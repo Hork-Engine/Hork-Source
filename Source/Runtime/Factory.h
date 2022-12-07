@@ -87,7 +87,8 @@ class AClassMeta
 public:
     const uint64_t ClassId;
 
-    const char*           GetName() const { return ClassName; }
+    const char*           GetName() const { return ClassName.CStr(); }
+    AGlobalStringView const& GetName2() const { return ClassName; }
     uint64_t              GetId() const { return ClassId; }
     AClassMeta const*     SuperClass() const { return pSuperClass; }
     AClassMeta const*     Next() const { return pNext; }
@@ -127,7 +128,7 @@ public:
     void             GetProperties(APropertyList& Properties, bool bRecursive = true) const;
 
 protected:
-    AClassMeta(AObjectFactory& Factory, const char* ClassName, AClassMeta const* SuperClassMeta) :
+    AClassMeta(AObjectFactory& Factory, AGlobalStringView ClassName, AClassMeta const* SuperClassMeta) :
         ClassId(Factory.NumClasses + 1), ClassName(ClassName)
     {
         HK_ASSERT_(Factory.FindClass(ClassName) == NULL, "Class already defined");
@@ -143,7 +144,7 @@ protected:
 private:
     static void CloneProperties_r(AClassMeta const* Meta, ABaseObject const* Template, ABaseObject* Destination);
 
-    const char*           ClassName;
+    AGlobalStringView     ClassName;
     AClassMeta*           pNext;
     AClassMeta const*     pSuperClass;
     AObjectFactory const* pFactory;
@@ -220,7 +221,7 @@ public:
     using GetterFun = AVariant (*)(ABaseObject const*);
     using CopyFun   = void (*)(ABaseObject*, ABaseObject const*);
 
-    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
+    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, AGlobalStringView Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
         Type(Type),
         Name(Name),
         pEnum(EnumDef),
@@ -265,7 +266,8 @@ public:
     }
 
     VARIANT_TYPE          GetType() const { return Type; }
-    const char*           GetName() const { return Name; }
+    const char*           GetName() const { return Name.CStr(); }
+    AGlobalStringView const& GetName2() const { return Name; }    
     SEnumDef const*       GetEnum() const { return pEnum; }
     SPropertyRange const& GetRange() const { return Range; }
     HK_PROPERTY_FLAGS     GetFlags() const { return Flags; }
@@ -274,7 +276,7 @@ public:
 
 private:
     VARIANT_TYPE      Type;
-    const char*       Name;
+    AGlobalStringView Name;
     SEnumDef const*   pEnum;
     SPropertyRange    Range;
     HK_PROPERTY_FLAGS Flags;
@@ -378,7 +380,7 @@ public:                                                                         
     class ThisClassMeta : public AClassMeta                                             \
     {                                                                                   \
     public:                                                                             \
-        ThisClassMeta() : AClassMeta(Factory, HK_STRINGIFY(Class), &Super::ClassMeta()) \
+        ThisClassMeta() : AClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::ClassMeta()) \
         {                                                                               \
             RegisterProperties();                                                       \
         }                                                                               \
@@ -415,7 +417,7 @@ private:
             *this,                                                                                     \
             VariantTraits::GetVariantType<PropertyType>(),                                             \
             VariantTraits::GetVariantEnum<PropertyType>(),                                             \
-            #Property,                                                                                 \
+            #Property##s,                                                                              \
             [](ABaseObject* pObject, AVariant const& Value) {                                          \
                 auto* pValue = Value.Get<PropertyType>();                                              \
                 if (pValue)                                                                            \
@@ -452,7 +454,7 @@ struct RemoveCVRef
             *this,                                                                                                  \
             VariantTraits::GetVariantType<PropertyType>(),                                                          \
             VariantTraits::GetVariantEnum<PropertyType>(),                                                          \
-            #Property,                                                                                              \
+            #Property##s,                                                                                           \
             [](ABaseObject* pObject, AVariant const& Value) {                                                       \
                 auto* pValue = Value.Get<PropertyType>();                                                           \
                 if (pValue)                                                                                         \

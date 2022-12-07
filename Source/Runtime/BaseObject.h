@@ -51,7 +51,7 @@ public:
     {
     public:
         ThisClassMeta() :
-            AClassMeta(AClassMeta::DummyFactory(), "ABaseObject", nullptr)
+            AClassMeta(AClassMeta::DummyFactory(), "ABaseObject"s, nullptr)
         {}
 
         ABaseObject* CreateInstance() const override
