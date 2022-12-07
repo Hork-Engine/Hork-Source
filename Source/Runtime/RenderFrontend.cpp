@@ -1381,6 +1381,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         ShadowBoxes.Add(component->GetWorldBounds());
     }
 
+    if (ShadowBoxes.IsEmpty())
+        return;
+
     ShadowBoxes.Resize(Align(ShadowBoxes.Size(), 4));
 
     ShadowCasterCullResult.ResizeInvalidate(ShadowBoxes.Size() / 4);
