@@ -355,10 +355,14 @@ public:
         Super::insert(end(), vector.begin(), vector.end());
     }
 
-    HK_FORCEINLINE void AddUnique(ValueType const& value)
+    HK_FORCEINLINE bool AddUnique(ValueType const& value)
     {
         if (eastl::find(begin(), end(), value) == end())
+        {
             Super::push_back(value);
+            return true;
+        }
+        return false;
     }
 
     HK_FORCEINLINE void Remove(SizeType index)
@@ -737,10 +741,14 @@ public:
         Super::insert(end(), vector.begin(), vector.end());
     }
 
-    HK_FORCEINLINE void AddUnique(ValueType const& value)
+    HK_FORCEINLINE bool AddUnique(ValueType const& value)
     {
         if (eastl::find(begin(), end(), value) == end())
+        {
             Super::push_back(value);
+            return true;
+        }
+        return false;
     }
 
     HK_FORCEINLINE void Remove(SizeType index)
