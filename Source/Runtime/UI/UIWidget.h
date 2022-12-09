@@ -472,6 +472,6 @@ public:
     AString            m_Name;
 
 private:
-    int  m_VisFrame = 0;
+    int  m_VisFrame = -1;
     bool m_bSetFocusOnAddToDesktop{};
 };
