@@ -33,16 +33,13 @@ SOFTWARE.
 #include "Texture.h"
 #include "Material.h"
 #include "IndexedMesh.h"
-//#include "ResourceManager.h"
 #include "Drawable.h"
-
-class ACameraComponent;
 
 /**
 
 AMeshComponent
 
-Mesh component without skinning
+Mesh without skinning
 
 */
 class AMeshComponent : public ADrawable,  private AIndexedMeshListener
@@ -65,36 +62,30 @@ public:
     /** Flipbook animation page offset */
     unsigned int SubpartBaseVertexOffset = 0;
 
-    bool bOverrideMeshMaterials = true;
-
     /** Allow raycasting */
-    void SetAllowRaycast(bool _AllowRaycast) override;
+    void SetAllowRaycast(bool bAllowRaycast) override;
 
     /** Set indexed mesh for the component */
-    void SetMesh(AIndexedMesh* _Mesh);
+    void SetMesh(AIndexedMesh* mesh);
 
     /** Get indexed mesh. Never return null */
-    AIndexedMesh* GetMesh() const { return Mesh; }
-
-    /** Unset materials */
-    void ClearMaterials();
+    AIndexedMesh* GetMesh() const { return m_Mesh; }
 
     /** Set materials from mesh resource */
     void CopyMaterialsFromMeshResource();
 
-    /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Instance);
+    /** Unset materials */
+    void ClearRenderViews();
 
-    /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance* GetMaterialInstance(int _SubpartIndex) const;
+    void SetRenderView(MeshRenderView* renderView);
+    void AddRenderView(MeshRenderView* renderView);
+    void RemoveRenderView(MeshRenderView* renderView);
 
-    /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance(AMaterialInstance* _Instance) { SetMaterialInstance(0, _Instance); }
+    using MeshRenderViews = TSmallVector<MeshRenderView*, 1>;
 
-    /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance* GetMaterialInstance() const { return GetMaterialInstance(0); }
+    MeshRenderViews const& GetRenderViews() const { return m_Views; }
 
-    BvAxisAlignedBox GetSubpartWorldBounds(int _SubpartIndex) const;
+    BvAxisAlignedBox GetSubpartWorldBounds(int subpartIndex) const;
 
     Float3x4 const& GetRenderTransformMatrix(int frameNum) const
     {
@@ -120,10 +111,8 @@ private:
     void NotifyMeshChanged();
     void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
 
-    AMaterialInstance* GetMaterialInstanceUnsafe(int _SubpartIndex) const;
-
-    TRef<AIndexedMesh>          Mesh;
-    TVector<AMaterialInstance*> Materials;
+    TRef<AIndexedMesh> m_Mesh;
+    MeshRenderViews    m_Views;
 
     /** Transform matrix used during last rendering */
     Float3x4 m_RenderTransformMatrix[2];
@@ -136,24 +125,21 @@ class AProceduralMeshComponent : public ADrawable
 
 public:
     /** Allow raycasting */
-    void SetAllowRaycast(bool _AllowRaycast) override;
+    void SetAllowRaycast(bool bAllowRaycast) override;
 
-    void SetMesh(AProceduralMesh* _Mesh)
-    {
-        ProceduralMesh = _Mesh;
-    }
+    void SetMesh(AProceduralMesh* mesh);
+    AProceduralMesh* GetMesh() const;
 
-    AProceduralMesh* GetMesh() const
-    {
-        return ProceduralMesh;
-    }
+    /** Unset materials */
+    void ClearRenderViews();
 
-    void SetMaterialInstance(AMaterialInstance* _MaterialInstance)
-    {
-        MaterialInstance = _MaterialInstance;
-    }
+    void SetRenderView(MeshRenderView* renderView);
+    void AddRenderView(MeshRenderView* renderView);
+    void RemoveRenderView(MeshRenderView* renderView);
 
-    AMaterialInstance* GetMaterialInstance() const;
+    using MeshRenderViews = TSmallVector<MeshRenderView*, 1>;
+
+    MeshRenderViews const& GetRenderViews() const { return m_Views; }
 
     Float3x4 const& GetRenderTransformMatrix(int frameNum) const
     {
@@ -162,6 +148,7 @@ public:
 
 protected:
     AProceduralMeshComponent();
+    ~AProceduralMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -170,8 +157,8 @@ protected:
 
     void DrawDebug(ADebugRenderer* InRenderer) override;
 
-    TRef<AProceduralMesh>   ProceduralMesh;
-    TRef<AMaterialInstance> MaterialInstance;
+    TRef<AProceduralMesh> m_Mesh;
+    MeshRenderViews       m_Views;
 
     /** Transform matrix used during last rendering */
     Float3x4 m_RenderTransformMatrix[2];

@@ -44,17 +44,20 @@ AConsoleVar com_DrawIndexedMeshBVH("com_DrawIndexedMeshBVH"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AMeshComponent)
 
-static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
+namespace
 {
-    AMeshComponent const* mesh           = static_cast<AMeshComponent const*>(Self->Owner);
-    bool                  bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
+
+bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
+{
+    AMeshComponent const* mesh = static_cast<AMeshComponent const*>(Self->Owner);
+    bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
     Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
 
     // transform ray to object space
     Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal   = transformInverse * InRayEnd;
-    Float3 rayDirLocal   = rayEndLocal - rayStartLocal;
+    Float3 rayEndLocal = transformInverse * InRayEnd;
+    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
 
     float hitDistanceLocal = rayDirLocal.Length();
     if (hitDistanceLocal < 0.0001f)
@@ -68,7 +71,7 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
 
     int firstHit = Hits.Size();
 
-    if (mesh->bOverrideMeshMaterials)
+    //if (mesh->bOverrideMeshMaterials)
     {
         bool ret = false;
 
@@ -85,10 +88,11 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
             return false;
         }
 
+        auto& views = mesh->GetRenderViews();
+
         AIndexedMeshSubpartArray const& subparts = resource->GetSubparts();
         for (int i = 0; i < subparts.Size(); i++)
         {
-
             int first = Hits.Size();
 
             // Raycast subpart
@@ -99,7 +103,17 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
             int num = Hits.Size() - first;
             if (num)
             {
-                AMaterialInstance* material = mesh->GetMaterialInstance(i);
+                AMaterialInstance* material;
+                if (views.IsEmpty())
+                {
+                    static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+                    material = DefaultInstance.GetObject();
+                }
+                else
+                {
+                    material = views[0]->GetMaterial(i);
+                }
+
                 for (int j = 0; j < num; j++)
                 {
                     Hits[first + j].Material = material;
@@ -112,46 +126,46 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
             return false;
         }
     }
-    else
-    {
-        if (!resource->Raycast(rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hits))
-        {
-            return false;
-        }
-    }
+    //else
+    //{
+    //    if (!resource->Raycast(rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hits))
+    //    {
+    //        return false;
+    //    }
+    //}
 
     // Convert hits to worldspace
 
     Float3x4 const& transform = mesh->GetWorldTransformMatrix();
-    Float3x3        normalMatrix;
+    Float3x3 normalMatrix;
 
     transform.DecomposeNormalMatrix(normalMatrix);
 
     int numHits = Hits.Size() - firstHit;
     for (int i = 0; i < numHits; i++)
     {
-        int                 hitNum    = firstHit + i;
+        int hitNum = firstHit + i;
         STriangleHitResult& hitResult = Hits[hitNum];
 
         hitResult.Location = transform * hitResult.Location;
-        hitResult.Normal   = (normalMatrix * hitResult.Normal).Normalized();
+        hitResult.Normal = (normalMatrix * hitResult.Normal).Normalized();
         hitResult.Distance = (hitResult.Location - InRayStart).Length();
     }
 
     return true;
 }
 
-static bool RaycastClosestCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit, SMeshVertex const** pVertices)
+bool RaycastClosestCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit, SMeshVertex const** pVertices)
 {
-    AMeshComponent const* mesh           = static_cast<AMeshComponent const*>(Self->Owner);
-    bool                  bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
+    AMeshComponent const* mesh = static_cast<AMeshComponent const*>(Self->Owner);
+    bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
     Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
 
     // transform ray to object space
     Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal   = transformInverse * InRayEnd;
-    Float3 rayDirLocal   = rayEndLocal - rayStartLocal;
+    Float3 rayEndLocal = transformInverse * InRayEnd;
+    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
 
     float hitDistanceLocal = rayDirLocal.Length();
     if (hitDistanceLocal < 0.0001f)
@@ -170,7 +184,16 @@ static bool RaycastClosestCallback(SPrimitiveDef const* Self, Float3 const& InRa
         return false;
     }
 
-    Hit.Material = mesh->GetMaterialInstance(subpartIndex);
+    auto& views = mesh->GetRenderViews();
+    if (views.IsEmpty())
+    {
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+        Hit.Material = DefaultInstance.GetObject();
+    }
+    else
+    {
+        Hit.Material = views[0]->GetMaterial(subpartIndex);
+    }
 
     *pVertices = resource->GetVertices();
 
@@ -197,6 +220,8 @@ static bool RaycastClosestCallback(SPrimitiveDef const* Self, Float3 const& InRa
     return true;
 }
 
+} // namespace
+
 AMeshComponent::AMeshComponent()
 {
     DrawableType = DRAWABLE_STATIC_MESH;
@@ -207,17 +232,17 @@ AMeshComponent::AMeshComponent()
     bAllowRaycast = true;
 
     static TStaticResourceFinder<AIndexedMesh> MeshResource("/Default/Meshes/Box"s);
-    Mesh   = MeshResource.GetObject();
-    Bounds = Mesh->GetBoundingBox();
+    m_Mesh = MeshResource.GetObject();
+    Bounds = m_Mesh->GetBoundingBox();
 
     SetUseMeshCollision(true);
 }
 
 AMeshComponent::~AMeshComponent()
 {
-    ClearMaterials();
+    ClearRenderViews();
 
-    Mesh->Listeners.Remove(this);
+    m_Mesh->Listeners.Remove(this);
 }
 
 void AMeshComponent::InitializeComponent()
@@ -230,9 +255,9 @@ void AMeshComponent::DeinitializeComponent()
     Super::DeinitializeComponent();
 }
 
-void AMeshComponent::SetAllowRaycast(bool _AllowRaycast)
+void AMeshComponent::SetAllowRaycast(bool _bAllowRaycast)
 {
-    if (_AllowRaycast)
+    if (_bAllowRaycast)
     {
         Primitive->RaycastCallback        = RaycastCallback;
         Primitive->RaycastClosestCallback = RaycastClosestCallback;
@@ -242,38 +267,38 @@ void AMeshComponent::SetAllowRaycast(bool _AllowRaycast)
         Primitive->RaycastCallback        = nullptr;
         Primitive->RaycastClosestCallback = nullptr;
     }
-    bAllowRaycast = _AllowRaycast;
+    bAllowRaycast = _bAllowRaycast;
 }
 
-void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
+void AMeshComponent::SetMesh(AIndexedMesh* mesh)
 {
-    if (Mesh == _Mesh)
+    if (m_Mesh == mesh)
     {
         return;
     }
 
-    Mesh->Listeners.Remove(this);
+    m_Mesh->Listeners.Remove(this);
 
-    Mesh = _Mesh;
+    m_Mesh = mesh;
 
     for (SceneSocket& socket : m_Sockets)
     {
         socket.SocketDef->RemoveRef();
     }
 
-    if (!Mesh)
+    if (!m_Mesh)
     {
         static TStaticResourceFinder<AIndexedMesh> MeshResource("/Default/Meshes/Box"s);
-        Mesh = MeshResource.GetObject();
+        m_Mesh = MeshResource.GetObject();
     }
 
-    Mesh->Listeners.Add(this);
+    m_Mesh->Listeners.Add(this);
 
     // Update bounding box
-    Bounds = Mesh->GetBoundingBox();
+    Bounds = m_Mesh->GetBoundingBox();
 
     // Update sockets
-    TVector<ASocketDef*> const& socketDef = Mesh->GetSockets();
+    TVector<ASocketDef*> const& socketDef = m_Mesh->GetSockets();
     m_Sockets.ResizeInvalidate(socketDef.Size());
     for (int i = 0; i < socketDef.Size(); i++)
     {
@@ -291,104 +316,52 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
     {
         UpdatePhysicsAttribs();
     }
-}
 
-void AMeshComponent::ClearMaterials()
-{
-    for (AMaterialInstance* material : Materials)
-    {
-        if (material)
-        {
-            material->RemoveRef();
-        }
-    }
-    Materials.Clear();
+    m_RenderTransformMatrixFrame = 0;
 }
 
 void AMeshComponent::CopyMaterialsFromMeshResource()
 {
-    ClearMaterials();
+    HK_ASSERT(m_Mesh);
+    SetRenderView(m_Mesh->GetDefaultRenderView());
+}
 
-    AIndexedMeshSubpartArray const& subparts = Mesh->GetSubparts();
-    for (int i = 0; i < subparts.Size(); i++)
+void AMeshComponent::ClearRenderViews()
+{
+    for (auto view : m_Views)
+        view->RemoveRef();
+    m_Views.Clear();
+}
+
+void AMeshComponent::SetRenderView(MeshRenderView* renderView)
+{
+    ClearRenderViews();
+    AddRenderView(renderView);
+}
+
+void AMeshComponent::AddRenderView(MeshRenderView* renderView)
+{
+    HK_ASSERT(renderView);
+
+    if (m_Views.AddUnique(renderView))
+        renderView->AddRef();
+}
+
+void AMeshComponent::RemoveRenderView(MeshRenderView* renderView)
+{
+    HK_ASSERT(renderView);
+
+    auto i = m_Views.IndexOf(renderView);
+    if (i != Core::NPOS)
     {
-        SetMaterialInstance(i, subparts[i]->GetMaterialInstance());
+        m_Views.Remove(i);
+        renderView->RemoveRef();
     }
 }
 
-void AMeshComponent::SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Instance)
+BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds(int subpartIndex) const
 {
-    HK_ASSERT(_SubpartIndex >= 0);
-
-    if (_SubpartIndex >= Materials.Size())
-    {
-
-        if (_Instance)
-        {
-            int n = Materials.Size();
-
-            Materials.Resize(n + _SubpartIndex + 1);
-            for (; n < Materials.Size(); n++)
-            {
-                Materials[n] = nullptr;
-            }
-            Materials[_SubpartIndex] = _Instance;
-            _Instance->AddRef();
-        }
-
-        return;
-    }
-
-    if (Materials[_SubpartIndex])
-    {
-        Materials[_SubpartIndex]->RemoveRef();
-    }
-    Materials[_SubpartIndex] = _Instance;
-    if (_Instance)
-    {
-        _Instance->AddRef();
-    }
-}
-
-AMaterialInstance* AMeshComponent::GetMaterialInstanceUnsafe(int _SubpartIndex) const
-{
-    if (_SubpartIndex < 0)
-    {
-        return nullptr;
-    }
-
-    if (bOverrideMeshMaterials)
-    {
-        if (_SubpartIndex >= Materials.Size())
-        {
-            return nullptr;
-        }
-        return Materials[_SubpartIndex];
-    }
-
-    AIndexedMeshSubpartArray const& subparts = Mesh->GetSubparts();
-    if (_SubpartIndex >= subparts.Size())
-    {
-        return nullptr;
-    }
-
-    return subparts[_SubpartIndex]->GetMaterialInstance();
-}
-
-AMaterialInstance* AMeshComponent::GetMaterialInstance(int _SubpartIndex) const
-{
-    AMaterialInstance* pInstance = GetMaterialInstanceUnsafe(_SubpartIndex);
-    if (!pInstance)
-    {
-        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
-        pInstance = DefaultInstance.GetObject();
-    }
-    return pInstance;
-}
-
-BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds(int _SubpartIndex) const
-{
-    AIndexedMeshSubpart const* subpart = const_cast<AMeshComponent*>(this)->Mesh->GetSubpart(_SubpartIndex);
+    AIndexedMeshSubpart const* subpart = const_cast<AMeshComponent*>(this)->m_Mesh->GetSubpart(subpartIndex);
     if (!subpart)
     {
         LOG("AMeshComponent::GetSubpartWorldBounds: invalid subpart index\n");
@@ -399,7 +372,7 @@ BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds(int _SubpartIndex) const
 
 ACollisionModel* AMeshComponent::GetMeshCollisionModel() const
 {
-    return Mesh->GetCollisionModel();
+    return m_Mesh->GetCollisionModel();
 }
 
 void AMeshComponent::NotifyMeshChanged()
@@ -409,7 +382,7 @@ void AMeshComponent::NotifyMeshChanged()
 
 void AMeshComponent::OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
 {
-    TRef<AIndexedMesh> curMesh = Mesh;
+    TRef<AIndexedMesh> curMesh = m_Mesh;
 
     // Reset mesh
     SetMesh(nullptr);
@@ -449,7 +422,7 @@ void AMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
     {
         if (Primitive->VisPass == InRenderer->GetVisPass())
         {
-            Mesh->DrawBVH(InRenderer, GetWorldTransformMatrix());
+            m_Mesh->DrawBVH(InRenderer, GetWorldTransformMatrix());
         }
     }
 
@@ -602,6 +575,19 @@ static bool RaycastCallback_Procedural(SPrimitiveDef const* Self, Float3 const& 
         return false;
     }
 
+    AMaterialInstance* material;
+
+    auto& views = mesh->GetRenderViews();
+    if (views.IsEmpty())
+    {
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+        material = DefaultInstance.GetObject();
+    }
+    else
+    {
+        material = views[0]->GetMaterial(0);
+    }
+
     // Convert hits to worldspace
 
     Float3x4 const& transform = mesh->GetWorldTransformMatrix();
@@ -610,8 +596,6 @@ static bool RaycastCallback_Procedural(SPrimitiveDef const* Self, Float3 const& 
     transform.DecomposeNormalMatrix(normalMatrix);
 
     int numHits = Hits.Size() - firstHit;
-
-    AMaterialInstance* material = mesh->GetMaterialInstance();
 
     for (int i = 0; i < numHits; i++)
     {
@@ -659,7 +643,16 @@ static bool RaycastClosestCallback_Procedural(SPrimitiveDef const* Self, Float3 
         return false;
     }
 
-    Hit.Material = mesh->GetMaterialInstance();
+    auto& views = mesh->GetRenderViews();
+    if (views.IsEmpty())
+    {
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+        Hit.Material = DefaultInstance.GetObject();
+    }
+    else
+    {
+        Hit.Material = views[0]->GetMaterial(0);
+    }
 
     *pVertices = resource->VertexCache.ToPtr();
 
@@ -698,8 +691,13 @@ AProceduralMeshComponent::AProceduralMeshComponent()
     //LightmapOffset.Z = LightmapOffset.W = 1;
 
     //static TStaticResourceFinder< AIndexedMesh > MeshResource("/Default/Meshes/Box"s);
-    //Mesh = MeshResource.GetObject();
-    //Bounds = Mesh->GetBoundingBox();
+    //m_Mesh = MeshResource.GetObject();
+    //Bounds = m_Mesh->GetBoundingBox();
+}
+
+AProceduralMeshComponent::~AProceduralMeshComponent()
+{
+    ClearRenderViews();
 }
 
 void AProceduralMeshComponent::InitializeComponent()
@@ -712,9 +710,9 @@ void AProceduralMeshComponent::DeinitializeComponent()
     Super::DeinitializeComponent();
 }
 
-void AProceduralMeshComponent::SetAllowRaycast(bool _AllowRaycast)
+void AProceduralMeshComponent::SetAllowRaycast(bool _bAllowRaycast)
 {
-    if (_AllowRaycast)
+    if (_bAllowRaycast)
     {
         Primitive->RaycastCallback        = RaycastCallback_Procedural;
         Primitive->RaycastClosestCallback = RaycastClosestCallback_Procedural;
@@ -724,7 +722,7 @@ void AProceduralMeshComponent::SetAllowRaycast(bool _AllowRaycast)
         Primitive->RaycastCallback        = nullptr;
         Primitive->RaycastClosestCallback = nullptr;
     }
-    bAllowRaycast = _AllowRaycast;
+    bAllowRaycast = _bAllowRaycast;
 }
 
 void AProceduralMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
@@ -742,15 +740,47 @@ void AProceduralMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
     }
 }
 
-AMaterialInstance* AProceduralMeshComponent::GetMaterialInstance() const
+void AProceduralMeshComponent::SetMesh(AProceduralMesh* mesh)
 {
-    AMaterialInstance* pInstance = MaterialInstance;
-    if (!pInstance)
+    m_Mesh = mesh;
+}
+
+AProceduralMesh* AProceduralMeshComponent::GetMesh() const
+{
+    return m_Mesh;
+}
+
+void AProceduralMeshComponent::ClearRenderViews()
+{
+    for (auto view : m_Views)
+        view->RemoveRef();
+    m_Views.Clear();
+}
+
+void AProceduralMeshComponent::SetRenderView(MeshRenderView* renderView)
+{
+    ClearRenderViews();
+    AddRenderView(renderView);
+}
+
+void AProceduralMeshComponent::AddRenderView(MeshRenderView* renderView)
+{
+    HK_ASSERT(renderView);
+
+    if (m_Views.AddUnique(renderView))
+        renderView->AddRef();
+}
+
+void AProceduralMeshComponent::RemoveRenderView(MeshRenderView* renderView)
+{
+    HK_ASSERT(renderView);
+
+    auto i = m_Views.IndexOf(renderView);
+    if (i != Core::NPOS)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
-        pInstance = DefaultInstance.GetObject();
+        m_Views.Remove(i);
+        renderView->RemoveRef();
     }
-    return pInstance;
 }
 
 void AProceduralMeshComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)

@@ -95,13 +95,17 @@ void ADirectionalLightComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Cylinder"s);
+    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Cylinder"s);
     static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
-    AMeshComponent*                                 meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("DirectionalLightAvatar");
+
+    MeshRenderView* meshRender = NewObj<MeshRenderView>();
+    meshRender->SetMaterial(MaterialInstance);
+
+    AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("DirectionalLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
-    meshComponent->SetMaterialInstance(MaterialInstance.GetObject());
+    meshComponent->SetRenderView(meshRender);
     meshComponent->SetCastShadow(false);
     meshComponent->SetAbsoluteScale(true);
     meshComponent->SetAngles(90, 0, 0);

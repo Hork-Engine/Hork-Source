@@ -48,14 +48,17 @@ void ACameraComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Box"s);
+    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Box"s);
     static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
+
+    MeshRenderView* meshRender = NewObj<MeshRenderView>();
+    meshRender->SetMaterial(MaterialInstance);
 
     AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("CameraAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
-    meshComponent->SetMaterialInstance(MaterialInstance.GetObject());
+    meshComponent->SetRenderView(meshRender);
     meshComponent->SetCastShadow(false);
     meshComponent->SetAbsoluteScale(true);
     meshComponent->SetScale(0.5f);

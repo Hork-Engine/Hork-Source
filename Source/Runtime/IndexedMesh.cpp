@@ -2638,3 +2638,83 @@ void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
 
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
+
+MeshRenderView* AIndexedMesh::GetDefaultRenderView() const
+{
+    if (m_RenderView.IsExpired())
+    {
+        m_RenderView = NewObj<MeshRenderView>();
+
+        m_RenderView->SetMaterials(this);
+    }
+
+    return m_RenderView;
+}
+
+MeshRenderView::~MeshRenderView()
+{
+    ClearMaterials();
+}
+
+void MeshRenderView::ClearMaterials()
+{
+    for (auto& material : m_Materials)
+    {
+        if (material)
+            material->RemoveRef();
+    }
+
+    m_Materials.Clear();
+}
+
+void MeshRenderView::SetMaterial(int subpartIndex, AMaterialInstance* instance)
+{
+    HK_ASSERT(subpartIndex >= 0);
+
+    if (subpartIndex >= m_Materials.Size())
+    {
+        auto n = m_Materials.Size();
+        m_Materials.Resize(n + subpartIndex + 1);
+        for (auto i = n, count = m_Materials.Size(); i < count; ++i)
+            m_Materials[i] = nullptr;
+    }
+
+    AMaterialInstance* material = m_Materials[subpartIndex];
+    if (material)
+        material->RemoveRef();
+
+    m_Materials[subpartIndex] = instance;
+    if (instance)
+        instance->AddRef();
+}
+
+void MeshRenderView::SetMaterials(AIndexedMesh const* indexedMesh)
+{
+    ClearMaterials();
+
+    auto& subparts = indexedMesh->GetSubparts();
+
+    m_Materials.Resize(subparts.Size());
+    for (int i = 0, count = subparts.Size(); i < count; ++i)
+    {
+        m_Materials[i] = subparts[i]->GetMaterialInstance();
+    }
+}
+
+AMaterialInstance* MeshRenderView::GetMaterialUnsafe(int subpartIndex) const
+{
+    if (subpartIndex < 0 || subpartIndex >= m_Materials.Size())
+        return nullptr;
+    return m_Materials[subpartIndex];
+}
+
+AMaterialInstance* MeshRenderView::GetMaterial(int subpartIndex) const
+{
+    AMaterialInstance* pInstance = GetMaterialUnsafe(subpartIndex);
+    if (!pInstance)
+    {
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+        pInstance = DefaultInstance.GetObject();
+    }
+    return pInstance;
+}

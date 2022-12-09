@@ -184,6 +184,40 @@ struct SSoftbodyFace
     unsigned int Indices[3];
 };
 
+class MeshRenderView : public GCObject
+{
+public:
+    ~MeshRenderView();
+
+    /** Unset materials */
+    void ClearMaterials();
+
+    /** Set material instance for subpart of the mesh */
+    void SetMaterial(AMaterialInstance* instance) { SetMaterial(0, instance); }
+
+    /** Set material instance for subpart of the mesh */
+    void SetMaterial(int subpartIndex, AMaterialInstance* instance);
+
+    /** Set materials from mesh resource */
+    void SetMaterials(AIndexedMesh const* indexedMesh);
+
+    /** Get material instance of subpart of the mesh. Never return null. */
+    AMaterialInstance* GetMaterial() const { return GetMaterial(0); }
+
+    /** Get material instance of subpart of the mesh. Never return null. */
+    AMaterialInstance* GetMaterial(int subpartIndex) const;
+
+    void SetEnabled(bool bEnabled);
+
+    bool IsEnabled() const { return m_bEnabled; }
+
+private:
+    AMaterialInstance* GetMaterialUnsafe(int subpartIndex) const;
+
+    bool m_bEnabled{true};
+    TVector<AMaterialInstance*> m_Materials;
+};
+
 enum INDEXED_MESH_UPDATE_FLAG : uint8_t
 {
     INDEXED_MESH_UPDATE_GEOMETRY = HK_BIT(0),
@@ -293,6 +327,8 @@ public:
 
     /** Collision model for the mesh. */
     ACollisionModel* GetCollisionModel() const { return m_CollisionModel; }
+
+    MeshRenderView* GetDefaultRenderView() const;
 
     /** Soft body collision model */
     TPodVector<SSoftbodyLink> /*const*/& GetSoftbodyLinks() /*const*/ { return m_SoftbodyLinks; }
@@ -416,6 +452,7 @@ private:
     SVertexHandle*            m_IndexHandle   = nullptr;
     SVertexHandle*            m_WeightsHandle = nullptr;
     AIndexedMeshSubpartArray  m_Subparts;
+    mutable TWeakRef<MeshRenderView> m_RenderView;
 
     SVertexHandle*                  m_LightmapUVsGPU = nullptr;
     TVertexBufferCPU<SMeshVertexUV> m_LightmapUVs;
