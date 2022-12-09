@@ -2698,6 +2698,7 @@ void MeshRenderView::SetMaterials(AIndexedMesh const* indexedMesh)
     for (int i = 0, count = subparts.Size(); i < count; ++i)
     {
         m_Materials[i] = subparts[i]->GetMaterialInstance();
+        m_Materials[i]->AddRef();
     }
 }
 
