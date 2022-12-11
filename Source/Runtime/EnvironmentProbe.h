@@ -32,53 +32,53 @@ SOFTWARE.
 
 #include "PunctualLightComponent.h"
 
-class AEnvironmentMap;
+class EnvironmentMap;
 
-class AEnvironmentProbe : public ASceneComponent
+class EnvironmentProbe : public SceneComponent
 {
-    HK_COMPONENT(AEnvironmentProbe, ASceneComponent)
+    HK_COMPONENT(EnvironmentProbe, SceneComponent)
 
 public:
     void  SetRadius(float _Radius);
-    float GetRadius() const { return Radius; }
+    float GetRadius() const { return m_Radius; }
 
-    void             SetEnvironmentMap(AEnvironmentMap* EnvironmentMap);
-    AEnvironmentMap* GetEnvironmentMap() const { return EnvironmentMap; }
+    void            SetEnvironmentMap(EnvironmentMap* environmentMap);
+    EnvironmentMap* GetEnvironmentMap() const { return m_EnvironmentMap; }
 
     void SetEnabled(bool _Enabled);
 
-    bool IsEnabled() const { return bEnabled; }
+    bool IsEnabled() const { return m_bEnabled; }
 
-    BvAxisAlignedBox const& GetWorldBounds() const { return AABBWorldBounds; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return m_AABBWorldBounds; }
 
-    Float4x4 const& GetOBBTransformInverse() const { return OBBTransformInverse; }
+    Float4x4 const& GetOBBTransformInverse() const { return m_OBBTransformInverse; }
 
-    BvSphere const& GetSphereWorldBounds() const { return SphereWorldBounds; }
+    BvSphere const& GetSphereWorldBounds() const { return m_SphereWorldBounds; }
 
-    void PackProbe(Float4x4 const& InViewMatrix, struct SProbeParameters& Probe);
+    void PackProbe(Float4x4 const& InViewMatrix, struct ProbeParameters& Probe);
 
 protected:
-    AEnvironmentProbe();
-    ~AEnvironmentProbe();
+    EnvironmentProbe();
+    ~EnvironmentProbe();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
     void UpdateWorldBounds();
 
-    SPrimitiveDef*   Primitive;
-    BvAxisAlignedBox AABBWorldBounds;
-    Float4x4         OBBTransformInverse;
-    BvSphere         SphereWorldBounds;
-    BvOrientedBox    OBBWorldBounds;
+    PrimitiveDef* m_Primitive;
+    BvAxisAlignedBox m_AABBWorldBounds;
+    Float4x4 m_OBBTransformInverse;
+    BvSphere m_SphereWorldBounds;
+    BvOrientedBox m_OBBWorldBounds;
 
-    float Radius;
-    bool  bEnabled;
+    float m_Radius;
+    bool m_bEnabled;
 
-    TRef<AEnvironmentMap>      EnvironmentMap;
-    RenderCore::BindlessHandle IrradianceMapHandle{};
-    RenderCore::BindlessHandle ReflectionMapHandle{};
+    TRef<EnvironmentMap>       m_EnvironmentMap;
+    RenderCore::BindlessHandle m_IrradianceMapHandle{};
+    RenderCore::BindlessHandle m_ReflectionMapHandle{};
 };

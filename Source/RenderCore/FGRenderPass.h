@@ -38,7 +38,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-struct SRect2D
+struct Rect2D
 {
     uint16_t X      = 0;
     uint16_t Y      = 0;
@@ -79,12 +79,12 @@ enum FRAMEBUFFER_OUTPUT : uint8_t
     FB_FLOAT
 };
 
-struct SAttachmentRef
+struct AttachmentRef
 {
     uint32_t Attachment = 0;
 
-    SAttachmentRef() = default;
-    SAttachmentRef(uint32_t _Attachment) :
+    AttachmentRef() = default;
+    AttachmentRef(uint32_t _Attachment) :
         Attachment(_Attachment)
     {}
 };
@@ -102,16 +102,16 @@ enum ATTACHMENT_STORE_OP : uint8_t
     ATTACHMENT_STORE_OP_DONT_CARE = 1
 };
 
-union SClearColorValue
+union ClearColorValue
 {
     float    Float32[4] = {0,0,0,0};
     int32_t  Int32[4];
     uint32_t UInt32[4];
 };
 
-inline SClearColorValue MakeClearColorValue(float R, float G, float B, float A)
+inline ClearColorValue MakeClearColorValue(float R, float G, float B, float A)
 {
-    SClearColorValue v;
+    ClearColorValue v;
     v.Float32[0] = R;
     v.Float32[1] = G;
     v.Float32[2] = B;
@@ -119,9 +119,9 @@ inline SClearColorValue MakeClearColorValue(float R, float G, float B, float A)
     return v;
 }
 
-inline SClearColorValue MakeClearColorValue(int32_t R, int32_t G, int32_t B, int32_t A)
+inline ClearColorValue MakeClearColorValue(int32_t R, int32_t G, int32_t B, int32_t A)
 {
-    SClearColorValue v;
+    ClearColorValue v;
     v.Int32[0] = R;
     v.Int32[1] = G;
     v.Int32[2] = B;
@@ -129,9 +129,9 @@ inline SClearColorValue MakeClearColorValue(int32_t R, int32_t G, int32_t B, int
     return v;
 }
 
-inline SClearColorValue MakeClearColorValue(uint32_t R, uint32_t G, uint32_t B, uint32_t A)
+inline ClearColorValue MakeClearColorValue(uint32_t R, uint32_t G, uint32_t B, uint32_t A)
 {
-    SClearColorValue v;
+    ClearColorValue v;
     v.UInt32[0] = R;
     v.UInt32[1] = G;
     v.UInt32[2] = B;
@@ -139,90 +139,90 @@ inline SClearColorValue MakeClearColorValue(uint32_t R, uint32_t G, uint32_t B, 
     return v;
 }
 
-struct SClearDepthStencilValue
+struct ClearDepthStencilValue
 {
     float    Depth   = 0;
     uint32_t Stencil = 0;
 
-    SClearDepthStencilValue() = default;
+    ClearDepthStencilValue() = default;
 
-    SClearDepthStencilValue(float Depth, uint32_t Stencil) :
+    ClearDepthStencilValue(float Depth, uint32_t Stencil) :
         Depth(Depth), Stencil(Stencil)
     {}
 };
 
-struct STextureAttachmentClearValue
+struct TextureAttachmentClearValue
 {
-    SClearColorValue        Color;
-    SClearDepthStencilValue DepthStencil;
+    ClearColorValue        Color;
+    ClearDepthStencilValue DepthStencil;
 };
 
-struct STextureAttachment
+struct TextureAttachment
 {
-    const char*                  Name               = "Unnamed texture attachment";
-    class FGTextureProxy*        pResource          = {};
-    STextureDesc                 TextureDesc        = {};
-    ATTACHMENT_LOAD_OP           LoadOp             = ATTACHMENT_LOAD_OP_LOAD;
-    ATTACHMENT_STORE_OP          StoreOp            = ATTACHMENT_STORE_OP_STORE;
-    STextureAttachmentClearValue ClearValue;
-    bool                         bCreateNewResource = false;
-    uint16_t                     MipLevel           = 0;
-    uint16_t                     SliceNum           = 0;
-    bool                         bSingleSlice       = false;
+    const char*                 Name               = "Unnamed texture attachment";
+    class FGTextureProxy*       pResource          = {};
+    TextureDesc                 TexDesc            = {};
+    ATTACHMENT_LOAD_OP          LoadOp             = ATTACHMENT_LOAD_OP_LOAD;
+    ATTACHMENT_STORE_OP         StoreOp            = ATTACHMENT_STORE_OP_STORE;
+    TextureAttachmentClearValue ClearValue;
+    bool                        bCreateNewResource = false;
+    uint16_t                    MipLevel           = 0;
+    uint16_t                    SliceNum           = 0;
+    bool                        bSingleSlice       = false;
 
-    explicit STextureAttachment(FGTextureProxy* pResource) :
+    explicit TextureAttachment(FGTextureProxy* pResource) :
         pResource(pResource), bCreateNewResource(false)
     {
     }
 
-    explicit STextureAttachment(const char* Name, STextureDesc const& TextureDesc) :
-        Name(Name), TextureDesc(TextureDesc), bCreateNewResource(true)
+    explicit TextureAttachment(const char* Name, TextureDesc const& TexDesc) :
+        Name(Name), TexDesc(TexDesc), bCreateNewResource(true)
     {
-        if (IsDepthStencilFormat(TextureDesc.Format))
+        if (IsDepthStencilFormat(TexDesc.Format))
         {
-            this->TextureDesc.BindFlags |= BIND_DEPTH_STENCIL;
+            this->TexDesc.BindFlags |= BIND_DEPTH_STENCIL;
         }
         else
         {
-            this->TextureDesc.BindFlags |= BIND_RENDER_TARGET;
+            this->TexDesc.BindFlags |= BIND_RENDER_TARGET;
         }
 
-        // FIXME: Set BIND_SHADER_RESOURCE as default for STextureAttachment or not?
-        this->TextureDesc.BindFlags |= BIND_SHADER_RESOURCE;
-        //this->TextureDesc.BindFlags |= BIND_UNORDERED_ACCESS;
+        // FIXME: Set BIND_SHADER_RESOURCE as default for TextureAttachment or not?
+        this->TexDesc.BindFlags |= BIND_SHADER_RESOURCE;
+        //this->TexDesc.BindFlags |= BIND_UNORDERED_ACCESS;
     }
 
-    STextureAttachment& SetLoadOp(ATTACHMENT_LOAD_OP InLoadOp)
+    TextureAttachment& SetLoadOp(ATTACHMENT_LOAD_OP InLoadOp)
     {
         LoadOp = InLoadOp;
         return *this;
     }
 
-    STextureAttachment& SetStoreOp(ATTACHMENT_STORE_OP InStoreOp)
+    TextureAttachment& SetStoreOp(ATTACHMENT_STORE_OP InStoreOp)
     {
         StoreOp = InStoreOp;
         return *this;
     }
 
-    STextureAttachment& SetClearValue(SClearColorValue const& InClearValue)
+    TextureAttachment& SetClearValue(ClearColorValue const& InClearValue)
     {
         ClearValue.Color = InClearValue;
         return *this;
     }
 
-    STextureAttachment& SetClearValue(SClearDepthStencilValue const& InClearValue)
+    TextureAttachment& SetClearValue(ClearDepthStencilValue const& InClearValue)
     {
         ClearValue.DepthStencil = InClearValue;
         return *this;
     }
 
-    STextureAttachment& SetMipLevel(uint16_t InMipLevel)
+    TextureAttachment& SetMipLevel(uint16_t InMipLevel)
     {
         MipLevel = InMipLevel;
         return *this;
     }
 
-    STextureAttachment& SetSlice(uint16_t InSlice)
+    TextureAttachment& SetSlice(uint16_t InSlice)
     {
         SliceNum     = InSlice;
         bSingleSlice = true;
@@ -236,169 +236,169 @@ struct STextureAttachment
     }
 };
 
-class ACommandBuffer
+class FGCommandBuffer
 {
 public:
     // TODO...
 };
 
-class ARenderPass;
+class RenderPass;
 
-class ARenderPassContext
+class FGRenderPassContext
 {
 public:
-    ARenderPass* pRenderPass;
-    int          SubpassIndex;
-    SRect2D      RenderArea;
+    RenderPass* pRenderPass;
+    int         SubpassIndex;
+    Rect2D      RenderArea;
     class IImmediateContext* pImmediateContext;
 
     int GetSubpassIndex() const { return SubpassIndex; }
 };
 
 // fixed_function is used to prevent memory allocations during frame rendering.
-using ARecordFunction = eastl::fixed_function<97, void(ARenderPassContext&, ACommandBuffer&)>;
+using FGRecordFunction = eastl::fixed_function<97, void(FGRenderPassContext&, FGCommandBuffer&)>;
 
-class ASubpassInfo
+class FGSubpassInfo
 {
 public:
     template <typename Fn>
-    ASubpassInfo(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, Fn RecordFunction) :
+    FGSubpassInfo(std::initializer_list<AttachmentRef> ColorAttachmentRefs, Fn RecordFunction) :
         Refs(ColorAttachmentRefs), Function(RecordFunction)
     {
     }
 
-    TStaticVector<SAttachmentRef, MAX_COLOR_ATTACHMENTS> Refs;
-    ARecordFunction                                      Function;
+    TStaticVector<AttachmentRef, MAX_COLOR_ATTACHMENTS> Refs;
+    FGRecordFunction                                      Function;
 };
 
-class ARenderPass : public FGRenderTask<ARenderPass>
+class RenderPass : public FGRenderTask<RenderPass>
 {
-    using Super = FGRenderTask<ARenderPass>;
+    using Super = FGRenderTask<RenderPass>;
 
 public:
-    using AColorAttachments = TStaticVector<STextureAttachment, MAX_COLOR_ATTACHMENTS>;
-    using ASubpassArray = TSmallVector<ASubpassInfo, 1, Allocators::FrameMemoryAllocator>;
+    using ColorAttachments = TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>;
+    using SubpassArray = TSmallVector<FGSubpassInfo, 1, Allocators::FrameMemoryAllocator>;
 
-    ARenderPass(AFrameGraph* pFrameGraph, const char* Name) :
+    RenderPass(FrameGraph* pFrameGraph, const char* Name) :
         FGRenderTask(pFrameGraph, Name, FG_RENDER_TASK_PROXY_TYPE_RENDER_PASS)
     {}
 
-    ARenderPass(ARenderPass const&) = delete;
-    ARenderPass(ARenderPass&&)      = default;
-    ARenderPass& operator=(ARenderPass const&) = delete;
-    ARenderPass& operator=(ARenderPass&&) = default;
+    RenderPass(RenderPass const&) = delete;
+    RenderPass(RenderPass&&)      = default;
+    RenderPass& operator=(RenderPass const&) = delete;
+    RenderPass& operator=(RenderPass&&) = default;
 
-    ARenderPass& SetColorAttachment(STextureAttachment const& InColorAttachment)
+    RenderPass& SetColorAttachment(TextureAttachment const& InColorAttachment)
     {
-        HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
+        HK_ASSERT_(m_ColorAttachments.IsEmpty(), "Overwriting color attachments");
 
-        ColorAttachments.Add(InColorAttachment);
+        m_ColorAttachments.Add(InColorAttachment);
 
         AddAttachmentResources();
         return *this;
     }
 
-    ARenderPass& SetColorAttachments(std::initializer_list<STextureAttachment> InColorAttachments)
+    RenderPass& SetColorAttachments(std::initializer_list<TextureAttachment> InColorAttachments)
     {
-        HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
+        HK_ASSERT_(m_ColorAttachments.IsEmpty(), "Overwriting color attachments");
         
         for (auto& attachment : InColorAttachments)
-            ColorAttachments.Add(attachment);
+            m_ColorAttachments.Add(attachment);
 
         AddAttachmentResources();
         return *this;
     }
 
-    ARenderPass& SetDepthStencilAttachment(STextureAttachment const& InDepthStencilAttachment)
+    RenderPass& SetDepthStencilAttachment(TextureAttachment const& InDepthStencilAttachment)
     {
-        HK_ASSERT_(!bHasDepthStencilAttachment, "Overwriting depth stencil attachment");
+        HK_ASSERT_(!m_bHasDepthStencilAttachment, "Overwriting depth stencil attachment");
 
-        DepthStencilAttachment     = InDepthStencilAttachment;
-        bHasDepthStencilAttachment = true;
+        m_DepthStencilAttachment = InDepthStencilAttachment;
+        m_bHasDepthStencilAttachment = true;
 
-        AddAttachmentResource(DepthStencilAttachment);
+        AddAttachmentResource(m_DepthStencilAttachment);
         return *this;
     }
 
-    ARenderPass& SetRenderArea(int X, int Y, int W, int H)
+    RenderPass& SetRenderArea(int X, int Y, int W, int H)
     {
-        RenderArea.X         = X;
-        RenderArea.Y         = Y;
-        RenderArea.Width     = W;
-        RenderArea.Height    = H;
-        bRenderAreaSpecified = true;
+        m_RenderArea.X = X;
+        m_RenderArea.Y = Y;
+        m_RenderArea.Width = W;
+        m_RenderArea.Height = H;
+        m_bRenderAreaSpecified = true;
         return *this;
     }
 
-    ARenderPass& SetRenderArea(int W, int H)
+    RenderPass& SetRenderArea(int W, int H)
     {
-        RenderArea.X         = 0;
-        RenderArea.Y         = 0;
-        RenderArea.Width     = W;
-        RenderArea.Height    = H;
-        bRenderAreaSpecified = true;
+        m_RenderArea.X = 0;
+        m_RenderArea.Y = 0;
+        m_RenderArea.Width = W;
+        m_RenderArea.Height = H;
+        m_bRenderAreaSpecified = true;
         return *this;
     }
 
-    ARenderPass& SetRenderArea(SRect2D const& Area)
+    RenderPass& SetRenderArea(Rect2D const& Area)
     {
-        RenderArea           = Area;
-        bRenderAreaSpecified = true;
+        m_RenderArea = Area;
+        m_bRenderAreaSpecified = true;
         return *this;
     }
 
     template <typename Fn>
-    ARenderPass& AddSubpass(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, Fn RecordFunction)
+    RenderPass& AddSubpass(std::initializer_list<AttachmentRef> ColorAttachmentRefs, Fn RecordFunction)
     {
-        Subpasses.EmplaceBack(ColorAttachmentRefs, RecordFunction);
+        m_Subpasses.EmplaceBack(ColorAttachmentRefs, RecordFunction);
         return *this;
     }
 
     // Getters
 
-    SRect2D const& GetRenderArea() const
+    Rect2D const& GetRenderArea() const
     {
-        return RenderArea;
+        return m_RenderArea;
     }
 
-    ASubpassArray const& GetSubpasses() const
+    SubpassArray const& GetSubpasses() const
     {
-        return Subpasses;
+        return m_Subpasses;
     }
 
-    AColorAttachments const& GetColorAttachments() const
+    ColorAttachments const& GetColorAttachments() const
     {
-        return ColorAttachments;
+        return m_ColorAttachments;
     }
 
-    STextureAttachment const& GetDepthStencilAttachment() const
+    TextureAttachment const& GetDepthStencilAttachment() const
     {
-        return DepthStencilAttachment;
+        return m_DepthStencilAttachment;
     }
 
     bool HasDepthStencilAttachment() const
     {
-        return bHasDepthStencilAttachment;
+        return m_bHasDepthStencilAttachment;
     }
 
     bool IsRenderAreaSpecified() const
     {
-        return bRenderAreaSpecified;
+        return m_bRenderAreaSpecified;
     }
 
 private:
     void AddAttachmentResources()
     {
-        for (STextureAttachment& attachment : ColorAttachments)
+        for (TextureAttachment& attachment : m_ColorAttachments)
         {
             AddAttachmentResource(attachment);
         }
     }
-    void AddAttachmentResource(STextureAttachment& attachment)
+    void AddAttachmentResource(TextureAttachment& attachment)
     {
         if (attachment.bCreateNewResource)
         {
-            AddNewResource(attachment.Name, attachment.TextureDesc, &attachment.pResource);
+            AddNewResource(attachment.Name, attachment.TexDesc, &attachment.pResource);
         }
         else
         {
@@ -416,12 +416,12 @@ private:
         }
     }
 
-    AColorAttachments  ColorAttachments;
-    STextureAttachment DepthStencilAttachment{nullptr};
-    bool               bHasDepthStencilAttachment = false;
-    bool               bRenderAreaSpecified       = false;
-    SRect2D            RenderArea;
-    ASubpassArray      Subpasses;
+    ColorAttachments  m_ColorAttachments;
+    TextureAttachment m_DepthStencilAttachment{nullptr};
+    bool              m_bHasDepthStencilAttachment = false;
+    bool              m_bRenderAreaSpecified       = false;
+    Rect2D            m_RenderArea;
+    SubpassArray      m_Subpasses;
 };
 
 } // namespace RenderCore

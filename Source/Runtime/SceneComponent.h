@@ -34,37 +34,37 @@ SOFTWARE.
 
 #include <Geometry/Transform.h>
 
-class ASceneComponent;
+class SceneComponent;
 
-using ChildComponents = TSmallVector<ASceneComponent*, 8>;
+using ChildComponents = TSmallVector<SceneComponent*, 8>;
 
-class ASocketDef;
-class ASkinnedComponent;
+class SocketDef;
+class SkinnedComponent;
 
 struct SceneSocket
 {
     /** Socket resource object */
-    ASocketDef* SocketDef;
+    SocketDef* SocketDef;
     /** Skinned mesh if socket is attached to joint */
-    ASkinnedComponent* SkinnedMesh;
+    SkinnedComponent* SkinnedMesh;
     /** Evaluate socket transform */
     Float3x4 EvaluateTransform() const;
 };
 
 /**
 
-ASceneComponent
+SceneComponent
 
 Base class for all actor components that have its position, rotation and scale
 
 */
-class ASceneComponent : public AActorComponent
+class SceneComponent : public ActorComponent
 {
-    HK_COMPONENT(ASceneComponent, AActorComponent)
+    HK_COMPONENT(SceneComponent, ActorComponent)
 
 public:
     /** Attach to parent component */
-    void AttachTo(ASceneComponent* _Parent, AStringView _Socket = {}, bool _KeepWorldTransform = false);
+    void AttachTo(SceneComponent* _Parent, StringView _Socket = {}, bool _KeepWorldTransform = false);
 
     /** Detach from parent component */
     void Detach(bool _KeepWorldTransform = false);
@@ -73,22 +73,22 @@ public:
     void DetachChilds(bool _bRecursive = false, bool _KeepWorldTransform = false);
 
     /** Is component parent of specified child */
-    bool IsChild(ASceneComponent* _Child, bool _Recursive) const;
+    bool IsChild(SceneComponent* _Child, bool _Recursive) const;
 
     /** Is component root */
     bool IsRoot() const;
 
     /** Find child by name */
-    ASceneComponent* FindChild(AStringView _UniqueName, bool _Recursive);
+    SceneComponent* FindChild(StringView _UniqueName, bool _Recursive);
 
     /** Get reference to array of child components */
     ChildComponents const& GetChildren() const { return m_Children; }
 
     /** Get parent component */
-    ASceneComponent* GetParent() const { return m_AttachParent; }
+    SceneComponent* GetParent() const { return m_AttachParent; }
 
     /** Get socket index by name */
-    int FindSocket(AStringView _Name) const;
+    int FindSocket(StringView _Name) const;
 
     /** Get socket transform matrix */
     Float3x4 GetSocketTransform(int _SocketIndex) const;
@@ -145,10 +145,10 @@ public:
     void SetTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale);
 
     /** Set local transform */
-    void SetTransform(STransform const& _Transform);
+    void SetTransform(Transform const& _Transform);
 
     /** Set local transform */
-    void SetTransform(ASceneComponent const* _Transform);
+    void SetTransform(SceneComponent const* _Transform);
 
     /** Set world position */
     void SetWorldPosition(Float3 const& _Position);
@@ -172,7 +172,7 @@ public:
     void SetWorldTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale);
 
     /** Set world transform */
-    void SetWorldTransform(STransform const& _Transform);
+    void SetWorldTransform(Transform const& _Transform);
 
     /** Get local position */
     Float3 const& GetPosition() const;
@@ -245,11 +245,11 @@ public:
     void Step(Float3 const& _Vector);
 
 protected:
-    ASceneComponent();
+    SceneComponent();
 
     void DeinitializeComponent() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
     virtual void OnTransformDirty() {}
 
@@ -257,7 +257,7 @@ protected:
     ArrayOfSockets m_Sockets;
 
 private:
-    void _AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform);
+    void _AttachTo(SceneComponent* _Parent, bool _KeepWorldTransform);
 
     void ComputeWorldTransform() const;
 
@@ -268,7 +268,7 @@ private:
     mutable Quat     m_WorldRotation{1, 0, 0, 0};
     mutable bool     m_bTransformDirty{true};
     ChildComponents  m_Children;
-    ASceneComponent* m_AttachParent{nullptr};
+    SceneComponent*  m_AttachParent{nullptr};
     int              m_SocketIndex{0};
     bool             m_bAbsolutePosition : 1;
     bool             m_bAbsoluteRotation : 1;

@@ -40,21 +40,21 @@ SOFTWARE.
 #include <Platform/Platform.h>
 
 class AActor;
-class AActorComponent;
-class ACameraComponent;
-class ATimer;
-class ADebugRenderer;
-class AGameModule;
-class AEnvironmentMap;
+class ActorComponent;
+class CameraComponent;
+class WorldTimer;
+class DebugRenderer;
+class GameModule;
+class EnvironmentMap;
 
 /** Actor spawn parameters */
-struct SActorSpawnInfo
+struct ActorSpawnInfo
 {
     /** Initial actor transform */
-    STransform SpawnTransform;
+    Transform SpawnTransform;
 
     /** Level for actor spawn */
-    ALevel* Level;
+    Level* Level;
 
     /** Who spawn the actor */
     AActor* Instigator;
@@ -62,16 +62,16 @@ struct SActorSpawnInfo
     /** Actor spawned for editing */
     bool bInEditor;
 
-    SActorSpawnInfo() = delete;
+    ActorSpawnInfo() = delete;
 
-    SActorSpawnInfo(AClassMeta const* _ActorTypeClassMeta) :
+    ActorSpawnInfo(ClassMeta const* _ActorTypeClassMeta) :
         Level(nullptr), Instigator(nullptr), bInEditor(false), Template(nullptr), ActorTypeClassMeta(_ActorTypeClassMeta)
     {
     }
 
-    SActorSpawnInfo(uint64_t _ActorClassId);
+    ActorSpawnInfo(uint64_t _ActorClassId);
 
-    SActorSpawnInfo(const char* _ActorClassName);
+    ActorSpawnInfo(const char* _ActorClassName);
 
     /** Set actor template */
     void SetTemplate(AActor const* _Template);
@@ -80,60 +80,60 @@ struct SActorSpawnInfo
     AActor const* GetTemplate() const { return Template; }
 
     /** Get actor meta class */
-    AClassMeta const* ActorClassMeta() const { return ActorTypeClassMeta; }
+    ClassMeta const* ActorClassMeta() const { return ActorTypeClassMeta; }
 
 protected:
     /** NOTE: template type meta must match ActorTypeClassMeta */
     AActor const* Template;
 
     /** Actor type */
-    AClassMeta const* ActorTypeClassMeta;
+    ClassMeta const* ActorTypeClassMeta;
 };
 
 /** Template helper for actor spawn parameters */
 template <typename ActorType>
-struct TActorSpawnInfo : SActorSpawnInfo
+struct TActorSpawnInfo : ActorSpawnInfo
 {
     TActorSpawnInfo() :
-        SActorSpawnInfo(&ActorType::ClassMeta())
+        ActorSpawnInfo(&ActorType::GetClassMeta())
     {
     }
 };
 
-/** AWorld. Defines a game map or editor/tool scene */
-class AWorld : public GCObject
+/** World. Defines a game map or editor/tool scene */
+class World : public GCObject
 {
 public:
     /** Delegate to notify when any actor spawned */
-    using AOnActorSpawned = TEvent<AActor*>;
-    AOnActorSpawned E_OnActorSpawned;
+    using OnActorSpawned = TEvent<AActor*>;
+    OnActorSpawned E_OnActorSpawned;
 
     /** Called on each tick after physics simulation */
-    using AOnPostPhysicsUpdate = TEvent<float>;
-    AOnPostPhysicsUpdate E_OnPostPhysicsUpdate;
+    using OnPostPhysicsUpdate = TEvent<float>;
+    OnPostPhysicsUpdate E_OnPostPhysicsUpdate;
 
     /** Delegate to prepare for rendering */
-    using AOnPrepareRenderFrontend = TEvent<ACameraComponent*, int>;
-    AOnPrepareRenderFrontend E_OnPrepareRenderFrontend;
+    using OnPrepareRenderFrontend = TEvent<CameraComponent*, int>;
+    OnPrepareRenderFrontend E_OnPrepareRenderFrontend;
 
-    AVisibilitySystem VisibilitySystem;
+    VisibilitySystem VisibilitySystem;
 
-    APhysicsSystem PhysicsSystem;
+    PhysicsSystem PhysicsSystem;
 
-    AAINavigationMesh NavigationMesh;
+    AINavigationMesh NavigationMesh;
 
-    ASkinningSystem SkinningSystem;
+    SkinningSystem SkinningSystem;
 
-    ALightingSystem LightingSystem;
+    LightingSystem LightingSystem;
 
     /** Create a new world */
-    static AWorld* CreateWorld();
+    static World* CreateWorld();
 
     /** Destroy all existing worlds */
     static void DestroyWorlds();
 
     /** Get array of worlds */
-    static TVector<AWorld*> const& GetWorlds() { return m_Worlds; }
+    static TVector<World*> const& GetWorlds() { return m_Worlds; }
 
     /** Tick the worlds */
     static void UpdateWorlds(float TimeStep);
@@ -142,43 +142,43 @@ public:
     static void KillWorlds();
 
     /** Bake AI nav mesh */
-    void BuildNavigation(SAINavigationConfig const& _NavigationConfig);
+    void BuildNavigation(AINavigationConfig const& _NavigationConfig);
 
     /** DEPRECATED!!!! Spawn a new actor */
-    AActor* SpawnActor(SActorSpawnInfo const& _SpawnInfo);
+    AActor* SpawnActor(ActorSpawnInfo const& _SpawnInfo);
 
     /** DEPRECATED!!!! Spawn a new actor */
     template <typename ActorType>
     ActorType* SpawnActor(TActorSpawnInfo<ActorType> const& _SpawnInfo)
     {
-        SActorSpawnInfo const& spawnInfo = _SpawnInfo;
+        ActorSpawnInfo const& spawnInfo = _SpawnInfo;
         return static_cast<ActorType*>(SpawnActor(spawnInfo));
     }
 
     /** Spawn empty actor */
-    AActor* SpawnActor2(STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
+    AActor* SpawnActor2(Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with definition */
-    AActor* SpawnActor2(class AActorDefinition* ActorDef, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
+    AActor* SpawnActor2(class ActorDefinition* ActorDef, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with script module */
-    AActor* SpawnActor2(AString const& ScriptModule, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
+    AActor* SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
-    AActor* SpawnActor2(AClassMeta const* ActorClass, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
+    AActor* SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
     template <typename T>
-    T* SpawnActor2(STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {})
+    T* SpawnActor2(Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {})
     {
-        if (T::ClassMeta().Factory() != &AActor::Factory())
-            CriticalError("AWorld::SpawnActor: not an actor class\n");
+        if (T::GetClassMeta().Factory() != &AActor::Factory())
+            CriticalError("World::SpawnActor: not an actor class\n");
 
-        return static_cast<T*>(SpawnActor2(&T::ClassMeta(), SpawnTransform, Instigator, Level, bInEditor));
+        return static_cast<T*>(SpawnActor2(&T::GetClassMeta(), SpawnTransform, Instigator, Level, bInEditor));
     }
 
     /** Clone actor */
-    AActor* SpawnActor2(AActor const* Template, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
+    AActor* SpawnActor2(AActor const* Template, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Get all actors in the world */
     TVector<AActor*> const& GetActors() const { return m_Actors; }
@@ -190,16 +190,16 @@ public:
     void DestroyActors();
 
     /** Add level to the world */
-    void AddLevel(ALevel* _Level);
+    void AddLevel(Level* _Level);
 
     /** Remove level from the world */
-    void RemoveLevel(ALevel* _Level);
+    void RemoveLevel(Level* _Level);
 
     /** Get world's persistent level */
-    ALevel* GetPersistentLevel() { return m_PersistentLevel; }
+    Level* GetPersistentLevel() { return m_PersistentLevel; }
 
     /** Get all levels in the world */
-    TVector<ALevel*> const& GetArrayOfLevels() const { return m_ArrayOfLevels; }
+    TVector<Level*> const& GetArrayOfLevels() const { return m_ArrayOfLevels; }
 
     /** Pause the game. Freezes world and actor ticking since the next game tick. */
     void SetPaused(bool _Paused);
@@ -246,152 +246,152 @@ public:
     /** Scale audio volume in the entire world */
     float GetAudioVolume() const { return m_AudioVolume; }
 
-    void SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap);
-    AEnvironmentMap* GetGlobalEnvironmentMap() const { return m_GlobalEnvironmentMap; }
+    void SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap);
+    EnvironmentMap* GetGlobalEnvironmentMap() const { return m_GlobalEnvironmentMap; }
 
     /** Per-triangle raycast */
-    bool Raycast(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
+    bool Raycast(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-bounds raycast */
-    bool RaycastBounds(TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
+    bool RaycastBounds(TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-triangle raycast */
-    bool RaycastClosest(SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
+    bool RaycastClosest(WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-bounds raycast */
-    bool RaycastClosestBounds(SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
+    bool RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter = nullptr) const;
 
     /** Trace collision bodies */
-    bool Trace(TPodVector<SCollisionTraceResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool Trace(TPodVector<CollisionTraceResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.Trace(Result, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceClosest(SCollisionTraceResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceClosest(CollisionTraceResult& Result, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceClosest(Result, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceSphere(SCollisionTraceResult& Result, float Radius, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceSphere(CollisionTraceResult& Result, float Radius, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceSphere(Result, Radius, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceBox(SCollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceBox(CollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceBox(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceBox2(TPodVector<SCollisionTraceResult>& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceBox2(TPodVector<CollisionTraceResult>& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceBox2(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceCylinder(SCollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceCylinder(CollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceCylinder(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceCapsule(SCollisionTraceResult& Result, float CapsuleHeight, float CapsuleRadius, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    bool TraceCapsule(CollisionTraceResult& Result, float CapsuleHeight, float CapsuleRadius, Float3 const& RayStart, Float3 const& RayEnd, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         return PhysicsSystem.TraceCapsule(Result, CapsuleHeight, CapsuleRadius, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceConvex(SCollisionTraceResult& Result, SConvexSweepTest const& SweepTest) const
+    bool TraceConvex(CollisionTraceResult& Result, ConvexSweepTest const& SweepTest) const
     {
         return PhysicsSystem.TraceConvex(Result, SweepTest);
     }
 
     /** Query objects in sphere */
-    void QueryHitProxies(TPodVector<AHitProxy*>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<HitProxy*>& Result, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryHitProxies_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query objects in box */
-    void QueryHitProxies(TPodVector<AHitProxy*>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<HitProxy*>& Result, Float3 const& Position, Float3 const& HalfExtents, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryHitProxies_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query objects in AABB */
-    void QueryHitProxies(TPodVector<AHitProxy*>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<HitProxy*>& Result, BvAxisAlignedBox const& BoundingBox, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryHitProxies(Result, BoundingBox, QueryFilter);
     }
 
     /** Query actors in sphere */
-    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query actors in box */
-    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, Float3 const& HalfExtents, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query actors in AABB */
-    void QueryActors(TPodVector<AActor*>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, BvAxisAlignedBox const& BoundingBox, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors(Result, BoundingBox, QueryFilter);
     }
 
     /** Query collisions with sphere */
-    void QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter) const
+    void QueryCollision_Sphere(TPodVector<CollisionQueryResult>& Result, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter) const
     {
         PhysicsSystem.QueryCollision_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query collisions with box */
-    void QueryCollision_Box(TPodVector<SCollisionQueryResult>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter) const
+    void QueryCollision_Box(TPodVector<CollisionQueryResult>& Result, Float3 const& Position, Float3 const& HalfExtents, CollisionQueryFilter const* QueryFilter) const
     {
         PhysicsSystem.QueryCollision_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query collisions with AABB */
-    void QueryCollision(TPodVector<SCollisionQueryResult>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter) const
+    void QueryCollision(TPodVector<CollisionQueryResult>& Result, BvAxisAlignedBox const& BoundingBox, CollisionQueryFilter const* QueryFilter) const
     {
         PhysicsSystem.QueryCollision(Result, BoundingBox, QueryFilter);
     }
 
     /** Query visible primitives */
-    void QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& InQuery);
+    void QueryVisiblePrimitives(TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& InQuery);
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas);
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas);
+    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas);
 
     /** Apply amount of damage in specified radius */
-    void ApplyRadialDamage(float DamageAmount, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr);
+    void ApplyRadialDamage(float DamageAmount, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter = nullptr);
 
     //
     // Internal
     //
 
-    AScriptEngine* GetScriptEngine() { return m_ScriptEngine.get(); }
+    ScriptEngine* GetScriptEngine() { return m_ScriptEngine.get(); }
 
-    void DrawDebug(ADebugRenderer* InRenderer);
+    void DrawDebug(DebugRenderer* InRenderer);
 
     /** Same as Actor->Destroy() */
     static void DestroyActor(AActor* Actor);
 
     /** Same as Component->Destroy() */
-    static void DestroyComponent(AActorComponent* Component);
+    static void DestroyComponent(ActorComponent* Component);
 
-    void RegisterTimer(ATimer* Timer);
+    void RegisterTimer(WorldTimer* Timer);
 
-    void UnregisterTimer(ATimer* Timer);
+    void UnregisterTimer(WorldTimer* Timer);
 
 protected:
     void Tick(float TimeStep);
@@ -399,28 +399,28 @@ protected:
 private:
     AActor*          m_PendingSpawnActors{};
     AActor*          m_PendingKillActors{};
-    AActorComponent* m_PendingKillComponents{};
+    ActorComponent* m_PendingKillComponents{};
 
 private:
-    struct SActorSpawnPrivate
+    struct ActorSpawnPrivate
     {
-        AClassMeta const* ActorClass{};
-        AActorDefinition* ActorDef{};
-        AString           ScriptModule;
-        AActor const*     Template{};
-        AActor*           Instigator{};
-        ALevel*           Level{};
-        bool              bInEditor{};
+        ClassMeta const* ActorClass{};
+        ActorDefinition* ActorDef{};
+        String           ScriptModule;
+        AActor const*    Template{};
+        AActor*          Instigator{};
+        Level*           Level{};
+        bool             bInEditor{};
     };
 
-    AWorld();
-    ~AWorld();
+    World();
+    ~World();
 
-    AActor* _SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& SpawnTransform = {});
+    AActor* _SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform = {});
 
     void BroadcastActorSpawned(AActor* _SpawnedActor);
 
-    asIScriptObject* CreateScriptModule(AString const& Module, AActor* Actor);
+    asIScriptObject* CreateScriptModule(String const& Module, AActor* Actor);
 
     void UpdatePauseStatus();
     void UpdateTimers(float TimeStep);
@@ -440,12 +440,12 @@ private:
 
     void KillActors(bool bClearSpawnQueue = false);
 
-    TVector<AActor*>          m_Actors;
-    TVector<AActor*>          m_TickingActors;
-    TVector<AActor*>          m_PrePhysicsTickActors;
-    TVector<AActor*>          m_PostPhysicsTickActors;
-    TVector<AActor*>          m_LateUpdateActors;
-    TVector<AActorComponent*> m_TickingComponents;
+    TVector<AActor*>         m_Actors;
+    TVector<AActor*>         m_TickingActors;
+    TVector<AActor*>         m_PrePhysicsTickActors;
+    TVector<AActor*>         m_PostPhysicsTickActors;
+    TVector<AActor*>         m_LateUpdateActors;
+    TVector<ActorComponent*> m_TickingComponents;
 
     bool m_bPauseRequest       = false;
     bool m_bUnpauseRequest     = false;
@@ -460,31 +460,31 @@ private:
     int64_t m_GameplayTimeMicro        = 0;
     int64_t m_GameplayTimeMicroAfterTick = 0;
 
-    ATimer* m_TimerList       = nullptr;
-    ATimer* m_TimerListTail   = nullptr;
-    ATimer* m_pNextTickingTimer = nullptr;
+    WorldTimer* m_TimerList       = nullptr;
+    WorldTimer* m_TimerListTail   = nullptr;
+    WorldTimer* m_pNextTickingTimer = nullptr;
 
     bool m_bPendingKill = false;
     bool m_bTicking     = false;
 
-    AWorld*        m_NextPendingKillWorld = nullptr;
-    static AWorld* m_PendingKillWorlds;
+    World*        m_NextPendingKillWorld = nullptr;
+    static World* m_PendingKillWorlds;
 
     // All existing worlds
-    static TVector<AWorld*> m_Worlds;
+    static TVector<World*> m_Worlds;
     // The worlds that are ticking
-    static TVector<AWorld*> m_TickingWorlds;
+    static TVector<World*> m_TickingWorlds;
 
-    TRef<ALevel>     m_PersistentLevel;
-    TVector<ALevel*> m_ArrayOfLevels;
+    TRef<Level>     m_PersistentLevel;
+    TVector<Level*> m_ArrayOfLevels;
 
     /** Scale audio volume in the entire world */
     float m_AudioVolume = 1.0f;
 
-    TRef<AEnvironmentMap> m_GlobalEnvironmentMap;
+    TRef<EnvironmentMap> m_GlobalEnvironmentMap;
 
     // Script
-    std::unique_ptr<AScriptEngine> m_ScriptEngine;
+    std::unique_ptr<ScriptEngine> m_ScriptEngine;
 };
 
 #include "Actor.h"
@@ -506,7 +506,7 @@ for ( TActorIterator< AMyActor > it( GetWorld() ) ; it ; ++it ) {
 template <typename T>
 struct TActorIterator
 {
-    explicit TActorIterator(AWorld* _World) :
+    explicit TActorIterator(World* _World) :
         Actors(_World->GetActors()), i(0)
     {
         Next();
@@ -550,7 +550,7 @@ struct TActorIterator
             {
                 continue;
             }
-            if (&a->FinalClassMeta() == &T::ClassMeta())
+            if (&a->FinalClassMeta() == &T::GetClassMeta())
             {
                 Actor = static_cast<T*>(a);
                 return;
@@ -582,7 +582,7 @@ for ( AMyActor * actor = it.First() ; actor ; actor = it.Next() ) {
 template <typename T>
 struct TActorIterator2
 {
-    explicit TActorIterator2(AWorld* _World) :
+    explicit TActorIterator2(World* _World) :
         Actors(_World->GetActors()), i(0)
     {
     }
@@ -603,7 +603,7 @@ struct TActorIterator2
             {
                 continue;
             }
-            if (&a->FinalClassMeta() == &T::ClassMeta())
+            if (&a->FinalClassMeta() == &T::GetClassMeta())
             {
                 return static_cast<T*>(a);
             }
@@ -668,7 +668,7 @@ struct TComponentIterator
 
     void Next()
     {
-        AActorComponent* a;
+        ActorComponent* a;
         while (i < Components.Size())
         {
             a = Components[i++];
@@ -676,7 +676,7 @@ struct TComponentIterator
             {
                 continue;
             }
-            if (&a->FinalClassMeta() == &T::ClassMeta())
+            if (&a->FinalClassMeta() == &T::GetClassMeta())
             {
                 Component = static_cast<T*>(a);
                 return;
@@ -721,7 +721,7 @@ struct TComponentIterator2
 
     T* Next()
     {
-        AActorComponent* a;
+        ActorComponent* a;
         while (i < Components.Size())
         {
             a = Components[i++];
@@ -729,7 +729,7 @@ struct TComponentIterator2
             {
                 continue;
             }
-            if (&a->FinalClassMeta() == &T::ClassMeta())
+            if (&a->FinalClassMeta() == &T::GetClassMeta())
             {
                 return static_cast<T*>(a);
             }

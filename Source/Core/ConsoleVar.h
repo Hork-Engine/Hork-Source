@@ -57,25 +57,25 @@ enum CVAR_ENVIRONMENT_FLAGS
     CVAR_INGAME_STATUS  = HK_BIT(2)
 };
 
-class AConsoleVar final
+class ConsoleVar final
 {
-    HK_FORBID_COPY(AConsoleVar)
+    HK_FORBID_COPY(ConsoleVar)
 
 public:
     static int EnvironmentFlags;
 
-    AConsoleVar(AGlobalStringView _Name) :
-        AConsoleVar(_Name, "0"s, 0, ""s) {}
+    ConsoleVar(GlobalStringView _Name) :
+        ConsoleVar(_Name, "0"s, 0, ""s) {}
 
-    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value) :
-        AConsoleVar(_Name, _Value, 0, ""s) {}
+    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value) :
+        ConsoleVar(_Name, _Value, 0, ""s) {}
 
-    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags) :
-        AConsoleVar(_Name, _Value, _Flags, ""s) {}
+    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags) :
+        ConsoleVar(_Name, _Value, _Flags, ""s) {}
 
-    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags, AGlobalStringView _Comment);
+    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment);
 
-    ~AConsoleVar();
+    ~ConsoleVar();
 
     char const* GetName() const { return Name; }
 
@@ -85,9 +85,9 @@ public:
 
     const char* GetDefaultValue() const { return DefaultValue; }
 
-    AString const& GetValue() const { return Value; }
+    String const& GetValue() const { return Value; }
 
-    AString const& GetLatchedValue() const { return LatchedValue; }
+    String const& GetLatchedValue() const { return LatchedValue; }
 
     bool GetBool() const { return !!I32; }
 
@@ -111,7 +111,7 @@ public:
 
     bool IsNoInGame() const { return !!(Flags & CVAR_NOINGAME); }
 
-    void SetString(AStringView _String);
+    void SetString(StringView _String);
 
     void SetBool(bool _Bool);
 
@@ -119,7 +119,7 @@ public:
 
     void SetFloat(float _Float);
 
-    void ForceString(AStringView _String);
+    void ForceString(StringView _String);
 
     void ForceBool(bool _Bool);
 
@@ -131,33 +131,33 @@ public:
 
     void Print();
 
-    AConsoleVar const& operator=(AStringView _String)
+    ConsoleVar const& operator=(StringView _String)
     {
         SetString(_String);
         return *this;
     }
-    AConsoleVar const& operator=(bool _Bool)
+    ConsoleVar const& operator=(bool _Bool)
     {
         SetBool(_Bool);
         return *this;
     }
-    AConsoleVar const& operator=(int32_t _Integer)
+    ConsoleVar const& operator=(int32_t _Integer)
     {
         SetInteger(_Integer);
         return *this;
     }
-    AConsoleVar const& operator=(float _Float)
+    ConsoleVar const& operator=(float _Float)
     {
         SetFloat(_Float);
         return *this;
     }
     operator bool() const { return GetBool(); }
 
-    AConsoleVar* GetNext() { return Next; }
+    ConsoleVar* GetNext() { return Next; }
 
-    static AConsoleVar* GlobalVariableList();
+    static ConsoleVar* GlobalVariableList();
 
-    static AConsoleVar* FindVariable(AStringView _Name);
+    static ConsoleVar* FindVariable(StringView _Name);
 
     // Internal
     static void AllocateVariables();
@@ -167,10 +167,10 @@ private:
     char const* const Name;
     char const* const DefaultValue;
     char const* const Comment;
-    AString           Value;
-    AString           LatchedValue;
+    String           Value;
+    String           LatchedValue;
     int32_t           I32{};
     float             F32{};
     uint16_t          Flags{};
-    AConsoleVar*      Next;
+    ConsoleVar*       Next;
 };

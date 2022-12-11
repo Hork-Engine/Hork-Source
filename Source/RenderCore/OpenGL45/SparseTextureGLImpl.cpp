@@ -36,7 +36,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-static void SetSwizzleParams(GLuint _Id, STextureSwizzle const& _Swizzle)
+static void SetSwizzleParams(GLuint _Id, TextureSwizzle const& _Swizzle)
 {
     if (_Swizzle.R != TEXTURE_SWIZZLE_IDENTITY)
     {
@@ -56,7 +56,7 @@ static void SetSwizzleParams(GLuint _Id, STextureSwizzle const& _Swizzle)
     }
 }
 
-ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextureDesc const& Desc) :
+SparseTextureGLImpl::SparseTextureGLImpl(DeviceGLImpl* pDevice, SparseTextureDesc const& Desc) :
     ISparseTexture(pDevice, Desc)
 {
     GLuint id;
@@ -80,7 +80,7 @@ ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextur
                                                              &PageSizeZ);
     if (!r)
     {
-        LOG("ASparseTextureGLImpl::ctor: failed to find appropriate sparse texture page size\n");
+        LOG("SparseTextureGLImpl::ctor: failed to find appropriate sparse texture page size\n");
         return;
     }
 
@@ -106,7 +106,7 @@ ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextur
     SetHandleNativeGL(id);
 }
 
-ASparseTextureGLImpl::~ASparseTextureGLImpl()
+SparseTextureGLImpl::~SparseTextureGLImpl()
 {
     GLuint id = GetHandleNativeGL();
 

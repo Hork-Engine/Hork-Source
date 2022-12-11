@@ -155,7 +155,7 @@ private:
     std::atomic<AtomicType> i;
 };
 
-using AAtomicShort = TAtomic<int16_t>;
-using AAtomicInt   = TAtomic<int32_t>;
-using AAtomicLong  = TAtomic<int64_t>;
-using AAtomicBool  = TAtomic<bool>;
+using AtomicShort = TAtomic<int16_t>;
+using AtomicInt   = TAtomic<int32_t>;
+using AtomicLong  = TAtomic<int64_t>;
+using AtomicBool  = TAtomic<bool>;

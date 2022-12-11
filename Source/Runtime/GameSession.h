@@ -32,27 +32,27 @@ SOFTWARE.
 
 #include "Resource.h"
 
-class AGameSession : public ARefCounted
+class GameSession : public RefCounted
 {
 public:
-    AGameSession();
-    virtual ~AGameSession();
+    GameSession();
+    virtual ~GameSession();
 
     void Start();
     void Stop();
 
     template <typename T>
-    void PrecacheResource(AStringView path)
+    void PrecacheResource(StringView path)
     {
         PrecacheResource(T::ClassMeta(), path);
     }
 
-    void PrecacheResource(AClassMeta const& classMeta, AStringView path);
+    void PrecacheResource(ClassMeta const& classMeta, StringView path);
 
     void LoadResources();
     void UnloadResources();
 
 private:
-    TStringHashMap<AClassMeta const*> m_PrecacheResources;
-    TVector<TRef<AResource>> m_Resources;
+    TStringHashMap<ClassMeta const*> m_PrecacheResources;
+    TVector<TRef<Resource>> m_Resources;
 };

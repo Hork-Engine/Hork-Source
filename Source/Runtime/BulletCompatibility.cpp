@@ -45,13 +45,13 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 
-// TODO: replace btIDebugDraw by ADebugRenderer
-void btDrawCollisionShape(ADebugRenderer* InRenderer, const btTransform& worldTransform, const btCollisionShape* shape)
+// TODO: replace btIDebugDraw by DebugRenderer
+void btDrawCollisionShape(DebugRenderer* InRenderer, const btTransform& worldTransform, const btCollisionShape* shape)
 {
     class ABulletDebugDraw : public btIDebugDraw
     {
     public:
-        ADebugRenderer* Renderer;
+        DebugRenderer* Renderer;
 
         void drawLine(btVector3 const& from, btVector3 const& to, btVector3 const& color) override
         {
@@ -248,7 +248,7 @@ void btDrawCollisionShape(ADebugRenderer* InRenderer, const btTransform& worldTr
     }
 }
 
-void btDrawCollisionObject(ADebugRenderer* InRenderer, btCollisionObject* CollisionObject)
+void btDrawCollisionObject(DebugRenderer* InRenderer, btCollisionObject* CollisionObject)
 {
     Color4 color(0.3f, 0.3f, 0.3f);
 

@@ -36,7 +36,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AQueryPoolGLImpl::AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const& Desc) :
+QueryPoolGLImpl::QueryPoolGLImpl(DeviceGLImpl* pDevice, QueryPoolDesc const& Desc) :
     IQueryPool(pDevice)
 {
     HK_ASSERT(Desc.PoolSize > 0);
@@ -45,13 +45,13 @@ AQueryPoolGLImpl::AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const&
     QueryType = Desc.QueryType;
     PoolSize  = Desc.PoolSize;
 
-    SAllocatorCallback const& allocator = pDevice->GetAllocator();
+    AllocatorCallback const& allocator = pDevice->GetAllocator();
 
     IdPool = (unsigned int*)allocator.Allocate(sizeof(*IdPool) * PoolSize);
 
     if (!IdPool)
     {
-        LOG("AQueryPoolGLImpl::ctor: out of memory\n");
+        LOG("QueryPoolGLImpl::ctor: out of memory\n");
         return;
     }
 
@@ -62,7 +62,7 @@ AQueryPoolGLImpl::AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const&
     SetHandleNativeGL(IdPool[0]);
 }
 
-AQueryPoolGLImpl::~AQueryPoolGLImpl()
+QueryPoolGLImpl::~QueryPoolGLImpl()
 {
     if (!IdPool)
     {

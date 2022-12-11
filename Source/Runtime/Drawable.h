@@ -35,9 +35,9 @@ SOFTWARE.
 
 #include <Core/IntrusiveLinkedListMacro.h>
 
-struct SRenderFrontendDef;
+struct RenderFrontendDef;
 
-enum EDrawableType
+enum DRAWABLE_TYPE
 {
     DRAWABLE_UNKNOWN,
     DRAWABLE_STATIC_MESH,
@@ -47,17 +47,17 @@ enum EDrawableType
 
 /**
 
-ADrawable
+Drawable
 
 Base class for drawing surfaces
 
 */
-class ADrawable : public APhysicalBody
+class Drawable : public PhysicalBody
 {
-    HK_COMPONENT(ADrawable, APhysicalBody)
+    HK_COMPONENT(Drawable, PhysicalBody)
 
 public:
-    TLink<ADrawable> Link; // Shadow casters
+    TLink<Drawable> Link; // Shadow casters
 
     /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
     bool bCustomDepthStencilPass = false;
@@ -81,7 +81,7 @@ public:
     void SetCastShadow(bool _CastShadow);
 
     /** Is cast shadows enabled */
-    bool IsCastShadow() const { return bCastShadow; }
+    bool IsCastShadow() const { return m_bCastShadow; }
 
     void SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup);
 
@@ -95,7 +95,7 @@ public:
     PlaneF const& GetFacePlane() const;
 
     /** Helper. Return true if surface is skinned mesh */
-    bool IsSkinnedMesh() const { return bSkinnedMesh; }
+    bool IsSkinnedMesh() const { return m_bSkinnedMesh; }
 
     /** Force using bounding box specified by SetBoundsOverride() */
     void ForceOverrideBounds(bool _OverrideBounds);
@@ -108,7 +108,7 @@ public:
     bool IsOutdoor() const;
 
     /** Get overrided bounding box in local space */
-    BvAxisAlignedBox const& GetBoundsOverride() const { return OverrideBoundingBox; }
+    BvAxisAlignedBox const& GetBoundsOverride() const { return m_OverrideBoundingBox; }
 
     /** Get current local bounds */
     BvAxisAlignedBox const& GetBounds() const;
@@ -119,35 +119,35 @@ public:
     /** Allow raycasting */
     virtual void SetAllowRaycast(bool _AllowRaycast) {}
 
-    bool IsRaycastAllowed() const { return bAllowRaycast; }
+    bool IsRaycastAllowed() const { return m_bAllowRaycast; }
 
     /** Raycast the drawable */
-    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const;
 
     /** Raycast the drawable */
-    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const;
+    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const;
 
     void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
     {
-        Primitive->SetVisibilityGroup(VisibilityGroup);
+        m_Primitive->SetVisibilityGroup(VisibilityGroup);
     }
 
     VISIBILITY_GROUP GetVisibilityGroup() const
     {
-        return Primitive->GetVisibilityGroup();
+        return m_Primitive->GetVisibilityGroup();
     }
 
-    EDrawableType GetDrawableType() const { return DrawableType; }
+    DRAWABLE_TYPE GetDrawableType() const { return m_DrawableType; }
 
     /** Called before rendering. Don't call directly. */
-    void PreRenderUpdate(SRenderFrontendDef const* _Def);
+    void PreRenderUpdate(RenderFrontendDef const* _Def);
 
     // Used during culling stage
     uint32_t CascadeMask = 0;
 
 protected:
-    ADrawable();
-    ~ADrawable();
+    Drawable();
+    ~Drawable();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -156,19 +156,19 @@ protected:
     void UpdateWorldBounds();
 
     /** Override to dynamic update mesh data */
-    virtual void OnPreRenderUpdate(SRenderFrontendDef const* _Def) {}
+    virtual void OnPreRenderUpdate(RenderFrontendDef const* _Def) {}
 
-    EDrawableType DrawableType = DRAWABLE_UNKNOWN;
+    DRAWABLE_TYPE m_DrawableType = DRAWABLE_UNKNOWN;
 
-    SPrimitiveDef* Primitive;
+    PrimitiveDef* m_Primitive;
 
-    int VisFrame = -1;
+    int m_VisFrame = -1;
 
-    mutable BvAxisAlignedBox Bounds;
-    mutable BvAxisAlignedBox WorldBounds;
-    BvAxisAlignedBox         OverrideBoundingBox;
-    bool                     bOverrideBounds : 1;
-    bool                     bSkinnedMesh : 1;
-    bool                     bCastShadow : 1;
-    bool                     bAllowRaycast : 1;
+    mutable BvAxisAlignedBox m_Bounds;
+    mutable BvAxisAlignedBox m_WorldBounds;
+    BvAxisAlignedBox         m_OverrideBoundingBox;
+    bool                     m_bOverrideBounds : 1;
+    bool                     m_bSkinnedMesh : 1;
+    bool                     m_bCastShadow : 1;
+    bool                     m_bAllowRaycast : 1;
 };

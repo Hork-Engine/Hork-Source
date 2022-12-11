@@ -39,30 +39,30 @@ SOFTWARE.
 static const float DEFAULT_RADIUS = 15; //1.0f;
 static const float MIN_RADIUS     = 0.01f;
 
-AConsoleVar com_DrawPointLights("com_DrawPointLights"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawPointLights("com_DrawPointLights"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(APointLightComponent)
+HK_CLASS_META(PointLightComponent)
 
-APointLightComponent::APointLightComponent()
+PointLightComponent::PointLightComponent()
 {
-    Radius              = DEFAULT_RADIUS;
-    InverseSquareRadius = 1.0f / (Radius * Radius);
+    m_Radius = DEFAULT_RADIUS;
+    m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
 
     UpdateWorldBounds();
 }
 
-void APointLightComponent::OnCreateAvatar()
+void PointLightComponent::OnCreateAvatar()
 {
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for point light avatar
-    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Sphere"s);
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
+    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Sphere"s);
+    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
 
     MeshRenderView* meshRender = NewObj<MeshRenderView>();
     meshRender->SetMaterial(MaterialInstance);
 
-    AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("PointLightAvatar");
+    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("PointLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
@@ -75,72 +75,72 @@ void APointLightComponent::OnCreateAvatar()
     meshComponent->SetHideInEditor(true);
 }
 
-void APointLightComponent::SetRadius(float _Radius)
+void PointLightComponent::SetRadius(float _Radius)
 {
-    Radius              = Math::Max(MIN_RADIUS, _Radius);
-    InverseSquareRadius = 1.0f / (Radius * Radius);
+    m_Radius = Math::Max(MIN_RADIUS, _Radius);
+    m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
 
     UpdateWorldBounds();
 }
 
-void APointLightComponent::OnTransformDirty()
+void PointLightComponent::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
     UpdateWorldBounds();
 }
 
-void APointLightComponent::UpdateWorldBounds()
+void PointLightComponent::UpdateWorldBounds()
 {
-    SphereWorldBounds.Radius = Radius;
-    SphereWorldBounds.Center = GetWorldPosition();
-    AABBWorldBounds.Mins     = SphereWorldBounds.Center - Radius;
-    AABBWorldBounds.Maxs     = SphereWorldBounds.Center + Radius;
-    OBBWorldBounds.Center    = SphereWorldBounds.Center;
-    OBBWorldBounds.HalfSize  = Float3(SphereWorldBounds.Radius);
-    OBBWorldBounds.Orient.SetIdentity();
+    m_SphereWorldBounds.Radius = m_Radius;
+    m_SphereWorldBounds.Center = GetWorldPosition();
+    m_AABBWorldBounds.Mins = m_SphereWorldBounds.Center - m_Radius;
+    m_AABBWorldBounds.Maxs = m_SphereWorldBounds.Center + m_Radius;
+    m_OBBWorldBounds.Center = m_SphereWorldBounds.Center;
+    m_OBBWorldBounds.HalfSize = Float3(m_SphereWorldBounds.Radius);
+    m_OBBWorldBounds.Orient.SetIdentity();
 
     // TODO: Optimize?
-    Float4x4 OBBTransform = Float4x4::Translation(OBBWorldBounds.Center) * Float4x4::Scale(OBBWorldBounds.HalfSize);
-    OBBTransformInverse   = OBBTransform.Inversed();
+    Float4x4 OBBTransform = Float4x4::Translation(m_OBBWorldBounds.Center) * Float4x4::Scale(m_OBBWorldBounds.HalfSize);
+    m_OBBTransformInverse = OBBTransform.Inversed();
 
-    Primitive->Sphere = SphereWorldBounds;
+    m_Primitive->Sphere = m_SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(m_Primitive);
     }
 }
 
-void APointLightComponent::DrawDebug(ADebugRenderer* InRenderer)
+void PointLightComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
     if (com_DrawPointLights)
     {
-        if (Primitive->VisPass == InRenderer->GetVisPass())
+        if (m_Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3 pos = GetWorldPosition();
 
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(1, 1, 1, 1));
-            InRenderer->DrawSphere(pos, Radius);
+            InRenderer->DrawSphere(pos, m_Radius);
         }
     }
 }
 
-void APointLightComponent::PackLight(Float4x4 const& InViewMatrix, SLightParameters& Light)
+void PointLightComponent::PackLight(Float4x4 const& InViewMatrix, LightParameters& Light)
 {
-    Light.Position               = Float3(InViewMatrix * GetWorldPosition());
-    Light.Radius                 = GetRadius();
-    Light.CosHalfOuterConeAngle  = 0;
-    Light.CosHalfInnerConeAngle  = 0;
-    Light.InverseSquareRadius    = InverseSquareRadius;
-    Light.Direction              = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
-    Light.SpotExponent           = 0;
-    Light.Color                  = GetEffectiveColor(-1.0f);
-    Light.LightType              = CLUSTER_LIGHT_POINT;
-    Light.RenderMask             = ~0u; //RenderMask; // TODO
-    APhotometricProfile* profile = GetPhotometricProfile();
-    Light.PhotometricProfile     = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
+    Light.Position              = Float3(InViewMatrix * GetWorldPosition());
+    Light.Radius                = GetRadius();
+    Light.CosHalfOuterConeAngle = 0;
+    Light.CosHalfInnerConeAngle = 0;
+    Light.InverseSquareRadius   = m_InverseSquareRadius;
+    Light.Direction             = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
+    Light.SpotExponent          = 0;
+    Light.Color                 = GetEffectiveColor(-1.0f);
+    Light.LightType             = CLUSTER_LIGHT_POINT;
+    Light.RenderMask            = ~0u; //RenderMask; // TODO
+    PhotometricProfile* profile = GetPhotometricProfile();
+    Light.PhotometricProfile    = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
 }

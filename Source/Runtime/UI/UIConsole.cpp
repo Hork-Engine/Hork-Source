@@ -35,8 +35,8 @@ SOFTWARE.
 
 #include <Runtime/FrameLoop.h>
 
-static AConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"s, "5"s);
-static AConsoleVar ui_consoleHeight("ui_consoleHeight"s, "0.8"s);
+static ConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"s, "5"s);
+static ConsoleVar ui_consoleHeight("ui_consoleHeight"s, "0.8"s);
 
 UIConsole::UIConsole() :
     m_pConBuffer(&Platform::GetConsoleBuffer())
@@ -102,7 +102,7 @@ void UIConsole::AddStoryLine(WideChar* text, int numChars)
     m_CurStoryLine = m_NumStoryLines;
 }
 
-void UIConsole::InsertUTF8Text(AStringView utf8)
+void UIConsole::InsertUTF8Text(StringView utf8)
 {
     int len = Core::UTF8StrLength(utf8.Begin(), utf8.End());
     if (m_CmdLineLength + len >= MAX_CMD_LINE_CHARS)
@@ -138,9 +138,9 @@ void UIConsole::InsertClipboardText()
     InsertUTF8Text(Platform::GetClipboard());
 }
 
-void UIConsole::CompleteString(ACommandContext& commandCtx, AStringView _Str)
+void UIConsole::CompleteString(CommandContext& commandCtx, StringView _Str)
 {
-    AString completion;
+    String completion;
     int     count = commandCtx.CompleteString(_Str, completion);
 
     if (completion.IsEmpty())
@@ -162,7 +162,7 @@ void UIConsole::CompleteString(ACommandContext& commandCtx, AStringView _Str)
     InsertUTF8Text(completion);
 }
 
-void UIConsole::OnKeyEvent(SKeyEvent const& event, ACommandContext& commandCtx, ACommandProcessor& commandProcessor)
+void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, CommandProcessor& commandProcessor)
 {
     if (event.Action == IA_PRESS || event.Action == IA_REPEAT)
     {
@@ -339,7 +339,7 @@ void UIConsole::OnKeyEvent(SKeyEvent const& event, ACommandContext& commandCtx, 
     }
 }
 
-void UIConsole::OnCharEvent(SCharEvent const& event)
+void UIConsole::OnCharEvent(CharEvent const& event)
 {
     if (event.UnicodeCharacter == '`')
     {
@@ -369,7 +369,7 @@ void UIConsole::OnCharEvent(SCharEvent const& event)
     }
 }
 
-void UIConsole::OnMouseWheelEvent(SMouseWheelEvent const& event)
+void UIConsole::OnMouseWheelEvent(MouseWheelEvent const& event)
 {
     if (event.WheelY < 0.0)
     {
@@ -381,10 +381,10 @@ void UIConsole::OnMouseWheelEvent(SMouseWheelEvent const& event)
     }
 }
 
-void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
+void UIConsole::DrawCmdLine(Canvas& cv, int x, int y, int maxLineChars)
 {
     FontStyle fontStyle;
-    fontStyle.FontSize = AConsoleBuffer::CharacterWidth;
+    fontStyle.FontSize = ConsoleBuffer::CharacterWidth;
 
     int offset = m_CmdLinePos + 1 - maxLineChars;
     if (offset < 0)
@@ -394,23 +394,23 @@ void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
     if (numDrawChars > maxLineChars)
         numDrawChars = maxLineChars;
 
-    cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, AWideStringView(&m_CmdLine[offset], &m_CmdLine[Math::Min(m_CmdLineLength, offset + numDrawChars)]));
+    cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, WideStringView(&m_CmdLine[offset], &m_CmdLine[Math::Min(m_CmdLineLength, offset + numDrawChars)]));
 
     if ((Platform::SysMicroseconds() >> 18) & 1)
     {
-        AFont* font = cv.GetDefaultFont();
+        Font* font = cv.GetDefaultFont();
         for (int i = 0; i < m_CmdLinePos - offset; i++)
             x += font->GetCharAdvance(fontStyle, m_CmdLine[i]);
 
         if (GUIManager->IsInsertMode())
         {
-            cv.DrawRectFilled(Float2(x, y), Float2(x + AConsoleBuffer::CharacterWidth * 0.7f, y + AConsoleBuffer::CharacterWidth), Color4::White());
+            cv.DrawRectFilled(Float2(x, y), Float2(x + ConsoleBuffer::CharacterWidth * 0.7f, y + ConsoleBuffer::CharacterWidth), Color4::White());
         }
         else
         {
             WideChar buf[2] = {'_', 0};
 
-            cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP, AWideStringView(buf, &buf[1]));
+            cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP, WideStringView(buf, &buf[1]));
         }
     }
 }
@@ -449,14 +449,14 @@ void UIConsole::Update(float timeStep)
     }
 }
 
-void UIConsole::Draw(ACanvas& cv, UIBrush* background)
+void UIConsole::Draw(Canvas& cv, UIBrush* background)
 {
     if (m_ConHeight <= 0.0f)
         return;
 
-    AFont* font = cv.GetDefaultFont();
+    Font* font = cv.GetDefaultFont();
 
-    const float fontSize = AConsoleBuffer::CharacterWidth;
+    const float fontSize = ConsoleBuffer::CharacterWidth;
 
     cv.ResetScissor();
     cv.FontFace(font);
@@ -482,12 +482,12 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
 
     cv.DrawLine(Float2(0, halfVidHeight), Float2(cv.GetWidth(), halfVidHeight), Color4::White(), 2.0f);
 
-    int x = AConsoleBuffer::Padding;
+    int x = ConsoleBuffer::Padding;
     int y = halfVidHeight - verticalStride;
 
     cv.FillColor(Color4::White());
 
-    AConsoleBuffer::SLock lock = m_pConBuffer->Lock();
+    ConsoleBuffer::LockedData lock = m_pConBuffer->Lock();
 
     DrawCmdLine(cv, x, y, lock.MaxLineChars);
 
@@ -507,7 +507,7 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
 
         len = Math::Min(len, lock.MaxLineChars);
 
-        cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, AWideStringView(line, len));
+        cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, WideStringView(line, len));
 
         y -= verticalStride;
     }
@@ -522,7 +522,7 @@ void UIConsole::WriteStoryLines()
         return;
     }
 
-    AFile f = AFile::OpenWrite("console_story.txt");
+    File f = File::OpenWrite("console_story.txt");
     if (!f)
     {
         LOG("Failed to write console story\n");
@@ -551,7 +551,7 @@ void UIConsole::ReadStoryLines()
     char     buf[MAX_CMD_LINE_CHARS * 3 + 2]; // In worst case WideChar transforms to 3 bytes,
                                               // two additional bytes are reserved for trailing '\n\0'
 
-    AFile f = AFile::OpenRead("console_story.txt");
+    File f = File::OpenRead("console_story.txt");
     if (!f)
     {
         return;

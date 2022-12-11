@@ -34,70 +34,70 @@ SOFTWARE.
 #include "Variant.h"
 #include "GarbageCollector.h"
 
-class AClassMeta;
-class AProperty;
-class ABaseObject;
+class ClassMeta;
+class Property;
+class BaseObject;
 
-class AObjectFactory final
+class ObjectFactory final
 {
-    HK_FORBID_COPY(AObjectFactory)
+    HK_FORBID_COPY(ObjectFactory)
 
-    friend class AClassMeta;
+    friend class ClassMeta;
 
 public:
-    AObjectFactory(const char* Tag);
-    ~AObjectFactory() = default;
+    ObjectFactory(const char* Tag);
+    ~ObjectFactory() = default;
 
     const char* GetTag() const { return Tag; }
 
-    ABaseObject* CreateInstance(AStringView ClassName) const;
-    ABaseObject* CreateInstance(uint64_t ClassId) const;
+    BaseObject* CreateInstance(StringView ClassName) const;
+    BaseObject* CreateInstance(uint64_t ClassId) const;
 
-    AClassMeta const* GetClassList() const;
+    ClassMeta const* GetClassList() const;
 
-    AClassMeta const* FindClass(AStringView ClassName) const;
+    ClassMeta const* FindClass(StringView ClassName) const;
 
-    AClassMeta const* LookupClass(AStringView ClassName) const;
-    AClassMeta const* LookupClass(uint64_t ClassId) const;
+    ClassMeta const* LookupClass(StringView ClassName) const;
+    ClassMeta const* LookupClass(uint64_t ClassId) const;
 
     uint64_t FactoryClassCount() const { return NumClasses; }
 
-    static AObjectFactory const* Factories() { return FactoryList; }
-    AObjectFactory const*        Next() const { return NextFactory; }
+    static ObjectFactory const* Factories() { return FactoryList; }
+    ObjectFactory const*        Next() const { return NextFactory; }
 
 private:
-    const char*            Tag;
-    AClassMeta*            Classes;
-    mutable TVector<AClassMeta*> IdTable;
-    mutable THashMap<AStringView, AClassMeta const*> LookupTable;
-    uint64_t               NumClasses;
-    AObjectFactory*        NextFactory;
-    static AObjectFactory* FactoryList;
+    const char*           Tag;
+    ClassMeta*            Classes;
+    mutable TVector<ClassMeta*> IdTable;
+    mutable THashMap<StringView, ClassMeta const*> LookupTable;
+    uint64_t              NumClasses;
+    ObjectFactory*        NextFactory;
+    static ObjectFactory* FactoryList;
 };
 
-using APropertyList = TSmallVector<AProperty const*, 32>;
+using APropertyList = TSmallVector<Property const*, 32>;
 
-class AClassMeta
+class ClassMeta
 {
-    HK_FORBID_COPY(AClassMeta)
+    HK_FORBID_COPY(ClassMeta)
 
-    friend class AObjectFactory;
-    friend class AProperty;
+    friend class ObjectFactory;
+    friend class Property;
 
 public:
     const uint64_t ClassId;
 
-    const char*           GetName() const { return ClassName.CStr(); }
-    AGlobalStringView const& GetName2() const { return ClassName; }
-    uint64_t              GetId() const { return ClassId; }
-    AClassMeta const*     SuperClass() const { return pSuperClass; }
-    AClassMeta const*     Next() const { return pNext; }
-    AObjectFactory const* Factory() const { return pFactory; }
-    AProperty const*      GetPropertyList() const { return PropertyList; }
+    const char*             GetName() const { return ClassName.CStr(); }
+    GlobalStringView const& GetName2() const { return ClassName; }
+    uint64_t                GetId() const { return ClassId; }
+    ClassMeta const*        SuperClass() const { return pSuperClass; }
+    ClassMeta const*        Next() const { return pNext; }
+    ObjectFactory const*    Factory() const { return pFactory; }
+    Property const*         GetPropertyList() const { return PropertyList; }
 
-    bool IsSubclassOf(AClassMeta const& Superclass) const
+    bool IsSubclassOf(ClassMeta const& Superclass) const
     {
-        for (AClassMeta const* meta = this; meta; meta = meta->SuperClass())
+        for (ClassMeta const* meta = this; meta; meta = meta->SuperClass())
         {
             if (meta->GetId() == Superclass.GetId())
             {
@@ -110,25 +110,25 @@ public:
     template <typename Superclass>
     bool IsSubclassOf() const
     {
-        return IsSubclassOf(Superclass::ClassMeta());
+        return IsSubclassOf(Superclass::GetClassMeta());
     }
 
-    virtual ABaseObject* CreateInstance() const = 0;
+    virtual BaseObject* CreateInstance() const = 0;
 
-    static void CloneProperties(ABaseObject const* Template, ABaseObject* Destination);
+    static void CloneProperties(BaseObject const* Template, BaseObject* Destination);
 
-    static AObjectFactory& DummyFactory()
+    static ObjectFactory& DummyFactory()
     {
-        static AObjectFactory ObjectFactory("Dummy factory");
+        static ObjectFactory ObjectFactory("Dummy factory");
         return ObjectFactory;
     }
 
     // Utilites
-    AProperty const* FindProperty(AStringView PropertyName, bool bRecursive) const;
+    Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
     void             GetProperties(APropertyList& Properties, bool bRecursive = true) const;
 
 protected:
-    AClassMeta(AObjectFactory& Factory, AGlobalStringView ClassName, AClassMeta const* SuperClassMeta) :
+    ClassMeta(ObjectFactory& Factory, GlobalStringView ClassName, ClassMeta const* SuperClassMeta) :
         ClassId(Factory.NumClasses + 1), ClassName(ClassName)
     {
         HK_ASSERT_(Factory.FindClass(ClassName) == NULL, "Class already defined");
@@ -142,34 +142,34 @@ protected:
     }
 
 private:
-    static void CloneProperties_r(AClassMeta const* Meta, ABaseObject const* Template, ABaseObject* Destination);
+    static void CloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination);
 
-    AGlobalStringView     ClassName;
-    AClassMeta*           pNext;
-    AClassMeta const*     pSuperClass;
-    AObjectFactory const* pFactory;
-    AProperty const*      PropertyList;
-    AProperty const*      PropertyListTail;
+    GlobalStringView     ClassName;
+    ClassMeta*           pNext;
+    ClassMeta const*     pSuperClass;
+    ObjectFactory const* pFactory;
+    Property const*      PropertyList;
+    Property const*      PropertyListTail;
 };
 
-HK_FORCEINLINE ABaseObject* AObjectFactory::CreateInstance(AStringView ClassName) const
+HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(StringView ClassName) const
 {
-    AClassMeta const* classMeta = LookupClass(ClassName);
+    ClassMeta const* classMeta = LookupClass(ClassName);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-HK_FORCEINLINE ABaseObject* AObjectFactory::CreateInstance(uint64_t ClassId) const
+HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(uint64_t ClassId) const
 {
-    AClassMeta const* classMeta = LookupClass(ClassId);
+    ClassMeta const* classMeta = LookupClass(ClassId);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-HK_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
+HK_FORCEINLINE ClassMeta const* ObjectFactory::GetClassList() const
 {
     return Classes;
 }
 
-struct SPropertyRange
+struct PropertyRange
 {
     int64_t MinIntegral = 0;
     int64_t MaxIntegral = 0;
@@ -182,17 +182,17 @@ struct SPropertyRange
     }
 };
 
-constexpr SPropertyRange RangeUnbound()
+constexpr PropertyRange RangeUnbound()
 {
-    return SPropertyRange();
+    return PropertyRange();
 }
 
-constexpr SPropertyRange RangeInt(int64_t MinIntegral, int64_t MaxIntegral)
+constexpr PropertyRange RangeInt(int64_t MinIntegral, int64_t MaxIntegral)
 {
     return {MinIntegral, MaxIntegral, static_cast<double>(MinIntegral), static_cast<double>(MaxIntegral)};
 }
 
-constexpr SPropertyRange RangeFloat(double MinFloat, double MaxFloat)
+constexpr PropertyRange RangeFloat(double MinFloat, double MaxFloat)
 {
     return {static_cast<int64_t>(MinFloat), static_cast<int64_t>(MaxFloat), MinFloat, MaxFloat};
 }
@@ -212,16 +212,16 @@ enum HK_PROPERTY_FLAGS : uint32_t
 HK_FLAG_ENUM_OPERATORS(HK_PROPERTY_FLAGS)
 
 
-class AProperty
+class Property
 {
-    HK_FORBID_COPY(AProperty)
+    HK_FORBID_COPY(Property)
 
 public:
-    using SetterFun = void (*)(ABaseObject*, AVariant const&);
-    using GetterFun = AVariant (*)(ABaseObject const*);
-    using CopyFun   = void (*)(ABaseObject*, ABaseObject const*);
+    using SetterFun = void (*)(BaseObject*, Variant const&);
+    using GetterFun = Variant (*)(BaseObject const*);
+    using CopyFun   = void (*)(BaseObject*, BaseObject const*);
 
-    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, AGlobalStringView Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
+    Property(ClassMeta const& _ClassMeta, VARIANT_TYPE Type, EnumDef const* EnumDef, GlobalStringView Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, PropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
         Type(Type),
         Name(Name),
         pEnum(EnumDef),
@@ -231,12 +231,12 @@ public:
         Getter(Getter),
         Copy(Copy)
     {
-        AClassMeta& classMeta = const_cast<AClassMeta&>(ClassMeta);
+        ClassMeta& classMeta = const_cast<ClassMeta&>(_ClassMeta);
         pNext                 = nullptr;
         pPrev                 = classMeta.PropertyListTail;
         if (pPrev)
         {
-            const_cast<AProperty*>(pPrev)->pNext = this;
+            const_cast<Property*>(pPrev)->pNext = this;
         }
         else
         {
@@ -245,46 +245,46 @@ public:
         classMeta.PropertyListTail = this;
     }
 
-    void SetValue(ABaseObject* pObject, AVariant const& Value) const
+    void SetValue(BaseObject* pObject, Variant const& Value) const
     {
         Setter(pObject, Value);
     }
 
-    void SetValue(ABaseObject* pObject, AStringView Value) const
+    void SetValue(BaseObject* pObject, StringView Value) const
     {
-        SetValue(pObject, AVariant(GetType(), GetEnum(), Value));
+        SetValue(pObject, Variant(GetType(), GetEnum(), Value));
     }
 
-    AVariant GetValue(ABaseObject const* pObject) const
+    Variant GetValue(BaseObject const* pObject) const
     {
         return Getter(pObject);
     }
 
-    void CopyValue(ABaseObject* Dst, ABaseObject const* Src) const
+    void CopyValue(BaseObject* Dst, BaseObject const* Src) const
     {
         return Copy(Dst, Src);
     }
 
     VARIANT_TYPE          GetType() const { return Type; }
     const char*           GetName() const { return Name.CStr(); }
-    AGlobalStringView const& GetName2() const { return Name; }    
-    SEnumDef const*       GetEnum() const { return pEnum; }
-    SPropertyRange const& GetRange() const { return Range; }
-    HK_PROPERTY_FLAGS     GetFlags() const { return Flags; }
-    AProperty const*      Next() const { return pNext; }
-    AProperty const*      Prev() const { return pPrev; }
+    GlobalStringView const& GetName2() const { return Name; }    
+    EnumDef const*       GetEnum() const { return pEnum; }
+    PropertyRange const& GetRange() const { return Range; }
+    HK_PROPERTY_FLAGS    GetFlags() const { return Flags; }
+    Property const*      Next() const { return pNext; }
+    Property const*      Prev() const { return pPrev; }
 
 private:
     VARIANT_TYPE      Type;
-    AGlobalStringView Name;
-    SEnumDef const*   pEnum;
-    SPropertyRange    Range;
+    GlobalStringView  Name;
+    EnumDef const*    pEnum;
+    PropertyRange     Range;
     HK_PROPERTY_FLAGS Flags;
     SetterFun         Setter;
     GetterFun         Getter;
     CopyFun           Copy;
-    AProperty const*  pNext;
-    AProperty const*  pPrev;
+    Property const*   pNext;
+    Property const*   pPrev;
 };
 
 template <std::size_t N, typename T0, typename... Ts>
@@ -325,26 +325,26 @@ struct TReturnType<R (Class::*)(As...)>
 
 #define _HK_GENERATED_CLASS_BODY()                   \
 public:                                              \
-    static ThisClassMeta const& ClassMeta()          \
+    static ThisClassMeta const& GetClassMeta()          \
     {                                                \
         static const ThisClassMeta __Meta;           \
         return __Meta;                               \
     }                                                \
-    static AClassMeta const* SuperClass()            \
+    static ClassMeta const* SuperClass()            \
     {                                                \
-        return ClassMeta().SuperClass();             \
+        return GetClassMeta().SuperClass();             \
     }                                                \
     static const char* ClassName()                   \
     {                                                \
-        return ClassMeta().GetName();                \
+        return GetClassMeta().GetName();                \
     }                                                \
     static uint64_t ClassId()                        \
     {                                                \
-        return ClassMeta().GetId();                  \
+        return GetClassMeta().GetId();                  \
     }                                                \
-    virtual AClassMeta const& FinalClassMeta() const \
+    virtual ClassMeta const& FinalClassMeta() const \
     {                                                \
-        return ClassMeta();                          \
+        return GetClassMeta();                          \
     }                                                \
     virtual const char* FinalClassName() const       \
     {                                                \
@@ -364,27 +364,27 @@ public:                                              \
     }
 
 #define HK_CLASS(Class, SuperClass) \
-    HK_FACTORY_CLASS(AClassMeta::DummyFactory(), Class, SuperClass)
+    HK_FACTORY_CLASS(ClassMeta::DummyFactory(), Class, SuperClass)
 
 #define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
-    HK_FACTORY_CLASS_A(Factory, Class, SuperClass, ABaseObject::Allocator)
+    HK_FACTORY_CLASS_A(Factory, Class, SuperClass, BaseObject::Allocator)
 
 #define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                      \
     HK_FORBID_COPY(Class)                                                               \
-    friend class ABaseObject;                                                                \
+    friend class BaseObject;                                                                \
                                                                                         \
 public:                                                                                 \
     typedef SuperClass Super;                                                           \
     typedef Class      ThisClass;                                                       \
     typedef _Allocator Allocator;                                                       \
-    class ThisClassMeta : public AClassMeta                                             \
+    class ThisClassMeta : public ClassMeta                                             \
     {                                                                                   \
     public:                                                                             \
-        ThisClassMeta() : AClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::ClassMeta()) \
+        ThisClassMeta() : ClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::GetClassMeta()) \
         {                                                                               \
             RegisterProperties();                                                       \
         }                                                                               \
-        ABaseObject* CreateInstance() const override                                         \
+        BaseObject* CreateInstance() const override                                         \
         {                                                                               \
             return new ThisClass;                                                       \
         }                                                                               \
@@ -398,7 +398,7 @@ private:
 
 
 #define HK_BEGIN_CLASS_META(Class)                               \
-    AClassMeta const& Class##__Meta = Class::ClassMeta();        \
+    ClassMeta const& Class##__Meta = Class::GetClassMeta();        \
     void              Class::ThisClassMeta::RegisterProperties() \
     {
 
@@ -410,33 +410,33 @@ private:
     HK_END_CLASS_META()
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT_RANGE(Property, Flags, Range)                                               \
+#define HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, Range)                                               \
     {                                                                                                  \
-        using PropertyType = decltype(ThisClass::Property);                                            \
-        static AProperty const decl_##Property(                                                        \
+        using PropertyType = decltype(ThisClass::TheProperty);                                            \
+        static Property const decl_##TheProperty(                                                        \
             *this,                                                                                     \
             VariantTraits::GetVariantType<PropertyType>(),                                             \
             VariantTraits::GetVariantEnum<PropertyType>(),                                             \
-            #Property##s,                                                                              \
-            [](ABaseObject* pObject, AVariant const& Value) {                                          \
+            #TheProperty##s,                                                                              \
+            [](BaseObject* pObject, Variant const& Value) {                                          \
                 auto* pValue = Value.Get<PropertyType>();                                              \
                 if (pValue)                                                                            \
                 {                                                                                      \
-                    static_cast<ThisClass*>(pObject)->Property = *pValue;                              \
+                    static_cast<ThisClass*>(pObject)->TheProperty = *pValue;                              \
                 }                                                                                      \
             },                                                                                         \
-            [](ABaseObject const* pObject) -> AVariant {                                               \
-                return static_cast<ThisClass const*>(pObject)->Property;                               \
+            [](BaseObject const* pObject) -> Variant {                                               \
+                return static_cast<ThisClass const*>(pObject)->TheProperty;                               \
             },                                                                                         \
-            [](ABaseObject* Dst, ABaseObject const* Src) {                                             \
-                static_cast<ThisClass*>(Dst)->Property = static_cast<ThisClass const*>(Src)->Property; \
+            [](BaseObject* Dst, BaseObject const* Src) {                                             \
+                static_cast<ThisClass*>(Dst)->TheProperty = static_cast<ThisClass const*>(Src)->TheProperty; \
             },                                                                                         \
             Range,                                                                                     \
             Flags);                                                                                    \
     }
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT(Property, Flags) HK_PROPERTY_DIRECT_RANGE(Property, Flags, RangeUnbound())
+#define HK_PROPERTY_DIRECT(TheProperty, Flags) HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, RangeUnbound())
 
 template <class T>
 struct RemoveCVRef
@@ -445,27 +445,27 @@ struct RemoveCVRef
 };
 
 /** Provides access to a property via a setter/getter. */
-#define HK_PROPERTY_RANGE(Property, Setter, Getter, Flags, Range)                                                   \
+#define HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, Range)                                                   \
     {                                                                                                               \
         using PropertyType     = RemoveCVRef<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type>::type; \
         using GetterReturnType = RemoveCVRef<TReturnType<decltype(&ThisClass::Getter)>::Type>::type;                \
         static_assert(std::is_same<PropertyType, GetterReturnType>::value, "Setter and getter type mismatch");      \
-        static AProperty const decl_##Property(                                                                     \
+        static Property const decl_##TheProperty(                                                                     \
             *this,                                                                                                  \
             VariantTraits::GetVariantType<PropertyType>(),                                                          \
             VariantTraits::GetVariantEnum<PropertyType>(),                                                          \
-            #Property##s,                                                                                           \
-            [](ABaseObject* pObject, AVariant const& Value) {                                                       \
+            #TheProperty##s,                                                                                           \
+            [](BaseObject* pObject, Variant const& Value) {                                                       \
                 auto* pValue = Value.Get<PropertyType>();                                                           \
                 if (pValue)                                                                                         \
                 {                                                                                                   \
                     static_cast<ThisClass*>(pObject)->Setter(*pValue);                                              \
                 }                                                                                                   \
             },                                                                                                      \
-            [](ABaseObject const* pObject) -> AVariant {                                                            \
+            [](BaseObject const* pObject) -> Variant {                                                            \
                 return static_cast<ThisClass const*>(pObject)->Getter();                                            \
             },                                                                                                      \
-            [](ABaseObject* Dst, ABaseObject const* Src) {                                                          \
+            [](BaseObject* Dst, BaseObject const* Src) {                                                          \
                 static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                 \
             },                                                                                                      \
             Range,                                                                                                  \
@@ -473,4 +473,4 @@ struct RemoveCVRef
     }
 
 /** Provides access to a property via a setter/getter. */
-#define HK_PROPERTY(Property, Setter, Getter, Flags) HK_PROPERTY_RANGE(Property, Setter, Getter, Flags, RangeUnbound())
+#define HK_PROPERTY(TheProperty, Setter, Getter, Flags) HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, RangeUnbound())

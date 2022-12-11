@@ -34,12 +34,12 @@ SOFTWARE.
 #include <Core/Ref.h>
 #include "VectorMath.h"
 
-using AClipperContour = TVector<Double2>;
+using ClipperContour = TVector<Double2>;
 
-struct SClipperPolygon
+struct ClipperPolygon
 {
-    AClipperContour          Outer;
-    TVector<AClipperContour> Holes;
+    ClipperContour          Outer;
+    TVector<ClipperContour> Holes;
 };
 
 enum POLY_CLIP_TYPE
@@ -55,11 +55,11 @@ namespace ClipperLib
 class Clipper;
 }
 
-class APolyClipper
+class PolyClipper
 {
 public:
-    APolyClipper();
-    virtual ~APolyClipper();
+    PolyClipper();
+    virtual ~PolyClipper();
 
     /** Transform matrix for 2D <-> 3D conversion */
     void SetTransform(Float3x3 const& transform3D);
@@ -86,10 +86,10 @@ public:
     void AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
     /** Execute and build polygons */
-    bool Execute(POLY_CLIP_TYPE clipType, TVector<SClipperPolygon>& polygons);
+    bool Execute(POLY_CLIP_TYPE clipType, TVector<ClipperPolygon>& polygons);
 
     /** Execute and build contours */
-    bool Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& contours);
+    bool Execute(POLY_CLIP_TYPE clipType, TVector<ClipperContour>& contours);
 
 private:
     TUniqueRef<ClipperLib::Clipper> m_pImpl;

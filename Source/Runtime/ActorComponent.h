@@ -32,33 +32,33 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class AWorld;
-class ALevel;
+class World;
+class Level;
 class AActor;
-class ADebugRenderer;
+class DebugRenderer;
 
 #define HK_COMPONENT(_Class, _SuperClass) \
-    HK_FACTORY_CLASS(AActorComponent::Factory(), _Class, _SuperClass)
+    HK_FACTORY_CLASS(ActorComponent::Factory(), _Class, _SuperClass)
 
 /**
 
-AActorComponent
+ActorComponent
 
 Base class for all actor components
 
 */
-class AActorComponent : public ABaseObject
+class ActorComponent : public BaseObject
 {
-    HK_COMPONENT(AActorComponent, ABaseObject)
+    HK_COMPONENT(ActorComponent, BaseObject)
 
     friend class AActor;
-    friend class AWorld;
+    friend class World;
 
 public:
     /** Actor Component factory */
-    static AObjectFactory& Factory()
+    static ObjectFactory& Factory()
     {
-        static AObjectFactory ObjectFactory("Actor Component factory");
+        static ObjectFactory ObjectFactory("Actor Component factory");
         return ObjectFactory;
     }
 
@@ -66,10 +66,10 @@ public:
     AActor* GetOwnerActor() const { return m_OwnerActor; }
 
     /** Component parent level */
-    ALevel* GetLevel() const;
+    Level* GetLevel() const;
 
     /** Get world */
-    AWorld* GetWorld() const;
+    World* GetWorld() const;
 
     /** Destroy this component */
     void Destroy();
@@ -92,15 +92,15 @@ public:
     void RegisterComponent();
 
     /** Set object debug/editor or ingame name */
-    void SetObjectName(AStringView Name) { m_Name = Name; }
+    void SetObjectName(StringView Name) { m_Name = Name; }
 
     /** Get object debug/editor or ingame name */
-    AString const& GetObjectName() const { return m_Name; }
+    String const& GetObjectName() const { return m_Name; }
 
 protected:
     bool bCanEverTick = false;
 
-    AActorComponent();
+    ActorComponent();
 
     virtual void OnCreateAvatar() {}
 
@@ -114,14 +114,14 @@ protected:
 
     virtual void TickComponent(float _TimeStep) {}
 
-    virtual void DrawDebug(ADebugRenderer* InRenderer) {}
+    virtual void DrawDebug(DebugRenderer* InRenderer) {}
 
 private:
     AActor* m_OwnerActor = nullptr;
 
-    AActorComponent* NextPendingKillComponent = nullptr;
+    ActorComponent* NextPendingKillComponent = nullptr;
 
-    AString m_Name;
+    String m_Name;
 
     int m_LocalId{};
     int m_ComponentIndex = -1;

@@ -35,7 +35,7 @@ SOFTWARE.
 
 class ImageStorage;
 
-struct SColorGradingPreset
+struct ColorGradingPreset
 {
     Float3 Gain;
     Float3 Gamma;
@@ -46,7 +46,7 @@ struct SColorGradingPreset
     float  ColorTemperatureBrightnessNormalization;
 };
 
-class ATextureView : public GCObject
+class TextureView : public GCObject
 {
 public:
     RenderCore::ITexture* GetResource()
@@ -72,88 +72,88 @@ protected:
 
 /**
 
-ATexture
+Texture
 
 */
-class ATexture : public AResource
+class Texture : public Resource
 {
-    HK_CLASS(ATexture, AResource)
+    HK_CLASS(Texture, Resource)
 
 public:
-    ATexture() = default;
-    ~ATexture() = default;
+    Texture() = default;
+    ~Texture() = default;
 
-    static ATexture* Create1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+    static Texture* Create1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->Initialize1D(Format, NumMipLevels, Width);
         return texture;
     }
 
-    static ATexture* Create1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+    static Texture* Create1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->Initialize1DArray(Format, NumMipLevels, Width, ArraySize);
         return texture;
     }
 
-    static ATexture* Create2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
+    static Texture* Create2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->Initialize2D(Format, NumMipLevels, Width, Height);
         return texture;
     }
 
-    static ATexture* Create2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
+    static Texture* Create2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->Initialize2DArray(Format, NumMipLevels, Width, Height, ArraySize);
         return texture;
     }
 
-    static ATexture* Create3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
+    static Texture* Create3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->Initialize3D(Format, NumMipLevels, Width, Height, Depth);
         return texture;
     }
 
-    static ATexture* CreateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+    static Texture* CreateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->InitializeCubemap(Format, NumMipLevels, Width);
         return texture;
     }
 
-    static ATexture* CreateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+    static Texture* CreateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->InitializeCubemapArray(Format, NumMipLevels, Width, ArraySize);
         return texture;
     }
 
-    static ATexture* CreateFromImage(ImageStorage const& Image)
+    static Texture* CreateFromImage(ImageStorage const& Image)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->InitializeFromImage(Image);
         return texture;
     }
 
-    static ATexture* CreateColorGradingLUT(IBinaryStreamReadInterface& Stream)
+    static Texture* CreateColorGradingLUT(IBinaryStreamReadInterface& Stream)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->InitializeColorGradingLUT(Stream);
         return texture;
     }
 
-    static ATexture* CreateColorGradingLUT(SColorGradingPreset const& Preset)
+    static Texture* CreateColorGradingLUT(ColorGradingPreset const& Preset)
     {
-        ATexture* texture = NewObj<ATexture>();
+        Texture* texture = NewObj<Texture>();
         texture->InitializeColorGradingLUT(Preset);
         return texture;
     }
 
-    ATextureView* GetView()
+    TextureView* GetView()
     {
         if (m_View.IsExpired())
         {
@@ -205,7 +205,7 @@ public:
 
     RenderCore::ITexture* GetGPUResource() { return m_TextureGPU; }
 
-    void SetDebugName(AStringView DebugName);
+    void SetDebugName(StringView DebugName);
 
 protected:
     /** Create empty 1D texture */
@@ -230,7 +230,7 @@ protected:
     void InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream);
 
     /** Create 3D color grading LUT */
-    void InitializeColorGradingLUT(SColorGradingPreset const& Preset);
+    void InitializeColorGradingLUT(ColorGradingPreset const& Preset);
 
     /** Create empty cubemap texture */
     void InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width);
@@ -242,7 +242,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Textures/Default2D"; }
 
@@ -254,10 +254,10 @@ protected:
     uint32_t                   m_Depth      = 0;
     uint32_t                   m_NumMipmaps = 0;
 
-    class TextureViewImpl : public ATextureView
+    class TextureViewImpl : public TextureView
     {
     public:
-        TextureViewImpl(ATexture* pTexture) :
+        TextureViewImpl(Texture* pTexture) :
             m_Texture(pTexture)
         {
             m_Width  = pTexture->GetDimensionX();
@@ -269,7 +269,7 @@ protected:
             m_Resource = pResource;
         }
 
-        TRef<ATexture> m_Texture;
+        TRef<Texture> m_Texture;
     };
     TWeakRef<TextureViewImpl> m_View;
 };

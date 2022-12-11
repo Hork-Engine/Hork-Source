@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "DebugRenderer.h"
 
-enum EItemType
+enum ITEM_TYPE
 {
     ITEM_TYPE_LIGHT,
     ITEM_TYPE_PROBE
@@ -71,7 +71,7 @@ struct Float4x4SSE
     }
 };
 
-struct SItemInfo
+struct ItemInfo
 {
     int MinSlice;
     int MinClusterX;
@@ -97,24 +97,24 @@ struct SItemInfo
     uint8_t Type;
 };
 
-class AStreamedMemoryGPU;
+class StreamedMemoryGPU;
 
-class ALightVoxelizer
+class LightVoxelizer
 {
 public:
     void Reset();
 
     bool IsSSE() const { return bUseSSE; };
 
-    SItemInfo* AllocItem()
+    ItemInfo* AllocItem()
     {
         HK_ASSERT(ItemsCount < MAX_ITEMS);
         return &ItemInfos[ItemsCount++];
     }
 
-    void Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* RV);
+    void Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData* RV);
 
-    void DrawVoxels(ADebugRenderer* InRenderer);
+    void DrawVoxels(DebugRenderer* InRenderer);
 
 private:
     static void VoxelizeWork(void* _Data);
@@ -126,25 +126,25 @@ private:
 
     void GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed);
 
-    SItemInfo ItemInfos[MAX_ITEMS];
+    ItemInfo ItemInfos[MAX_ITEMS];
     int       ItemsCount;
 
     unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
-    AAtomicInt     ItemCounter;
+    AtomicInt     ItemCounter;
     Float4x4       ViewProj;
     Float4x4       ViewProjInv;
 
-    struct SFrustumCluster
+    struct FrustumCluster
     {
         unsigned short LightsCount;
         unsigned short DecalsCount;
         unsigned short ProbesCount;
     };
 
-    alignas(16) SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+    alignas(16) FrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
-    SClusterHeader*      pClusterHeaderData;
-    SClusterPackedIndex* pClusterPackedIndices;
+    ClusterHeader*      pClusterHeaderData;
+    ClusterPackedIndex* pClusterPackedIndices;
 
     TVector<Float3> DebugLinePoints;
 

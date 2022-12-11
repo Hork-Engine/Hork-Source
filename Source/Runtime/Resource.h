@@ -40,11 +40,11 @@ enum RESOURCE_FLAGS : uint32_t
 
 HK_FLAG_ENUM_OPERATORS(RESOURCE_FLAGS)
 
-class AResource : public ABaseObject
+class Resource : public BaseObject
 {
-    HK_CLASS(AResource, ABaseObject)
+    HK_CLASS(Resource, BaseObject)
 
-    friend class AResourceManager;
+    friend class ResourceManager;
 
 public:
     template <typename ResourceType>
@@ -56,7 +56,7 @@ public:
     }
 
     template <typename ResourceType>
-    static ResourceType* CreateFromFile(AStringView path)
+    static ResourceType* CreateFromFile(StringView path)
     {
         ResourceType* resource = NewObj<ResourceType>();
         resource->InitializeFromFile(path);
@@ -64,51 +64,51 @@ public:
     }
 
     /** Get physical resource path */
-    AString const& GetResourcePath() const { return m_ResourcePath; }
+    String const& GetResourcePath() const { return m_ResourcePath; }
 
     bool IsManualResource() const { return m_bManualResource; }
 
     bool IsPersistent() const { return !!(m_Flags & RESOURCE_FLAG_PERSISTENT); }
 
 protected:
-    AResource() = default;
+    Resource() = default;
 
     /** Initialize default object representation */
     void InitializeDefaultObject();
 
     /** Initialize object from file */
-    void InitializeFromFile(AStringView path);
+    void InitializeFromFile(StringView path);
 
     /** Load resource from file */
     virtual bool LoadResource(IBinaryStreamReadInterface& stream) { return false; }
 
     /** Create internal resource */
-    virtual void LoadInternalResource(AStringView path) {}
+    virtual void LoadInternalResource(StringView path) {}
 
     virtual const char* GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
 
 private:
-    bool LoadFromPath(AStringView path);
+    bool LoadFromPath(StringView path);
 
     /** Set resource path */
-    void SetResourcePath(AStringView path) { m_ResourcePath = path; }
+    void SetResourcePath(StringView path) { m_ResourcePath = path; }
 
     void SetManualResource(bool bManualResource) { m_bManualResource = bManualResource; }
 
     void SetResourceFlags(RESOURCE_FLAGS Flags) { m_Flags = Flags; }
 
-    AString m_ResourcePath;
+    String m_ResourcePath;
     bool m_bManualResource = false;
     RESOURCE_FLAGS m_Flags = RESOURCE_FLAG_DEFAULT;
 };
 
-class ABinaryResource : public AResource
+class BinaryResource : public Resource
 {
-    HK_CLASS(ABinaryResource, AResource)
+    HK_CLASS(BinaryResource, Resource)
 
 public:
-    ABinaryResource() = default;
-    ~ABinaryResource();
+    BinaryResource() = default;
+    ~BinaryResource();
 
     void* GetBinaryData()
     {
@@ -132,7 +132,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView path) override;
+    void LoadInternalResource(StringView path) override;
 
 private:
     void*  m_pBinaryData = nullptr;

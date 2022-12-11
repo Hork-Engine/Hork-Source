@@ -68,42 +68,42 @@ UIViewport& UIViewport::SetPlayerController(APlayerController* playerController)
     return *this;
 }
 
-void UIViewport::OnKeyEvent(SKeyEvent const& event, double timeStamp)
+void UIViewport::OnKeyEvent(KeyEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->SetButtonState({ID_KEYBOARD, uint16_t(event.Key)}, event.Action, event.ModMask, timeStamp);
 }
 
-void UIViewport::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIViewport::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->SetButtonState({ID_MOUSE, uint16_t(event.Button)}, event.Action, event.ModMask, timeStamp);
 }
 
-void UIViewport::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void UIViewport::OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
 }
 
-void UIViewport::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->SetMouseAxisState(event.X, event.Y);
 
@@ -115,36 +115,36 @@ void UIViewport::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp
     inputComponent->SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
 }
 
-void UIViewport::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
+void UIViewport::OnJoystickButtonEvent(JoystickButtonEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->SetButtonState({uint16_t(ID_JOYSTICK_1 + event.Joystick), uint16_t(event.Button)}, event.Action, 0, timeStamp);
 }
 
-void UIViewport::OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp)
+void UIViewport::OnJoystickAxisEvent(JoystickAxisEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent::SetJoystickAxisState(event.Joystick, event.Axis, event.Value);
+    InputComponent::SetJoystickAxisState(event.Joystick, event.Axis, event.Value);
 }
 
-void UIViewport::OnCharEvent(SCharEvent const& event, double timeStamp)
+void UIViewport::OnCharEvent(CharEvent const& event, double timeStamp)
 {
     if (!m_PlayerController)
     {
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->NotifyUnicodeCharacter(event.UnicodeCharacter, event.ModMask, timeStamp);
 }
@@ -156,7 +156,7 @@ void UIViewport::OnFocusLost()
         return;
     }
 
-    AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
+    InputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->UnpressButtons();
 }
@@ -177,7 +177,7 @@ void UIViewport::UpdateViewSize() // TODO: PostGeometryUpdate?
     }
 }
 
-void UIViewport::Draw(ACanvas& canvas)
+void UIViewport::Draw(Canvas& canvas)
 {
     if (m_PlayerController)
     {

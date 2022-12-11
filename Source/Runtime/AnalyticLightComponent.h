@@ -33,29 +33,29 @@ SOFTWARE.
 #include "PunctualLightComponent.h"
 #include "PhotometricProfile.h"
 
-class AAnalyticLightComponent : public APunctualLightComponent
+class AnalyticLightComponent : public PunctualLightComponent
 {
-    HK_COMPONENT(AAnalyticLightComponent, APunctualLightComponent)
+    HK_COMPONENT(AnalyticLightComponent, PunctualLightComponent)
 
 public:
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow(bool _CastShadow) { bCastShadow = _CastShadow; }
+    void SetCastShadow(bool _CastShadow) { m_bCastShadow = _CastShadow; }
 
     /** Is cast shadows enabled */
-    bool IsCastShadow() const { return bCastShadow; }
+    bool IsCastShadow() const { return m_bCastShadow; }
 
     /** Set photometric profile for the light source */
-    void                 SetPhotometricProfile(APhotometricProfile* Profile);
-    APhotometricProfile* GetPhotometricProfile() const { return PhotometricProfile; }
+    void                 SetPhotometricProfile(PhotometricProfile* Profile);
+    PhotometricProfile* GetPhotometricProfile() const { return m_PhotometricProfile; }
 
     /** If true, photometric profile will be used as mask to modify luminous intensity of the light source.
     If false, luminous intensity will be taken from photometric profile */
     void SetPhotometricAsMask(bool bPhotometricAsMask);
-    bool IsPhotometricAsMask() const { return bPhotometricAsMask; }
+    bool IsPhotometricAsMask() const { return m_bPhotometricAsMask; }
 
     /** Luminous intensity scale for photometric profile */
     void  SetLuminousIntensityScale(float IntensityScale);
-    float GetLuminousIntensityScale() const { return LuminousIntensityScale; }
+    float GetLuminousIntensityScale() const { return m_LuminousIntensityScale; }
 
     void  SetLumens(float Lumens);
     float GetLumens() const;
@@ -77,18 +77,18 @@ public:
     Float3 GetWorldDirection() const;
 
     /** Internal */
-    virtual void PackLight(Float4x4 const& InViewMatrix, struct SLightParameters& Light);
+    virtual void PackLight(Float4x4 const& InViewMatrix, struct LightParameters& Light);
 
 protected:
-    AAnalyticLightComponent();
+    AnalyticLightComponent();
 
 private:
-    TRef<APhotometricProfile> PhotometricProfile;
-    float                     Lumens;
-    float                     LuminousIntensityScale = 1.0f;
-    float                     Temperature;
-    Float3                    Color;
-    mutable Float3            EffectiveColor; // Composed from Temperature, Lumens, Color
-    bool                      bPhotometricAsMask = false;
-    bool                      bCastShadow        = false;
+    TRef<PhotometricProfile> m_PhotometricProfile;
+    float                    m_Lumens;
+    float                    m_LuminousIntensityScale = 1.0f;
+    float                    m_Temperature;
+    Float3                   m_Color;
+    mutable Float3           m_EffectiveColor; // Composed from Temperature, Lumens, Color
+    bool                     m_bPhotometricAsMask = false;
+    bool                     m_bCastShadow        = false;
 };

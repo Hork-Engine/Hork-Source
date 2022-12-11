@@ -35,55 +35,60 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
+SphereMesh::SphereMesh(int _HDiv, int _VDiv)
 {
     const int numVerts = _VDiv * (_HDiv - 1) + 2;
     const int numIndices = (_HDiv - 1) * (_VDiv - 1) * 6;
     int i, j;
     float a1, a2;
 
-    HK_ASSERT_( numVerts < 65536, "Too many vertices" );
+    HK_ASSERT_(numVerts < 65536, "Too many vertices");
 
-    TVector< Float3 > vertices;
-    TVector< unsigned short > indices;
+    TVector<Float3> vertices;
+    TVector<unsigned short> indices;
 
-    vertices.Resize( numVerts );
-    indices.Resize( numIndices );
+    vertices.Resize(numVerts);
+    indices.Resize(numIndices);
 
-    for ( i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++ ) {
+    for (i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++)
+    {
         float y, r;
-        Math::SinCos( a1, r, y );
-        for ( j = 0, a2 = 0; j < _VDiv; j++ ) {
+        Math::SinCos(a1, r, y);
+        for (j = 0, a2 = 0; j < _VDiv; j++)
+        {
             float s, c;
-            Math::SinCos( a2, s, c );
-            vertices[i*_VDiv + j] = Float3( r*c, -y, r*s );
+            Math::SinCos(a2, s, c);
+            vertices[i * _VDiv + j] = Float3(r * c, -y, r * s);
             a2 += Math::_2PI / (_VDiv - 1);
         }
         a1 += Math::_PI / _HDiv;
     }
-    vertices[(_HDiv - 1)*_VDiv + 0] = Float3( 0, -1, 0 );
-    vertices[(_HDiv - 1)*_VDiv + 1] = Float3( 0, 1, 0 );
+    vertices[(_HDiv - 1) * _VDiv + 0] = Float3(0, -1, 0);
+    vertices[(_HDiv - 1) * _VDiv + 1] = Float3(0, 1, 0);
 
     // generate indices
-    unsigned short *pIndices = indices.ToPtr();
-    for ( i = 0; i < _HDiv; i++ ) {
-        for ( j = 0; j < _VDiv - 1; j++ ) {
+    unsigned short* pIndices = indices.ToPtr();
+    for (i = 0; i < _HDiv; i++)
+    {
+        for (j = 0; j < _VDiv - 1; j++)
+        {
             unsigned short i2 = i + 1;
             unsigned short j2 = (j == _VDiv - 1) ? 0 : j + 1;
-            if ( i == (_HDiv - 2) ) {
-                *pIndices++ = (i*_VDiv + j2);
-                *pIndices++ = (i*_VDiv + j);
-                *pIndices++ = ((_HDiv - 1)*_VDiv + 1);
-
+            if (i == (_HDiv - 2))
+            {
+                *pIndices++ = (i * _VDiv + j2);
+                *pIndices++ = (i * _VDiv + j);
+                *pIndices++ = ((_HDiv - 1) * _VDiv + 1);
             }
-            else if ( i == (_HDiv - 1) ) {
+            else if (i == (_HDiv - 1))
+            {
                 *pIndices++ = (0 * _VDiv + j);
                 *pIndices++ = (0 * _VDiv + j2);
-                *pIndices++ = ((_HDiv - 1)*_VDiv + 0);
-
+                *pIndices++ = ((_HDiv - 1) * _VDiv + 0);
             }
-            else {
-                int quad[4] = { i*_VDiv + j, i*_VDiv + j2, i2*_VDiv + j2, i2*_VDiv + j };
+            else
+            {
+                int quad[4] = {i * _VDiv + j, i * _VDiv + j2, i2 * _VDiv + j2, i2 * _VDiv + j};
                 *pIndices++ = quad[3];
                 *pIndices++ = quad[2];
                 *pIndices++ = quad[1];
@@ -94,18 +99,18 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
         }
     }
 
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
 
-    bufferCI.SizeInBytes = sizeof( Float3 ) * vertices.Size();
-    GDevice->CreateBuffer( bufferCI, vertices.ToPtr(), &VertexBuffer );
+    bufferCI.SizeInBytes = sizeof(Float3) * vertices.Size();
+    GDevice->CreateBuffer(bufferCI, vertices.ToPtr(), &VertexBuffer);
 
-    VertexBuffer->SetDebugName( "Sphere mesh vertex buffer" );
+    VertexBuffer->SetDebugName("Sphere mesh vertex buffer");
 
-    bufferCI.SizeInBytes = sizeof( unsigned short ) * indices.Size();
-    GDevice->CreateBuffer( bufferCI, indices.ToPtr(), &IndexBuffer );
+    bufferCI.SizeInBytes = sizeof(unsigned short) * indices.Size();
+    GDevice->CreateBuffer(bufferCI, indices.ToPtr(), &IndexBuffer);
 
-    VertexBuffer->SetDebugName( "Sphere mesh index buffer" );
+    VertexBuffer->SetDebugName("Sphere mesh index buffer");
 
     IndexCount = indices.Size();
 }

@@ -32,20 +32,19 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class ASmaaRenderer
+class SmaaRenderer
 {
 public:
-    ASmaaRenderer();
+    SmaaRenderer();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture);
 
 private:
-    void EdgeDetectionPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppEdgeTexture);
-    void BlendingWeightCalculationPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* EdgeTexture, RenderCore::FGTextureProxy** ppBlendTexture);
-    void NeighborhoodBlendingPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy* BlendTexture, RenderCore::FGTextureProxy** ppResultTexture);
+    void EdgeDetectionPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppEdgeTexture);
+    void BlendingWeightCalculationPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* EdgeTexture, RenderCore::FGTextureProxy** ppBlendTexture);
+    void NeighborhoodBlendingPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy* BlendTexture, RenderCore::FGTextureProxy** ppResultTexture);
 
     void CreateTextures();
-    void CreateSampler();
 
     TRef<RenderCore::IPipeline> EdgeDetectionPipeline;
     TRef<RenderCore::IPipeline> BlendingWeightCalculationPipeline;

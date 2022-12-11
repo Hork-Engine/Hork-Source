@@ -33,17 +33,17 @@ SOFTWARE.
 #include "RenderDefs.h"
 #include <Containers/ArrayView.h>
 
-class AShaderLoader
+class ShaderLoader
 {
 public:
-    AString LoadShader(AStringView FileName, TArrayView<SMaterialSource> Predefined = {});
-    AString LoadShaderFromString(AStringView FileName, AStringView Source, TArrayView<SMaterialSource> Predefined = {});
+    String LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined = {});
+    String LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined = {});
 
 protected:
-    virtual bool LoadFile(AStringView FileName, AString& Source);
-    bool LoadShaderFromString(AStringView FileName, AStringView Source, AString& Out);
-    bool LoadShaderWithInclude(AStringView FileName, AString& Out);
+    virtual bool LoadFile(StringView FileName, String& Source);
+    bool LoadShaderFromString(StringView FileName, StringView Source, String& Out);
+    bool LoadShaderWithInclude(StringView FileName, String& Out);
 
     /** Predefined shaders */
-    TArrayView<SMaterialSource> m_Predefined;
+    TArrayView<MaterialSource> m_Predefined;
 };

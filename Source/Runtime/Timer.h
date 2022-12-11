@@ -32,15 +32,15 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class AWorld;
+class World;
 
-class ATimer : public ABaseObject
+class WorldTimer : public BaseObject
 {
-    HK_CLASS(ATimer, ABaseObject)
+    HK_CLASS(WorldTimer, BaseObject)
 
 public:
-    ATimer();
-    ~ATimer();
+    WorldTimer();
+    ~WorldTimer();
 
     float FirstDelay = 0.0f;
 
@@ -68,18 +68,18 @@ public:
 
     int GetPulseIndex() const { return NumPulses - 1; }
 
-    void Tick(AWorld* World, float TimeStep);
+    void Tick(World* World, float TimeStep);
 
 private:
     // Allow a world to register actors
-    friend class AWorld;
-    ATimer* NextInActor = {};
-    ATimer* PrevInActor = {};
+    friend class World;
+    WorldTimer* NextInActor = {};
+    WorldTimer* PrevInActor = {};
 
     // Allow an actor to keep a list of timers
     friend class AActor;
-    ATimer* NextInWorld = {};
-    ATimer* PrevInWorld = {};
+    WorldTimer* NextInWorld = {};
+    WorldTimer* PrevInWorld = {};
 
     int   State       = 0;
     int   NumPulses   = 0;

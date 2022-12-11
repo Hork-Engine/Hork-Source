@@ -34,9 +34,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-APostprocessRenderer::APostprocessRenderer()
+PostprocessRenderer::PostprocessRenderer()
 {
-    SSamplerDesc samplers[7];
+    SamplerDesc samplers[7];
 
     // Color texture sampler
     samplers[0].Filter = FILTER_NEAREST;
@@ -80,28 +80,28 @@ APostprocessRenderer::APostprocessRenderer()
     samplers[6].AddressV = SAMPLER_ADDRESS_CLAMP;
     samplers[6].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    SBufferInfo bufferInfo;
+    BufferInfo bufferInfo;
     bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
 
-    resourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(samplers);
     resourceLayout.Samplers = samplers;
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;
 
-    AShaderFactory::CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout );
+    ShaderFactory::CreateFullscreenQuadPipeline(&PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout);
 }
 
-void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
-                                   FGTextureProxy*            ColorTexture,
-                                   FGTextureProxy*            Exposure,
-                                   FGTextureProxy*            ColorGrading,
-                                   ABloomRenderer::STextures& BloomTex,
-                                   TEXTURE_FORMAT             OutputFormat,
-                                   FGTextureProxy**           ppPostprocessTexture)
+void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,
+                                  FGTextureProxy* ColorTexture,
+                                  FGTextureProxy* Exposure,
+                                  FGTextureProxy* ColorGrading,
+                                  BloomRenderer::Textures& BloomTex,
+                                  TEXTURE_FORMAT OutputFormat,
+                                  FGTextureProxy** ppPostprocessTexture)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Postprocess Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("Postprocess Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
 
@@ -120,14 +120,14 @@ void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
     renderPass.AddResource(BloomTex.BloomTexture3, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment("Postprocess texture",
-                           STextureDesc()
-                               .SetFormat(OutputFormat)
-                               .SetResolution(GetFrameResoultion()))
+        TextureAttachment("Postprocess texture",
+                          TextureDesc()
+                              .SetFormat(OutputFormat)
+                              .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
                           {
                               rtbl->BindTexture(0, ColorTexture->Actual());
@@ -147,14 +147,14 @@ void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
     *ppPostprocessTexture = renderPass.GetColorAttachments()[0].pResource;
 }
 
-void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
-                                   FGTextureProxy*            ColorTexture,
-                                   FGTextureProxy*            Exposure,
-                                   FGTextureProxy*            ColorGrading,
-                                   ABloomRenderer::STextures& BloomTex,
-                                   FGTextureProxy*            Dest)
+void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,
+                                  FGTextureProxy* ColorTexture,
+                                  FGTextureProxy* Exposure,
+                                  FGTextureProxy* ColorGrading,
+                                  BloomRenderer::Textures& BloomTex,
+                                  FGTextureProxy* Dest)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Postprocess Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("Postprocess Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
 
@@ -173,11 +173,11 @@ void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
     renderPass.AddResource(BloomTex.BloomTexture3, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment(Dest)
+        TextureAttachment(Dest)
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
                           {
                               rtbl->BindTexture(0, ColorTexture->Actual());

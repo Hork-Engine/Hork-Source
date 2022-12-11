@@ -32,51 +32,51 @@ SOFTWARE.
 #include "World.h"
 #include "DebugRenderer.h"
 
-HK_CLASS_META(APunctualLightComponent)
+HK_CLASS_META(PunctualLightComponent)
 
-APunctualLightComponent::APunctualLightComponent()
+PunctualLightComponent::PunctualLightComponent()
 {
-    AABBWorldBounds.Clear();
-    OBBTransformInverse.Clear();
+    m_AABBWorldBounds.Clear();
+    m_OBBTransformInverse.Clear();
 
-    Primitive             = AVisibilitySystem::AllocatePrimitive();
-    Primitive->Owner      = this;
-    Primitive->Type       = VSD_PRIMITIVE_SPHERE;
-    Primitive->VisGroup   = VISIBILITY_GROUP_DEFAULT;
-    Primitive->QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    m_Primitive = VisibilitySystem::AllocatePrimitive();
+    m_Primitive->Owner = this;
+    m_Primitive->Type = VSD_PRIMITIVE_SPHERE;
+    m_Primitive->VisGroup = VISIBILITY_GROUP_DEFAULT;
+    m_Primitive->QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
 }
 
-APunctualLightComponent::~APunctualLightComponent()
+PunctualLightComponent::~PunctualLightComponent()
 {
-    AVisibilitySystem::DeallocatePrimitive(Primitive);
+    VisibilitySystem::DeallocatePrimitive(m_Primitive);
 }
 
-void APunctualLightComponent::InitializeComponent()
+void PunctualLightComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(m_Primitive);
 }
 
-void APunctualLightComponent::DeinitializeComponent()
+void PunctualLightComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(m_Primitive);
 }
 
-void APunctualLightComponent::SetEnabled(bool _Enabled)
+void PunctualLightComponent::SetEnabled(bool _Enabled)
 {
     Super::SetEnabled(_Enabled);
 
     if (_Enabled)
     {
-        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+        m_Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        m_Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
     else
     {
-        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+        m_Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        m_Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }

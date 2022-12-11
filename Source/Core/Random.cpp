@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Core/Random.h>
 
-void AMersenneTwisterRand::Initialize(uint32_t InSeed)
+void MersenneTwisterRand::Initialize(uint32_t InSeed)
 {
     // Initialize generator state with seed
     // See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
@@ -47,7 +47,7 @@ void AMersenneTwisterRand::Initialize(uint32_t InSeed)
     }
 }
 
-void AMersenneTwisterRand::Reload()
+void MersenneTwisterRand::Reload()
 {
     // Generate N new values in state
     // Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)

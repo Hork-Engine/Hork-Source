@@ -265,7 +265,7 @@ void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes)
 
 #ifndef USE_MIMALLOC
 
-struct SHeapChunk
+struct HeapChunk
 {
     uint32_t Size;
     uint32_t Offset;
@@ -291,19 +291,19 @@ void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flag
         HK_VERIFY(IsPowerOfTwo(Alignment), "MemoryAlloc: Alignment must be power of two\n");
     }
 
-    size_t size = SizeInBytes + sizeof(SHeapChunk) + (Alignment - 1);
+    size_t size = SizeInBytes + sizeof(HeapChunk) + (Alignment - 1);
 
     byte* p = (byte*)malloc(size);
     if (HK_UNLIKELY(!p))
         return nullptr;
 
-    void* aligned = AlignPtr(p + sizeof(SHeapChunk), Alignment);
+    void* aligned = AlignPtr(p + sizeof(HeapChunk), Alignment);
 
     size_t offset = ((byte*)aligned - p);
     HK_VERIFY(offset <= std::numeric_limits<uint32_t>::max(), "MemoryAlloc: Too big alignment\n");
 
-    (((SHeapChunk*)aligned) - 1)->Offset = (uint32_t)offset;
-    (((SHeapChunk*)aligned) - 1)->Size   = SizeInBytes;
+    (((HeapChunk*)aligned) - 1)->Offset = (uint32_t)offset;
+    (((HeapChunk*)aligned) - 1)->Size   = SizeInBytes;
 
     if (Flags & MALLOC_ZERO)
         Platform::ZeroMem(aligned, SizeInBytes);
@@ -320,16 +320,16 @@ void MemoryHeap::Free(void* Ptr)
     if (!Ptr)
         return;
 
-    MemoryAllocated.Sub((((SHeapChunk*)Ptr) - 1)->Size);
+    MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
     MemoryAllocs.Decrement();
     PerFrameFrees.Increment();
 
-    free((byte*)Ptr - (((SHeapChunk*)Ptr) - 1)->Offset);
+    free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
 }
 
 size_t MemoryHeap::GetSize(void* Ptr)
 {
-    return Ptr ? (((SHeapChunk*)Ptr) - 1)->Size : 0;
+    return Ptr ? (((HeapChunk*)Ptr) - 1)->Size : 0;
 }
 
 void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
@@ -337,7 +337,7 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
     if (!Ptr)
         return _Alloc(SizeInBytes, Alignment, Flags);
 
-    size_t OldSize = (((SHeapChunk*)Ptr) - 1)->Size;
+    size_t OldSize = (((HeapChunk*)Ptr) - 1)->Size;
     if (OldSize >= SizeInBytes && IsAlignedPtr(Ptr, Alignment))
         return Ptr;
 
@@ -348,9 +348,9 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
             Platform::Memcpy(NewPtr, Ptr, OldSize);
     }
 
-    MemoryAllocated.Sub((((SHeapChunk*)Ptr) - 1)->Size);
+    MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
 
-    free((byte*)Ptr - (((SHeapChunk*)Ptr) - 1)->Offset);
+    free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
     PerFrameFrees.Increment();
     MemoryAllocs.Decrement();
 
@@ -454,12 +454,12 @@ void* MemoryHeap::Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLO
     return Ptr;
 }
 
-SMemoryStat MemoryHeap::MemoryGetStat()
+MemoryStat MemoryHeap::MemoryGetStat()
 {
-    SMemoryStat stat = {};
+    MemoryStat stat = {};
     for (int n = 0; n < HEAP_MAX; n++)
     {
-        SMemoryStat heapStat = Platform::MemoryHeaps[n].GetStat();
+        MemoryStat heapStat = Platform::MemoryHeaps[n].GetStat();
         stat.FrameAllocs += heapStat.FrameAllocs;
         stat.FrameFrees += heapStat.FrameFrees;
         stat.MemoryAllocated += heapStat.MemoryAllocated;
@@ -469,9 +469,9 @@ SMemoryStat MemoryHeap::MemoryGetStat()
     return stat;
 }
 
-SMemoryStat MemoryHeap::GetStat()
+MemoryStat MemoryHeap::GetStat()
 {
-    SMemoryStat stat;
+    MemoryStat stat;
 
     stat.FrameAllocs     = PerFrameAllocs.Load();
     stat.FrameFrees      = PerFrameFrees.Load();

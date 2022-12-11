@@ -35,18 +35,18 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "CameraComponent.h"
 
-class AWorld;
-class AActorComponent;
-class ASceneComponent;
-class AInputComponent;
+class World;
+class ActorComponent;
+class SceneComponent;
+class InputComponent;
 class AController;
 
-using ActorComponents = TSmallVector<AActorComponent*, 8>;
+using ActorComponents = TSmallVector<ActorComponent*, 8>;
 
 #define HK_ACTOR(_Class, _SuperClass) \
     HK_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
 
-struct SActorInitializer
+struct ActorInitializer
 {
     bool bCanEverTick{};
     bool bTickEvenWhenPaused{};
@@ -55,7 +55,7 @@ struct SActorInitializer
     bool bLateUpdate{};
 };
 
-struct SActorDamage
+struct ActorDamage
 {
     float   Amount;
     Float3  Position;
@@ -74,19 +74,19 @@ AActor
 Base class for all actors
 
 */
-class AActor : public ABaseObject
+class AActor : public BaseObject
 {
-    HK_ACTOR(AActor, ABaseObject)
+    HK_ACTOR(AActor, BaseObject)
 
-    friend class AWorld;
+    friend class World;
     friend class AController;
-    friend class APhysicsSystem;
+    friend class PhysicsSystem;
 
 public:
     /** Actor factory */
-    static AObjectFactory& Factory()
+    static ObjectFactory& Factory()
     {
-        static AObjectFactory ObjectFactory("Actor factory");
+        static ObjectFactory ObjectFactory("Actor factory");
         return ObjectFactory;
     }
 
@@ -98,19 +98,19 @@ public:
     AActor();
 
     /** Get actor's world */
-    AWorld* GetWorld() const { return m_World; }
+    World* GetWorld() const { return m_World; }
 
     /** Get actor's level */
-    ALevel* GetLevel() const { return m_Level; }
+    Level* GetLevel() const { return m_Level; }
 
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
-    ASceneComponent* GetRootComponent() const { return m_RootComponent; }
+    SceneComponent* GetRootComponent() const { return m_RootComponent; }
 
     void ResetRootComponent() { m_RootComponent = nullptr; }
 
     /** The pawn camera is used to setup rendering. */
-    ACameraComponent* GetPawnCamera() { return m_PawnCamera; }
+    CameraComponent* GetPawnCamera() { return m_PawnCamera; }
 
     /** Actor's instigator */
     AActor* GetInstigator() { return m_Instigator; }
@@ -118,35 +118,35 @@ public:
     AController* GetController() { return m_Controller; }
 
     /** Create component by it's class id */
-    AActorComponent* CreateComponent(uint64_t _ClassId, AStringView Name);
+    ActorComponent* CreateComponent(uint64_t _ClassId, StringView Name);
 
     /** Create component by it's class name */
-    AActorComponent* CreateComponent(const char* _ClassName, AStringView Name);
+    ActorComponent* CreateComponent(const char* _ClassName, StringView Name);
 
     /** Create component by it's class meta (fastest way to create component) */
-    AActorComponent* CreateComponent(AClassMeta const* _ClassMeta, AStringView Name);
+    ActorComponent* CreateComponent(ClassMeta const* _ClassMeta, StringView Name);
 
     /** Get component by it's class id */
-    AActorComponent* GetComponent(uint64_t _ClassId);
+    ActorComponent* GetComponent(uint64_t _ClassId);
 
     /** Get component by it's class name */
-    AActorComponent* GetComponent(const char* _ClassName);
+    ActorComponent* GetComponent(const char* _ClassName);
 
     /** Get component by it's class meta */
-    AActorComponent* GetComponent(AClassMeta const* _ClassMeta);
+    ActorComponent* GetComponent(ClassMeta const* _ClassMeta);
 
     /** Create component of specified type */
     template <typename ComponentType>
-    ComponentType* CreateComponent(AStringView Name)
+    ComponentType* CreateComponent(StringView Name)
     {
-        return static_cast<ComponentType*>(CreateComponent(&ComponentType::ClassMeta(), Name));
+        return static_cast<ComponentType*>(CreateComponent(&ComponentType::GetClassMeta(), Name));
     }
 
     /** Get component of specified type */
     template <typename ComponentType>
     ComponentType* GetComponent()
     {
-        return static_cast<ComponentType*>(GetComponent(&ComponentType::ClassMeta()));
+        return static_cast<ComponentType*>(GetComponent(&ComponentType::GetClassMeta()));
     }
 
     /** Get all actor components */
@@ -159,10 +159,10 @@ public:
     bool IsPendingKill() const { return m_bPendingKill; }
 
     /** Apply damage to the actor */
-    void ApplyDamage(SActorDamage const& Damage);
+    void ApplyDamage(ActorDamage const& Damage);
 
     /** Override this function to bind axes and actions to the input component */
-    virtual void SetupInputComponent(AInputComponent* Input) {}
+    virtual void SetupInputComponent(InputComponent* Input) {}
 
     /** Is used to register console commands. Experimental. */
     virtual void SetupRuntimeCommands() {}
@@ -172,31 +172,31 @@ public:
     bool IsInEditor() const { return m_bInEditor; }
 
     /** Set property value by it's public name. See actor definition. */
-    bool SetPublicProperty(AStringView PublicName, AStringView Value);
+    bool SetPublicProperty(StringView PublicName, StringView Value);
 
     class asILockableSharedBool* ScriptGetWeakRefFlag();
 
     /** Set object debug/editor or ingame name */
-    void SetObjectName(AStringView Name) { m_Name = Name; }
+    void SetObjectName(StringView Name) { m_Name = Name; }
 
     /** Get object debug/editor or ingame name */
-    AString const& GetObjectName() const { return m_Name; }
+    String const& GetObjectName() const { return m_Name; }
 
 protected:
     // Actor events
-    AContactDelegate E_OnBeginContact;
-    AContactDelegate E_OnEndContact;
-    AContactDelegate E_OnUpdateContact;
-    AOverlapDelegate E_OnBeginOverlap;
-    AOverlapDelegate E_OnEndOverlap;
-    AOverlapDelegate E_OnUpdateOverlap;
+    ContactDelegate E_OnBeginContact;
+    ContactDelegate E_OnEndContact;
+    ContactDelegate E_OnUpdateContact;
+    OverlapDelegate E_OnBeginOverlap;
+    OverlapDelegate E_OnEndOverlap;
+    OverlapDelegate E_OnUpdateOverlap;
 
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
-    ASceneComponent* m_RootComponent{};
+    SceneComponent* m_RootComponent{};
 
     /** The pawn camera is used to setup rendering. */
-    TWeakRef<ACameraComponent> m_PawnCamera;
+    TWeakRef<CameraComponent> m_PawnCamera;
 
     /** Called after constructor. Note that the actor is not yet in the world.
     The actor appears in the world only after spawn and just before calling BeginPlay().
@@ -206,7 +206,7 @@ protected:
         E_OnBeginContact.Add(this, &MyActorController::HandleBeginContact)
     In the script, you just need to declare the OnBeginContact method and similarly with other events.
     */
-    virtual void Initialize(SActorInitializer& Initializer) {}
+    virtual void Initialize(ActorInitializer& Initializer) {}
 
     /** Called when the actor enters the game */
     virtual void BeginPlay() {}
@@ -229,10 +229,10 @@ protected:
 
     virtual void OnInputLost() {}
 
-    virtual void OnApplyDamage(SActorDamage const& Damage) {}
+    virtual void OnApplyDamage(ActorDamage const& Damage) {}
 
     /** Draw debug primitives */
-    virtual void DrawDebug(ADebugRenderer* InRenderer) {}
+    virtual void DrawDebug(DebugRenderer* InRenderer) {}
 
     /** Called before components initialized */
     virtual void PreInitializeComponents() {}
@@ -240,29 +240,29 @@ protected:
     /** Called after components initialized */
     virtual void PostInitializeComponents() {}
 
-    class ATimer* AddTimer(TCallback<void()> const& Callback);
-    void          RemoveTimer(ATimer* Timer);
+    class WorldTimer* AddTimer(TCallback<void()> const& Callback);
+    void          RemoveTimer(WorldTimer* Timer);
     void          RemoveAllTimers();
 
 private:
-    void AddComponent(AActorComponent* Component, AStringView Name);
+    void AddComponent(ActorComponent* Component, StringView Name);
     void CallBeginPlay();
     void CallTick(float TimeStep);
     void CallTickPrePhysics(float TimeStep);
     void CallTickPostPhysics(float TimeStep);
     void CallLateUpdate(float TimeStep);
-    void CallDrawDebug(ADebugRenderer* InRenderer);
+    void CallDrawDebug(DebugRenderer* InRenderer);
 
 private:
-    AWorld*                      m_World{};
-    TWeakRef<ALevel>             m_Level;
+    World*                      m_World{};
+    TWeakRef<Level>             m_Level;
     ActorComponents              m_Components;
-    TRef<AActorDefinition>       m_pActorDef;
+    TRef<ActorDefinition>       m_pActorDef;
     AActor*                      m_Instigator{};
     AController*                 m_Controller{};
     class asIScriptObject*       m_ScriptModule{};
     class asILockableSharedBool* m_pWeakRefFlag{};
-    AString                      m_Name;
+    String                      m_Name;
 
     int m_ComponentLocalIdGen{};
 
@@ -275,8 +275,8 @@ private:
     AActor* m_NextSpawnActor{};
     AActor* m_NextPendingKillActor{};
 
-    ATimer* m_TimerList{};
-    ATimer* m_TimerListTail{};
+    WorldTimer* m_TimerList{};
+    WorldTimer* m_TimerListTail{};
 
     float m_LifeTime{0.0f};
 

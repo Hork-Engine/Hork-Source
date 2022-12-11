@@ -36,7 +36,7 @@ SOFTWARE.
 struct SDL_Window;
 union SDL_Event;
 
-struct SVideoMode
+struct DisplayVideoMode
 {
     /** Horizontal position on display (read only) */
     int X;
@@ -88,15 +88,15 @@ public:
         IDeviceObject(pDevice, PROXY_TYPE)
     {}
 
-    virtual void      SetVideoMode(SVideoMode const& DesiredMode) = 0;
-    SVideoMode const& GetVideoMode() const { return VideoMode; }
+    virtual void      SetVideoMode(DisplayVideoMode const& DesiredMode) = 0;
+    DisplayVideoMode const& GetVideoMode() const { return VideoMode; }
 
     void ParseEvent(SDL_Event const& Event);
 
     static IGenericWindow* GetWindowFromNativeHandle(SDL_Window* Handle);
 
 protected:
-    SVideoMode  VideoMode;
+    DisplayVideoMode  VideoMode;
     TWeakRef<ISwapChain> SwapChain;
 };
 

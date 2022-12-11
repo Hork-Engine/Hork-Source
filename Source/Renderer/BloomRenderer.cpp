@@ -31,23 +31,23 @@ SOFTWARE.
 #include "BloomRenderer.h"
 #include "RenderLocal.h"
 
-AConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"s);
-AConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
-AConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
+ConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"s);
+ConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
+ConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
 
 using namespace RenderCore;
 
-ABloomRenderer::ABloomRenderer()
+BloomRenderer::BloomRenderer()
 {
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
 
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter   = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    SBufferInfo bufferInfo[2];
+    BufferInfo bufferInfo[2];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
     bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT;
 
@@ -56,14 +56,14 @@ ABloomRenderer::ABloomRenderer()
     resourceLayout.NumBuffers  = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers     = bufferInfo;
 
-    AShaderFactory::CreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
-    AShaderFactory::CreateFullscreenQuadPipeline(&BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
 
     resourceLayout.NumBuffers = 0;
-    AShaderFactory::CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
 }
 
-void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, ABloomRenderer::STextures* pResult)
+void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult)
 {
     TEXTURE_FORMAT pf;
 
@@ -81,7 +81,7 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
             break;
     }
 
-    STextureResolution2D bloomResolution = GetFrameResoultion();
+    TextureResolution2D bloomResolution = GetFrameResoultion();
     bloomResolution.Width >>= 1;
     bloomResolution.Height >>= 1;
     bloomResolution.Width = Math::Max(64u, bloomResolution.Width);
@@ -94,25 +94,25 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Make bright texture
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: Bright Pass");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: Bright Pass");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright texture",
-                               STextureDesc()
+            TextureAttachment("Bright texture",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SBrightPassDrawCall
+                            struct BrightPassDrawCall
                             {
                                 Float4 BloomStart;
                                 Float4 BloomThreshold;
                             };
 
-                            SBrightPassDrawCall* drawCall = MapDrawCallConstants<SBrightPassDrawCall>();
+                            BrightPassDrawCall* drawCall = MapDrawCallConstants<BrightPassDrawCall>();
                             drawCall->BloomStart          = Float4(r_BloomStart.GetFloat());
                             drawCall->BloomThreshold      = Float4(r_BloomThreshold.GetFloat());
 
@@ -131,24 +131,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // X pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: X pass. Result in BrightBlurXTexture");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: X pass. Result in BrightBlurXTexture");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightTexture, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright Blur X texture",
-                               STextureDesc()
+            TextureAttachment("Bright Blur X texture",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 1.0f / RenderPassContext.RenderArea.Width;
                             drawCall->InvSize.Y = 0;
 
@@ -162,24 +162,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Y pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: Y pass. Result in BrightBlurTexture");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: Y pass. Result in BrightBlurTexture");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurXTexture, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright Blur texture",
-                               STextureDesc()
+            TextureAttachment("Bright Blur texture",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 0;
                             drawCall->InvSize.Y = 1.0f / RenderPassContext.RenderArea.Height;
 
@@ -196,17 +196,17 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Downsample
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Downsample BrightBlurTexture to BrightTexture2");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Downsample BrightBlurTexture to BrightTexture2");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurTexture, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright texture 2",
-                               STextureDesc()
+            TextureAttachment("Bright texture 2",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
                             rtbl->BindTexture(0, BrightBlurTexture->Actual());
 
@@ -218,24 +218,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // X pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: X pass. Result in BrightBlurXTexture2");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: X pass. Result in BrightBlurXTexture2");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightTexture2, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur X texture 2",
-                               STextureDesc()
+            TextureAttachment("Bright blur X texture 2",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 1.0f / RenderPassContext.RenderArea.Width;
                             drawCall->InvSize.Y = 0;
 
@@ -249,24 +249,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Y pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: Y pass. Result in BrightBlurTexture2");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: Y pass. Result in BrightBlurTexture2");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurXTexture2, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur texture 2",
-                               STextureDesc()
+            TextureAttachment("Bright blur texture 2",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 0;
                             drawCall->InvSize.Y = 1.0f / RenderPassContext.RenderArea.Height;
 
@@ -283,17 +283,17 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Downsample
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Downsample BrightBlurTexture2 to BrightTexture4");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Downsample BrightBlurTexture2 to BrightTexture4");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurTexture2, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright texture 4",
-                               STextureDesc()
+            TextureAttachment("Bright texture 4",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
                             rtbl->BindTexture(0, BrightBlurTexture2->Actual());
 
@@ -305,24 +305,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // X pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: X pass.Result in BrightBlurXTexture4");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: X pass.Result in BrightBlurXTexture4");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightTexture4, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur X texture 4",
-                               STextureDesc()
+            TextureAttachment("Bright blur X texture 4",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 1.0f / RenderPassContext.RenderArea.Width;
                             drawCall->InvSize.Y = 0;
 
@@ -336,24 +336,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Y pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: Y pass. Result in BrightBlurTexture4");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: Y pass. Result in BrightBlurTexture4");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurXTexture4, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur texture 4",
-                               STextureDesc()
+            TextureAttachment("Bright blur texture 4",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 0;
                             drawCall->InvSize.Y = 1.0f / RenderPassContext.RenderArea.Height;
 
@@ -370,17 +370,17 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Downsample
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Downsample BrightBlurTexture4 to BrightTexture6");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Downsample BrightBlurTexture4 to BrightTexture6");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurTexture4, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright texture 6",
-                               STextureDesc()
+            TextureAttachment("Bright texture 6",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
                             rtbl->BindTexture(0, BrightBlurTexture4->Actual());
 
@@ -392,24 +392,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // X pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: X pass. Result in BrightBlurXTexture6");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: X pass. Result in BrightBlurXTexture6");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightTexture6, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur X texture 6",
-                               STextureDesc()
+            TextureAttachment("Bright blur X texture 6",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 1.0f / RenderPassContext.RenderArea.Width;
                             drawCall->InvSize.Y = 0;
 
@@ -423,24 +423,24 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
 
     // Y pass
     {
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Bloom: Y pass. Result in BrightBlurTexture6");
+        RenderPass& pass = FrameGraph.AddTask<RenderPass>("Bloom: Y pass. Result in BrightBlurTexture6");
         pass.SetRenderArea(bloomResolution.Width, bloomResolution.Height);
         pass.AddResource(BrightBlurXTexture6, FG_RESOURCE_ACCESS_READ);
         pass.SetColorAttachment(
-            STextureAttachment("Bright blur texture 6",
-                               STextureDesc()
+            TextureAttachment("Bright blur texture 6",
+                               TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
                 .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
-                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            struct SDrawCall
+                            struct DrawCall
                             {
                                 Float2 InvSize;
                             };
 
-                            SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                            DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
                             drawCall->InvSize.X = 0;
                             drawCall->InvSize.Y = 1.0f / RenderPassContext.RenderArea.Height;
 

@@ -36,7 +36,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AShaderModuleGLImpl::AShaderModuleGLImpl(ADeviceGLImpl* pDevice, SShaderBinaryData const* _BinaryData) :
+ShaderModuleGLImpl::ShaderModuleGLImpl(DeviceGLImpl* pDevice, ShaderBinaryData const* _BinaryData) :
     IShaderModule(pDevice)
 {
     GLuint id = CreateShaderProgramBin(_BinaryData);
@@ -49,14 +49,14 @@ AShaderModuleGLImpl::AShaderModuleGLImpl(ADeviceGLImpl* pDevice, SShaderBinaryDa
     Type = _BinaryData->ShaderType;
 }
 
-AShaderModuleGLImpl::AShaderModuleGLImpl(ADeviceGLImpl* pDevice, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources) :
+ShaderModuleGLImpl::ShaderModuleGLImpl(DeviceGLImpl* pDevice, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources) :
     IShaderModule(pDevice)
 {
 #if 0
     ShaderBinaryData binaryData;
 
     if ( !CreateShaderBinaryData( pDevice, _ShaderType, _NumSources, _Sources, &binaryData ) ) {
-        LOG( "AShaderModuleGLImpl::ctor: couldn't create shader binary data\n" );
+        LOG( "ShaderModuleGLImpl::ctor: couldn't create shader binary data\n" );
         return;
     }
 
@@ -85,7 +85,7 @@ AShaderModuleGLImpl::AShaderModuleGLImpl(ADeviceGLImpl* pDevice, SHADER_TYPE _Sh
 #endif
 }
 
-AShaderModuleGLImpl::~AShaderModuleGLImpl()
+ShaderModuleGLImpl::~ShaderModuleGLImpl()
 {
     GLuint id = GetHandleNativeGL();
 
@@ -150,18 +150,18 @@ static bool CheckLinkStatus(unsigned int NativeId, SHADER_TYPE ShaderType)
     return true;
 }
 
-unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const* _BinaryData)
+unsigned int ShaderModuleGLImpl::CreateShaderProgramBin(ShaderBinaryData const* _BinaryData)
 {
     if (_BinaryData->BinaryFormat == SHADER_BINARY_FORMAT_SPIR_V_ARB && !GetDevice()->IsFeatureSupported(FEATURE_SPIR_V))
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: SPIR-V binary format is not supported by video driver\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgramBin: SPIR-V binary format is not supported by video driver\n");
         return 0;
     }
 
     GLuint program = glCreateProgram();
     if (!program)
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: failed to create shader program\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgramBin: failed to create shader program\n");
         return 0;
     }
 
@@ -190,7 +190,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
             }
             else
             {
-                LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
+                LOG("ShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
             }
             glDeleteShader(shader);
         }
@@ -217,7 +217,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
             }
             else
             {
-                LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
+                LOG("ShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
             }
             glDeleteShader(shader);
         }
@@ -226,7 +226,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
 
     if (!CheckLinkStatus(program, _BinaryData->ShaderType))
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid link status\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgramBin: invalid link status\n");
         glDeleteProgram(program);
         return 0;
     }
@@ -234,7 +234,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
     return program;
 }
 
-unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _ShaderType,
+unsigned int ShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _ShaderType,
                                                       int                _NumStrings,
                                                       const char* const* _Strings,
                                                       bool               bBinaryRetrievable)
@@ -246,7 +246,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
     program = glCreateShaderProgramv(type, _NumStrings, _Strings); // v 4.1
     if (!program)
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
         return 0;
     }
 
@@ -255,7 +255,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
     program = glCreateProgram();
     if (!program)
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
         return 0;
     }
 
@@ -278,7 +278,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
         }
         else
         {
-            LOG("AShaderModuleGLImpl::CreateShaderProgram: invalid compile status\n");
+            LOG("ShaderModuleGLImpl::CreateShaderProgram: invalid compile status\n");
         }
         glDeleteShader(shader);
     }
@@ -286,7 +286,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
 
     if (!CheckLinkStatus(program, _ShaderType))
     {
-        LOG("AShaderModuleGLImpl::CreateShaderProgram: invalid link status\n");
+        LOG("ShaderModuleGLImpl::CreateShaderProgram: invalid link status\n");
         glDeleteProgram(program);
         return 0;
     }
@@ -294,11 +294,11 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
     return program;
 }
 
-bool AShaderModuleGLImpl::CreateShaderBinaryData(ADeviceGLImpl*     _Device,
+bool ShaderModuleGLImpl::CreateShaderBinaryData(DeviceGLImpl*     _Device,
                                                  SHADER_TYPE        _ShaderType,
                                                  unsigned int       _NumSources,
                                                  const char* const* _Sources,
-                                                 SShaderBinaryData* _BinaryData)
+                                                 ShaderBinaryData* _BinaryData)
 {
     GLuint   id;
     GLsizei  binaryLength;
@@ -328,7 +328,7 @@ bool AShaderModuleGLImpl::CreateShaderBinaryData(ADeviceGLImpl*     _Device,
     }
     else
     {
-        LOG("AShaderModuleGLImpl::CreateShaderBinaryData: failed to retrieve shader program binary data\n");
+        LOG("ShaderModuleGLImpl::CreateShaderBinaryData: failed to retrieve shader program binary data\n");
         glDeleteProgram(id);
         return false;
     }
@@ -337,7 +337,7 @@ bool AShaderModuleGLImpl::CreateShaderBinaryData(ADeviceGLImpl*     _Device,
     return true;
 }
 
-void AShaderModuleGLImpl::DestroyShaderBinaryData(ADeviceGLImpl* _Device, SShaderBinaryData* _BinaryData)
+void ShaderModuleGLImpl::DestroyShaderBinaryData(DeviceGLImpl* _Device, ShaderBinaryData* _BinaryData)
 {
     if (!_BinaryData->BinaryCode)
     {

@@ -51,7 +51,7 @@ public:
     AActor* GetPawn() const { return m_Pawn; }
 
 protected:
-    void Initialize(SActorInitializer& Initializer) override;
+    void Initialize(ActorInitializer& Initializer) override;
 
 protected:
     virtual void OnPawnChanged() {}

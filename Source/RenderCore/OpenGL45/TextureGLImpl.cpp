@@ -43,7 +43,7 @@ static size_t CalcTextureRequiredMemory()
     return 0;
 }
 
-static void SetSwizzleParams(GLuint _Id, STextureSwizzle const& _Swizzle)
+static void SetSwizzleParams(GLuint _Id, TextureSwizzle const& _Swizzle)
 {
     if (_Swizzle.R != TEXTURE_SWIZZLE_IDENTITY)
     {
@@ -63,7 +63,7 @@ static void SetSwizzleParams(GLuint _Id, STextureSwizzle const& _Swizzle)
     }
 }
 
-ATextureGLImpl::ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& TextureDesc, bool bDummyTexture) :
+TextureGLImpl::TextureGLImpl(DeviceGLImpl* pDevice, TextureDesc const& TextureDesc, bool bDummyTexture) :
     ITexture(pDevice, TextureDesc), bDummyTexture(bDummyTexture)
 {
     GLuint id = 0;
@@ -156,9 +156,9 @@ ATextureGLImpl::ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& Textu
     CreateDefaultViews();
 }
 
-void ATextureGLImpl::CreateDefaultViews()
+void TextureGLImpl::CreateDefaultViews()
 {
-    STextureViewDesc viewDesc;
+    TextureViewDesc viewDesc;
     viewDesc.Type          = GetDesc().Type;
     viewDesc.Format        = GetDesc().Format;
     viewDesc.FirstMipLevel = 0;
@@ -199,14 +199,14 @@ void ATextureGLImpl::CreateDefaultViews()
     }
 }
 
-ITextureView* ATextureGLImpl::GetTextureView(STextureViewDesc const& TextureViewDesc)
+ITextureView* TextureGLImpl::GetTextureView(TextureViewDesc const& TextureViewDesc)
 {   
     auto it = Views.Find(TextureViewDesc);
     if (it == Views.End())
     {
-        TRef<ATextureViewGLImpl> textureView;
+        TRef<TextureViewGLImpl> textureView;
 
-        textureView = MakeRef<ATextureViewGLImpl>(TextureViewDesc, this);
+        textureView = MakeRef<TextureViewGLImpl>(TextureViewDesc, this);
         Views[TextureViewDesc] = textureView;
 
         return textureView;
@@ -215,7 +215,7 @@ ITextureView* ATextureGLImpl::GetTextureView(STextureViewDesc const& TextureView
     return it->second;
 }
 
-ATextureGLImpl::~ATextureGLImpl()
+TextureGLImpl::~TextureGLImpl()
 {
     // It is important to destroy views before a texture
 #ifdef HK_ALLOW_ASSERTS
@@ -238,14 +238,14 @@ ATextureGLImpl::~ATextureGLImpl()
         glDeleteTextures(1, &id);
     }
     
-    static_cast<ADeviceGLImpl*>(GetDevice())->TextureMemoryAllocated -= CalcTextureRequiredMemory();
+    static_cast<DeviceGLImpl*>(GetDevice())->TextureMemoryAllocated -= CalcTextureRequiredMemory();
 }
 
-void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
+void TextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
 {
     if (!BindlessHandle)
     {
-        LOG("ATextureGLImpl::MakeBindlessSamplerResident: invalid handle\n");
+        LOG("TextureGLImpl::MakeBindlessSamplerResident: invalid handle\n");
         return;
     }
 
@@ -257,11 +257,11 @@ void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, 
         glMakeTextureHandleNonResidentARB(BindlessHandle);
 }
 
-bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
+bool TextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
 {
     if (!BindlessHandle)
     {
-        LOG("ATextureGLImpl::IsBindlessSamplerResident: invalid handle\n");
+        LOG("TextureGLImpl::IsBindlessSamplerResident: invalid handle\n");
         return false;
     }
 
@@ -270,20 +270,20 @@ bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
     return !!glIsTextureHandleResidentARB(BindlessHandle);
 }
 
-BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDesc)
+BindlessHandle TextureGLImpl::GetBindlessSampler(SamplerDesc const& SamplerDesc)
 {
     if (!GetDevice()->IsFeatureSupported(FEATURE_BINDLESS_TEXTURE))
     {
-        LOG("ATextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
+        LOG("TextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
         return 0;
     }
 
     HK_ASSERT(GetHandleNativeGL());
 
-    uint64_t bindlessHandle = glGetTextureSamplerHandleARB(GetHandleNativeGL(), static_cast<ADeviceGLImpl*>(GetDevice())->CachedSampler(SamplerDesc));
+    uint64_t bindlessHandle = glGetTextureSamplerHandleARB(GetHandleNativeGL(), static_cast<DeviceGLImpl*>(GetDevice())->CachedSampler(SamplerDesc));
     if (!bindlessHandle)
     {
-        LOG("ATextureGLImpl::GetBindlessSampler: couldn't get texture sampler handle\n");
+        LOG("TextureGLImpl::GetBindlessSampler: couldn't get texture sampler handle\n");
         return 0;
     }
 
@@ -292,9 +292,9 @@ BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDes
     return bindlessHandle;
 }
 
-void ATextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const
+void TextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, TextureMipLevelInfo* pInfo) const
 {
-    *pInfo = STextureMipLevelInfo{};
+    *pInfo = TextureMipLevelInfo{};
 
     switch (Desc.Type)
     {
@@ -354,21 +354,21 @@ void ATextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pI
     //The internal storage resolution of an individual component. The resolution chosen by the GL will be a close match for the resolution requested by the user with the component argument of glTexImage1D, glTexImage2D, glTexImage3D, glCopyTexImage1D, and glCopyTexImage2D. The initial value is 0.
 }
 
-void ATextureGLImpl::Invalidate(uint16_t MipLevel)
+void TextureGLImpl::Invalidate(uint16_t MipLevel)
 {
     if (IsDummyTexture())
         return;
     glInvalidateTexImage(GetHandleNativeGL(), MipLevel);
 }
 
-void ATextureGLImpl::InvalidateRect(uint32_t _NumRectangles, STextureRect const* _Rectangles)
+void TextureGLImpl::InvalidateRect(uint32_t _NumRectangles, TextureRect const* _Rectangles)
 {
     if (IsDummyTexture())
         return;
 
     GLuint id = GetHandleNativeGL();
 
-    for (STextureRect const* rect = _Rectangles; rect < &_Rectangles[_NumRectangles]; rect++)
+    for (TextureRect const* rect = _Rectangles; rect < &_Rectangles[_NumRectangles]; rect++)
     {
         glInvalidateTexSubImage(id,
                                 rect->Offset.MipLevel,
@@ -381,14 +381,14 @@ void ATextureGLImpl::InvalidateRect(uint32_t _NumRectangles, STextureRect const*
     }
 }
 
-void ATextureGLImpl::Read(uint16_t     MipLevel,
+void TextureGLImpl::Read(uint16_t     MipLevel,
                           size_t       SizeInBytes,
                           unsigned int Alignment,
                           void*        pSysMem)
 {
     HK_ASSERT(MipLevel < GetDesc().NumMipLevels);
 
-    STextureRect rect;
+    TextureRect rect;
     rect.Offset.MipLevel = MipLevel;
     rect.Dimension.X     = Math::Max(1u, GetWidth() >> MipLevel);
     rect.Dimension.Y     = Math::Max(1u, GetHeight() >> MipLevel);
@@ -397,7 +397,7 @@ void ATextureGLImpl::Read(uint16_t     MipLevel,
     ReadRect(rect, SizeInBytes, Alignment, pSysMem);
 }
 
-void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
+void TextureGLImpl::ReadRect(TextureRect const& Rectangle,
                               size_t              SizeInBytes,
                               unsigned int        Alignment,
                               void*               pSysMem)
@@ -406,24 +406,24 @@ void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
     {
         HK_ASSERT(pContext);
         
-        SScopedContextGL scopedContext(pContext);
+        ScopedContextGL scopedContext(pContext);
         pContext->ReadTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
     }
     else
     {
-        AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
+        ImmediateContextGLImpl* current = ImmediateContextGLImpl::GetCurrent();
         current->ReadTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
     }
 }
 
-bool ATextureGLImpl::Write(uint16_t     MipLevel,
+bool TextureGLImpl::Write(uint16_t     MipLevel,
                            size_t       SizeInBytes,
                            unsigned int Alignment, // Specifies alignment of source data
                            const void*  pSysMem)
 {
     HK_ASSERT(MipLevel < GetDesc().NumMipLevels);
 
-    STextureRect rect;
+    TextureRect rect;
     rect.Offset.MipLevel = MipLevel;
     rect.Dimension.X     = Math::Max(1u, GetWidth() >> MipLevel);
     rect.Dimension.Y     = Math::Max(1u, GetHeight() >> MipLevel);
@@ -435,14 +435,14 @@ bool ATextureGLImpl::Write(uint16_t     MipLevel,
                      pSysMem);
 }
 
-bool ATextureGLImpl::WriteRect(STextureRect const& Rectangle,
+bool TextureGLImpl::WriteRect(TextureRect const& Rectangle,
                                size_t              SizeInBytes,
                                unsigned int        Alignment, // Specifies alignment of source data
                                const void*         pSysMem,
                                size_t              RowPitch,
                                size_t              DepthPitch)
 {
-    AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
+    ImmediateContextGLImpl* current = ImmediateContextGLImpl::GetCurrent();
     return current->WriteTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem, RowPitch, DepthPitch);
 }
 

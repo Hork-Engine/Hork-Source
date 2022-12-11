@@ -60,7 +60,7 @@ enum TEXTURE_VIEW : uint8_t
     TEXTURE_VIEW_UNORDERED_ACCESS
 };
 
-struct STextureViewDesc
+struct TextureViewDesc
 {
     TEXTURE_VIEW   ViewType = TEXTURE_VIEW_UNDEFINED;
     TEXTURE_TYPE   Type     = TEXTURE_2D;
@@ -74,7 +74,7 @@ struct STextureViewDesc
     uint16_t FirstSlice = 0;
     uint16_t NumSlices  = 0;
 
-    bool operator==(STextureViewDesc const& Rhs) const
+    bool operator==(TextureViewDesc const& Rhs) const
     {
         // clang-format off
         return ViewType      == Rhs.ViewType &&
@@ -87,7 +87,7 @@ struct STextureViewDesc
         // clang-format on
     }
 
-    bool operator!=(STextureViewDesc const& Rhs) const
+    bool operator!=(TextureViewDesc const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -104,9 +104,9 @@ class ITextureView : public IDeviceObject
 public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_TEXTURE_VIEW;
 
-    ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pTexture);
+    ITextureView(TextureViewDesc const& TextureViewDesc, ITexture* pTexture);
 
-    STextureViewDesc const& GetDesc() const { return Desc; }
+    TextureViewDesc const& GetDesc() const { return Desc; }
 
     ITexture* GetTexture() { return pTexture; }
 
@@ -115,8 +115,8 @@ public:
     uint32_t GetHeight() const;
 
 private:
-    STextureViewDesc Desc;
-    ITexture*        pTexture;
+    TextureViewDesc Desc;
+    ITexture*       pTexture;
 };
 
 } // namespace RenderCore

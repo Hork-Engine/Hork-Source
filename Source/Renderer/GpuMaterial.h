@@ -32,13 +32,13 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
-class AMaterialGPU : public ARefCounted
+class MaterialGPU : public RefCounted
 {
 public:
-    AMaterialGPU(ACompiledMaterial const* pCompiledMaterial);
+    MaterialGPU(CompiledMaterial const* pCompiledMaterial);
 
-    AMaterialGPU(AMaterialGPU&& Rhs) = default;
-    AMaterialGPU& operator=(AMaterialGPU&& Rhs) = default;
+    MaterialGPU(MaterialGPU&& Rhs) = default;
+    MaterialGPU& operator=(MaterialGPU&& Rhs) = default;
 
     // Internal. Do not modify:
 

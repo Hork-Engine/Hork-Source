@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class ADebugDrawRenderer {
+class DebugDrawRenderer {
 public:
-    ADebugDrawRenderer();
+    DebugDrawRenderer();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* DepthTexture);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* DepthTexture);
 
 private:
     TRef< RenderCore::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];

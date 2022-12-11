@@ -60,31 +60,31 @@ struct RawImageFormatInfo
 
 RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format);
 
-class ARawImage
+class RawImage
 {
 public:
-    ARawImage() = default;
+    RawImage() = default;
 
-    ARawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void* pData = nullptr)
+    RawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void* pData = nullptr)
     {
         Reset(Width, Height, Format, pData);
     }
 
-    ARawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
+    RawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
     {
         Reset(Width, Height, Format);
         Clear(Color);
     }
 
-    virtual ~ARawImage()
+    virtual ~RawImage()
     {
         Reset();
     }
 
-    ARawImage(ARawImage const& Rhs) = delete;
-    ARawImage& operator=(ARawImage const& Rhs) = delete;
+    RawImage(RawImage const& Rhs) = delete;
+    RawImage& operator=(RawImage const& Rhs) = delete;
 
-    ARawImage(ARawImage&& Rhs) noexcept :
+    RawImage(RawImage&& Rhs) noexcept :
         m_pData(Rhs.m_pData),
         m_Width(Rhs.m_Width),
         m_Height(Rhs.m_Height),
@@ -96,7 +96,7 @@ public:
         Rhs.m_Format = RAW_IMAGE_FORMAT_UNDEFINED;
     }
 
-    ARawImage& operator=(ARawImage&& Rhs) noexcept
+    RawImage& operator=(RawImage&& Rhs) noexcept
     {
         Reset();
 
@@ -113,7 +113,7 @@ public:
         return *this;
     }
 
-    ARawImage Clone() const;
+    RawImage Clone() const;
 
     void Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void const* pData = nullptr);
 
@@ -170,11 +170,11 @@ public:
 
     size_t GetBytesPerPixel() const;
 
-    void Swap(ARawImage& Rhs)
+    void Swap(RawImage& Rhs)
     {
-        ARawImage temp = std::move(Rhs);
-        Rhs            = std::move(*this);
-        *this          = std::move(temp);
+        RawImage temp = std::move(Rhs);
+        Rhs           = std::move(*this);
+        *this         = std::move(temp);
     }
 
     /** Flip image horizontally. */
@@ -209,16 +209,16 @@ private:
 };
 
 /** Create image from stream. */
-ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
+RawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 
 /** Create image from file. */
-ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
+RawImage CreateRawImage(StringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 
 /** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
-ARawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::Zero());
+RawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::Zero());
 
 /** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
-ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::Zero());
+RawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::Zero());
 
 enum IMAGE_FILE_FORMAT
 {
@@ -239,12 +239,12 @@ enum IMAGE_FILE_FORMAT
 IMAGE_FILE_FORMAT GetImageFileFormat(IBinaryStreamReadInterface& Stream);
 
 /** Selects an image file format from the file name. */
-IMAGE_FILE_FORMAT GetImageFileFormat(AStringView FileName);
+IMAGE_FILE_FORMAT GetImageFileFormat(StringView FileName);
 
-ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
+RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
 
-ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream);
-ARawImage LoadNormalMapAsRawVectors(AStringView FileName);
+RawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream);
+RawImage LoadNormalMapAsRawVectors(StringView FileName);
 
 /** Flip image horizontally */
 void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPixel, size_t RowStride);
@@ -351,7 +351,7 @@ parameter is the amount of effort put into the compression: 0 is the fastest but
 */
 bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData, float Quality = 1.0f, bool bLossless = true);
 
-bool WriteImage(AStringView FileName, ImageWriteConfig const& Config);
-bool WriteImageHDRI(AStringView FileName, ImageWriteConfig const& Config);
+bool WriteImage(StringView FileName, ImageWriteConfig const& Config);
+bool WriteImageHDRI(StringView FileName, ImageWriteConfig const& Config);
 
-bool WriteImage(AStringView FileName, ARawImage const& Image);
+bool WriteImage(StringView FileName, RawImage const& Image);

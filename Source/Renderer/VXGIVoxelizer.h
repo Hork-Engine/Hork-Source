@@ -54,13 +54,13 @@ private:
     };
 
     void CreatePipeline();
-    //struct SConstantData
+    //struct ConstantData
     //{
     //    Float4x4 Transform[6];
     //    Float4 LightDir;
     //};
     //TRef< RenderCore::IBuffer > ConstantBuffer;
-    //SConstantData ConstantBufferData;
+    //ConstantData ConstantBufferData;
     TRef< RenderCore::IPipeline > Pipeline;
 
 //    TRef< RenderCore::IFramebuffer > voxelFBO;

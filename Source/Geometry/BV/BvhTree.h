@@ -71,7 +71,7 @@ BvhTree
 Binary AABB-based BVH tree
 
 */
-class BvhTree : public ANoncopyable
+class BvhTree : public Noncopyable
 {
 public:
     BvhTree();
@@ -86,7 +86,7 @@ public:
     {}
 
     #if 0
-    BvhTree(TArrayView<SPrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf);
+    BvhTree(TArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf);
     #endif
 
     int MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEnd, unsigned int* MarkLeafs, int MaxLeafs) const;

@@ -39,79 +39,79 @@ SOFTWARE.
 
 #include <SDL.h>
 
-AConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
+ConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
 
-AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
-    FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
-    RenderDevice(RenderDevice)
+FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
+    m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
+    m_RenderDevice(RenderDevice)
 {
-    GPUSync           = MakeRef<AGPUSync>(RenderDevice->GetImmediateContext());
-    StreamedMemoryGPU = MakeRef<AStreamedMemoryGPU>(RenderDevice);
+    m_GPUSync = MakeRef<GPUSync>(m_RenderDevice->GetImmediateContext());
+    m_StreamedMemoryGPU = MakeRef<StreamedMemoryGPU>(m_RenderDevice);
 
-    FrameTimeStamp = Platform::SysStartMicroseconds();
-    FrameDuration  = 1000000.0 / 60;
-    FrameNumber    = 0;
+    m_FrameTimeStamp = Platform::SysStartMicroseconds();
+    m_FrameDuration = 1000000.0 / 60;
+    m_FrameNumber = 0;
 
-    Platform::ZeroMem(PressedKeys.ToPtr(), sizeof(PressedKeys));
-    Platform::ZeroMem(PressedMouseButtons.ToPtr(), sizeof(PressedMouseButtons));
-    Platform::ZeroMem(JoystickButtonState.ToPtr(), sizeof(JoystickButtonState));
-    Platform::ZeroMem(JoystickAxisState.ToPtr(), sizeof(JoystickAxisState));
-    Platform::ZeroMem(JoystickAdded.ToPtr(), sizeof(JoystickAdded));
+    Platform::ZeroMem(m_PressedKeys.ToPtr(), sizeof(m_PressedKeys));
+    Platform::ZeroMem(m_PressedMouseButtons.ToPtr(), sizeof(m_PressedMouseButtons));
+    Platform::ZeroMem(m_JoystickButtonState.ToPtr(), sizeof(m_JoystickButtonState));
+    Platform::ZeroMem(m_JoystickAxisState.ToPtr(), sizeof(m_JoystickAxisState));
+    Platform::ZeroMem(m_JoystickAdded.ToPtr(), sizeof(m_JoystickAdded));
 
-    m_FontStash = GetSharedInstance<AFontStash>();
+    m_FontStash = GetSharedInstance<FontStash>();
 }
 
-AFrameLoop::~AFrameLoop()
+FrameLoop::~FrameLoop()
 {}
 
-void* AFrameLoop::AllocFrameMem(size_t _SizeInBytes)
+void* FrameLoop::AllocFrameMem(size_t _SizeInBytes)
 {
-    return FrameMemory.Allocate(_SizeInBytes);
+    return m_FrameMemory.Allocate(_SizeInBytes);
 }
 
-size_t AFrameLoop::GetFrameMemorySize() const
+size_t FrameLoop::GetFrameMemorySize() const
 {
-    return FrameMemory.GetBlockMemoryUsage();
+    return m_FrameMemory.GetBlockMemoryUsage();
 }
 
-size_t AFrameLoop::GetFrameMemoryUsed() const
+size_t FrameLoop::GetFrameMemoryUsed() const
 {
-    return FrameMemory.GetTotalMemoryUsage();
+    return m_FrameMemory.GetTotalMemoryUsage();
 }
 
-size_t AFrameLoop::GetFrameMemoryUsedPrev() const
+size_t FrameLoop::GetFrameMemoryUsedPrev() const
 {
-    return FrameMemoryUsedPrev;
+    return m_FrameMemoryUsedPrev;
 }
 
-size_t AFrameLoop::GetMaxFrameMemoryUsage() const
+size_t FrameLoop::GetMaxFrameMemoryUsage() const
 {
-    return MaxFrameMemoryUsage;
+    return m_MaxFrameMemoryUsage;
 }
 
-int64_t AFrameLoop::SysFrameTimeStamp()
+int64_t FrameLoop::SysFrameTimeStamp()
 {
-    return FrameTimeStamp;
+    return m_FrameTimeStamp;
 }
 
-int64_t AFrameLoop::SysFrameDuration()
+int64_t FrameLoop::SysFrameDuration()
 {
-    return FrameDuration;
+    return m_FrameDuration;
 }
 
-int AFrameLoop::SysFrameNumber() const
+int FrameLoop::SysFrameNumber() const
 {
-    return FrameNumber;
+    return m_FrameNumber;
 }
 
-void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
+void FrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
 {
     MemoryHeap::MemoryNewFrame();
 
-    GPUSync->SetEvent();
+    m_GPUSync->SetEvent();
 
     // Swap buffers for streamed memory
-    StreamedMemoryGPU->Swap();
+    m_StreamedMemoryGPU->Swap();
 
     // Swap window
     for (auto* swapChain : SwapChains)
@@ -120,51 +120,51 @@ void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains,
     }
 
     // Wait for free streamed buffer
-    StreamedMemoryGPU->Wait();
+    m_StreamedMemoryGPU->Wait();
 
-    int64_t prevTimeStamp = FrameTimeStamp;
-    FrameTimeStamp        = Platform::SysMicroseconds();
+    int64_t prevTimeStamp = m_FrameTimeStamp;
+    m_FrameTimeStamp = Platform::SysMicroseconds();
     if (prevTimeStamp == Platform::SysStartMicroseconds())
     {
         // First frame
-        FrameDuration = 1000000.0 / 60;
+        m_FrameDuration = 1000000.0 / 60;
     }
     else
     {
-        FrameDuration = FrameTimeStamp - prevTimeStamp;
+        m_FrameDuration = m_FrameTimeStamp - prevTimeStamp;
     }
 
-    FrameNumber++;
+    m_FrameNumber++;
 
     // Keep memory statistics
-    MaxFrameMemoryUsage = Math::Max(MaxFrameMemoryUsage, FrameMemory.GetTotalMemoryUsage());
-    FrameMemoryUsedPrev = FrameMemory.GetTotalMemoryUsage();
+    m_MaxFrameMemoryUsage = Math::Max(m_MaxFrameMemoryUsage, m_FrameMemory.GetTotalMemoryUsage());
+    m_FrameMemoryUsedPrev = m_FrameMemory.GetTotalMemoryUsage();
 
     // Free frame memory for new frame
-    FrameMemory.ResetAndMerge();
+    m_FrameMemory.ResetAndMerge();
 
     ClearViews();
 
     m_FontStash->Cleanup();
 }
 
-void AFrameLoop::ClearViews()
+void FrameLoop::ClearViews()
 {
     m_Views.Clear();
 }
 
-void AFrameLoop::RegisterView(WorldRenderView* pView)
+void FrameLoop::RegisterView(WorldRenderView* pView)
 {
     m_Views.Add(pView);
 }
 
 #define FROM_SDL_TIMESTAMP(event) ((event).timestamp * 0.001)
 
-struct SKeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
+struct KeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
 {
-    SKeyMappingsSDL()
+    KeyMappingsSDL()
     {
-        SKeyMappingsSDL& self = *this;
+        KeyMappingsSDL& self = *this;
 
         Platform::ZeroMem(ToPtr(), sizeof(*this));
 
@@ -288,7 +288,7 @@ struct SKeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
     }
 };
 
-static const SKeyMappingsSDL SDLKeyMappings;
+static const KeyMappingsSDL SDLKeyMappings;
 
 static HK_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
 {
@@ -354,42 +354,42 @@ static HK_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
     return modMask;
 }
 
-void AFrameLoop::UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum, double _TimeStamp)
+void FrameLoop::UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum, double _TimeStamp)
 {
-    SJoystickButtonEvent buttonEvent;
+    JoystickButtonEvent buttonEvent;
     buttonEvent.Joystick = _JoystickNum;
     buttonEvent.Action   = IA_RELEASE;
     for (int i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
     {
-        if (JoystickButtonState[_JoystickNum][i])
+        if (m_JoystickButtonState[_JoystickNum][i])
         {
-            JoystickButtonState[_JoystickNum][i] = SDL_RELEASED;
+            m_JoystickButtonState[_JoystickNum][i] = SDL_RELEASED;
             buttonEvent.Button                   = JOY_BUTTON_1 + i;
             Listener->OnJoystickButtonEvent(buttonEvent, _TimeStamp);
         }
     }
 }
 
-void AFrameLoop::ClearJoystickAxes(IEventListener* Listener, int _JoystickNum, double _TimeStamp)
+void FrameLoop::ClearJoystickAxes(IEventListener* Listener, int _JoystickNum, double _TimeStamp)
 {
-    SJoystickAxisEvent axisEvent;
+    JoystickAxisEvent axisEvent;
     axisEvent.Joystick = _JoystickNum;
     axisEvent.Value    = 0;
     for (int i = 0; i < MAX_JOYSTICK_AXES; i++)
     {
-        if (JoystickAxisState[_JoystickNum][i] != 0)
+        if (m_JoystickAxisState[_JoystickNum][i] != 0)
         {
-            JoystickAxisState[_JoystickNum][i] = 0;
+            m_JoystickAxisState[_JoystickNum][i] = 0;
             axisEvent.Axis                     = JOY_AXIS_1 + i;
             Listener->OnJoystickAxisEvent(axisEvent, _TimeStamp);
         }
     }
 }
 
-void AFrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
+void FrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
 {
-    SKeyEvent         keyEvent;
-    SMouseButtonEvent mouseEvent;
+    KeyEvent         keyEvent;
+    MouseButtonEvent mouseEvent;
 
     keyEvent.Action  = IA_RELEASE;
     keyEvent.ModMask = 0;
@@ -401,23 +401,23 @@ void AFrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
 
     for (int i = 0; i <= KEY_LAST; i++)
     {
-        if (PressedKeys[i])
+        if (m_PressedKeys[i])
         {
             keyEvent.Key      = i;
-            keyEvent.Scancode = PressedKeys[i] - 1;
+            keyEvent.Scancode = m_PressedKeys[i] - 1;
 
-            PressedKeys[i] = 0;
+            m_PressedKeys[i] = 0;
 
             Listener->OnKeyEvent(keyEvent, timeStamp);
         }
     }
     for (int i = MOUSE_BUTTON_1; i <= MOUSE_BUTTON_8; i++)
     {
-        if (PressedMouseButtons[i])
+        if (m_PressedMouseButtons[i])
         {
             mouseEvent.Button = i;
 
-            PressedMouseButtons[i] = 0;
+            m_PressedMouseButtons[i] = 0;
 
             Listener->OnMouseButtonEvent(mouseEvent, timeStamp);
         }
@@ -430,7 +430,7 @@ void AFrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
     }
 }
 
-void AFrameLoop::PollEvents(IEventListener* Listener)
+void FrameLoop::PollEvents(IEventListener* Listener)
 {
     // NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
     static bool bIgnoreFalseMouseMotionHack = false;
@@ -438,7 +438,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
     // Sync with GPU to prevent "input lag"
     if (rt_SyncGPU)
     {
-        GPUSync->Wait();
+        m_GPUSync->Wait();
     }
 
     SDL_Event event;
@@ -609,20 +609,20 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             // Key pressed/released
             case SDL_KEYDOWN:
             case SDL_KEYUP: {
-                SKeyEvent keyEvent;
+                KeyEvent keyEvent;
                 keyEvent.Key      = SDLKeyMappings[event.key.keysym.scancode];
                 keyEvent.Scancode = event.key.keysym.scancode;
-                keyEvent.Action   = (event.type == SDL_KEYDOWN) ? (PressedKeys[keyEvent.Key] ? IA_REPEAT : IA_PRESS) : IA_RELEASE;
+                keyEvent.Action = (event.type == SDL_KEYDOWN) ? (m_PressedKeys[keyEvent.Key] ? IA_REPEAT : IA_PRESS) : IA_RELEASE;
                 keyEvent.ModMask  = FromKeymodSDL(event.key.keysym.mod);
                 if (keyEvent.Key)
                 {
-                    if ((keyEvent.Action == IA_RELEASE && !PressedKeys[keyEvent.Key]) || (keyEvent.Action == IA_PRESS && PressedKeys[keyEvent.Key]))
+                    if ((keyEvent.Action == IA_RELEASE && !m_PressedKeys[keyEvent.Key]) || (keyEvent.Action == IA_PRESS && m_PressedKeys[keyEvent.Key]))
                     {
                         // State does not changed
                     }
                     else
                     {
-                        PressedKeys[keyEvent.Key] = (keyEvent.Action == IA_RELEASE) ? 0 : keyEvent.Scancode + 1;
+                        m_PressedKeys[keyEvent.Key] = (keyEvent.Action == IA_RELEASE) ? 0 : keyEvent.Scancode + 1;
 
                         Listener->OnKeyEvent(keyEvent, FROM_SDL_TIMESTAMP(event.key));
                     }
@@ -636,7 +636,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
 
             // Keyboard text input
             case SDL_TEXTINPUT: {
-                SCharEvent charEvent;
+                CharEvent charEvent;
                 charEvent.ModMask = FromKeymodSDL_Char(SDL_GetModState());
 
                 const char* unicode = event.text.text;
@@ -662,7 +662,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_MOUSEMOTION: {
                 if (!bIgnoreFalseMouseMotionHack)
                 {
-                    SMouseMoveEvent moveEvent;
+                    MouseMoveEvent moveEvent;
                     moveEvent.X = event.motion.xrel;
                     moveEvent.Y = -event.motion.yrel;
                     Listener->OnMouseMoveEvent(moveEvent, FROM_SDL_TIMESTAMP(event.motion));
@@ -674,7 +674,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             // Mouse button pressed
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                SMouseButtonEvent mouseEvent;
+                MouseButtonEvent mouseEvent;
                 switch (event.button.button)
                 {
                     case 2:
@@ -692,14 +692,14 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
 
                 if (mouseEvent.Button >= MOUSE_BUTTON_1 && mouseEvent.Button <= MOUSE_BUTTON_8)
                 {
-                    if (mouseEvent.Action == (int)PressedMouseButtons[mouseEvent.Button])
+                    if (mouseEvent.Action == (int)m_PressedMouseButtons[mouseEvent.Button])
                     {
 
                         // State does not changed
                     }
                     else
                     {
-                        PressedMouseButtons[mouseEvent.Button] = mouseEvent.Action != IA_RELEASE;
+                        m_PressedMouseButtons[mouseEvent.Button] = mouseEvent.Action != IA_RELEASE;
 
                         Listener->OnMouseButtonEvent(mouseEvent, FROM_SDL_TIMESTAMP(event.button));
                     }
@@ -709,12 +709,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
 
             // Mouse wheel motion
             case SDL_MOUSEWHEEL: {
-                SMouseWheelEvent wheelEvent;
+                MouseWheelEvent wheelEvent;
                 wheelEvent.WheelX = event.wheel.x;
                 wheelEvent.WheelY = event.wheel.y;
                 Listener->OnMouseWheelEvent(wheelEvent, FROM_SDL_TIMESTAMP(event.wheel));
 
-                SMouseButtonEvent mouseEvent;
+                MouseButtonEvent mouseEvent;
                 mouseEvent.ModMask = FromKeymodSDL(SDL_GetModState());
 
                 if (wheelEvent.WheelX < 0.0)
@@ -764,12 +764,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYAXISMOTION: {
                 if (event.jaxis.which >= 0 && event.jaxis.which < MAX_JOYSTICKS_COUNT)
                 {
-                    HK_ASSERT(JoystickAdded[event.jaxis.which]);
+                    HK_ASSERT(m_JoystickAdded[event.jaxis.which]);
                     if (event.jaxis.axis >= 0 && event.jaxis.axis < MAX_JOYSTICK_AXES)
                     {
-                        if (JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
+                        if (m_JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
                         {
-                            SJoystickAxisEvent axisEvent;
+                            JoystickAxisEvent axisEvent;
                             axisEvent.Joystick = event.jaxis.which;
                             axisEvent.Axis     = JOY_AXIS_1 + event.jaxis.axis;
                             axisEvent.Value    = ((float)event.jaxis.value + 32768.0f) / 0xffff * 2.0f - 1.0f; // scale to -1.0f ... 1.0f
@@ -805,13 +805,13 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYBUTTONUP: {
                 if (event.jbutton.which >= 0 && event.jbutton.which < MAX_JOYSTICKS_COUNT)
                 {
-                    HK_ASSERT(JoystickAdded[event.jbutton.which]);
+                    HK_ASSERT(m_JoystickAdded[event.jbutton.which]);
                     if (event.jbutton.button >= 0 && event.jbutton.button < MAX_JOYSTICK_BUTTONS)
                     {
-                        if (JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
+                        if (m_JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
                         {
-                            JoystickButtonState[event.jbutton.which][event.jbutton.button] = event.jbutton.state;
-                            SJoystickButtonEvent buttonEvent;
+                            m_JoystickButtonState[event.jbutton.which][event.jbutton.button] = event.jbutton.state;
+                            JoystickButtonEvent buttonEvent;
                             buttonEvent.Joystick = event.jbutton.which;
                             buttonEvent.Button   = JOY_BUTTON_1 + event.jbutton.button;
                             buttonEvent.Action   = event.jbutton.state == SDL_PRESSED ? IA_PRESS : IA_RELEASE;
@@ -834,11 +834,11 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYDEVICEADDED:
                 if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
                 {
-                    HK_ASSERT(!JoystickAdded[event.jdevice.which]);
-                    JoystickAdded[event.jdevice.which] = true;
+                    HK_ASSERT(!m_JoystickAdded[event.jdevice.which]);
+                    m_JoystickAdded[event.jdevice.which] = true;
 
-                    Platform::ZeroMem(JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(JoystickButtonState[0]));
-                    Platform::ZeroMem(JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(JoystickAxisState[0]));
+                    Platform::ZeroMem(m_JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(m_JoystickButtonState[0]));
+                    Platform::ZeroMem(m_JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(m_JoystickAxisState[0]));
                 }
                 else
                 {
@@ -856,8 +856,8 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                     UnpressJoystickButtons(Listener, event.jdevice.which, timeStamp);
                     ClearJoystickAxes(Listener, event.jdevice.which, timeStamp);
 
-                    HK_ASSERT(JoystickAdded[event.jdevice.which]);
-                    JoystickAdded[event.jdevice.which] = false;
+                    HK_ASSERT(m_JoystickAdded[event.jdevice.which]);
+                    m_JoystickAdded[event.jdevice.which] = false;
                 }
                 else
                 {

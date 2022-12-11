@@ -35,11 +35,11 @@ SOFTWARE.
 #include "AudioSystem.h"
 #include "WorldRenderView.h"
 
-class AInputMappings;
+class InputMappings;
 
-class AAudioParameters : public ABaseObject
+class AudioParameters : public BaseObject
 {
-    HK_CLASS(AAudioParameters, ABaseObject)
+    HK_CLASS(AudioParameters, BaseObject)
 
 public:
     //Float3 Velocity;
@@ -47,12 +47,12 @@ public:
     //float DopplerFactor = 1;
     //float DopplerVelocity = 1;
     //float SpeedOfSound = 343.3f;
-    //EAudioDistanceModel DistanceModel = AUDIO_DIST_LINEAR_CLAMPED;//AUDIO_DIST_INVERSE_CLAMPED;
+    //AUDIO_DISTANCE_MODEL DistanceModel = AUDIO_DIST_LINEAR_CLAMPED;//AUDIO_DIST_INVERSE_CLAMPED;
     float Volume = 1.0f;
 
     uint32_t ListenerMask = ~0u;
 
-    AAudioParameters() = default;
+    AudioParameters() = default;
 };
 
 /**
@@ -71,7 +71,7 @@ public:
     void SetViewport(int w, int h);
 
     /** Override listener location. If listener is not specified, pawn camera will be used. */
-    void SetAudioListener(ASceneComponent* _AudioListener);
+    void SetAudioListener(SceneComponent* _AudioListener);
 
     /** Set HUD actor */
     void SetHUD(AHUD* _HUD);
@@ -80,10 +80,10 @@ public:
     void SetRenderView(WorldRenderView* renderView);
 
     /** Set audio rendering parameters */
-    void SetAudioParameters(AAudioParameters* _AudioParameters);
+    void SetAudioParameters(AudioParameters* _AudioParameters);
 
     /** Set input mappings for input component */
-    void SetInputMappings(AInputMappings* _InputMappings);
+    void SetInputMappings(InputMappings* _InputMappings);
 
     /** Set controller player index */
     void SetPlayerIndex(int _ControllerId);
@@ -97,7 +97,7 @@ public:
     int GetViewportHeight() const { return m_ViewportHeight; }
 
     /** Get current audio listener */
-    ASceneComponent* GetAudioListener();
+    SceneComponent* GetAudioListener();
 
     /** Get HUD actor */
     AHUD* GetHUD() const { return m_HUD; }
@@ -106,13 +106,13 @@ public:
     WorldRenderView* GetRenderView() { return m_RenderView; }
 
     /** Get audio rendering parameters */
-    AAudioParameters* GetAudioParameters() { return m_AudioParameters; }
+    AudioParameters* GetAudioParameters() { return m_AudioParameters; }
 
     /** Get input mappings of input component */
-    AInputMappings* GetInputMappings();
+    InputMappings* GetInputMappings();
 
     /** Return input component */
-    AInputComponent* GetInputComponent() const { return m_InputComponent; }
+    InputComponent* GetInputComponent() const { return m_InputComponent; }
 
     /** Get controller player index */
     int GetPlayerIndex() const;
@@ -123,12 +123,12 @@ public:
     virtual void UpdatePawnCamera();
 
 protected:
-    AInputComponent* m_InputComponent{};
+    InputComponent* m_InputComponent{};
 
     APlayerController() = default;
     ~APlayerController();
 
-    void Initialize(SActorInitializer& Initializer);
+    void Initialize(ActorInitializer& Initializer);
 
     void OnPawnChanged() override;
 
@@ -136,8 +136,8 @@ private:
     void TogglePause();
 
     TRef<WorldRenderView>      m_RenderView;
-    TRef<AAudioParameters>     m_AudioParameters;
-    TWeakRef<ASceneComponent>  m_AudioListener;
+    TRef<AudioParameters>     m_AudioParameters;
+    TWeakRef<SceneComponent>  m_AudioListener;
     TWeakRef<AHUD>             m_HUD;
     float                      m_ViewportAspectRatio{};
     int                        m_ViewportWidth{};

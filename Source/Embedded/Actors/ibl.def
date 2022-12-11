@@ -1,7 +1,7 @@
 components
 [
 	{
-		classname "AIBLComponent"
+		classname "IBLComponent"
 		name "IBL"
 		id "1"
 	}

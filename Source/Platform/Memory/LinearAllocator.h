@@ -90,7 +90,7 @@ public:
     // Allocates raw memory
     void* Allocate(size_t SizeInBytes, size_t Alignment = sizeof(size_t))
     {
-        SBlock* block;
+        Block* block;
         size_t  address;
 
         HK_ASSERT(IsPowerOfTwo(Alignment));
@@ -102,9 +102,9 @@ public:
         {
             // Allocate new block
 
-            size_t size = std::max<size_t>(SizeInBytes, BlockSize) + sizeof(SBlock) + (Alignment - 1);
+            size_t size = std::max<size_t>(SizeInBytes, BlockSize) + sizeof(Block) + (Alignment - 1);
 
-            block             = (SBlock*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(size);
+            block             = (Block*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(size);
             block->Address    = (size_t)AlignPtr(block + 1, Alignment);
             block->MaxAddress = (size_t)((byte*)block + size);
             block->CurAddress = block->Address;
@@ -136,7 +136,7 @@ public:
 
         size_t address = (size_t)Ptr;
 
-        SBlock* block = GetBlockByAddress(address);
+        Block* block = GetBlockByAddress(address);
         if (!block)
             return 0;
 
@@ -161,7 +161,7 @@ public:
 
         size_t address = (size_t)Ptr;
 
-        SBlock* block = GetBlockByAddress(address);
+        Block* block = GetBlockByAddress(address);
         if (!block)
             return 0;
 
@@ -184,7 +184,7 @@ public:
 
         size_t address = (size_t)Ptr;
 
-        SBlock* block = GetBlockByAddress(address);
+        Block* block = GetBlockByAddress(address);
         if (!block)
             return false;
 
@@ -222,7 +222,7 @@ public:
 
         size_t address = (size_t)Ptr;
 
-        SBlock* block = GetBlockByAddress(address);
+        Block* block = GetBlockByAddress(address);
         HK_ASSERT(block);
 
         if (block->LastAllocationAddress == address)
@@ -260,7 +260,7 @@ public:
 
         size_t address = (size_t)Ptr;
 
-        SBlock* block = GetBlockByAddress(address);
+        Block* block = GetBlockByAddress(address);
         HK_ASSERT(block);
 
         if (block->LastAllocationAddress == address)
@@ -285,9 +285,9 @@ public:
     // Free allocated memory.
     void Free()
     {
-        for (SBlock* block = Blocks; block;)
+        for (Block* block = Blocks; block;)
         {
-            SBlock* next = block->Next;
+            Block* next = block->Next;
             Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
             block = next;
         }
@@ -309,9 +309,9 @@ public:
             // In most cases, the alignment is less than or equal to 16. Therefore, we use this alignment by default.
             const size_t Alignment = 16;
 
-            blockMemoryUsage = blockMemoryUsage + sizeof(SBlock) + (Alignment - 1);
+            blockMemoryUsage = blockMemoryUsage + sizeof(Block) + (Alignment - 1);
 
-            SBlock* block                 = (SBlock*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(blockMemoryUsage);
+            Block* block                 = (Block*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(blockMemoryUsage);
             block->Address                = (size_t)AlignPtr(block + 1, Alignment);
             block->MaxAddress             = (size_t)((byte*)block + blockMemoryUsage);
             block->CurAddress             = block->Address;
@@ -328,7 +328,7 @@ public:
     // Clears memory blocks. Doesn't free memory blocks.
     void Reset()
     {
-        for (SBlock* block = Blocks; block; block = block->Next)
+        for (Block* block = Blocks; block; block = block->Next)
         {
             block->CurAddress = block->Address;
         }
@@ -348,7 +348,7 @@ public:
     size_t GetBlockMemoryUsage() const
     {
         size_t blockMemoryUsage = 0;
-        for (SBlock* block = Blocks; block; block = block->Next)
+        for (Block* block = Blocks; block; block = block->Next)
         {
             blockMemoryUsage += block->MaxAddress - block->Address;
         }
@@ -356,21 +356,21 @@ public:
     }
 
 private:
-    struct SBlock
+    struct Block
     {
         size_t  Address;
         size_t  MaxAddress;
         size_t  CurAddress;
         size_t  LastAllocationAddress;
         size_t  LastAllocationAddress2;
-        SBlock* Next;
+        Block* Next;
     };
-    SBlock* Blocks           = nullptr;
+    Block* Blocks           = nullptr;
     size_t  TotalAllocs      = 0;
     size_t  TotalMemoryUsage = 0;
 
     // Returns true if the block was found, otherwise the block and address are undefined.
-    bool FindBlock(size_t SizeInBytes, size_t Alignment, SBlock*& Block, size_t& Address) const
+    bool FindBlock(size_t SizeInBytes, size_t Alignment, Block*& Block, size_t& Address) const
     {
         for (Block = Blocks; Block; Block = Block->Next)
         {
@@ -383,9 +383,9 @@ private:
         return false;
     }
 
-    SBlock* GetBlockByAddress(size_t Address) const
+    Block* GetBlockByAddress(size_t Address) const
     {
-        for (SBlock* block = Blocks; block; block = block->Next)
+        for (Block* block = Blocks; block; block = block->Next)
         {
             if (Address >= block->Address && Address < block->MaxAddress)
                 return block;

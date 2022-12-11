@@ -180,7 +180,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
     }
 }
 
-//struct SConvexDecompositionDesc {
+//struct ConvexDecompositionDesc {
 //    // options
 //    unsigned int  Depth;    // depth to split, a maximum of 10, generally not over 7.
 //    float         ConcavityThreshold; // the concavity threshold percentage.  0=20 is reasonable.
@@ -219,7 +219,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
 //        float               mSphereVolume;      // volume of the best fit sphere
 //#endif
 
-//        SConvexHullDesc & hull = Hulls.Add();
+//        ConvexHullDesc & hull = Hulls.Add();
 
 //        hull.FirstVertex = Vertices.Length();
 //        hull.VertexCount = _Result.mHullVcount;
@@ -236,7 +236,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
 
 //    }
 
-//    struct SConvexHullDesc {
+//    struct ConvexHullDesc {
 //        int FirstVertex;
 //        int VertexCount;
 //        int FirstIndex;
@@ -259,7 +259,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
 
 //    TPodVector< Float3 > Vertices;
 //    TPodVector< unsigned int > Indices;
-//    TPodVector< SConvexHullDesc > Hulls;
+//    TPodVector< ConvexHullDesc > Hulls;
 //};
 // TODO: try ConvexBuilder
 
@@ -286,7 +286,7 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
                                 int                          _IndicesCount,
                                 TPodVector<Float3>&          _OutVertices,
                                 TPodVector<unsigned int>&    _OutIndices,
-                                TPodVector<SConvexHullDesc>& _OutHulls)
+                                TPodVector<ConvexHullDesc>& _OutHulls)
 {
     _OutVertices.Clear();
     _OutIndices.Clear();
@@ -373,7 +373,7 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
 
         hacd.GetCH(cluster, hullPoints.ToPtr(), hullTriangles.ToPtr());
 
-        SConvexHullDesc& hull = _OutHulls[cluster];
+        ConvexHullDesc& hull = _OutHulls[cluster];
         hull.FirstVertex      = totalPoints;
         hull.VertexCount      = numPoints;
         hull.FirstIndex       = totalTriangles * 3;
@@ -422,7 +422,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _IndicesCount,
                                      TPodVector<Float3>&          _OutVertices,
                                      TPodVector<unsigned int>&    _OutIndices,
-                                     TPodVector<SConvexHullDesc>& _OutHulls,
+                                     TPodVector<ConvexHullDesc>& _OutHulls,
                                      Float3&                      _CenterOfMass)
 {
     class Callback : public VHACD::IVHACD::IUserCallback
@@ -498,7 +498,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
         int totalIndices  = 0;
         for (int i = 0; i < _OutHulls.Size(); i++)
         {
-            SConvexHullDesc& hull = _OutHulls[i];
+            ConvexHullDesc& hull = _OutHulls[i];
 
             vhacd->GetConvexHull(i, ch);
 
@@ -519,7 +519,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
 
         for (int i = 0; i < _OutHulls.Size(); i++)
         {
-            SConvexHullDesc& hull = _OutHulls[i];
+            ConvexHullDesc& hull = _OutHulls[i];
 
             vhacd->GetConvexHull(i, ch);
 

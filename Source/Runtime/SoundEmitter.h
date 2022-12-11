@@ -36,9 +36,9 @@ SOFTWARE.
 #include <Audio/AudioChannel.h>
 #include <Containers/PodQueue.h>
 
-class ASoundGroup : public ABaseObject
+class SoundGroup : public BaseObject
 {
-    HK_CLASS(ASoundGroup, ABaseObject)
+    HK_CLASS(SoundGroup, BaseObject)
 
 public:
     /** Scale volume for all sounds in group */
@@ -77,7 +77,7 @@ public:
         return bPlayEvenWhenPaused;
     }
 
-    ASoundGroup() {}
+    SoundGroup() = default;
 
 protected:
     /** Scale volume for all sounds in group */
@@ -90,7 +90,7 @@ protected:
     bool bPlayEvenWhenPaused = false;
 };
 
-enum ESoundEmitterType
+enum SOUND_EMITTER_TYPE
 {
     /** Spatial sound emitter */
     SOUND_EMITTER_POINT,
@@ -103,7 +103,7 @@ enum ESoundEmitterType
 };
 
 /** Audio distance attenuation model. Not used now, reserved for future. */
-enum EAudioDistanceModel
+enum AUDIO_DISTANCE_MODEL
 {
     AUDIO_DIST_INVERSE          = 0,
     AUDIO_DIST_INVERSE_CLAMPED  = 1, // default
@@ -115,7 +115,7 @@ enum EAudioDistanceModel
 
 /** Priority to play the sound.
 NOTE: Not used now. Reserved for future to pick a free channel. */
-enum EAudioChannelPriority : uint8_t
+enum AUDIO_CHANNEL_PRIORITY : uint8_t
 {
     AUDIO_CHANNEL_PRIORITY_ONESHOT  = 0,
     AUDIO_CHANNEL_PRIORITY_AMBIENT  = 1,
@@ -131,7 +131,7 @@ constexpr float SOUND_DISTANCE_DEFAULT     = 100.0f;
 constexpr float SOUND_REF_DISTANCE_DEFAULT = 1.0f;
 constexpr float SOUND_ROLLOFF_RATE_DEFAULT = 1.0f;
 
-struct SSoundAttenuationParameters
+struct SoundAttenuationParameters
 {
     /** Distance attenuation parameter
     Can be from SOUND_DISTANCE_MIN to SOUND_DISTANCE_MAX */
@@ -146,10 +146,10 @@ struct SSoundAttenuationParameters
     float RolloffRate = SOUND_ROLLOFF_RATE_DEFAULT;
 };
 
-struct SSoundSpawnInfo
+struct SoundSpawnInfo
 {
     /** Audio source type */
-    ESoundEmitterType EmitterType = SOUND_EMITTER_POINT;
+    SOUND_EMITTER_TYPE EmitterType = SOUND_EMITTER_POINT;
 
     /** Priority to play the sound.
     NOTE: Not used now. Reserved for future to pick a free channel. */
@@ -168,10 +168,10 @@ struct SSoundSpawnInfo
     uint32_t ListenerMask = ~0u;
 
     /** Sound group */
-    ASoundGroup* Group = nullptr;
+    SoundGroup* Group = nullptr;
 
     /** Sound attenuation */
-    SSoundAttenuationParameters Attenuation;
+    SoundAttenuationParameters Attenuation;
 
     /** Sound volume */
     float Volume = 1;
@@ -192,19 +192,19 @@ struct SSoundSpawnInfo
     Float3 Direction;
 };
 
-class ASoundOneShot
+class SoundOneShot
 {
-    HK_FORBID_COPY(ASoundOneShot)
+    HK_FORBID_COPY(SoundOneShot)
 
 public:
-    int                   Priority; // EAudioChannelPriority
-    ESoundEmitterType     EmitterType;
+    int                   Priority; // AUDIO_CHANNEL_PRIORITY
+    SOUND_EMITTER_TYPE     EmitterType;
     uint64_t              AudioClient;
     uint32_t              ListenerMask;
-    TRef<AWorld>          World;
-    TRef<ASoundGroup>     Group;
-    TRef<ASceneComponent> Instigator;
-    TRef<ASoundResource>  Resource;
+    TRef<World>          World;
+    TRef<SoundGroup>     Group;
+    TRef<SceneComponent> Instigator;
+    TRef<SoundResource>  Resource;
     uint64_t              InstigatorId;
     int                   ResourceRevision;
     Float3                SoundPosition;
@@ -223,12 +223,12 @@ public:
     bool                  bFollowInstigator : 1;
     bool                  bSpatializedStereo : 1;
 
-    SAudioChannel* Channel;
+    AudioChannel* Channel;
 
-    ASoundOneShot* Next;
-    ASoundOneShot* Prev;
+    SoundOneShot* Next;
+    SoundOneShot* Prev;
 
-    ASoundOneShot()
+    SoundOneShot()
     {
         Priority         = 0;
         EmitterType      = SOUND_EMITTER_POINT;
@@ -257,33 +257,33 @@ public:
         Channel                 = nullptr;
     }
 
-    virtual ~ASoundOneShot() {}
+    virtual ~SoundOneShot() {}
 
     void Spatialize();
 
     bool IsPaused() const;
 };
 
-class ASoundEmitter : public ASceneComponent
+class SoundEmitter : public SceneComponent
 {
-    HK_COMPONENT(ASoundEmitter, ASceneComponent)
+    HK_COMPONENT(SoundEmitter, SceneComponent)
 
 public:
     /** Start playing sound. This function cancels any sound that is already being played by the emitter. */
-    void PlaySound(ASoundResource* SoundResource, int StartFrame = 0, int LoopStart = -1);
+    void PlaySound(SoundResource* SoundResource, int StartFrame = 0, int LoopStart = -1);
 
     /** Play one shot. Does not cancel sounds that are already being played by PlayOneShot and PlaySound.
     This function creates a separate channel for sound playback. */
-    void PlayOneShot(ASoundResource* SoundResource, float VolumeScale, bool bFixedPosition, int StartFrame = 0);
+    void PlayOneShot(SoundResource* SoundResource, float VolumeScale, bool bFixedPosition, int StartFrame = 0);
 
     /** Plays a sound at a given position in world space. */
-    static void PlaySoundAt(AWorld* World, ASoundResource* SoundResource, ASoundGroup* SoundGroup, Float3 const& Position, float Volume = 1.0f, int StartFrame = 0);
+    static void PlaySoundAt(World* World, SoundResource* SoundResource, SoundGroup* SoundGroup, Float3 const& Position, float Volume = 1.0f, int StartFrame = 0);
 
     /** Plays a sound at background. */
-    static void PlaySoundBackground(AWorld* World, ASoundResource* SoundResource, ASoundGroup* SoundGroup = nullptr, float Volume = 1.0f, int StartFrame = 0);
+    static void PlaySoundBackground(World* World, SoundResource* SoundResource, SoundGroup* SoundGroup = nullptr, float Volume = 1.0f, int StartFrame = 0);
 
     /** Play a custom sound. Use it if you want full control over one shot sounds. */
-    static void SpawnSound(ASoundResource* SoundResource, Float3 const& SpawnPosition, AWorld* World, ASceneComponent* Instigator, SSoundSpawnInfo const* SpawnInfo);
+    static void SpawnSound(SoundResource* SoundResource, Float3 const& SpawnPosition, World* World, SceneComponent* Instigator, SoundSpawnInfo const* SpawnInfo);
 
     /** Clears all one shot sounds. */
     static void ClearOneShotSounds();
@@ -292,16 +292,16 @@ public:
     void ClearSound();
 
     /** Add sound to queue */
-    void AddToQueue(ASoundResource* SoundResource);
+    void AddToQueue(SoundResource* SoundResource);
 
     /** Clear sound queue */
     void ClearQueue();
 
     /** We can control the volume by groups of sound emitters */
-    void SetSoundGroup(ASoundGroup* SoundGroup);
+    void SetSoundGroup(SoundGroup* SoundGroup);
 
     /** We can control the volume by groups of sound emitters */
-    ASoundGroup* GetSoundGroup() const { return Group; }
+    SoundGroup* GetSoundGroup() const { return Group; }
 
     /** If audio client is not specified, audio will be hearable for all listeners */
     void SetAudioClient(AActor* AudioClient);
@@ -315,11 +315,11 @@ public:
     /** With listener mask you can filter listeners for the sound */
     uint32_t GetListenerMask() const { return ListenerMask; }
 
-    /** Set emitter type. See ESoundEmitterType */
-    void SetEmitterType(ESoundEmitterType EmitterType);
+    /** Set emitter type. See SOUND_EMITTER_TYPE */
+    void SetEmitterType(SOUND_EMITTER_TYPE EmitterType);
 
-    /** Get emitter type. See ESoundEmitterType */
-    ESoundEmitterType GetEmitterType() const { return EmitterType; }
+    /** Get emitter type. See SOUND_EMITTER_TYPE */
+    SOUND_EMITTER_TYPE GetEmitterType() const { return EmitterType; }
 
     /** Virtualize sound when silent. Looped sounds has this by default. */
     void SetVirtualizeWhenSilent(bool bVirtualizeWhenSilent);
@@ -399,21 +399,21 @@ public:
     bool IsPaused() const;
 
     /** Next sound emitter from global list */
-    ASoundEmitter* GetNext() { return Next; }
+    SoundEmitter* GetNext() { return Next; }
 
     /** Prev sound emitter from global list */
-    ASoundEmitter* GetPrev() { return Prev; }
+    SoundEmitter* GetPrev() { return Prev; }
 
     /** Global sound emitters list */
-    static ASoundEmitter* GetSoundEmitters() { return SoundEmitters; }
+    static SoundEmitter* GetSoundEmitters() { return SoundEmitters; }
 
     /** Global list of one shot sounds */
-    static ASoundOneShot* GetOneShots() { return OneShots; }
+    static SoundOneShot* GetOneShots() { return OneShots; }
 
     /** Internal. Called by Audio System to update the sounds. */
     static void UpdateSounds();
 
-    ASoundEmitter();
+    SoundEmitter();
 
 protected:
     void InitializeComponent() override;
@@ -430,45 +430,45 @@ private:
     /** Select next sound from queue */
     bool SelectNextSound();
 
-    bool StartPlay(ASoundResource* SoundResource, int StartFrame, int LoopStart);
+    bool StartPlay(SoundResource* SoundResource, int StartFrame, int LoopStart);
 
     bool RestartSound();
 
     void Spatialize();
 
-    static void UpdateSound(ASoundOneShot* Sound);
-    static void FreeSound(ASoundOneShot* Sound);
+    static void UpdateSound(SoundOneShot* Sound);
+    static void FreeSound(SoundOneShot* Sound);
 
-    using AQueue = TPodQueue<ASoundResource*, 1, true>;
+    using Queue = TPodQueue<SoundResource*, 1, true>;
 
-    AQueue AudioQueue;
+    Queue AudioQueue;
 
-    TRef<ASoundGroup>    Group;
-    TRef<AActor>         Client;
-    uint32_t             ListenerMask;
-    ESoundEmitterType    EmitterType;
-    TRef<ASoundResource> Resource;
-    int                  ResourceRevision;
-    SAudioChannel*       Channel;
-    float                Volume;
-    float                ReferenceDistance;
-    float                MaxDistance;
-    float                RolloffRate;
-    float                ConeInnerAngle;
-    float                ConeOuterAngle;
-    int                  ChanVolume[2];
-    Float3               LocalDir;
-    bool                 bSpatializedStereo;
-    bool                 bEmitterPaused : 1;
-    bool                 bVirtualizeWhenSilent : 1;
-    bool                 bMuted : 1;
+    TRef<SoundGroup>    Group;
+    TRef<AActor>        Client;
+    uint32_t            ListenerMask;
+    SOUND_EMITTER_TYPE  EmitterType;
+    TRef<SoundResource> Resource;
+    int                 ResourceRevision;
+    AudioChannel*       Channel;
+    float               Volume;
+    float               ReferenceDistance;
+    float               MaxDistance;
+    float               RolloffRate;
+    float               ConeInnerAngle;
+    float               ConeOuterAngle;
+    int                 ChanVolume[2];
+    Float3              LocalDir;
+    bool                bSpatializedStereo;
+    bool                bEmitterPaused : 1;
+    bool                bVirtualizeWhenSilent : 1;
+    bool                bMuted : 1;
 
-    ASoundEmitter* Next = nullptr;
-    ASoundEmitter* Prev = nullptr;
+    SoundEmitter* Next = nullptr;
+    SoundEmitter* Prev = nullptr;
 
-    static ASoundEmitter* SoundEmitters;
-    static ASoundEmitter* SoundEmittersTail;
+    static SoundEmitter* SoundEmitters;
+    static SoundEmitter* SoundEmittersTail;
 
-    static ASoundOneShot* OneShots;
-    static ASoundOneShot* OneShotsTail;
+    static SoundOneShot* OneShots;
+    static SoundOneShot* OneShotsTail;
 };

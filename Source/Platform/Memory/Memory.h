@@ -62,7 +62,7 @@ enum MALLOC_FLAGS : uint32_t
 
 HK_FLAG_ENUM_OPERATORS(MALLOC_FLAGS)
 
-struct SMemoryStat
+struct MemoryStat
 {
     size_t FrameAllocs;
     size_t FrameFrees;
@@ -73,25 +73,25 @@ struct SMemoryStat
 
 struct MemoryHeap
 {
-    static void        MemoryNewFrame();
-    static void        MemoryCleanup();
-    static SMemoryStat MemoryGetStat();
+    static void       MemoryNewFrame();
+    static void       MemoryCleanup();
+    static MemoryStat MemoryGetStat();
 
-    void*       Alloc(size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
-    void*       Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
-    void        Free(void* Ptr);
-    size_t      GetSize(void* Ptr);
-    SMemoryStat GetStat();
+    void*      Alloc(size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
+    void*      Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
+    void       Free(void* Ptr);
+    size_t     GetSize(void* Ptr);
+    MemoryStat GetStat();
 
 private:
     void* _Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
     void* _Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
 
-    AAtomicLong MemoryAllocated{};
-    AAtomicLong MemoryAllocs{};
-    AAtomicLong PeakAllocated{};
-    AAtomicLong PerFrameAllocs{};
-    AAtomicLong PerFrameFrees{};
+    AtomicLong MemoryAllocated{};
+    AtomicLong MemoryAllocs{};
+    AtomicLong PeakAllocated{};
+    AtomicLong PerFrameAllocs{};
+    AtomicLong PerFrameFrees{};
 };
 
 namespace Platform

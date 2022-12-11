@@ -35,15 +35,15 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class ABufferGLImpl final : public IBuffer
+class BufferGLImpl final : public IBuffer
 {
 public:
-    ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, const void* SysMem = nullptr);
-    ~ABufferGLImpl();
+    BufferGLImpl(DeviceGLImpl* pDevice, BufferDesc const& Desc, const void* SysMem = nullptr);
+    ~BufferGLImpl();
 
-    bool CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) override;
+    bool CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) override;
 
     bool Orphan() override;
 

@@ -35,49 +35,49 @@ SOFTWARE.
 #include "Terrain.h"
 #include "Level.h"
 
-class ATerrainComponent : public ASceneComponent, private ANavigationPrimitive
+class TerrainComponent : public SceneComponent, private NavigationPrimitive
 {
-    HK_COMPONENT(ATerrainComponent, ASceneComponent)
+    HK_COMPONENT(TerrainComponent, SceneComponent)
 
 public:
-    AHitProxy* GetHitProxy() const
+    HitProxy* GetHitProxy() const
     {
-        return HitProxy;
+        return m_HitProxy;
     }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     void SetDispatchContactEvents(bool bDispatch)
     {
-        HitProxy->bDispatchContactEvents = bDispatch;
+        m_HitProxy->bDispatchContactEvents = bDispatch;
     }
 
     bool ShouldDispatchContactEvents() const
     {
-        return HitProxy->bDispatchContactEvents;
+        return m_HitProxy->bDispatchContactEvents;
     }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     void SetGenerateContactPoints(bool bGenerate)
     {
-        HitProxy->bGenerateContactPoints = bGenerate;
+        m_HitProxy->bGenerateContactPoints = bGenerate;
     }
 
     bool ShouldGenerateContactPoints() const
     {
-        return HitProxy->bGenerateContactPoints;
+        return m_HitProxy->bGenerateContactPoints;
     }
 
     /** Set collision group/layer. See COLLISION_MASK. */
     void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
 
     /** Get collision group. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+    COLLISION_MASK GetCollisionGroup() const { return m_HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See COLLISION_MASK. */
     void SetCollisionMask(COLLISION_MASK _CollisionMask);
 
     /** Get collision mask. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+    COLLISION_MASK GetCollisionMask() const { return m_HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See COLLISION_MASK. */
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
@@ -89,10 +89,10 @@ public:
     void RemoveCollisionIgnoreActor(AActor* _Actor);
 
     /** Set terrain resource */
-    void SetTerrain(ATerrain* InTerrain);
+    void SetTerrain(Terrain* terrain);
 
     /** Get terrain resource */
-    ATerrain* GetTerrain() const { return Terrain; }
+    Terrain* GetTerrain() const { return m_Terrain; }
 
     void SetVisible(bool _Visible);
 
@@ -115,16 +115,16 @@ public:
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the terrain */
-    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const;
 
     /** Raycast the terrain */
-    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const;
+    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const;
 
     /** Get X,Z coordinates in local terrain space */
     void GetLocalXZ(Float3 const& Position, float& X, float& Z) const;
 
     /** Get terrain triangle at specified world position */
-    bool GetTriangle(Float3 const& Position, STerrainTriangle& Triangle) const;
+    bool GetTriangle(Float3 const& Position, TerrainTriangle& Triangle) const;
 
     float SampleHeight(Float3 const& Position) const;
 
@@ -139,14 +139,14 @@ public:
 
     void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const;
 
-    void GatherNavigationGeometry(SNavigationGeometry& Geometry) const override;
+    void GatherNavigationGeometry(NavigationGeometry& Geometry) const override;
 
     /** Internal rigid body */
-    class btRigidBody* GetRigidBody() const { return RigidBody; }
+    class btRigidBody* GetRigidBody() const { return m_RigidBody; }
 
 protected:
-    ATerrainComponent();
-    ~ATerrainComponent();
+    TerrainComponent();
+    ~TerrainComponent();
 
     void InitializeComponent() override;
 
@@ -154,7 +154,7 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
     void OnTerrainModified();
 
@@ -165,13 +165,13 @@ protected:
     void RemoveTerrainPhysics();
 
     // Terrain resource
-    TRef<ATerrain> Terrain;
+    TRef<Terrain> m_Terrain;
     // Collision hit proxy
-    TRef<AHitProxy> HitProxy;
+    TRef<HitProxy> m_HitProxy;
     // Internal rigid body
-    btRigidBody* RigidBody{};
+    btRigidBody* m_RigidBody{};
     // VSD primitive
-    SPrimitiveDef* Primitive{};
+    PrimitiveDef* Primitive{};
     // Cached world transform
     Float3x4 TerrainWorldTransform;
     // Cached world transform inversed
@@ -179,7 +179,7 @@ protected:
     // Allow raycast flag
     bool bAllowRaycast : 1;
 
-    friend class ATerrain;
-    ATerrainComponent* pNext{};
-    ATerrainComponent* pPrev{};
+    friend class Terrain;
+    TerrainComponent* pNext{};
+    TerrainComponent* pPrev{};
 };

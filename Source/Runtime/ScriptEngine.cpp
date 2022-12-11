@@ -46,26 +46,26 @@ void PrintMessage(std::string const& message)
     LOG(message.c_str());
 }
 
-struct SScopedContext
+struct ScopedContext
 {
-    HK_FORBID_COPY(SScopedContext)
+    HK_FORBID_COPY(ScopedContext)
 
     asIScriptContext* Self;
-    AScriptEngine*    pEngine;
+    ScriptEngine*    pEngine;
 
-    SScopedContext(AScriptEngine* pEngine, asIScriptObject* pObject, asIScriptFunction* pFunction) :
+    ScopedContext(ScriptEngine* pEngine, asIScriptObject* pObject, asIScriptFunction* pFunction) :
         pEngine(pEngine)
     {
         Self = pEngine->GetContextPool().PrepareContext(pObject, pFunction);
     }
 
-    SScopedContext(AScriptEngine* pEngine, asIScriptFunction* pFunction) :
+    ScopedContext(ScriptEngine* pEngine, asIScriptFunction* pFunction) :
         pEngine(pEngine)
     {
         Self = pEngine->GetContextPool().PrepareContext(pFunction);
     }
 
-    ~SScopedContext()
+    ~ScopedContext()
     {
         pEngine->GetContextPool().UnprepareContext(Self);
     }
@@ -1760,115 +1760,115 @@ static void RegisterAngl(asIScriptEngine* pEngine)
 #endif
 }
 
-static void ConstructTransformDefault(STransform* p)
+static void ConstructTransformDefault(Transform* p)
 {
-    new (p) STransform(Float3(0), Quat::Identity(), Float3(1));
+    new (p) Transform(Float3(0), Quat::Identity(), Float3(1));
 }
 
-static void ConstructTransformPRS(STransform* p, Float3 const& Position, Quat const& Rotation, Float3 const& Scale)
+static void ConstructTransformPRS(Transform* p, Float3 const& Position, Quat const& Rotation, Float3 const& Scale)
 {
-    new (p) STransform(Position, Rotation, Scale);
+    new (p) Transform(Position, Rotation, Scale);
 }
 
-static void ConstructTransformPR(STransform* p, Float3 const& Position, Quat const& Rotation)
+static void ConstructTransformPR(Transform* p, Float3 const& Position, Quat const& Rotation)
 {
-    new (p) STransform(Position, Rotation);
+    new (p) Transform(Position, Rotation);
 }
 
-static void ConstructTransformFromTransform(STransform* p, STransform const& other)
+static void ConstructTransformFromTransform(Transform* p, Transform const& other)
 {
-    new (p) STransform(other);
+    new (p) Transform(other);
 }
 
 static void RegisterTransform(asIScriptEngine* pEngine)
 {
     int r;
 
-    r = pEngine->RegisterObjectProperty("STransform", "Float3 Position", offsetof(STransform, Position));
+    r = pEngine->RegisterObjectProperty("Transform", "Float3 Position", offsetof(Transform, Position));
     assert(r >= 0);
-    r = pEngine->RegisterObjectProperty("STransform", "Quat Rotation", offsetof(STransform, Rotation));
+    r = pEngine->RegisterObjectProperty("Transform", "Quat Rotation", offsetof(Transform, Rotation));
     assert(r >= 0);
-    r = pEngine->RegisterObjectProperty("STransform", "Float3 Scale", offsetof(STransform, Scale));
+    r = pEngine->RegisterObjectProperty("Transform", "Float3 Scale", offsetof(Transform, Scale));
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructTransformDefault), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Transform", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructTransformDefault), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_CONSTRUCT, "void f(const Float3 &in, const Quat &in, const Float3 &in)", asFUNCTION(ConstructTransformPRS), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Transform", asBEHAVE_CONSTRUCT, "void f(const Float3 &in, const Quat &in, const Float3 &in)", asFUNCTION(ConstructTransformPRS), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_CONSTRUCT, "void f(const Float3 &in, const Quat &in)", asFUNCTION(ConstructTransformPR), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Transform", asBEHAVE_CONSTRUCT, "void f(const Float3 &in, const Quat &in)", asFUNCTION(ConstructTransformPR), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_CONSTRUCT, "void f(const STransform &in)", asFUNCTION(ConstructTransformFromTransform), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Transform", asBEHAVE_CONSTRUCT, "void f(const Transform &in)", asFUNCTION(ConstructTransformFromTransform), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<STransform>), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Transform", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Transform>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "STransform &opAssign(const STransform &in)", asMETHODPR(STransform, operator=, (const STransform&), STransform&), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Transform &opAssign(const Transform &in)", asMETHODPR(Transform, operator=, (const Transform&), Transform&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void Clear()", asMETHOD(STransform, Clear), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void Clear()", asMETHOD(Transform, Clear), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetIdentity()", asMETHOD(STransform, SetIdentity), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetIdentity()", asMETHOD(Transform, SetIdentity), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetScale(const Float3 &in)", asMETHODPR(STransform, SetScale, (Float3 const&), void), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetScale(const Float3 &in)", asMETHODPR(Transform, SetScale, (Float3 const&), void), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetScale(float, float, float)", asMETHODPR(STransform, SetScale, (float, float, float), void), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetScale(float, float, float)", asMETHODPR(Transform, SetScale, (float, float, float), void), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetScale(float)", asMETHODPR(STransform, SetScale, (float), void), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetScale(float)", asMETHODPR(Transform, SetScale, (float), void), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetAngles(const Angl &in)", asMETHODPR(STransform, SetAngles, (Angl const&), void), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetAngles(const Angl &in)", asMETHODPR(Transform, SetAngles, (Angl const&), void), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void SetAngles(float, float, float)", asMETHODPR(STransform, SetAngles, (float, float, float), void), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void SetAngles(float, float, float)", asMETHODPR(Transform, SetAngles, (float, float, float), void), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Angl GetAngles() const", asMETHOD(STransform, GetAngles), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Angl GetAngles() const", asMETHOD(Transform, GetAngles), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "float GetPitch() const", asMETHOD(STransform, GetPitch), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "float GetPitch() const", asMETHOD(Transform, GetPitch), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "float GetYaw() const", asMETHOD(STransform, GetYaw), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "float GetYaw() const", asMETHOD(Transform, GetYaw), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "float GetRoll() const", asMETHOD(STransform, GetRoll), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "float GetRoll() const", asMETHOD(Transform, GetRoll), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetRightVector() const", asMETHOD(STransform, GetRightVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetRightVector() const", asMETHOD(Transform, GetRightVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetLeftVector() const", asMETHOD(STransform, GetLeftVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetLeftVector() const", asMETHOD(Transform, GetLeftVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetUpVector() const", asMETHOD(STransform, GetUpVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetUpVector() const", asMETHOD(Transform, GetUpVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetDownVector() const", asMETHOD(STransform, GetDownVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetDownVector() const", asMETHOD(Transform, GetDownVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetBackVector() const", asMETHOD(STransform, GetBackVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetBackVector() const", asMETHOD(Transform, GetBackVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "Float3 GetForwardVector() const", asMETHOD(STransform, GetForwardVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Float3 GetForwardVector() const", asMETHOD(Transform, GetForwardVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void ComputeTransformMatrix(Float3x4 &out) const", asMETHOD(STransform, ComputeTransformMatrix), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void ComputeTransformMatrix(Float3x4 &out) const", asMETHOD(Transform, ComputeTransformMatrix), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnRightFPS(float)", asMETHOD(STransform, TurnRightFPS), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnRightFPS(float)", asMETHOD(Transform, TurnRightFPS), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnLeftFPS(float)", asMETHOD(STransform, TurnLeftFPS), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnLeftFPS(float)", asMETHOD(Transform, TurnLeftFPS), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnUpFPS(float)", asMETHOD(STransform, TurnUpFPS), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnUpFPS(float)", asMETHOD(Transform, TurnUpFPS), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnDownFPS(float)", asMETHOD(STransform, TurnDownFPS), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnDownFPS(float)", asMETHOD(Transform, TurnDownFPS), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnAroundAxis(float, const Float3 &in)", asMETHOD(STransform, TurnAroundAxis), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnAroundAxis(float, const Float3 &in)", asMETHOD(Transform, TurnAroundAxis), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void TurnAroundVector(float, const Float3 &in)", asMETHOD(STransform, TurnAroundVector), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void TurnAroundVector(float, const Float3 &in)", asMETHOD(Transform, TurnAroundVector), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepRight(float)", asMETHOD(STransform, StepRight), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepRight(float)", asMETHOD(Transform, StepRight), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepLeft(float)", asMETHOD(STransform, StepLeft), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepLeft(float)", asMETHOD(Transform, StepLeft), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepUp(float)", asMETHOD(STransform, StepUp), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepUp(float)", asMETHOD(Transform, StepUp), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepDown(float)", asMETHOD(STransform, StepDown), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepDown(float)", asMETHOD(Transform, StepDown), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepBack(float)", asMETHOD(STransform, StepBack), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepBack(float)", asMETHOD(Transform, StepBack), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void StepForward(float)", asMETHOD(STransform, StepForward), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void StepForward(float)", asMETHOD(Transform, StepForward), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void Step(const Float3 &in)", asMETHOD(STransform, Step), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void Step(const Float3 &in)", asMETHOD(Transform, Step), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "STransform Inversed() const", asMETHOD(STransform, Inversed), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Transform Inversed() const", asMETHOD(Transform, Inversed), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "void InverseSelf()", asMETHOD(STransform, InverseSelf), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "void InverseSelf()", asMETHOD(Transform, InverseSelf), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("STransform", "STransform opMul(const STransform &in) const", asMETHODPR(STransform, operator*, (const STransform&) const, STransform), asCALL_THISCALL);
+    r = pEngine->RegisterObjectMethod("Transform", "Transform opMul(const Transform &in) const", asMETHODPR(Transform, operator*, (const Transform&) const, Transform), asCALL_THISCALL);
     assert(r >= 0);
 
     HK_UNUSED(r);
@@ -2148,7 +2148,7 @@ void RegisterMath(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectType("Angl", sizeof(Angl), asOBJ_VALUE | asGetTypeTraits<Angl>());
     assert(r >= 0);
-    r = pEngine->RegisterObjectType("STransform", sizeof(STransform), asOBJ_VALUE | asGetTypeTraits<STransform>());
+    r = pEngine->RegisterObjectType("Transform", sizeof(Transform), asOBJ_VALUE | asGetTypeTraits<Transform>());
     assert(r >= 0);
     r = pEngine->RegisterObjectType("Plane", sizeof(PlaneF), asOBJ_VALUE | asGetTypeTraits<PlaneF>());
     assert(r >= 0);
@@ -2398,7 +2398,7 @@ void RegisterMath(asIScriptEngine* pEngine)
 }
 
 
-AScriptEngine::AScriptEngine(AWorld* pWorld) :
+ScriptEngine::ScriptEngine(World* pWorld) :
     m_pEngine(asCreateScriptEngine()),
     m_ContextPool(m_pEngine)
 {
@@ -2406,7 +2406,7 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     int r;
 
 
-    r = m_pEngine->SetMessageCallback(asMETHOD(AScriptEngine, MessageCallback), this, asCALL_THISCALL);
+    r = m_pEngine->SetMessageCallback(asMETHOD(ScriptEngine, MessageCallback), this, asCALL_THISCALL);
     assert(r >= 0);
 
     // Register the string type
@@ -2430,7 +2430,7 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_GET_WEAKREF_FLAG, "int &f()", asMETHOD(AActor, ScriptGetWeakRefFlag), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectType("SActorDamage", sizeof(SActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
+    r = m_pEngine->RegisterObjectType("ActorDamage", sizeof(ActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
     assert(r >= 0);
 
     //r = m_pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
@@ -2442,17 +2442,17 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     r = m_pEngine->RegisterObjectMethod("AActor", "bool get_bPendingKill() const property", asMETHOD(AActor, IsPendingKill), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const SActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const ActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
     assert(r >= 0);
 
 
-    r = m_pEngine->RegisterObjectProperty("SActorDamage", "float Amount", offsetof(SActorDamage, Amount));
+    r = m_pEngine->RegisterObjectProperty("ActorDamage", "float Amount", offsetof(ActorDamage, Amount));
     assert(r >= 0);
-    r = m_pEngine->RegisterObjectProperty("SActorDamage", "Float3 Position", offsetof(SActorDamage, Position));
+    r = m_pEngine->RegisterObjectProperty("ActorDamage", "Float3 Position", offsetof(ActorDamage, Position));
     assert(r >= 0);
-    r = m_pEngine->RegisterObjectProperty("SActorDamage", "float Radius", offsetof(SActorDamage, Radius));
+    r = m_pEngine->RegisterObjectProperty("ActorDamage", "float Radius", offsetof(ActorDamage, Radius));
     assert(r >= 0);
-    //r = m_pEngine->RegisterObjectProperty("SActorDamage", "AActor@+ DamageCauser", offsetof(SActorDamage, DamageCauser));
+    //r = m_pEngine->RegisterObjectProperty("ActorDamage", "AActor@+ DamageCauser", offsetof(ActorDamage, DamageCauser));
     //assert(r >= 0);
 
 
@@ -2464,16 +2464,16 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     r = m_pEngine->RegisterGlobalFunction("void PrintMessage(const string &in msg)", asFUNCTION(PrintMessage), asCALL_CDECL);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectType("AWorld", 0, asOBJ_REF | asOBJ_NOHANDLE);
+    r = m_pEngine->RegisterObjectType("World", 0, asOBJ_REF | asOBJ_NOHANDLE);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterGlobalProperty("AWorld world", pWorld);
+    r = m_pEngine->RegisterGlobalProperty("World world", pWorld);
     assert(r >= 0);
 
     HK_UNUSED(r);
 }
 
-AScriptEngine::~AScriptEngine()
+ScriptEngine::~ScriptEngine()
 {
     m_Scripts.Clear();
 
@@ -2481,7 +2481,7 @@ AScriptEngine::~AScriptEngine()
         m_pEngine->ShutDownAndRelease();
 }
 
-void AScriptEngine::MessageCallback(asSMessageInfo const& msg)
+void ScriptEngine::MessageCallback(asSMessageInfo const& msg)
 {
     const char* type = "ERR ";
 
@@ -2506,14 +2506,14 @@ void AScriptEngine::MessageCallback(asSMessageInfo const& msg)
 
 static int LoadScript(const char* SourceFileName, const char* IncludedFrom, CScriptBuilder* pBuilder)
 {
-    AFile f = AFile::OpenRead(SourceFileName);
+    File f = File::OpenRead(SourceFileName);
     if (!f)
         return -1;
 
     return pBuilder->AddSectionFromMemory(SourceFileName, f.AsString().CStr());
 }
 
-AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
+ActorScript* ScriptEngine::GetActorScript(String const& ModuleName)
 {
     int r;
 
@@ -2549,7 +2549,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
         return nullptr;
 
     // Cache the functions and methods that will be used
-    std::unique_ptr<AActorScript> pScript = std::make_unique<AActorScript>();
+    std::unique_ptr<ActorScript> pScript = std::make_unique<ActorScript>();
 
     pScript->Module = ModuleName;
 
@@ -2584,7 +2584,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
         return nullptr;
     }
 
-    AString s = AString(type->GetName()) + "@ " + type->GetName() + "(AActor @)";
+    String s = String(type->GetName()) + "@ " + type->GetName() + "(AActor @)";
 
     pScript->M_FactoryFunc = type->GetFactoryByDecl(s.CStr());
     if (pScript->M_FactoryFunc == 0)
@@ -2598,7 +2598,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     pScript->M_TickPrePhysics  = type->GetMethodByDecl("void TickPrePhysics(float TimeStep)");
     pScript->M_TickPostPhysics = type->GetMethodByDecl("void TickPostPhysics(float TimeStep)");
     pScript->M_LateUpdate      = type->GetMethodByDecl("void LateUpdate(float TimeStep)");
-    pScript->M_OnApplyDamage   = type->GetMethodByDecl("void OnApplyDamage(const SActorDamage& in Damage)");
+    pScript->M_OnApplyDamage   = type->GetMethodByDecl("void OnApplyDamage(const ActorDamage& in Damage)");
 
     pScript->pEngine = this;
 
@@ -2609,15 +2609,15 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     return m_Scripts.Last().get();
 }
 
-asIScriptObject* AScriptEngine::CreateScriptInstance(AString const& ModuleName, AActor* pActor)
+asIScriptObject* ScriptEngine::CreateScriptInstance(String const& ModuleName, AActor* pActor)
 {
     asIScriptObject* pInstance{};
 
-    AActorScript* pScript = GetActorScript(ModuleName);
+    ActorScript* pScript = GetActorScript(ModuleName);
     if (!pScript)
         return nullptr;
 
-    SScopedContext ctx(this, pScript->M_FactoryFunc);
+    ScopedContext ctx(this, pScript->M_FactoryFunc);
     ctx->SetArgObject(0, pActor);
 
     if (ctx.ExecuteCall() == asEXECUTION_FINISHED)
@@ -2628,18 +2628,18 @@ asIScriptObject* AScriptEngine::CreateScriptInstance(AString const& ModuleName, 
     return pInstance;
 }
 
-AScriptContextPool::AScriptContextPool(asIScriptEngine* pEngine) :
+ScriptContextPool::ScriptContextPool(asIScriptEngine* pEngine) :
     m_pEngine(pEngine)
 {
 }
 
-AScriptContextPool::~AScriptContextPool()
+ScriptContextPool::~ScriptContextPool()
 {
     for (asIScriptContext* pContext : m_Contexts)
         pContext->Release();
 }
 
-asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunction)
+asIScriptContext* ScriptContextPool::PrepareContext(asIScriptFunction* pFunction)
 {
     asIScriptContext* pContext;
     if (!m_Contexts.IsEmpty())
@@ -2655,106 +2655,106 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunctio
 
     if (!r)
     {
-        LOG("AScriptContextPool::PrepareContext: failed to prepare context '{}'\n", pFunction->GetName());
+        LOG("ScriptContextPool::PrepareContext: failed to prepare context '{}'\n", pFunction->GetName());
     }
 
     return pContext;
 }
 
-asIScriptContext* AScriptContextPool::PrepareContext(asIScriptObject* pScriptObject, asIScriptFunction* pFunction)
+asIScriptContext* ScriptContextPool::PrepareContext(asIScriptObject* pScriptObject, asIScriptFunction* pFunction)
 {
     asIScriptContext* pContext = PrepareContext(pFunction);
     pContext->SetObject(pScriptObject);
     return pContext;
 }
 
-void AScriptContextPool::UnprepareContext(asIScriptContext* pContext)
+void ScriptContextPool::UnprepareContext(asIScriptContext* pContext)
 {
     pContext->Unprepare();
     m_Contexts.Add(pContext);
 }
 
-AActorScript* AActorScript::GetScript(asIScriptObject* pObject)
+ActorScript* ActorScript::GetScript(asIScriptObject* pObject)
 {
-    return reinterpret_cast<AActorScript*>(pObject->GetObjectType()->GetUserData());
+    return reinterpret_cast<ActorScript*>(pObject->GetObjectType()->GetUserData());
 }
 
-void AActorScript::SetProperties(asIScriptObject* pObject, TStringHashMap<AString> const& Properties)
+void ActorScript::SetProperties(asIScriptObject* pObject, TStringHashMap<String> const& Properties)
 {
     // TODO
 }
 
-bool AActorScript::SetProperty(asIScriptObject* pObject, AStringView PropertyName, AStringView PropertyValue)
+bool ActorScript::SetProperty(asIScriptObject* pObject, StringView PropertyName, StringView PropertyValue)
 {
     // TODO
     return false;
 }
 
-void AActorScript::CloneProperties(asIScriptObject* Template, asIScriptObject* Destination)
+void ActorScript::CloneProperties(asIScriptObject* Template, asIScriptObject* Destination)
 {
     // TODO
 }
 
-void AActorScript::BeginPlay(asIScriptObject* pObject)
+void ActorScript::BeginPlay(asIScriptObject* pObject)
 {
     if (M_BeginPlay)
     {
-        SScopedContext ctx(pEngine, pObject, M_BeginPlay);
+        ScopedContext ctx(pEngine, pObject, M_BeginPlay);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::Tick(asIScriptObject* pObject, float TimeStep)
+void ActorScript::Tick(asIScriptObject* pObject, float TimeStep)
 {
     if (M_Tick)
     {
-        SScopedContext ctx(pEngine, pObject, M_Tick);
+        ScopedContext ctx(pEngine, pObject, M_Tick);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::TickPrePhysics(asIScriptObject* pObject, float TimeStep)
+void ActorScript::TickPrePhysics(asIScriptObject* pObject, float TimeStep)
 {
     if (M_TickPrePhysics)
     {
-        SScopedContext ctx(pEngine, pObject, M_TickPrePhysics);
+        ScopedContext ctx(pEngine, pObject, M_TickPrePhysics);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::TickPostPhysics(asIScriptObject* pObject, float TimeStep)
+void ActorScript::TickPostPhysics(asIScriptObject* pObject, float TimeStep)
 {
     if (M_TickPostPhysics)
     {
-        SScopedContext ctx(pEngine, pObject, M_TickPostPhysics);
+        ScopedContext ctx(pEngine, pObject, M_TickPostPhysics);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::LateUpdate(asIScriptObject* pObject, float TimeStep)
+void ActorScript::LateUpdate(asIScriptObject* pObject, float TimeStep)
 {
     if (M_LateUpdate)
     {
-        SScopedContext ctx(pEngine, pObject, M_LateUpdate);
+        ScopedContext ctx(pEngine, pObject, M_LateUpdate);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::OnApplyDamage(asIScriptObject* pObject, SActorDamage const& Damage)
+void ActorScript::OnApplyDamage(asIScriptObject* pObject, ActorDamage const& Damage)
 {
     if (M_OnApplyDamage)
     {
-        SScopedContext ctx(pEngine, pObject, M_OnApplyDamage);
+        ScopedContext ctx(pEngine, pObject, M_OnApplyDamage);
         ctx->SetArgObject(0, (void*)&Damage);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::DrawDebug(asIScriptObject* pObject, ADebugRenderer* InRenderer)
+void ActorScript::DrawDebug(asIScriptObject* pObject, DebugRenderer* InRenderer)
 {
     // TODO
 }

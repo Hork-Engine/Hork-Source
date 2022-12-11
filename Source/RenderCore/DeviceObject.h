@@ -65,7 +65,7 @@ enum DEVICE_OBJECT_PROXY_TYPE : uint8_t
     DEVICE_OBJECT_TYPE_MAX
 };
 
-class IDeviceObject : public ARefCounted
+class IDeviceObject : public RefCounted
 {
 public:
     IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType, bool bInternalDeviceObject = false);
@@ -74,7 +74,7 @@ public:
 
     DEVICE_OBJECT_PROXY_TYPE GetProxyType() const { return ProxyType; }
 
-    void SetDebugName(AStringView _DebugName)
+    void SetDebugName(StringView _DebugName)
     {
 #ifdef HK_DEBUG
         DebugName = _DebugName;
@@ -134,7 +134,7 @@ private:
     IDevice* pDevice;
     bool bInternalDeviceObject;
 #ifdef HK_DEBUG
-    AString DebugName;
+    String DebugName;
 
     IDeviceObject* Next = nullptr;
     IDeviceObject* Prev = nullptr;

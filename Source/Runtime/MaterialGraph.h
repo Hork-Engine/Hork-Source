@@ -37,7 +37,7 @@ SOFTWARE.
 
 class MGNode;
 class MGMaterialGraph;
-class AMaterialBuildContext;
+class MaterialBuildContext;
 
 enum MG_VALUE_TYPE
 {
@@ -71,21 +71,21 @@ enum PARALLAX_TECHNIQUE
 class MGOutput
 {
 public:
-    AString       Expression;
+    String       Expression;
     MG_VALUE_TYPE Type   = MG_VALUE_TYPE_UNDEFINED;
     int           Usages = 0;
 
-    MGOutput(AStringView Name, MG_VALUE_TYPE Type = MG_VALUE_TYPE_UNDEFINED) :
+    MGOutput(StringView Name, MG_VALUE_TYPE Type = MG_VALUE_TYPE_UNDEFINED) :
         m_Name(Name), Type(Type)
     {}
 
-    AString const& GetName() const
+    String const& GetName() const
     {
         return m_Name;
     }
 
 private:
-    AString m_Name;
+    String m_Name;
     MGNode* m_Owner = nullptr;
 
     friend class MGNode;
@@ -94,11 +94,11 @@ private:
 class MGInput
 {
 public:
-    MGInput(AStringView Name) :
+    MGInput(StringView Name) :
         m_Name(Name)
     {}
 
-    AString const& GetName() const
+    String const& GetName() const
     {
         return m_Name;
     }
@@ -114,49 +114,49 @@ public:
     }
 
 private:
-    AString      m_Name;
+    String      m_Name;
     MGOutput*    m_Slot = nullptr;
     TRef<MGNode> m_SlotNode;
 
     friend class MGNode;
 };
 
-class MGNode : public ABaseObject
+class MGNode : public BaseObject
 {
-    HK_CLASS(MGNode, ABaseObject)
+    HK_CLASS(MGNode, BaseObject)
 
     friend class MGMaterialGraph;
 
 public:
     Float2 Location;
 
-    MGNode(AStringView Name = "Unnamed");
+    MGNode(StringView Name = "Unnamed");
 
     uint32_t GetId() const { return m_ID; }
 
-    MGNode& BindInput(AStringView InputSlot, MGNode* Node);
-    MGNode& BindInput(AStringView InputSlot, MGNode& Node);
-    MGNode& BindInput(AStringView InputSlot, MGOutput& pSlot);
-    MGNode& BindInput(AStringView InputSlot, MGOutput* pSlot);
+    MGNode& BindInput(StringView InputSlot, MGNode* Node);
+    MGNode& BindInput(StringView InputSlot, MGNode& Node);
+    MGNode& BindInput(StringView InputSlot, MGOutput& pSlot);
+    MGNode& BindInput(StringView InputSlot, MGOutput* pSlot);
 
-    void UnbindInput(AStringView InputSlot);
+    void UnbindInput(StringView InputSlot);
 
-    MGOutput* operator[](AStringView Name)
+    MGOutput* operator[](StringView Name)
     {
         return FindOutput(Name);
     }
 
-    MGOutput* FindOutput(AStringView _Name);
+    MGOutput* FindOutput(StringView _Name);
 
-    bool Build(AMaterialBuildContext& Context);
+    bool Build(MaterialBuildContext& Context);
 
-    void ResetConnections(AMaterialBuildContext const& Context);
-    void TouchConnections(AMaterialBuildContext const& Context);
+    void ResetConnections(MaterialBuildContext const& Context);
+    void TouchConnections(MaterialBuildContext const& Context);
 
     TVector<MGInput*> const&  GetInputs() const { return m_Inputs; }
     TVector<MGOutput*> const& GetOutputs() const { return m_Outputs; }
 
-    void ParseProperties(ADocValue const* document);
+    void ParseProperties(DocumentValue const* document);
 
 protected:
     void SetInputs(std::initializer_list<MGInput*> Inputs);
@@ -168,11 +168,11 @@ protected:
         SetOutputs(Outputs);
     }
 
-    virtual void Compute(AMaterialBuildContext& Context) {}
+    virtual void Compute(MaterialBuildContext& Context) {}
 
 private:
     uint32_t           m_ID{};
-    AString            m_Name;
+    String            m_Name;
     TVector<MGInput*>  m_Inputs;
     TVector<MGOutput*> m_Outputs;
     int                m_Serial{};
@@ -185,7 +185,7 @@ class MGSingleton : public MGNode
 
 public:
     MGSingleton() = default;
-    MGSingleton(AStringView Name) :
+    MGSingleton(StringView Name) :
         Super(Name)
     {}
     ~MGSingleton() = default;
@@ -214,9 +214,9 @@ protected:
         Normalize
     };
 
-    MGArithmeticFunction1(FUNCTION _Function, AStringView _Name = "ArithmeticFunction1");
+    MGArithmeticFunction1(FUNCTION _Function, StringView _Name = "ArithmeticFunction1");
 
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 
     FUNCTION m_Function{};
 };
@@ -246,9 +246,9 @@ protected:
         Max
     };
 
-    MGArithmeticFunction2(FUNCTION Function, AStringView Name = "ArithmeticFunction2");
+    MGArithmeticFunction2(FUNCTION Function, StringView Name = "ArithmeticFunction2");
 
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 
     FUNCTION m_Function;
 };
@@ -273,9 +273,9 @@ public:
     MGArithmeticFunction3();
 
 protected:
-    MGArithmeticFunction3(FUNCTION Function, AStringView Name = "ArithmeticFunction3");
+    MGArithmeticFunction3(FUNCTION Function, StringView Name = "ArithmeticFunction3");
 
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 
     FUNCTION m_Function;
 };
@@ -453,7 +453,7 @@ public:
     MGLength();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGDecomposeVector : public MGNode
@@ -470,7 +470,7 @@ public:
     MGDecomposeVector();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGMakeVector : public MGNode
@@ -487,7 +487,7 @@ public:
     MGMakeVector();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGSpheremapCoord : public MGNode
@@ -501,7 +501,7 @@ public:
     MGSpheremapCoord();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGLuminance : public MGNode
@@ -515,7 +515,7 @@ public:
     MGLuminance();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGPI : public MGNode
@@ -528,7 +528,7 @@ public:
     MGPI();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MG2PI : public MGNode
@@ -541,7 +541,7 @@ public:
     MG2PI();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGBoolean : public MGNode
@@ -556,7 +556,7 @@ public:
     MGBoolean(bool v = false);
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGBoolean2 : public MGNode
@@ -571,7 +571,7 @@ public:
     MGBoolean2(Bool2 const& v = Bool2::Zero());
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGBoolean3 : public MGNode
@@ -586,7 +586,7 @@ public:
     MGBoolean3(Bool3 const& v = Bool3::Zero());
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGBoolean4 : public MGNode
@@ -601,7 +601,7 @@ public:
     MGBoolean4(Bool4 const& v = Bool4::Zero());
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGFloat : public MGNode
@@ -616,7 +616,7 @@ public:
     MGFloat(float Value = 0.0f);
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGFloat2 : public MGNode
@@ -631,7 +631,7 @@ public:
     MGFloat2(Float2 const& Value = {});
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGFloat3 : public MGNode
@@ -646,7 +646,7 @@ public:
     MGFloat3(Float3 const& Value = {});
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGFloat4 : public MGNode
@@ -661,7 +661,7 @@ public:
     MGFloat4(Float4 const& Value = {});
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGTextureSlot : public MGNode
@@ -674,10 +674,10 @@ class MGTextureSlot : public MGNode
 
 public:
     TEXTURE_TYPE    TextureType{TEXTURE_2D};
-    ETextureFilter  Filter{TEXTURE_FILTER_LINEAR};
-    ETextureAddress AddressU{TEXTURE_ADDRESS_WRAP};
-    ETextureAddress AddressV{TEXTURE_ADDRESS_WRAP};
-    ETextureAddress AddressW{TEXTURE_ADDRESS_WRAP};
+    TEXTURE_FILTER  Filter{TEXTURE_FILTER_LINEAR};
+    TEXTURE_ADDRESS AddressU{TEXTURE_ADDRESS_WRAP};
+    TEXTURE_ADDRESS AddressV{TEXTURE_ADDRESS_WRAP};
+    TEXTURE_ADDRESS AddressW{TEXTURE_ADDRESS_WRAP};
     float           MipLODBias{0};
     float           Anisotropy{16};
     float           MinLod{-1000};
@@ -688,7 +688,7 @@ public:
     MGTextureSlot();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 
 private:
     int m_SlotIndex{-1};
@@ -709,7 +709,7 @@ public:
     MGUniformAddress();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGTextureLoad : public MGNode
@@ -728,12 +728,12 @@ class MGTextureLoad : public MGNode
 
 public:
     bool               bSwappedToBGR = false;
-    ETextureColorSpace ColorSpace    = TEXTURE_COLORSPACE_RGBA;
+    TEXTURE_COLOR_SPACE ColorSpace    = TEXTURE_COLOR_SPACE_RGBA;
 
     MGTextureLoad();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGNormalLoad : public MGNode
@@ -754,7 +754,7 @@ public:
     MGNormalLoad();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGParallaxMapLoad : public MGSingleton
@@ -772,7 +772,7 @@ public:
     MGParallaxMapLoad();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGVirtualTextureLoad : public MGNode
@@ -789,12 +789,12 @@ class MGVirtualTextureLoad : public MGNode
 public:
     int                TextureLayer{0};
     bool               bSwappedToBGR = false;
-    ETextureColorSpace ColorSpace    = TEXTURE_COLORSPACE_RGBA;
+    TEXTURE_COLOR_SPACE ColorSpace    = TEXTURE_COLOR_SPACE_RGBA;
 
     MGVirtualTextureLoad();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGVirtualTextureNormalLoad : public MGNode
@@ -813,7 +813,7 @@ public:
     MGVirtualTextureNormalLoad();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInFragmentCoord : public MGSingleton
@@ -831,7 +831,7 @@ public:
     MGInFragmentCoord();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 // Vertex position in model space
@@ -845,7 +845,7 @@ public:
     MGInPosition();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInNormal : public MGSingleton
@@ -858,7 +858,7 @@ public:
     MGInNormal();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInColor : public MGSingleton
@@ -871,7 +871,7 @@ public:
     MGInColor();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInTexCoord : public MGSingleton
@@ -884,7 +884,7 @@ public:
     MGInTexCoord();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInTimer : public MGSingleton
@@ -898,7 +898,7 @@ public:
     MGInTimer();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGInViewPosition : public MGSingleton
@@ -911,7 +911,7 @@ public:
     MGInViewPosition();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGCondLess : public MGNode
@@ -928,7 +928,7 @@ public:
     MGCondLess();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 // TODO: add greater, lequal, gequal, equal, not equal
@@ -944,7 +944,7 @@ public:
     MGAtmosphere();
 
 protected:
-    void Compute(AMaterialBuildContext& Context) override;
+    void Compute(MaterialBuildContext& Context) override;
 };
 
 class MGMaterialGraph : public MGNode
@@ -1029,7 +1029,7 @@ public:
     template <typename T, typename... TArgs>
     T* Add(TArgs&&... Args)
     {
-        if (T::ClassMeta().IsSubclassOf<MGSingleton>())
+        if (T::GetClassMeta().IsSubclassOf<MGSingleton>())
         {
             for (MGNode* node : m_Nodes)
             {
@@ -1046,34 +1046,34 @@ public:
         return static_cast<T*>(node);
     }
 
-    MGNode* Add(AStringView Name);
+    MGNode* Add(StringView Name);
 
     MGTextureSlot* GetTexture(uint32_t Slot);
 
     TVector<MGTextureSlot*> const& GetTextures() const { return m_TextureSlots; }
 
-    TRef<ACompiledMaterial> Compile();
+    TRef<CompiledMaterial> Compile();
 
 private:
-    void CompileStage(class AMaterialBuildContext& ctx);
+    void CompileStage(class MaterialBuildContext& ctx);
 
-    void CreateStageTransitions(struct SMaterialStageTransition& Transition,
-                                AMaterialBuildContext const*     VertexStage,
-                                AMaterialBuildContext const*     TessControlStage,
-                                AMaterialBuildContext const*     TessEvalStage,
-                                AMaterialBuildContext const*     GeometryStage,
-                                AMaterialBuildContext const*     FragmentStage);
+    void CreateStageTransitions(struct MaterialStageTransition& Transition,
+                                MaterialBuildContext const*     VertexStage,
+                                MaterialBuildContext const*     TessControlStage,
+                                MaterialBuildContext const*     TessEvalStage,
+                                MaterialBuildContext const*     GeometryStage,
+                                MaterialBuildContext const*     FragmentStage);
 
-    AString SamplersString(int MaxtextureSlot);
+    String SamplersString(int MaxtextureSlot);
 
-    void Compute(AMaterialBuildContext& Context) override;
-    void ComputeVertexStage(AMaterialBuildContext& Context);
-    void ComputeDepthStage(AMaterialBuildContext& Context);
-    void ComputeLightStage(AMaterialBuildContext& Context);
-    void ComputeShadowCastStage(AMaterialBuildContext& Context);
-    void ComputeTessellationControlStage(AMaterialBuildContext& Context);
-    void ComputeTessellationEvalStage(AMaterialBuildContext& Context);
-    void ComputeAlphaMask(AMaterialBuildContext& Context);
+    void Compute(MaterialBuildContext& Context) override;
+    void ComputeVertexStage(MaterialBuildContext& Context);
+    void ComputeDepthStage(MaterialBuildContext& Context);
+    void ComputeLightStage(MaterialBuildContext& Context);
+    void ComputeShadowCastStage(MaterialBuildContext& Context);
+    void ComputeTessellationControlStage(MaterialBuildContext& Context);
+    void ComputeTessellationEvalStage(MaterialBuildContext& Context);
+    void ComputeAlphaMask(MaterialBuildContext& Context);
 
     TVector<MGNode*>        m_Nodes;
     TVector<MGTextureSlot*> m_TextureSlots;

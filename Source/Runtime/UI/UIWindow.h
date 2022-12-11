@@ -119,7 +119,7 @@ public:
 
     bool CaptionHitTest(float x, float y) const;
 
-    void Draw(ACanvas& canvas) override;
+    void Draw(Canvas& canvas) override;
 
 private:
     struct WindowLayout : UIBaseLayout
@@ -138,4 +138,4 @@ private:
 };
 
 
-UIWindow* UIMakeWindow(AStringView captionText, UIWidget* centralWidget);
+UIWindow* UIMakeWindow(StringView captionText, UIWidget* centralWidget);

@@ -35,13 +35,13 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class ATransformFeedbackGLImpl final : public ITransformFeedback
+class TransformFeedbackGLImpl final : public ITransformFeedback
 {
 public:
-    ATransformFeedbackGLImpl(ADeviceGLImpl* pDevice, STransformFeedbackDesc const& Desc);
-    ~ATransformFeedbackGLImpl();
+    TransformFeedbackGLImpl(DeviceGLImpl* pDevice, TransformFeedbackDesc const& Desc);
+    ~TransformFeedbackGLImpl();
 };
 
 #if 0

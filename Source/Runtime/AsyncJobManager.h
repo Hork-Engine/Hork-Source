@@ -36,24 +36,24 @@ SOFTWARE.
 //#define HK_ACTIVE_THREADS_COUNTERS
 
 /** Job for job list */
-struct SAsyncJob
+struct AsyncJob
 {
     /** Callback for the job */
     void (*Callback)(void*);
     /** Data that will be passed for the job */
     void* Data;
     /** Pointer to the next job in job list */
-    SAsyncJob* Next;
+    AsyncJob* Next;
 };
 
-class AAsyncJobManager;
+class AsyncJobManager;
 
 /** Job list */
-class AAsyncJobList final
+class AsyncJobList final
 {
-    HK_FORBID_COPY(AAsyncJobList)
+    HK_FORBID_COPY(AsyncJobList)
 
-    friend class AAsyncJobManager;
+    friend class AsyncJobManager;
 
 public:
     /** Set job pool size (max jobs for the list) */
@@ -75,52 +75,52 @@ public:
     void SubmitAndWait();
 
 private:
-    AAsyncJobList();
-    ~AAsyncJobList();
+    AsyncJobList();
+    ~AsyncJobList();
 
-    AAsyncJobManager* JobManager{nullptr};
+    AsyncJobManager* JobManager{nullptr};
 
-    TSmallVector<SAsyncJob, 1024> JobPool;
-    SAsyncJob*                  JobList{nullptr};
-    int                         NumPendingJobs{0};
+    TSmallVector<AsyncJob, 1024> JobPool;
+    AsyncJob*                    JobList{nullptr};
+    int                          NumPendingJobs{0};
 
-    SAsyncJob* SubmittedJobs{nullptr};
-    AMutex     SubmitSync;
+    AsyncJob* SubmittedJobs{nullptr};
+    Mutex     SubmitSync;
 
-    AAtomicInt SubmittedJobsCount{0};
-    AAtomicInt FetchCount{0};
-    //AAtomicInt FetchLock{ 0 };
+    AtomicInt SubmittedJobsCount{0};
+    AtomicInt FetchCount{0};
+    //AtomicInt FetchLock{0};
 
-    ASyncEvent EventDone;
-    bool       bSignalled{false}; // FIXME: must be atomic?
+    SyncEvent EventDone;
+    bool      bSignalled{false}; // FIXME: must be atomic?
 };
 
-HK_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const
+HK_FORCEINLINE int AsyncJobList::GetMaxParallelJobs() const
 {
     return JobPool.Capacity();
 }
 
 /** Job manager */
-class AAsyncJobManager final : public ARefCounted
+class AsyncJobManager final : public RefCounted
 {
-    HK_FORBID_COPY(AAsyncJobManager)
+    HK_FORBID_COPY(AsyncJobManager)
 
 public:
     static constexpr int MAX_WORKER_THREADS = 4;
     static constexpr int MAX_JOB_LISTS      = 4;
 
     /** Initialize job manager. Set worker threads count and create job lists */
-    AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists);
+    AsyncJobManager(int _NumWorkerThreads, int _NumJobLists);
 
-    ~AAsyncJobManager();
+    ~AsyncJobManager();
 
-    void SubmitJobList(AAsyncJobList* InJobList);
+    void SubmitJobList(AsyncJobList* InJobList);
 
     /** Wakeup worker threads for the new jobs */
     void NotifyThreads();
 
     /** Get job list by the index */
-    AAsyncJobList* GetAsyncJobList(int _Index)
+    AsyncJobList* GetAsyncJobList(int _Index)
     {
         HK_ASSERT(_Index >= 0 && _Index < NumJobLists);
         return &JobList[_Index];
@@ -139,19 +139,19 @@ public:
 private:
     void WorkerThreadRoutine(int _ThreadId);
 
-    AThread WorkerThread[MAX_WORKER_THREADS];
-    int     NumWorkerThreads{0};
+    Thread WorkerThread[MAX_WORKER_THREADS];
+    int    NumWorkerThreads{0};
 
 #ifdef HK_ACTIVE_THREADS_COUNTERS
-    AAtomicInt NumActiveThreads{0};
+    AtomicInt NumActiveThreads{0};
 #endif
 
-    ASyncEvent EventNotify[MAX_WORKER_THREADS];
+    SyncEvent EventNotify[MAX_WORKER_THREADS];
 
-    AAsyncJobList JobList[MAX_JOB_LISTS];
-    int           NumJobLists{0};
+    AsyncJobList JobList[MAX_JOB_LISTS];
+    int          NumJobLists{0};
 
-    AAtomicInt TotalJobs{0};
+    AtomicInt TotalJobs{0};
 
     bool bTerminated{false};
 };

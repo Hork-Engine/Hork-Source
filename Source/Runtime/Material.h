@@ -36,31 +36,31 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Renderer/GpuMaterial.h>
 
-class AMaterialInstance;
+class MaterialInstance;
 
 /**
 
 Material
 
 */
-class AMaterial : public AResource
+class Material : public Resource
 {
-    HK_CLASS(AMaterial, AResource)
+    HK_CLASS(Material, Resource)
 
 public:
-    AMaterial();
-    AMaterial(ACompiledMaterial* pCompiledMaterial);
+    Material();
+    Material(CompiledMaterial* pCompiledMaterial);
 
-    ~AMaterial();
+    ~Material();
 
     /** Create a new material instance. */
-    AMaterialInstance* Instantiate();
+    MaterialInstance* Instantiate();
 
     /** Find texture slot by name */
-    uint32_t GetTextureSlotByName(AStringView Name) const;
+    uint32_t GetTextureSlotByName(StringView Name) const;
 
     /** Find constant offset by name */
-    uint32_t GetConstantOffsetByName(AStringView Name) const;
+    uint32_t GetConstantOffsetByName(StringView Name) const;
 
     uint32_t NumTextureSlots() const;
 
@@ -99,16 +99,16 @@ public:
     /** Is face culling disabled */
     bool IsTwoSided() const { return m_pCompiledMaterial->bTwoSided; }
 
-    AMaterialGPU* GetGPUResource() { return m_GpuMaterial; }
+    MaterialGPU* GetGPUResource() { return m_GpuMaterial; }
 
     void UpdateGpuMaterial()
     {
-        m_GpuMaterial = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial = MakeRef<MaterialGPU>(m_pCompiledMaterial);
     }
 
     static void UpdateGpuMaterials()
     {
-        for (TListIterator<AMaterial> it(MaterialRegistry); it; it++)
+        for (TListIterator<Material> it(MaterialRegistry); it; it++)
         {
             it->UpdateGpuMaterial();
         }
@@ -119,19 +119,19 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(StringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
-    TRef<AMaterialGPU>      m_GpuMaterial;
-    TRef<ACompiledMaterial> m_pCompiledMaterial;
+    TRef<MaterialGPU>      m_GpuMaterial;
+    TRef<CompiledMaterial> m_pCompiledMaterial;
 
-    TLink<AMaterial>        Link;
-    static TList<AMaterial> MaterialRegistry;
+    TLink<Material>        Link;
+    static TList<Material> MaterialRegistry;
 
-    friend struct TList<AMaterial>;
-    friend struct TListIterator<AMaterial>;
+    friend struct TList<Material>;
+    friend struct TListIterator<Material>;
 };
 
 
@@ -140,64 +140,64 @@ private:
 Material Instance
 
 */
-class AMaterialInstance : public AResource
+class MaterialInstance : public Resource
 {
-    HK_CLASS(AMaterialInstance, AResource)
+    HK_CLASS(MaterialInstance, Resource)
 
 public:
-    AMaterialInstance();
-    AMaterialInstance(AMaterial* pMaterial);
+    MaterialInstance();
+    MaterialInstance(Material* pMaterial);
 
-    void SetTexture(AStringView Name, ATexture* pView);
-    void SetTexture(AStringView Name, ATextureView* pTexture);
+    void SetTexture(StringView Name, Texture* pView);
+    void SetTexture(StringView Name, TextureView* pTexture);
 
-    void SetTexture(uint32_t Slot, ATexture* pView);
-    void SetTexture(uint32_t Slot, ATextureView* pTexture);
+    void SetTexture(uint32_t Slot, Texture* pView);
+    void SetTexture(uint32_t Slot, TextureView* pTexture);
 
     void UnsetTextures();
 
-    void SetConstant(AStringView Name, float Value);
+    void SetConstant(StringView Name, float Value);
 
     void SetConstant(uint32_t Offset, float Value);
 
-    void SetVector(AStringView Name, Float4 const& Value);
+    void SetVector(StringView Name, Float4 const& Value);
 
     void SetVector(uint32_t Offset, Float4 const& Value);
 
-    uint32_t GetTextureSlotByName(AStringView Name) const;
+    uint32_t GetTextureSlotByName(StringView Name) const;
 
-    uint32_t GetConstantOffsetByName(AStringView Name) const;
+    uint32_t GetConstantOffsetByName(StringView Name) const;
 
     uint32_t NumTextureSlots() const;
 
     /** Get material. Never return null. */
-    AMaterial* GetMaterial() const;
+    Material* GetMaterial() const;
 
-    ATextureView* GetTexture(uint32_t Slot);
+    TextureView*  GetTexture(uint32_t Slot);
     float         GetConstant(uint32_t Offset);
     Float4 const& GetVector(uint32_t Offset);
 
     // Experimental:
-    void SetVirtualTexture(AVirtualTextureResource* VirtualTex);
+    void SetVirtualTexture(VirtualTextureResource* VirtualTex);
 
     /** Internal. Used by render frontend */
-    SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int FrameNumber);
+    MaterialFrameData* PreRenderUpdate(class FrameLoop* FrameLoop, int FrameNumber);
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
     bool LoadTextVersion(IBinaryStreamReadInterface& Stream);
 
 private:
-    TRef<AMaterial>               m_pMaterial;
-    TRef<ATextureView>            m_Textures[MAX_MATERIAL_TEXTURES];
-    TRef<AVirtualTextureResource> m_VirtualTexture;
+    TRef<Material>               m_pMaterial;
+    TRef<TextureView>            m_Textures[MAX_MATERIAL_TEXTURES];
+    TRef<VirtualTextureResource> m_VirtualTexture;
     union
     {
         /** Instance uniforms */
@@ -206,6 +206,6 @@ private:
         /** Instance uniform vectors */
         Float4 m_UniformVectors[MAX_MATERIAL_UNIFORM_VECTORS];
     };
-    SMaterialFrameData* m_FrameData = nullptr;
-    int                 m_VisFrame  = -1;
+    MaterialFrameData* m_FrameData = nullptr;
+    int                m_VisFrame  = -1;
 };

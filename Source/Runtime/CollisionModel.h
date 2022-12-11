@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Geometry/BV/BvAxisAlignedBox.h>
 #include <Geometry/Plane.h>
 
-class AIndexedMeshSubpart;
+class IndexedMeshSubpart;
 
 enum COLLISION_MASK : uint32_t
 {
@@ -101,7 +101,7 @@ enum
     COLLISION_SHAPE_AXIAL_DEFAULT = COLLISION_SHAPE_AXIAL_Y
 };
 
-struct SCollisionMeshSubpart
+struct CollisionMeshSubpart
 {
     int BaseVertex;
     int VertexCount;
@@ -109,24 +109,24 @@ struct SCollisionMeshSubpart
     int IndexCount;
 };
 
-struct SCollisionBone
+struct CollisionBone
 {
     int            JointIndex{-1};
     COLLISION_MASK CollisionGroup{CM_NOCOLLISION};
     COLLISION_MASK CollisionMask{CM_NOCOLLISION};
 };
 
-struct SCollisionSphereDef
+struct CollisionSphereDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_SPHERE};
     void*           pNext{};
     Float3          Position;
     float           Margin{0.01f};
     float           Radius{0.5f};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionSphereRadiiDef
+struct CollisionSphereRadiiDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_SPHERE_RADII};
     void*           pNext{};
@@ -134,10 +134,10 @@ struct SCollisionSphereRadiiDef
     Quat            Rotation;
     float           Margin{0.01f};
     Float3          Radius{0.5f, 0.5f, 0.5f};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionBoxDef
+struct CollisionBoxDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_BOX};
     void*           pNext{};
@@ -145,10 +145,10 @@ struct SCollisionBoxDef
     Quat            Rotation;
     float           Margin{0.01f};
     Float3          HalfExtents{0.5f, 0.5f, 0.5f};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionCylinderDef
+struct CollisionCylinderDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_CYLINDER};
     void*           pNext{};
@@ -158,10 +158,10 @@ struct SCollisionCylinderDef
     float           Radius{0.5f};
     float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionConeDef
+struct CollisionConeDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_CONE};
     void*           pNext{};
@@ -171,10 +171,10 @@ struct SCollisionConeDef
     float           Radius{0.5f};
     float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionCapsuleDef
+struct CollisionCapsuleDef
 {
     COLLISION_SHAPE Type{COLLISION_SHAPE_CAPSULE};
     void*           pNext{};
@@ -184,10 +184,10 @@ struct SCollisionCapsuleDef
     float           Radius{0.5f};
     float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
-    SCollisionBone  Bone;
+    CollisionBone   Bone;
 };
 
-struct SCollisionConvexHullDef
+struct CollisionConvexHullDef
 {
     COLLISION_SHAPE     Type{COLLISION_SHAPE_CONVEX_HULL};
     void*               pNext{};
@@ -200,45 +200,45 @@ struct SCollisionConvexHullDef
     int                 IndexCount{};
     PlaneF const*       pPlanes{};
     int                 PlaneCount{};
-    SCollisionBone      Bone;
+    CollisionBone       Bone;
 };
 
-struct SCollisionTriangleSoupBVHDef
+struct CollisionTriangleSoupBVHDef
 {
-    COLLISION_SHAPE              Type{COLLISION_SHAPE_TRIANGLE_SOUP_BVH};
-    void*                        pNext{};
-    Float3                       Position;
-    Quat                         Rotation;
-    float                        Margin{0.01f};
-    Float3 const*                pVertices{};
-    int                          VertexStride{};
-    int                          VertexCount{};
-    unsigned int const*          pIndices{};
-    int                          IndexCount{};
-    SCollisionMeshSubpart const* pSubparts{};
-    AIndexedMeshSubpart* const*  pIndexedMeshSubparts{};
-    int                          SubpartCount{};
-    bool                         bForceQuantizedAabbCompression{false};
+    COLLISION_SHAPE             Type{COLLISION_SHAPE_TRIANGLE_SOUP_BVH};
+    void*                       pNext{};
+    Float3                      Position;
+    Quat                        Rotation;
+    float                       Margin{0.01f};
+    Float3 const*               pVertices{};
+    int                         VertexStride{};
+    int                         VertexCount{};
+    unsigned int const*         pIndices{};
+    int                         IndexCount{};
+    CollisionMeshSubpart const* pSubparts{};
+    IndexedMeshSubpart* const*  pIndexedMeshSubparts{};
+    int                         SubpartCount{};
+    bool                        bForceQuantizedAabbCompression{false};
 };
 
-struct SCollisionTriangleSoupGimpactDef
+struct CollisionTriangleSoupGimpactDef
 {
-    COLLISION_SHAPE              Type{COLLISION_SHAPE_TRIANGLE_SOUP_GIMPACT};
-    void*                        pNext{};
-    Float3                       Position;
-    Quat                         Rotation;
-    float                        Margin{0.01f};
-    Float3 const*                pVertices{};
-    int                          VertexStride{};
-    int                          VertexCount{};
-    unsigned int const*          pIndices{};
-    int                          IndexCount{};
-    SCollisionMeshSubpart const* pSubparts{};
-    AIndexedMeshSubpart* const*  pIndexedMeshSubparts{};
-    int                          SubpartCount{};
+    COLLISION_SHAPE             Type{COLLISION_SHAPE_TRIANGLE_SOUP_GIMPACT};
+    void*                       pNext{};
+    Float3                      Position;
+    Quat                        Rotation;
+    float                       Margin{0.01f};
+    Float3 const*               pVertices{};
+    int                         VertexStride{};
+    int                         VertexCount{};
+    unsigned int const*         pIndices{};
+    int                         IndexCount{};
+    CollisionMeshSubpart const* pSubparts{};
+    IndexedMeshSubpart* const*  pIndexedMeshSubparts{};
+    int                         SubpartCount{};
 };
 
-struct SCollisionConvexDecompositionDef
+struct CollisionConvexDecompositionDef
 {
     COLLISION_SHAPE     Type{COLLISION_SHAPE_CONVEX_DECOMPOSITION};
     void*               pNext{};
@@ -249,7 +249,7 @@ struct SCollisionConvexDecompositionDef
     int                 IndicesCount{};
 };
 
-struct SCollisionConvexDecompositionVHACDDef
+struct CollisionConvexDecompositionVHACDDef
 {
     COLLISION_SHAPE     Type{COLLISION_SHAPE_CONVEX_DECOMPOSITION_VHACD};
     void*               pNext{};
@@ -260,95 +260,95 @@ struct SCollisionConvexDecompositionVHACDDef
     int                 IndicesCount{};
 };
 
-struct ACollisionBody
+struct CollisionBody
 {
     Float3 Position;
     Quat   Rotation;
     float  Margin{0.01f};
 
-    virtual ~ACollisionBody() {}
+    virtual ~CollisionBody() {}
 
     virtual class btCollisionShape* Create(Float3 const& Scale) { return nullptr; }
     virtual void                    GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const {}
 };
 
-struct SBoneCollision
+struct BoneCollision
 {
-    int                        JointIndex;
-    COLLISION_MASK             CollisionGroup;
-    COLLISION_MASK             CollisionMask;
-    TUniqueRef<ACollisionBody> CollisionBody;
+    int                       JointIndex;
+    COLLISION_MASK            CollisionGroup;
+    COLLISION_MASK            CollisionMask;
+    TUniqueRef<CollisionBody> CollisionBody;
 };
 
-struct SCollisionModelCreateInfo
+struct CollisionModelCreateInfo
 {
     void const* pShapes{};
     Float3      CenterOfMass;
     bool        bOverrideCenterOfMass{};
 };
 
-class ACollisionInstance;
+class CollisionInstance;
 
 /**
 NOTE: Collision model should be an immutable object
 */
-class ACollisionModel : public AResource
+class CollisionModel : public Resource
 {
-    HK_CLASS(ACollisionModel, AResource)
+    HK_CLASS(CollisionModel, Resource)
 
 public:
-    ACollisionModel();
-    ACollisionModel(void const* pShapes);
-    ACollisionModel(SCollisionModelCreateInfo const& CreateInfo);
-    ~ACollisionModel();
+    CollisionModel();
+    CollisionModel(void const* pShapes);
+    CollisionModel(CollisionModelCreateInfo const& CreateInfo);
+    ~CollisionModel();
 
     Float3 const& GetCenterOfMass() const { return m_CenterOfMass; }
 
     bool IsEmpty() const { return m_CollisionBodies.IsEmpty(); }
 
-    TVector<SBoneCollision> const& GetBoneCollisions() const { return m_BoneCollisions; }
+    TVector<BoneCollision> const& GetBoneCollisions() const { return m_BoneCollisions; }
 
     void GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const;
 
     /** Create a scaled instance of the collision model. */
-    TRef<ACollisionInstance> Instantiate(Float3 const& Scale);
+    TRef<CollisionInstance> Instantiate(Float3 const& Scale);
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/CollisionModel/Default"; }
 
 private:
-    void AddSphere(SCollisionSphereDef const* pShape, int& NumShapes);
-    void AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int& NumShapes);
-    void AddBox(SCollisionBoxDef const* pShape, int& NumShapes);
-    void AddCylinder(SCollisionCylinderDef const* pShape, int& NumShapes);
-    void AddCone(SCollisionConeDef const* pShape, int& NumShapes);
-    void AddCapsule(SCollisionCapsuleDef const* pShape, int& NumShapes);
-    void AddConvexHull(SCollisionConvexHullDef const* pShape, int& NumShapes);
-    void AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pShape, int& NumShapes);
-    void AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef const* pShape, int& NumShapes);
-    void AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes);
-    void AddConvexDecompositionVHACD(SCollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes);
+    void AddSphere(CollisionSphereDef const* pShape, int& NumShapes);
+    void AddSphereRadii(CollisionSphereRadiiDef const* pShape, int& NumShapes);
+    void AddBox(CollisionBoxDef const* pShape, int& NumShapes);
+    void AddCylinder(CollisionCylinderDef const* pShape, int& NumShapes);
+    void AddCone(CollisionConeDef const* pShape, int& NumShapes);
+    void AddCapsule(CollisionCapsuleDef const* pShape, int& NumShapes);
+    void AddConvexHull(CollisionConvexHullDef const* pShape, int& NumShapes);
+    void AddTriangleSoupBVH(CollisionTriangleSoupBVHDef const* pShape, int& NumShapes);
+    void AddTriangleSoupGimpact(CollisionTriangleSoupGimpactDef const* pShape, int& NumShapes);
+    void AddConvexDecomposition(CollisionConvexDecompositionDef const* pShape, int& NumShapes);
+    void AddConvexDecompositionVHACD(CollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes);
 
-    TVector<TUniqueRef<ACollisionBody>> m_CollisionBodies;
-    TVector<SBoneCollision>             m_BoneCollisions;
-    Float3                              m_CenterOfMass;
+    TVector<TUniqueRef<CollisionBody>> m_CollisionBodies;
+    TVector<BoneCollision>             m_BoneCollisions;
+    Float3                             m_CenterOfMass;
 
     // Collision instance has access to CollisionBodies
-    friend class ACollisionInstance;
+    friend class CollisionInstance;
 };
 
 /** Collision instance is an immutable object */
-class ACollisionInstance : public ARefCounted
+class CollisionInstance : public RefCounted
 {
 public:
-    ACollisionInstance(ACollisionModel* CollisionModel, Float3 const& Scale);
-    ~ACollisionInstance();
+    CollisionInstance(CollisionModel* CollisionModel, Float3 const& Scale);
+    ~CollisionInstance();
 
     Float3 CalculateLocalInertia(float Mass) const;
 
@@ -369,7 +369,7 @@ public:
     btCollisionShape* GetCollisionShape() const { return m_CollisionShape; }
 
 private:
-    TRef<ACollisionModel>             m_Model;
+    TRef<CollisionModel>              m_Model;
     TUniqueRef<class btCompoundShape> m_CompoundShape;
     btCollisionShape*                 m_CollisionShape;
     Float3                            m_CenterOfMass;

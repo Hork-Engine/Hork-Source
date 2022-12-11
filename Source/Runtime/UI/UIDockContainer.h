@@ -87,7 +87,7 @@ private:
     friend class UIDockContainer;
 };
 
-struct WDockPlacement
+struct UIDockPlacement
 {
     TRef<UIDockNode>  Leaf;
     DOCK_ZONE         Zone;
@@ -106,13 +106,13 @@ class UIDockContainer : public UIWidget
 
 public:
     UIDockContainer();
-    UIDockContainer(AStringView containerName);
+    UIDockContainer(StringView containerName);
 
     UIDockNode* TraceLeaf(float x, float y);
 
-    WDockPlacement GetPlacement(float x, float y);
+    UIDockPlacement GetPlacement(float x, float y);
 
-    AString const& GetContainerName() const { return m_ContainerName; }
+    String const& GetContainerName() const { return m_ContainerName; }
 
     bool AttachWidgetAt(UIDockWidget* widget, float x, float y);
 
@@ -135,11 +135,11 @@ public:
     TRef<UIDockWidget> DragWidget;
 
 protected:
-    void PostDraw(ACanvas& canvas) override;
+    void PostDraw(Canvas& canvas) override;
 
-    bool OnChildrenMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    bool OnChildrenMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
 
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
 
     void OnFocusLost() override;
 
@@ -157,7 +157,7 @@ private:
         void ArrangeChildren(UIDockNode* node);
     };
 
-    AString m_ContainerName;
+    String m_ContainerName;
     TRef<UIDockNode>    m_Root;
     TWeakRef<UIDockNode> m_DragSplitter;
     Float2 m_DragPos;

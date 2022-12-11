@@ -33,60 +33,61 @@ SOFTWARE.
 #include "TextureViewGLImpl.h"
 #include <Containers/Hash.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class ATextureGLImpl final : public ITexture
+class TextureGLImpl final : public ITexture
 {
 public:
-    ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& TextureDesc, bool bDummyTexture = false);
-    ~ATextureGLImpl();
+    TextureGLImpl(DeviceGLImpl* pDevice, TextureDesc const& TextureDesc, bool bDummyTexture = false);
+    ~TextureGLImpl();
 
     void MakeBindlessSamplerResident(BindlessHandle Handle, bool bResident) override;
 
     bool IsBindlessSamplerResident(BindlessHandle Handle) override;
 
-    BindlessHandle GetBindlessSampler(SSamplerDesc const& SamplerDesc) override;
+    BindlessHandle GetBindlessSampler(SamplerDesc const& SamplerDesc) override;
 
-    ITextureView* GetTextureView(STextureViewDesc const& TextureViewDesc) override;
+    ITextureView* GetTextureView(TextureViewDesc const& TextureViewDesc) override;
 
-    void GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const;
+    void GetMipLevelInfo(uint16_t MipLevel, TextureMipLevelInfo* pInfo) const;
 
     // TODO: Move Invalidate to FrameGraph
     void Invalidate(uint16_t MipLevel) override;
-    void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) override;
+    void InvalidateRect(uint32_t _NumRectangles, TextureRect const* _Rectangles) override;
 
     bool IsDummyTexture() const { return bDummyTexture; }
 
-    void Read(uint16_t     MipLevel,
-              size_t       SizeInBytes,
+    void Read(uint16_t MipLevel,
+              size_t SizeInBytes,
               unsigned int Alignment,
-              void*        pSysMem) override;
+              void* pSysMem) override;
 
-    void ReadRect(STextureRect const& Rectangle,
-                  size_t              SizeInBytes,
-                  unsigned int        Alignment,
-                  void*               pSysMem) override;
+    void ReadRect(TextureRect const& Rectangle,
+                  size_t SizeInBytes,
+                  unsigned int Alignment,
+                  void* pSysMem) override;
 
-    bool Write(uint16_t     MipLevel,
-               size_t       SizeInBytes,
+    bool Write(uint16_t MipLevel,
+               size_t SizeInBytes,
                unsigned int Alignment,
-               const void*  pSysMem) override;
+               const void* pSysMem) override;
 
-    bool WriteRect(STextureRect const& Rectangle,
-                   size_t              SizeInBytes,
-                   unsigned int        Alignment,
-                   const void*         pSysMem,
-                   size_t              RowPitch   = 0,
-                   size_t              DepthPitch = 0) override;
+    bool WriteRect(TextureRect const& Rectangle,
+                   size_t SizeInBytes,
+                   unsigned int Alignment,
+                   const void* pSysMem,
+                   size_t RowPitch = 0,
+                   size_t DepthPitch = 0) override;
 
-    class AImmediateContextGLImpl* pContext{};
+    class ImmediateContextGLImpl* pContext{};
 
 private:
     void CreateDefaultViews();
 
-    THashMap<STextureViewDesc, TRef<ATextureViewGLImpl>> Views;
+    THashMap<TextureViewDesc, TRef<TextureViewGLImpl>> Views;
 
     THashSet<uint64_t> BindlessSamplers;
 
@@ -94,4 +95,4 @@ private:
     bool bDummyTexture{};
 };
 
-}
+} // namespace RenderCore

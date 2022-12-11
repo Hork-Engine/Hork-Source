@@ -2,10 +2,10 @@
 
 #include "RenderDefs.h"
 
-class AOmnidirectionalShadowMapPool
+class OmnidirectionalShadowMapPool
 {
 public:
-    AOmnidirectionalShadowMapPool();
+    OmnidirectionalShadowMapPool();
 
     int GetResolution() const;
 

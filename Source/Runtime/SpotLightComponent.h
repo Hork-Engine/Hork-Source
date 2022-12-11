@@ -32,43 +32,43 @@ SOFTWARE.
 
 #include "AnalyticLightComponent.h"
 
-class ASpotLightComponent : public AAnalyticLightComponent
+class SpotLightComponent : public AnalyticLightComponent
 {
-    HK_COMPONENT(ASpotLightComponent, AAnalyticLightComponent)
+    HK_COMPONENT(SpotLightComponent, AnalyticLightComponent)
 
 public:
-    void  SetRadius(float _Radius);
+    void  SetRadius(float radius);
     float GetRadius() const;
 
-    void  SetInnerConeAngle(float _Angle);
+    void  SetInnerConeAngle(float angle);
     float GetInnerConeAngle() const;
 
-    void  SetOuterConeAngle(float _Angle);
+    void  SetOuterConeAngle(float angle);
     float GetOuterConeAngle() const;
 
-    void  SetSpotExponent(float _Exponent);
+    void  SetSpotExponent(float exponent);
     float GetSpotExponent() const;
 
-    void PackLight(Float4x4 const& InViewMatrix, SLightParameters& Light) override;
+    void PackLight(Float4x4 const& InViewMatrix, LightParameters& Light) override;
 
 protected:
-    ASpotLightComponent();
+    SpotLightComponent();
 
     void OnCreateAvatar() override;
     void OnTransformDirty() override;
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
     void UpdateWorldBounds();
 
-    BvSphere      SphereWorldBounds;
-    BvOrientedBox OBBWorldBounds;
+    BvSphere m_SphereWorldBounds;
+    BvOrientedBox m_OBBWorldBounds;
 
-    float Radius;
-    float InverseSquareRadius;
-    float InnerConeAngle;
-    float OuterConeAngle;
-    float CosHalfInnerConeAngle;
-    float CosHalfOuterConeAngle;
-    float SpotExponent;
+    float m_Radius;
+    float m_InverseSquareRadius;
+    float m_InnerConeAngle;
+    float m_OuterConeAngle;
+    float m_CosHalfInnerConeAngle;
+    float m_CosHalfOuterConeAngle;
+    float m_SpotExponent;
 };

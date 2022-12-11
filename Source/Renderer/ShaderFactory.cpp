@@ -33,7 +33,7 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
+ConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
 #ifdef HK_DEBUG
                                 "1"s,
 #else
@@ -41,15 +41,15 @@ AConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
 #endif
                                 CVAR_CHEAT);
 
-extern AConsoleVar r_SSLR;
-extern AConsoleVar r_HBAO;
+extern ConsoleVar r_SSLR;
+extern ConsoleVar r_HBAO;
 
 /** Render device */
 extern RenderCore::IDevice* GDevice;
 
 using namespace RenderCore;
 
-void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*> Sources, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*> Sources, TRef<IShaderModule>& Module)
 {
     TPodVector<const char*> sources;
 
@@ -61,7 +61,7 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
         "#define GEOMETRY_SHADER\n",
         "#define COMPUTE_SHADER\n"};
 
-    AString predefines = predefine[ShaderType];
+    String predefines = predefine[ShaderType];
 
     switch (GDevice->GetGraphicsVendor())
     {
@@ -131,24 +131,24 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
     GDevice->CreateShaderFromCode(ShaderType, sources.Size(), sources.ToPtr(), &Module);
 }
 
-void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, TRef<IShaderModule>& Module)
 {
     TPodVector<const char*> sources;
     sources.Add(Source);
     CreateShader(ShaderType, sources, Module);
 }
 
-void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, AString const& Source, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, String const& Source, TRef<IShaderModule>& Module)
 {
     CreateShader(ShaderType, Source.CStr(), Module);
 }
 
-void AShaderFactory::CreateVertexShader(AStringView FileName, SVertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateVertexShader(StringView FileName, VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<IShaderModule>& Module)
 {
     // TODO: here check if the shader binary is cached. Load from cache if so.
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(VertexAttribs, NumVertexAttribs);
-    AString source                    = AShaderLoader{}.LoadShader(FileName);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(VertexAttribs, NumVertexAttribs);
+    String source                    = ShaderLoader{}.LoadShader(FileName);
 
     TPodVector<const char*> sources;
 
@@ -161,55 +161,55 @@ void AShaderFactory::CreateVertexShader(AStringView FileName, SVertexAttribInfo 
     // TODO: Write shader binary to cache
 }
 
-void AShaderFactory::CreateTessControlShader(AStringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateTessControlShader(StringView FileName, TRef<IShaderModule>& Module)
 {
-    AString source = AShaderLoader{}.LoadShader(FileName);
+    String source = ShaderLoader{}.LoadShader(FileName);
     CreateShader(TESS_CONTROL_SHADER, source, Module);
 }
 
-void AShaderFactory::CreateTessEvalShader(AStringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateTessEvalShader(StringView FileName, TRef<IShaderModule>& Module)
 {
-    AString source = AShaderLoader{}.LoadShader(FileName);
+    String source = ShaderLoader{}.LoadShader(FileName);
     CreateShader(TESS_EVALUATION_SHADER, source, Module);
 }
 
-void AShaderFactory::CreateGeometryShader(AStringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateGeometryShader(StringView FileName, TRef<IShaderModule>& Module)
 {
-    AString source = AShaderLoader{}.LoadShader(FileName);
+    String source = ShaderLoader{}.LoadShader(FileName);
     CreateShader(GEOMETRY_SHADER, source, Module);
 }
 
-void AShaderFactory::CreateFragmentShader(AStringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateFragmentShader(StringView FileName, TRef<IShaderModule>& Module)
 {
-    AString source = AShaderLoader{}.LoadShader(FileName);
+    String source = ShaderLoader{}.LoadShader(FileName);
     CreateShader(FRAGMENT_SHADER, source, Module);
 }
 
-void AShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, AStringView VertexShader, AStringView FragmentShader, SPipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
+void ShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
 {
     using namespace RenderCore;
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = POLYGON_CULL_FRONT;
     rsd.bScissorEnable        = false;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
 
     if (BlendingPreset != BLENDING_NO_BLEND)
     {
         bsd.RenderTargetSlots[0].SetBlendingPreset(BlendingPreset);
     }
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
     CreateVertexShader(VertexShader, nullptr, 0, pipelineCI.pVS);
     CreateFragmentShader(FragmentShader, pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
     if (pResourceLayout)
@@ -220,24 +220,24 @@ void AShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, A
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void AShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline, AStringView VertexShader, AStringView FragmentShader, AStringView GeometryShader, SPipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
+void ShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, StringView GeometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
 {
     using namespace RenderCore;
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = POLYGON_CULL_FRONT;
     rsd.bScissorEnable        = false;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
 
     if (BlendingPreset != BLENDING_NO_BLEND)
     {
         bsd.RenderTargetSlots[0].SetBlendingPreset(BlendingPreset);
     }
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
@@ -245,7 +245,7 @@ void AShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline,
     CreateGeometryShader(GeometryShader, pipelineCI.pGS);
     CreateFragmentShader(FragmentShader, pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
     if (pResourceLayout)

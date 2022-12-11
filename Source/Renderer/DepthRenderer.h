@@ -32,4 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-void AddDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppDepthTexture, RenderCore::FGTextureProxy** ppVelocity);
+void AddDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppDepthTexture, RenderCore::FGTextureProxy** ppVelocity);

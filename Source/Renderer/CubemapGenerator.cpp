@@ -33,13 +33,13 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ACubemapGenerator::ACubemapGenerator()
+CubemapGenerator::CubemapGenerator()
 {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
 
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SConstantData );
+    bufferCI.SizeInBytes = sizeof( ConstantData );
     GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
@@ -49,16 +49,16 @@ ACubemapGenerator::ACubemapGenerator()
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
+    VertexBindingInfo vertexBindings[] =
     {
         {
             0,                              // vertex buffer binding
@@ -67,7 +67,7 @@ ACubemapGenerator::ACubemapGenerator()
         }
     };
 
-    SVertexAttribInfo vertexAttribs[] =
+    VertexAttribInfo vertexAttribs[] =
     {
         {
             "InPosition",
@@ -80,20 +80,20 @@ ACubemapGenerator::ACubemapGenerator()
         }
     };
 
-    AShaderFactory::CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
-    AShaderFactory::CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
+    ShaderFactory::CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     //samplerCI.bCubemapSeamless = true;
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
@@ -104,14 +104,14 @@ ACubemapGenerator::ACubemapGenerator()
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void ACubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
+void CubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
 {
-    GDevice->CreateTexture(RenderCore::STextureDesc()
+    GDevice->CreateTexture(RenderCore::TextureDesc()
                                .SetFormat(_Format)
-                               .SetResolution(STextureResolutionCubemapArray(_Resolution, _SourcesCount)),
+                               .SetResolution(TextureResolutionCubemapArray(_Resolution, _SourcesCount)),
                            ppTextureArray);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph( GDevice );
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
 
@@ -120,17 +120,17 @@ void ACubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, 
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
+    RenderPass & pass = frameGraph.AddTask< RenderPass >( "Irradiance gen pass" );
 
     pass.SetRenderArea( _Resolution, _Resolution );
 
     pass.SetColorAttachment(
-        STextureAttachment(pCubemapArrayProxy)
+        TextureAttachment(pCubemapArrayProxy)
         .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
     );
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
@@ -153,14 +153,14 @@ void ACubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, 
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void ACubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture)
+void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture)
 {
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(_Format)
-                               .SetResolution(STextureResolutionCubemap(_Resolution)),
+                               .SetResolution(TextureResolutionCubemap(_Resolution)),
                            ppTexture);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph( GDevice );
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
 
@@ -169,17 +169,17 @@ void ACubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITextu
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
+    RenderPass & pass = frameGraph.AddTask< RenderPass >( "Irradiance gen pass" );
 
     pass.SetRenderArea( _Resolution, _Resolution );
 
     pass.SetColorAttachment(
-        STextureAttachment(pCubemapProxy)
+        TextureAttachment(pCubemapProxy)
         .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
     );
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 

@@ -36,28 +36,28 @@ SOFTWARE.
 #include <Geometry/BV/BvOrientedBox.h>
 #include <Containers/ArrayView.h>
 
-using AArrayOfDebugVertices = TVector<SDebugVertex>;
-using AArrayOfDebugIndices  = TVector<unsigned short>;
-using AArrayOfDebugDrawCmds = TVector<SDebugDrawCmd>;
+using ArrayOfDebugVertices = TVector<DebugVertex>;
+using ArrayOfDebugIndices  = TVector<unsigned short>;
+using ArrayOfDebugDrawCmds = TVector<DebugDrawCmd>;
 
-class ADebugRenderer
+class DebugRenderer
 {
-    HK_FORBID_COPY(ADebugRenderer)
+    HK_FORBID_COPY(DebugRenderer)
 
 public:
-    ADebugRenderer();
+    DebugRenderer();
 
-    ~ADebugRenderer();
+    ~DebugRenderer();
 
     void Free();
 
     void Reset();
 
-    void BeginRenderView(SRenderView* InView, int InVisPass);
+    void BeginRenderView(RenderViewData* InView, int InVisPass);
 
     void EndRenderView();
 
-    SRenderView const* GetRenderView() const { return pView; }
+    RenderViewData const* GetRenderView() const { return pView; }
 
     void SetDepthTest(bool _DepthTest);
 
@@ -157,21 +157,21 @@ public:
 
     int GetVisPass() const { return VisPass; }
 
-    AArrayOfDebugVertices const& GetVertices() const { return Vertices; }
-    AArrayOfDebugIndices const&  GetIndices() const { return Indices; }
-    AArrayOfDebugDrawCmds const& GetCmds() const { return Cmds; }
+    ArrayOfDebugVertices const& GetVertices() const { return Vertices; }
+    ArrayOfDebugIndices const&  GetIndices() const { return Indices; }
+    ArrayOfDebugDrawCmds const& GetCmds() const { return Cmds; }
 
 private:
-    bool PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, int _NumIndices, SDebugDrawCmd** _Cmd, SDebugVertex** _Verts, unsigned short** _Indices);
+    bool PrimitiveReserve(DBG_DRAW_CMD _CmdName, int _NumVertices, int _NumIndices, DebugDrawCmd** _Cmd, DebugVertex** _Verts, unsigned short** _Indices);
 
-    SRenderView*          pView;
-    AArrayOfDebugVertices Vertices;
-    AArrayOfDebugIndices  Indices;
-    AArrayOfDebugDrawCmds Cmds;
-    uint32_t              CurrentColor;
-    int                   FirstVertex;
-    int                   FirstIndex;
-    int                   VisPass;
-    bool                  bDepthTest;
-    bool                  bSplit;
+    RenderViewData*      pView;
+    ArrayOfDebugVertices Vertices;
+    ArrayOfDebugIndices  Indices;
+    ArrayOfDebugDrawCmds Cmds;
+    uint32_t             CurrentColor;
+    int                  FirstVertex;
+    int                  FirstIndex;
+    int                  VisPass;
+    bool                 bDepthTest;
+    bool                 bSplit;
 };

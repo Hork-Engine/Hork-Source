@@ -35,34 +35,34 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ACustomTask;
+class FGCustomTask;
 
-class ACustomTaskContext
+class FGCustomTaskContext
 {
 public:
     IImmediateContext* pImmediateContext;
 };
 
 // fixed_function is used to prevent memory allocations during frame rendering.
-using ATaskFunction = eastl::fixed_function<64, void(ACustomTaskContext const&)>;
+using ATaskFunction = eastl::fixed_function<64, void(FGCustomTaskContext const&)>;
 
-class ACustomTask : public FGRenderTask<ACustomTask>
+class FGCustomTask : public FGRenderTask<FGCustomTask>
 {
-    using Super = FGRenderTask<ACustomTask>;
+    using Super = FGRenderTask<FGCustomTask>;
 
 public:
-    ACustomTask(AFrameGraph* pFrameGraph, const char* Name) :
+    FGCustomTask(FrameGraph* pFrameGraph, const char* Name) :
         FGRenderTask(pFrameGraph, Name, FG_RENDER_TASK_PROXY_TYPE_CUSTOM)
     {
     }
 
-    ACustomTask(ACustomTask const&) = delete;
-    ACustomTask(ACustomTask&&)      = default;
-    ACustomTask& operator=(ACustomTask const&) = delete;
-    ACustomTask& operator=(ACustomTask&&) = default;
+    FGCustomTask(FGCustomTask const&) = delete;
+    FGCustomTask(FGCustomTask&&)      = default;
+    FGCustomTask& operator=(FGCustomTask const&) = delete;
+    FGCustomTask& operator=(FGCustomTask&&) = default;
 
     template <typename Fn>
-    ACustomTask& SetFunction(Fn RecordFunction)
+    FGCustomTask& SetFunction(Fn RecordFunction)
     {
         Function = RecordFunction;
         return *this;

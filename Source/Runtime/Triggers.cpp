@@ -34,7 +34,7 @@ HK_CLASS_META(ATriggerBox)
 
 ATriggerBox::ATriggerBox()
 {
-    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
+    TriggerBody   = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
@@ -43,8 +43,8 @@ ATriggerBox::ATriggerBox()
     TriggerBody->SetCollisionGroup(CM_TRIGGER);
     TriggerBody->SetCollisionMask(CM_PAWN);
 
-    SCollisionBoxDef box;
-    ACollisionModel* collisionModel = NewObj<ACollisionModel>(&box);
+    CollisionBoxDef box;
+    CollisionModel* collisionModel = NewObj<CollisionModel>(&box);
 
     TriggerBody->SetCollisionModel(collisionModel);
 }
@@ -53,7 +53,7 @@ HK_CLASS_META(ATriggerSphere)
 
 ATriggerSphere::ATriggerSphere()
 {
-    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
+    TriggerBody   = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
@@ -62,8 +62,8 @@ ATriggerSphere::ATriggerSphere()
     TriggerBody->SetCollisionGroup(CM_TRIGGER);
     TriggerBody->SetCollisionMask(CM_PAWN);
 
-    SCollisionSphereDef sphere;
-    ACollisionModel*    collisionModel = NewObj<ACollisionModel>(&sphere);
+    CollisionSphereDef sphere;
+    CollisionModel*    collisionModel = NewObj<CollisionModel>(&sphere);
 
     TriggerBody->SetCollisionModel(collisionModel);
 }
@@ -72,7 +72,7 @@ HK_CLASS_META(ATriggerCylinder)
 
 ATriggerCylinder::ATriggerCylinder()
 {
-    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
+    TriggerBody   = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
@@ -81,8 +81,8 @@ ATriggerCylinder::ATriggerCylinder()
     TriggerBody->SetCollisionGroup(CM_TRIGGER);
     TriggerBody->SetCollisionMask(CM_PAWN);
 
-    SCollisionCylinderDef cylinder;
-    ACollisionModel*      collisionModel = NewObj<ACollisionModel>(&cylinder);
+    CollisionCylinderDef cylinder;
+    CollisionModel*      collisionModel = NewObj<CollisionModel>(&cylinder);
 
     TriggerBody->SetCollisionModel(collisionModel);
 }
@@ -91,7 +91,7 @@ HK_CLASS_META(ATriggerCone)
 
 ATriggerCone::ATriggerCone()
 {
-    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
+    TriggerBody   = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
@@ -100,8 +100,8 @@ ATriggerCone::ATriggerCone()
     TriggerBody->SetCollisionGroup(CM_TRIGGER);
     TriggerBody->SetCollisionMask(CM_PAWN);
 
-    SCollisionConeDef cone;
-    ACollisionModel*  collisionModel = NewObj<ACollisionModel>(&cone);
+    CollisionConeDef cone;
+    CollisionModel*  collisionModel = NewObj<CollisionModel>(&cone);
 
     TriggerBody->SetCollisionModel(collisionModel);
 }
@@ -110,7 +110,7 @@ HK_CLASS_META(ATriggerCapsule)
 
 ATriggerCapsule::ATriggerCapsule()
 {
-    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
+    TriggerBody   = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
@@ -119,8 +119,8 @@ ATriggerCapsule::ATriggerCapsule()
     TriggerBody->SetCollisionGroup(CM_TRIGGER);
     TriggerBody->SetCollisionMask(CM_PAWN);
 
-    SCollisionCapsuleDef capsule;
-    ACollisionModel*     collisionModel = NewObj<ACollisionModel>(&capsule);
+    CollisionCapsuleDef capsule;
+    CollisionModel*     collisionModel = NewObj<CollisionModel>(&capsule);
 
     TriggerBody->SetCollisionModel(collisionModel);
 }

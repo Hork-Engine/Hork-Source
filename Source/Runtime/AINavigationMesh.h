@@ -39,26 +39,24 @@ SOFTWARE.
 #include <Containers/BitMask.h>
 
 #ifdef DT_POLYREF64
-typedef uint64_t SNavPolyRef;
+typedef uint64_t NavPolyRef;
 #else
-typedef unsigned int SNavPolyRef;
+typedef unsigned int NavPolyRef;
 #endif
 
-class AWorld;
-
-struct SNavPointRef
+struct NavPointRef
 {
-    SNavPolyRef PolyRef;
+    NavPolyRef PolyRef;
     Float3      Position;
 };
 
-struct SAINavigationPathPoint
+struct AINavigationPathPoint
 {
     Float3 Position;
     int    Flags;
 };
 
-struct SAINavigationTraceResult
+struct AINavigationTraceResult
 {
     Float3 Position;
     Float3 Normal;
@@ -71,7 +69,7 @@ struct SAINavigationTraceResult
     }
 };
 
-struct SAINavigationHitResult
+struct AINavigationHitResult
 {
     Float3 Position;
     Float3 Normal;
@@ -83,7 +81,7 @@ struct SAINavigationHitResult
     }
 };
 
-struct SNavigationGeometry
+struct NavigationGeometry
 {
     TVector<Float3>       Vertices;
     TVector<unsigned int> Indices;
@@ -92,7 +90,7 @@ struct SNavigationGeometry
     BvAxisAlignedBox const*      pClipBoundingBox;
 };
 
-enum EAINavMeshPartition
+enum AI_NAV_MESH_PARTITION
 {
     /** Best choice if you precompute the navmesh, use this if you have large open areas (default) */
     AI_NAV_MESH_PARTITION_WATERSHED,
@@ -102,7 +100,7 @@ enum EAINavMeshPartition
     AI_NAV_MESH_PARTITION_LAYERS
 };
 
-enum EAINavMeshArea
+enum AI_NAV_MESH_AREA
 {
     AI_NAV_MESH_AREA_WATER = 0,
     AI_NAV_MESH_AREA_ROAD  = 1,
@@ -118,7 +116,7 @@ enum EAINavMeshArea
     AI_NAV_MESH_AREA_MAX = 64
 };
 
-enum EAINavMeshAreaFlags
+enum AI_NAV_MESH_FLAG
 {
     /** Ability to walk (ground, grass, road) */
     AI_NAV_MESH_FLAGS_WALK = 0x01,
@@ -134,7 +132,7 @@ enum EAINavMeshAreaFlags
     AI_NAV_MESH_FLAGS_ALL = 0xffff
 };
 
-enum EAINavMeshStraightFlags
+enum AI_NAV_MESH_STRAIGHTPATH
 {
     /** The vertex is the start position in the path. */
     AI_NAV_MESH_STRAIGHTPATH_START = 0x01,
@@ -144,7 +142,7 @@ enum EAINavMeshStraightFlags
     AI_NAV_MESH_STRAIGHTPATH_OFFMESH_CONNECTION = 0x04
 };
 
-enum EAINavMeshStraightPathCrossing
+enum AI_NAV_MESH_STRAIGHTPATH_CROSSING
 {
     AI_NAV_MESH_STRAIGHTPATH_DEFAULT = 0,
     /** Add a vertex at every polygon edge crossing where area changes */
@@ -153,7 +151,7 @@ enum EAINavMeshStraightPathCrossing
     AI_NAV_MESH_STRAIGHTPATH_ALL_CROSSINGS = 0x02,
 };
 
-struct SAINavMeshConnection
+struct AINavMeshConnection
 {
     /** Connection start position */
     Float3 StartPosition;
@@ -167,7 +165,7 @@ struct SAINavMeshConnection
     /** A flag that indicates that an off-mesh connection can be traversed in both directions */
     bool bBidirectional;
 
-    /** Area id assigned to the connection (see EAINavMeshArea) */
+    /** Area id assigned to the connection (see AI_NAV_MESH_AREA) */
     unsigned char AreaId;
 
     /** Flags assigned to the connection */
@@ -184,24 +182,24 @@ struct SAINavMeshConnection
     }
 };
 
-enum EAINavigationAreaShape
+enum AI_NAV_MESH_AREA_SHAPE
 {
     AI_NAV_MESH_AREA_SHAPE_BOX,
     AI_NAV_MESH_AREA_SHAPE_CONVEX_VOLUME
 };
 
-struct SAINavigationArea
+struct AINavigationArea
 {
     enum
     {
         MAX_VERTS = 32
     };
 
-    /** Area ID (see EAINavMeshArea) */
+    /** Area ID (see AI_NAV_MESH_AREA) */
     unsigned char AreaId;
 
     /** Area shape */
-    EAINavigationAreaShape Shape;
+    AI_NAV_MESH_AREA_SHAPE Shape;
 
     /** Convex volume definition */
     int    NumConvexVolumeVerts;
@@ -250,16 +248,16 @@ struct SAINavigationArea
     }
 };
 
-enum ENavMeshObstacleShape
+enum AI_NAV_MESH_OBSTACLE
 {
     AI_NAV_MESH_OBSTACLE_BOX,
     AI_NAV_MESH_OBSTACLE_CYLINDER
 };
 
-class AAINavMeshObstacle
+class AINavMeshObstacle
 {
 public:
-    ENavMeshObstacleShape Shape;
+    AI_NAV_MESH_OBSTACLE Shape;
 
     Float3 Position;
 
@@ -273,14 +271,14 @@ public:
     unsigned int ObstacleRef;
 };
 
-struct ANavQueryFilter
+struct NavQueryFilter
 {
-    HK_FORBID_COPY(ANavQueryFilter)
+    HK_FORBID_COPY(NavQueryFilter)
 
-    friend class AAINavigationMesh;
+    friend class AINavigationMesh;
 
-    ANavQueryFilter();
-    virtual ~ANavQueryFilter();
+    NavQueryFilter();
+    virtual ~NavQueryFilter();
 
     /** Sets the traversal cost of the area */
     void SetAreaCost(int _AreaId, float _Cost);
@@ -303,10 +301,10 @@ struct ANavQueryFilter
     unsigned short GetExcludeFlags() const;
 
 private:
-    TUniqueRef<class ANavQueryFilterPrivate> Filter;
+    TUniqueRef<class NavQueryFilterPrivate> Filter;
 };
 
-struct SAINavigationConfig
+struct AINavigationConfig
 {
     //unsigned int NavTrianglesPerChunk = 256;
 
@@ -358,44 +356,44 @@ struct SAINavigationConfig
     int MaxDynamicObstacles = 1024;
 
     /** Partition for non-tiled nav mesh */
-    EAINavMeshPartition RecastPartitionMethod = AI_NAV_MESH_PARTITION_WATERSHED;
+    AI_NAV_MESH_PARTITION RecastPartitionMethod = AI_NAV_MESH_PARTITION_WATERSHED;
 
     BvAxisAlignedBox BoundingBox = BvAxisAlignedBox::Empty();
 };
 
-class ANavigationPrimitive
+class NavigationPrimitive
 {
 public:
-    TLink<ANavigationPrimitive> Link;
+    TLink<NavigationPrimitive> Link;
 
-    virtual void GatherNavigationGeometry(SNavigationGeometry& Geometry) const = 0;
+    virtual void GatherNavigationGeometry(NavigationGeometry& Geometry) const = 0;
 };
 
-class AAINavigationMesh
+class AINavigationMesh
 {
-    HK_FORBID_COPY(AAINavigationMesh)
+    HK_FORBID_COPY(AINavigationMesh)
 
 public:
     /** Default query filter */
-    ANavQueryFilter QueryFilter;
+    NavQueryFilter QueryFilter;
 
     /** Navigation mesh connections. You must rebuild navigation mesh if you change connections. */
-    TPodVector<SAINavMeshConnection> NavMeshConnections; // TODO: Components?
+    TVector<AINavMeshConnection> NavMeshConnections; // TODO: Components?
 
     /** Navigation areas. You must rebuild navigation mesh if you change areas. */
-    TPodVector<SAINavigationArea> NavigationAreas; // TODO: Components?
+    TVector<AINavigationArea> NavigationAreas; // TODO: Components?
 
-    TList<ANavigationPrimitive> NavigationPrimitives;
+    TList<NavigationPrimitive> NavigationPrimitives;
 
     //
     // Public methods
     //
 
-    AAINavigationMesh();
-    virtual ~AAINavigationMesh();
+    AINavigationMesh();
+    virtual ~AINavigationMesh();
 
     /** Initialize empty nav mesh. You must rebuild nav mesh after that. */
-    bool Initialize(SAINavigationConfig const& _NavigationConfig);
+    bool Initialize(AINavigationConfig const& _NavigationConfig);
 
     /** Build all tiles in nav mesh */
     bool Build();
@@ -414,11 +412,11 @@ public:
 
     void RemoveTiles(Int2 const& _Mins, Int2 const& _Maxs);
 
-    void AddObstacle(AAINavMeshObstacle* _Obstacle);
+    void AddObstacle(AINavMeshObstacle* _Obstacle);
 
-    void RemoveObstacle(AAINavMeshObstacle* _Obstacle);
+    void RemoveObstacle(AINavMeshObstacle* _Obstacle);
 
-    void UpdateObstacle(AAINavMeshObstacle* _Obstacle);
+    void UpdateObstacle(AINavMeshObstacle* _Obstacle);
 
     /** Purge navigation data */
     void Purge();
@@ -427,123 +425,123 @@ public:
     void Update(float _TimeStep);
 
     /** Draw debug info */
-    void DrawDebug(ADebugRenderer* InRenderer);
+    void DrawDebug(DebugRenderer* InRenderer);
 
     /** Casts a 'walkability' ray along the surface of the navigation mesh from
     the start position toward the end position. */
-    bool Trace(SAINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, ANavQueryFilter const& _Filter) const;
+    bool Trace(AINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, NavQueryFilter const& _Filter) const;
 
     /** Casts a 'walkability' ray along the surface of the navigation mesh from
     the start position toward the end position. */
-    bool Trace(SAINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents) const;
+    bool Trace(AINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents) const;
 
     /** Query tile loaction */
     bool QueryTileLocaction(Float3 const& _Position, int* _TileX, int* _TileY) const;
 
     /** Queries the polygon nearest to the specified position.
     Extents is the search distance along each axis */
-    bool QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPolyRef* _NearestPolyRef) const;
+    bool QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPolyRef* _NearestPolyRef) const;
 
     /** Queries the polygon nearest to the specified position.
     Extents is the search distance along each axis */
-    bool QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, SNavPolyRef* _NearestPolyRef) const;
+    bool QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavPolyRef* _NearestPolyRef) const;
 
     /** Queries the polygon nearest to the specified position.
     Extents is the search distance along each axis */
-    bool QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPointRef* _NearestPointRef) const;
+    bool QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _NearestPointRef) const;
 
     /** Queries the polygon nearest to the specified position.
     Extents is the search distance along each axis */
-    bool QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, SNavPointRef* _NearestPointRef) const;
+    bool QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavPointRef* _NearestPointRef) const;
 
     /** Queries random location on navmesh.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon. */
-    bool QueryRandomPoint(ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPoint(NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const;
 
     /** Queries random location on navmesh.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon. */
-    bool QueryRandomPoint(SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPoint(NavPointRef* _RandomPointRef) const;
 
     /** Queries random location on navmesh within the reach of specified location.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon.
     The location is not exactly constrained by the circle, but it limits the visited polygons. */
-    bool QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const;
 
     /** Queries random location on navmesh within the reach of specified location.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon.
     The location is not exactly constrained by the circle, but it limits the visited polygons. */
-    bool QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavPointRef* _RandomPointRef) const;
 
     /** Queries random location on navmesh within the reach of specified location.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon.
     The location is not exactly constrained by the circle, but it limits the visited polygons. */
-    bool QueryRandomPointAroundCircle(SNavPointRef const& _StartRef, float _Radius, ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const;
 
     /** Queries random location on navmesh within the reach of specified location.
     Polygons are chosen weighted by area. The search runs in linear related to number of polygon.
     The location is not exactly constrained by the circle, but it limits the visited polygons. */
-    bool QueryRandomPointAroundCircle(SNavPointRef const& _StartRef, float _Radius, SNavPointRef* _RandomPointRef) const;
+    bool QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavPointRef* _RandomPointRef) const;
 
     /** Queries the closest point on the specified polygon. */
-    bool QueryClosestPointOnPoly(SNavPointRef const& _PointRef, Float3* _Point, bool* _OverPolygon = nullptr) const;
+    bool QueryClosestPointOnPoly(NavPointRef const& _PointRef, Float3* _Point, bool* _OverPolygon = nullptr) const;
 
     /** Query a point on the boundary closest to the source point if the source point is outside the
     polygon's xz-bounds. */
-    bool QueryClosestPointOnPolyBoundary(SNavPointRef const& _PointRef, Float3* _Point) const;
+    bool QueryClosestPointOnPolyBoundary(NavPointRef const& _PointRef, Float3* _Point) const;
 
     /** Moves from the start to the end position constrained to the navigation mesh */
-    bool MoveAlongSurface(SNavPointRef const& _StartRef, Float3 const& _Destination, ANavQueryFilter const& _Filter, SNavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const;
+    bool MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavQueryFilter const& _Filter, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Moves from the start to the end position constrained to the navigation mesh */
-    bool MoveAlongSurface(SNavPointRef const& _StartRef, Float3 const& _Destination, SNavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const;
+    bool MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Moves from the start to the end position constrained to the navigation mesh */
-    bool MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, ANavQueryFilter const& _Filter, int _MaxVisitedSize, Float3& _ResultPos) const;
+    bool MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, NavQueryFilter const& _Filter, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Moves from the start to the end position constrained to the navigation mesh */
     bool MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Last visited polys from MoveAlongSurface */
-    TPodVector<SNavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
+    TPodVector<NavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
 
     /** Finds a path from the start polygon to the end polygon. */
-    bool FindPath(SNavPointRef const& _StartRef, SNavPointRef const& _EndRef, ANavQueryFilter const& _Filter, SNavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
+    bool FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavQueryFilter const& _Filter, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
 
     /** Finds a path from the start polygon to the end polygon. */
-    bool FindPath(SNavPointRef const& _StartRef, SNavPointRef const& _EndRef, SNavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
+    bool FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, ANavQueryFilter const& _Filter, TPodVector<SAINavigationPathPoint>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<AINavigationPathPoint>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<SAINavigationPathPoint>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<AINavigationPathPoint>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, ANavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
     bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<Float3>& _PathPoints) const;
 
     /** Finds the straight path from the start to the end position within the polygon corridor. */
-    bool FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, SNavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, SNavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, EAINavMeshStraightPathCrossing _StraightPathCrossing = AI_NAV_MESH_STRAIGHTPATH_DEFAULT) const;
+    bool FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, NavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, NavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, AI_NAV_MESH_STRAIGHTPATH_CROSSING _StraightPathCrossing = AI_NAV_MESH_STRAIGHTPATH_DEFAULT) const;
 
     /** Calculates the distance from the specified position to the nearest polygon wall. */
-    bool CalcDistanceToWall(SNavPointRef const& _StartRef, float _Radius, ANavQueryFilter const& _Filter, SAINavigationHitResult& _HitResult) const;
+    bool CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const;
 
     /** Calculates the distance from the specified position to the nearest polygon wall. */
-    bool CalcDistanceToWall(SNavPointRef const& _StartRef, float _Radius, SAINavigationHitResult& _HitResult) const;
+    bool CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, AINavigationHitResult& _HitResult) const;
 
     /** Calculates the distance from the specified position to the nearest polygon wall. */
-    bool CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, ANavQueryFilter const& _Filter, SAINavigationHitResult& _HitResult) const;
+    bool CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const;
 
     /** Calculates the distance from the specified position to the nearest polygon wall. */
-    bool CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, SAINavigationHitResult& _HitResult) const;
+    bool CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, AINavigationHitResult& _HitResult) const;
 
     /** Gets the height of the polygon at the provided position using the height detail. */
-    bool GetHeight(SNavPointRef const& _PointRef, float* _Height) const;
+    bool GetHeight(NavPointRef const& _PointRef, float* _Height) const;
 
     /** Gets the endpoints for an off-mesh connection, ordered by "direction of travel". */
-    bool GetOffMeshConnectionPolyEndPoints(SNavPolyRef _PrevRef, SNavPolyRef _PolyRef, Float3* _StartPos, Float3* _EndPos) const;
+    bool GetOffMeshConnectionPolyEndPoints(NavPolyRef _PrevRef, NavPolyRef _PolyRef, Float3* _StartPos, Float3* _EndPos) const;
 
     /** Navmesh tile bounding box in world space */
     void GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _BoundingBox) const;
@@ -554,13 +552,13 @@ public:
     int GetTileCountX() const { return m_NumTilesX; }
     int GetTileCountZ() const { return m_NumTilesZ; }
 
-    void GatherNavigationGeometry(SNavigationGeometry& Geometry);
+    void GatherNavigationGeometry(NavigationGeometry& Geometry);
 
 private:
     bool BuildTiles(Int2 const& _Mins, Int2 const& _Maxs);
     bool BuildTile(int _X, int _Z);
 
-    SAINavigationConfig Initial;
+    AINavigationConfig Initial;
 
     int              m_NumTilesX{};
     int              m_NumTilesZ{};
@@ -574,12 +572,12 @@ private:
     class dtTileCache* m_TileCache{};
 
     // For tile cache
-    TUniqueRef<struct ADetourLinearAllocator> m_LinearAllocator;
-    TUniqueRef<struct ADetourMeshProcess>     m_MeshProcess;
+    TUniqueRef<struct DetourLinearAllocator> m_LinearAllocator;
+    TUniqueRef<struct DetourMeshProcess>     m_MeshProcess;
 
     // NavMesh areas
-    //TPodVector< SAINavigationArea > m_Areas;
+    //TVector<AINavigationArea> m_Areas;
 
     // Temp array to reduce memory allocations during MoveAlongSurface
-    mutable TPodVector<SNavPolyRef> m_LastVisitedPolys;
+    mutable TPodVector<NavPolyRef> m_LastVisitedPolys;
 };

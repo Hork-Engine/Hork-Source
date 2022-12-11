@@ -34,16 +34,16 @@ SOFTWARE.
 
 /*
 
-AGPUSync
+GPUSync
 
 Sync GPU and CPU. Used to reduce input lag.
 
 */
-class AGPUSync : public ARefCounted
+class GPUSync : public RefCounted
 {
 public:
-    AGPUSync(RenderCore::IImmediateContext* pImmediateContext);
-    ~AGPUSync();
+    GPUSync(RenderCore::IImmediateContext* pImmediateContext);
+    ~GPUSync();
 
     void SetEvent();
     void Wait();

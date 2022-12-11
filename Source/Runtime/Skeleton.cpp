@@ -34,32 +34,32 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
-HK_CLASS_META(ASkeleton)
+HK_CLASS_META(Skeleton)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ASkeleton::ASkeleton()
+Skeleton::Skeleton()
 {
     m_BindposeBounds.Clear();
 }
 
-ASkeleton::~ASkeleton()
+Skeleton::~Skeleton()
 {
     Purge();
 }
 
-void ASkeleton::Purge()
+void Skeleton::Purge()
 {
     m_Joints.Clear();
 }
 
-void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds)
+void Skeleton::Initialize(SkeletonJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds)
 {
     Purge();
 
     if (_JointsCount < 0)
     {
-        LOG("ASkeleton::Initialize: joints count < 0\n");
+        LOG("Skeleton::Initialize: joints count < 0\n");
         _JointsCount = 0;
     }
 
@@ -73,7 +73,7 @@ void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox c
     m_BindposeBounds = _BindposeBounds;
 }
 
-void ASkeleton::LoadInternalResource(AStringView _Path)
+void Skeleton::LoadInternalResource(StringView _Path)
 {
     Purge();
 
@@ -88,7 +88,7 @@ void ASkeleton::LoadInternalResource(AStringView _Path)
     LoadInternalResource("/Default/Skeleton/Default");
 }
 
-bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
+bool Skeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 
@@ -108,7 +108,7 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Purge();
 
-    AString guid = Stream.ReadString();
+    String guid = Stream.ReadString();
 
     Stream.ReadArray(m_Joints);
     Stream.ReadObject(m_BindposeBounds);
@@ -116,7 +116,7 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-int ASkeleton::FindJoint(const char* _Name) const
+int Skeleton::FindJoint(const char* _Name) const
 {
     for (int j = 0; j < m_Joints.Size(); j++)
     {

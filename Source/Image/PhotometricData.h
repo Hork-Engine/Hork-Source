@@ -78,4 +78,4 @@ public:
     float SampleAvg(float x, float y) const;
 };
 
-PhotometricData ParsePhotometricData(AStringView Text);
+PhotometricData ParsePhotometricData(StringView Text);

@@ -34,7 +34,7 @@ SOFTWARE.
 namespace Geometry
 {
 
-void CalcTangentSpace(SMeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
+void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
 {
     Float3 binormal, tangent;
 

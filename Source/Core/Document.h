@@ -42,7 +42,7 @@ enum DOCUMENT_TOKEN_TYPE : uint8_t
     DOCUMENT_TOKEN_STRING
 };
 
-struct SToken
+struct DocumentToken
 {
     const char*         Begin = "";
     const char*         End   = "";
@@ -51,13 +51,13 @@ struct SToken
     const char* NamedType() const;
 };
 
-class ADocumentTokenizer
+class DocumentTokenizer
 {
-    HK_FORBID_COPY(ADocumentTokenizer)
+    HK_FORBID_COPY(DocumentTokenizer)
 
 public:
-    ADocumentTokenizer();
-    ~ADocumentTokenizer();
+    DocumentTokenizer();
+    ~DocumentTokenizer();
 
     void Reset(const char* pDocumentData, bool InSitu);
 
@@ -67,7 +67,7 @@ public:
 
     void NextToken();
 
-    SToken const& GetToken() const { return m_CurToken; }
+    DocumentToken const& GetToken() const { return m_CurToken; }
 
 private:
     void SkipWhitespaces();
@@ -76,23 +76,23 @@ private:
     const char* m_Cur;
     int         m_LineNumber;
     bool        m_bInSitu;
-    SToken      m_CurToken;
+    DocumentToken      m_CurToken;
 };
 
-struct SDocumentSerializeInfo
+struct DocumentSerializeInfo
 {
     bool bCompactStringConversion;
 };
 
-struct SDocumentDeserializeInfo
+struct DocumentDeserializeInfo
 {
     const char* pDocumentData;
     bool        bInsitu;
 };
 
-class ADocMember;
+class DocumentMember;
 
-class ADocValue : public ARefCounted
+class DocumentValue : public RefCounted
 {
 public:
     enum TYPE
@@ -101,31 +101,31 @@ public:
         TYPE_OBJECT
     };
 
-    ADocValue(TYPE Type);
-    ~ADocValue();
+    DocumentValue(TYPE Type);
+    ~DocumentValue();
 
-    AString SerializeToString(SDocumentSerializeInfo const& SerializeInfo) const;
+    String SerializeToString(DocumentSerializeInfo const& SerializeInfo) const;
 
     /** Get next value inside array */
-    ADocValue* GetNext()
+    DocumentValue* GetNext()
     {
         return m_Next;
     }
 
     /** Get next value inside array */
-    ADocValue const* GetNext() const
+    DocumentValue const* GetNext() const
     {
         return m_Next;
     }
 
     /** Get prev value inside array */
-    ADocValue* GetPrev()
+    DocumentValue* GetPrev()
     {
         return m_Prev;
     }
 
     /** Get prev value inside array */
-    ADocValue const* GetPrev() const
+    DocumentValue const* GetPrev() const
     {
         return m_Prev;
     }
@@ -143,7 +143,7 @@ public:
     }
 
     /** Set string value */
-    void SetString(AStringView Str)
+    void SetString(StringView Str)
     {
         m_Value = Str;
 
@@ -151,65 +151,65 @@ public:
         m_StrEnd   = m_Value.End();
     }
 
-    void SetStringInsitu(AStringView Str)
+    void SetStringInsitu(StringView Str)
     {
         m_StrBegin = Str.Begin();
         m_StrEnd   = Str.End();
     }
 
     /** Get string value */
-    AStringView GetStringView() const
+    StringView GetStringView() const
     {
-        return AStringView(m_StrBegin, m_StrEnd);
+        return StringView(m_StrBegin, m_StrEnd);
     }
 
-    ADocMember* FindMember(AStringView Name);
+    DocumentMember* FindMember(StringView Name);
 
-    ADocMember const* FindMember(AStringView Name) const;
+    DocumentMember const* FindMember(StringView Name) const;
 
-    bool GetBool(AStringView Name, bool Default = false) const;
+    bool GetBool(StringView Name, bool Default = false) const;
 
-    uint8_t GetUInt8(AStringView Name, uint8_t Default = 0) const;
+    uint8_t GetUInt8(StringView Name, uint8_t Default = 0) const;
 
-    uint16_t GetUInt16(AStringView Name, uint16_t Default = 0) const;
+    uint16_t GetUInt16(StringView Name, uint16_t Default = 0) const;
 
-    uint32_t GetUInt32(AStringView Name, uint32_t Default = 0) const;
+    uint32_t GetUInt32(StringView Name, uint32_t Default = 0) const;
 
-    uint64_t GetUInt64(AStringView Name, uint64_t Default = 0) const;
+    uint64_t GetUInt64(StringView Name, uint64_t Default = 0) const;
 
-    int8_t GetInt8(AStringView Name, int8_t Default = 0) const;
+    int8_t GetInt8(StringView Name, int8_t Default = 0) const;
 
-    int16_t GetInt16(AStringView Name, int16_t Default = 0) const;
+    int16_t GetInt16(StringView Name, int16_t Default = 0) const;
 
-    int32_t GetInt32(AStringView Name, int32_t Default = 0) const;
+    int32_t GetInt32(StringView Name, int32_t Default = 0) const;
 
-    int64_t GetInt64(AStringView Name, int64_t Default = 0) const;
+    int64_t GetInt64(StringView Name, int64_t Default = 0) const;
 
-    float GetFloat(AStringView Name, float Default = 0) const;
+    float GetFloat(StringView Name, float Default = 0) const;
 
-    double GetDouble(AStringView Name, double Default = 0) const;
+    double GetDouble(StringView Name, double Default = 0) const;
 
-    AStringView GetString(AStringView Name, AStringView Default = "") const;
+    StringView GetString(StringView Name, StringView Default = "") const;
 
     void Clear();
 
     /** Add string */
-    ADocMember* AddString(AGlobalStringView Name, AStringView Str);
+    DocumentMember* AddString(GlobalStringView Name, StringView Str);
 
     /** Add object */
-    ADocMember* AddObject(AGlobalStringView Name, ADocValue* Object);
+    DocumentMember* AddObject(GlobalStringView Name, DocumentValue* Object);
 
     /** Add array */
-    ADocMember* AddArray(AGlobalStringView Name);
+    DocumentMember* AddArray(GlobalStringView Name);
 
     /** Get members inside the object */
-    ADocMember* GetListOfMembers()
+    DocumentMember* GetListOfMembers()
     {
         return m_MembersHead;
     }
 
     /** Get members inside the object */
-    ADocMember const* GetListOfMembers() const
+    DocumentMember const* GetListOfMembers() const
     {
         return m_MembersHead;
     }
@@ -217,41 +217,41 @@ public:
     void Print() const;
 
 private:
-    void AddMember(ADocMember* Member);
+    void AddMember(DocumentMember* Member);
 
     TYPE m_Type;
 
     const char* m_StrBegin; // string data for TYPE_STRING
     const char* m_StrEnd;   // string data for TYPE_STRING
 
-    AString m_Value;
+    String m_Value;
 
-    ADocMember* m_MembersHead{};
-    ADocMember* m_MembersTail{};
-    ADocValue* m_Next{};
-    ADocValue* m_Prev{};
+    DocumentMember* m_MembersHead{};
+    DocumentMember* m_MembersTail{};
+    DocumentValue* m_Next{};
+    DocumentValue* m_Prev{};
 
-    friend class ADocument;
-    friend class ADocMember;
+    friend class Document;
+    friend class DocumentMember;
 };
 
-class ADocMember : public ARefCounted
+class DocumentMember : public RefCounted
 {
 public:
-    ADocMember();
-    ~ADocMember();
+    DocumentMember();
+    ~DocumentMember();
 
     /** Add value to array */
-    void AddValue(ADocValue* Value);
+    void AddValue(DocumentValue* Value);
 
     /** Get member name */
-    AStringView GetName() const
+    StringView GetName() const
     {
-        return AStringView(m_NameBegin, m_NameEnd);
+        return StringView(m_NameBegin, m_NameEnd);
     }
 
     /** Get member value as string if possible */
-    AStringView GetStringView() const
+    StringView GetStringView() const
     {
         if (IsString())
         {
@@ -279,37 +279,37 @@ public:
     }
 
     /** Get next member inside object */
-    ADocMember* GetNext()
+    DocumentMember* GetNext()
     {
         return m_Next;
     }
 
     /** Get next member inside object */
-    ADocMember const* GetNext() const
+    DocumentMember const* GetNext() const
     {
         return m_Next;
     }
 
     /** Get prev member inside object */
-    ADocMember* GetPrev()
+    DocumentMember* GetPrev()
     {
         return m_Prev;
     }
 
     /** Get prev member inside object */
-    ADocMember const* GetPrev() const
+    DocumentMember const* GetPrev() const
     {
         return m_Prev;
     }
 
     /** Get list of values */
-    ADocValue* GetArrayValues()
+    DocumentValue* GetArrayValues()
     {
         return m_Values;
     }
 
     /** Get list of values */
-    ADocValue const* GetArrayValues() const
+    DocumentValue const* GetArrayValues() const
     {
         return m_Values;
     }
@@ -320,27 +320,27 @@ private:
     const char* m_NameBegin;
     const char* m_NameEnd;
 
-    ADocValue* m_Values{};
-    ADocValue* m_ValuesEnd{};
+    DocumentValue* m_Values{};
+    DocumentValue* m_ValuesEnd{};
 
-    ADocMember* m_Next{};
-    ADocMember* m_Prev{};
+    DocumentMember* m_Next{};
+    DocumentMember* m_Prev{};
 
-    friend class ADocument;
-    friend class ADocValue;
+    friend class Document;
+    friend class DocumentValue;
 };
 
-class ADocument : public ADocValue
+class Document : public DocumentValue
 {
 public:
-    ADocument();
+    Document();
 
-    void DeserializeFromString(SDocumentDeserializeInfo const& DeserializeInfo);
+    void DeserializeFromString(DocumentDeserializeInfo const& DeserializeInfo);
 
 private:
-    TRef<ADocValue>  ParseObject();
-    TRef<ADocMember> ParseMember(SToken const& MemberToken);
-    void             ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail);
+    TRef<DocumentValue>  ParseObject();
+    TRef<DocumentMember> ParseMember(DocumentToken const& MemberToken);
+    void                 ParseArray(DocumentValue** ppArrayHead, DocumentValue** ppArrayTail);
 
-    ADocumentTokenizer m_Tokenizer;
+    DocumentTokenizer m_Tokenizer;
 };

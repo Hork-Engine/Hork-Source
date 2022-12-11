@@ -139,7 +139,7 @@ struct TGlobalStringView
     const CharT* pRawString;
 };
 
-using AGlobalStringView = TGlobalStringView<char>;
+using GlobalStringView = TGlobalStringView<char>;
 using AGlobalStringViewW = TGlobalStringView<WideChar>;
 
 #ifdef __GNUC__
@@ -147,9 +147,9 @@ using AGlobalStringViewW = TGlobalStringView<WideChar>;
 #    pragma GCC diagnostic ignored "-Wliteral-suffix"
 #endif
 
-HK_FORCEINLINE AGlobalStringView operator"" s(const char* s, size_t sz)
+HK_FORCEINLINE GlobalStringView operator"" s(const char* s, size_t sz)
 {
-    AGlobalStringView v;
+    GlobalStringView v;
     v.pRawString = s;
     return v;
 }
@@ -1394,7 +1394,7 @@ Usage:
 TSprintfBuffer< 128 > buffer;
 buffer.Sprintf( "%d %f", 10, 15.1f );
 
-AString s = TSprintfBuffer< 128 >().Sprintf( "%d %f", 10, 15.1f );
+String s = TSprintfBuffer< 128 >().Sprintf( "%d %f", 10, 15.1f );
 
 */
 template <size_t Size>
@@ -1414,82 +1414,82 @@ struct TSprintfBuffer
     }
 };
 
-using AString         = TString<char>;
-using AWideString     = TString<WideChar>;
-using AStringView     = TStringView<char>;
-using AWideStringView = TStringView<WideChar>;
+using String         = TString<char>;
+using WideString     = TString<WideChar>;
+using StringView     = TStringView<char>;
+using WideStringView = TStringView<WideChar>;
 
-class AFormatter
+class Formatter
 {
     fmt::memory_buffer m_Buffer;
 
 public:
     template <typename... T>
-    HK_INLINE AStringView operator()(fmt::format_string<T...> Format, T&&... args)
+    HK_INLINE StringView operator()(fmt::format_string<T...> Format, T&&... args)
     {
         m_Buffer.clear();
         fmt::detail::vformat_to(m_Buffer, fmt::string_view(Format), fmt::make_format_args(args...));
-        return AStringView(m_Buffer.begin(), m_Buffer.end());
+        return StringView(m_Buffer.begin(), m_Buffer.end());
     }
 
     template <typename T>
-    AStringView ToString(T const& Val)
+    StringView ToString(T const& Val)
     {
         return (*this)("{}", Val);
     }
 };
 
-#define HK_FORMAT(x, ...) AFormatter()(HK_FMT(x), __VA_ARGS__)
+#define HK_FORMAT(x, ...) Formatter()(HK_FMT(x), __VA_ARGS__)
 
 namespace Core
 {
 
-HK_INLINE AString GetString(AWideStringView wideStr)
+HK_INLINE String GetString(WideStringView wideStr)
 {
     const WideChar* s = wideStr.Begin();
     const WideChar* e = wideStr.End();
 
     auto size = WideStrUTF8Bytes(s, e);
 
-    AString str;
+    String str;
     str.Reserve(size);
 
     char buf[4];
     while (s < e)
     {
         int n = WideCharEncodeUTF8(buf, HK_ARRAY_SIZE(buf), *s++);
-        str.Concat(AStringView(buf, n));
+        str.Concat(StringView(buf, n));
     }
     return str;
 }
 
-HK_INLINE AString GetString(AGlobalStringViewW wideStr)
+HK_INLINE String GetString(AGlobalStringViewW wideStr)
 {
     const WideChar* s = wideStr.CStr();
     const WideChar* e = s + StringLength(wideStr);
 
     auto size = WideStrUTF8Bytes(s, e);
 
-    AString str;
+    String str;
     str.Reserve(size);
 
     char buf[4];
     while (s < e)
     {
         int n = WideCharEncodeUTF8(buf, HK_ARRAY_SIZE(buf), *s++);
-        str.Concat(AStringView(buf, n));
+        str.Concat(StringView(buf, n));
     }
     return str;
 }
 
-HK_INLINE AWideString GetWideString(AStringView utfStr)
+HK_INLINE WideString GetWideString(StringView utfStr)
 {
     const char* s = utfStr.Begin();
     const char* e = utfStr.End();
 
     auto numCharacters = UTF8StrLength(s, e);
 
-    AWideString wideStr;
+    WideString wideStr;
     wideStr.Reserve(numCharacters);
 
     WideChar ch;
@@ -1501,14 +1501,14 @@ HK_INLINE AWideString GetWideString(AStringView utfStr)
     return wideStr;
 }
 
-HK_INLINE AWideString GetWideString(AGlobalStringView utfStr)
+HK_INLINE WideString GetWideString(GlobalStringView utfStr)
 {
     const char* s = utfStr.CStr();
     const char* e = s + StringLength(utfStr);
 
     auto numCharacters = UTF8StrLength(s, e);
 
-    AWideString wideStr;
+    WideString wideStr;
     wideStr.Reserve(numCharacters);
 
     WideChar ch;
@@ -1523,13 +1523,13 @@ HK_INLINE AWideString GetWideString(AGlobalStringView utfStr)
 
 
 template <typename T>
-HK_INLINE AString ToString(T const& Val)
+HK_INLINE String ToString(T const& Val)
 {
-    return AFormatter().ToString(Val);
+    return Formatter().ToString(Val);
 }
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
-HK_INLINE AString ToHexString(T const& _Value, bool bLeadingZeros = false, bool bPrefix = false)
+HK_INLINE String ToHexString(T const& _Value, bool bLeadingZeros = false, bool bPrefix = false)
 {
     TSprintfBuffer<32> value;
     TSprintfBuffer<32> format;
@@ -1599,7 +1599,7 @@ template <> struct fmt::formatter<TString<WideChar>>
 
     template <typename FormatContext> auto format(TString<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        AString str = Core::GetString(v);
+        String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
@@ -1609,7 +1609,7 @@ template <> struct fmt::formatter<TStringView<WideChar>>
 
     template <typename FormatContext> auto format(TStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        AString str = Core::GetString(v);
+        String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
@@ -1619,7 +1619,7 @@ template <> struct fmt::formatter<TGlobalStringView<WideChar>>
 
     template <typename FormatContext> auto format(TGlobalStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        AString str = Core::GetString(v);
+        String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };

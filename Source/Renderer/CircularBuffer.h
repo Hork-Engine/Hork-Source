@@ -32,35 +32,40 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
-class ACircularBuffer : public ARefCounted {
+class CircularBuffer : public RefCounted
+{
 public:
-    ACircularBuffer( size_t InBufferSize );
-    virtual ~ACircularBuffer();
+    CircularBuffer(size_t InBufferSize);
+    virtual ~CircularBuffer();
 
-    size_t Allocate( size_t InSize );
+    size_t Allocate(size_t InSize);
 
-    byte * GetMappedMemory() { return (byte *)pMappedMemory; }
+    byte* GetMappedMemory() { return (byte*)m_pMappedMemory; }
 
-    RenderCore::IBuffer * GetBuffer() { return Buffer; }
+    RenderCore::IBuffer* GetBuffer() { return m_Buffer; }
 
 private:
-    struct SChainBuffer {
+    struct ChainBuffer
+    {
         size_t UsedMemory;
         RenderCore::SyncObject Sync;
     };
 
-    SChainBuffer * Swap();
+    ChainBuffer* Swap();
 
-    void Wait( RenderCore::SyncObject Sync );
+    void Wait(RenderCore::SyncObject Sync);
 
-    TRef< RenderCore::IBuffer > Buffer;
-    void * pMappedMemory;
-    int BufferIndex;
+    TRef<RenderCore::IBuffer> m_Buffer;
+    void* m_pMappedMemory;
+    int m_BufferIndex;
 
-    enum { SWAP_CHAIN_SIZE = 3 };
+    enum
+    {
+        SWAP_CHAIN_SIZE = 3
+    };
 
-    SChainBuffer ChainBuffer[SWAP_CHAIN_SIZE];
-    size_t BufferSize;
+    ChainBuffer m_ChainBuffer[SWAP_CHAIN_SIZE];
+    size_t m_BufferSize;
 
-    unsigned int ConstantBufferAlignment;
+    unsigned int m_ConstantBufferAlignment;
 };

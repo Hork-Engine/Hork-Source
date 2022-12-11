@@ -44,30 +44,30 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
 
-AConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
-AConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
-AConsoleVar r_RenderSurfaces("r_RenderSurfaces"s, "1"s, CVAR_CHEAT);
-AConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
-AConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
-AConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
-AConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
-AConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
-AConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
-AConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
+ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
+ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderSurfaces("r_RenderSurfaces"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
+ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
+ConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
+ConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
+ConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
 
-extern AConsoleVar r_HBAO;
-extern AConsoleVar r_HBAODeinterleaved;
+extern ConsoleVar r_HBAO;
+extern ConsoleVar r_HBAODeinterleaved;
 
-AConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
 static constexpr int TerrainTileSize = 256; //32;//256;
 
-ARenderFrontend::ARenderFrontend()
+RenderFrontend::RenderFrontend()
 {
-    TerrainMesh = MakeRef<ATerrainMesh>(TerrainTileSize);
+    m_TerrainMesh = MakeRef<TerrainMesh>(TerrainTileSize);
 
-    GEngine->GetRenderDevice()->CreateTexture(RenderCore::STextureDesc{}
-                                                  .SetResolution(RenderCore::STextureResolution1DArray(256, 256))
+    GEngine->GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
+                                                  .SetResolution(RenderCore::TextureResolution1DArray(256, 256))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
                                               &PhotometricProfiles);
@@ -75,31 +75,31 @@ ARenderFrontend::ARenderFrontend()
     PhotometricProfiles->SetDebugName("Photometric Profiles");
 }
 
-ARenderFrontend::~ARenderFrontend()
+RenderFrontend::~RenderFrontend()
 {
 }
 
-struct SInstanceSortFunction
+struct InstanceSortFunction
 {
-    bool operator()(SRenderInstance const* _A, SRenderInstance* _B)
+    bool operator()(RenderInstance const* _A, RenderInstance* _B)
     {
         return _A->SortKey < _B->SortKey;
     }
 } InstanceSortFunction;
 
-struct SShadowInstanceSortFunction
+struct ShadowInstanceSortFunction
 {
-    bool operator()(SShadowRenderInstance const* _A, SShadowRenderInstance* _B)
+    bool operator()(ShadowRenderInstance const* _A, ShadowRenderInstance* _B)
     {
         return _A->SortKey < _B->SortKey;
     }
 } ShadowInstanceSortFunction;
 
-void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
+void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
 {
-    FrameLoop = InFrameLoop;
+    m_FrameLoop = InFrameLoop;
 
-    FrameData.FrameNumber = FrameNumber = FrameLoop->SysFrameNumber();
+    m_FrameData.FrameNumber = FrameNumber = m_FrameLoop->SysFrameNumber();
 
     Stat.FrontendTime       = Platform::SysMilliseconds();
     Stat.PolyCount          = 0;
@@ -107,82 +107,82 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
 
     TVector<WorldRenderView*> const& renderViews = InFrameLoop->GetRenderViews();
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
-    FrameData.CanvasDrawData = InCanvas->GetDrawData();
+    m_FrameData.CanvasDrawData = InCanvas->GetDrawData();
 
-    if (FrameData.CanvasDrawData->VertexCount > 0)
-        FrameData.CanvasVertexData = streamedMemory->AllocateVertex(FrameData.CanvasDrawData->VertexCount * sizeof(CanvasVertex), FrameData.CanvasDrawData->Vertices);
+    if (m_FrameData.CanvasDrawData->VertexCount > 0)
+        m_FrameData.CanvasVertexData = streamedMemory->AllocateVertex(m_FrameData.CanvasDrawData->VertexCount * sizeof(CanvasVertex), m_FrameData.CanvasDrawData->Vertices);
     else
-        FrameData.CanvasVertexData = 0;
+        m_FrameData.CanvasVertexData = 0;
 
-    FrameData.CanvasWidth  = InCanvas->GetWidth();
-    FrameData.CanvasHeight = InCanvas->GetHeight();
+    m_FrameData.CanvasWidth = InCanvas->GetWidth();
+    m_FrameData.CanvasHeight = InCanvas->GetHeight();
 
-    const Float2 orthoMins(0.0f, (float)FrameData.CanvasHeight);
-    const Float2 orthoMaxs((float)FrameData.CanvasWidth, 0.0f);
-    FrameData.CanvasOrthoProjection = Float4x4::Ortho2DCC(orthoMins, orthoMaxs);
+    const Float2 orthoMins(0.0f, (float)m_FrameData.CanvasHeight);
+    const Float2 orthoMaxs((float)m_FrameData.CanvasWidth, 0.0f);
+    m_FrameData.CanvasOrthoProjection = Float4x4::Ortho2DCC(orthoMins, orthoMaxs);
 
-    FrameData.Instances.Clear();
-    FrameData.TranslucentInstances.Clear();
-    FrameData.OutlineInstances.Clear();
-    FrameData.ShadowInstances.Clear();
-    FrameData.LightPortals.Clear();
-    FrameData.DirectionalLights.Clear();
-    FrameData.LightShadowmaps.Clear();
-    FrameData.TerrainInstances.Clear();
+    m_FrameData.Instances.Clear();
+    m_FrameData.TranslucentInstances.Clear();
+    m_FrameData.OutlineInstances.Clear();
+    m_FrameData.ShadowInstances.Clear();
+    m_FrameData.LightPortals.Clear();
+    m_FrameData.DirectionalLights.Clear();
+    m_FrameData.LightShadowmaps.Clear();
+    m_FrameData.TerrainInstances.Clear();
 
-    //FrameData.ShadowCascadePoolSize = 0;
+    //m_FrameData.ShadowCascadePoolSize = 0;
     DebugDraw.Reset();
 
     // Allocate views
-    FrameData.NumViews    = renderViews.Size();
-    FrameData.RenderViews = (SRenderView*)FrameLoop->AllocFrameMem(sizeof(SRenderView) * FrameData.NumViews);
+    m_FrameData.NumViews = renderViews.Size();
+    m_FrameData.RenderViews = (RenderViewData*)m_FrameLoop->AllocFrameMem(sizeof(RenderViewData) * m_FrameData.NumViews);
 
-    for (int i = 0; i < FrameData.NumViews; i++)
+    for (int i = 0; i < m_FrameData.NumViews; i++)
     {
         RenderView(i);
     }
 
-    //int64_t t = FrameLoop->SysMilliseconds();
+    //int64_t t = m_FrameLoop->SysMilliseconds();
 
-    for (SRenderView* view = FrameData.RenderViews; view < &FrameData.RenderViews[FrameData.NumViews]; view++)
+    for (RenderViewData* view = m_FrameData.RenderViews; view < &m_FrameData.RenderViews[m_FrameData.NumViews]; view++)
     {
-        std::sort(FrameData.Instances.Begin() + view->FirstInstance,
-                  FrameData.Instances.Begin() + (view->FirstInstance + view->InstanceCount),
+        std::sort(m_FrameData.Instances.Begin() + view->FirstInstance,
+                  m_FrameData.Instances.Begin() + (view->FirstInstance + view->InstanceCount),
                   InstanceSortFunction);
 
-        std::sort(FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
-                  FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
+        std::sort(m_FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
+                  m_FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                   InstanceSortFunction);
     }
-    //LOG( "Sort instances time {} instances count {}\n", FrameLoop->SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
+    //LOG( "Sort instances time {} instances count {}\n", m_FrameLoop->SysMilliseconds() - t, m_FrameData.Instances.Size() + m_FrameData.ShadowInstances.Size() );
 
     if (DebugDraw.CommandsCount() > 0)
     {
-        FrameData.DbgCmds               = DebugDraw.GetCmds().ToPtr();
-        FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex(DebugDraw.GetVertices().Size() * sizeof(SDebugVertex), DebugDraw.GetVertices().ToPtr());
-        FrameData.DbgIndexStreamOffset = streamedMemory->AllocateIndex(DebugDraw.GetIndices().Size() * sizeof(unsigned short), DebugDraw.GetIndices().ToPtr());
+        m_FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
+        m_FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex(DebugDraw.GetVertices().Size() * sizeof(DebugVertex), DebugDraw.GetVertices().ToPtr());
+        m_FrameData.DbgIndexStreamOffset = streamedMemory->AllocateIndex(DebugDraw.GetIndices().Size() * sizeof(unsigned short), DebugDraw.GetIndices().ToPtr());
     }
 
     Stat.FrontendTime = Platform::SysMilliseconds() - Stat.FrontendTime;
 }
 
-void ARenderFrontend::RenderView(int _Index)
+void RenderFrontend::RenderView(int _Index)
 {
-    WorldRenderView*      worldRenderView = FrameLoop->GetRenderViews()[_Index];
-    ACameraComponent*     camera          = worldRenderView->m_pCamera;
-    AWorld*               world          = camera->GetWorld();
-    SRenderView*          view           = &FrameData.RenderViews[_Index];
-    AStreamedMemoryGPU*   streamedMemory = FrameLoop->GetStreamedMemoryGPU();
-    ATextureView*         renderTextureView = worldRenderView->GetTextureView();
+    WorldRenderView* worldRenderView = m_FrameLoop->GetRenderViews()[_Index];
+    CameraComponent*     camera          = worldRenderView->m_pCamera;
+    World*               world          = camera->GetWorld();
+    RenderViewData* view = &m_FrameData.RenderViews[_Index];
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
+    TextureView*         renderTextureView = worldRenderView->GetTextureView();
 
     uint32_t width = renderTextureView->GetWidth();
     uint32_t height = renderTextureView->GetHeight();
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds    = world->GetGameplayTimeMicro() * 0.000001;
-    view->GameplayTimeStep       = world->IsPaused() ? 0.0f : Math::Max(FrameLoop->SysFrameDuration() * 0.000001f, 0.0001f);
+    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max(m_FrameLoop->SysFrameDuration() * 0.000001f, 0.0001f);
     view->ViewIndex              = _Index;
     //view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
     //view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
@@ -296,17 +296,17 @@ void ARenderFrontend::RenderView(int _Index)
 
     view->NumShadowMapCascades     = 0;
     view->NumCascadedShadowMaps    = 0;
-    view->FirstInstance            = FrameData.Instances.Size();
+    view->FirstInstance = m_FrameData.Instances.Size();
     view->InstanceCount            = 0;
-    view->FirstTranslucentInstance = FrameData.TranslucentInstances.Size();
+    view->FirstTranslucentInstance = m_FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
-    view->FirstOutlineInstance     = FrameData.OutlineInstances.Size();
+    view->FirstOutlineInstance = m_FrameData.OutlineInstances.Size();
     view->OutlineInstanceCount     = 0;
-    //view->FirstLightPortal = FrameData.LightPortals.Size();
+    //view->FirstLightPortal = m_FrameData.LightPortals.Size();
     //view->LightPortalsCount = 0;
-    //view->FirstShadowInstance = FrameData.ShadowInstances.Size();
+    //view->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
     //view->ShadowInstanceCount = 0;
-    view->FirstDirectionalLight = FrameData.DirectionalLights.Size();
+    view->FirstDirectionalLight = m_FrameData.DirectionalLights.Size();
     view->NumDirectionalLights  = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
@@ -320,10 +320,10 @@ void ARenderFrontend::RenderView(int _Index)
 
     size_t numFrustumClusters = MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z;
 
-    view->ClusterLookupStreamHandle = streamedMemory->AllocateConstant(numFrustumClusters * sizeof(SClusterHeader), nullptr);
-    view->ClusterLookup             = (SClusterHeader*)streamedMemory->Map(view->ClusterLookupStreamHandle);
+    view->ClusterLookupStreamHandle = streamedMemory->AllocateConstant(numFrustumClusters * sizeof(ClusterHeader), nullptr);
+    view->ClusterLookup             = (ClusterHeader*)streamedMemory->Map(view->ClusterLookupStreamHandle);
 
-    view->FirstTerrainInstance = FrameData.TerrainInstances.Size();
+    view->FirstTerrainInstance = m_FrameData.TerrainInstances.Size();
     view->TerrainInstanceCount = 0;
 
     if (!r_RenderView || !camera)
@@ -339,7 +339,7 @@ void ARenderFrontend::RenderView(int _Index)
     RenderDef.VisibilityMask     = worldRenderView ? worldRenderView->VisibilityMask : VISIBILITY_GROUP_ALL;
     RenderDef.PolyCount          = 0;
     RenderDef.ShadowMapPolyCount = 0;
-    RenderDef.StreamedMemory     = FrameLoop->GetStreamedMemoryGPU();
+    RenderDef.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     m_WorldRenderView = worldRenderView;
 
@@ -348,7 +348,7 @@ void ARenderFrontend::RenderView(int _Index)
 
     QueryVisiblePrimitives(world);
 
-    AEnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap();
+    EnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap();
 
     if (pEnvironmentMap)
     {
@@ -359,7 +359,7 @@ void ARenderFrontend::RenderView(int _Index)
     {
         if (!DummyEnvironmentMap)
         {
-            DummyEnvironmentMap = AResource::CreateDefault<AEnvironmentMap>();
+            DummyEnvironmentMap = Resource::CreateDefault<EnvironmentMap>();
         }
         view->GlobalIrradianceMap = DummyEnvironmentMap->GetIrradianceHandle();
         view->GlobalReflectionMap = DummyEnvironmentMap->GetReflectionHandle();
@@ -388,16 +388,16 @@ void ARenderFrontend::RenderView(int _Index)
     {
         for (auto& it : worldRenderView->m_TerrainViews)
         {
-            it.second->DrawDebug(&DebugDraw, TerrainMesh);
+            it.second->DrawDebug(&DebugDraw, m_TerrainMesh);
         }
 
         DebugDraw.EndRenderView();
     }
 }
 
-void ARenderFrontend::QueryVisiblePrimitives(AWorld* InWorld)
+void RenderFrontend::QueryVisiblePrimitives(World* InWorld)
 {
-    SVisibilityQuery query;
+    VisibilityQuery query;
 
     for (int i = 0; i < 6; i++)
     {
@@ -412,9 +412,9 @@ void ARenderFrontend::QueryVisiblePrimitives(AWorld* InWorld)
     InWorld->QueryVisiblePrimitives(VisPrimitives, VisSurfaces, &VisPass, query);
 }
 
-void ARenderFrontend::QueryShadowCasters(AWorld* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<SPrimitiveDef*>& Primitives, TPodVector<SSurfaceDef*>& Surfaces)
+void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<PrimitiveDef*>& Primitives, TPodVector<SurfaceDef*>& Surfaces)
 {
-    SVisibilityQuery query;
+    VisibilityQuery query;
     BvFrustum        frustum;
 
     frustum.FromMatrix(LightViewProjection, true);
@@ -508,38 +508,38 @@ void ARenderFrontend::QueryShadowCasters(AWorld* InWorld, Float4x4 const& LightV
     InWorld->QueryVisiblePrimitives(Primitives, Surfaces, nullptr, query);
 }
 
-void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
+void RenderFrontend::AddRenderInstances(World* InWorld)
 {
-    AScopedTimer TimeCheck("AddRenderInstances");
+    ScopedTimer TimeCheck("AddRenderInstances");
 
-    SRenderView*             view = RenderDef.View;
-    ADrawable*               drawable;
-    ATerrainComponent*       terrain;
-    AAnalyticLightComponent* light;
-    AEnvironmentProbe*       envProbe;
-    AStreamedMemoryGPU*      streamedMemory = FrameLoop->GetStreamedMemoryGPU();
-    ALightingSystem&         lightingSystem = InWorld->LightingSystem;
+    RenderViewData* view = RenderDef.View;
+    Drawable*               drawable;
+    TerrainComponent*       terrain;
+    AnalyticLightComponent* light;
+    EnvironmentProbe*       envProbe;
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
+    LightingSystem&         lightingSystem = InWorld->LightingSystem;
 
     VisLights.Clear();
     VisEnvProbes.Clear();
 
-    for (SPrimitiveDef* primitive : VisPrimitives)
+    for (PrimitiveDef* primitive : VisPrimitives)
     {
         // TODO: Replace upcasting by something better (virtual function?)
 
-        if (nullptr != (drawable = Upcast<ADrawable>(primitive->Owner)))
+        if (nullptr != (drawable = Upcast<Drawable>(primitive->Owner)))
         {
             AddDrawable(drawable);
             continue;
         }
 
-        if (nullptr != (terrain = Upcast<ATerrainComponent>(primitive->Owner)))
+        if (nullptr != (terrain = Upcast<TerrainComponent>(primitive->Owner)))
         {
             AddTerrain(terrain);
             continue;
         }
 
-        if (nullptr != (light = Upcast<AAnalyticLightComponent>(primitive->Owner)))
+        if (nullptr != (light = Upcast<AnalyticLightComponent>(primitive->Owner)))
         {
             if (!light->IsEnabled())
             {
@@ -557,7 +557,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             continue;
         }
 
-        if (nullptr != (envProbe = Upcast<AEnvironmentProbe>(primitive->Owner)))
+        if (nullptr != (envProbe = Upcast<EnvironmentProbe>(primitive->Owner)))
         {
             if (!envProbe->IsEnabled())
             {
@@ -580,9 +580,9 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     if (r_RenderSurfaces && !VisSurfaces.IsEmpty())
     {
-        struct SSortFunction
+        struct SortFunction
         {
-            bool operator()(SSurfaceDef const* _A, SSurfaceDef const* _B)
+            bool operator()(SurfaceDef const* _A, SurfaceDef const* _B)
             {
                 return (_A->SortKey < _B->SortKey);
             }
@@ -596,7 +596,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     // Add directional lights
     view->NumShadowMapCascades  = 0;
     view->NumCascadedShadowMaps = 0;
-    for (TListIterator<ADirectionalLightComponent> dirlight(lightingSystem.DirectionalLights); dirlight; dirlight++)
+    for (TListIterator<DirectionalLightComponent> dirlight(lightingSystem.DirectionalLights); dirlight; dirlight++)
     {
         if (view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS)
         {
@@ -609,11 +609,11 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             continue;
         }
 
-        SDirectionalLightInstance* instance = (SDirectionalLightInstance*)FrameLoop->AllocFrameMem(sizeof(SDirectionalLightInstance));
+        DirectionalLightInstance* instance = (DirectionalLightInstance*)m_FrameLoop->AllocFrameMem(sizeof(DirectionalLightInstance));
 
-        FrameData.DirectionalLights.Add(instance);
+        m_FrameData.DirectionalLights.Add(instance);
 
-        dirlight->AddShadowmapCascades(FrameLoop->GetStreamedMemoryGPU(), view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades);
+        dirlight->AddShadowmapCascades(m_FrameLoop->GetStreamedMemoryGPU(), view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades);
 
         view->NumCascadedShadowMaps += instance->NumCascades > 0 ? 1 : 0; // Just statistics
 
@@ -631,10 +631,10 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     // Allocate lights
     view->NumPointLights          = VisLights.Size();
-    view->PointLightsStreamSize   = sizeof(SLightParameters) * view->NumPointLights;
+    view->PointLightsStreamSize   = sizeof(LightParameters) * view->NumPointLights;
     view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
-    view->PointLights             = (SLightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
-    view->FirstOmnidirectionalShadowMap = FrameData.LightShadowmaps.Size();
+    view->PointLights             = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
+    view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
     view->NumOmnidirectionalShadowMaps  = 0;
 
     int maxOmnidirectionalShadowMaps = GEngine->GetRenderBackend()->MaxOmnidirectionalShadowMapsPerView();
@@ -660,13 +660,13 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             LOG("maxOmnidirectionalShadowMaps hit\n");
         }
 
-        APhotometricProfile* profile = light->GetPhotometricProfile();
+        PhotometricProfile* profile = light->GetPhotometricProfile();
         if (profile)
         {
             profile->WritePhotometricData(PhotometricProfiles, FrameNumber);
         }
 
-        SItemInfo* info = LightVoxelizer.AllocItem();
+        ItemInfo* info = LightVoxelizer.AllocItem();
         info->Type      = ITEM_TYPE_LIGHT;
         info->ListIndex = i;
 
@@ -686,11 +686,11 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     // Allocate probes
     view->NumProbes         = VisEnvProbes.Size();
-    view->ProbeStreamSize   = sizeof(SProbeParameters) * view->NumProbes;
+    view->ProbeStreamSize   = sizeof(ProbeParameters) * view->NumProbes;
     view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
         streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :
         0;
-    view->Probes            = (SProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
+    view->Probes            = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
 
     for (int i = 0; i < view->NumProbes; i++)
     {
@@ -698,7 +698,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
         envProbe->PackProbe(view->ViewMatrix, view->Probes[i]);
 
-        SItemInfo* info = LightVoxelizer.AllocItem();
+        ItemInfo* info = LightVoxelizer.AllocItem();
         info->Type      = ITEM_TYPE_PROBE;
         info->ListIndex = i;
 
@@ -718,49 +718,49 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     if (!r_FixFrustumClusters)
     {
-        LightVoxelizer.Voxelize(FrameLoop->GetStreamedMemoryGPU(), view);
+        LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
     }
 }
 
-void ARenderFrontend::AddDrawable(ADrawable* InComponent)
+void RenderFrontend::AddDrawable(Drawable* InComponent)
 {
     switch (InComponent->GetDrawableType())
     {
         case DRAWABLE_STATIC_MESH:
-            AddStaticMesh(static_cast<AMeshComponent*>(InComponent));
+            AddStaticMesh(static_cast<MeshComponent*>(InComponent));
             break;
         case DRAWABLE_SKINNED_MESH:
-            AddSkinnedMesh(static_cast<ASkinnedComponent*>(InComponent));
+            AddSkinnedMesh(static_cast<SkinnedComponent*>(InComponent));
             break;
         case DRAWABLE_PROCEDURAL_MESH:
-            AddProceduralMesh(static_cast<AProceduralMeshComponent*>(InComponent));
+            AddProceduralMesh(static_cast<ProceduralMeshComponent*>(InComponent));
             break;
         default:
             break;
     }
 }
 
-void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
+void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
 {
-    SRenderView* view = RenderDef.View;
+    RenderViewData* view = RenderDef.View;
 
     if (!r_RenderTerrain)
     {
         return;
     }
 
-    ATerrain* terrainResource = InComponent->GetTerrain();
+    Terrain* terrainResource = InComponent->GetTerrain();
     if (!terrainResource)
     {
         return;
     }
 
-    ATerrainView* terrainView;
+    TerrainView* terrainView;
 
     auto it = m_WorldRenderView->m_TerrainViews.find(terrainResource->Id);
     if (it == m_WorldRenderView->m_TerrainViews.end())
     {
-        terrainView                               = new ATerrainView(TerrainTileSize);
+        terrainView                               = new TerrainView(TerrainTileSize);
         m_WorldRenderView->m_TerrainViews[terrainResource->Id] = terrainView;
     }
     else
@@ -798,7 +798,7 @@ void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
     // Update resource
     terrainView->SetTerrain(terrainResource);
     // Update view
-    terrainView->Update(FrameLoop->GetStreamedMemoryGPU(), TerrainMesh, localViewPosition, localFrustum);
+    terrainView->Update(m_FrameLoop->GetStreamedMemoryGPU(), m_TerrainMesh, localViewPosition, localFrustum);
 
     if (terrainView->GetIndirectBufferDrawCount() == 0)
     {
@@ -806,12 +806,12 @@ void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
         return;
     }
 
-    STerrainRenderInstance* instance = (STerrainRenderInstance*)FrameLoop->AllocFrameMem(sizeof(STerrainRenderInstance));
+    TerrainRenderInstance* instance = (TerrainRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(TerrainRenderInstance));
 
-    FrameData.TerrainInstances.Add(instance);
+    m_FrameData.TerrainInstances.Add(instance);
 
-    instance->VertexBuffer               = TerrainMesh->GetVertexBufferGPU();
-    instance->IndexBuffer                = TerrainMesh->GetIndexBufferGPU();
+    instance->VertexBuffer = m_TerrainMesh->GetVertexBufferGPU();
+    instance->IndexBuffer = m_TerrainMesh->GetIndexBufferGPU();
     instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
     instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
     instance->IndirectBufferDrawCount    = terrainView->GetIndirectBufferDrawCount();
@@ -829,7 +829,7 @@ void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
     view->TerrainInstanceCount++;
 }
 
-void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
+void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
 {
     if (!r_RenderMeshes)
     {
@@ -847,11 +847,11 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
-    ALevel* level = InComponent->GetLevel();
-    ALevelLighting* lighting = level->Lighting;
+    Level* level = InComponent->GetLevel();
+    LevelLighting* lighting = level->Lighting;
 
-    AIndexedMesh* mesh = InComponent->GetMesh();
-    AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
+    IndexedMesh* mesh = InComponent->GetMesh();
+    IndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
     bool bHasLightmap = (lighting &&
                          InComponent->bHasLightmap &&
@@ -868,34 +868,34 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
         for (int subpartIndex = 0, count = subparts.Size(); subpartIndex < count; subpartIndex++)
         {
-            AIndexedMeshSubpart* subpart = subparts[subpartIndex];
+            IndexedMeshSubpart* subpart = subparts[subpartIndex];
 
-            AMaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
+            MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
-            AMaterial* material = materialInstance->GetMaterial();
+            Material* material = materialInstance->GetMaterial();
 
             // Add render instance
-            SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
+            RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
             if (material->IsTranslucent())
             {
-                FrameData.TranslucentInstances.Add(instance);
+                m_FrameData.TranslucentInstances.Add(instance);
                 RenderDef.View->TranslucentInstanceCount++;
             }
             else
             {
-                FrameData.Instances.Add(instance);
+                m_FrameData.Instances.Add(instance);
                 RenderDef.View->InstanceCount++;
             }
 
             if (InComponent->bOutline)
             {
-                FrameData.OutlineInstances.Add(instance);
+                m_FrameData.OutlineInstances.Add(instance);
                 RenderDef.View->OutlineInstanceCount++;
             }
 
@@ -920,7 +920,7 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
             if (InComponent->bHasVertexLight)
             {
-                AVertexLight* vertexLight = level->GetVertexLight(InComponent->VertexLightChannel);
+                VertexLight* vertexLight = level->GetVertexLight(InComponent->VertexLightChannel);
                 if (vertexLight && vertexLight->GetVertexCount() == mesh->GetVertexCount())
                 {
                     vertexLight->GetVertexBufferGPU(&instance->VertexLightChannel, &instance->VertexLightOffset);
@@ -954,9 +954,9 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
     }
 }
 
-void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
+void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
 {
-    AIndexedMesh* mesh = InComponent->GetMesh();
+    IndexedMesh* mesh = InComponent->GetMesh();
 
     if (!r_RenderMeshes)
     {
@@ -980,7 +980,7 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
-    AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
+    IndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
     auto& meshRenderViews = InComponent->GetRenderViews();
 
@@ -991,34 +991,34 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
 
         for (int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++)
         {
-            AIndexedMeshSubpart* subpart = subparts[subpartIndex];
+            IndexedMeshSubpart* subpart = subparts[subpartIndex];
 
-            AMaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
+            MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
-            AMaterial* material = materialInstance->GetMaterial();
+            Material* material = materialInstance->GetMaterial();
 
             // Add render instance
-            SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
+            RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
             if (material->IsTranslucent())
             {
-                FrameData.TranslucentInstances.Add(instance);
+                m_FrameData.TranslucentInstances.Add(instance);
                 RenderDef.View->TranslucentInstanceCount++;
             }
             else
             {
-                FrameData.Instances.Add(instance);
+                m_FrameData.Instances.Add(instance);
                 RenderDef.View->InstanceCount++;
             }
 
             if (InComponent->bOutline)
             {
-                FrameData.OutlineInstances.Add(instance);
+                m_FrameData.OutlineInstances.Add(instance);
                 RenderDef.View->OutlineInstanceCount++;
             }
 
@@ -1057,7 +1057,7 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
     }
 }
 
-void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
+void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
 {
     if (!r_RenderMeshes)
     {
@@ -1066,7 +1066,7 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
 
     InComponent->PreRenderUpdate(&RenderDef);
 
-    AProceduralMesh* mesh = InComponent->GetMesh();
+    ProceduralMesh* mesh = InComponent->GetMesh();
     if (!mesh)
     {
         return;
@@ -1093,32 +1093,32 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
         if (!meshRender->IsEnabled())
             continue;
 
-        AMaterialInstance* materialInstance = meshRender->GetMaterial();
+        MaterialInstance* materialInstance = meshRender->GetMaterial();
         HK_ASSERT(materialInstance);
 
-        SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
         if (!materialInstanceFrameData)
             return;
 
-        AMaterial* material = materialInstance->GetMaterial();
+        Material* material = materialInstance->GetMaterial();
 
         // Add render instance
-        SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
+        RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
         if (material->IsTranslucent())
         {
-            FrameData.TranslucentInstances.Add(instance);
+            m_FrameData.TranslucentInstances.Add(instance);
             RenderDef.View->TranslucentInstanceCount++;
         }
         else
         {
-            FrameData.Instances.Add(instance);
+            m_FrameData.Instances.Add(instance);
             RenderDef.View->InstanceCount++;
         }
 
         if (InComponent->bOutline)
         {
-            FrameData.OutlineInstances.Add(instance);
+            m_FrameData.OutlineInstances.Add(instance);
             RenderDef.View->OutlineInstanceCount++;
         }
 
@@ -1155,7 +1155,7 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
     }
 }
 
-void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshComponent* InComponent)
+void RenderFrontend::AddShadowmap_StaticMesh(LightShadowmap* ShadowMap, MeshComponent* InComponent)
 {
     if (!r_RenderMeshes)
     {
@@ -1164,11 +1164,11 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
 
     InComponent->PreRenderUpdate(&RenderDef);
 
-    AIndexedMesh* mesh = InComponent->GetMesh();
+    IndexedMesh* mesh = InComponent->GetMesh();
 
     Float3x4 const& instanceMatrix = InComponent->GetWorldTransformMatrix();
 
-    AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
+    IndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
     auto& meshRenderViews = InComponent->GetRenderViews();
 
@@ -1181,12 +1181,12 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
         {
             // FIXME: check subpart bounding box here
 
-            AIndexedMeshSubpart* subpart = subparts[subpartIndex];
+            IndexedMeshSubpart* subpart = subparts[subpartIndex];
 
-            AMaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
+            MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            AMaterial* material = materialInstance->GetMaterial();
+            Material* material = materialInstance->GetMaterial();
 
             // Prevent rendering of instances with disabled shadow casting
             if (!material->IsShadowCastEnabled())
@@ -1194,14 +1194,14 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
                 continue;
             }
 
-            SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
             // Add render instance
-            SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
+            ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
-            FrameData.ShadowInstances.Add(instance);
+            m_FrameData.ShadowInstances.Add(instance);
 
             instance->Material = material->GetGPUResource();
             instance->MaterialInstance = materialInstanceFrameData;
@@ -1234,7 +1234,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
     }
 }
 
-void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkinnedComponent* InComponent)
+void RenderFrontend::AddShadowmap_SkinnedMesh(LightShadowmap* ShadowMap, SkinnedComponent* InComponent)
 {
     if (!r_RenderMeshes)
     {
@@ -1243,7 +1243,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
 
     InComponent->PreRenderUpdate(&RenderDef);
 
-    AIndexedMesh* mesh = InComponent->GetMesh();
+    IndexedMesh* mesh = InComponent->GetMesh();
 
     size_t skeletonOffset   = 0;
     size_t skeletonOffsetMB = 0;
@@ -1253,7 +1253,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
 
     Float3x4 const& instanceMatrix = InComponent->GetWorldTransformMatrix();
 
-    AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
+    IndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
     auto& meshRenderViews = InComponent->GetRenderViews();
 
@@ -1266,12 +1266,12 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
         {
             // FIXME: check subpart bounding box here
 
-            AIndexedMeshSubpart* subpart = subparts[subpartIndex];
+            IndexedMeshSubpart* subpart = subparts[subpartIndex];
 
-            AMaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
+            MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            AMaterial* material = materialInstance->GetMaterial();
+            Material* material = materialInstance->GetMaterial();
 
             // Prevent rendering of instances with disabled shadow casting
             if (!material->IsShadowCastEnabled())
@@ -1279,14 +1279,14 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
                 continue;
             }
 
-            SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
             // Add render instance
-            SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
+            ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
-            FrameData.ShadowInstances.Add(instance);
+            m_FrameData.ShadowInstances.Add(instance);
 
             instance->Material = material->GetGPUResource();
             instance->MaterialInstance = materialInstanceFrameData;
@@ -1318,7 +1318,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
     }
 }
 
-void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AProceduralMeshComponent* InComponent)
+void RenderFrontend::AddShadowmap_ProceduralMesh(LightShadowmap* ShadowMap, ProceduralMeshComponent* InComponent)
 {
     if (!r_RenderMeshes)
     {
@@ -1334,10 +1334,10 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
         if (!meshRender->IsEnabled())
             continue;
 
-        AMaterialInstance* materialInstance = meshRender->GetMaterial();
+        MaterialInstance* materialInstance = meshRender->GetMaterial();
         HK_ASSERT(materialInstance);
 
-        AMaterial* material = materialInstance->GetMaterial();
+        Material* material = materialInstance->GetMaterial();
 
         // Prevent rendering of instances with disabled shadow casting
         if (!material->IsShadowCastEnabled())
@@ -1345,7 +1345,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
             return;
         }
 
-        AProceduralMesh* mesh = InComponent->GetMesh();
+        ProceduralMesh* mesh = InComponent->GetMesh();
         if (!mesh)
         {
             return;
@@ -1358,14 +1358,14 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
             return;
         }
 
-        SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
         if (!materialInstanceFrameData)
             return;
 
         // Add render instance
-        SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
+        ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
-        FrameData.ShadowInstances.Add(instance);
+        m_FrameData.ShadowInstances.Add(instance);
 
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1399,23 +1399,23 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
+void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 {
     if (!RenderDef.View->NumShadowMapCascades)
     {
         return;
     }
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     // Create shadow instances
 
     ShadowCasters.Clear();
     ShadowBoxes.Clear();
 
-    ALightingSystem& lightingSystem = InWorld->LightingSystem;
+    LightingSystem& lightingSystem = InWorld->LightingSystem;
 
-    for (TListIterator<ADrawable> component(lightingSystem.ShadowCasters); component; component++)
+    for (TListIterator<Drawable> component(lightingSystem.ShadowCasters); component; component++)
     {
         if ((component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0)
         {
@@ -1440,20 +1440,20 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
     {
         int lightOffset = RenderDef.View->FirstDirectionalLight + lightIndex;
 
-        SDirectionalLightInstance* lightDef = FrameData.DirectionalLights[lightOffset];
+        DirectionalLightInstance* lightDef = m_FrameData.DirectionalLights[lightOffset];
 
         if (lightDef->NumCascades == 0)
         {
             continue;
         }
 
-        lightDef->ShadowmapIndex = FrameData.LightShadowmaps.Size();
+        lightDef->ShadowmapIndex = m_FrameData.LightShadowmaps.Size();
 
-        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Add();
+        LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
 
-        shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
+        shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;
-        shadowMap->FirstLightPortal    = FrameData.LightPortals.Size();
+        shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
         shadowMap->LightPortalsCount   = 0;
 
         Float4x4* lightViewProjectionMatrices = (Float4x4*)streamedMemory->Map(lightDef->ViewProjStreamHandle);
@@ -1478,7 +1478,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
         for (int n = 0; n < ShadowCasters.Size(); n++)
         {
-            ADrawable* component = ShadowCasters[n];
+            Drawable* component = ShadowCasters[n];
 
             if (component->CascadeMask == 0)
             {
@@ -1488,13 +1488,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
             switch (component->GetDrawableType())
             {
                 case DRAWABLE_STATIC_MESH:
-                    AddShadowmap_StaticMesh(shadowMap, static_cast<AMeshComponent*>(component));
+                    AddShadowmap_StaticMesh(shadowMap, static_cast<MeshComponent*>(component));
                     break;
                 case DRAWABLE_SKINNED_MESH:
-                    AddShadowmap_SkinnedMesh(shadowMap, static_cast<ASkinnedComponent*>(component));
+                    AddShadowmap_SkinnedMesh(shadowMap, static_cast<SkinnedComponent*>(component));
                     break;
                 case DRAWABLE_PROCEDURAL_MESH:
-                    AddShadowmap_ProceduralMesh(shadowMap, static_cast<AProceduralMeshComponent*>(component));
+                    AddShadowmap_ProceduralMesh(shadowMap, static_cast<ProceduralMeshComponent*>(component));
                     break;
                 default:
                     break;
@@ -1505,9 +1505,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         }
 
         // Add static shadow casters
-        for (ALevel* level : InWorld->GetArrayOfLevels())
+        for (Level* level : InWorld->GetArrayOfLevels())
         {
-            ALevelLighting* lighting = level->Lighting;
+            LevelLighting* lighting = level->Lighting;
 
             if (!lighting)
                 continue;
@@ -1520,9 +1520,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
             }
 
             // Add render instance
-            SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
+            ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
-            FrameData.ShadowInstances.Add(instance);
+            m_FrameData.ShadowInstances.Add(instance);
 
             instance->Material            = nullptr;
             instance->MaterialInstance    = nullptr;
@@ -1546,36 +1546,36 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
             RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
         }
 
-        std::sort(FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
-                  FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
+        std::sort(m_FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+                  m_FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
                   ShadowInstanceSortFunction);
 
         if (r_RenderLightPortals)
         {
             // Add light portals
-            for (ALevel* level : InWorld->GetArrayOfLevels())
+            for (Level* level : InWorld->GetArrayOfLevels())
             {
-                ALevelLighting* lighting = level->Lighting;
+                LevelLighting* lighting = level->Lighting;
 
                 if (!lighting)
                     continue;
 
-                TPodVector<SLightPortalDef> const& lightPortals = lighting->GetLightPortals();
+                TPodVector<LightPortalDef> const& lightPortals = lighting->GetLightPortals();
 
                 if (lightPortals.IsEmpty())
                 {
                     continue;
                 }
 
-                for (SLightPortalDef const& lightPortal : lightPortals)
+                for (LightPortalDef const& lightPortal : lightPortals)
                 {
 
                     // TODO: Perform culling for each light portal
                     // NOTE: We can precompute visible geometry for static light and meshes from every light portal
 
-                    SLightPortalRenderInstance* instance = (SLightPortalRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SLightPortalRenderInstance));
+                    LightPortalRenderInstance* instance = (LightPortalRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(LightPortalRenderInstance));
 
-                    FrameData.LightPortals.Add(instance);
+                    m_FrameData.LightPortals.Add(instance);
 
                     instance->VertexBuffer       = lighting->GetLightPortalsVB();
                     instance->VertexBufferOffset = 0;
@@ -1594,19 +1594,19 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
     }
 }
 
-HK_FORCEINLINE bool CanMergeSurfaces(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
+HK_FORCEINLINE bool CanMergeSurfaces(SurfaceDef const* InFirst, SurfaceDef const* InSecond)
 {
     return (InFirst->Model == InSecond->Model && InFirst->LightmapBlock == InSecond->LightmapBlock && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
 }
 
-HK_FORCEINLINE bool CanMergeSurfacesShadowmap(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
+HK_FORCEINLINE bool CanMergeSurfacesShadowmap(SurfaceDef const* InFirst, SurfaceDef const* InSecond)
 {
     return (InFirst->Model == InSecond->Model && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
 }
 
-void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount)
+void RenderFrontend::AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount)
 {
     if (!SurfaceCount)
     {
@@ -1617,7 +1617,7 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
     int totalIndices = 0;
     for (int i = 0; i < SurfaceCount; i++)
     {
-        SSurfaceDef const* surfDef = Surfaces[i];
+        SurfaceDef const* surfDef = Surfaces[i];
 
         totalVerts += surfDef->NumVertices;
         totalIndices += surfDef->NumIndices;
@@ -1629,28 +1629,28 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
         return;
     }
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
-    SurfaceStream.VertexAddr      = streamedMemory->AllocateVertex(totalVerts * sizeof(SMeshVertex), nullptr);
-    SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(SMeshVertexLight), nullptr);
-    SurfaceStream.VertexUVAddr    = streamedMemory->AllocateVertex(totalVerts * sizeof(SMeshVertexUV), nullptr);
+    SurfaceStream.VertexAddr      = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
+    SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexLight), nullptr);
+    SurfaceStream.VertexUVAddr    = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexUV), nullptr);
     SurfaceStream.IndexAddr       = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
 
-    SMeshVertex*      vertices    = (SMeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
-    SMeshVertexLight* vertexLight = (SMeshVertexLight*)streamedMemory->Map(SurfaceStream.VertexLightAddr);
-    SMeshVertexUV*    vertexUV    = (SMeshVertexUV*)streamedMemory->Map(SurfaceStream.VertexUVAddr);
+    MeshVertex*      vertices    = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
+    MeshVertexLight* vertexLight = (MeshVertexLight*)streamedMemory->Map(SurfaceStream.VertexLightAddr);
+    MeshVertexUV*    vertexUV    = (MeshVertexUV*)streamedMemory->Map(SurfaceStream.VertexUVAddr);
     unsigned int*     indices     = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
 
     int numVerts   = 0;
     int numIndices = 0;
     int firstIndex = 0;
 
-    SSurfaceDef const* merge = Surfaces[0];
-    ABrushModel const* model = merge->Model;
+    SurfaceDef const* merge = Surfaces[0];
+    BrushModel const* model = merge->Model;
 
     for (int i = 0; i < SurfaceCount; i++)
     {
-        SSurfaceDef const* surfDef = Surfaces[i];
+        SurfaceDef const* surfDef = Surfaces[i];
 
         if (!CanMergeSurfaces(merge, surfDef))
         {
@@ -1668,9 +1668,9 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
             firstIndex = numIndices;
         }
 
-        SMeshVertex const*      srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
-        SMeshVertexUV const*    srcLM      = model->LightmapVerts.ToPtr() + surfDef->FirstVertex;
-        SMeshVertexLight const* srcVL      = model->VertexLight.ToPtr() + surfDef->FirstVertex;
+        MeshVertex const*      srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
+        MeshVertexUV const*    srcLM      = model->LightmapVerts.ToPtr() + surfDef->FirstVertex;
+        MeshVertexLight const* srcVL      = model->VertexLight.ToPtr() + surfDef->FirstVertex;
         unsigned int const*     srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
@@ -1678,9 +1678,9 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
         HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size());
         HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
 
-        Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(SMeshVertex) * surfDef->NumVertices);
-        Platform::Memcpy(vertexUV + numVerts, srcLM, sizeof(SMeshVertexUV) * surfDef->NumVertices);
-        Platform::Memcpy(vertexLight + numVerts, srcVL, sizeof(SMeshVertexLight) * surfDef->NumVertices);
+        Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(MeshVertex) * surfDef->NumVertices);
+        Platform::Memcpy(vertexUV + numVerts, srcLM, sizeof(MeshVertexUV) * surfDef->NumVertices);
+        Platform::Memcpy(vertexLight + numVerts, srcVL, sizeof(MeshVertexLight) * surfDef->NumVertices);
 
         for (int ind = 0; ind < surfDef->NumIndices; ind++)
         {
@@ -1704,7 +1704,7 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
     HK_ASSERT(numIndices == totalIndices);
 }
 
-void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceDef* const* Surfaces, int SurfaceCount)
+void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef* const* Surfaces, int SurfaceCount)
 {
     if (!SurfaceCount)
     {
@@ -1715,7 +1715,7 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
     int totalIndices = 0;
     for (int i = 0; i < SurfaceCount; i++)
     {
-        SSurfaceDef const* surfDef = Surfaces[i];
+        SurfaceDef const* surfDef = Surfaces[i];
 
         if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
         {
@@ -1732,24 +1732,24 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
         return;
     }
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
-    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(SMeshVertex), nullptr);
+    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
     SurfaceStream.IndexAddr  = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
 
-    SMeshVertex*  vertices = (SMeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
+    MeshVertex*  vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
     unsigned int* indices  = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
 
     int numVerts   = 0;
     int numIndices = 0;
     int firstIndex = 0;
 
-    SSurfaceDef const* merge = Surfaces[0];
-    ABrushModel const* model = merge->Model;
+    SurfaceDef const* merge = Surfaces[0];
+    BrushModel const* model = merge->Model;
 
     for (int i = 0; i < SurfaceCount; i++)
     {
-        SSurfaceDef const* surfDef = Surfaces[i];
+        SurfaceDef const* surfDef = Surfaces[i];
 
         if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
         {
@@ -1772,13 +1772,13 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
             firstIndex = numIndices;
         }
 
-        SMeshVertex const*  srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
+        MeshVertex const*  srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
         unsigned int const* srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
 #if 0
         DebugDraw.SetDepthTest( false );
         DebugDraw.SetColor( Color4( 1, 1, 0, 1 ) );
-        DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( SMeshVertex ),
+        DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( MeshVertex ),
                                              srcIndices, surfDef->NumIndices );
         //DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
         //DebugDraw.DrawAABB( surfDef->Bounds );
@@ -1789,7 +1789,7 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
         HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size());
         HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
 
-        Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(SMeshVertex) * surfDef->NumVertices);
+        Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(MeshVertex) * surfDef->NumVertices);
 
         for (int ind = 0; ind < surfDef->NumIndices; ind++)
         {
@@ -1812,37 +1812,37 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
     HK_ASSERT(numIndices == totalIndices);
 }
 
-void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
+void RenderFrontend::AddSurface(Level* Level, MaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
 {
-    AMaterial*          material                  = MaterialInstance->GetMaterial();
-    SMaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+    Material*          material                  = MaterialInstance->GetMaterial();
+    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
 
     if (!materialInstanceFrameData)
         return;
 
     // Add render instance
-    SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
+    RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
     if (material->IsTranslucent())
     {
-        FrameData.TranslucentInstances.Add(instance);
+        m_FrameData.TranslucentInstances.Add(instance);
         RenderDef.View->TranslucentInstanceCount++;
     }
     else
     {
-        FrameData.Instances.Add(instance);
+        m_FrameData.Instances.Add(instance);
         RenderDef.View->InstanceCount++;
     }
 
     //if ( bOutline ) {
-    //    FrameData.OutlineInstances.Add( instance );
+    //    m_FrameData.OutlineInstances.Add( instance );
     //    RenderDef.View->OutlineInstanceCount++;
     //}
 
     instance->Material         = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset);
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset);
@@ -1854,7 +1854,7 @@ void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInsta
     instance->LightmapOffset.Z = 1;
     instance->LightmapOffset.W = 1;
 
-    ALevelLighting* lighting = Level->Lighting;
+    LevelLighting* lighting = Level->Lighting;
     if (lighting && _LightmapBlock >= 0 && _LightmapBlock < lighting->Lightmaps.Size() && !r_VertexLight)
     {
         instance->Lightmap = lighting->Lightmaps[_LightmapBlock];
@@ -1886,23 +1886,23 @@ void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInsta
     RenderDef.PolyCount += instance->IndexCount / 3;
 }
 
-void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
+void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
 {
-    AMaterial*          material                  = MaterialInstance->GetMaterial();
-    SMaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+    Material*          material                  = MaterialInstance->GetMaterial();
+    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
 
     if (!materialInstanceFrameData)
         return;
 
     // Add render instance
-    SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
+    ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
-    FrameData.ShadowInstances.Add(instance);
+    m_FrameData.ShadowInstances.Add(instance);
 
     instance->Material         = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset);
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset);
@@ -1926,14 +1926,14 @@ void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialI
     RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
-bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Radius)
+bool RenderFrontend::AddLightShadowmap(AnalyticLightComponent* Light, float Radius)
 {
     if (!Light->IsCastShadow())
     {
         return false;
     }
 
-    AWorld* world = Light->GetWorld();
+    World* world = Light->GetWorld();
 
     Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
     Float4x4        projMat          = Float4x4::PerspectiveRevCC_Cube(0.1f, 1000/*Radius*/);
@@ -1943,7 +1943,7 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
 
     Float3 lightPos = Light->GetWorldPosition();
 
-    ADrawable* drawable;
+    Drawable* drawable;
 
     int totalInstances = 0;
     int totalSurfaces  = 0;
@@ -1966,32 +1966,32 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
         // TODO: VSD не учитывает FarPlane для кулинга - исправить это
         QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), VisPrimitives, VisSurfaces);
 
-        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Add();
+        LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
 
-        shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
+        shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;
-        shadowMap->FirstLightPortal    = FrameData.LightPortals.Size();
+        shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
         shadowMap->LightPortalsCount   = 0;
         shadowMap->LightPosition       = lightPos;
 
-        for (SPrimitiveDef* primitive : VisPrimitives)
+        for (PrimitiveDef* primitive : VisPrimitives)
         {
             // TODO: Replace upcasting by something better (virtual function?)
 
-            if (nullptr != (drawable = Upcast<ADrawable>(primitive->Owner)))
+            if (nullptr != (drawable = Upcast<Drawable>(primitive->Owner)))
             {
                 drawable->CascadeMask = 1 << faceIndex;
 
                 switch (drawable->GetDrawableType())
                 {
                     case DRAWABLE_STATIC_MESH:
-                        AddShadowmap_StaticMesh(shadowMap, static_cast<AMeshComponent*>(drawable));
+                        AddShadowmap_StaticMesh(shadowMap, static_cast<MeshComponent*>(drawable));
                         break;
                     case DRAWABLE_SKINNED_MESH:
-                        AddShadowmap_SkinnedMesh(shadowMap, static_cast<ASkinnedComponent*>(drawable));
+                        AddShadowmap_SkinnedMesh(shadowMap, static_cast<SkinnedComponent*>(drawable));
                         break;
                     case DRAWABLE_PROCEDURAL_MESH:
-                        AddShadowmap_ProceduralMesh(shadowMap, static_cast<AProceduralMeshComponent*>(drawable));
+                        AddShadowmap_ProceduralMesh(shadowMap, static_cast<ProceduralMeshComponent*>(drawable));
                         break;
                     default:
                         break;
@@ -2009,9 +2009,9 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
 
         if (r_RenderSurfaces && !VisSurfaces.IsEmpty())
         {
-            struct SSortFunction
+            struct SortFunction
             {
-                bool operator()(SSurfaceDef const* _A, SSurfaceDef const* _B)
+                bool operator()(SurfaceDef const* _A, SurfaceDef const* _B)
                 {
                     return (_A->SortKey < _B->SortKey);
                 }
@@ -2024,8 +2024,8 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
             totalSurfaces += VisSurfaces.Size();
         }
 
-        std::sort(FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
-                  FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
+        std::sort(m_FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+                  m_FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
                   ShadowInstanceSortFunction);
 
         totalInstances += shadowMap->ShadowInstanceCount;
@@ -2033,7 +2033,7 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
 
     if (totalInstances == 0 && totalSurfaces == 0)
     {
-        FrameData.LightShadowmaps.Resize(FrameData.LightShadowmaps.Size() - 6);
+        m_FrameData.LightShadowmaps.Resize(m_FrameData.LightShadowmaps.Size() - 6);
         return false;
     }
 

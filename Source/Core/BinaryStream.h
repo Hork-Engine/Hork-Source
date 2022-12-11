@@ -36,7 +36,7 @@ SOFTWARE.
 #include "HeapBlob.h"
 #include "Ref.h"
 
-class IBinaryStreamBaseInterface : public ARefCounted
+class IBinaryStreamBaseInterface : public RefCounted
 {
 public:
     virtual ~IBinaryStreamBaseInterface() = default;
@@ -60,7 +60,7 @@ public:
 
     virtual bool Eof() const = 0;
 
-    virtual AString const& GetName() const = 0;
+    virtual String const& GetName() const = 0;
 };
 
 
@@ -342,14 +342,14 @@ public:
 
     virtual void Flush() = 0;
 
-    void WriteString(AStringView Str)
+    void WriteString(StringView Str)
     {
         StringSizeType size = Str.Size();
         WriteUInt32(size);
         Write(Str.ToPtr(), size);
     }
 
-    void WriteString(AWideStringView Str)
+    void WriteString(WideStringView Str)
     {
         StringSizeType size = Str.Size();
         WriteUInt32(size);

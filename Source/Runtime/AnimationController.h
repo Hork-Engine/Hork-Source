@@ -32,17 +32,15 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class ASkeletalAnimation;
-class ASkinnedComponent;
+class SkeletalAnimation;
+class SkinnedComponent;
 
 /**
-
-EAnimationPlayMode
 
 Animation play mode
 
 */
-enum EAnimationPlayMode
+enum ANIMATION_PLAY_MODE
 {
     ANIMATION_PLAY_WRAP,
     ANIMATION_PLAY_MIRROR,
@@ -51,26 +49,26 @@ enum EAnimationPlayMode
 
 /**
 
-AAnimationController
+AnimationController
 
 Animation controller (track, state)
 
 */
-class AAnimationController : public ABaseObject
+class AnimationController : public BaseObject
 {
-    HK_CLASS(AAnimationController, ABaseObject)
+    HK_CLASS(AnimationController, BaseObject)
 
-    friend class ASkinnedComponent;
+    friend class SkinnedComponent;
 
 public:
     /** Set source animation */
-    void SetAnimation(ASkeletalAnimation* _Animation);
+    void SetAnimation(SkeletalAnimation* _Animation);
 
     /** Get source animation */
-    ASkeletalAnimation* GetAnimation() { return Animation; }
+    SkeletalAnimation* GetAnimation() { return Animation; }
 
     /** Get animation owner */
-    ASkinnedComponent* GetOwner() { return Owner; }
+    SkinnedComponent* GetOwner() { return Owner; }
 
     /** Set position on animation track */
     void SetTime(float _Time);
@@ -82,10 +80,10 @@ public:
     float GetTime() const { return TimeLine; }
 
     /** Set play mode */
-    void SetPlayMode(EAnimationPlayMode _PlayMode);
+    void SetPlayMode(ANIMATION_PLAY_MODE _PlayMode);
 
     /** Get play mode */
-    EAnimationPlayMode GetPlayMode() const { return PlayMode; }
+    ANIMATION_PLAY_MODE GetPlayMode() const { return PlayMode; }
 
     /** Set time quantizer */
     void SetQuantizer(float _Quantizer);
@@ -105,17 +103,17 @@ public:
     /** Is controller enabled */
     bool IsEnabled() const { return bEnabled; }
 
-    AAnimationController();
+    AnimationController();
 
 private:
-    TRef<ASkeletalAnimation> Animation;
-    ASkinnedComponent*       Owner;
-    float                    TimeLine;
-    float                    Quantizer;
-    float                    Weight;
-    float                    Blend;
-    int                      Frame;
-    int                      NextFrame;
-    EAnimationPlayMode       PlayMode;
-    bool                     bEnabled;
+    TRef<SkeletalAnimation> Animation;
+    SkinnedComponent*       Owner;
+    float                   TimeLine;
+    float                   Quantizer;
+    float                   Weight;
+    float                   Blend;
+    int                     Frame;
+    int                     NextFrame;
+    ANIMATION_PLAY_MODE     PlayMode;
+    bool                    bEnabled;
 };

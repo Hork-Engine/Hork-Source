@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include "Texture.h"
 
-class AFontStash : public ARefCounted
+class FontStash : public RefCounted
 {
 public:
-    AFontStash();
-    ~AFontStash();
+    FontStash();
+    ~FontStash();
 
     struct FONScontext* GetImpl()
     {
@@ -46,7 +46,7 @@ public:
     bool ReallocTexture();
     void UpdateTexture();
 
-    ATextureView* GetTextureView();
+    TextureView* GetTextureView();
 
     void Cleanup();
 
@@ -61,10 +61,10 @@ private:
     TRef<RenderCore::ITexture> m_FontImages[MAX_FONT_IMAGES];
     int                        m_FontImageIdx{};
 
-    class TextureViewImpl : public ATextureView
+    class TextureViewImpl : public TextureView
     {
     public:
-        TextureViewImpl(AFontStash* pFontStash) :
+        TextureViewImpl(FontStash* pFontStash) :
             m_FontStash(pFontStash)
         {}
 
@@ -75,7 +75,7 @@ private:
             m_Height   = pResource->GetDesc().Resolution.Height;
         }
 
-        TRef<AFontStash> m_FontStash;
+        TRef<FontStash> m_FontStash;
     };
 
     TWeakRef<TextureViewImpl> m_TextureViews[MAX_FONT_IMAGES];
@@ -105,7 +105,7 @@ struct TextRow
     /** Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending. */
     float MinX, MaxX;
 
-    AStringView GetStringView() const { return AStringView(Start, End); }
+    StringView GetStringView() const { return StringView(Start, End); }
 };
 
 struct TextRowW
@@ -125,7 +125,7 @@ struct TextRowW
     /** Actual bounds of the row. Logical width and bounds can differ because of kerning and some parts over extending. */
     float MinX, MaxX;
 
-    AWideStringView GetStringView() const { return AWideStringView(Start, End); }
+    WideStringView GetStringView() const { return WideStringView(Start, End); }
 };
 
 struct FontStyle
@@ -142,13 +142,13 @@ struct FontStyle
     float LineHeight{1};
 };
 
-class AFont : public AResource
+class Font : public Resource
 {
-    HK_CLASS(AFont, AResource)
+    HK_CLASS(Font, Resource)
 
 public:
-    AFont();
-    ~AFont();
+    Font();
+    ~Font();
 
     int GetId() const
     {
@@ -161,19 +161,19 @@ public:
     float GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const;
 
     /** Measures the size of specified multi-text string */
-    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text, bool bKeepSpaces = false) const;
-    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AWideStringView text, bool bKeepSpaces = false) const;
+    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, StringView text, bool bKeepSpaces = false) const;
+    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, WideStringView text, bool bKeepSpaces = false) const;
 
     /** Breaks the specified text into lines.
     White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
     Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
-    int TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces = false) const;
-    int TextBreakLines(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces = false) const;
+    int TextBreakLines(FontStyle const& fontStyle, StringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces = false) const;
+    int TextBreakLines(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces = false) const;
 
-    int TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth, bool bKeepSpaces = false) const;
-    int TextLineCount(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, bool bKeepSpaces = false) const;
+    int TextLineCount(FontStyle const& fontStyle, StringView text, float breakRowWidth, bool bKeepSpaces = false) const;
+    int TextLineCount(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, bool bKeepSpaces = false) const;
 
-    bool AddFallbackFont(AFont* fallbackFont);
+    bool AddFallbackFont(Font* fallbackFont);
     void ResetFallbackFonts();
 
 protected:
@@ -181,13 +181,13 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
     int                  m_FontId = -1;
-    mutable TRef<AFontStash> m_FontStash;
+    mutable TRef<FontStash> m_FontStash;
     HeapBlob             m_Blob;
-    TVector<TRef<AFont>> m_Fallbacks;
+    TVector<TRef<Font>> m_Fallbacks;
 };

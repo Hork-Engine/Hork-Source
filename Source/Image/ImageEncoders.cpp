@@ -392,7 +392,7 @@ void CompressBC5(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
 // Input RGBA32_FLOAT image, output BC6 compressed image
 void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height, bool bSigned)
 {
-    AScopedTimer timer("CompressBC6h");
+    ScopedTimer timer("CompressBC6h");
 
     //uint8_t const* src = (uint8_t const*)pSrc;
     //uint8_t*       dst = (uint8_t*)pDest;
@@ -407,7 +407,7 @@ void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height
 
     const int num_threads = 16;
 
-    AThread threads[num_threads];
+    Thread threads[num_threads];
 
     struct ThreadData
     {
@@ -425,7 +425,7 @@ void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height
     uint32_t blocksPerThread = numBlocks / num_threads;
     uint32_t firstBlock      = 0;
 
-    AAtomicInt counter{};
+    AtomicInt counter{};
 
     ThreadData data[num_threads];
     for (int i = 0; i < num_threads; i++)
@@ -440,8 +440,8 @@ void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height
         data[i].bSigned    = bSigned;
         firstBlock += blocksPerThread;
 
-        threads[i] = AThread(
-            [](ThreadData& data, uint32_t numBlocks, AAtomicInt& counter)
+        threads[i] = Thread(
+            [](ThreadData& data, uint32_t numBlocks, AtomicInt& counter)
             {
                 uint8_t block[4 * 4 * 4 * sizeof(float)];
 
@@ -557,7 +557,7 @@ void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
 #if 0
 void DecompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height, bool bSigned)
 {
-    //AScopedTimer timer("CompressBC6h");
+    //ScopedTimer timer("CompressBC6h");
 
     //uint8_t const* src = (uint8_t const*)pSrc;
     //uint8_t*       dst = (uint8_t*)pDest;
@@ -572,7 +572,7 @@ void DecompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Heig
 
     const int num_threads = 16;
 
-    AThread threads[num_threads];
+    Thread threads[num_threads];
 
     struct ThreadData
     {
@@ -590,7 +590,7 @@ void DecompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Heig
     uint32_t blocksPerThread = numBlocks / num_threads;
     uint32_t firstBlock      = 0;
 
-    AAtomicInt counter{};
+    AtomicInt counter{};
 
     ThreadData data[num_threads];
     for (int i = 0; i < num_threads; i++)
@@ -605,8 +605,8 @@ void DecompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Heig
         data[i].bSigned    = bSigned;
         firstBlock += blocksPerThread;
 
-        threads[i] = AThread(
-            [](ThreadData& data, uint32_t numBlocks, AAtomicInt& counter)
+        threads[i] = Thread(
+            [](ThreadData& data, uint32_t numBlocks, AtomicInt& counter)
             {
                 const uint32_t blockWidth       = 4;
                 const uint32_t bpp              = 3 * sizeof(float);
@@ -688,9 +688,9 @@ const float pack_midpoints6[64] = {
 
 
 // Assume normals already normalized
-ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
@@ -705,9 +705,9 @@ ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, 
 }
 
 // Assume normals already normalized
-ARawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
@@ -720,9 +720,9 @@ ARawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, ui
 }
 
 // Assume normals already normalized
-ARawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
@@ -737,9 +737,9 @@ ARawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Wi
 }
 
 // Assume normals already normalized
-ARawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
@@ -752,9 +752,9 @@ ARawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_
 }
 
 // Assume normals already normalized
-ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
@@ -777,9 +777,9 @@ ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t W
 }
 
 // Assume normals already normalized
-ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+RawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
 {
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)

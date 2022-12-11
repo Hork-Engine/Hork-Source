@@ -56,7 +56,7 @@ enum QUERY_RESULT_FLAGS : uint32_t
     //QUERY_RESULT_PARTIAL_BIT = 8  // TODO?
 };
 
-struct SQueryPoolDesc
+struct QueryPoolDesc
 {
     QUERY_TYPE QueryType;
     uint32_t   PoolSize;

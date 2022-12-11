@@ -34,22 +34,22 @@ SOFTWARE.
 #include <RenderCore/Texture.h>
 #include <Image/PhotometricData.h>
 
-class ATexture;
+class Texture;
 
 /**
 
-APhotometricProfile
+PhotometricProfile
 
 */
-class APhotometricProfile : public AResource
+class PhotometricProfile : public Resource
 {
-    HK_CLASS(APhotometricProfile, AResource)
+    HK_CLASS(PhotometricProfile, Resource)
 
 public:
-    APhotometricProfile();
-    ~APhotometricProfile();
+    PhotometricProfile();
+    ~PhotometricProfile();
 
-    static APhotometricProfile* Create(void const* pData, float Intensity);
+    static PhotometricProfile* Create(void const* pData, float Intensity);
 
     void SetIntensity(float Intensity) { m_Intensity = Intensity; }
 
@@ -67,7 +67,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/PhotometricProfile/Default"; }
 

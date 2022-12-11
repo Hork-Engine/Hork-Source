@@ -34,78 +34,78 @@ SOFTWARE.
 
 #include <Core/Document.h>
 
-class AActorDefinition : public AResource
+class ActorDefinition : public Resource
 {
-    HK_CLASS(AActorDefinition, AResource)
+    HK_CLASS(ActorDefinition, Resource)
 
 public:
-    struct SComponentDef
+    struct ComponentDef
     {
-        AClassMeta const*       ClassMeta;
-        AString                 Name;
-        uint64_t                Id;
-        uint64_t                Attach;
-        int                     ParentIndex{-1};
-        TStringHashMap<AString> PropertyHash;
+        ClassMeta const*       ClassMeta;
+        String                 Name;
+        uint64_t               Id;
+        uint64_t               Attach;
+        int                    ParentIndex{-1};
+        TStringHashMap<String> PropertyHash;
     };
 
-    struct SPublicProperty
+    struct PublicProperty
     {
-        int     ComponentIndex;
-        AString PropertyName;
-        AString PublicName;
+        int    ComponentIndex;
+        String PropertyName;
+        String PublicName;
     };
 
-    struct SScriptPublicProperty
+    struct ScriptPublicProperty
     {
-        AString PropertyName;
-        AString PublicName;
+        String PropertyName;
+        String PublicName;
     };
 
-    AActorDefinition();
+    ActorDefinition();
 
-    static AActorDefinition* CreateFromDocument(ADocument const& Document)
+    static ActorDefinition* CreateFromDocument(Document const& Document)
     {
-        AActorDefinition* def = NewObj<AActorDefinition>();
+        ActorDefinition* def = NewObj<ActorDefinition>();
         def->InitializeFromDocument(Document);
         return def;
     }
 
-    AClassMeta const* GetActorClass() const { return m_ActorClass; }
+    ClassMeta const* GetActorClass() const { return m_ActorClass; }
 
-    TVector<SComponentDef> const& GetComponents() const { return m_Components; }
+    TVector<ComponentDef> const& GetComponents() const { return m_Components; }
     int                           GetRootIndex() const { return m_RootIndex; }
 
-    TStringHashMap<AString> const&  GetActorPropertyHash() const { return m_ActorPropertyHash; }
-    TVector<SPublicProperty> const& GetPublicProperties() const { return m_PublicProperties; }
+    TStringHashMap<String> const&  GetActorPropertyHash() const { return m_ActorPropertyHash; }
+    TVector<PublicProperty> const& GetPublicProperties() const { return m_PublicProperties; }
 
-    AString const& GetScriptModule() const { return m_ScriptModule; }
+    String const& GetScriptModule() const { return m_ScriptModule; }
 
-    TStringHashMap<AString> const&        GetScriptPropertyHash() const { return m_ScriptPropertyHash; }
-    TVector<SScriptPublicProperty> const& GetScriptPublicProperties() const { return m_ScriptPublicProperties; }
+    TStringHashMap<String> const&        GetScriptPropertyHash() const { return m_ScriptPropertyHash; }
+    TVector<ScriptPublicProperty> const& GetScriptPublicProperties() const { return m_ScriptPublicProperties; }
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/ActorDefinition/Default"; }
 
 private:
-    void InitializeFromDocument(ADocument const& Document);
+    void InitializeFromDocument(Document const& Document);
 
-    AClassMeta const*      m_ActorClass{nullptr};
-    TVector<SComponentDef> m_Components;
-    int                    m_RootIndex{-1};
+    ClassMeta const*      m_ActorClass{nullptr};
+    TVector<ComponentDef> m_Components;
+    int                   m_RootIndex{-1};
 
-    TStringHashMap<AString>  m_ActorPropertyHash;
-    TVector<SPublicProperty> m_PublicProperties;
+    TStringHashMap<String>  m_ActorPropertyHash;
+    TVector<PublicProperty> m_PublicProperties;
 
-    AString                 m_ScriptModule;
-    TStringHashMap<AString> m_ScriptPropertyHash;
+    String                 m_ScriptModule;
+    TStringHashMap<String> m_ScriptPropertyHash;
 
-    TVector<SScriptPublicProperty> m_ScriptPublicProperties;
+    TVector<ScriptPublicProperty> m_ScriptPublicProperties;
 };
 

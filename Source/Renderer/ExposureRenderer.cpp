@@ -31,69 +31,69 @@ SOFTWARE.
 #include "ExposureRenderer.h"
 #include "RenderLocal.h"
 
-AConsoleVar r_ShowDefaultExposure("r_ShowDefaultExposure"s, "0"s);
+ConsoleVar r_ShowDefaultExposure("r_ShowDefaultExposure"s, "0"s);
 
 using namespace RenderCore;
 
-AExposureRenderer::AExposureRenderer()
+ExposureRenderer::ExposureRenderer()
 {
     // Create textures
-    STextureDesc textureDesc;
+    TextureDesc textureDesc;
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(BIND_SHADER_RESOURCE);
 
     textureDesc.SetFormat(TEXTURE_FORMAT_RG16_FLOAT);
 
-    textureDesc.SetResolution(STextureResolution2D(64, 64));
+    textureDesc.SetResolution(TextureResolution2D(64, 64));
     GDevice->CreateTexture(textureDesc, &Luminance64);
 
-    textureDesc.SetResolution(STextureResolution2D(32, 32));
+    textureDesc.SetResolution(TextureResolution2D(32, 32));
     GDevice->CreateTexture(textureDesc, &Luminance32);
 
-    textureDesc.SetResolution(STextureResolution2D(16, 16));
+    textureDesc.SetResolution(TextureResolution2D(16, 16));
     GDevice->CreateTexture(textureDesc, &Luminance16);
 
-    textureDesc.SetResolution(STextureResolution2D(8, 8));
+    textureDesc.SetResolution(TextureResolution2D(8, 8));
     GDevice->CreateTexture(textureDesc, &Luminance8);
 
-    textureDesc.SetResolution(STextureResolution2D(4, 4));
+    textureDesc.SetResolution(TextureResolution2D(4, 4));
     GDevice->CreateTexture(textureDesc, &Luminance4);
 
-    textureDesc.SetResolution(STextureResolution2D(2, 2));
+    textureDesc.SetResolution(TextureResolution2D(2, 2));
     GDevice->CreateTexture(textureDesc, &Luminance2);
 
     byte defaultLum[2] = {30, 30}; // TODO: choose appropriate value
 
-    textureDesc.SetResolution(STextureResolution2D(1, 1));
+    textureDesc.SetResolution(TextureResolution2D(1, 1));
     textureDesc.SetFormat(TEXTURE_FORMAT_RG8_UNORM);
     GDevice->CreateTexture(textureDesc, &DefaultLuminance);
     DefaultLuminance->Write(0, sizeof(defaultLum), 1, defaultLum);
 
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter   = FILTER_LINEAR;
+    samplerCI.Filter = FILTER_LINEAR;
 
-    SBufferInfo bufferInfo[1];
+    BufferInfo bufferInfo[1];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;
-    resourceLayout.Samplers    = &samplerCI;
+    resourceLayout.Samplers = &samplerCI;
 
     resourceLayout.NumBuffers = HK_ARRAY_SIZE(bufferInfo);
-    resourceLayout.Buffers    = bufferInfo;
+    resourceLayout.Buffers = bufferInfo;
 
-    AShaderFactory::CreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);
-    AShaderFactory::CreateFullscreenQuadPipeline(&DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, BLENDING_ALPHA);
+    ShaderFactory::CreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 0;
 
-    AShaderFactory::CreateFullscreenQuadPipeline(&SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout);
 }
 
-void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppExposure)
+void ExposureRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppExposure)
 {
     ITexture* exposureTexture = GRenderView->CurrentExposure;
 
@@ -103,22 +103,22 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
         return;
     }
 
-    auto Exposure_R    = FrameGraph.AddExternalResource<FGTextureProxy>("Exposure texture", exposureTexture);
+    auto Exposure_R = FrameGraph.AddExternalResource<FGTextureProxy>("Exposure texture", exposureTexture);
     auto Luminance64_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance64", Luminance64);
     auto Luminance32_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance32", Luminance32);
     auto Luminance16_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance16", Luminance16);
-    auto Luminance8_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance8", Luminance8);
-    auto Luminance4_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance4", Luminance4);
-    auto Luminance2_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance2", Luminance2);
+    auto Luminance8_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance8", Luminance8);
+    auto Luminance4_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance4", Luminance4);
+    auto Luminance2_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance2", Luminance2);
 
     // Make luminance map 64x64
-    FrameGraph.AddTask<ARenderPass>("Make luminance map 64x64")
+    FrameGraph.AddTask<RenderPass>("Make luminance map 64x64")
         .SetRenderArea(64, 64)
-        .SetColorAttachment(STextureAttachment(Luminance64_R)
+        .SetColorAttachment(TextureAttachment(Luminance64_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, SourceTexture->Actual());
 
@@ -126,13 +126,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Downscale luminance to 32x32
-    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 32x32")
+    FrameGraph.AddTask<RenderPass>("Downscale luminance to 32x32")
         .SetRenderArea(32, 32)
-        .SetColorAttachment(STextureAttachment(Luminance32_R)
+        .SetColorAttachment(TextureAttachment(Luminance32_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance64_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance64_R->Actual());
 
@@ -140,13 +140,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Downscale luminance to 16x16
-    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 16x16")
+    FrameGraph.AddTask<RenderPass>("Downscale luminance to 16x16")
         .SetRenderArea(16, 16)
-        .SetColorAttachment(STextureAttachment(Luminance16_R)
+        .SetColorAttachment(TextureAttachment(Luminance16_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance32_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance32_R->Actual());
 
@@ -154,13 +154,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Downscale luminance to 8x8
-    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 8x8")
+    FrameGraph.AddTask<RenderPass>("Downscale luminance to 8x8")
         .SetRenderArea(8, 8)
-        .SetColorAttachment(STextureAttachment(Luminance8_R)
+        .SetColorAttachment(TextureAttachment(Luminance8_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance16_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance16_R->Actual());
 
@@ -168,13 +168,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Downscale luminance to 4x4
-    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 4x4")
+    FrameGraph.AddTask<RenderPass>("Downscale luminance to 4x4")
         .SetRenderArea(4, 4)
-        .SetColorAttachment(STextureAttachment(Luminance4_R)
+        .SetColorAttachment(TextureAttachment(Luminance4_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance8_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance8_R->Actual());
 
@@ -182,13 +182,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Downscale luminance to 2x2
-    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 2x2")
+    FrameGraph.AddTask<RenderPass>("Downscale luminance to 2x2")
         .SetRenderArea(2, 2)
-        .SetColorAttachment(STextureAttachment(Luminance2_R)
+        .SetColorAttachment(TextureAttachment(Luminance2_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance4_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance4_R->Actual());
 
@@ -196,13 +196,13 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     });
 
     // Render final exposure
-    FrameGraph.AddTask<ARenderPass>("Render final exposure")
+    FrameGraph.AddTask<RenderPass>("Render final exposure")
         .SetRenderArea(1, 1)
-        .SetColorAttachment(STextureAttachment(Exposure_R)
+        .SetColorAttachment(TextureAttachment(Exposure_R)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
         .AddResource(Luminance2_R, FG_RESOURCE_ACCESS_READ)
         .AddSubpass({0},
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         rtbl->BindTexture(0, Luminance2_R->Actual());
 

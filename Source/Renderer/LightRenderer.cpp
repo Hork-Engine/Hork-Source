@@ -34,11 +34,11 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"s);
+ConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"s);
 
 using namespace RenderCore;
 
-ALightRenderer::ALightRenderer()
+LightRenderer::LightRenderer()
 {
 }
 
@@ -137,7 +137,7 @@ static Float2 IntegrateBRDF( float NdotV, float roughness )
     return Float2( A, B );
 }
 
-void ALightRenderer::CreateLookupBRDF()
+void LightRenderer::CreateLookupBRDF()
 {
     int sizeX = 512;
     int sizeY = 256; // enough for roughness
@@ -145,7 +145,7 @@ void ALightRenderer::CreateLookupBRDF()
 
     Float2 * data = (Float2 *)GHunkMemory.Alloc( sizeInBytes );
 
-    AFile f = AFile::OpenRead( "brdf.bin" );
+    File f = File::OpenRead( "brdf.bin" );
     if ( !f ) {
         Float2 * pdata = data;
         for ( int y = 1 ; y <= sizeY ; y++ ) {
@@ -157,7 +157,7 @@ void ALightRenderer::CreateLookupBRDF()
         }
 
         // Debug image
-        //f = AFile::OpenWrite( "brdf.png" );
+        //f = File::OpenWrite( "brdf.png" );
         //if ( f ) {
         //    byte * b = (byte *)GHunkMemory.Alloc( sizeX*sizeY*3 );
         //    for ( int n = sizeX*sizeY, i = 0 ; i < n ; i++ ) {
@@ -169,7 +169,7 @@ void ALightRenderer::CreateLookupBRDF()
         //    GHunkMemory.ClearLastHunk();
         //}
 
-        f = AFile::OpenWrite( "brdf.bin" );
+        f = File::OpenWrite( "brdf.bin" );
         if ( f ) {
             f.WriteBuffer( data, sizeInBytes );
         }
@@ -178,9 +178,9 @@ void ALightRenderer::CreateLookupBRDF()
         f.ReadBuffer( data, sizeInBytes );
     }
 
-    GDevice->CreateTexture(RenderCore::STextureDesc{}
+    GDevice->CreateTexture(RenderCore::TextureDesc{}
                                .SetFormat(RenderCore::TEXTURE_FORMAT_RG16_FLOAT)
-                               .SetResolution(STextureResolution2D(sizeX, sizeY))
+                               .SetResolution(TextureResolution2D(sizeX, sizeY))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &LookupBRDF);
     LookupBRDF->Write(0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data);
@@ -188,9 +188,9 @@ void ALightRenderer::CreateLookupBRDF()
     GHunkMemory.ClearLastHunk();
 }
 #endif
-bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRenderInstance const* Instance)
+bool LightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, RenderInstance const* Instance)
 {
-    AMaterialGPU* pMaterial = Instance->Material;
+    MaterialGPU* pMaterial = Instance->Material;
     IPipeline*    pPipeline;
     IBuffer*      pSecondVertexBuffer = nullptr;
     size_t        secondBufferOffset  = 0;
@@ -258,7 +258,7 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
     //if ( Instance->bUseVT ) // TODO
     {
         int              textureUnit = 0; // TODO: Instance->VTUnit;
-        AVirtualTexture* pVirtualTex = GFeedbackAnalyzerVT->GetTexture(textureUnit);
+        VirtualTexture* pVirtualTex = GFeedbackAnalyzerVT->GetTexture(textureUnit);
         //HK_ASSERT( pVirtualTex != nullptr );
 
         if (GPhysCacheVT)
@@ -273,7 +273,7 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
     return true;
 }
 
-void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
+void LightRenderer::AddPass(FrameGraph&     FrameGraph,
                              FGTextureProxy*  DepthTarget,
                              FGTextureProxy*  SSAOTexture,
                              FGTextureProxy*  ShadowMapDepth0,
@@ -305,7 +305,7 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
             break;
     }
 
-    ARenderPass& opaquePass = FrameGraph.AddTask<ARenderPass>("Opaque Pass");
+    RenderPass& opaquePass = FrameGraph.AddTask<RenderPass>("Opaque Pass");
 
     opaquePass.SetRenderArea(GRenderViewArea);
 
@@ -327,18 +327,18 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
     }
 
     opaquePass.SetColorAttachment(
-        STextureAttachment("Light texture",
-                           STextureDesc()
+        TextureAttachment("Light texture",
+                           TextureDesc()
                                .SetFormat(pf)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     opaquePass.SetDepthStencilAttachment(
-        STextureAttachment(DepthTarget)
+        TextureAttachment(DepthTarget)
             .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
     opaquePass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                           {
                               // Clearing don't work properly with dynamic resolution scale :(
                               IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
@@ -348,7 +348,7 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
                               {
                                   unsigned int attachment = 0;
 
-                                  SClearColorValue clearValue;
+                                  ClearColorValue clearValue;
                                   clearValue.Float32[0] = GRenderView->BackgroundColor.X;
                                   clearValue.Float32[1] = GRenderView->BackgroundColor.Y;
                                   clearValue.Float32[2] = GRenderView->BackgroundColor.Z;
@@ -385,9 +385,9 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
 
                               for (int i = 0; i < GRenderView->TerrainInstanceCount; i++)
                               {
-                                  STerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                                  TerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-                                  STerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<STerrainInstanceConstantBuffer>();
+                                  TerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<TerrainInstanceConstantBuffer>();
                                   drawCall->LocalViewProjection            = instance->LocalViewProjection;
                                   StoreFloat3x3AsFloat3x4Transposed(instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace);
                                   drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
@@ -403,16 +403,16 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
                                   immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
                                                                          GStreamBuffer,
                                                                          instance->IndirectBufferStreamHandle,
-                                                                         sizeof(SDrawIndexedIndirectCmd));
+                                                                         sizeof(DrawIndexedIndirectCmd));
                               }
 
-                              SDrawIndexedCmd drawCmd;
+                              DrawIndexedCmd drawCmd;
                               drawCmd.InstanceCount         = 1;
                               drawCmd.StartInstanceLocation = 0;
 
                               for (int i = 0; i < GRenderView->InstanceCount; i++)
                               {
-                                  SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                                  RenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
                                   if (!BindMaterialLightPass(immediateCtx, instance))
                                   {
@@ -439,7 +439,7 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
 
     if (GRenderView->TranslucentInstanceCount)
     {
-        ARenderPass& translucentPass = FrameGraph.AddTask<ARenderPass>("Translucent Pass");
+        RenderPass& translucentPass = FrameGraph.AddTask<RenderPass>("Translucent Pass");
 
         translucentPass.SetRenderArea(GRenderViewArea);
 
@@ -461,19 +461,19 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
         }
 
         translucentPass.SetColorAttachment(
-            STextureAttachment(LightTexture)
+            TextureAttachment(LightTexture)
                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
         translucentPass.SetDepthStencilAttachment(
-            STextureAttachment(DepthTarget)
+            TextureAttachment(DepthTarget)
                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
         translucentPass.AddSubpass({0}, // color attachment refs
-                                   [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                                   [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                                    {
                                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                                       SDrawIndexedCmd drawCmd;
+                                       DrawIndexedCmd drawCmd;
                                        drawCmd.InstanceCount         = 1;
                                        drawCmd.StartInstanceLocation = 0;
 
@@ -506,7 +506,7 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
 
                                        for (int i = 0; i < GRenderView->TranslucentInstanceCount; i++)
                                        {
-                                           SRenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+                                           RenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
                                            if (!BindMaterialLightPass(immediateCtx, instance))
                                            {
@@ -535,12 +535,12 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
     if (r_SSLR)
     {
         // TODO: We can store reflection color and depth in one texture
-        ACustomTask& task = FrameGraph.AddTask<ACustomTask>("Copy Light Pass");
+        FGCustomTask& task = FrameGraph.AddTask<FGCustomTask>("Copy Light Pass");
         task.AddResource(LightTexture, FG_RESOURCE_ACCESS_READ);
         task.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
         task.AddResource(ReflectionColor_R, FG_RESOURCE_ACCESS_WRITE);
         task.AddResource(ReflectionDepth_R, FG_RESOURCE_ACCESS_WRITE);
-        task.SetFunction([=](ACustomTaskContext const& Task)
+        task.SetFunction([=](FGCustomTaskContext const& Task)
                          {
                              IImmediateContext* immediateCtx = Task.pImmediateContext;
 

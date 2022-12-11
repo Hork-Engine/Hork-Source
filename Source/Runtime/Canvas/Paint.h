@@ -47,7 +47,7 @@ struct CanvasPaint
     float                 Feather{};
     Color4                InnerColor;
     Color4                OuterColor;
-    ATextureView*         pTextureView{};
+    TextureView*         pTextureView{};
     CANVAS_IMAGE_FLAGS    ImageFlags = CANVAS_IMAGE_DEFAULT;
 
     /** Creates and returns a linear gradient.
@@ -66,7 +66,7 @@ struct CanvasPaint
 
     /** Creates and returns an image patter. Angle is a rotation around the top-left corner.
     The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, ATextureView* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
+    CanvasPaint& ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, TextureView* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
 
     CanvasPaint& Solid(Color4 const& color);
 };

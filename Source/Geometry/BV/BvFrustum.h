@@ -41,7 +41,7 @@ SOFTWARE.
 
 #define HK_FRUSTUM_USE_SSE
 
-enum EFrustumPlane
+enum FRUSTUM_PLANE
 {
     FRUSTUM_PLANE_RIGHT,
     FRUSTUM_PLANE_LEFT,
@@ -106,14 +106,14 @@ public:
 
 private:
 #ifdef HK_FRUSTUM_USE_SSE
-    struct SPlanesData
+    struct PlanesData
     {
         __m128 x[6];
         __m128 y[6];
         __m128 z[6];
         __m128 d[6];
     };
-    SPlanesData m_SSEData;
+    PlanesData m_SSEData;
 #endif
     PlaneF m_Planes[6];
 };

@@ -34,12 +34,12 @@ SOFTWARE.
 
 //#define CONVEX_HULL_CW
 
-AConvexHull::AConvexHull(PlaneF const& plane, float maxExtents)
+ConvexHull::ConvexHull(PlaneF const& plane, float maxExtents)
 {
     FromPlane(plane, maxExtents);
 }
 
-void AConvexHull::FromPlane(PlaneF const& plane, float maxExtents)
+void ConvexHull::FromPlane(PlaneF const& plane, float maxExtents)
 {
     Float3 rightVec;
     Float3 upVec;
@@ -68,25 +68,25 @@ void AConvexHull::FromPlane(PlaneF const& plane, float maxExtents)
     m_Points[3] += p;
 }
 
-void AConvexHull::FromPoints(Float3 const* points, size_t numPoints)
+void ConvexHull::FromPoints(Float3 const* points, size_t numPoints)
 {
     m_Points.Resize(numPoints);
     Platform::Memcpy(m_Points.ToPtr(), points, numPoints * sizeof(Float3));
 }
 
-AConvexHull AConvexHull::Reversed() const
+ConvexHull ConvexHull::Reversed() const
 {
-    AConvexHull hull = *this;
+    ConvexHull hull = *this;
     hull.Reverse();
     return hull;
 }
 
-void AConvexHull::Reverse()
+void ConvexHull::Reverse()
 {
     m_Points.Reverse();
 }
 
-PLANE_SIDE AConvexHull::Classify(PlaneF const& plane, float epsilon) const
+PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
 {
     int front   = 0;
     int back    = 0;
@@ -139,7 +139,7 @@ PLANE_SIDE AConvexHull::Classify(PlaneF const& plane, float epsilon) const
     return PLANE_SIDE_CROSS;
 }
 
-bool AConvexHull::IsTiny(float minEdgeLength) const
+bool ConvexHull::IsTiny(float minEdgeLength) const
 {
     const float minEdgeLengthSqr = minEdgeLength * minEdgeLength;
     int numEdges = 0;
@@ -157,7 +157,7 @@ bool AConvexHull::IsTiny(float minEdgeLength) const
     return true;
 }
 
-bool AConvexHull::IsHuge() const
+bool ConvexHull::IsHuge() const
 {
     for (Float3 const& p : m_Points)
         if (p.X <= CONVEX_HULL_MIN_BOUNDS || p.X >= CONVEX_HULL_MAX_BOUNDS || p.Y <= CONVEX_HULL_MIN_BOUNDS || p.Y >= CONVEX_HULL_MAX_BOUNDS || p.Z <= CONVEX_HULL_MIN_BOUNDS || p.Z >= CONVEX_HULL_MAX_BOUNDS)
@@ -165,7 +165,7 @@ bool AConvexHull::IsHuge() const
     return false;
 }
 
-float AConvexHull::CalcArea() const
+float ConvexHull::CalcArea() const
 {
     float area = 0;
     for (size_t i = 2, count = m_Points.Size(); i < count; ++i)
@@ -173,7 +173,7 @@ float AConvexHull::CalcArea() const
     return area * 0.5f;
 }
 
-BvAxisAlignedBox AConvexHull::CalcBounds() const
+BvAxisAlignedBox ConvexHull::CalcBounds() const
 {
     if (m_Points.IsEmpty())
         return BvAxisAlignedBox::Empty();
@@ -184,11 +184,11 @@ BvAxisAlignedBox AConvexHull::CalcBounds() const
     return bounds;
 }
 
-Float3 AConvexHull::CalcNormal() const
+Float3 ConvexHull::CalcNormal() const
 {
     if (m_Points.Size() < 3)
     {
-        LOG("AConvexHull::CalcNormal: num points < 3\n");
+        LOG("ConvexHull::CalcNormal: num points < 3\n");
         return Float3(0);
     }
 
@@ -203,13 +203,13 @@ Float3 AConvexHull::CalcNormal() const
 #endif
 }
 
-PlaneF AConvexHull::CalcPlane() const
+PlaneF ConvexHull::CalcPlane() const
 {
     PlaneF plane;
 
     if (m_Points.Size() < 3)
     {
-        LOG("AConvexHull::CalcPlane: num points < 3\n");
+        LOG("ConvexHull::CalcPlane: num points < 3\n");
         plane.Clear();
         return plane;
     }
@@ -227,11 +227,11 @@ PlaneF AConvexHull::CalcPlane() const
     return plane;
 }
 
-Float3 AConvexHull::CalcCenter() const
+Float3 ConvexHull::CalcCenter() const
 {
     if (m_Points.IsEmpty())
     {
-        LOG("AConvexHull::CalcCenter: no points in hull\n");
+        LOG("ConvexHull::CalcCenter: no points in hull\n");
         return Float3(0);
     }
     Float3 center = m_Points[0];
@@ -240,7 +240,7 @@ Float3 AConvexHull::CalcCenter() const
     return center * (1.0f / m_Points.Size());
 }
 
-PLANE_SIDE AConvexHull::Split(PlaneF const& plane, float epsilon, AConvexHull& frontHull, AConvexHull& backHull) const
+PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& frontHull, ConvexHull& backHull) const
 {
     size_t i;
     size_t count = m_Points.Size();
@@ -377,7 +377,7 @@ PLANE_SIDE AConvexHull::Split(PlaneF const& plane, float epsilon, AConvexHull& f
     return PLANE_SIDE_CROSS;
 }
 
-PLANE_SIDE AConvexHull::Clip(PlaneF const& plane, float epsilon, AConvexHull& frontHull) const
+PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& frontHull) const
 {
     size_t i;
     size_t count = m_Points.Size();

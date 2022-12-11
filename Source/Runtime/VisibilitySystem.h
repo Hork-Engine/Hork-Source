@@ -37,18 +37,18 @@ SOFTWARE.
 #include <Platform/Memory/PoolAllocator.h>
 
 class AActor;
-class AWorld;
-class ALevel;
-class ATexture;
-class ASceneComponent;
-class ABrushModel;
-class AConvexHull;
-class AIndexedMesh;
-class ADebugRenderer;
-struct SVisArea;
-struct SPrimitiveDef;
-struct SPortalLink;
-struct SPrimitiveLink;
+class World;
+class Level;
+class Texture;
+class SceneComponent;
+class BrushModel;
+class ConvexHull;
+class IndexedMesh;
+class DebugRenderer;
+struct VisArea;
+struct PrimitiveDef;
+struct PortalLink;
+struct PrimitiveLink;
 
 enum VSD_PRIMITIVE
 {
@@ -134,21 +134,21 @@ enum SURFACE_FLAGS : uint8_t
 
 HK_FLAG_ENUM_OPERATORS(SURFACE_FLAGS)
 
-using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(SPrimitiveDef const*            Self,
+using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(PrimitiveDef const*            Self,
                                             Float3 const&                   RayStart,
                                             Float3 const&                   RayEnd,
-                                            TPodVector<STriangleHitResult>& Hits);
+                                            TPodVector<TriangleHitResult>& Hits);
 
-using PRIMITIVE_RAYCAST_CLOSEST_CALLBACK = bool (*)(SPrimitiveDef const* Self,
+using PRIMITIVE_RAYCAST_CLOSEST_CALLBACK = bool (*)(PrimitiveDef const* Self,
                                                     Float3 const&        RayStart,
                                                     Float3 const&        RayEnd,
-                                                    STriangleHitResult&  Hit,
-                                                    SMeshVertex const**  pVertices);
+                                                    TriangleHitResult&  Hit,
+                                                    MeshVertex const**  pVertices);
 
-using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(SPrimitiveDef*       Self,
-                                                   ALevel const*        LightingLevel,
-                                                   SMeshVertex const*   pVertices,
-                                                   SMeshVertexUV const* pLightmapVerts,
+using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(PrimitiveDef*       Self,
+                                                   Level const*        LightingLevel,
+                                                   MeshVertex const*   pVertices,
+                                                   MeshVertexUV const* pLightmapVerts,
                                                    int                  LightmapBlock,
                                                    unsigned int const*  pIndices,
                                                    Float3 const&        HitLocation,
@@ -156,25 +156,25 @@ using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(SPrimitiveDef*       Self,
                                                    Float3*              Vertices,
                                                    Float2&              TexCoord,
                                                    Float3&              LightmapSample);
-struct SPrimitiveDef
+struct PrimitiveDef
 {
     /** Owner component */
-    ASceneComponent* Owner{};
+    SceneComponent* Owner{};
 
     /** List of areas where primitive located */
-    SPrimitiveLink* Links{};
+    PrimitiveLink* Links{};
 
     /** Next primitive in level */
-    SPrimitiveDef* Next{};
+    PrimitiveDef* Next{};
 
     /** Prev primitive in level */
-    SPrimitiveDef* Prev{};
+    PrimitiveDef* Prev{};
 
     /** Next primitive in update list */
-    SPrimitiveDef* NextUpd{};
+    PrimitiveDef* NextUpd{};
 
     /** Prev primitive in update list */
-    SPrimitiveDef* PrevUpd{};
+    PrimitiveDef* PrevUpd{};
 
     /** Callback for local raycast */
     PRIMITIVE_RAYCAST_CALLBACK RaycastCallback{};
@@ -214,7 +214,7 @@ struct SPrimitiveDef
     /** Is primitive outdoor/indoor */
     bool bIsOutdoor : 1;
 
-    SPrimitiveDef() : bIsOutdoor(false) {}
+    PrimitiveDef() : bIsOutdoor(false) {}
 
     void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
     {
@@ -227,22 +227,22 @@ struct SPrimitiveDef
     }
 };
 
-struct SPrimitiveLink
+struct PrimitiveLink
 {
     /** The area */
-    SVisArea* Area;
+    VisArea* Area;
 
     /** The primitive */
-    SPrimitiveDef* Primitive;
+    PrimitiveDef* Primitive;
 
     /** Next primitive in the area */
-    SPrimitiveLink* NextInArea;
+    PrimitiveLink* NextInArea;
 
     /** Next link for the primitive */
-    SPrimitiveLink* Next;
+    PrimitiveLink* Next;
 };
 
-struct SPortalDef
+struct PortalDef
 {
     /** First hull vertex in array of vertices */
     int FirstVert;
@@ -254,10 +254,10 @@ struct SPortalDef
     int Areas[2];
 };
 
-struct SVisPortal
+struct VisPortal
 {
     /** Portal to areas */
-    SPortalLink* Portals[2];
+    PortalLink* Portals[2];
 
     /** Visibility marker */
     int VisMark;
@@ -266,37 +266,37 @@ struct SVisPortal
     bool bBlocked;
 };
 
-struct SPortalLink
+struct PortalLink
 {
     /** Area visible from the portal */
-    SVisArea* ToArea;
+    VisArea* ToArea;
 
     /** Portal hull */
-    AConvexHull* Hull;
+    ConvexHull* Hull;
 
     /** Portal plane */
     PlaneF Plane;
 
     /** Next portal inside an area */
-    SPortalLink* Next;
+    PortalLink* Next;
 
     /** Visibility portal */
-    SVisPortal* Portal;
+    VisPortal* Portal;
 };
 
-struct SVisArea
+struct VisArea
 {
     /** Area bounding box */
     BvAxisAlignedBox Bounds; // FIXME: will be removed later?
 
     /** Linked portals */
-    SPortalLink* PortalList;
+    PortalLink* PortalList;
 
     /** Movable primitives inside the area */
-    SPrimitiveLink* Links;
+    PrimitiveLink* Links;
 
     /** Non-movable primitives if AABB tree is not present */
-    //SPrimitiveLink * NonMovableLinks;
+    //PrimitiveLink * NonMovableLinks;
 
     /** AABB tree for non-movable primitives */
     //BvhTree * AABBTree;
@@ -311,7 +311,7 @@ struct SVisArea
     int VisMark;
 };
 
-struct SVisibilityQuery
+struct VisibilityQuery
 {
     /** View frustum planes */
     PlaneF const* FrustumPlanes[6];
@@ -333,10 +333,10 @@ struct SVisibilityQuery
 };
 
 /** Box hit result */
-struct SBoxHitResult
+struct BoxHitResult
 {
     /** Box owner. Null for the surfaces. */
-    ASceneComponent* Object;
+    SceneComponent* Object;
 
     Float3 LocationMin;
     Float3 LocationMax;
@@ -350,10 +350,10 @@ struct SBoxHitResult
 };
 
 /** Raycast primitive */
-struct SWorldRaycastPrimitive
+struct WorldRaycastPrimitive
 {
     /** Primitive owner. Null for surfaces. */
-    ASceneComponent* Object;
+    SceneComponent* Object;
 
     /** First hit in array of hits */
     int FirstHit;
@@ -366,25 +366,25 @@ struct SWorldRaycastPrimitive
 };
 
 /** Raycast result */
-struct SWorldRaycastResult
+struct WorldRaycastResult
 {
     /** Array of hits */
-    TPodVector<STriangleHitResult> Hits;
+    TPodVector<TriangleHitResult> Hits;
 
     /** Array of primitives and surfaces */
-    TPodVector<SWorldRaycastPrimitive> Primitives;
+    TPodVector<WorldRaycastPrimitive> Primitives;
 
     /** Sort raycast result by hit distance */
     void Sort()
     {
-        struct ASortPrimitives
+        struct SortPrimitives
         {
-            TPodVector<STriangleHitResult> const& Hits;
+            TPodVector<TriangleHitResult> const& Hits;
 
-            ASortPrimitives(TPodVector<STriangleHitResult> const& _Hits) :
+            SortPrimitives(TPodVector<TriangleHitResult> const& _Hits) :
                 Hits(_Hits) {}
 
-            bool operator()(SWorldRaycastPrimitive const& _A, SWorldRaycastPrimitive const& _B)
+            bool operator()(WorldRaycastPrimitive const& _A, WorldRaycastPrimitive const& _B)
             {
                 const float hitDistanceA = Hits[_A.ClosestHit].Distance;
                 const float hitDistanceB = Hits[_B.ClosestHit].Distance;
@@ -398,14 +398,14 @@ struct SWorldRaycastResult
 
         struct ASortHit
         {
-            bool operator()(STriangleHitResult const& _A, STriangleHitResult const& _B)
+            bool operator()(TriangleHitResult const& _A, TriangleHitResult const& _B)
             {
                 return (_A.Distance < _B.Distance);
             }
         } SortHit;
 
         // Sort by hit distance
-        for (SWorldRaycastPrimitive& primitive : Primitives)
+        for (WorldRaycastPrimitive& primitive : Primitives)
         {
             std::sort(Hits.ToPtr() + primitive.FirstHit, Hits.ToPtr() + (primitive.FirstHit + primitive.NumHits), SortHit);
             primitive.ClosestHit = primitive.FirstHit;
@@ -421,13 +421,13 @@ struct SWorldRaycastResult
 };
 
 /** Closest hit result */
-struct SWorldRaycastClosestResult
+struct WorldRaycastClosestResult
 {
     /** Primitive owner. Null for surfaces. */
-    ASceneComponent* Object;
+    SceneComponent* Object;
 
     /** Hit */
-    STriangleHitResult TriangleHit;
+    TriangleHitResult TriangleHit;
 
     /** Hit fraction */
     float Fraction;
@@ -448,7 +448,7 @@ struct SWorldRaycastClosestResult
 };
 
 /** World raycast filter */
-struct SWorldRaycastFilter
+struct WorldRaycastFilter
 {
     /** Filter objects by mask */
     VISIBILITY_GROUP VisibilityMask;
@@ -457,7 +457,7 @@ struct SWorldRaycastFilter
     /** Sort result by the distance */
     bool bSortByDistance;
 
-    SWorldRaycastFilter()
+    WorldRaycastFilter()
     {
         VisibilityMask  = VISIBILITY_GROUP_ALL;
         QueryMask       = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
@@ -465,10 +465,10 @@ struct SWorldRaycastFilter
     }
 };
 
-struct SSurfaceDef
+struct SurfaceDef
 {
     /** Parent brush model */
-    ABrushModel* Model;
+    BrushModel* Model;
 
     /** Bounding box of the surface */
     BvAxisAlignedBox Bounds;
@@ -541,7 +541,7 @@ struct SSurfaceDef
     }
 };
 
-struct SBinarySpacePlane : PlaneF
+struct BinarySpacePlane : PlaneF
 {
     /** Plane axial type */
     uint8_t Type;
@@ -552,10 +552,10 @@ struct SBinarySpacePlane : PlaneF
     }
 };
 
-struct SNodeBase
+struct NodeBase
 {
     /** Parent node */
-    struct SBinarySpaceNode* Parent;
+    struct BinarySpaceNode* Parent;
 
     /** Visited mark */
     int ViewMark;
@@ -564,16 +564,16 @@ struct SNodeBase
     BvAxisAlignedBox Bounds;
 };
 
-struct SBinarySpaceNode : SNodeBase
+struct BinarySpaceNode : NodeBase
 {
     /** Node split plane */
-    SBinarySpacePlane* Plane;
+    BinarySpacePlane* Plane;
 
     /** Child indices */
     int ChildrenIdx[2];
 };
 
-struct SBinarySpaceLeaf : SNodeBase
+struct BinarySpaceLeaf : NodeBase
 {
     /** Leaf PVS cluster */
     int PVSCluster;
@@ -585,17 +585,17 @@ struct SBinarySpaceLeaf : SNodeBase
     int AudioArea;
 
     /** Visibility area */
-    SVisArea* Area;
+    VisArea* Area;
 };
 
-enum EFrustumCullingType
+enum FRUSTUM_CULLING_TYPE
 {
-    CULLING_TYPE_COMBINED,
-    CULLING_TYPE_SEPARATE,
-    CULLING_TYPE_SIMPLE
+    FRUSTUM_CULLING_COMBINED,
+    FRUSTUM_CULLING_SEPARATE,
+    FRUSTUM_CULLING_SIMPLE
 };
 
-struct SLightPortalDef
+struct LightPortalDef
 {
     /** First mesh vertex in array of vertices */
     int FirstVert;
@@ -608,31 +608,30 @@ struct SLightPortalDef
     int NumIndices;
 };
 
-class ABrushModel : public GCObject
+class BrushModel : public GCObject
 {
 public:
     /** Baked surface definitions */
-    TVector<SSurfaceDef> Surfaces;
+    TVector<SurfaceDef> Surfaces;
 
     /** Baked surface vertex data */
-    TVector<SMeshVertex> Vertices;
+    TVector<MeshVertex> Vertices;
 
     /** Baked surface vertex data */
-    TVector<SMeshVertexUV> LightmapVerts;
+    TVector<MeshVertexUV> LightmapVerts;
 
     /** Baked surface vertex data */
-    TVector<SMeshVertexLight> VertexLight;
+    TVector<MeshVertexLight> VertexLight;
 
     /** Baked surface triangle index data */
     TVector<unsigned int> Indices;
 
     /** Surface materials */
-    TVector<TRef<AMaterialInstance>> SurfaceMaterials;
+    TVector<TRef<MaterialInstance>> SurfaceMaterials;
 
     /** Lighting data will be used from that level. */
-    TWeakRef<ALevel> ParentLevel;
+    TWeakRef<Level> ParentLevel;
 };
-
 
 enum LIGHTMAP_FORMAT
 {
@@ -640,7 +639,7 @@ enum LIGHTMAP_FORMAT
     LIGHTMAP_RGBA16_FLOAT
 };
 
-struct SNodeBaseDef
+struct NodeBaseDef
 {
     /** Parent node */
     int Parent;
@@ -649,7 +648,7 @@ struct SNodeBaseDef
     BvAxisAlignedBox Bounds;
 };
 
-struct SBinarySpaceNodeDef : SNodeBaseDef
+struct BinarySpaceNodeDef : NodeBaseDef
 {
     /** Node split plane */
     int PlaneIndex;
@@ -658,7 +657,7 @@ struct SBinarySpaceNodeDef : SNodeBaseDef
     int ChildrenIdx[2];
 };
 
-struct SBinarySpaceLeafDef : SNodeBaseDef
+struct BinarySpaceLeafDef : NodeBaseDef
 {
     /** Leaf PVS cluster */
     int PVSCluster;
@@ -673,7 +672,7 @@ struct SBinarySpaceLeafDef : SNodeBaseDef
     int AreaNum;
 };
 
-struct SVisibilityAreaDef
+struct VisibilityAreaDef
 {
     /** Area bounding box */
     BvAxisAlignedBox Bounds;
@@ -685,7 +684,7 @@ struct SVisibilityAreaDef
     int NumSurfaces;
 };
 
-struct SVisibilitySystemPVS
+struct VisibilitySystemPVS
 {
     byte const* Visdata;
     size_t      VisdataSize;
@@ -693,37 +692,37 @@ struct SVisibilitySystemPVS
     bool        bCompressedVisData;
 };
 
-class AVisibilityLevel;
+class VisibilityLevel;
 
-struct SVisibilitySystemCreateInfo
+struct VisibilitySystemCreateInfo
 {
-    SVisibilityAreaDef* Areas{};
-    int                 NumAreas{};
+    VisibilityAreaDef* Areas{};
+    int                NumAreas{};
 
     int const* AreaSurfaces{};
     int        NumAreaSurfaces{};
 
-    SPortalDef const* Portals{};
-    int               PortalsCount{};
+    PortalDef const* Portals{};
+    int             PortalsCount{};
     Float3 const*     HullVertices{};
 
-    SBinarySpacePlane const* Planes{};
-    int                      NumPlanes{};
+    BinarySpacePlane const* Planes{};
+    int                     NumPlanes{};
 
-    SBinarySpaceNodeDef const* Nodes{};
-    int                        NumNodes{};
+    BinarySpaceNodeDef const* Nodes{};
+    int                       NumNodes{};
 
-    SBinarySpaceLeafDef const* Leafs{};
-    int                        NumLeafs{};
+    BinarySpaceLeafDef const* Leafs{};
+    int                       NumLeafs{};
 
-    SVisibilitySystemPVS const* PVS{};
+    VisibilitySystemPVS const* PVS{};
 
-    ABrushModel* Model{};
+    BrushModel* Model{};
 
-    AVisibilityLevel* PersistentLevel{};
+    VisibilityLevel* PersistentLevel{};
 };
 
-struct SPortalScissor
+struct PortalScissor
 {
     float MinX;
     float MinY;
@@ -731,38 +730,38 @@ struct SPortalScissor
     float MaxY;
 };
 
-struct SPortalStack
+struct PortalStack
 {
     enum { MAX_CULL_PLANES = 5 };
 
-    PlaneF             AreaFrustum[MAX_CULL_PLANES];
-    int                PlanesCount;
-    SPortalLink const* Portal;
-    SPortalScissor     Scissor;
+    PlaneF            AreaFrustum[MAX_CULL_PLANES];
+    int               PlanesCount;
+    PortalLink const* Portal;
+    PortalScissor     Scissor;
 };
 
-class AVisibilityLevel;
+class VisibilityLevel;
 
-class AVisibilitySystem
+class VisibilitySystem
 {
 public:
-    AVisibilitySystem();
-    virtual ~AVisibilitySystem();
+    VisibilitySystem();
+    virtual ~VisibilitySystem();
 
-    void RegisterLevel(AVisibilityLevel* Level);
-    void UnregisterLevel(AVisibilityLevel* Level);
+    void RegisterLevel(VisibilityLevel* Level);
+    void UnregisterLevel(VisibilityLevel* Level);
 
     /** Add primitive to the level */
-    void AddPrimitive(SPrimitiveDef* Primitive);
+    void AddPrimitive(PrimitiveDef* Primitive);
 
     /** Remove primitive from the level */
-    void RemovePrimitive(SPrimitiveDef* Primitive);
+    void RemovePrimitive(PrimitiveDef* Primitive);
 
     /** Remove all primitives in the level */
     void RemovePrimitives();
 
     /** Mark primitive dirty */
-    void MarkPrimitive(SPrimitiveDef* Primitive);
+    void MarkPrimitive(PrimitiveDef* Primitive);
 
     /** Mark all primitives in the level */
     void MarkPrimitives();
@@ -772,140 +771,137 @@ public:
 
     void UpdatePrimitiveLinks();
 
-    void DrawDebug(ADebugRenderer* Renderer);
+    void DrawDebug(DebugRenderer* Renderer);
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas) const;
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas) const;
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas) const;
+    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas) const;
 
-    void QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& Query) const;
+    void QueryVisiblePrimitives(TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query) const;
 
-    bool RaycastTriangles(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const;
+    bool RaycastTriangles(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    bool RaycastClosest(SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const;
+    bool RaycastClosest(WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    bool RaycastBounds(TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const;
+    bool RaycastBounds(TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    bool RaycastClosestBounds(SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const;
+    bool RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    TPodVector<AVisibilityLevel*> const& GetLevels() const { return Levels; }
+    TPodVector<VisibilityLevel*> const& GetLevels() const { return Levels; }
 
-    using APrimitivePool     = TPoolAllocator<SPrimitiveDef>;
-    using APrimitiveLinkPool = TPoolAllocator<SPrimitiveLink>;
+    static TPoolAllocator<PrimitiveDef>  PrimitivePool;
+    static TPoolAllocator<PrimitiveLink> PrimitiveLinkPool;
 
-    static APrimitivePool     PrimitivePool;
-    static APrimitiveLinkPool PrimitiveLinkPool;
-
-    static SPrimitiveDef* AllocatePrimitive();
-    static void           DeallocatePrimitive(SPrimitiveDef* Primitive);
+    static PrimitiveDef* AllocatePrimitive();
+    static void          DeallocatePrimitive(PrimitiveDef* Primitive);
 
 private:
     /** Unlink primitive from the level areas */
-    void UnlinkPrimitive(SPrimitiveDef* Primitive);
+    void UnlinkPrimitive(PrimitiveDef* Primitive);
 
-    TPodVector<AVisibilityLevel*> Levels;
+    TPodVector<VisibilityLevel*> Levels;
 
-    SPrimitiveDef* PrimitiveList          = nullptr;
-    SPrimitiveDef* PrimitiveListTail      = nullptr;
-    SPrimitiveDef* PrimitiveDirtyList     = nullptr;
-    SPrimitiveDef* PrimitiveDirtyListTail = nullptr;
+    PrimitiveDef* PrimitiveList          = nullptr;
+    PrimitiveDef* PrimitiveListTail      = nullptr;
+    PrimitiveDef* PrimitiveDirtyList     = nullptr;
+    PrimitiveDef* PrimitiveDirtyListTail = nullptr;
 };
 
-class AVisibilityLevel : public ARefCounted
+class VisibilityLevel : public RefCounted
 {
 public:
-    using AArrayOfNodes = TPodVector<SBinarySpaceNode>;
-    using AArrayOfLeafs = TPodVector<SBinarySpaceLeaf>;
+    using ArrayOfNodes = TPodVector<BinarySpaceNode>;
+    using ArrayOfLeafs = TPodVector<BinarySpaceLeaf>;
 
-    AVisibilityLevel(SVisibilitySystemCreateInfo const& CreateInfo);
-    virtual ~AVisibilityLevel();
+    VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo);
+    virtual ~VisibilityLevel();
 
     /** Get level indoor bounding box */
     BvAxisAlignedBox const& GetIndoorBounds() const { return IndoorBounds; }
 
     /** Get level areas */
-    TPodVector<SVisArea> const& GetAreas() const { return Areas; }
+    TPodVector<VisArea> const& GetAreas() const { return Areas; }
 
     /** Get level outdoor area */
-    SVisArea const* GetOutdoorArea() const { return pOutdoorArea; }
+    VisArea const* GetOutdoorArea() const { return pOutdoorArea; }
 
     /** Find level leaf */
     int FindLeaf(Float3 const& _Position);
 
     /** Find level area */
-    SVisArea* FindArea(Float3 const& _Position);
+    VisArea* FindArea(Float3 const& _Position);
 
     /** Mark potentially visible leafs. Uses PVS */
     int MarkLeafs(int _ViewLeaf);
 
     /** BSP leafs */
-    AArrayOfLeafs const& GetLeafs() const { return Leafs; }
+    ArrayOfLeafs const& GetLeafs() const { return Leafs; }
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas);
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas);
+    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas);
 
     /** Add primitive to the level areas */
-    static void AddPrimitiveToLevelAreas(TPodVector<AVisibilityLevel*> const& Levels, SPrimitiveDef* Primitive);
+    static void AddPrimitiveToLevelAreas(TPodVector<VisibilityLevel*> const& Levels, PrimitiveDef* Primitive);
 
-    void DrawDebug(ADebugRenderer* Renderer);
+    void DrawDebug(DebugRenderer* Renderer);
 
-    static void QueryVisiblePrimitives(TPodVector<AVisibilityLevel*> const& Levels, TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& Query);
+    static void QueryVisiblePrimitives(TPodVector<VisibilityLevel*> const& Levels, TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query);
 
-    static bool RaycastTriangles(TPodVector<AVisibilityLevel*> const& Levels, SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter);
+    static bool RaycastTriangles(TPodVector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosest(TPodVector<AVisibilityLevel*> const& Levels, SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter);
+    static bool RaycastClosest(TPodVector<VisibilityLevel*> const& Levels, WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastBounds(TPodVector<AVisibilityLevel*> const& Levels, TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter);
+    static bool RaycastBounds(TPodVector<VisibilityLevel*> const& Levels, TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosestBounds(TPodVector<AVisibilityLevel*> const& Levels, SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter);
+    static bool RaycastClosestBounds(TPodVector<VisibilityLevel*> const& Levels, BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
 private:
-    void CreatePortals(SPortalDef const* Portals, int PortalsCount, Float3 const* HullVertices);
+    void CreatePortals(PortalDef const* Portals, int PortalsCount, Float3 const* HullVertices);
 
-    byte const* LeafPVS(SBinarySpaceLeaf const* _Leaf);
+    byte const* LeafPVS(BinarySpaceLeaf const* _Leaf);
 
     byte const* DecompressVisdata(byte const* _Data);
 
-    void QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas);
-    void QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TPodVector<SVisArea*>& Areas);
+    void QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
+    void QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TPodVector<VisArea*>& Areas);
 
-    void AddBoxRecursive(int NodeIndex, SPrimitiveDef* Primitive);
-    void AddSphereRecursive(int NodeIndex, SPrimitiveDef* Primitive);
+    void AddBoxRecursive(int NodeIndex, PrimitiveDef* Primitive);
+    void AddSphereRecursive(int NodeIndex, PrimitiveDef* Primitive);
 
-    void AddPrimitiveToArea(SVisArea* Area, SPrimitiveDef* Primitive);
+    void AddPrimitiveToArea(VisArea* Area, PrimitiveDef* Primitive);
 
-    void ProcessLevelVisibility(struct SVisibilityQueryContext& QueryContext, struct SVisibilityQueryResult& QueryResult);
+    void ProcessLevelVisibility(struct VisibilityQueryContext& QueryContext, struct VisibilityQueryResult& QueryResult);
 
     void LevelTraverse_r(int NodeIndex, int CullBits);
 
-    bool CullNode(PlaneF const Frustum[SPortalStack::MAX_CULL_PLANES], BvAxisAlignedBox const& Bounds, int& CullBits);
+    bool CullNode(PlaneF const Frustum[PortalStack::MAX_CULL_PLANES], BvAxisAlignedBox const& Bounds, int& CullBits);
 
-    void FlowThroughPortals_r(SVisArea const* Area);
+    void FlowThroughPortals_r(VisArea const* Area);
 
-    bool CalcPortalStack(SPortalStack* OutStack, SPortalStack const* PrevStack, SPortalLink const* Portal);
+    bool CalcPortalStack(PortalStack* OutStack, PortalStack const* PrevStack, PortalLink const* Portal);
 
-    struct SPortalHull* CalcPortalWinding(SPortalLink const* Portal, SPortalStack const* Stack);
+    struct PortalHull* CalcPortalWinding(PortalLink const* Portal, PortalStack const* Stack);
 
-    void CalcPortalScissor(SPortalScissor& OutScissor, SPortalHull const* Hull, SPortalStack const* Stack);
+    void CalcPortalScissor(PortalScissor& OutScissor, PortalHull const* Hull, PortalStack const* Stack);
 
-    void CullPrimitives(SVisArea const* Area, PlaneF const* CullPlanes, const int CullPlanesCount);
+    void CullPrimitives(VisArea const* Area, PlaneF const* CullPlanes, const int CullPlanesCount);
 
-    bool FaceCull(SPrimitiveDef const* Primitive);
-    bool FaceCull(SSurfaceDef const* Surface);
+    bool FaceCull(PrimitiveDef const* Primitive);
+    bool FaceCull(SurfaceDef const* Surface);
 
-    enum EHitProxyType
+    enum HIT_PROXY_TYPE
     {
-        HIT_PROXY_TYPE_UNKNOWN,
-        HIT_PROXY_TYPE_PRIMITIVE,
-        HIT_PROXY_TYPE_SURFACE
+        HIT_PROXY_UNKNOWN,
+        HIT_PROXY_PRIMITIVE,
+        HIT_PROXY_SURFACE
     };
 
-    struct SRaycast
+    struct VisRaycast
     {
         Float3 RayStart;
         Float3 RayEnd;
@@ -916,70 +912,70 @@ private:
         float  HitDistanceMax; // only for bounds test
 
         // For closest raycast
-        EHitProxyType HitProxyType;
+        HIT_PROXY_TYPE HitProxyType;
         union
         {
-            SPrimitiveDef* HitPrimitive;
-            SSurfaceDef*   HitSurface;
+            PrimitiveDef* HitPrimitive;
+            SurfaceDef*   HitSurface;
         };
-        Float3               HitLocation;
-        Float2               HitUV;
-        Float3               HitNormal;
-        SMeshVertex const*   pVertices;
-        SMeshVertexUV const* pLightmapVerts;
-        int                  LightmapBlock;
-        ALevel const*        LightingLevel;
-        unsigned int         Indices[3];
-        AMaterialInstance*   Material;
-        int                  NumHits; // For debug
+        Float3              HitLocation;
+        Float2              HitUV;
+        Float3              HitNormal;
+        MeshVertex const*   pVertices;
+        MeshVertexUV const* pLightmapVerts;
+        int                 LightmapBlock;
+        Level const*        LightingLevel;
+        unsigned int        Indices[3];
+        MaterialInstance*   Material;
+        int                 NumHits; // For debug
 
         bool bClosest;
 
         VSD_QUERY_MASK VisQueryMask;
         VISIBILITY_GROUP VisibilityMask;
     };
-    void ProcessLevelRaycast(SRaycast& Raycast, SWorldRaycastResult& Result);
-    void ProcessLevelRaycastClosest(SRaycast& Raycast);
-    void ProcessLevelRaycastBounds(SRaycast& Raycast, TPodVector<SBoxHitResult>& Result);
-    void ProcessLevelRaycastClosestBounds(SRaycast& Raycast);
-    void RaycastSurface(SSurfaceDef* Self);
-    void RaycastPrimitive(SPrimitiveDef* Self);
-    void RaycastArea(SVisArea* Area);
-    void RaycastPrimitiveBounds(SVisArea* Area);
+    void ProcessLevelRaycast(VisRaycast& Raycast, WorldRaycastResult& Result);
+    void ProcessLevelRaycastClosest(VisRaycast& Raycast);
+    void ProcessLevelRaycastBounds(VisRaycast& Raycast, TPodVector<BoxHitResult>& Result);
+    void ProcessLevelRaycastClosestBounds(VisRaycast& Raycast);
+    void RaycastSurface(SurfaceDef* Self);
+    void RaycastPrimitive(PrimitiveDef* Self);
+    void RaycastArea(VisArea* Area);
+    void RaycastPrimitiveBounds(VisArea* Area);
     void LevelRaycast_r(int NodeIndex);
     bool LevelRaycast2_r(int NodeIndex, Float3 const& RayStart, Float3 const& RayEnd);
     void LevelRaycastBounds_r(int NodeIndex);
     bool LevelRaycastBounds2_r(int NodeIndex, Float3 const& RayStart, Float3 const& RayEnd);
-    void LevelRaycastPortals_r(SVisArea* Area);
-    void LevelRaycastBoundsPortals_r(SVisArea* Area);
+    void LevelRaycastPortals_r(VisArea* Area);
+    void LevelRaycastBoundsPortals_r(VisArea* Area);
 
-    AVisibilityLevel* PersistentLevel{};
+    VisibilityLevel* PersistentLevel{};
 
     /** Level portals */
-    TPodVector<SVisPortal> Portals;
+    TPodVector<VisPortal> Portals;
 
-    TVector<AConvexHull> PortalHulls;
+    TVector<ConvexHull> PortalHulls;
 
     /** Links between the portals and areas */
-    TPodVector<SPortalLink> AreaLinks;
+    TPodVector<PortalLink> AreaLinks;
 
     /** Level indoor areas */
-    TPodVector<SVisArea> Areas;
+    TPodVector<VisArea> Areas;
 
     /** Level outdoor area */
-    SVisArea OutdoorArea;
-    SVisArea* pOutdoorArea;
+    VisArea OutdoorArea;
+    VisArea* pOutdoorArea;
 
     BvAxisAlignedBox IndoorBounds;
 
     /** Node split planes */
-    TPodVector<SBinarySpacePlane> SplitPlanes;
+    TPodVector<BinarySpacePlane> SplitPlanes;
 
     /** BSP nodes */
-    AArrayOfNodes Nodes;
+    ArrayOfNodes Nodes;
 
     /** BSP leafs */
-    AArrayOfLeafs Leafs;
+    ArrayOfLeafs Leafs;
 
     /** PVS data */
     byte* Visdata = nullptr;
@@ -1005,19 +1001,19 @@ private:
     TPodVector<int> AreaSurfaces;
 
     /** Baked surface data */
-    TRef<ABrushModel> Model;
+    TRef<BrushModel> Model;
 
     // Visibility query temp vars:
     static int               VisQueryMarker;
-    int                      CachedSignBits[SPortalStack::MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
+    int                      CachedSignBits[PortalStack::MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
     PlaneF*                  ViewFrustum;
     int                      ViewFrustumPlanes;
     int                      NodeViewMark;
-    SVisibilityQueryContext* pQueryContext;
-    SVisibilityQueryResult*  pQueryResult;
+    VisibilityQueryContext* pQueryContext;
+    VisibilityQueryResult*  pQueryResult;
 
     //Raycast temp vars
-    SRaycast*                  pRaycast;
-    SWorldRaycastResult*       pRaycastResult;
-    TPodVector<SBoxHitResult>* pBoundsRaycastResult;
+    VisRaycast*               pRaycast;
+    WorldRaycastResult*       pRaycastResult;
+    TPodVector<BoxHitResult>* pBoundsRaycastResult;
 };

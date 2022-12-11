@@ -151,7 +151,7 @@ void UISlider::MoveSlider(float Vec)
     SetValue(Vec * (m_MaxValue - m_MinValue) / SliderBarSize + m_MinValue);
 }
 
-void UISlider::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UISlider::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     m_Action = A_NONE;
 
@@ -186,7 +186,7 @@ void UISlider::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeSta
     }
 }
 
-void UISlider::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UISlider::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     if (m_Action == A_MOVE)
     {
@@ -196,7 +196,7 @@ void UISlider::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
     }
 }
 
-void UISlider::Draw(ACanvas& cv)
+void UISlider::Draw(Canvas& cv)
 {
     UpdateSliderGeometry();
 

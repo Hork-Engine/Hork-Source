@@ -214,7 +214,7 @@ void UIDesktop::SetFocusWidget(UIWidget* widget)
 
     if (m_FocusWidget)
     {
-        //SMouseButtonEvent event;
+        //MouseButtonEvent event;
         //event.ModMask = 0;
         //event.Action  = IA_RELEASE;
 
@@ -240,7 +240,7 @@ void UIDesktop::SetFocusWidget(UIWidget* widget)
     }
 }
 
-void UIDesktop::Draw(ACanvas& cv)
+void UIDesktop::Draw(Canvas& cv)
 {
     cv.Push(CANVAS_PUSH_FLAG_RESET);
 
@@ -278,7 +278,7 @@ UIWidget* UIDesktop::GetExclusive()
     return exclusive;
 }
 
-void UIDesktop::GenerateKeyEvents(SKeyEvent const& event, double timeStamp)
+void UIDesktop::GenerateKeyEvents(KeyEvent const& event, double timeStamp)
 {
     if (m_DraggingWidget)
     {
@@ -363,7 +363,7 @@ void UIDesktop::GenerateKeyEvents(SKeyEvent const& event, double timeStamp)
     }
 }
 
-void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event, double timeStamp)
+void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event, double timeStamp)
 {
     UIWidget* widget = nullptr;
     const int DraggingButton = 0;
@@ -499,7 +499,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
     }
 }
 
-void UIDesktop::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double timeStamp)
+void UIDesktop::GenerateMouseWheelEvents(MouseWheelEvent const& event, double timeStamp)
 {
     UIWidget* widget;
 
@@ -541,7 +541,7 @@ void UIDesktop::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double t
     }
 }
 
-void UIDesktop::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double timeStamp)
+void UIDesktop::GenerateMouseMoveEvents(MouseMoveEvent const& event, double timeStamp)
 {
     if (HandleDraggingWidget())
     {
@@ -587,7 +587,7 @@ void UIDesktop::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double tim
     }
 }
 
-void UIDesktop::GenerateJoystickButtonEvents(SJoystickButtonEvent const& event, double timeStamp)
+void UIDesktop::GenerateJoystickButtonEvents(JoystickButtonEvent const& event, double timeStamp)
 {
     if (m_DraggingWidget)
     {
@@ -628,7 +628,7 @@ void UIDesktop::GenerateJoystickButtonEvents(SJoystickButtonEvent const& event, 
     }
 }
 
-void UIDesktop::GenerateJoystickAxisEvents(SJoystickAxisEvent const& event, double timeStamp)
+void UIDesktop::GenerateJoystickAxisEvents(JoystickAxisEvent const& event, double timeStamp)
 {
     if (m_DraggingWidget)
     {
@@ -647,7 +647,7 @@ void UIDesktop::GenerateJoystickAxisEvents(SJoystickAxisEvent const& event, doub
     }
 }
 
-void UIDesktop::GenerateCharEvents(SCharEvent const& event, double timeStamp)
+void UIDesktop::GenerateCharEvents(CharEvent const& event, double timeStamp)
 {
     if (m_DraggingWidget)
     {

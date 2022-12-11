@@ -48,7 +48,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AGenericWindowGLImpl::AGenericWindowGLImpl(ADeviceGLImpl* pDevice, SVideoMode const& InVideoMode, AWindowPoolGL& WindowPool, AWindowPoolGL::SWindowGL WindowHandle) :
+GenericWindowGLImpl::GenericWindowGLImpl(DeviceGLImpl* pDevice, DisplayVideoMode const& InVideoMode, WindowPoolGL& WindowPool, WindowPoolGL::WindowGL WindowHandle) :
     IGenericWindow(pDevice),
     WindowPool(WindowPool),
     bUseExternalHandle(WindowHandle.Handle != nullptr)
@@ -62,7 +62,7 @@ AGenericWindowGLImpl::AGenericWindowGLImpl(ADeviceGLImpl* pDevice, SVideoMode co
         WindowGL = WindowPool.Create();
         if (!WindowGL.ImmediateCtx)
         {
-            WindowGL.ImmediateCtx = new AImmediateContextGLImpl(pDevice, WindowGL, false);
+            WindowGL.ImmediateCtx = new ImmediateContextGLImpl(pDevice, WindowGL, false);
         }
     }
 
@@ -73,7 +73,7 @@ AGenericWindowGLImpl::AGenericWindowGLImpl(ADeviceGLImpl* pDevice, SVideoMode co
     SetVideoMode(InVideoMode);
 }
 
-AGenericWindowGLImpl::~AGenericWindowGLImpl()
+GenericWindowGLImpl::~GenericWindowGLImpl()
 {
     SDL_SetWindowData((SDL_Window*)GetHandle(), "p", nullptr);
 
@@ -93,12 +93,12 @@ AGenericWindowGLImpl::~AGenericWindowGLImpl()
     }
 }
 
-void AGenericWindowGLImpl::SetSwapChain(ISwapChain* InSwapChain)
+void GenericWindowGLImpl::SetSwapChain(ISwapChain* InSwapChain)
 {
     SwapChain = InSwapChain;
 }
 
-void AGenericWindowGLImpl::SetVideoMode(SVideoMode const& DesiredMode)
+void GenericWindowGLImpl::SetVideoMode(DisplayVideoMode const& DesiredMode)
 {
     SDL_Window* handle = (SDL_Window*)GetHandle();
 

@@ -45,22 +45,22 @@ SOFTWARE.
 
 #include <miniz/miniz.h>
 
-AFile::~AFile()
+File::~File()
 {
     Close();
 }
 
-AFile AFile::OpenRead(AStringView FileName)
+File File::OpenRead(StringView FileName)
 {
     return OpenFromFileSystem(FileName, FILE_TYPE_READ_FILE_SYSTEM);
 }
 
-AFile AFile::OpenWrite(AStringView FileName)
+File File::OpenWrite(StringView FileName)
 {
     return OpenFromFileSystem(FileName, FILE_TYPE_WRITE_FILE_SYSTEM);
 }
 
-AFile AFile::OpenAppend(AStringView FileName)
+File File::OpenAppend(StringView FileName)
 {
     return OpenFromFileSystem(FileName, FILE_TYPE_APPEND_FILE_SYSTEM);
 }
@@ -96,9 +96,9 @@ static FILE* OpenFile(const char* FileName, const char* Mode)
     return f;
 }
 
-AFile AFile::OpenFromFileSystem(AStringView FileName, FILE_TYPE Type)
+File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
 {
-    AFile f;
+    File f;
 
     f.m_Name = PathUtils::FixPath(FileName);
     if (f.m_Name.Length() && f.m_Name[f.m_Name.Length() - 1] == '/')
@@ -147,7 +147,7 @@ AFile AFile::OpenFromFileSystem(AStringView FileName, FILE_TYPE Type)
     return f;
 }
 
-void AFile::Close()
+void File::Close()
 {
     if (m_Type == FILE_TYPE_UNDEFINED)
     {
@@ -175,7 +175,7 @@ void AFile::Close()
     m_bMemoryBufferOwner = true;
 }
 
-size_t AFile::Read(void* pBuffer, size_t SizeInBytes)
+size_t File::Read(void* pBuffer, size_t SizeInBytes)
 {
     size_t bytesToRead{};
 
@@ -204,7 +204,7 @@ size_t AFile::Read(void* pBuffer, size_t SizeInBytes)
     return bytesToRead;
 }
 
-size_t AFile::Write(const void* pBuffer, size_t SizeInBytes)
+size_t File::Write(const void* pBuffer, size_t SizeInBytes)
 {
     size_t bytesToWrite{};
 
@@ -241,7 +241,7 @@ size_t AFile::Write(const void* pBuffer, size_t SizeInBytes)
     return bytesToWrite;
 }
 
-char* AFile::Gets(char* pBuffer, size_t SizeInBytes)
+char* File::Gets(char* pBuffer, size_t SizeInBytes)
 {
     if (!IsReadable())
     {
@@ -288,7 +288,7 @@ char* AFile::Gets(char* pBuffer, size_t SizeInBytes)
     return pBuffer;
 }
 
-void AFile::Flush()
+void File::Flush()
 {
     if (IsFileSystem() && IsWritable())
     {
@@ -296,14 +296,14 @@ void AFile::Flush()
     }
 }
 
-size_t AFile::GetOffset() const
+size_t File::GetOffset() const
 {
     return m_RWOffset;
 }
 
 #define HasFileSize() (m_FileSize != ~0ull)
 
-bool AFile::SeekSet(int32_t Offset)
+bool File::SeekSet(int32_t Offset)
 {
     if (!IsOpened())
         return false;
@@ -332,7 +332,7 @@ bool AFile::SeekSet(int32_t Offset)
     }
 }
 
-bool AFile::SeekCur(int32_t Offset)
+bool File::SeekCur(int32_t Offset)
 {
     if (!IsOpened())
         return false;
@@ -387,7 +387,7 @@ bool AFile::SeekCur(int32_t Offset)
     }
 }
 
-bool AFile::SeekEnd(int32_t Offset)
+bool File::SeekEnd(int32_t Offset)
 {
     if (!IsOpened())
         return false;
@@ -445,7 +445,7 @@ bool AFile::SeekEnd(int32_t Offset)
     }
 }
 
-size_t AFile::SizeInBytes() const
+size_t File::SizeInBytes() const
 {
     if (!IsOpened())
         return 0;
@@ -462,7 +462,7 @@ size_t AFile::SizeInBytes() const
     return m_FileSize;
 }
 
-bool AFile::Eof() const
+bool File::Eof() const
 {
     if (!IsOpened())
         return false;
@@ -473,24 +473,24 @@ bool AFile::Eof() const
         return m_RWOffset >= m_FileSize;
 }
 
-void* AFile::Alloc(size_t SizeInBytes)
+void* File::Alloc(size_t SizeInBytes)
 {
     return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
 }
 
-void* AFile::Realloc(void* pMemory, size_t SizeInBytes)
+void* File::Realloc(void* pMemory, size_t SizeInBytes)
 {
     return Platform::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
 }
 
-void AFile::Free(void* pMemory)
+void File::Free(void* pMemory)
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
 }
 
-AFile AFile::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
+File File::OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
 {
-    AFile f;
+    File f;
 
     f.m_Name               = FileName;
     f.m_Type               = FILE_TYPE_READ_MEMORY;
@@ -502,9 +502,9 @@ AFile AFile::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t Si
     return f;
 }
 
-AFile AFile::OpenRead(AStringView FileName, BlobRef Blob)
+File File::OpenRead(StringView FileName, BlobRef Blob)
 {
-    AFile f;
+    File f;
 
     f.m_Name = FileName;
     f.m_Type = FILE_TYPE_READ_MEMORY;
@@ -518,9 +518,9 @@ AFile AFile::OpenRead(AStringView FileName, BlobRef Blob)
     return f;
 }
 
-AFile AFile::OpenRead(AStringView FileName, AArchive const& Archive)
+File File::OpenRead(StringView FileName, Archive const& Archive)
 {
-    AFile f;
+    File f;
 
     if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
@@ -536,9 +536,9 @@ AFile AFile::OpenRead(AStringView FileName, AArchive const& Archive)
     return f;
 }
 
-AFile AFile::OpenRead(AFileHandle FileHandle, AArchive const& Archive)
+File File::OpenRead(FileHandle FileHandle, Archive const& Archive)
 {
-    AFile f;
+    File f;
 
     Archive.GetFileName(FileHandle, f.m_Name);
 
@@ -555,9 +555,9 @@ AFile AFile::OpenRead(AFileHandle FileHandle, AArchive const& Archive)
     return f;
 }
 
-AFile AFile::OpenWrite(AStringView StreamName, void* pMemoryBuffer, size_t SizeInBytes)
+File File::OpenWrite(StringView StreamName, void* pMemoryBuffer, size_t SizeInBytes)
 {
-    AFile f;
+    File f;
 
     f.m_Name               = StreamName;
     f.m_Type               = FILE_TYPE_WRITE_MEMORY;
@@ -569,9 +569,9 @@ AFile AFile::OpenWrite(AStringView StreamName, void* pMemoryBuffer, size_t SizeI
     return f;
 }
 
-AFile AFile::OpenWriteToMemory(AStringView StreamName, size_t ReservedSize)
+File File::OpenWriteToMemory(StringView StreamName, size_t ReservedSize)
 {
-    AFile f;
+    File f;
 
     f.m_Name               = StreamName;
     f.m_Type               = FILE_TYPE_WRITE_MEMORY;
@@ -583,24 +583,24 @@ AFile AFile::OpenWriteToMemory(AStringView StreamName, size_t ReservedSize)
     return f;
 }
 
-size_t AFile::GetMemoryReservedSize() const
+size_t File::GetMemoryReservedSize() const
 {
     return m_ReservedSize;
 }
 
-void* AFile::GetHeapPtr()
+void* File::GetHeapPtr()
 {
     if (IsFileSystem())
         return nullptr;
     return m_pHeapPtr;
 }
 
-AArchive::~AArchive()
+Archive::~Archive()
 {
     Close();
 }
 
-AArchive AArchive::Open(AStringView ArchiveName, bool bResourcePack)
+Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
 {
     mz_zip_archive arch;
     mz_uint64      fileStartOffset = 0;
@@ -608,7 +608,7 @@ AArchive AArchive::Open(AStringView ArchiveName, bool bResourcePack)
 
     if (bResourcePack)
     {
-        AFile f = AFile::OpenRead(ArchiveName);
+        File f = File::OpenRead(ArchiveName);
         if (!f)
         {
             return {};
@@ -628,14 +628,14 @@ AArchive AArchive::Open(AStringView ArchiveName, bool bResourcePack)
 
     Platform::ZeroMem(&arch, sizeof(arch));
 
-    mz_bool status = mz_zip_reader_init_file_v2(&arch, ArchiveName.IsNullTerminated() ? ArchiveName.Begin() : AString(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
+    mz_bool status = mz_zip_reader_init_file_v2(&arch, ArchiveName.IsNullTerminated() ? ArchiveName.Begin() : String(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
     {
         LOG("Couldn't open archive {}\n", ArchiveName);
         return {};
     }
 
-    AArchive archive;
+    Archive archive;
     archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
     Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
@@ -645,7 +645,7 @@ AArchive AArchive::Open(AStringView ArchiveName, bool bResourcePack)
     return archive;
 }
 
-AArchive AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
+Archive Archive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
 {
     mz_zip_archive arch;
 
@@ -658,7 +658,7 @@ AArchive AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
         return {};
     }
 
-    AArchive archive;
+    Archive archive;
     archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
     Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
@@ -668,7 +668,7 @@ AArchive AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
     return archive;
 }
 
-void AArchive::Close()
+void Archive::Close()
 {
     if (!m_Handle)
     {
@@ -681,14 +681,14 @@ void AArchive::Close()
     m_Handle = nullptr;
 }
 
-int AArchive::GetNumFiles() const
+int Archive::GetNumFiles() const
 {
     return mz_zip_reader_get_num_files((mz_zip_archive*)m_Handle);
 }
 
-AFileHandle AArchive::LocateFile(AStringView FileName) const
+FileHandle Archive::LocateFile(StringView FileName) const
 {
-    return AFileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0));
+    return FileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), NULL, 0));
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS   20
@@ -696,7 +696,7 @@ AFileHandle AArchive::LocateFile(AStringView FileName) const
 #define MZ_ZIP_CDH_FILENAME_LEN_OFS      28
 #define MZ_ZIP_CENTRAL_DIR_HEADER_SIZE   46
 
-bool AArchive::GetFileSize(AFileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const
+bool Archive::GetFileSize(FileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const
 {
     // All checks are processd in mz_zip_get_cdh
     const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
@@ -717,7 +717,7 @@ bool AArchive::GetFileSize(AFileHandle FileHandle, size_t* pCompressedSize, size
     return true;
 }
 
-bool AArchive::GetFileName(AFileHandle FileHandle, AString& FileName) const
+bool Archive::GetFileName(FileHandle FileHandle, String& FileName) const
 {
     // All checks are processd in mz_zip_get_cdh
     const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
@@ -740,20 +740,20 @@ bool AArchive::GetFileName(AFileHandle FileHandle, AString& FileName) const
     return true;
 }
 
-bool AArchive::ExtractFileToMemory(AFileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const
+bool Archive::ExtractFileToMemory(FileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const
 {
     // All checks are processd in mz_zip_reader_extract_to_mem
     return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, int(FileHandle), pMemoryBuffer, SizeInBytes, 0);
 }
 
-bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
+bool Archive::ExtractFileToHeapMemory(StringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
 {
     size_t uncompSize;
 
     *pHeapMemoryPtr = nullptr;
     *pSizeInBytes   = 0;
 
-    AFileHandle fileHandle = LocateFile(FileName);
+    FileHandle fileHandle = LocateFile(FileName);
     if (!fileHandle)
     {
         return false;
@@ -778,7 +778,7 @@ bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryP
     return true;
 }
 
-bool AArchive::ExtractFileToHeapMemory(AFileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
+bool Archive::ExtractFileToHeapMemory(FileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
 {
     size_t uncompSize;
 
@@ -812,7 +812,7 @@ bool AArchive::ExtractFileToHeapMemory(AFileHandle FileHandle, void** pHeapMemor
 namespace Core
 {
 
-void CreateDirectory(AStringView Directory, bool bFileName)
+void CreateDirectory(StringView Directory, bool bFileName)
 {
     size_t len = Directory.Length();
     if (!len)
@@ -854,14 +854,14 @@ void CreateDirectory(AStringView Directory, bool bFileName)
     Platform::GetHeapAllocator<HEAP_TEMP>().Free(tmpStr);
 }
 
-bool IsFileExists(AStringView FileName)
+bool IsFileExists(StringView FileName)
 {
     return access(PathUtils::FixSeparator(FileName).CStr(), 0) == 0;
 }
 
-void RemoveFile(AStringView FileName)
+void RemoveFile(StringView FileName)
 {
-    AString s = PathUtils::FixPath(FileName);
+    String s = PathUtils::FixPath(FileName);
 #if defined HK_OS_LINUX
     ::remove(s.CStr());
 #elif defined HK_OS_WIN32
@@ -880,10 +880,10 @@ void RemoveFile(AStringView FileName)
 }
 
 #ifdef HK_OS_LINUX
-void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
+void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
 {
-    AString fn;
-    DIR*    dir = opendir(Path.IsNullTerminated() ? Path.Begin() : AString(Path).CStr());
+    String fn;
+    DIR*    dir = opendir(Path.IsNullTerminated() ? Path.Begin() : String(Path).CStr());
     if (dir)
     {
         while (1)
@@ -928,9 +928,9 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
 #endif
 
 #ifdef HK_OS_WIN32
-void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
+void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
 {
-    AString fn;
+    String fn;
 
     HANDLE           fh;
     WIN32_FIND_DATAA fd;
@@ -969,10 +969,10 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
 }
 #endif
 
-bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
+bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
 {
-    AString path   = PathUtils::FixSeparator(SourcePath);
-    AString result = PathUtils::FixSeparator(ResultFile);
+    String path   = PathUtils::FixSeparator(SourcePath);
+    String result = PathUtils::FixSeparator(ResultFile);
 
     LOG("==== WriteResourcePack ====\n"
         "Source '{}'\n"
@@ -996,7 +996,7 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
     if (mz_zip_writer_init_cfile(&zip, file, 0))
     {
         TraverseDirectory(path, true,
-                          [&zip, &path](AStringView FileName, bool bIsDirectory)
+                          [&zip, &path](StringView FileName, bool bIsDirectory)
                           {
                               if (bIsDirectory)
                               {
@@ -1008,11 +1008,11 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
                                   return;
                               }
 
-                              AString fn = FileName.TruncateHead(path.Length() + 1);
+                              String fn = FileName.TruncateHead(path.Length() + 1);
 
                               LOG("Writing '{}'\n", fn);
 
-                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
+                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
                               if (!status)
                               {
                                   LOG("Failed to archive {}\n", FileName);

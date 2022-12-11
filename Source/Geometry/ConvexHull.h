@@ -45,18 +45,18 @@ enum PLANE_SIDE
     PLANE_SIDE_CROSS = 2
 };
 
-class AConvexHull
+class ConvexHull
 {
 public:
-    AConvexHull() = default;
+    ConvexHull() = default;
 
-    AConvexHull(AConvexHull const&) = default;
-    AConvexHull& operator=(AConvexHull const&) = default;
+    ConvexHull(ConvexHull const&) = default;
+    ConvexHull& operator=(ConvexHull const&) = default;
 
-    AConvexHull(AConvexHull&&) = default;
-    AConvexHull& operator=(AConvexHull&&) = default;
+    ConvexHull(ConvexHull&&) = default;
+    ConvexHull& operator=(ConvexHull&&) = default;
 
-    AConvexHull(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
+    ConvexHull(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
 
     void FromPlane(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
     void FromPoints(Float3 const* points, size_t numPoints);
@@ -93,7 +93,7 @@ public:
         m_Points.Clear();
     }
 
-    AConvexHull Reversed() const;
+    ConvexHull Reversed() const;
 
     void Reverse();
 
@@ -113,9 +113,9 @@ public:
 
     Float3 CalcCenter() const;
 
-    PLANE_SIDE Split(PlaneF const& plane, float epsilon, AConvexHull& front, AConvexHull& back) const;
+    PLANE_SIDE Split(PlaneF const& plane, float epsilon, ConvexHull& front, ConvexHull& back) const;
 
-    PLANE_SIDE Clip(PlaneF const& plane, float epsilon, AConvexHull& front) const;
+    PLANE_SIDE Clip(PlaneF const& plane, float epsilon, ConvexHull& front) const;
 
 private:
     TVector<Float3> m_Points;

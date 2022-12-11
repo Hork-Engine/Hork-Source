@@ -32,18 +32,18 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-HK_BEGIN_CLASS_META(AAnchorComponent)
+HK_BEGIN_CLASS_META(AnchorComponent)
 HK_END_CLASS_META()
 
-AAnchorComponent::AAnchorComponent()
+AnchorComponent::AnchorComponent()
 {
 }
 
-void AAnchorComponent::InitializeComponent()
+void AnchorComponent::InitializeComponent()
 {
 }
 
-void AAnchorComponent::DeinitializeComponent()
+void AnchorComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
@@ -54,7 +54,7 @@ void AAnchorComponent::DeinitializeComponent()
     shape = nullptr;
 }
 
-void AAnchorComponent::OnTransformDirty()
+void AnchorComponent::OnTransformDirty()
 {
     btTransform transform;
 

@@ -490,7 +490,7 @@ static size_t CalcRawImageSize(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT
     return size;
 }
 
-void ARawImage::Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void const* pData)
+void RawImage::Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void const* pData)
 {
     Reset();
 
@@ -509,7 +509,7 @@ void ARawImage::Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, 
     }
 }
 
-void ARawImage::Reset()
+void RawImage::Reset()
 {
     if (!m_pData)
         return;
@@ -522,27 +522,27 @@ void ARawImage::Reset()
     m_Format = RAW_IMAGE_FORMAT_UNDEFINED;
 }
 
-ARawImage ARawImage::Clone() const
+RawImage RawImage::Clone() const
 {
     if (!m_pData)
         return {};
 
-    ARawImage rawImage;
+    RawImage rawImage;
     rawImage.Reset(m_Width, m_Height, m_Format, m_pData);
     return rawImage;
 }
 
-int ARawImage::NumChannels() const
+int RawImage::NumChannels() const
 {
     return RawImageFormatLUT[m_Format].NumChannels;
 }
 
-size_t ARawImage::GetBytesPerPixel() const
+size_t RawImage::GetBytesPerPixel() const
 {
     return RawImageFormatLUT[m_Format].BytesPerPixel;
 }
 
-void ARawImage::Clear(Float4 const& Color)
+void RawImage::Clear(Float4 const& Color)
 {
     if (m_Format == RAW_IMAGE_FORMAT_UNDEFINED)
         return;
@@ -648,7 +648,7 @@ void ARawImage::Clear(Float4 const& Color)
     }
 }
 
-void ARawImage::FlipX()
+void RawImage::FlipX()
 {
     if (m_pData)
     {
@@ -657,7 +657,7 @@ void ARawImage::FlipX()
     }
 }
 
-void ARawImage::FlipY()
+void RawImage::FlipY()
 {
     if (m_pData)
     {
@@ -681,7 +681,7 @@ void SwapRGB(T* pData, uint32_t Width, uint32_t Height, uint32_t NumChannels)
     }
 }
 
-void ARawImage::SwapRGB()
+void RawImage::SwapRGB()
 {
     switch (m_Format)
     {
@@ -710,7 +710,7 @@ void InvertChannel(T* pData, uint32_t Width, uint32_t Height, uint32_t NumChanne
 {
     if (ChannelIndex >= NumChannels)
     {
-        LOG("ARawImage::InvertChannel: channel index is out of range\n");
+        LOG("RawImage::InvertChannel: channel index is out of range\n");
         return;
     }
 
@@ -723,7 +723,7 @@ void InvertChannel(T* pData, uint32_t Width, uint32_t Height, uint32_t NumChanne
     }
 }
 
-void ARawImage::InvertChannel(uint32_t ChannelIndex)
+void RawImage::InvertChannel(uint32_t ChannelIndex)
 {
     switch (m_Format)
     {
@@ -751,11 +751,11 @@ void ARawImage::InvertChannel(uint32_t ChannelIndex)
     }
 }
 
-void ARawImage::PremultiplyAlpha()
+void RawImage::PremultiplyAlpha()
 {
     if (m_Format != RAW_IMAGE_FORMAT_RGBA8 && m_Format != RAW_IMAGE_FORMAT_BGRA8)
     {
-        LOG("ARawImage::PremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
+        LOG("RawImage::PremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
         return;
     }
 
@@ -777,11 +777,11 @@ void ARawImage::PremultiplyAlpha()
     }
 }
 
-void ARawImage::UnpremultiplyAlpha()
+void RawImage::UnpremultiplyAlpha()
 {
     if (m_Format != RAW_IMAGE_FORMAT_RGBA8 && m_Format != RAW_IMAGE_FORMAT_BGRA8)
     {
-        LOG("ARawImage::UnpremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
+        LOG("RawImage::UnpremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
         return;
     }
 
@@ -981,7 +981,7 @@ IMAGE_FILE_FORMAT GetImageFileFormat(IBinaryStreamReadInterface& Stream)
 struct ExtensionToFileFormatMapping
 {
     IMAGE_FILE_FORMAT FileFormat;
-    AStringView       Extension;
+    StringView       Extension;
 };
 
 static ExtensionToFileFormatMapping ExtensionToFileFormatMappings[] = {
@@ -997,9 +997,9 @@ static ExtensionToFileFormatMapping ExtensionToFileFormatMappings[] = {
     {IMAGE_FILE_FORMAT_HDR, ".hdr"},
     {IMAGE_FILE_FORMAT_EXR, ".exr"}};
 
-IMAGE_FILE_FORMAT GetImageFileFormat(AStringView FileName)
+IMAGE_FILE_FORMAT GetImageFileFormat(StringView FileName)
 {
-    AStringView extension = PathUtils::GetExt(FileName);
+    StringView extension = PathUtils::GetExt(FileName);
 
     for (ExtensionToFileFormatMapping& mapping : ExtensionToFileFormatMappings)
     {
@@ -1009,7 +1009,7 @@ IMAGE_FILE_FORMAT GetImageFileFormat(AStringView FileName)
     return IMAGE_FILE_FORMAT_UNKNOWN;
 }
 
-ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format)
+RawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format)
 {
     if (!Stream.IsValid())
         return {};
@@ -1122,18 +1122,18 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
         }
     }
 
-    ARawImage image;
+    RawImage image;
     image.SetExternalData(w, h, Format, data);
 
     return image;
 }
 
-ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format)
+RawImage CreateRawImage(StringView FileName, RAW_IMAGE_FORMAT Format)
 {
-    return CreateRawImage(AFile::OpenRead(FileName).ReadInterface(), Format);
+    return CreateRawImage(File::OpenRead(FileName).ReadInterface(), Format);
 }
 
-ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
+RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
 {
     if (Format == RAW_IMAGE_FORMAT_UNDEFINED)
     {
@@ -1141,10 +1141,10 @@ ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT 
         return {};
     }
 
-    return ARawImage(Width, Height, Format, Color);
+    return RawImage(Width, Height, Format, Color);
 }
 
-ARawImage CreateRawImage(SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor)
+RawImage CreateRawImage(SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor)
 {
     if (!Document)
         return {};
@@ -1152,14 +1152,14 @@ ARawImage CreateRawImage(SvgDocument const& Document, uint32_t Width, uint32_t H
     if (Width == 0 || Height == 0)
         return {};
 
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_BGRA8, BackgroundColor);
+    RawImage image(Width, Height, RAW_IMAGE_FORMAT_BGRA8, BackgroundColor);
 
     Document.RenderToImage(image.GetData(), image.GetWidth(), image.GetHeight(), image.GetWidth() * image.GetHeight() * image.GetBytesPerPixel());
 
     return image;
 }
 
-ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale, Float4 const& BackgroundColor)
+RawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale, Float4 const& BackgroundColor)
 {
     if (Scale.X <= 0.0f || Scale.Y <= 0.0f)
         return {};
@@ -1174,9 +1174,9 @@ ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const
     return CreateRawImage(document, w, h, BackgroundColor);
 }
 
-ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
+RawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
 {
-    ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
     if (!rawImage)
         return {};
 
@@ -1192,9 +1192,9 @@ ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
     return rawImage;
 }
 
-ARawImage LoadNormalMapAsRawVectors(AStringView FileName)
+RawImage LoadNormalMapAsRawVectors(StringView FileName)
 {
-    AFile f = AFile::OpenRead(FileName);
+    File f = File::OpenRead(FileName);
     if (!f)
     {
         LOG("LoadNormalMapAsRawVectors: couldn't open {}\n", FileName);
@@ -1632,9 +1632,9 @@ bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Hei
 #endif
 }
 
-bool WriteImage(AStringView FileName, ImageWriteConfig const& Config)
+bool WriteImage(StringView FileName, ImageWriteConfig const& Config)
 {
-    AStringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::GetExt(FileName);
 
     if (ext.Icompare(".hdr") || ext.Icompare(".exr"))
     {
@@ -1648,7 +1648,7 @@ bool WriteImage(AStringView FileName, ImageWriteConfig const& Config)
         return false;
     }
 
-    AFile f = AFile::OpenWrite(FileName);
+    File f = File::OpenWrite(FileName);
     if (!f)
         return false;
 
@@ -1673,9 +1673,9 @@ bool WriteImage(AStringView FileName, ImageWriteConfig const& Config)
     return result;
 }
 
-bool WriteImageHDRI(AStringView FileName, ImageWriteConfig const& Config)
+bool WriteImageHDRI(StringView FileName, ImageWriteConfig const& Config)
 {
-    AStringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::GetExt(FileName);
 
     if (!(ext.Icompare(".hdr") || ext.Icompare(".exr")))
     {
@@ -1683,7 +1683,7 @@ bool WriteImageHDRI(AStringView FileName, ImageWriteConfig const& Config)
         return false;
     }
 
-    AFile f = AFile::OpenWrite(FileName);
+    File f = File::OpenWrite(FileName);
     if (!f)
         return false;
 
@@ -1702,7 +1702,7 @@ bool WriteImageHDRI(AStringView FileName, ImageWriteConfig const& Config)
     return result;
 }
 
-bool WriteImage(AStringView FileName, ARawImage const& Image)
+bool WriteImage(StringView FileName, RawImage const& Image)
 {
     bool bHDRI = false;
     switch (Image.GetFormat())
@@ -1727,7 +1727,7 @@ bool WriteImage(AStringView FileName, ARawImage const& Image)
             return false;
     }
 
-    AStringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::GetExt(FileName);
     bool        bHDRIExt = ext.Icompare(".hdr") || ext.Icompare(".exr");
 
     ImageWriteConfig config;

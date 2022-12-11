@@ -48,14 +48,14 @@ Float2 UIText::GetTextBoxSize(float breakRowWidth) const
         if (m_Font)
             m_CachedSize = m_Font->GetTextBoxSize(style, breakRowWidth, Text);
         else
-            m_CachedSize = ACanvas::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
+            m_CachedSize = Canvas::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
 
         m_BreakRowWidth = breakRowWidth;
     }
     return m_CachedSize;
 }
 
-void UIText::Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
+void UIText::Draw(Canvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
 {
     FontStyle fontStyle;
     fontStyle.FontSize      = m_FontSize;

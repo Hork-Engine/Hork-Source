@@ -34,16 +34,16 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AGPUSync::AGPUSync(RenderCore::IImmediateContext* _pImmediateContext) :
+GPUSync::GPUSync(RenderCore::IImmediateContext* _pImmediateContext) :
     pImmediateContext(_pImmediateContext)
 {
 }
 
-AGPUSync::~AGPUSync()
+GPUSync::~GPUSync()
 {
 }
 
-void AGPUSync::SetEvent()
+void GPUSync::SetEvent()
 {
     if (Texture)
     {
@@ -51,7 +51,7 @@ void AGPUSync::SetEvent()
     }
 }
 
-void AGPUSync::Wait()
+void GPUSync::Wait()
 {
     if (!Texture)
     {
@@ -60,17 +60,17 @@ void AGPUSync::Wait()
 
         IDevice* device = pImmediateContext->GetDevice();
 
-        device->CreateTexture(STextureDesc()
+        device->CreateTexture(TextureDesc()
                                   .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
-                                  .SetResolution(STextureResolution2D(2, 2))
+                                  .SetResolution(TextureResolution2D(2, 2))
                                   .SetMipLevels(2),
                               &Texture);
 
         pImmediateContext->WriteTexture(Texture, 0, sizeof(data), 1, data);
 
-        device->CreateTexture(STextureDesc()
+        device->CreateTexture(TextureDesc()
                                   .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
-                                  .SetResolution(STextureResolution2D(1, 1))
+                                  .SetResolution(TextureResolution2D(1, 1))
                                   .SetMipLevels(1),
                               &Staging);
     }

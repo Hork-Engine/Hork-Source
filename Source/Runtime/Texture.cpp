@@ -47,13 +47,13 @@ static const char* TextureTypeName[] =
         "TEXTURE_CUBE_ARRAY",
 };
 
-HK_CLASS_META(ATexture)
+HK_CLASS_META(Texture)
 
-bool ATexture::InitializeFromImage(ImageStorage const& Image)
+bool Texture::InitializeFromImage(ImageStorage const& Image)
 {
     if (!Image)
     {
-        LOG("ATexture::InitializeFromImage: empty image data\n");
+        LOG("Texture::InitializeFromImage: empty image data\n");
         InitializeDefaultObject();
         return false;
     }
@@ -104,7 +104,7 @@ bool ATexture::InitializeFromImage(ImageStorage const& Image)
     return true;
 }
 
-void ATexture::LoadInternalResource(AStringView Path)
+void Texture::LoadInternalResource(StringView Path)
 {
     if (!Path.Icmp("/Default/Textures/White"))
     {
@@ -197,7 +197,7 @@ void ATexture::LoadInternalResource(AStringView Path)
     if (!Path.Icmp("/Default/Textures/LUT1") || !Path.Icmp("/Default/Textures/Default3D"))
     {
 
-        constexpr SColorGradingPreset ColorGradingPreset1 = {
+        constexpr ColorGradingPreset ColorGradingPreset1 = {
             Float3(0.5f), // Gain
             Float3(0.5f), // Gamma
             Float3(0.5f), // Lift
@@ -214,7 +214,7 @@ void ATexture::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Textures/LUT2"))
     {
-        constexpr SColorGradingPreset ColorGradingPreset2 = {
+        constexpr ColorGradingPreset ColorGradingPreset2 = {
             Float3(0.5f), // Gain
             Float3(0.5f), // Gamma
             Float3(0.5f), // Lift
@@ -231,7 +231,7 @@ void ATexture::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Textures/LUT3"))
     {
-        constexpr SColorGradingPreset ColorGradingPreset3 = {
+        constexpr ColorGradingPreset ColorGradingPreset3 = {
             Float3(0.51f, 0.55f, 0.53f), // Gain
             Float3(0.45f, 0.57f, 0.55f), // Gamma
             Float3(0.5f, 0.4f, 0.6f),    // Lift
@@ -274,11 +274,11 @@ void ATexture::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/Textures/Default2D");
 }
 
-bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
+bool Texture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString const& fn        = Stream.GetName();
+    String const& fn        = Stream.GetName();
 
-    AScopedTimer ScopedTime(fn.CStr());
+    ScopedTimer ScopedTime(fn.CStr());
 
     ImageStorage image;
 
@@ -319,12 +319,12 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
     return InitializeFromImage(image);
 }
 
-bool ATexture::IsCubemap() const
+bool Texture::IsCubemap() const
 {
     return m_Type == TEXTURE_CUBE || m_Type == TEXTURE_CUBE_ARRAY;
 }
 
-static void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::STextureSwizzle& _Swizzle)
+static void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::TextureSwizzle& _Swizzle)
 {
     TextureFormatInfo const& info = GetTextureFormatInfo(Format);
 
@@ -366,7 +366,7 @@ static void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::STexture
     }
 }
 
-void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+void Texture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
     m_Type       = TEXTURE_1D;
     m_Format     = Format;
@@ -375,8 +375,8 @@ void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     m_Depth      = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution1D(Width));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolution1D(Width));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -389,7 +389,7 @@ void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+void Texture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
     m_Type       = TEXTURE_1D_ARRAY;
     m_Format     = Format;
@@ -398,8 +398,8 @@ void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth      = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution1DArray(Width, ArraySize));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolution1DArray(Width, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -412,7 +412,7 @@ void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
+void Texture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
 {
     m_Type       = TEXTURE_2D;
     m_Format     = Format;
@@ -421,8 +421,8 @@ void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     m_Depth      = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution2D(Width, Height));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolution2D(Width, Height));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -435,7 +435,7 @@ void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
+void Texture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
 {
     m_Type       = TEXTURE_2D_ARRAY;
     m_Format     = Format;
@@ -444,8 +444,8 @@ void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth      = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution2DArray(Width, Height, ArraySize));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolution2DArray(Width, Height, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -458,7 +458,7 @@ void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
+void Texture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
 {
     m_Type       = TEXTURE_3D;
     m_Format     = Format;
@@ -467,8 +467,8 @@ void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     m_Depth      = Depth;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution3D(Width, Height, Depth));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolution3D(Width, Height, Depth));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -481,7 +481,7 @@ void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream)
+void Texture::InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream)
 {
     ImageStorage image = CreateImage(Stream, nullptr, IMAGE_STORAGE_NO_ALPHA, TEXTURE_FORMAT_SBGRA8_UNORM);
 
@@ -512,7 +512,7 @@ void ATexture::InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream)
     LoadInternalResource("/Default/Textures/LUT_Luminance");
 }
 
-static Float3 ApplyColorGrading(SColorGradingPreset const& p, Color4 const& _Color)
+static Float3 ApplyColorGrading(ColorGradingPreset const& p, Color4 const& _Color)
 {
     float lum = _Color.GetLuminance();
 
@@ -546,7 +546,7 @@ static Float3 ApplyColorGrading(SColorGradingPreset const& p, Color4 const& _Col
     return rgb;
 }
 
-void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
+void Texture::InitializeColorGradingLUT(ColorGradingPreset const& Preset)
 {
     Color4 color;
     Float3  result;
@@ -584,7 +584,7 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
     WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 }
 
-void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+void Texture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
     m_Type       = TEXTURE_CUBE;
     m_Format     = Format;
@@ -593,8 +593,8 @@ void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth      = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(Width));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolutionCubemap(Width));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -607,7 +607,7 @@ void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
         m_View->SetResource(m_TextureGPU);
 }
 
-void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+void Texture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
     m_Type       = TEXTURE_CUBE_ARRAY;
     m_Format     = Format;
@@ -616,8 +616,8 @@ void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
     m_Depth      = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemapArray(Width, ArraySize));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolutionCubemapArray(Width, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -630,7 +630,7 @@ void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
         m_View->SetResource(m_TextureGPU);
 }
 
-uint32_t ATexture::GetArraySize() const
+uint32_t Texture::GetArraySize() const
 {
     switch (m_Type)
     {
@@ -644,81 +644,81 @@ uint32_t ATexture::GetArraySize() const
     return 1;
 }
 
-bool ATexture::WriteTextureData1D(uint32_t LocationX, uint32_t Width, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureData1D(uint32_t LocationX, uint32_t Width, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_1D && m_Type != TEXTURE_1D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData1D: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureData1D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, 0, 0, Width, 1, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData1DArray(uint32_t LocationX, uint32_t Width, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureData1DArray(uint32_t LocationX, uint32_t Width, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_1D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData1DArray: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureData1DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, 0, ArrayLayer, Width, 1, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData2D(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureData2D(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_2D && m_Type != TEXTURE_2D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData2D: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureData2D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, LocationY, 0, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData2DArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureData2DArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_2D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData2DArray: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureData2DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, LocationY, ArrayLayer, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData3D(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureData3D(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_3D)
     {
-        LOG("ATexture::WriteTextureData3D: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureData3D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, LocationY, LocationZ, Width, Height, Depth, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureDataCubemap(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureDataCubemap(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_CUBE && m_Type != TEXTURE_CUBE_ARRAY)
     {
-        LOG("ATexture::WriteTextureDataCubemap: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureDataCubemap: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, LocationY, FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool Texture::WriteTextureDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_CUBE_ARRAY)
     {
-        LOG("ATexture::WriteTextureDataCubemapArray: called for {}\n", TextureTypeName[m_Type]);
+        LOG("Texture::WriteTextureDataCubemapArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
     return WriteArbitraryData(LocationX, LocationY, ArrayLayer * 6 + FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
+bool Texture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
 {
     if (!m_Width)
     {
-        LOG("ATexture::WriteArbitraryData: texture is not initialized\n");
+        LOG("Texture::WriteArbitraryData: texture is not initialized\n");
         return false;
     }
 
@@ -737,7 +737,7 @@ bool ATexture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32
 
     // TODO: bounds check?
 
-    RenderCore::STextureRect rect;
+    RenderCore::TextureRect rect;
     rect.Offset.X        = LocationX;
     rect.Offset.Y        = LocationY;
     rect.Offset.Z        = LocationZ;
@@ -764,11 +764,11 @@ bool ATexture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32
     return true;
 }
 
-void ATexture::SetDebugName(AStringView DebugName)
+void Texture::SetDebugName(StringView DebugName)
 {
     if (!m_TextureGPU)
     {
-        LOG("ATexture::SetDebugName: texture must be initialized\n");
+        LOG("Texture::SetDebugName: texture must be initialized\n");
         return;
     }
 

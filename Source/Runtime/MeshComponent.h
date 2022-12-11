@@ -37,14 +37,14 @@ SOFTWARE.
 
 /**
 
-AMeshComponent
+MeshComponent
 
 Mesh without skinning
 
 */
-class AMeshComponent : public ADrawable,  private AIndexedMeshListener
+class MeshComponent : public Drawable,  private IndexedMeshListener
 {
-    HK_COMPONENT(AMeshComponent, ADrawable)
+    HK_COMPONENT(MeshComponent, Drawable)
 
 public:
     /** Lightmap atlas index */
@@ -66,10 +66,10 @@ public:
     void SetAllowRaycast(bool bAllowRaycast) override;
 
     /** Set indexed mesh for the component */
-    void SetMesh(AIndexedMesh* mesh);
+    void SetMesh(IndexedMesh* mesh);
 
     /** Get indexed mesh. Never return null */
-    AIndexedMesh* GetMesh() const { return m_Mesh; }
+    IndexedMesh* GetMesh() const { return m_Mesh; }
 
     /** Set materials from mesh resource */
     void CopyMaterialsFromMeshResource();
@@ -93,25 +93,25 @@ public:
     }
 
 protected:
-    AMeshComponent();
-    ~AMeshComponent();
+    MeshComponent();
+    ~MeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    ACollisionModel* GetMeshCollisionModel() const override;
+    CollisionModel* GetMeshCollisionModel() const override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
     virtual void OnMeshChanged() {}
 
-    void OnPreRenderUpdate(SRenderFrontendDef const* _Def) override;
+    void OnPreRenderUpdate(RenderFrontendDef const* _Def) override;
 
 private:
     void NotifyMeshChanged();
     void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
 
-    TRef<AIndexedMesh> m_Mesh;
+    TRef<IndexedMesh> m_Mesh;
     MeshRenderViews    m_Views;
 
     /** Transform matrix used during last rendering */
@@ -119,16 +119,16 @@ private:
     int      m_RenderTransformMatrixFrame{0};
 };
 
-class AProceduralMeshComponent : public ADrawable
+class ProceduralMeshComponent : public Drawable
 {
-    HK_COMPONENT(AProceduralMeshComponent, ADrawable)
+    HK_COMPONENT(ProceduralMeshComponent, Drawable)
 
 public:
     /** Allow raycasting */
     void SetAllowRaycast(bool bAllowRaycast) override;
 
-    void SetMesh(AProceduralMesh* mesh);
-    AProceduralMesh* GetMesh() const;
+    void SetMesh(ProceduralMesh* mesh);
+    ProceduralMesh* GetMesh() const;
 
     /** Unset materials */
     void ClearRenderViews();
@@ -147,18 +147,18 @@ public:
     }
 
 protected:
-    AProceduralMeshComponent();
-    ~AProceduralMeshComponent();
+    ProceduralMeshComponent();
+    ~ProceduralMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void OnPreRenderUpdate(SRenderFrontendDef const* _Def) override;
+    void OnPreRenderUpdate(RenderFrontendDef const* _Def) override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
-    TRef<AProceduralMesh> m_Mesh;
-    MeshRenderViews       m_Views;
+    TRef<ProceduralMesh> m_Mesh;
+    MeshRenderViews      m_Views;
 
     /** Transform matrix used during last rendering */
     Float3x4 m_RenderTransformMatrix[2];

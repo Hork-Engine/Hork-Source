@@ -54,5 +54,5 @@ public:
 protected:
     void AdjustSize(Float2 const& size) override;
 
-    void Draw(ACanvas& canvas) override;
+    void Draw(Canvas& canvas) override;
 };

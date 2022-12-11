@@ -46,7 +46,7 @@ enum DISPLAY_ORIENTATION
     DISPLAY_ORIENTATION_PORTRAIT_FLIPPED
 };
 
-struct SDisplayMode
+struct DisplayMode
 {
     /** Width, in screen coordinates */
     int Width;
@@ -56,7 +56,7 @@ struct SDisplayMode
     int RefreshRate;
 };
 
-struct SDisplayInfo
+struct DisplayInfo
 {
     /** Internal identifier */
     int Id;
@@ -92,18 +92,18 @@ namespace Runtime
 {
 
 /** Get list of displays */
-void GetDisplays(TPodVector<SDisplayInfo>& Displays);
+void GetDisplays(TPodVector<DisplayInfo>& Displays);
 
 /** Get list of display modes */
-void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Modes);
+void GetDisplayModes(DisplayInfo const& Display, TPodVector<DisplayMode>& Modes);
 
 /** Get information about the desktop display mode */
-void GetDesktopDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode);
+void GetDesktopDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);
 
 /** Get information about the current display mode */
-void GetCurrentDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode);
+void GetCurrentDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);
 
 /** Get the closest match to the requested display mode */
-bool GetClosestDisplayMode(SDisplayInfo const& Display, int Width, int Height, int RefreshRate, SDisplayMode& Mode);
+bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, int RefreshRate, DisplayMode& Mode);
 
 } // namespace Core

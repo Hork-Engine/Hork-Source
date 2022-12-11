@@ -282,7 +282,7 @@ enum {
     KEY_UNDEFINED = 0xffff
 };
 
-enum EInputAction
+enum INPUT_ACTION
 {
     IA_RELEASE,
     IA_PRESS,

@@ -35,40 +35,40 @@ SOFTWARE.
 #include <Core/CommandProcessor.h>
 #include <Core/ConsoleVar.h>
 
-class ACommandContext : public ICommandContext
+class CommandContext : public ICommandContext
 {
-    HK_FORBID_COPY(ACommandContext)
+    HK_FORBID_COPY(CommandContext)
 
 public:
-    ACommandContext();
-    ~ACommandContext();
+    CommandContext();
+    ~CommandContext();
 
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
+    void AddCommand(GlobalStringView _Name, TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment = ""s);
 
-    void RemoveCommand(AStringView _Name);
+    void RemoveCommand(StringView _Name);
 
     void RemoveCommands();
 
-    int CompleteString(AStringView Str, AString& _Result);
+    int CompleteString(StringView Str, String& _Result);
 
-    void Print(AStringView Str);
+    void Print(StringView Str);
 
 protected:
     //
     // ICommandContext implementation
     //
 
-    void ExecuteCommand(ACommandProcessor const& _Proc) override;
+    void ExecuteCommand(CommandProcessor const& _Proc) override;
 
 private:
-    class ARuntimeCommand
+    class RuntimeCommand
     {
     public:
-        ARuntimeCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment) :
+        RuntimeCommand(GlobalStringView _Name, TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment) :
             Name(_Name.CStr()), Comment(_Comment.CStr()), Callback(_Callback)
         {}
 
-        void Override(TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment)
+        void Override(TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment)
         {
             Comment  = _Comment.CStr();
             Callback = _Callback;
@@ -78,13 +78,13 @@ private:
 
         const char* GetComment() const { return Comment; }
 
-        void Execute(ACommandProcessor const& _Proc) { Callback(_Proc); }
+        void Execute(CommandProcessor const& _Proc) { Callback(_Proc); }
 
     private:
         const char*                               Name;
         const char*                               Comment;
-        TCallback<void(ACommandProcessor const&)> Callback;
+        TCallback<void(CommandProcessor const&)> Callback;
     };
 
-    TVector<ARuntimeCommand> Commands;
+    TVector<RuntimeCommand> Commands;
 };

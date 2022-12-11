@@ -74,13 +74,13 @@ IDevice::~IDevice()
 #endif
 }
 
-void CreateLogicalDevice(const char*               Backend,
-                         SAllocatorCallback const* pAllocator,
-                         TRef<IDevice>*            ppDevice)
+void CreateLogicalDevice(const char*              Backend,
+                         AllocatorCallback const* pAllocator,
+                         TRef<IDevice>*           ppDevice)
 {
     if (!Platform::Stricmp(Backend, "OpenGL 4.5"))
     {
-        *ppDevice = MakeRef<ADeviceGLImpl>(pAllocator);
+        *ppDevice = MakeRef<DeviceGLImpl>(pAllocator);
     }
     else
     {

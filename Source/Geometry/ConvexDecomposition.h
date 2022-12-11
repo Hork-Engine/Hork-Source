@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Geometry/Plane.h>
 
-struct SConvexHullDesc
+struct ConvexHullDesc
 {
     int    FirstVertex;
     int    VertexCount;
@@ -54,7 +54,7 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
                                 int                          _IndicesCount,
                                 TPodVector<Float3>&          _OutVertices,
                                 TPodVector<unsigned int>&    _OutIndices,
-                                TPodVector<SConvexHullDesc>& _OutHulls);
+                                TPodVector<ConvexHullDesc>& _OutHulls);
 
 bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _VerticesCount,
@@ -63,7 +63,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _IndicesCount,
                                      TPodVector<Float3>&          _OutVertices,
                                      TPodVector<unsigned int>&    _OutIndices,
-                                     TPodVector<SConvexHullDesc>& _OutHulls,
+                                     TPodVector<ConvexHullDesc>& _OutHulls,
                                      Float3&                      _CenterOfMass);
 
 void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPodVector<PlaneF>& _Planes);

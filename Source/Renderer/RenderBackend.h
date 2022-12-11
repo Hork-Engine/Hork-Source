@@ -41,48 +41,48 @@ SOFTWARE.
 
 #include <RenderCore/VertexMemoryGPU.h>
 
-class ARenderBackend : public ARefCounted
+class RenderBackend : public RefCounted
 {
 public:
-    ARenderBackend(RenderCore::IDevice* pDevice);
-    ~ARenderBackend();
+    RenderBackend(RenderCore::IDevice* pDevice);
+    ~RenderBackend();
 
     void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
     void GenerateReflectionMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
     void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
 
-    bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile);
-    bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
+    bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile);
+    bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile);
     ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
 
-    void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
+    void RenderFrame(StreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, RenderFrameData* pFrameData);
 
     int ClusterPackedIndicesAlignment() const;
 
     int MaxOmnidirectionalShadowMapsPerView() const;
 
 private:
-    void RenderView(int ViewportIndex, SRenderView* pRenderView);
+    void RenderView(int ViewportIndex, RenderViewData* pRenderView);
     void SetViewConstants(int ViewportIndex);
     void UploadShaderResources(int ViewportIndex);
 
-    TRef<RenderCore::AFrameGraph>       m_FrameGraph;
+    TRef<RenderCore::FrameGraph>       m_FrameGraph;
 
-    TRef<ACanvasRenderer> CanvasRenderer;
-    TRef<AFrameRenderer>  FrameRenderer;
+    TRef<CanvasRenderer> m_CanvasRenderer;
+    TRef<FrameRenderer> m_FrameRenderer;
 
-    TRef<RenderCore::IQueryPool> TimeQuery;
+    TRef<RenderCore::IQueryPool> m_TimeQuery;
 
-    TRef<RenderCore::IQueryPool> TimeStamp1;
-    TRef<RenderCore::IQueryPool> TimeStamp2;
+    TRef<RenderCore::IQueryPool> m_TimeStamp1;
+    TRef<RenderCore::IQueryPool> m_TimeStamp2;
 
-    TRef<AVirtualTextureFeedbackAnalyzer> FeedbackAnalyzerVT;
-    TRef<AVirtualTextureCache>            PhysCacheVT;
+    TRef<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
+    TRef<VirtualTextureCache> m_PhysCacheVT;
 
-    TRef<RenderCore::IPipeline> TerrainDepthPipeline;
-    TRef<RenderCore::IPipeline> TerrainLightPipeline;
-    TRef<RenderCore::IPipeline> TerrainWireframePipeline;
+    TRef<RenderCore::IPipeline> m_TerrainDepthPipeline;
+    TRef<RenderCore::IPipeline> m_TerrainLightPipeline;
+    TRef<RenderCore::IPipeline> m_TerrainWireframePipeline;
 
     // Just for test
-    TRef<AVirtualTexture> TestVT;
+    TRef<VirtualTexture> m_TestVT;
 };

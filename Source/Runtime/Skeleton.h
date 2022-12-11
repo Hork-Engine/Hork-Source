@@ -38,22 +38,22 @@ SOFTWARE.
 
 /**
 
-ASkeleton
+Skeleton
 
 Skeleton structure
 
 */
-class ASkeleton : public AResource
+class Skeleton : public Resource
 {
-    HK_CLASS(ASkeleton, AResource)
+    HK_CLASS(Skeleton, Resource)
 
 public:
-    ASkeleton();
-    ~ASkeleton();
+    Skeleton();
+    ~Skeleton();
 
-    static ASkeleton* Create(SJoint* Joints, int JointsCount, BvAxisAlignedBox const& BindposeBounds)
+    static Skeleton* Create(SkeletonJoint* Joints, int JointsCount, BvAxisAlignedBox const& BindposeBounds)
     {
-        ASkeleton* skeleton = NewObj<ASkeleton>();
+        Skeleton* skeleton = NewObj<Skeleton>();
         skeleton->Initialize(Joints, JointsCount, BindposeBounds);
         return skeleton;
     }
@@ -62,22 +62,22 @@ public:
 
     int FindJoint(const char* _Name) const;
 
-    TPodVector<SJoint> const& GetJoints() const { return m_Joints; }
+    TPodVector<SkeletonJoint> const& GetJoints() const { return m_Joints; }
 
     BvAxisAlignedBox const& GetBindposeBounds() const { return m_BindposeBounds; }
 
 protected:
-    void Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
+    void Initialize(SkeletonJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
 
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(StringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
 
 private:
-    TPodVector<SJoint> m_Joints;
+    TPodVector<SkeletonJoint> m_Joints;
     BvAxisAlignedBox   m_BindposeBounds;
 };

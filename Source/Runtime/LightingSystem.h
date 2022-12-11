@@ -34,9 +34,9 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include "DirectionalLightComponent.h"
 
-class ALightingSystem
+class LightingSystem
 {
 public:    
-    TList<ADrawable>                  ShadowCasters;
-    TList<ADirectionalLightComponent> DirectionalLights;
+    TList<Drawable>                  ShadowCasters;
+    TList<DirectionalLightComponent> DirectionalLights;
 };

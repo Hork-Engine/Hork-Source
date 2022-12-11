@@ -128,7 +128,7 @@ template<typename T>
 struct TListReverseIterator;
 
 template <typename T>
-struct TList : public ANoncopyable
+struct TList : public Noncopyable
 {
     friend struct TListIterator<T>;
     friend struct TListReverseIterator<T>;

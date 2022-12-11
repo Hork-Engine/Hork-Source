@@ -72,21 +72,21 @@ public:
 private:
     void UpdateGeometry(float w, float h);
 
-    void Draw(ACanvas& cv);
+    void Draw(Canvas& cv);
 
-    void GenerateKeyEvents(struct SKeyEvent const& event, double timeStamp);
+    void GenerateKeyEvents(struct KeyEvent const& event, double timeStamp);
 
-    void GenerateMouseButtonEvents(struct SMouseButtonEvent const& event, double timeStamp);
+    void GenerateMouseButtonEvents(struct MouseButtonEvent const& event, double timeStamp);
 
-    void GenerateMouseWheelEvents(struct SMouseWheelEvent const& event, double timeStamp);
+    void GenerateMouseWheelEvents(struct MouseWheelEvent const& event, double timeStamp);
 
-    void GenerateMouseMoveEvents(struct SMouseMoveEvent const& event, double timeStamp);
+    void GenerateMouseMoveEvents(struct MouseMoveEvent const& event, double timeStamp);
 
-    void GenerateJoystickButtonEvents(struct SJoystickButtonEvent const& event, double timeStamp);
+    void GenerateJoystickButtonEvents(struct JoystickButtonEvent const& event, double timeStamp);
 
-    void GenerateJoystickAxisEvents(struct SJoystickAxisEvent const& event, double timeStamp);
+    void GenerateJoystickAxisEvents(struct JoystickAxisEvent const& event, double timeStamp);
 
-    void GenerateCharEvents(struct SCharEvent const& event, double timeStamp);
+    void GenerateCharEvents(struct CharEvent const& event, double timeStamp);
 
     void StartDragging(UIWidget* widget);
 

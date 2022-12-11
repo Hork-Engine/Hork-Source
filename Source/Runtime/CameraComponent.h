@@ -43,9 +43,9 @@ enum CAMERA_PROJECTION_TYPE : uint8_t
     CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 };
 
-class ACameraComponent : public ASceneComponent
+class CameraComponent : public SceneComponent
 {
-    HK_COMPONENT(ACameraComponent, ASceneComponent)
+    HK_COMPONENT(CameraComponent, SceneComponent)
 
 public:
     /** Set view projection */
@@ -117,13 +117,13 @@ public:
     void MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix /*, const float _ClusterZNear, const float _ClusterZFar*/) const;
 
 protected:
-    ACameraComponent();
+    CameraComponent();
 
     void OnCreateAvatar() override;
 
     void OnTransformDirty() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
     float             m_FovX{90.0f};

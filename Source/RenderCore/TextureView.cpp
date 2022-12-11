@@ -34,11 +34,11 @@ SOFTWARE.
 namespace RenderCore
 {
 
-ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
+ITextureView::ITextureView(TextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
     IDeviceObject(pTexture->GetDevice(), PROXY_TYPE), Desc(TextureViewDesc), pTexture(pTexture)
 {
 #ifdef HK_DEBUG
-    STextureDesc const& textureDesc = pTexture->GetDesc();
+    TextureDesc const& textureDesc = pTexture->GetDesc();
 
     HK_ASSERT(TextureViewDesc.ViewType != TEXTURE_VIEW_UNDEFINED);
 

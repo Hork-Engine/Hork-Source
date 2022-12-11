@@ -46,16 +46,16 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class AFrameGraph : public ARefCounted
+class FrameGraph : public RefCounted
 {
 public:
-    AFrameGraph(IDevice* pDevice, FGRenderTargetCache* pRenderTargetCache = nullptr) :
+    FrameGraph(IDevice* pDevice, FGRenderTargetCache* pRenderTargetCache = nullptr) :
         pDevice(pDevice),
         pRenderTargetCache(pRenderTargetCache ? pRenderTargetCache : MakeRef<FGRenderTargetCache>(pDevice))
     {
     }
 
-    ~AFrameGraph()
+    ~FrameGraph()
     {
         ReleaseCapturedResources();
     }
@@ -93,7 +93,7 @@ public:
 
     void Debug();
 
-    void ExportGraphviz(AStringView FileName);
+    void ExportGraphviz(StringView FileName);
 
     std::size_t GenerateResourceId() const
     {
@@ -105,7 +105,7 @@ public:
         return pRenderTargetCache;
     }
 
-    struct STimelineStep
+    struct TimelineStep
     {
         FGRenderTaskBase* RenderTask;
         int               FirstAcquiredResource;
@@ -114,7 +114,7 @@ public:
         int               NumReleasedResources;
     };
 
-    TVector<STimelineStep> const& GetTimeline() const
+    TVector<TimelineStep> const& GetTimeline() const
     {
         return Timeline;
     }
@@ -158,7 +158,7 @@ private:
     TVector<FGResourceProxyBase*>              Resources; // all resources
     TVector<FGResourceProxyBase*>              CapturedResources;
 
-    TVector<STimelineStep>        Timeline;
+    TVector<TimelineStep>        Timeline;
     TVector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
 
     // Temporary data. Used for building
@@ -168,7 +168,7 @@ private:
     mutable std::size_t IdGenerator = 0;
 };
 
-HK_FORCEINLINE std::size_t FG_GenerateResourceId(AFrameGraph* pFrameGraph)
+HK_FORCEINLINE std::size_t FG_GenerateResourceId(FrameGraph* pFrameGraph)
 {
     return pFrameGraph->GenerateResourceId();
 }

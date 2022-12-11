@@ -32,13 +32,13 @@ SOFTWARE.
 
 #include "Format.h"
 
-struct SCommandLine
+struct CommandLine
 {
-    HK_FORBID_COPY(SCommandLine)
+    HK_FORBID_COPY(CommandLine)
 
-    SCommandLine(const char* _CommandLine);
-    SCommandLine(int _Argc, char** _Argv);
-    ~SCommandLine();
+    CommandLine(const char* _CommandLine);
+    CommandLine(int _Argc, char** _Argv);
+    ~CommandLine();
 
     /** Application command line args count */
     int GetArgc() const { return NumArguments; }
@@ -62,7 +62,7 @@ private:
 };
 
 /** CPU features */
-struct SCPUInfo
+struct CPUInfo
 {
     bool OS_AVX : 1;
     bool OS_AVX512 : 1;
@@ -112,7 +112,7 @@ struct SCPUInfo
     bool PREFETCHWT1 : 1;
 };
 
-struct SMemoryInfo
+struct MemoryInfo
 {
     size_t TotalAvailableMegabytes;
     size_t CurrentAvailableMegabytes;
@@ -126,26 +126,26 @@ enum PROCESS_ATTRIBUTE
     PROCESS_UNIQUE
 };
 
-struct SProcessInfo
+struct ProcessInfo
 {
     int   ProcessAttribute = 0;
     char* Executable       = nullptr;
 };
 
-struct SPlatformInitialize
+struct PlatformInitialize
 {
     char**      Argv                    = nullptr;
     int         Argc                    = 0;
     const char* pCommandLine            = nullptr;
 };
 
-class AConsoleBuffer;
+class ConsoleBuffer;
 
 namespace Platform
 {
 
 /** Initialize core library */
-void Initialize(SPlatformInitialize const& CoreInitialize);
+void Initialize(PlatformInitialize const& CoreInitialize);
 
 /** Deinitialize core library */
 void Deinitialize();
@@ -163,19 +163,19 @@ int CheckArg(const char* _Arg);
 bool HasArg(const char* _Arg);
 
 /** Get command line pointer */
-SCommandLine const* GetCommandLine();
+CommandLine const* GetCommandLine();
 
 /** Console buffer */
-AConsoleBuffer& GetConsoleBuffer();
+ConsoleBuffer& GetConsoleBuffer();
 
 /** Get CPU info */
-SCPUInfo const* CPUInfo();
+CPUInfo const* GetCPUInfo();
 
 /** Get total/available memory status */
-SMemoryInfo GetPhysMemoryInfo();
+MemoryInfo GetPhysMemoryInfo();
 
 /** Get process info */
-SProcessInfo const& GetProcessInfo();
+ProcessInfo const& GetProcessInfo();
 
 /** Write message to log file */
 void WriteLog(const char* Message);

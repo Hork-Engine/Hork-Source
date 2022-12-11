@@ -36,7 +36,7 @@ SOFTWARE.
 namespace Runtime
 {
 
-void GetDisplays(TPodVector<SDisplayInfo>& Displays)
+void GetDisplays(TPodVector<DisplayInfo>& Displays)
 {
     SDL_Rect rect;
     int      displayCount = SDL_GetNumVideoDisplays();
@@ -45,7 +45,7 @@ void GetDisplays(TPodVector<SDisplayInfo>& Displays)
 
     for (int i = 0; i < displayCount; i++)
     {
-        SDisplayInfo& d = Displays[i];
+        DisplayInfo& d = Displays[i];
 
         d.Id   = i;
         d.Name = SDL_GetDisplayName(i);
@@ -70,7 +70,7 @@ void GetDisplays(TPodVector<SDisplayInfo>& Displays)
     }
 }
 
-void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Modes)
+void GetDisplayModes(DisplayInfo const& Display, TPodVector<DisplayMode>& Modes)
 {
     SDL_DisplayMode modeSDL;
 
@@ -83,7 +83,7 @@ void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Mode
 
         if (modeSDL.format == SDL_PIXELFORMAT_RGB888)
         {
-            SDisplayMode& mode = Modes.Add();
+            DisplayMode& mode = Modes.Add();
 
             mode.Width       = modeSDL.w;
             mode.Height      = modeSDL.h;
@@ -92,7 +92,7 @@ void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Mode
     }
 }
 
-void GetDesktopDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
+void GetDesktopDisplayMode(DisplayInfo const& Display, DisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL;
     SDL_GetDesktopDisplayMode(Display.Id, &modeSDL);
@@ -102,7 +102,7 @@ void GetDesktopDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
     Mode.RefreshRate = modeSDL.refresh_rate;
 }
 
-void GetCurrentDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
+void GetCurrentDisplayMode(DisplayInfo const& Display, DisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL;
     SDL_GetCurrentDisplayMode(Display.Id, &modeSDL);
@@ -112,7 +112,7 @@ void GetCurrentDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
     Mode.RefreshRate = modeSDL.refresh_rate;
 }
 
-bool GetClosestDisplayMode(SDisplayInfo const& Display, int Width, int Height, int RefreshRate, SDisplayMode& Mode)
+bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, int RefreshRate, DisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL, closestSDL;
 

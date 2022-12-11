@@ -124,7 +124,7 @@ enum MAP_PERSISTENCE : uint8_t
                                /// If you use this flag for immutable buffer IMMUTABLE_MAP_PERSISTENT must be set on creation stage.
 };
 
-struct SBufferDesc
+struct BufferDesc
 {
     bool bImmutableStorage = false;
 
@@ -146,13 +146,13 @@ class IBuffer : public IDeviceObject
 public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_BUFFER;
 
-    IBuffer(IDevice* pDevice, SBufferDesc const& Desc) :
+    IBuffer(IDevice* pDevice, BufferDesc const& Desc) :
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
-    virtual bool CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;
+    virtual bool CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;
 
-    SBufferDesc const& GetDesc() const { return Desc; }
+    BufferDesc const& GetDesc() const { return Desc; }
 
     /// Allocate new storage for the buffer
     virtual bool Orphan() = 0;
@@ -172,7 +172,7 @@ public:
     virtual void WriteRange(size_t ByteOffset, size_t SizeInBytes, const void* pSysMem) = 0;
 
 protected:
-    SBufferDesc Desc;
+    BufferDesc Desc;
 };
 
 } // namespace RenderCore

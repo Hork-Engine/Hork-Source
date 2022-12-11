@@ -33,7 +33,10 @@ SOFTWARE.
 #include "IO.h"
 #include "HashFunc.h"
 
-struct AGUID
+namespace Hk
+{
+
+struct GUID
 {
     union
     {
@@ -53,18 +56,18 @@ struct AGUID
 
     void Generate();
 
-    bool operator==(AGUID const& Rhs) const
+    bool operator==(GUID const& Rhs) const
     {
         return Hi == Rhs.Hi && Lo == Rhs.Lo;
     }
 
-    bool operator!=(AGUID const& Rhs) const
+    bool operator!=(GUID const& Rhs) const
     {
         return Hi != Rhs.Hi || Lo != Rhs.Lo;
     }
 
     // String conversions
-    AString ToString() const
+    String ToString() const
     {
         TSprintfBuffer<37> buffer;
         return buffer.Sprintf("%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
@@ -75,7 +78,7 @@ struct AGUID
                               LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
-    AGUID& FromString(AStringView String);
+    GUID& FromString(StringView String);
 
     const byte* GetBytes() const { return &HiBytes[0]; }
     byte*       GetBytes() { return &HiBytes[0]; }
@@ -98,3 +101,5 @@ struct AGUID
         Lo = Stream.ReadUInt64();
     }
 };
+
+}

@@ -32,16 +32,16 @@ SOFTWARE.
 
 #include "Angl.h"
 
-struct STransform
+struct Transform
 {
     Float3 Position;
     Quat   Rotation;
     Float3 Scale{1,1,1};
 
-    STransform() = default;
-    STransform(Float3 const& position, Quat const& rotation, Float3 const& scale);
-    STransform(Float3 const& position, Quat const& rotation);
-    STransform(Float3 const& position);
+    Transform() = default;
+    Transform(Float3 const& position, Quat const& rotation, Float3 const& scale);
+    Transform(Float3 const& position, Quat const& rotation);
+    Transform(Float3 const& position);
     void   Clear();
     void   SetIdentity();
     void   SetScale(Float3 const& scale);
@@ -75,9 +75,9 @@ struct STransform
     void   StepForward(float units);
     void   Step(Float3 const& vector);
 
-    STransform operator*(STransform const& rhs) const;
+    Transform operator*(Transform const& rhs) const;
 
-    STransform Inversed() const;
+    Transform Inversed() const;
     void       InverseSelf();
 
     // Byte serialization
@@ -85,58 +85,58 @@ struct STransform
     void Read(IBinaryStreamReadInterface& stream);
 };
 
-HK_FORCEINLINE STransform::STransform(Float3 const& position, Quat const& rotation, Float3 const& scale) :
+HK_FORCEINLINE Transform::Transform(Float3 const& position, Quat const& rotation, Float3 const& scale) :
     Position(position), Rotation(rotation), Scale(scale)
 {}
 
-HK_FORCEINLINE STransform::STransform(Float3 const& position, Quat const& rotation) :
+HK_FORCEINLINE Transform::Transform(Float3 const& position, Quat const& rotation) :
     Position(position), Rotation(rotation)
 {}
 
-HK_FORCEINLINE STransform::STransform(Float3 const& position) :
+HK_FORCEINLINE Transform::Transform(Float3 const& position) :
     Position(position)
 {}
 
-HK_FORCEINLINE void STransform::Clear()
+HK_FORCEINLINE void Transform::Clear()
 {
     Position.X = Position.Y = Position.Z = 0;
     SetIdentity();
     SetScale(1);
 }
 
-HK_FORCEINLINE void STransform::SetIdentity()
+HK_FORCEINLINE void Transform::SetIdentity()
 {
     Rotation.SetIdentity();
 }
 
-HK_FORCEINLINE void STransform::SetScale(Float3 const& scale)
+HK_FORCEINLINE void Transform::SetScale(Float3 const& scale)
 {
     Scale = scale;
 }
 
-HK_FORCEINLINE void STransform::SetScale(float x, float y, float z)
+HK_FORCEINLINE void Transform::SetScale(float x, float y, float z)
 {
     Scale.X = x;
     Scale.Y = y;
     Scale.Z = z;
 }
 
-HK_FORCEINLINE void STransform::SetScale(float uniformScale)
+HK_FORCEINLINE void Transform::SetScale(float uniformScale)
 {
     Scale.X = Scale.Y = Scale.Z = uniformScale;
 }
 
-HK_FORCEINLINE void STransform::SetAngles(Angl const& angles)
+HK_FORCEINLINE void Transform::SetAngles(Angl const& angles)
 {
     Rotation = angles.ToQuat();
 }
 
-HK_FORCEINLINE void STransform::SetAngles(float pitch, float yaw, float roll)
+HK_FORCEINLINE void Transform::SetAngles(float pitch, float yaw, float roll)
 {
     Rotation = Angl(pitch, yaw, roll).ToQuat();
 }
 
-HK_FORCEINLINE Angl STransform::GetAngles() const
+HK_FORCEINLINE Angl Transform::GetAngles() const
 {
     Angl angles;
     Rotation.ToAngles(angles.Pitch, angles.Yaw, angles.Roll);
@@ -146,22 +146,22 @@ HK_FORCEINLINE Angl STransform::GetAngles() const
     return angles;
 }
 
-HK_FORCEINLINE float STransform::GetPitch() const
+HK_FORCEINLINE float Transform::GetPitch() const
 {
     return Math::Degrees(Rotation.Pitch());
 }
 
-HK_FORCEINLINE float STransform::GetYaw() const
+HK_FORCEINLINE float Transform::GetYaw() const
 {
     return Math::Degrees(Rotation.Yaw());
 }
 
-HK_FORCEINLINE float STransform::GetRoll() const
+HK_FORCEINLINE float Transform::GetRoll() const
 {
     return Math::Degrees(Rotation.Roll());
 }
 
-HK_FORCEINLINE Float3 STransform::GetRightVector() const
+HK_FORCEINLINE Float3 Transform::GetRightVector() const
 {
     //return Math::ToMat3(Rotation)[0];
 
@@ -175,7 +175,7 @@ HK_FORCEINLINE Float3 STransform::GetRightVector() const
     return Float3(1 - 2 * (qyy + qzz), 2 * (qxy + qwz), 2 * (qxz - qwy));
 }
 
-HK_FORCEINLINE Float3 STransform::GetLeftVector() const
+HK_FORCEINLINE Float3 Transform::GetLeftVector() const
 {
     //return -Math::ToMat3(Rotation)[0];
 
@@ -189,7 +189,7 @@ HK_FORCEINLINE Float3 STransform::GetLeftVector() const
     return Float3(-1 + 2 * (qyy + qzz), -2 * (qxy + qwz), -2 * (qxz - qwy));
 }
 
-HK_FORCEINLINE Float3 STransform::GetUpVector() const
+HK_FORCEINLINE Float3 Transform::GetUpVector() const
 {
     //return Math::ToMat3(Rotation)[1];
 
@@ -203,7 +203,7 @@ HK_FORCEINLINE Float3 STransform::GetUpVector() const
     return Float3(2 * (qxy - qwz), 1 - 2 * (qxx + qzz), 2 * (qyz + qwx));
 }
 
-HK_FORCEINLINE Float3 STransform::GetDownVector() const
+HK_FORCEINLINE Float3 Transform::GetDownVector() const
 {
     //return -Math::ToMat3(Rotation)[1];
 
@@ -217,7 +217,7 @@ HK_FORCEINLINE Float3 STransform::GetDownVector() const
     return Float3(-2 * (qxy - qwz), -1 + 2 * (qxx + qzz), -2 * (qyz + qwx));
 }
 
-HK_FORCEINLINE Float3 STransform::GetBackVector() const
+HK_FORCEINLINE Float3 Transform::GetBackVector() const
 {
     //return Math::ToMat3(Rotation)[2];
 
@@ -231,7 +231,7 @@ HK_FORCEINLINE Float3 STransform::GetBackVector() const
     return Float3(2 * (qxz + qwy), 2 * (qyz - qwx), 1 - 2 * (qxx + qyy));
 }
 
-HK_FORCEINLINE Float3 STransform::GetForwardVector() const
+HK_FORCEINLINE Float3 Transform::GetForwardVector() const
 {
     //return -Math::ToMat3(Rotation)[2];
 
@@ -245,7 +245,7 @@ HK_FORCEINLINE Float3 STransform::GetForwardVector() const
     return Float3(-2 * (qxz + qwy), -2 * (qyz - qwx), -1 + 2 * (qxx + qyy));
 }
 
-HK_FORCEINLINE void STransform::GetVectors(Float3* right, Float3* up, Float3* back) const
+HK_FORCEINLINE void Transform::GetVectors(Float3* right, Float3* up, Float3* back) const
 {
     //if ( right ) *right = Math::ToMat3(Rotation)[0];
     //if ( up ) *up = Math::ToMat3(Rotation)[1];
@@ -285,32 +285,32 @@ HK_FORCEINLINE void STransform::GetVectors(Float3* right, Float3* up, Float3* ba
 }
 
 
-HK_FORCEINLINE void STransform::ComputeTransformMatrix(Float3x4& localTransformMatrix) const
+HK_FORCEINLINE void Transform::ComputeTransformMatrix(Float3x4& localTransformMatrix) const
 {
     localTransformMatrix.Compose(Position, Rotation.ToMatrix3x3(), Scale);
 }
 
-HK_FORCEINLINE void STransform::TurnRightFPS(float angleDeltaInRadians)
+HK_FORCEINLINE void Transform::TurnRightFPS(float angleDeltaInRadians)
 {
     TurnLeftFPS(-angleDeltaInRadians);
 }
 
-HK_FORCEINLINE void STransform::TurnLeftFPS(float angleDeltaInRadians)
+HK_FORCEINLINE void Transform::TurnLeftFPS(float angleDeltaInRadians)
 {
     TurnAroundAxis(angleDeltaInRadians, Float3(0, 1, 0));
 }
 
-HK_FORCEINLINE void STransform::TurnUpFPS(float angleDeltaInRadians)
+HK_FORCEINLINE void Transform::TurnUpFPS(float angleDeltaInRadians)
 {
     TurnAroundAxis(angleDeltaInRadians, GetRightVector());
 }
 
-HK_FORCEINLINE void STransform::TurnDownFPS(float angleDeltaInRadians)
+HK_FORCEINLINE void Transform::TurnDownFPS(float angleDeltaInRadians)
 {
     TurnUpFPS(-angleDeltaInRadians);
 }
 
-HK_FORCEINLINE void STransform::TurnAroundAxis(float angleDeltaInRadians, Float3 const& normalizedAxis)
+HK_FORCEINLINE void Transform::TurnAroundAxis(float angleDeltaInRadians, Float3 const& normalizedAxis)
 {
     float s, c;
 
@@ -320,61 +320,61 @@ HK_FORCEINLINE void STransform::TurnAroundAxis(float angleDeltaInRadians, Float3
     Rotation.NormalizeSelf();
 }
 
-HK_FORCEINLINE void STransform::TurnAroundVector(float angleDeltaInRadians, Float3 const& vector)
+HK_FORCEINLINE void Transform::TurnAroundVector(float angleDeltaInRadians, Float3 const& vector)
 {
     TurnAroundAxis(angleDeltaInRadians, vector.Normalized());
 }
 
-HK_FORCEINLINE void STransform::StepRight(float units)
+HK_FORCEINLINE void Transform::StepRight(float units)
 {
     Step(GetRightVector() * units);
 }
 
-HK_FORCEINLINE void STransform::StepLeft(float units)
+HK_FORCEINLINE void Transform::StepLeft(float units)
 {
     Step(GetLeftVector() * units);
 }
 
-HK_FORCEINLINE void STransform::StepUp(float units)
+HK_FORCEINLINE void Transform::StepUp(float units)
 {
     Step(GetUpVector() * units);
 }
 
-HK_FORCEINLINE void STransform::StepDown(float units)
+HK_FORCEINLINE void Transform::StepDown(float units)
 {
     Step(GetDownVector() * units);
 }
 
-HK_FORCEINLINE void STransform::StepBack(float units)
+HK_FORCEINLINE void Transform::StepBack(float units)
 {
     Step(GetBackVector() * units);
 }
 
-HK_FORCEINLINE void STransform::StepForward(float units)
+HK_FORCEINLINE void Transform::StepForward(float units)
 {
     Step(GetForwardVector() * units);
 }
 
-HK_FORCEINLINE void STransform::Step(Float3 const& vector)
+HK_FORCEINLINE void Transform::Step(Float3 const& vector)
 {
     Position += vector;
 }
 
-HK_FORCEINLINE STransform STransform::operator*(STransform const& rhs) const
+HK_FORCEINLINE Transform Transform::operator*(Transform const& rhs) const
 {
     Float3x4 m;
     ComputeTransformMatrix(m);
-    return STransform(m * rhs.Position, Rotation * rhs.Rotation, Scale * rhs.Scale);
+    return Transform(m * rhs.Position, Rotation * rhs.Rotation, Scale * rhs.Scale);
 }
 
-HK_FORCEINLINE STransform STransform::Inversed() const
+HK_FORCEINLINE Transform Transform::Inversed() const
 {
     Float3x4 m;
     ComputeTransformMatrix(m);
-    return STransform(m.Inversed().DecomposeTranslation(), Rotation.Inversed(), Float3(1.0) / Scale);
+    return Transform(m.Inversed().DecomposeTranslation(), Rotation.Inversed(), Float3(1.0) / Scale);
 }
 
-HK_FORCEINLINE void STransform::InverseSelf()
+HK_FORCEINLINE void Transform::InverseSelf()
 {
     Float3x4 m;
     ComputeTransformMatrix(m);
@@ -383,14 +383,14 @@ HK_FORCEINLINE void STransform::InverseSelf()
     Scale = Float3(1.0f) / Scale;
 }
 
-HK_FORCEINLINE void STransform::Write(IBinaryStreamWriteInterface& stream) const
+HK_FORCEINLINE void Transform::Write(IBinaryStreamWriteInterface& stream) const
 {
     Position.Write(stream);
     Rotation.Write(stream);
     Scale.Write(stream);
 }
 
-HK_FORCEINLINE void STransform::Read(IBinaryStreamReadInterface& stream)
+HK_FORCEINLINE void Transform::Read(IBinaryStreamReadInterface& stream)
 {
     Position.Read(stream);
     Rotation.Read(stream);

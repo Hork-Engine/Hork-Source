@@ -33,78 +33,78 @@ SOFTWARE.
 #include "Resource.h"
 #include "Engine.h"
 
-class AResourceFactory : public ARefCounted
+class ResourceFactory : public RefCounted
 {
 public:
-    virtual bool IsResourceExists(AStringView Path)
+    virtual bool IsResourceExists(StringView Path)
     {
         return false;
     }
 
-    virtual AFile OpenResource(AStringView Path)
+    virtual File OpenResource(StringView Path)
     {
         return {};
     }
 };
 
-class AResourceManager
+class ResourceManager
 {
 public:
-    AResourceManager();
-    virtual ~AResourceManager();
+    ResourceManager();
+    virtual ~ResourceManager();
 
     /** Add custom resource factory */
-    void AddResourceFactory(AResourceFactory* Factory);
+    void AddResourceFactory(ResourceFactory* Factory);
 
-    void AddResourcePack(AStringView fileName);
+    void AddResourcePack(StringView fileName);
 
     /** Find file in resource packs */
-    bool FindFile(AStringView fileName, int* pResourcePackIndex, AFileHandle* pFileHandle) const;
+    bool FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const;
 
     /** Get or create resource. Return default object if fails. */
     template <typename T>
-    HK_FORCEINLINE T* GetOrCreateResource(AStringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT)
+    HK_FORCEINLINE T* GetOrCreateResource(StringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT)
     {
-        return static_cast<T*>(GetOrCreateResource(T::ClassMeta(), path, flags));
+        return static_cast<T*>(GetOrCreateResource(T::GetClassMeta(), path, flags));
     }
 
     /** Get resource. Return default object if fails. */
     template <typename T>
-    HK_FORCEINLINE T* GetResource(AStringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr)
+    HK_FORCEINLINE T* GetResource(StringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr)
     {
-        return static_cast<T*>(GetResource(T::ClassMeta(), path, bResourceFoundResult, bMetadataMismatch));
+        return static_cast<T*>(GetResource(T::GetClassMeta(), path, bResourceFoundResult, bMetadataMismatch));
     }
 
     /** Get or create resource. Return default object if fails. */
-    AResource* GetOrCreateResource(AClassMeta const& classMeta, AStringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT);
+    Resource* GetOrCreateResource(ClassMeta const& classMeta, StringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT);
 
     /** Get resource. Return default object if fails. */
-    AResource* GetResource(AClassMeta const& classMeta, AStringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr);
+    Resource* GetResource(ClassMeta const& classMeta, StringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr);
 
     /** Get resource meta. Return null if fails. */
-    AClassMeta const* GetResourceInfo(AStringView path);
+    ClassMeta const* GetResourceInfo(StringView path);
 
     /** Find resource in cache. Return null if fails. */
     template <typename T>
-    T* FindResource(AStringView path, bool& bMetadataMismatch)
+    T* FindResource(StringView path, bool& bMetadataMismatch)
     {
         return static_cast<T*>(FindResource(T::ClassMeta(), path, bMetadataMismatch));
     }
 
     /** Find resource in cache. Return null if fails. */
-    AResource* FindResource(AClassMeta const& classMeta, AStringView path, bool& bMetadataMismatch);
+    Resource* FindResource(ClassMeta const& classMeta, StringView path, bool& bMetadataMismatch);
 
     /** Find resource in cache. Return null if fails. */
-    AResource* FindResource(AStringView path);
+    Resource* FindResource(StringView path);
 
     /** Register object as resource. */
-    bool RegisterResource(AResource* resource, AStringView path);
+    bool RegisterResource(Resource* resource, StringView path);
 
     /** Unregister object as resource. */
-    bool UnregisterResource(AResource* resource);
+    bool UnregisterResource(Resource* resource);
 
     /** Unregister all resources with same meta. */
-    void UnregisterResources(AClassMeta const& classMeta);
+    void UnregisterResources(ClassMeta const& classMeta);
 
     /** Unregister all resources by type. */
     template <typename T>
@@ -118,17 +118,17 @@ public:
 
     void RemoveUnreferencedResources();
 
-    TVector<AArchive> const& GetResourcePacks() const { return m_ResourcePacks; }
-    AArchive const& GetCommonResources() const { return m_CommonResources; }
+    TVector<Archive> const& GetResourcePacks() const { return m_ResourcePacks; }
+    Archive const& GetCommonResources() const { return m_CommonResources; }
 
-    bool IsResourceExists(AStringView path);
-    AFile OpenResource(AStringView path);
+    bool IsResourceExists(StringView path);
+    File OpenResource(StringView path);
 
 private:
-    TVector<TRef<AResourceFactory>> m_ResourceFactories;
-    TNameHash<AResource*> m_ResourceCache;
-    TVector<AArchive>     m_ResourcePacks;
-    AArchive              m_CommonResources;
+    TVector<TRef<ResourceFactory>> m_ResourceFactories;
+    TNameHash<Resource*> m_ResourceCache;
+    TVector<Archive>     m_ResourcePacks;
+    Archive              m_CommonResources;
 };
 
 
@@ -140,59 +140,59 @@ Helpers
 
 /** Get or create resource. Return default object if fails. */
 template <typename T>
-HK_FORCEINLINE T* GetOrCreateResource(AStringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT)
+HK_FORCEINLINE T* GetOrCreateResource(StringView path, RESOURCE_FLAGS flags = RESOURCE_FLAG_DEFAULT)
 {
     return GEngine->GetResourceManager()->GetOrCreateResource<T>(path, flags);
 }
 
 /** Get resource. Return default object if fails. */
 template <typename T>
-HK_FORCEINLINE T* GetResource(AStringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr)
+HK_FORCEINLINE T* GetResource(StringView path, bool* bResourceFoundResult = nullptr, bool* bMetadataMismatch = nullptr)
 {
     return GEngine->GetResourceManager()->GetResource<T>(path, bResourceFoundResult, bMetadataMismatch);
 }
 
 /** Get resource meta. Return null if fails. */
-HK_FORCEINLINE AClassMeta const* GetResourceInfo(AStringView path)
+HK_FORCEINLINE ClassMeta const* GetResourceInfo(StringView path)
 {
     return GEngine->GetResourceManager()->GetResourceInfo(path);
 }
 
 /** Find resource in cache. Return null if fails. */
-HK_FORCEINLINE AResource* FindResource(AClassMeta const& classMeta, AStringView path, bool& bMetadataMismatch)
+HK_FORCEINLINE Resource* FindResource(ClassMeta const& classMeta, StringView path, bool& bMetadataMismatch)
 {
     return GEngine->GetResourceManager()->FindResource(classMeta, path, bMetadataMismatch);
 }
 
 /** Find resource in cache. Return null if fails. */
 template <typename T>
-HK_FORCEINLINE T* FindResource(AStringView path, bool& bMetadataMismatch)
+HK_FORCEINLINE T* FindResource(StringView path, bool& bMetadataMismatch)
 {
-    return static_cast<T*>(FindResource(T::ClassMeta(), path, bMetadataMismatch));
+    return static_cast<T*>(FindResource(T::GetClassMeta(), path, bMetadataMismatch));
 }
 
 /** Find resource in cache. Return null if fails. */
 template <typename T>
-HK_FORCEINLINE T* FindResource(AStringView path)
+HK_FORCEINLINE T* FindResource(StringView path)
 {
     bool bMetadataMismatch;
-    return static_cast<T*>(FindResource(T::ClassMeta(), path, bMetadataMismatch));
+    return static_cast<T*>(FindResource(T::GetClassMeta(), path, bMetadataMismatch));
 }
 
 /** Find resource in cache. Return null if fails. */
-HK_FORCEINLINE AResource* FindResource(AStringView path)
+HK_FORCEINLINE Resource* FindResource(StringView path)
 {
     return GEngine->GetResourceManager()->FindResource(path);
 }
 
 /** Register object as resource. */
-HK_FORCEINLINE bool RegisterResource(AResource* resource, AStringView path)
+HK_FORCEINLINE bool RegisterResource(Resource* resource, StringView path)
 {
     return GEngine->GetResourceManager()->RegisterResource(resource, path);
 }
 
 /** Unregister object as resource. */
-HK_FORCEINLINE bool UnregisterResource(AResource* resource)
+HK_FORCEINLINE bool UnregisterResource(Resource* resource)
 {
     return GEngine->GetResourceManager()->UnregisterResource(resource);
 }
@@ -215,14 +215,14 @@ HK_FORCEINLINE void UnregisterResources()
 Static resource finder
 
 Usage:
-static TStaticResourceFinder<AIndexedMesh> Resource("/Root/Meshes/MyMesh.asset"s);
-AIndexedMesh * mesh = Resource.GetObject();
+static TStaticResourceFinder<IndexedMesh> Resource("/Root/Meshes/MyMesh.asset"s);
+IndexedMesh * mesh = Resource.GetObject();
 
 */
 template <typename T>
 struct TStaticResourceFinder
 {
-    TStaticResourceFinder(AGlobalStringView path) :
+    TStaticResourceFinder(GlobalStringView path) :
         m_ResourcePath(path)
     {
         m_Object = GetOrCreateResource<T>(m_ResourcePath);
@@ -248,6 +248,6 @@ struct TStaticResourceFinder
     }
 
 private:
-    AStringView m_ResourcePath;
+    StringView m_ResourcePath;
     TWeakRef<T> m_Object;
 };

@@ -33,9 +33,9 @@ SOFTWARE.
 #if defined(HK_OS_WIN32)
 #    include <Platform/WindowsDefs.h>
 #    include <objbase.h>
-void AGUID::Generate()
+void Hk::GUID::Generate()
 {
-    GUID id;
+    ::GUID id;
     CoCreateGuid(&id);
     // clang-format off
     Hi = ( static_cast< uint64_t >( ( id.Data1 >> 24 ) & 0xff ) << 56 )
@@ -58,7 +58,7 @@ void AGUID::Generate()
 }
 #elif defined(HK_OS_LINUX)
 #    include <uuid/uuid.h>
-void AGUID::Generate()
+void Hk::GUID::Generate()
 {
     uuid_t id;
     uuid_generate(id);
@@ -82,7 +82,7 @@ void AGUID::Generate()
     // clang-format on
 }
 #elif defined(HK_OS_APPLE)
-void AGUID::Generate()
+void Hk::GUID::Generate()
 {
     auto id    = CFUUIDCreate(NULL);
     auto bytes = CFUUIDGetUUIDBytes(id);
@@ -110,7 +110,7 @@ void AGUID::Generate()
 #    error "GenerateGUID is not implemented on current platform"
 #endif
 
-AGUID& AGUID::FromString(AStringView String)
+Hk::GUID& Hk::GUID::FromString(StringView String)
 {
     char ch;
     int  n = 0;

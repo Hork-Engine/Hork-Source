@@ -35,32 +35,34 @@ SOFTWARE.
 
 #include <miniaudio/miniaudio.h>
 
-SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int _SampleRate, int _SampleBits, int _Channels )
+AudioStream::AudioStream(FileInMemory* _pFileInMemory, int _FrameCount, int _SampleRate, int _SampleBits, int _Channels)
 {
     ma_format format = ma_format_unknown;
 
-    switch ( _SampleBits ) {
-    case 8:
-        format = ma_format_u8;
-        break;
-    case 16:
-        format = ma_format_s16;
-        break;
-    case 32:
-        format = ma_format_f32;
-        break;
-    default:
-        // Shouldn't happen
-        CriticalError( "SAudioStream::ctor: expected 8, 16 or 32 sample bits\n" );
+    switch (_SampleBits)
+    {
+        case 8:
+            format = ma_format_u8;
+            break;
+        case 16:
+            format = ma_format_s16;
+            break;
+        case 32:
+            format = ma_format_f32;
+            break;
+        default:
+            // Shouldn't happen
+            CriticalError("AudioStream::ctor: expected 8, 16 or 32 sample bits\n");
     }
 
     Decoder = (ma_decoder*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(sizeof(*Decoder));
 
-    ma_decoder_config config = ma_decoder_config_init( format, _Channels, _SampleRate );
+    ma_decoder_config config = ma_decoder_config_init(format, _Channels, _SampleRate);
 
-    ma_result result = ma_decoder_init_memory( _pFileInMemory->GetHeapPtr(), _pFileInMemory->GetSizeInBytes(), &config, Decoder );
-    if ( result != MA_SUCCESS ) {
-        CriticalError( "SAudioStream::ctor: failed to initialize decoder\n" );
+    ma_result result = ma_decoder_init_memory(_pFileInMemory->GetHeapPtr(), _pFileInMemory->GetSizeInBytes(), &config, Decoder);
+    if (result != MA_SUCCESS)
+    {
+        CriticalError("AudioStream::ctor: failed to initialize decoder\n");
     }
 
     // Capture the reference
@@ -72,15 +74,15 @@ SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int
     SampleStride = (_SampleBits >> 3) << (_Channels - 1);
 }
 
-SAudioStream::~SAudioStream()
+AudioStream::~AudioStream()
 {
-    ma_decoder_uninit( Decoder );
+    ma_decoder_uninit(Decoder);
     Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(Decoder);
 }
 
-void SAudioStream::SeekToFrame( int FrameNum )
+void AudioStream::SeekToFrame(int FrameNum)
 {
-    ma_decoder_seek_to_pcm_frame( Decoder, Math::Max( 0, FrameNum ) );
+    ma_decoder_seek_to_pcm_frame(Decoder, Math::Max(0, FrameNum));
 }
 
 //static const int ma_format_sample_bits[] =
@@ -93,17 +95,19 @@ void SAudioStream::SeekToFrame( int FrameNum )
 //    32, // ma_format_f32
 //};
 
-int SAudioStream::ReadFrames( void * _pFrames, int _FrameCount, size_t _SizeInBytes )
+int AudioStream::ReadFrames(void* _pFrames, int _FrameCount, size_t _SizeInBytes)
 {
-    if ( _FrameCount <= 0 ) {
+    if (_FrameCount <= 0)
+    {
         return 0;
     }
 
     //const int stride = ( ma_format_sample_bits[Decoder->outputFormat] >> 3 ) << ( Decoder->outputChannels - 1 );
 
-    if ( (size_t)_FrameCount * SampleStride > _SizeInBytes ) {
+    if ((size_t)_FrameCount * SampleStride > _SizeInBytes)
+    {
         _FrameCount = _SizeInBytes / SampleStride;
     }
 
-    return ma_decoder_read_pcm_frames( Decoder, _pFrames, _FrameCount );
+    return ma_decoder_read_pcm_frames(Decoder, _pFrames, _FrameCount);
 }

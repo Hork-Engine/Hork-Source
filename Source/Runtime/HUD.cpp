@@ -35,10 +35,9 @@ SOFTWARE.
 HK_CLASS_META(AHUD)
 
 AHUD::AHUD()
-{
-}
+{}
 
-void AHUD::Draw(ACanvas& canvas, int x, int y, int width, int height)
+void AHUD::Draw(Canvas& canvas, int x, int y, int width, int height)
 {
     m_ViewportX = x;
     m_ViewportY = y;

@@ -40,7 +40,7 @@ class ATriggerBox : public AActor
 protected:
     ATriggerBox();
 
-    APhysicalBody* TriggerBody;
+    PhysicalBody* TriggerBody;
 };
 
 class ATriggerSphere : public AActor
@@ -50,7 +50,7 @@ class ATriggerSphere : public AActor
 protected:
     ATriggerSphere();
 
-    APhysicalBody* TriggerBody;
+    PhysicalBody* TriggerBody;
 };
 
 class ATriggerCylinder : public AActor
@@ -60,7 +60,7 @@ class ATriggerCylinder : public AActor
 protected:
     ATriggerCylinder();
 
-    APhysicalBody* TriggerBody;
+    PhysicalBody* TriggerBody;
 };
 
 class ATriggerCone : public AActor
@@ -70,7 +70,7 @@ class ATriggerCone : public AActor
 protected:
     ATriggerCone();
 
-    APhysicalBody* TriggerBody;
+    PhysicalBody* TriggerBody;
 };
 
 class ATriggerCapsule : public AActor
@@ -80,5 +80,5 @@ class ATriggerCapsule : public AActor
 protected:
     ATriggerCapsule();
 
-    APhysicalBody* TriggerBody;
+    PhysicalBody* TriggerBody;
 };

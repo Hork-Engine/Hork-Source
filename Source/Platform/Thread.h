@@ -59,38 +59,38 @@ private:
 
 /**
 
-AThread
+Thread
 
 Thread.
 
 */
-class AThread final
+class Thread final
 {
-    HK_FORBID_COPY(AThread)
+    HK_FORBID_COPY(Thread)
 
 public:
     static const int NumHardwareThreads;
 
-    AThread() = default;
+    Thread() = default;
 
     template <class Fn, class... Args>
-    AThread(Fn&& _Fn, Args&&... _Args)
+    Thread(Fn&& _Fn, Args&&... _Args)
     {
         Start(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
     }
 
-    ~AThread()
+    ~Thread()
     {
         Join();
     }
 
-    AThread(AThread&& Rhs) noexcept :
+    Thread(Thread&& Rhs) noexcept :
         m_Internal(Rhs.m_Internal)
     {
         Rhs.m_Internal = 0;
     }
 
-    AThread& operator=(AThread&& Rhs) noexcept
+    Thread& operator=(Thread&& Rhs) noexcept
     {
         Join();
         Core::Swap(m_Internal, Rhs.m_Internal);
@@ -152,20 +152,20 @@ private:
 
 /**
 
-AMutex
+Mutex
 
 Thread mutex.
 
 */
-class AMutex final
+class Mutex final
 {
-    HK_FORBID_COPY(AMutex)
+    HK_FORBID_COPY(Mutex)
 
-    friend class ASyncEvent;
+    friend class SyncEvent;
 
 public:
-    AMutex();
-    ~AMutex();
+    Mutex();
+    ~Mutex();
 
     void Lock();
 
@@ -218,15 +218,15 @@ HK_FORCEINLINE void YieldCPU()
 
 /**
 
-ASpinLock
+SpinLock
 
 */
-class ASpinLock final
+class SpinLock final
 {
-    HK_FORBID_COPY(ASpinLock)
+    HK_FORBID_COPY(SpinLock)
 
 public:
-    ASpinLock() :
+    SpinLock() :
         LockVar(false) {}
 
     HK_FORCEINLINE void Lock() noexcept
@@ -262,7 +262,7 @@ public:
     }
 
 private:
-    AAtomicBool LockVar;
+    AtomicBool LockVar;
 };
 
 
@@ -331,24 +331,24 @@ private:
 };
 
 
-using AMutexGurad    = TLockGuard<AMutex>;
-using ASpinLockGuard = TLockGuard<ASpinLock>;
+using MutexGurad    = TLockGuard<Mutex>;
+using SpinLockGuard = TLockGuard<SpinLock>;
 
 
 /**
 
-ASyncEvent
+SyncEvent
 
 Thread event.
 
 */
-class ASyncEvent final
+class SyncEvent final
 {
-    HK_FORBID_COPY(ASyncEvent)
+    HK_FORBID_COPY(SyncEvent)
 
 public:
-    ASyncEvent();
-    ~ASyncEvent();
+    SyncEvent();
+    ~SyncEvent();
 
     /** Waits until the event is in the signaled state. */
     void Wait();
@@ -367,13 +367,13 @@ private:
     void  SingalWIN32();
     void* Internal;
 #else
-    AMutex         Sync;
+    Mutex         Sync;
     pthread_cond_t Internal = PTHREAD_COND_INITIALIZER;
     bool           bSignaled;
 #endif
 };
 
-HK_FORCEINLINE ASyncEvent::ASyncEvent()
+HK_FORCEINLINE SyncEvent::SyncEvent()
 {
 #ifdef HK_OS_WIN32
     CreateEventWIN32();
@@ -382,19 +382,19 @@ HK_FORCEINLINE ASyncEvent::ASyncEvent()
 #endif
 }
 
-HK_FORCEINLINE ASyncEvent::~ASyncEvent()
+HK_FORCEINLINE SyncEvent::~SyncEvent()
 {
 #ifdef HK_OS_WIN32
     DestroyEventWIN32();
 #endif
 }
 
-HK_FORCEINLINE void ASyncEvent::Wait()
+HK_FORCEINLINE void SyncEvent::Wait()
 {
 #ifdef HK_OS_WIN32
     WaitWIN32();
 #else
-    AMutexGurad syncGuard(Sync);
+    MutexGurad syncGuard(Sync);
     while (!bSignaled)
     {
         pthread_cond_wait(&Internal, &Sync.Internal);
@@ -403,13 +403,13 @@ HK_FORCEINLINE void ASyncEvent::Wait()
 #endif
 }
 
-HK_FORCEINLINE void ASyncEvent::Signal()
+HK_FORCEINLINE void SyncEvent::Signal()
 {
 #ifdef HK_OS_WIN32
     SingalWIN32();
 #else
     {
-        AMutexGurad syncGuard(Sync);
+        MutexGurad syncGuard(Sync);
         bSignaled = true;
     }
     pthread_cond_signal(&Internal);

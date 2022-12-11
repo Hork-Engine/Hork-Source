@@ -35,7 +35,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-struct STransformFeedbackDesc
+struct TransformFeedbackDesc
 {
 };
 

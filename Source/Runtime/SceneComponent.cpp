@@ -38,16 +38,16 @@ SOFTWARE.
 
 #include <algorithm> // find
 
-AConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(ASceneComponent)
+HK_CLASS_META(SceneComponent)
 
-ASceneComponent::ASceneComponent() :
+SceneComponent::SceneComponent() :
     m_bAbsolutePosition(false), m_bAbsoluteRotation(false), m_bAbsoluteScale(false)
 {
 }
 
-void ASceneComponent::DeinitializeComponent()
+void SceneComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
@@ -68,9 +68,9 @@ void ASceneComponent::DeinitializeComponent()
     else
     {
         // Detach only other actors
-        for (ASceneComponent** childIt = m_Children.Begin(); childIt != m_Children.End();)
+        for (SceneComponent** childIt = m_Children.Begin(); childIt != m_Children.End();)
         {
-            ASceneComponent* child = *childIt;
+            SceneComponent* child = *childIt;
             if (child->GetOwnerActor() != owner)
             {
                 child->Detach(true);
@@ -88,7 +88,7 @@ void ASceneComponent::DeinitializeComponent()
     }
 }
 
-void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bool _KeepWorldTransform)
+void SceneComponent::AttachTo(SceneComponent* _Parent, StringView _Socket, bool _KeepWorldTransform)
 {
     _AttachTo(_Parent, _KeepWorldTransform);
 
@@ -103,7 +103,7 @@ void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bo
     }
 }
 
-void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform)
+void SceneComponent::_AttachTo(SceneComponent* _Parent, bool _KeepWorldTransform)
 {
     if (m_AttachParent == _Parent)
     {
@@ -113,7 +113,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
 
     if (_Parent == this)
     {
-        LOG("ASceneComponent::Attach: Parent and child are same objects\n");
+        LOG("SceneComponent::Attach: Parent and child are same objects\n");
         return;
     }
 
@@ -127,7 +127,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
 #if 0
     if (_Parent->GetParentActor() != GetParentActor())
     {
-        LOG("ASceneComponent::Attach: Parent and child are in different actors\n");
+        LOG("SceneComponent::Attach: Parent and child are in different actors\n");
         return;
     }
 #endif
@@ -135,7 +135,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
     if (IsChild(_Parent, true))
     {
         // Object have desired parent in childs
-        LOG("ASceneComponent::Attach: Recursive attachment\n");
+        LOG("SceneComponent::Attach: Recursive attachment\n");
         return;
     }
 
@@ -165,7 +165,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
     }
 }
 
-void ASceneComponent::Detach(bool _KeepWorldTransform)
+void SceneComponent::Detach(bool _KeepWorldTransform)
 {
     if (!m_AttachParent)
     {
@@ -197,11 +197,11 @@ void ASceneComponent::Detach(bool _KeepWorldTransform)
     }
 }
 
-void ASceneComponent::DetachChilds(bool _bRecursive, bool _KeepWorldTransform)
+void SceneComponent::DetachChilds(bool _bRecursive, bool _KeepWorldTransform)
 {
     while (!m_Children.IsEmpty())
     {
-        ASceneComponent* child = m_Children.Last();
+        SceneComponent* child = m_Children.Last();
         child->Detach(_KeepWorldTransform);
         if (_bRecursive)
         {
@@ -210,9 +210,9 @@ void ASceneComponent::DetachChilds(bool _bRecursive, bool _KeepWorldTransform)
     }
 }
 
-bool ASceneComponent::IsChild(ASceneComponent* _Child, bool _Recursive) const
+bool SceneComponent::IsChild(SceneComponent* _Child, bool _Recursive) const
 {
-    for (ASceneComponent* child : m_Children)
+    for (SceneComponent* child : m_Children)
     {
         if (child == _Child || (_Recursive && child->IsChild(_Child, true)))
         {
@@ -222,15 +222,15 @@ bool ASceneComponent::IsChild(ASceneComponent* _Child, bool _Recursive) const
     return false;
 }
 
-bool ASceneComponent::IsRoot() const
+bool SceneComponent::IsRoot() const
 {
     AActor* owner = GetOwnerActor();
     return owner && owner->GetRootComponent() == this;
 }
 
-ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recursive)
+SceneComponent* SceneComponent::FindChild(StringView _UniqueName, bool _Recursive)
 {
-    for (ASceneComponent* child : m_Children)
+    for (SceneComponent* child : m_Children)
     {
         if (!child->GetObjectName().Icmp(_UniqueName))
         {
@@ -240,9 +240,9 @@ ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recur
 
     if (_Recursive)
     {
-        for (ASceneComponent* child : m_Children)
+        for (SceneComponent* child : m_Children)
         {
-            ASceneComponent* rec = child->FindChild(_UniqueName, true);
+            SceneComponent* rec = child->FindChild(_UniqueName, true);
             if (rec)
             {
                 return rec;
@@ -252,7 +252,7 @@ ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recur
     return nullptr;
 }
 
-int ASceneComponent::FindSocket(AStringView _Name) const
+int SceneComponent::FindSocket(StringView _Name) const
 {
     for (int socketIndex = 0; socketIndex < m_Sockets.Size(); socketIndex++)
     {
@@ -265,10 +265,10 @@ int ASceneComponent::FindSocket(AStringView _Name) const
     return -1;
 }
 
-void ASceneComponent::MarkTransformDirty()
+void SceneComponent::MarkTransformDirty()
 {
-    ASceneComponent* node = this;
-    ASceneComponent* nextNode;
+    SceneComponent* node = this;
+    SceneComponent* nextNode;
     int              numChilds;
 
     while (1)
@@ -286,7 +286,7 @@ void ASceneComponent::MarkTransformDirty()
         int NumListeners = node->Listeners.Length();
         for (int i = 0; i < NumListeners;)
         {
-            AActorComponent* Component = node->Listeners.ToPtr()[i];
+            ActorComponent* Component = node->Listeners.ToPtr()[i];
             if (Component)
             {
                 Component->OnTransformDirty(node);
@@ -321,7 +321,7 @@ void ASceneComponent::MarkTransformDirty()
     }
 }
 
-void ASceneComponent::SetAbsolutePosition(bool _AbsolutePosition)
+void SceneComponent::SetAbsolutePosition(bool _AbsolutePosition)
 {
     if (m_bAbsolutePosition != _AbsolutePosition)
     {
@@ -331,7 +331,7 @@ void ASceneComponent::SetAbsolutePosition(bool _AbsolutePosition)
     }
 }
 
-void ASceneComponent::SetAbsoluteRotation(bool _AbsoluteRotation)
+void SceneComponent::SetAbsoluteRotation(bool _AbsoluteRotation)
 {
     if (m_bAbsoluteRotation != _AbsoluteRotation)
     {
@@ -341,7 +341,7 @@ void ASceneComponent::SetAbsoluteRotation(bool _AbsoluteRotation)
     }
 }
 
-void ASceneComponent::SetAbsoluteScale(bool _AbsoluteScale)
+void SceneComponent::SetAbsoluteScale(bool _AbsoluteScale)
 {
     if (m_bAbsoluteScale != _AbsoluteScale)
     {
@@ -351,14 +351,14 @@ void ASceneComponent::SetAbsoluteScale(bool _AbsoluteScale)
     }
 }
 
-void ASceneComponent::SetPosition(Float3 const& _Position)
+void SceneComponent::SetPosition(Float3 const& _Position)
 {
     m_Position = _Position;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetPosition(float _X, float _Y, float _Z)
+void SceneComponent::SetPosition(float _X, float _Y, float _Z)
 {
     m_Position.X = _X;
     m_Position.Y = _Y;
@@ -367,35 +367,35 @@ void ASceneComponent::SetPosition(float _X, float _Y, float _Z)
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetRotation(Quat const& _Rotation)
+void SceneComponent::SetRotation(Quat const& _Rotation)
 {
     m_Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetAngles(Angl const& _Angles)
+void SceneComponent::SetAngles(Angl const& _Angles)
 {
     m_Rotation = _Angles.ToQuat();
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetAngles(float _Pitch, float _Yaw, float _Roll)
+void SceneComponent::SetAngles(float _Pitch, float _Yaw, float _Roll)
 {
     m_Rotation = Angl(_Pitch, _Yaw, _Roll).ToQuat();
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale(Float3 const& _Scale)
+void SceneComponent::SetScale(Float3 const& _Scale)
 {
     m_Scale = _Scale;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale(float _X, float _Y, float _Z)
+void SceneComponent::SetScale(float _X, float _Y, float _Z)
 {
     m_Scale.X = _X;
     m_Scale.Y = _Y;
@@ -404,14 +404,14 @@ void ASceneComponent::SetScale(float _X, float _Y, float _Z)
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale(float _ScaleXYZ)
+void SceneComponent::SetScale(float _ScaleXYZ)
 {
     m_Scale.X = m_Scale.Y = m_Scale.Z = _ScaleXYZ;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation)
+void SceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation)
 {
     m_Position = _Position;
     m_Rotation = _Rotation;
@@ -419,7 +419,7 @@ void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotatio
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
+void SceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
 {
     m_Position = _Position;
     m_Rotation = _Rotation;
@@ -428,12 +428,12 @@ void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotatio
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform(STransform const& _Transform)
+void SceneComponent::SetTransform(Transform const& _Transform)
 {
     SetTransform(_Transform.Position, _Transform.Rotation, _Transform.Scale);
 }
 
-void ASceneComponent::SetTransform(ASceneComponent const* _Transform)
+void SceneComponent::SetTransform(SceneComponent const* _Transform)
 {
     m_Position = _Transform->m_Position;
     m_Rotation = _Transform->m_Rotation;
@@ -442,7 +442,7 @@ void ASceneComponent::SetTransform(ASceneComponent const* _Transform)
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetWorldPosition(Float3 const& _Position)
+void SceneComponent::SetWorldPosition(Float3 const& _Position)
 {
     if (m_AttachParent && !m_bAbsolutePosition)
     {
@@ -456,27 +456,27 @@ void ASceneComponent::SetWorldPosition(Float3 const& _Position)
     }
 }
 
-void ASceneComponent::SetWorldPosition(float _X, float _Y, float _Z)
+void SceneComponent::SetWorldPosition(float _X, float _Y, float _Z)
 {
     SetWorldPosition(Float3(_X, _Y, _Z));
 }
 
-void ASceneComponent::SetWorldRotation(Quat const& _Rotation)
+void SceneComponent::SetWorldRotation(Quat const& _Rotation)
 {
     SetRotation(m_AttachParent && !m_bAbsoluteRotation ? m_AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation);
 }
 
-void ASceneComponent::SetWorldScale(Float3 const& _Scale)
+void SceneComponent::SetWorldScale(Float3 const& _Scale)
 {
     SetScale(m_AttachParent && !m_bAbsoluteScale ? _Scale / m_AttachParent->GetWorldScale() : _Scale);
 }
 
-void ASceneComponent::SetWorldScale(float _X, float _Y, float _Z)
+void SceneComponent::SetWorldScale(float _X, float _Y, float _Z)
 {
     SetWorldScale(Float3(_X, _Y, _Z));
 }
 
-void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation)
+void SceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation)
 {
     if (m_AttachParent)
     {
@@ -492,7 +492,7 @@ void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Ro
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
+void SceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
 {
     if (m_AttachParent)
     {
@@ -510,22 +510,22 @@ void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Ro
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetWorldTransform(STransform const& _Transform)
+void SceneComponent::SetWorldTransform(Transform const& _Transform)
 {
     SetWorldTransform(_Transform.Position, _Transform.Rotation, _Transform.Scale);
 }
 
-Float3 const& ASceneComponent::GetPosition() const
+Float3 const& SceneComponent::GetPosition() const
 {
     return m_Position;
 }
 
-Quat const& ASceneComponent::GetRotation() const
+Quat const& SceneComponent::GetRotation() const
 {
     return m_Rotation;
 }
 
-Angl ASceneComponent::GetAngles() const
+Angl SceneComponent::GetAngles() const
 {
     Angl Angles;
     m_Rotation.ToAngles(Angles.Pitch, Angles.Yaw, Angles.Roll);
@@ -535,52 +535,52 @@ Angl ASceneComponent::GetAngles() const
     return Angles;
 }
 
-float ASceneComponent::GetPitch() const
+float SceneComponent::GetPitch() const
 {
     return Math::Degrees(m_Rotation.Pitch());
 }
 
-float ASceneComponent::GetYaw() const
+float SceneComponent::GetYaw() const
 {
     return Math::Degrees(m_Rotation.Yaw());
 }
 
-float ASceneComponent::GetRoll() const
+float SceneComponent::GetRoll() const
 {
     return Math::Degrees(m_Rotation.Roll());
 }
 
-Float3 ASceneComponent::GetRightVector() const
+Float3 SceneComponent::GetRightVector() const
 {
     return m_Rotation.XAxis();
 }
 
-Float3 ASceneComponent::GetLeftVector() const
+Float3 SceneComponent::GetLeftVector() const
 {
     return -m_Rotation.XAxis();
 }
 
-Float3 ASceneComponent::GetUpVector() const
+Float3 SceneComponent::GetUpVector() const
 {
     return m_Rotation.YAxis();
 }
 
-Float3 ASceneComponent::GetDownVector() const
+Float3 SceneComponent::GetDownVector() const
 {
     return -m_Rotation.YAxis();
 }
 
-Float3 ASceneComponent::GetBackVector() const
+Float3 SceneComponent::GetBackVector() const
 {
     return m_Rotation.ZAxis();
 }
 
-Float3 ASceneComponent::GetForwardVector() const
+Float3 SceneComponent::GetForwardVector() const
 {
     return -m_Rotation.ZAxis();
 }
 
-void ASceneComponent::GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
+void SceneComponent::GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
 {
     float qxx(m_Rotation.X * m_Rotation.X);
     float qyy(m_Rotation.Y * m_Rotation.Y);
@@ -614,37 +614,37 @@ void ASceneComponent::GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) con
     }
 }
 
-Float3 ASceneComponent::GetWorldRightVector() const
+Float3 SceneComponent::GetWorldRightVector() const
 {
     return GetWorldRotation().XAxis();
 }
 
-Float3 ASceneComponent::GetWorldLeftVector() const
+Float3 SceneComponent::GetWorldLeftVector() const
 {
     return -GetWorldRotation().XAxis();
 }
 
-Float3 ASceneComponent::GetWorldUpVector() const
+Float3 SceneComponent::GetWorldUpVector() const
 {
     return GetWorldRotation().YAxis();
 }
 
-Float3 ASceneComponent::GetWorldDownVector() const
+Float3 SceneComponent::GetWorldDownVector() const
 {
     return -GetWorldRotation().YAxis();
 }
 
-Float3 ASceneComponent::GetWorldBackVector() const
+Float3 SceneComponent::GetWorldBackVector() const
 {
     return GetWorldRotation().ZAxis();
 }
 
-Float3 ASceneComponent::GetWorldForwardVector() const
+Float3 SceneComponent::GetWorldForwardVector() const
 {
     return -GetWorldRotation().ZAxis();
 }
 
-void ASceneComponent::GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
+void SceneComponent::GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
 {
     const Quat& R = GetWorldRotation();
 
@@ -680,12 +680,12 @@ void ASceneComponent::GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back
     }
 }
 
-Float3 const& ASceneComponent::GetScale() const
+Float3 const& SceneComponent::GetScale() const
 {
     return m_Scale;
 }
 
-Float3 ASceneComponent::GetWorldPosition() const
+Float3 SceneComponent::GetWorldPosition() const
 {
     if (m_bTransformDirty)
     {
@@ -695,7 +695,7 @@ Float3 ASceneComponent::GetWorldPosition() const
     return m_WorldTransformMatrix.DecomposeTranslation();
 }
 
-Quat const& ASceneComponent::GetWorldRotation() const
+Quat const& SceneComponent::GetWorldRotation() const
 {
     if (m_bTransformDirty)
     {
@@ -705,7 +705,7 @@ Quat const& ASceneComponent::GetWorldRotation() const
     return m_WorldRotation;
 }
 
-Float3 ASceneComponent::GetWorldScale() const
+Float3 SceneComponent::GetWorldScale() const
 {
     if (m_bTransformDirty)
     {
@@ -715,7 +715,7 @@ Float3 ASceneComponent::GetWorldScale() const
     return m_WorldTransformMatrix.DecomposeScale();
 }
 
-Float3x4 const& ASceneComponent::GetWorldTransformMatrix() const
+Float3x4 const& SceneComponent::GetWorldTransformMatrix() const
 {
     if (m_bTransformDirty)
     {
@@ -725,7 +725,7 @@ Float3x4 const& ASceneComponent::GetWorldTransformMatrix() const
     return m_WorldTransformMatrix;
 }
 
-void ASceneComponent::ComputeLocalTransformMatrix(Float3x4& _LocalTransformMatrix) const
+void SceneComponent::ComputeLocalTransformMatrix(Float3x4& _LocalTransformMatrix) const
 {
     _LocalTransformMatrix.Compose(m_Position, m_Rotation.ToMatrix3x3(), m_Scale);
 }
@@ -755,7 +755,7 @@ Float3x4 SceneSocket::EvaluateTransform() const
     return transform;
 }
 
-Float3x4 ASceneComponent::GetSocketTransform(int _SocketIndex) const
+Float3x4 SceneComponent::GetSocketTransform(int _SocketIndex) const
 {
     if (m_SocketIndex < 0 || m_SocketIndex >= m_AttachParent->m_Sockets.Size())
     {
@@ -765,7 +765,7 @@ Float3x4 ASceneComponent::GetSocketTransform(int _SocketIndex) const
     return m_Sockets[_SocketIndex].EvaluateTransform();
 }
 
-void ASceneComponent::ComputeWorldTransform() const
+void SceneComponent::ComputeWorldTransform() const
 {
     // TODO: optimize
 
@@ -830,39 +830,39 @@ void ASceneComponent::ComputeWorldTransform() const
     m_bTransformDirty = false;
 }
 
-Float3x4 ASceneComponent::ComputeWorldTransformInverse() const
+Float3x4 SceneComponent::ComputeWorldTransformInverse() const
 {
     Float3x4 const& WorldTransform = GetWorldTransformMatrix();
 
     return WorldTransform.Inversed();
 }
 
-Quat ASceneComponent::ComputeWorldRotationInverse() const
+Quat SceneComponent::ComputeWorldRotationInverse() const
 {
     return GetWorldRotation().Inversed();
 }
 
-void ASceneComponent::TurnRightFPS(float _DeltaAngleRad)
+void SceneComponent::TurnRightFPS(float _DeltaAngleRad)
 {
     TurnLeftFPS(-_DeltaAngleRad);
 }
 
-void ASceneComponent::TurnLeftFPS(float _DeltaAngleRad)
+void SceneComponent::TurnLeftFPS(float _DeltaAngleRad)
 {
     TurnAroundAxis(_DeltaAngleRad, Float3(0, 1, 0));
 }
 
-void ASceneComponent::TurnUpFPS(float _DeltaAngleRad)
+void SceneComponent::TurnUpFPS(float _DeltaAngleRad)
 {
     TurnAroundAxis(_DeltaAngleRad, GetRightVector());
 }
 
-void ASceneComponent::TurnDownFPS(float _DeltaAngleRad)
+void SceneComponent::TurnDownFPS(float _DeltaAngleRad)
 {
     TurnUpFPS(-_DeltaAngleRad);
 }
 
-void ASceneComponent::TurnAroundAxis(float _DeltaAngleRad, Float3 const& _NormalizedAxis)
+void SceneComponent::TurnAroundAxis(float _DeltaAngleRad, Float3 const& _NormalizedAxis)
 {
     float s, c;
 
@@ -874,49 +874,49 @@ void ASceneComponent::TurnAroundAxis(float _DeltaAngleRad, Float3 const& _Normal
     MarkTransformDirty();
 }
 
-void ASceneComponent::TurnAroundVector(float _DeltaAngleRad, Float3 const& _Vector)
+void SceneComponent::TurnAroundVector(float _DeltaAngleRad, Float3 const& _Vector)
 {
     TurnAroundAxis(_DeltaAngleRad, _Vector.Normalized());
 }
 
-void ASceneComponent::StepRight(float _Units)
+void SceneComponent::StepRight(float _Units)
 {
     Step(GetRightVector() * _Units);
 }
 
-void ASceneComponent::StepLeft(float _Units)
+void SceneComponent::StepLeft(float _Units)
 {
     Step(GetLeftVector() * _Units);
 }
 
-void ASceneComponent::StepUp(float _Units)
+void SceneComponent::StepUp(float _Units)
 {
     Step(GetUpVector() * _Units);
 }
 
-void ASceneComponent::StepDown(float _Units)
+void SceneComponent::StepDown(float _Units)
 {
     Step(GetDownVector() * _Units);
 }
 
-void ASceneComponent::StepBack(float _Units)
+void SceneComponent::StepBack(float _Units)
 {
     Step(GetBackVector() * _Units);
 }
 
-void ASceneComponent::StepForward(float _Units)
+void SceneComponent::StepForward(float _Units)
 {
     Step(GetForwardVector() * _Units);
 }
 
-void ASceneComponent::Step(Float3 const& _Vector)
+void SceneComponent::Step(Float3 const& _Vector)
 {
     m_Position += _Vector;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::DrawDebug(ADebugRenderer* InRenderer)
+void SceneComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 

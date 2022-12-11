@@ -34,16 +34,16 @@ SOFTWARE.
 
 #include <Core/Parse.h>
 
-HK_CLASS_META(AActorDefinition)
+HK_CLASS_META(ActorDefinition)
 
-AActorDefinition::AActorDefinition()
+ActorDefinition::ActorDefinition()
 {
 }
 
-void AActorDefinition::InitializeFromDocument(ADocument const& Document)
+void ActorDefinition::InitializeFromDocument(Document const& Document)
 {
     THashMap<uint64_t, int> componentIdMap;
-    THashSet<AString> publicPropertyNames;
+    THashSet<String> publicPropertyNames;
 
     auto* mActorClassName = Document.FindMember("classname");
     if (mActorClassName)
@@ -51,14 +51,14 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         auto className = mActorClassName->GetStringView();
         if (!className.IsEmpty())
         {
-            m_ActorClass = AActorComponent::Factory().LookupClass(className);
+            m_ActorClass = ActorComponent::Factory().LookupClass(className);
             if (!m_ActorClass)
                 LOG("WARNING: Unknown C++ actor class '{}'\n", className);
         }
     }
 
     if (!m_ActorClass)
-        m_ActorClass = &AActor::ClassMeta();
+        m_ActorClass = &AActor::GetClassMeta();
 
     auto* mComponents = Document.FindMember("components");
     if (mComponents)
@@ -76,17 +76,17 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (className.IsEmpty())
                 continue;
 
-            AClassMeta const* classMeta = AActorComponent::Factory().LookupClass(className);
+            ClassMeta const* classMeta = ActorComponent::Factory().LookupClass(className);
             if (!classMeta)
                 continue;
 
-            SComponentDef componentDef;
+            ComponentDef componentDef;
             componentDef.ClassMeta = classMeta;
 
             componentDef.Name = mComponent->GetString("name", "Unnamed");
             componentDef.Id   = mComponent->GetUInt64("id");
 
-            if (classMeta->IsSubclassOf<ASceneComponent>())
+            if (classMeta->IsSubclassOf<SceneComponent>())
             {
                 componentDef.Attach = mComponent->GetUInt64("attach");
             }
@@ -132,14 +132,14 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         if (it != componentIdMap.End())
         {
             int            index        = it->second;
-            SComponentDef& componentDef = m_Components[index];
-            if (componentDef.ClassMeta->IsSubclassOf<ASceneComponent>())
+            ComponentDef& componentDef = m_Components[index];
+            if (componentDef.ClassMeta->IsSubclassOf<SceneComponent>())
             {
                 m_RootIndex = index;
             }
             else
             {
-                LOG("WARNING: Root component must be derived from ASceneComponent\n");
+                LOG("WARNING: Root component must be derived from SceneComponent\n");
             }
         }
         else
@@ -148,7 +148,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         }
     }
 
-    for (SComponentDef& componentDef : m_Components)
+    for (ComponentDef& componentDef : m_Components)
     {
         if (componentDef.Attach)
         {
@@ -157,15 +157,15 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             {
                 int index = it->second;
 
-                SComponentDef& parentComponentDecl = m_Components[index];
-                if (parentComponentDecl.ClassMeta->IsSubclassOf<ASceneComponent>() && componentDef.Id != componentDef.Attach)
+                ComponentDef& parentComponentDecl = m_Components[index];
+                if (parentComponentDecl.ClassMeta->IsSubclassOf<SceneComponent>() && componentDef.Id != componentDef.Attach)
                 {
                     // TODO: Check cyclical relationship
                     componentDef.ParentIndex = index;
                 }
                 else
                 {
-                    LOG("WARNING: Component can be attached only to other component derived from ASceneComponent\n");
+                    LOG("WARNING: Component can be attached only to other component derived from SceneComponent\n");
                 }
             }
         }
@@ -236,7 +236,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
             publicPropertyNames.Insert(publicName);
 
-            SPublicProperty publicProperty;
+            PublicProperty publicProperty;
             publicProperty.ComponentIndex = componentIndex;
             publicProperty.PropertyName   = std::move(propertyName);
             publicProperty.PublicName     = std::move(publicName);
@@ -303,7 +303,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
                     publicPropertyNames.Insert(publicName);
 
-                    SScriptPublicProperty publicProperty;
+                    ScriptPublicProperty publicProperty;
                     publicProperty.PropertyName = std::move(propertyName);
                     publicProperty.PublicName   = std::move(publicName);
                     m_ScriptPublicProperties.Add(std::move(publicProperty));
@@ -313,15 +313,15 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
     }
 }
 
-bool AActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
+bool ActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString actorDefScript = Stream.AsString();
+    String actorDefScript = Stream.AsString();
 
-    SDocumentDeserializeInfo deserializeInfo;
+    DocumentDeserializeInfo deserializeInfo;
     deserializeInfo.bInsitu       = true;
     deserializeInfo.pDocumentData = actorDefScript.CStr();
 
-    ADocument document;
+    Document document;
     document.DeserializeFromString(deserializeInfo);
 
     InitializeFromDocument(document);
@@ -329,7 +329,7 @@ bool AActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AActorDefinition::LoadInternalResource(AStringView _Path)
+void ActorDefinition::LoadInternalResource(StringView _Path)
 {
     // Empty resource
 }

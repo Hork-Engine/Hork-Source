@@ -60,7 +60,7 @@ private:
         int              VertexCount{};
         int              FirstIndex{};
         int              IndexCount{};
-        AString          UniqueName;
+        String           UniqueName;
         cgltf_node*      NodeGltf{};
         int              MaterialNum{};
         BvAxisAlignedBox BoundingBox;
@@ -69,10 +69,10 @@ private:
 
     struct TextureInfo
     {
-        AString Name;
-        AString Path;
-        AString PathToWrite;
-        bool    bSRGB{};
+        String Name;
+        String Path;
+        String PathToWrite;
+        bool   bSRGB{};
     };
 
     struct MaterialInfo
@@ -82,7 +82,7 @@ private:
             Platform::ZeroMem(Uniforms, sizeof(Uniforms));
         }
 
-        AString                         PathToWrite;
+        String                          PathToWrite;
         const char*                     DefaultMaterial{""};
         TVector<TextureInfo*>           Textures;
         float                           Uniforms[16];
@@ -91,12 +91,12 @@ private:
 
     struct AnimationInfo
     {
-        AString                    Name;
-        float                      FrameDelta; // fixed time delta between frames
-        uint32_t                   FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-        TVector<SAnimationChannel> Channels;
-        TVector<STransform>        Transforms;
-        TVector<BvAxisAlignedBox>  Bounds;
+        String                    Name;
+        float                     FrameDelta; // fixed time delta between frames
+        uint32_t                  FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
+        TVector<AnimationChannel> Channels;
+        TVector<Transform>        Transforms;
+        TVector<BvAxisAlignedBox> Bounds;
     };
 
     bool         ReadGLTF(cgltf_data* Data);
@@ -119,27 +119,27 @@ private:
     void         WriteSingleModel();
     void         WriteMeshes();
     void         WriteMesh(MeshInfo const& Mesh);
-    void         WriteSkyboxMaterial(AStringView SkyboxTexture);
-    AString      GeneratePhysicalPath(AStringView DesiredName, AStringView Extension);
+    void         WriteSkyboxMaterial(StringView SkyboxTexture);
+    String       GeneratePhysicalPath(StringView DesiredName, StringView Extension);
     int          MapGltfMaterial(cgltf_material* Material);
     TextureInfo* FindTextureImageGltf(cgltf_texture const* Texture);
     void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);
 
-    AssetImportSettings      m_Settings;
-    AString                  m_Path;
-    cgltf_data*              m_Data;
-    bool                     m_bSkeletal;
-    TVector<SMeshVertex>     m_Vertices;
-    TVector<SMeshVertexSkin> m_Weights;
-    TVector<unsigned int>    m_Indices;
-    TVector<MeshInfo>        m_Meshes;
-    TVector<TextureInfo>     m_Textures;
-    TVector<MaterialInfo>    m_Materials;
-    TVector<AnimationInfo>   m_Animations;
-    TVector<SJoint>          m_Joints;
-    ASkin                    m_Skin;
-    BvAxisAlignedBox         m_BindposeBounds;
-    AString                  m_SkeletonPath;
+    AssetImportSettings     m_Settings;
+    String                  m_Path;
+    cgltf_data*             m_Data;
+    bool                    m_bSkeletal;
+    TVector<MeshVertex>     m_Vertices;
+    TVector<MeshVertexSkin> m_Weights;
+    TVector<unsigned int>   m_Indices;
+    TVector<MeshInfo>       m_Meshes;
+    TVector<TextureInfo>    m_Textures;
+    TVector<MaterialInfo>   m_Materials;
+    TVector<AnimationInfo>  m_Animations;
+    TVector<SkeletonJoint>  m_Joints;
+    MeshSkin                m_Skin;
+    BvAxisAlignedBox        m_BindposeBounds;
+    String                  m_SkeletonPath;
 };
 
 bool ImportGLTF(AssetImportSettings const& Settings)
@@ -313,7 +313,7 @@ static void unpack_vec4(cgltf_accessor* acc, Float4* output, size_t stride)
     }
 }
 
-static void unpack_tangents(cgltf_accessor* acc, SMeshVertex* output)
+static void unpack_tangents(cgltf_accessor* acc, MeshVertex* output)
 {
     if (!acc || acc->type != cgltf_type_vec4)
     {
@@ -387,7 +387,7 @@ static void unpack_mat4_to_mat3x4(cgltf_accessor* acc, Float3x4* output, size_t 
     }
 }
 
-static void unpack_weights(cgltf_accessor* acc, SMeshVertexSkin* weights)
+static void unpack_weights(cgltf_accessor* acc, MeshVertexSkin* weights)
 {
     float weight[4];
 
@@ -409,7 +409,7 @@ static void unpack_weights(cgltf_accessor* acc, SMeshVertexSkin* weights)
     }
 }
 
-static void unpack_joints(cgltf_accessor* acc, SMeshVertexSkin* weights)
+static void unpack_joints(cgltf_accessor* acc, MeshVertexSkin* weights)
 {
     float indices[4];
 
@@ -710,14 +710,14 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
 bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
 {
     bool           ret    = false;
-    AString const& Source = Settings.ImportFile;
+    String const& Source = Settings.ImportFile;
 
     m_Settings = Settings;
 
     m_Path = PathUtils::GetFilePath(Settings.ImportFile);
     m_Path += "/";
 
-    AFile f = AFile::OpenRead(Source);
+    File f = File::OpenRead(Source);
     if (!f)
     {
         LOG("Couldn't open {}\n", Source);
@@ -776,7 +776,7 @@ bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
 
 void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
 {
-    SJoint&  joint = m_Joints.Add();
+    SkeletonJoint&  joint = m_Joints.Add();
     Float4x4 localTransform;
 
     cgltf_node_transform_local(node, (float*)localTransform.ToPtr());
@@ -788,7 +788,7 @@ void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
     }
     else
     {
-        AString name = HK_FORMAT("unnamed_{}", m_Joints.Size() - 1);
+        String name = HK_FORMAT("unnamed_{}", m_Joints.Size() - 1);
         Platform::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
     }
 
@@ -903,7 +903,7 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
             {
                 // Add root node
 
-                SJoint& joint = m_Joints.Add();
+                SkeletonJoint& joint = m_Joints.Add();
 
                 joint.LocalTransform.SetIdentity();
                 Platform::Strcpy(joint.Name, sizeof(joint.Name), "generated_root");
@@ -930,7 +930,7 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
                 //Float3x4 scaleMatrix = Float3x4::Scale( Float3( m_Settings.Scale ) );
                 for (int i = 0; i < m_Joints.Size(); i++)
                 {
-                    SJoint* joint = &m_Joints[i];
+                    SkeletonJoint* joint = &m_Joints[i];
 
                     // Scale skeleton joints
                     joint->LocalTransform.DecomposeAll(transl, rot, scale);
@@ -942,7 +942,7 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
             if (!m_Joints.IsEmpty())
             {
                 Float3x4 rotation     = Float3x4(m_Settings.Rotation.ToMatrix3x3().Transposed());
-                SJoint*  joint        = &m_Joints[0];
+                SkeletonJoint*  joint        = &m_Joints[0];
                 joint->LocalTransform = rotation * joint->LocalTransform;
             }
 
@@ -1028,13 +1028,13 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
 #if 0
 #    include <World/Public/MaterialGraph/MaterialGraph.h>
 
-static ETextureFilter ChooseSamplerFilter( int MinFilter, int MagFilter ) {
+static TEXTURE_FILTER ChooseSamplerFilter( int MinFilter, int MagFilter ) {
     // TODO:...
 
     return TEXTURE_FILTER_MIPMAP_TRILINEAR;
 }
 
-static ETextureAddress ChooseSamplerWrap( int Wrap ) {
+static TEXTURE_ADDRESS ChooseSamplerWrap( int Wrap ) {
     // TODO:...
 
     return TEXTURE_ADDRESS_WRAP;
@@ -1528,11 +1528,11 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
             }
         }
 
-        unpack_vec2_or_vec3(position, &m_Vertices[firstVert].Position, sizeof(SMeshVertex));
+        unpack_vec2_or_vec3(position, &m_Vertices[firstVert].Position, sizeof(MeshVertex));
 
         if (texcoord)
         {
-            unpack_vec2_to_half2(texcoord, &m_Vertices[firstVert].TexCoord[0], sizeof(SMeshVertex));
+            unpack_vec2_to_half2(texcoord, &m_Vertices[firstVert].TexCoord[0], sizeof(MeshVertex));
         }
         else
         {
@@ -1544,7 +1544,7 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
 
         if (normal && (normal->type == cgltf_type_vec2 || normal->type == cgltf_type_vec3) && normal->count == vertexCount)
         {
-            unpack_vec2_or_vec3_to_half3(normal, &m_Vertices[firstVert].Normal[0], sizeof(SMeshVertex), true);
+            unpack_vec2_or_vec3_to_half3(normal, &m_Vertices[firstVert].Normal[0], sizeof(MeshVertex), true);
         }
         else
         {
@@ -1573,7 +1573,7 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
             }
             else
             {
-                SMeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
+                MeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
                 for (int v = 0; v < vertexCount; v++, pVert++)
                 {
                     pVert->SetTangent(pos, zero, zero);
@@ -1591,7 +1591,7 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
 
         HK_UNUSED(color);
 
-        SMeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
+        MeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
 
         if (/*m_Settings.bSingleModel && */ !m_bSkeletal)
         {
@@ -1752,7 +1752,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
             }
         }
 
-        SAnimationChannel* jointAnim;
+        AnimationChannel* jointAnim;
 
         if (mergedChannel < Animation.Channels.Size())
         {
@@ -1776,7 +1776,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
             q.FromMatrix(rotation);
             for (int f = 0; f < numFrames; f++)
             {
-                STransform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
                 transform.Position    = position;
                 transform.Scale       = scale;
                 transform.Rotation    = q;
@@ -1790,7 +1790,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
                 for (int f = 0; f < numFrames; f++)
                 {
-                    STransform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                    Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                     sample_vec3(sampler, f * frameDelta, transform.Position);
 
@@ -1803,7 +1803,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
                 for (int f = 0; f < numFrames; f++)
                 {
-                    STransform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                    Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                     sample_quat(sampler, f * frameDelta, transform.Rotation);
                 }
@@ -1814,7 +1814,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
                 for (int f = 0; f < numFrames; f++)
                 {
-                    STransform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                    Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                     sample_vec3(sampler, f * frameDelta, transform.Scale);
                 }
@@ -1827,7 +1827,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
         for (int f = 0; f < numFrames; f++)
         {
-            STransform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+            Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
             float frameTime = f * frameDelta;
 
@@ -1853,14 +1853,14 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
     for (int channel = 0; channel < Animation.Channels.Size(); channel++)
     {
-        SAnimationChannel* jointAnim = &Animation.Channels[channel];
+        AnimationChannel* jointAnim = &Animation.Channels[channel];
 
         if (jointAnim->JointIndex == 0 && jointAnim->bHasRotation)
         {
             for (int frameIndex = 0; frameIndex < numFrames; frameIndex++)
             {
 
-                STransform& transform = Animation.Transforms[jointAnim->TransformOffset + frameIndex];
+                Transform& transform = Animation.Transforms[jointAnim->TransformOffset + frameIndex];
 
                 transform.Rotation = m_Settings.Rotation * transform.Rotation;
             }
@@ -1869,7 +1869,7 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 }
 
 #if 0
-Float3x4 CalcJointWorldTransform( SJoint const & InJoint, SJoint const * InJoints ) {
+Float3x4 CalcJointWorldTransform( SkeletonJoint const & InJoint, SkeletonJoint const * InJoints ) {
     if ( InJoint.Parent == -1 ) {
         return InJoint.LocalTransform;
     }
@@ -1925,9 +1925,9 @@ void AssetImporter::WriteTextures()
 
 void AssetImporter::WriteTexture(TextureInfo& tex)
 {
-    AString fileName       = GeneratePhysicalPath(!tex.Name.IsEmpty() ? tex.Name : "texture", ".texture");
-    AString sourceFileName = m_Path + tex.Path;
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath(!tex.Name.IsEmpty() ? tex.Name : "texture", ".texture");
+    String sourceFileName = m_Path + tex.Path;
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
     ImageMipmapConfig mipmapConfig;
     mipmapConfig.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
@@ -1938,7 +1938,7 @@ void AssetImporter::WriteTexture(TextureInfo& tex)
     if (!image)
         return;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -1965,10 +1965,10 @@ void AssetImporter::WriteMaterials()
 
 void AssetImporter::WriteMaterial(MaterialInfo& m)
 {
-    AString fileName       = GeneratePhysicalPath("matinst", ".minst");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath("matinst", ".minst");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -1999,9 +1999,9 @@ void AssetImporter::WriteMaterial(MaterialInfo& m)
     f.FormattedPrint("]\n");
 }
 
-static AString ValidateFileName(AStringView FileName)
+static String ValidateFileName(StringView FileName)
 {
-    AString ValidatedName = FileName;
+    String ValidatedName = FileName;
 
     for (StringSizeType i = 0; i < ValidatedName.Size(); i++)
     {
@@ -2025,16 +2025,16 @@ static AString ValidateFileName(AStringView FileName)
     return ValidatedName;
 }
 
-AString AssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringView Extension)
+String AssetImporter::GeneratePhysicalPath(StringView DesiredName, StringView Extension)
 {
-    AString sourceName    = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
-    AString validatedName = ValidateFileName(DesiredName);
+    String sourceName    = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
+    String validatedName = ValidateFileName(DesiredName);
 
     sourceName.ToLower();
     validatedName.ToLower();
 
-    AString path   = m_Settings.OutputPath / sourceName + "_" + validatedName;
-    AString result = path + Extension;
+    String path   = m_Settings.OutputPath / sourceName + "_" + validatedName;
+    String result = path + Extension;
 
     int uniqueNumber = 0;
 
@@ -2060,10 +2060,10 @@ void AssetImporter::WriteSkeleton()
 {
     if (!m_Joints.IsEmpty())
     {
-        AString fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
-        AString fileSystemPath = m_Settings.RootPath + fileName;
+        String fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
+        String fileSystemPath = m_Settings.RootPath + fileName;
 
-        AFile f = AFile::OpenWrite(fileSystemPath);
+        File f = File::OpenWrite(fileSystemPath);
         if (!f)
         {
             LOG("Failed to write {}\n", fileName);
@@ -2090,10 +2090,10 @@ void AssetImporter::WriteAnimations()
 
 void AssetImporter::WriteAnimation(AnimationInfo const& Animation)
 {
-    AString fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2117,17 +2117,17 @@ void AssetImporter::WriteSingleModel()
         return;
     }
 
-    AString fileName       = GeneratePhysicalPath("mesh", ".mesh_data");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath("mesh", ".mesh_data");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
     }
 
-    AString pathToWrite = "/Root/" + fileName;
+    String pathToWrite = "/Root/" + fileName;
 
     bool bSkinnedMesh = m_bSkeletal;
 
@@ -2185,7 +2185,7 @@ void AssetImporter::WriteSingleModel()
         for (MeshInfo const& meshInfo : m_Meshes)
         {
             // Generate subpart BVH
-            BvhTree aabbTree(TArrayView<SMeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
 
             // Write subpart BVH
             f.WriteObject(aabbTree);
@@ -2226,7 +2226,7 @@ void AssetImporter::WriteSingleModel()
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
     fileSystemPath = m_Settings.RootPath + fileName;
 
-    f = AFile::OpenWrite(fileSystemPath);
+    f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2244,10 +2244,10 @@ void AssetImporter::WriteSingleModel()
         f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
     f.FormattedPrint("Subparts [\n");
-    AString dummy;
+    String dummy;
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        AString materialPath = meshInfo.MaterialNum >= 0 ? m_Materials[meshInfo.MaterialNum].PathToWrite : dummy;
+        String materialPath = meshInfo.MaterialNum >= 0 ? m_Materials[meshInfo.MaterialNum].PathToWrite : dummy;
         f.FormattedPrint("\"{}\"\n", materialPath);
     }
     f.FormattedPrint("]\n");
@@ -2263,10 +2263,10 @@ void AssetImporter::WriteMeshes()
 
 void AssetImporter::WriteMesh(MeshInfo const& Mesh)
 {
-    AString fileName       = GeneratePhysicalPath(!Mesh.UniqueName.IsEmpty() ? Mesh.UniqueName : "mesh", ".mesh_data");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath(!Mesh.UniqueName.IsEmpty() ? Mesh.UniqueName : "mesh", ".mesh_data");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2276,7 +2276,7 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     bool bSkinnedMesh = m_bSkeletal;
     HK_ASSERT(bSkinnedMesh == false);
 
-    AString pathToMesh = "/Root/" + fileName;
+    String pathToMesh = "/Root/" + fileName;
 
     bool bRaycastBVH = m_Settings.bGenerateRaycastBVH;
 
@@ -2294,7 +2294,7 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     }
 
     f.WriteUInt32(Mesh.VertexCount);
-    SMeshVertex* verts = m_Vertices.ToPtr() + Mesh.BaseVertex;
+    MeshVertex* verts = m_Vertices.ToPtr() + Mesh.BaseVertex;
     for (int i = 0; i < Mesh.VertexCount; i++)
     {
         verts->Write(f);
@@ -2305,7 +2305,7 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     {
         f.WriteUInt32(Mesh.VertexCount); // weights count
 
-        SMeshVertexSkin* weights = m_Weights.ToPtr() + Mesh.BaseVertex;
+        MeshVertexSkin* weights = m_Weights.ToPtr() + Mesh.BaseVertex;
         for (int i = 0; i < Mesh.VertexCount; i++)
         {
             weights->Write(f);
@@ -2336,7 +2336,7 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     if (bRaycastBVH)
     {
         // Generate subpart BVH
-        BvhTree aabbTree(TArrayView<SMeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+        BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
                          TArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
                          0,
                          m_Settings.RaycastPrimitivesPerLeaf);
@@ -2356,7 +2356,7 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
     fileSystemPath = m_Settings.RootPath + fileName;
 
-    f = AFile::OpenWrite(fileSystemPath);
+    f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2374,13 +2374,13 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
         f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
     f.FormattedPrint("Subparts [\n");
-    AString        dummy;
-    AString const& materialPath = Mesh.MaterialNum >= 0 ? m_Materials[Mesh.MaterialNum].PathToWrite : dummy;
+    String        dummy;
+    String const& materialPath = Mesh.MaterialNum >= 0 ? m_Materials[Mesh.MaterialNum].PathToWrite : dummy;
     f.FormattedPrint("\"{}\"\n", materialPath);
     f.FormattedPrint("]\n");
 }
 
-bool SaveSkyboxTexture(AStringView FileName, ImageStorage const& Image)
+bool SaveSkyboxTexture(StringView FileName, ImageStorage const& Image)
 {
     if (!Image || Image.GetDesc().Type != TEXTURE_CUBE)
     {
@@ -2388,7 +2388,7 @@ bool SaveSkyboxTexture(AStringView FileName, ImageStorage const& Image)
         return false;
     }
 
-    AFile f = AFile::OpenWrite(FileName);
+    File f = File::OpenWrite(FileName);
     if (!f)
     {
         LOG("Failed to write {}\n", FileName);
@@ -2422,10 +2422,10 @@ bool AssetImporter::ImportSkybox(AssetImportSettings const& Settings)
     if (!image)
         return false;
 
-    AString fileName       = GeneratePhysicalPath("texture", ".texture");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath("texture", ".texture");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2451,12 +2451,12 @@ bool AssetImporter::ImportSkybox(AssetImportSettings const& Settings)
     return true;
 }
 
-void AssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
+void AssetImporter::WriteSkyboxMaterial(StringView SkyboxTexture)
 {
-    AString fileName       = GeneratePhysicalPath("matinst", ".minst");
-    AString fileSystemPath = m_Settings.RootPath + fileName;
+    String fileName       = GeneratePhysicalPath("matinst", ".minst");
+    String fileSystemPath = m_Settings.RootPath + fileName;
 
-    AFile f = AFile::OpenWrite(fileSystemPath);
+    File f = File::OpenWrite(fileSystemPath);
     if (!f)
     {
         LOG("Failed to write {}\n", fileName);
@@ -2471,7 +2471,7 @@ void AssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
 
 bool AssetImporter::ImportOBJ(AssetImportSettings const& Settings)
 {
-    AString const& Source = Settings.ImportFile;
+    String const& Source = Settings.ImportFile;
 
     m_Settings = Settings;
 
@@ -2646,7 +2646,7 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
             {
                 vertexHash[v] = m_Vertices.Size() - baseVertex;
 
-                SMeshVertex& meshVert = m_Vertices.Add();
+                MeshVertex& meshVert = m_Vertices.Add();
 
                 meshVert.Position = v.Position * m_Settings.Scale;
                 meshVert.SetTexCoord(Float2(v.TexCoord.X,1.0f-v.TexCoord.Y));

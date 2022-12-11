@@ -1,7 +1,7 @@
 components
 [
 	{
-		classname "APointLightComponent"
+		classname "PointLightComponent"
 		name "PointLight"
 		id "1"
 	}

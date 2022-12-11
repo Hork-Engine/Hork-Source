@@ -44,44 +44,42 @@ SOFTWARE.
 #include "SSAORenderer.h"
 #include "ShadowMapRenderer.h"
 
-struct SVirtualTextureWorkflow;
-
-class AFrameRenderer : public ARefCounted
+class FrameRenderer : public RefCounted
 {
 public:
-    AFrameRenderer();
+    FrameRenderer();
 
-    void Render(RenderCore::AFrameGraph& FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache* PhysCacheVT);
+    void Render(RenderCore::FrameGraph& FrameGraph, bool bVirtualTexturing, class VirtualTextureCache* PhysCacheVT);
 
-    AOmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return OmniShadowMapPool; }
+    OmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return OmniShadowMapPool; }
 
 private:
-    void AddLinearizeDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
+    void AddLinearizeDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
 
-    void AddReconstrutNormalsPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppNormalTexture);
+    void AddReconstrutNormalsPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppNormalTexture);
 
-    void AddMotionBlurPass(RenderCore::AFrameGraph&    FrameGraph,
+    void AddMotionBlurPass(RenderCore::FrameGraph&    FrameGraph,
                            RenderCore::FGTextureProxy*  LightTexture,
                            RenderCore::FGTextureProxy*  VelocityTexture,
                            RenderCore::FGTextureProxy*  LinearDepth,
                            RenderCore::FGTextureProxy** ppResultTexture);
 
-    void AddOutlinePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppOutlineTexture);
-    void AddOutlineOverlayPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
-    void AddCopyPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* Source, RenderCore::FGTextureProxy* Dest);
+    void AddOutlinePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppOutlineTexture);
+    void AddOutlineOverlayPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
+    void AddCopyPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* Source, RenderCore::FGTextureProxy* Dest);
 
-    AShadowMapRenderer    ShadowMapRenderer;
-    ALightRenderer        LightRenderer;
-    ADebugDrawRenderer    DebugDrawRenderer;
-    ABloomRenderer        BloomRenderer;
-    AExposureRenderer     ExposureRenderer;
-    AColorGradingRenderer ColorGradingRenderer;
-    APostprocessRenderer  PostprocessRenderer;
-    AFxaaRenderer         FxaaRenderer;
-    ASmaaRenderer         SmaaRenderer;
-    ASSAORenderer         SSAORenderer;
+    ShadowMapRenderer    ShadowMapRenderer;
+    LightRenderer        LightRenderer;
+    DebugDrawRenderer    DebugDrawRenderer;
+    BloomRenderer        BloomRenderer;
+    ExposureRenderer     ExposureRenderer;
+    ColorGradingRenderer ColorGradingRenderer;
+    PostprocessRenderer  PostprocessRenderer;
+    FxaaRenderer         FxaaRenderer;
+    SmaaRenderer         SmaaRenderer;
+    SSAORenderer         SSAORenderer;
 
-    AOmnidirectionalShadowMapPool OmniShadowMapPool;
+    OmnidirectionalShadowMapPool OmniShadowMapPool;
 
     TRef<RenderCore::IPipeline> LinearDepthPipe;
     TRef<RenderCore::IPipeline> LinearDepthPipe_ORTHO;

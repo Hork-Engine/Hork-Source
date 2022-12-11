@@ -36,28 +36,27 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ARenderPassGLImpl;
-class APipelineGLImpl;
-class AGenericWindowGLImpl;
+class PipelineGLImpl;
+class GenericWindowGLImpl;
 
-struct SBindingStateGL
+struct BindingStateGL
 {
-    uint64_t                      ReadFramebuffer;
-    unsigned int                  DrawFramebuffer;
-    unsigned short                DrawFramebufferWidth;
-    unsigned short                DrawFramebufferHeight;
-    unsigned int                  DrawInderectBuffer;
-    unsigned int                  DispatchIndirectBuffer;
-    SBlendingStateInfo const*     BlendState;        // current blend state binding
-    SRasterizerStateInfo const*   RasterizerState;   // current rasterizer state binding
-    SDepthStencilStateInfo const* DepthStencilState; // current depth-stencil state binding
+    uint64_t                     ReadFramebuffer;
+    unsigned int                 DrawFramebuffer;
+    unsigned short               DrawFramebufferWidth;
+    unsigned short               DrawFramebufferHeight;
+    unsigned int                 DrawInderectBuffer;
+    unsigned int                 DispatchIndirectBuffer;
+    BlendingStateInfo const*     BlendState;        // current blend state binding
+    RasterizerStateInfo const*   RasterizerState;   // current rasterizer state binding
+    DepthStencilStateInfo const* DepthStencilState; // current depth-stencil state binding
 };
 
-class AResourceTableGLImpl final : public IResourceTable
+class ResourceTableGLImpl final : public IResourceTable
 {
 public:
-    AResourceTableGLImpl(ADeviceGLImpl* pDevice, bool bIsRoot = false);
-    ~AResourceTableGLImpl();
+    ResourceTableGLImpl(DeviceGLImpl* pDevice, bool bIsRoot = false);
+    ~ResourceTableGLImpl();
 
     void BindTexture(unsigned int Slot, ITextureView* pShaderResourceView) override;
     void BindTexture(unsigned int Slot, IBufferView* pShaderResourceView) override;
@@ -95,7 +94,7 @@ private:
     ptrdiff_t    BufferBindingSizes[MAX_BUFFER_SLOTS];
 };
 
-struct SFrameBufferHash
+struct FrameBufferHash
 {
     TStaticVector<TWeakRef<ITextureView>, MAX_COLOR_ATTACHMENTS> ColorAttachments;
     TWeakRef<ITextureView>                                       pDepthStencilAttachment;
@@ -126,7 +125,7 @@ struct SFrameBufferHash
         return hash;
     }
 
-    bool operator==(const SFrameBufferHash& other) const
+    bool operator==(const FrameBufferHash& other) const
     {
         if (ColorAttachments.Size() != other.ColorAttachments.Size())
             return false;
@@ -137,36 +136,36 @@ struct SFrameBufferHash
     }
 };
 
-class AFramebufferCacheGL : public ARefCounted
+class FramebufferCacheGL : public RefCounted
 {
 public:
-    AFramebufferCacheGL() = default;
+    FramebufferCacheGL() = default;
 
     void CleanupOutdatedFramebuffers();
 
-    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TStaticVector<STextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
+    FramebufferGL* GetFramebuffer(const char* RenderPassName, TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments, TextureAttachment* DepthStencilAttachment);
 
 private:
-    THashMap<SFrameBufferHash, std::unique_ptr<AFramebufferGL>> Framebuffers;
+    THashMap<FrameBufferHash, std::unique_ptr<FramebufferGL>> Framebuffers;
 };
 
-struct SRenderPassBeginGL
+struct RenderPassBeginGL
 {
-    ARenderPass*          pRenderPass;
-    AFramebufferGL const* pFramebuffer;
-    SRect2D               RenderArea;
+    RenderPass*          pRenderPass;
+    FramebufferGL const* pFramebuffer;
+    Rect2D              RenderArea;
 };
 
-class AImmediateContextGLImpl final : public IImmediateContext
+class ImmediateContextGLImpl final : public IImmediateContext
 {
 public:
-    AImmediateContextGLImpl(ADeviceGLImpl* pDevice, AWindowPoolGL::SWindowGL Window, bool bMainContext);
-    ~AImmediateContextGLImpl();
+    ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPoolGL::WindowGL Window, bool bMainContext);
+    ~ImmediateContextGLImpl();
 
-    static void MakeCurrent(AImmediateContextGLImpl* pContext);
-    static AImmediateContextGLImpl* GetCurrent() { return Current; }
+    static void MakeCurrent(ImmediateContextGLImpl* pContext);
+    static ImmediateContextGLImpl* GetCurrent() { return Current; }
 
-    void ExecuteFrameGraph(AFrameGraph* pFrameGraph) override;
+    void ExecuteFrameGraph(FrameGraph* pFrameGraph) override;
 
     //
     // Pipeline
@@ -196,31 +195,31 @@ public:
     // Viewport
     //
 
-    void SetViewport(SViewport const& _Viewport) override;
+    void SetViewport(Viewport const& _Viewport) override;
 
-    void SetViewportArray(uint32_t _NumViewports, SViewport const* _Viewports) override;
+    void SetViewportArray(uint32_t _NumViewports, Viewport const* _Viewports) override;
 
-    void SetViewportArray(uint32_t _FirstIndex, uint32_t _NumViewports, SViewport const* _Viewports) override;
+    void SetViewportArray(uint32_t _FirstIndex, uint32_t _NumViewports, Viewport const* _Viewports) override;
 
-    void SetViewportIndexed(uint32_t _Index, SViewport const& _Viewport) override;
+    void SetViewportIndexed(uint32_t _Index, Viewport const& _Viewport) override;
 
     //
     // Scissor
     //
 
-    void SetScissor(/* optional */ SRect2D const& _Scissor) override;
+    void SetScissor(/* optional */ Rect2D const& _Scissor) override;
 
-    void SetScissorArray(uint32_t _NumScissors, SRect2D const* _Scissors) override;
+    void SetScissorArray(uint32_t _NumScissors, Rect2D const* _Scissors) override;
 
-    void SetScissorArray(uint32_t _FirstIndex, uint32_t _NumScissors, SRect2D const* _Scissors) override;
+    void SetScissorArray(uint32_t _FirstIndex, uint32_t _NumScissors, Rect2D const* _Scissors) override;
 
-    void SetScissorIndexed(uint32_t _Index, SRect2D const& _Scissor) override;
+    void SetScissorIndexed(uint32_t _Index, Rect2D const& _Scissor) override;
 
     //
     // Render pass
     //
 
-    void BeginRenderPass(SRenderPassBeginGL const& _RenderPassBegin);
+    void BeginRenderPass(RenderPassBeginGL const& _RenderPassBegin);
 
     void NextSubpass();
 
@@ -244,15 +243,15 @@ public:
     // Draw
     //
 
-    void Draw(SDrawCmd const* _Cmd) override;
+    void Draw(DrawCmd const* _Cmd) override;
 
-    void Draw(SDrawIndexedCmd const* _Cmd) override;
+    void Draw(DrawIndexedCmd const* _Cmd) override;
 
     void Draw(ITransformFeedback* _TransformFeedback, unsigned int _InstanceCount = 1, unsigned int _StreamIndex = 0) override;
 #if 0
-    void DrawIndirect( SDrawIndirectCmd const * _Cmd ) override;
+    void DrawIndirect( DrawIndirectCmd const * _Cmd ) override;
 
-    void DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd ) override;
+    void DrawIndirect( DrawIndexedIndirectCmd const * _Cmd ) override;
 #endif
     void DrawIndirect(IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset) override;
 
@@ -262,9 +261,9 @@ public:
 
     void MultiDraw(unsigned int _DrawCount, const unsigned int* _IndexCount, const void* const* _IndexByteOffsets, const int* _BaseVertexLocations = nullptr) override;
 #if 0
-    void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride ) override;
+    void MultiDrawIndirect( unsigned int _DrawCount, DrawIndirectCmd const * _Cmds, unsigned int _Stride ) override;
 
-    void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) override;
+    void MultiDrawIndirect( unsigned int _DrawCount, DrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) override;
 #endif
     void MultiDrawIndirect(unsigned int _DrawCount, IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride) override;
 
@@ -278,7 +277,7 @@ public:
                          unsigned int _ThreadGroupCountY,
                          unsigned int _ThreadGroupCountZ) override;
 
-    void DispatchCompute(SDispatchIndirectCmd const* _Cmd) override;
+    void DispatchCompute(DispatchIndirectCmd const* _Cmd) override;
 
     void DispatchComputeIndirect(IBuffer* _DispatchIndirectBuffer, unsigned int _AlignedByteOffset) override;
 
@@ -354,11 +353,11 @@ public:
 
     void CopyBuffer(IBuffer* _SrcBuffer, IBuffer* _DstBuffer) override;
 
-    void CopyBufferRange(IBuffer* _SrcBuffer, IBuffer* _DstBuffer, uint32_t _NumRanges, SBufferCopy const* _Ranges) override;
+    void CopyBufferRange(IBuffer* _SrcBuffer, IBuffer* _DstBuffer, uint32_t _NumRanges, BufferCopy const* _Ranges) override;
 
     bool CopyBufferToTexture(IBuffer const*      pSrcBuffer,
                              ITexture*           DstTexture,
-                             STextureRect const& Rectangle,
+                             TextureRect const& Rectangle,
                              DATA_FORMAT         Format,
                              size_t              CompressedDataSizeInBytes,
                              size_t              SourceByteOffset,
@@ -366,7 +365,7 @@ public:
 
     void CopyTextureToBuffer(ITexture const*     pSrcTexture,
                              IBuffer*            DstBuffer,
-                             STextureRect const& Rectangle,
+                             TextureRect const& Rectangle,
                              DATA_FORMAT         Format,
                              size_t              SizeInBytes,
                              size_t              DstByteOffset,
@@ -382,17 +381,17 @@ public:
     // Clear
     //
 
-    void ClearBuffer(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, DATA_FORMAT Format, const SClearValue* ClearValue) override;
+    void ClearBuffer(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, DATA_FORMAT Format, const ClearValue* ClearValue) override;
 
-    void ClearBufferRange(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, uint32_t NumRanges, SBufferClear const* Ranges, DATA_FORMAT Format, const SClearValue* ClearValue) override;
+    void ClearBufferRange(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, uint32_t NumRanges, BufferClear const* Ranges, DATA_FORMAT Format, const ClearValue* ClearValue) override;
 
-    void ClearTexture(ITexture* pTexture, uint16_t MipLevel, DATA_FORMAT Format, const SClearValue* ClearValue) override;
+    void ClearTexture(ITexture* pTexture, uint16_t MipLevel, DATA_FORMAT Format, const ClearValue* ClearValue) override;
 
     void ClearTextureRect(ITexture*           pTexture,
                           uint32_t            NumRectangles,
-                          STextureRect const* Rectangles,
+                          TextureRect const* Rectangles,
                           DATA_FORMAT         Format,
-                          const SClearValue*  ClearValue) override;
+                          const ClearValue*  ClearValue) override;
 
     //
     // Read
@@ -405,7 +404,7 @@ public:
                      void*        pSysMem) override;
 
     void ReadTextureRect(ITexture*           pTexture,
-                         STextureRect const& Rectangle,
+                         TextureRect const& Rectangle,
                          size_t              SizeInBytes,
                          unsigned int        Alignment,
                          void*               pSysMem) override;
@@ -417,7 +416,7 @@ public:
                       const void*  pSysMem) override;
 
     bool WriteTextureRect(ITexture*           pTexture,
-                          STextureRect const& Rectangle,
+                          TextureRect const& Rectangle,
                           size_t              SizeInBytes,
                           unsigned int        Alignment,
                           const void*         pSysMem,
@@ -439,7 +438,7 @@ public:
                                  const void*     pSysMem) override;
 
     void SparseTextureCommitRect(ISparseTexture*     pTexture,
-                                 STextureRect const& Rectangle,
+                                 TextureRect const& Rectangle,
                                  DATA_FORMAT         Format, // Specifies a pixel format for the input data
                                  size_t              SizeInBytes,
                                  unsigned int        Alignment, // Specifies alignment of source data
@@ -447,7 +446,7 @@ public:
 
     void SparseTextureUncommitPage(ISparseTexture* pTexture, int MipLevel, int PageX, int PageY, int PageZ) override;
 
-    void SparseTextureUncommitRect(ISparseTexture* pTexture, STextureRect const& Rectangle) override;
+    void SparseTextureUncommitRect(ISparseTexture* pTexture, TextureRect const& Rectangle) override;
 
     //
     // Buffer
@@ -516,17 +515,17 @@ public:
     // Render pass
     //
 
-    bool CopyFramebufferToTexture(ARenderPassContext&   RenderPassContext,
+    bool CopyFramebufferToTexture(FGRenderPassContext&   RenderPassContext,
                                   ITexture*             pDstTexture,
                                   int                   ColorAttachment,
-                                  STextureOffset const& Offset,
-                                  SRect2D const&        SrcRect,
+                                  TextureOffset const& Offset,
+                                  Rect2D const&        SrcRect,
                                   unsigned int          Alignment) override;
 
-    void CopyColorAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+    void CopyColorAttachmentToBuffer(FGRenderPassContext& RenderPassContext,
                                      IBuffer*            pDstBuffer,
                                      int                 SubpassAttachmentRef,
-                                     SRect2D const&      SrcRect,
+                                     Rect2D const&      SrcRect,
                                      FRAMEBUFFER_CHANNEL FramebufferChannel,
                                      FRAMEBUFFER_OUTPUT  FramebufferOutput,
                                      COLOR_CLAMP         ColorClamp,
@@ -534,30 +533,30 @@ public:
                                      size_t              DstByteOffset,
                                      unsigned int        Alignment) override;
 
-    void CopyDepthAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+    void CopyDepthAttachmentToBuffer(FGRenderPassContext& RenderPassContext,
                                      IBuffer*            pDstBuffer,
-                                     SRect2D const&      SrcRect,
+                                     Rect2D const&      SrcRect,
                                      size_t              SizeInBytes,
                                      size_t              DstByteOffset,
                                      unsigned int        Alignment) override;
 
-    bool BlitFramebuffer(ARenderPassContext&   RenderPassContext,
+    bool BlitFramebuffer(FGRenderPassContext&   RenderPassContext,
                          int                   ColorAttachment,
                          uint32_t              NumRectangles,
-                         SBlitRectangle const* Rectangles,
+                         BlitRectangle const* Rectangles,
                          FRAMEBUFFER_BLIT_MASK Mask,
                          bool                  LinearFilter) override;
 
-    void ClearAttachments(ARenderPassContext&            RenderPassContext,
+    void ClearAttachments(FGRenderPassContext&            RenderPassContext,
                           unsigned int*                  ColorAttachments,
                           unsigned int                   NumColorAttachments,
-                          SClearColorValue const*        ColorClearValues,
-                          SClearDepthStencilValue const* DepthStencilClearValue,
-                          SRect2D const*                 Rect) override;
+                          ClearColorValue const*        ColorClearValues,
+                          ClearDepthStencilValue const* DepthStencilClearValue,
+                          Rect2D const*                 Rect) override;
 
-    bool ReadFramebufferAttachment(ARenderPassContext& RenderPassContext,
+    bool ReadFramebufferAttachment(FGRenderPassContext& RenderPassContext,
                                    int                 ColorAttachment,
-                                   SRect2D const&      SrcRect,
+                                   Rect2D const&      SrcRect,
                                    FRAMEBUFFER_CHANNEL FramebufferChannel,
                                    FRAMEBUFFER_OUTPUT  FramebufferOutput,
                                    COLOR_CLAMP         ColorClamp,
@@ -565,8 +564,8 @@ public:
                                    unsigned int        Alignment, // Specifies alignment of destination data
                                    void*               pSysMem) override;
 
-    bool ReadFramebufferDepthStencilAttachment(ARenderPassContext& RenderPassContext,
-                                               SRect2D const&      SrcRect,
+    bool ReadFramebufferDepthStencilAttachment(FGRenderPassContext& RenderPassContext,
+                                               Rect2D const&      SrcRect,
                                                size_t              SizeInBytes,
                                                unsigned int        Alignment,
                                                void*               pSysMem) override;
@@ -631,43 +630,43 @@ private:
 
     void ClampReadColor(COLOR_CLAMP _ColorClamp);
 
-    void BindReadFramebuffer(AFramebufferGL const* Framebuffer);
+    void BindReadFramebuffer(FramebufferGL const* Framebuffer);
 
-    bool ChooseReadBuffer(AFramebufferGL const* pFramebuffer, int _ColorAttachment) const;
+    bool ChooseReadBuffer(FramebufferGL const* pFramebuffer, int _ColorAttachment) const;
 
-    void ExecuteRenderPass(class ARenderPass* pRenderPass);
-    void ExecuteCustomTask(class ACustomTask* pCustomTask);
+    void ExecuteRenderPass(class RenderPass* pRenderPass);
+    void ExecuteCustomTask(class FGCustomTask* pCustomTask);
 
-    uint32_t CreateProgramPipeline(APipelineGLImpl* pPipeline);
-    uint32_t GetProgramPipeline(APipelineGLImpl* pPipeline);
+    uint32_t CreateProgramPipeline(PipelineGLImpl* pPipeline);
+    uint32_t GetProgramPipeline(PipelineGLImpl* pPipeline);
 
-    static AImmediateContextGLImpl* Current;
+    static ImmediateContextGLImpl* Current;
 
-    //AGenericWindowGLImpl* pWindow;
-    AWindowPoolGL::SWindowGL Window;
+    //GenericWindowGLImpl* pWindow;
+    WindowPoolGL::WindowGL Window;
     void*                pContextGL;
     bool                 bMainContext = false;
 
-    SBindingStateGL Binding;
+    BindingStateGL Binding;
 
     uint32_t  BufferBindingUIDs[MAX_BUFFER_SLOTS];
     ptrdiff_t BufferBindingOffsets[MAX_BUFFER_SLOTS];
     ptrdiff_t BufferBindingSizes[MAX_BUFFER_SLOTS];
 
-    TRef<IResourceTable>        RootResourceTable;
-    TRef<AResourceTableGLImpl>  CurrentResourceTable;
-    APipelineGLImpl*            CurrentPipeline;
-    class AVertexLayoutGL*      CurrentVertexLayout;
-    class AVertexArrayObjectGL* CurrentVAO;
-    uint8_t                     NumPatchVertices;      // count of patch vertices to set by glPatchParameteri
-    unsigned int                IndexBufferType;       // type of current binded index buffer (uin16 or uint32_t)
-    size_t                      IndexBufferTypeSizeOf; // size of one index
-    unsigned int                IndexBufferOffset;     // offset in current binded index buffer
-    uint32_t                    IndexBufferUID;
-    unsigned int                IndexBufferHandle;
-    uint32_t                    VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
-    unsigned int                VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
-    ptrdiff_t                   VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
+    TRef<IResourceTable>       RootResourceTable;
+    TRef<ResourceTableGLImpl>  CurrentResourceTable;
+    PipelineGLImpl*            CurrentPipeline;
+    class VertexLayoutGL*      CurrentVertexLayout;
+    class VertexArrayObjectGL* CurrentVAO;
+    uint8_t                    NumPatchVertices;      // count of patch vertices to set by glPatchParameteri
+    unsigned int               IndexBufferType;       // type of current binded index buffer (uin16 or uint32_t)
+    size_t                     IndexBufferTypeSizeOf; // size of one index
+    unsigned int               IndexBufferOffset;     // offset in current binded index buffer
+    uint32_t                   IndexBufferUID;
+    unsigned int               IndexBufferHandle;
+    uint32_t                   VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
+    unsigned int               VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
+    ptrdiff_t                  VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
 
     uint32_t CurrentQueryUID[QUERY_TYPE_MAX];
 
@@ -679,63 +678,63 @@ private:
 
     COLOR_CLAMP ColorClamp;
 
-    SBlendingStateInfo BlendState; // current blend state
+    BlendingStateInfo BlendState; // current blend state
     float              BlendColor[4];
     unsigned int       SampleMask[4];
     bool               bSampleMaskEnabled;
     bool               bLogicOpEnabled;
 
-    SRasterizerStateInfo RasterizerState; // current rasterizer state
+    RasterizerStateInfo RasterizerState; // current rasterizer state
     bool                 bPolygonOffsetEnabled;
     unsigned int         CullFace;
 
-    SDepthStencilStateInfo DepthStencilState; // current depth-stencil state
+    DepthStencilStateInfo DepthStencilState; // current depth-stencil state
     unsigned int           StencilRef;
 
-    ARenderPass*          CurrentRenderPass;
-    int                   CurrentSubpass;
-    SRect2D               CurrentRenderPassRenderArea;
-    AFramebufferGL const* CurrentFramebuffer;
+    RenderPass*          CurrentRenderPass;
+    int                  CurrentSubpass;
+    Rect2D               CurrentRenderPassRenderArea;
+    FramebufferGL const* CurrentFramebuffer;
 
-    TArray<SClearColorValue, MAX_COLOR_ATTACHMENTS> ColorAttachmentClearValues;
-    SClearDepthStencilValue                         DepthStencilAttachmentClearValue;
+    TArray<ClearColorValue, MAX_COLOR_ATTACHMENTS> ColorAttachmentClearValues;
+    ClearDepthStencilValue                         DepthStencilAttachmentClearValue;
 
-    struct SAttachmentUse
+    struct AttachmentUse
     {
         int FirstSubpass;
         int LastSubpass;
     };
-    TArray<SAttachmentUse, MAX_COLOR_ATTACHMENTS> ColorAttachmentSubpassUse;
-    SAttachmentUse                                DepthStencilAttachmentSubpassUse;
+    TArray<AttachmentUse, MAX_COLOR_ATTACHMENTS> ColorAttachmentSubpassUse;
+    AttachmentUse                                DepthStencilAttachmentSubpassUse;
 
     float CurrentViewport[4];
     float CurrentDepthRange[2];
 
-    SRect2D CurrentScissor;
+    Rect2D CurrentScissor;
 
-    TRef<AFramebufferCacheGL> pFramebufferCache;
+    TRef<FramebufferCacheGL> pFramebufferCache;
 
     THashMap<uint64_t, uint32_t> ProgramPipelines;
 };
 
-struct SScopedContextGL
+struct ScopedContextGL
 {
-    AImmediateContextGLImpl* PrevContext;
+    ImmediateContextGLImpl* PrevContext;
 
-    SScopedContextGL(AImmediateContextGLImpl* NewContext) :
-        PrevContext(AImmediateContextGLImpl::GetCurrent())
+    ScopedContextGL(ImmediateContextGLImpl* NewContext) :
+        PrevContext(ImmediateContextGLImpl::GetCurrent())
     {
         if (PrevContext != NewContext)
         {
-            AImmediateContextGLImpl::MakeCurrent(NewContext);
+            ImmediateContextGLImpl::MakeCurrent(NewContext);
         }
     }
 
-    ~SScopedContextGL()
+    ~ScopedContextGL()
     {
-        if (PrevContext != AImmediateContextGLImpl::GetCurrent())
+        if (PrevContext != ImmediateContextGLImpl::GetCurrent())
         {
-            AImmediateContextGLImpl::MakeCurrent(PrevContext);
+            ImmediateContextGLImpl::MakeCurrent(PrevContext);
         }
     }
 };

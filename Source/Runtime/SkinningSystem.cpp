@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "SkinningSystem.h"
 
-void ASkinningSystem::Update()
+void SkinningSystem::Update()
 {
-    for (TListIterator<ASkinnedComponent> skinnedMesh(SkinnedMeshes); skinnedMesh; skinnedMesh++)
+    for (TListIterator<SkinnedComponent> skinnedMesh(SkinnedMeshes); skinnedMesh; skinnedMesh++)
     {
         skinnedMesh->UpdateBounds();
     }

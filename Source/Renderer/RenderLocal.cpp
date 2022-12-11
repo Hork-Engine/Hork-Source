@@ -45,24 +45,24 @@ IImmediateContext* rcmd;
 IResourceTable* rtbl;
 
 /** Render frame data */
-SRenderFrame* GFrameData;
+RenderFrameData* GFrameData;
 
 /** Render frame view */
-SRenderView* GRenderView;
+RenderViewData* GRenderView;
 
 /** Render view area */
-SRect2D GRenderViewArea;
+Rect2D GRenderViewArea;
 
 /** Stream buffer */
 IBuffer*            GStreamBuffer;
-AStreamedMemoryGPU* GStreamedMemory;
+StreamedMemoryGPU* GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-TRef<ACircularBuffer> GCircularBuffer;
+TRef<CircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-TRef<ASphereMesh> GSphereMesh;
+TRef<SphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
 TRef<IBuffer> GSaq;
@@ -82,24 +82,24 @@ TRef<IBuffer> GClusterItemBuffer;
 /** Cluster item references view */
 TRef<IBufferView> GClusterItemTBO;
 
-TVector<SRenderViewContext> GRenderViewContext;
+TVector<RenderViewContext> GRenderViewContext;
 
-AVirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
-AVirtualTextureCache*            GPhysCacheVT{};
+VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
+VirtualTextureCache*            GPhysCacheVT{};
 
 IPipeline* GTerrainDepthPipeline;
 IPipeline* GTerrainLightPipeline;
 IPipeline* GTerrainWireframePipeline;
 
-STextureResolution2D GetFrameResoultion()
+TextureResolution2D GetFrameResoultion()
 {
-    return STextureResolution2D(GRenderView->Width, GRenderView->Height);
-    //return STextureResolution2D(GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight);
+    return TextureResolution2D(GRenderView->Width, GRenderView->Height);
+    //return TextureResolution2D(GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight);
 }
 
 void DrawSAQ(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
 {
-    const SDrawCmd drawCmd = {3, InstanceCount, 0, 0};
+    const DrawCmd drawCmd = {3, InstanceCount, 0, 0};
     immediateCtx->BindPipeline(Pipeline);
     immediateCtx->BindVertexBuffer(0, nullptr, 0);
     immediateCtx->BindIndexBuffer(nullptr, INDEX_TYPE_UINT16, 0);
@@ -108,7 +108,7 @@ void DrawSAQ(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int 
 
 void DrawSphere(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
 {
-    SDrawIndexedCmd drawCmd       = {};
+    DrawIndexedCmd drawCmd       = {};
     drawCmd.IndexCountPerInstance = GSphereMesh->IndexCount;
     drawCmd.InstanceCount         = InstanceCount;
 
@@ -118,7 +118,7 @@ void DrawSphere(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned i
     immediateCtx->Draw(&drawCmd);
 }
 
-void BindTextures(IResourceTable* Rtbl, SMaterialFrameData* Instance, int MaxTextures)
+void BindTextures(IResourceTable* Rtbl, MaterialFrameData* Instance, int MaxTextures)
 {
     HK_ASSERT(Instance);
 
@@ -130,7 +130,7 @@ void BindTextures(IResourceTable* Rtbl, SMaterialFrameData* Instance, int MaxTex
     }
 }
 
-void BindTextures(SMaterialFrameData* Instance, int MaxTextures)
+void BindTextures(MaterialFrameData* Instance, int MaxTextures)
 {
     HK_ASSERT(Instance);
 
@@ -142,19 +142,19 @@ void BindTextures(SMaterialFrameData* Instance, int MaxTextures)
     }
 }
 
-void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SRenderInstance const* Instance)
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, RenderInstance const* Instance)
 {
     immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
     immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
 }
 
-void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SShadowRenderInstance const* Instance)
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, ShadowRenderInstance const* Instance)
 {
     immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
     immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
 }
 
-void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SLightPortalRenderInstance const* Instance)
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, LightPortalRenderInstance const* Instance)
 {
     immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
     immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
@@ -170,11 +170,11 @@ void BindSkeletonMotionBlur(size_t _Offset, size_t _Size)
     rtbl->BindBuffer(7, GStreamBuffer, _Offset, _Size);
 }
 
-void BindInstanceConstants(SRenderInstance const* Instance)
+void BindInstanceConstants(RenderInstance const* Instance)
 {
-    size_t offset = GCircularBuffer->Allocate(sizeof(SInstanceConstantBuffer));
+    size_t offset = GCircularBuffer->Allocate(sizeof(InstanceConstantBuffer));
 
-    SInstanceConstantBuffer* pConstantBuf = reinterpret_cast<SInstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
+    InstanceConstantBuffer* pConstantBuf = reinterpret_cast<InstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
     Platform::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
     Platform::Memcpy(&pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof(pConstantBuf->TransformMatrixP));
@@ -187,14 +187,14 @@ void BindInstanceConstants(SRenderInstance const* Instance)
     pConstantBuf->VTScale  = Float2(1.0f); //Instance->VTScale;
     pConstantBuf->VTUnit   = 0;            //Instance->VTUnit;
 
-    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(SInstanceConstantBuffer));
+    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(InstanceConstantBuffer));
 }
 
-void BindInstanceConstantsFB(SRenderInstance const* Instance)
+void BindInstanceConstantsFB(RenderInstance const* Instance)
 {
-    size_t offset = GCircularBuffer->Allocate(sizeof(SFeedbackConstantBuffer));
+    size_t offset = GCircularBuffer->Allocate(sizeof(FeedbackConstantBuffer));
 
-    SFeedbackConstantBuffer* pConstantBuf = reinterpret_cast<SFeedbackConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
+    FeedbackConstantBuffer* pConstantBuf = reinterpret_cast<FeedbackConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
     Platform::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
 
@@ -203,14 +203,14 @@ void BindInstanceConstantsFB(SRenderInstance const* Instance)
     pConstantBuf->VTScale  = Float2(1.0f); //Instance->VTScale;
     pConstantBuf->VTUnit   = 0;            //Instance->VTUnit;
 
-    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(SFeedbackConstantBuffer));
+    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(FeedbackConstantBuffer));
 }
 
-void BindShadowInstanceConstants(SShadowRenderInstance const* Instance)
+void BindShadowInstanceConstants(ShadowRenderInstance const* Instance)
 {
-    size_t offset = GCircularBuffer->Allocate(sizeof(SShadowInstanceConstantBuffer));
+    size_t offset = GCircularBuffer->Allocate(sizeof(ShadowInstanceConstantBuffer));
 
-    SShadowInstanceConstantBuffer* pConstantBuf = reinterpret_cast<SShadowInstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
+    ShadowInstanceConstantBuffer* pConstantBuf = reinterpret_cast<ShadowInstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
     StoreFloat3x4AsFloat4x4Transposed(Instance->WorldTransformMatrix, pConstantBuf->TransformMatrix);
 
@@ -221,14 +221,14 @@ void BindShadowInstanceConstants(SShadowRenderInstance const* Instance)
 
     pConstantBuf->CascadeMask = Instance->CascadeMask;
 
-    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(SShadowInstanceConstantBuffer));
+    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(ShadowInstanceConstantBuffer));
 }
 
-void BindShadowInstanceConstants(SShadowRenderInstance const* Instance, int FaceIndex, Float3 const& LightPosition)
+void BindShadowInstanceConstants(ShadowRenderInstance const* Instance, int FaceIndex, Float3 const& LightPosition)
 {
-    size_t offset = GCircularBuffer->Allocate(sizeof(SShadowInstanceConstantBuffer));
+    size_t offset = GCircularBuffer->Allocate(sizeof(ShadowInstanceConstantBuffer));
 
-    SShadowInstanceConstantBuffer* pConstantBuf = reinterpret_cast<SShadowInstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
+    ShadowInstanceConstantBuffer* pConstantBuf = reinterpret_cast<ShadowInstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
     //StoreFloat3x4AsFloat4x4Transposed(Instance->WorldTransformMatrix, pConstantBuf->TransformMatrix);
 
@@ -245,7 +245,7 @@ void BindShadowInstanceConstants(SShadowRenderInstance const* Instance, int Face
 
     pConstantBuf->CascadeMask = Instance->CascadeMask;
 
-    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(SShadowInstanceConstantBuffer));
+    rtbl->BindBuffer(1, GCircularBuffer->GetBuffer(), offset, sizeof(ShadowInstanceConstantBuffer));
 }
 
 void* MapDrawCallConstants(size_t SizeInBytes)
@@ -297,7 +297,7 @@ void SaveSnapshot(ITexture& _Texture)
     FlipImageY(data, w, h, numchannels, w * numchannels);
 
     static int  n = 0;
-    AFile f = AFile::OpenWrite(HK_FORMAT("snapshots/{}.png", n++);
+    File f = File::OpenWrite(HK_FORMAT("snapshots/{}.png", n++);
     if (f)
     {
         WritePNG(f, w, h, numchannels, data, w * numchannels);

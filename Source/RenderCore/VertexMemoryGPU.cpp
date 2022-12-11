@@ -31,36 +31,36 @@ SOFTWARE.
 #include "VertexMemoryGPU.h"
 #include <Platform/Platform.h>
 
-AVertexMemoryGPU::AVertexMemoryGPU(RenderCore::IDevice* pDevice) :
-    pDevice(pDevice)
+VertexMemoryGPU::VertexMemoryGPU(RenderCore::IDevice* pDevice) :
+    m_pDevice(pDevice)
 {
-    UsedMemory     = 0;
-    UsedMemoryHuge = 0;
+    m_UsedMemory = 0;
+    m_UsedMemoryHuge = 0;
 }
 
-AVertexMemoryGPU::~AVertexMemoryGPU()
+VertexMemoryGPU::~VertexMemoryGPU()
 {
     CheckMemoryLeaks();
-    for (SVertexHandle* handle : HugeHandles)
+    for (VertexHandle* handle : m_HugeHandles)
     {
         RenderCore::IBuffer* buffer = (RenderCore::IBuffer*)handle->Address;
         buffer->RemoveRef();
     }
 }
 
-SVertexHandle* AVertexMemoryGPU::AllocateVertex(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
+VertexHandle* VertexMemoryGPU::AllocateVertex(size_t _SizeInBytes, const void* _Data, GetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
     //HK_ASSERT( IsAligned< VERTEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
 }
 
-SVertexHandle* AVertexMemoryGPU::AllocateIndex(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
+VertexHandle* VertexMemoryGPU::AllocateIndex(size_t _SizeInBytes, const void* _Data, GetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
     //HK_ASSERT( IsAligned< INDEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
 }
 
-void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
+void VertexMemoryGPU::Deallocate(VertexHandle* _Handle)
 {
     if (!_Handle)
     {
@@ -75,7 +75,7 @@ void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
 
     //LOG( "Deallocated buffer at block {}, offset {}, size {}\n", _Handle->GetBlockIndex(), _Handle->GetBlockOffset(), _Handle->Size );
 
-    SBlock* block = &Blocks[_Handle->GetBlockIndex()];
+    Block* block = &m_Blocks[_Handle->GetBlockIndex()];
 
     size_t chunkSize = Align(_Handle->Size, VERTEX_MEMORY_GPU_CHUNK_OFFSET_ALIGNMENT);
 
@@ -93,14 +93,14 @@ void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
         block->AllocOffset = 0;
     }
 
-    UsedMemory -= chunkSize;
+    m_UsedMemory -= chunkSize;
 
-    Handles.RemoveUnsorted(Handles.IndexOf(_Handle));
+    m_Handles.RemoveUnsorted(m_Handles.IndexOf(_Handle));
 
-    HandlePool.Deallocate(_Handle);
+    m_HandlePool.Deallocate(_Handle);
 }
 
-void AVertexMemoryGPU::Update(SVertexHandle* _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void* _Data)
+void VertexMemoryGPU::Update(VertexHandle* _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void* _Data)
 {
     if (_Handle->Size > VERTEX_MEMORY_GPU_BLOCK_SIZE)
     {
@@ -108,29 +108,29 @@ void AVertexMemoryGPU::Update(SVertexHandle* _Handle, size_t _ByteOffset, size_t
         return;
     }
 
-    BufferHandles[_Handle->GetBlockIndex()]->WriteRange(_Handle->GetBlockOffset() + _ByteOffset, _SizeInBytes, _Data);
+    m_BufferHandles[_Handle->GetBlockIndex()]->WriteRange(_Handle->GetBlockOffset() + _ByteOffset, _SizeInBytes, _Data);
 }
 
-void AVertexMemoryGPU::Defragment(bool bDeallocateEmptyBlocks, bool bForceUpload)
+void VertexMemoryGPU::Defragment(bool bDeallocateEmptyBlocks, bool bForceUpload)
 {
     struct
     {
-        bool operator()(SVertexHandle const* A, SVertexHandle const* B)
+        bool operator()(VertexHandle const* A, VertexHandle const* B)
         {
             return A->Size > B->Size;
         }
     } cmp;
 
-    std::sort(Handles.Begin(), Handles.End(), cmp);
+    std::sort(m_Handles.Begin(), m_Handles.End(), cmp);
 
     // NOTE: We can allocate new GPU buffers for blocks and just copy buffer-to-buffer on GPU side and then deallocate old buffers.
     // It is gonna be faster than CPU->GPU transition and get rid of implicit synchroization on the driver, but takes more memory.
 
-    Blocks.Clear();
+    m_Blocks.Clear();
 
-    for (int i = 0; i < Handles.Size(); i++)
+    for (int i = 0; i < m_Handles.Size(); i++)
     {
-        SVertexHandle* handle = Handles[i];
+        VertexHandle* handle = m_Handles[i];
 
         size_t handleSize        = handle->Size;
         int    handleBlockIndex  = handle->GetBlockIndex();
@@ -138,26 +138,26 @@ void AVertexMemoryGPU::Defragment(bool bDeallocateEmptyBlocks, bool bForceUpload
         size_t chunkSize         = Align(handleSize, VERTEX_MEMORY_GPU_CHUNK_OFFSET_ALIGNMENT);
 
         bool bRelocated = false;
-        for (int j = 0; j < Blocks.Size(); j++)
+        for (int j = 0; j < m_Blocks.Size(); j++)
         {
-            if (Blocks[j].AllocOffset + handleSize <= VERTEX_MEMORY_GPU_BLOCK_SIZE)
+            if (m_Blocks[j].AllocOffset + handleSize <= VERTEX_MEMORY_GPU_BLOCK_SIZE)
             {
-                if (handleBlockIndex != j || handleBlockOffset != Blocks[j].AllocOffset || bForceUpload)
+                if (handleBlockIndex != j || handleBlockOffset != m_Blocks[j].AllocOffset || bForceUpload)
                 {
-                    handle->MakeAddress(j, Blocks[j].AllocOffset);
+                    handle->MakeAddress(j, m_Blocks[j].AllocOffset);
 
-                    BufferHandles[handle->GetBlockIndex()]->WriteRange(handle->GetBlockOffset(), handle->Size, handle->GetMemoryCB(handle->UserPointer));
+                    m_BufferHandles[handle->GetBlockIndex()]->WriteRange(handle->GetBlockOffset(), handle->Size, handle->GetMemoryCB(handle->UserPointer));
                 }
-                Blocks[j].AllocOffset += chunkSize;
-                Blocks[j].UsedMemory += chunkSize;
+                m_Blocks[j].AllocOffset += chunkSize;
+                m_Blocks[j].UsedMemory += chunkSize;
                 bRelocated = true;
                 break;
             }
         }
         if (!bRelocated)
         {
-            int    blockIndex = Blocks.Size();
-            size_t offset     = 0;
+            int blockIndex = m_Blocks.Size();
+            size_t offset = 0;
 
             //if ( bForceUpload ) {
             //    // If buffers are in use driver will allocate a new storage and implicit synchroization will not occur.
@@ -168,42 +168,42 @@ void AVertexMemoryGPU::Defragment(bool bDeallocateEmptyBlocks, bool bForceUpload
             {
                 handle->MakeAddress(blockIndex, offset);
 
-                BufferHandles[blockIndex]->WriteRange(offset, handle->Size, handle->GetMemoryCB(handle->UserPointer));
+                m_BufferHandles[blockIndex]->WriteRange(offset, handle->Size, handle->GetMemoryCB(handle->UserPointer));
             }
 
-            SBlock newBlock;
+            Block newBlock;
             newBlock.AllocOffset = chunkSize;
             newBlock.UsedMemory  = chunkSize;
-            Blocks.Add(newBlock);
+            m_Blocks.Add(newBlock);
         }
     }
 
-    int freeBuffers = BufferHandles.Size() - Blocks.Size();
+    int freeBuffers = m_BufferHandles.Size() - m_Blocks.Size();
     if (freeBuffers > 0)
     {
         if (bDeallocateEmptyBlocks)
         {
             // Destroy and deallocate unused GPU buffers
             //for ( int i = 0 ; i < freeBuffers ; i++ ) {
-            //    BufferHandles[ Blocks.Size() + i ].Reset();
+            //    m_BufferHandles[ m_Blocks.Size() + i ].Reset();
             //}
-            BufferHandles.Resize(Blocks.Size());
+            m_BufferHandles.Resize(m_Blocks.Size());
         }
         else
         {
             // Emit empty blocks
-            int firstBlock = Blocks.Size();
-            Blocks.Resize(BufferHandles.Size());
+            int firstBlock = m_Blocks.Size();
+            m_Blocks.Resize(m_BufferHandles.Size());
             for (int i = 0; i < freeBuffers; i++)
             {
-                Blocks[firstBlock + i].AllocOffset = 0;
-                Blocks[firstBlock + i].UsedMemory  = 0;
+                m_Blocks[firstBlock + i].AllocOffset = 0;
+                m_Blocks[firstBlock + i].UsedMemory = 0;
             }
         }
     }
 }
 
-void AVertexMemoryGPU::GetPhysicalBufferAndOffset(SVertexHandle* _Handle, RenderCore::IBuffer** _Buffer, size_t* _Offset)
+void VertexMemoryGPU::GetPhysicalBufferAndOffset(VertexHandle* _Handle, RenderCore::IBuffer** _Buffer, size_t* _Offset)
 {
     if (_Handle->IsHuge())
     {
@@ -212,15 +212,15 @@ void AVertexMemoryGPU::GetPhysicalBufferAndOffset(SVertexHandle* _Handle, Render
         return;
     }
 
-    *_Buffer = BufferHandles[_Handle->GetBlockIndex()];
+    *_Buffer = m_BufferHandles[_Handle->GetBlockIndex()];
     *_Offset = _Handle->GetBlockOffset();
 }
 
-int AVertexMemoryGPU::FindBlock(size_t _RequiredSize)
+int VertexMemoryGPU::FindBlock(size_t _RequiredSize)
 {
-    for (int i = 0; i < Blocks.Size(); i++)
+    for (int i = 0; i < m_Blocks.Size(); i++)
     {
-        if (Blocks[i].AllocOffset + _RequiredSize <= VERTEX_MEMORY_GPU_BLOCK_SIZE)
+        if (m_Blocks[i].AllocOffset + _RequiredSize <= VERTEX_MEMORY_GPU_BLOCK_SIZE)
         {
             return i;
         }
@@ -228,7 +228,7 @@ int AVertexMemoryGPU::FindBlock(size_t _RequiredSize)
     return -1;
 }
 
-SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
+VertexHandle* VertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, GetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
     if (_SizeInBytes > VERTEX_MEMORY_GPU_BLOCK_SIZE)
     {
@@ -236,7 +236,7 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
 
         if (!bAllowHugeAllocs)
         {
-            CriticalError("AVertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
+            CriticalError("VertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
         }
 
         return AllocateHuge(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
@@ -258,47 +258,47 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
         i = FindBlock(_SizeInBytes);
     }
 
-    SBlock* block = i == -1 ? nullptr : &Blocks[i];
+    Block* block = i == -1 ? nullptr : &m_Blocks[i];
 
     if (!block)
     {
 
-        if (MaxBlocks && Blocks.Size() >= MaxBlocks)
+        if (MaxBlocks && m_Blocks.Size() >= MaxBlocks)
         {
-            CriticalError("AVertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
+            CriticalError("VertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
         }
 
-        SBlock newBlock;
+        Block newBlock;
         newBlock.AllocOffset = 0;
         newBlock.UsedMemory  = 0;
-        Blocks.Add(newBlock);
+        m_Blocks.Add(newBlock);
 
-        i = Blocks.Size() - 1;
+        i = m_Blocks.Size() - 1;
 
-        block = &Blocks[i];
+        block = &m_Blocks[i];
 
         AddGPUBuffer();
     }
 
-    SVertexHandle* handle = HandlePool.Allocate();
+    VertexHandle* handle = m_HandlePool.Allocate();
 
     handle->MakeAddress(i, block->AllocOffset);
     handle->Size        = _SizeInBytes;
     handle->GetMemoryCB = _GetMemoryCB;
     handle->UserPointer = _UserPointer;
 
-    Handles.Add(handle);
+    m_Handles.Add(handle);
 
     size_t chunkSize = Align(_SizeInBytes, VERTEX_MEMORY_GPU_CHUNK_OFFSET_ALIGNMENT);
 
     block->AllocOffset += chunkSize;
     block->UsedMemory += chunkSize;
 
-    UsedMemory += chunkSize;
+    m_UsedMemory += chunkSize;
 
     if (_Data)
     {
-        BufferHandles[handle->GetBlockIndex()]->WriteRange(handle->GetBlockOffset(), handle->Size, _Data);
+        m_BufferHandles[handle->GetBlockIndex()]->WriteRange(handle->GetBlockOffset(), handle->Size, _Data);
     }
 
     //LOG( "Allocated buffer at block {}, offset {}, size {}\n", handle->GetBlockIndex(), handle->GetBlockOffset(), handle->Size );
@@ -306,22 +306,22 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
     return handle;
 }
 
-SVertexHandle* AVertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
+VertexHandle* VertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _Data, GetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
-    SVertexHandle* handle = HandlePool.Allocate();
+    VertexHandle* handle = m_HandlePool.Allocate();
 
     handle->Size        = _SizeInBytes;
     handle->GetMemoryCB = _GetMemoryCB;
     handle->UserPointer = _UserPointer;
 
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
     bufferCI.SizeInBytes             = _SizeInBytes;
     // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering than immutable (tested on NVidia GeForce GTX 770)
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef<RenderCore::IBuffer> buffer;
-    pDevice->CreateBuffer(bufferCI, _Data, &buffer);
+    m_pDevice->CreateBuffer(bufferCI, _Data, &buffer);
     buffer->SetDebugName("Vertex memory HUGE buffer");
 
     RenderCore::IBuffer* pBuffer = buffer.GetObject();
@@ -329,31 +329,31 @@ SVertexHandle* AVertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _
 
     handle->Address = (size_t)pBuffer;
 
-    UsedMemoryHuge += _SizeInBytes;
+    m_UsedMemoryHuge += _SizeInBytes;
 
-    HugeHandles.Add(handle);
+    m_HugeHandles.Add(handle);
 
     return handle;
 }
 
-void AVertexMemoryGPU::DeallocateHuge(SVertexHandle* _Handle)
+void VertexMemoryGPU::DeallocateHuge(VertexHandle* _Handle)
 {
-    UsedMemoryHuge -= _Handle->Size;
+    m_UsedMemoryHuge -= _Handle->Size;
 
     RenderCore::IBuffer* buffer = (RenderCore::IBuffer*)_Handle->Address;
     buffer->RemoveRef();
 
-    HugeHandles.RemoveUnsorted(HugeHandles.IndexOf(_Handle));
+    m_HugeHandles.RemoveUnsorted(m_HugeHandles.IndexOf(_Handle));
 
-    HandlePool.Deallocate(_Handle);
+    m_HandlePool.Deallocate(_Handle);
 }
 
-void AVertexMemoryGPU::UpdateHuge(SVertexHandle* _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void* _Data)
+void VertexMemoryGPU::UpdateHuge(VertexHandle* _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void* _Data)
 {
     ((RenderCore::IBuffer*)_Handle->Address)->WriteRange(_ByteOffset, _SizeInBytes, _Data);
 }
 
-void AVertexMemoryGPU::UploadBuffers()
+void VertexMemoryGPU::UploadBuffers()
 {
     // We not only upload the buffer data, we also perform defragmentation here.
 
@@ -363,64 +363,64 @@ void AVertexMemoryGPU::UploadBuffers()
     Defragment(bDeallocateEmptyBlocks, bForceUpload);
 }
 
-void AVertexMemoryGPU::UploadBuffersHuge()
+void VertexMemoryGPU::UploadBuffersHuge()
 {
-    for (int i = 0; i < HugeHandles.Size(); i++)
+    for (int i = 0; i < m_HugeHandles.Size(); i++)
     {
-        SVertexHandle* handle = HugeHandles[i];
+        VertexHandle* handle = m_HugeHandles[i];
         ((RenderCore::IBuffer*)handle->Address)->WriteRange(0, handle->Size, handle->GetMemoryCB(handle->UserPointer));
     }
 }
 
-void AVertexMemoryGPU::AddGPUBuffer()
+void VertexMemoryGPU::AddGPUBuffer()
 {
     // Create GPU buffer
 
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
     bufferCI.SizeInBytes             = VERTEX_MEMORY_GPU_BLOCK_SIZE;
     // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering than immutable (tested on NVidia GeForce GTX 770)
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef<RenderCore::IBuffer> buffer;
-    pDevice->CreateBuffer(bufferCI, nullptr, &buffer);
+    m_pDevice->CreateBuffer(bufferCI, nullptr, &buffer);
 
     buffer->SetDebugName("Vertex memory block buffer");
 
-    BufferHandles.Add(buffer);
+    m_BufferHandles.Add(buffer);
 
-    LOG("Allocated a new block (total blocks {})\n", BufferHandles.Size());
+    LOG("Allocated a new block (total blocks {})\n", m_BufferHandles.Size());
 }
 
-void AVertexMemoryGPU::CheckMemoryLeaks()
+void VertexMemoryGPU::CheckMemoryLeaks()
 {
-    for (SVertexHandle* handle : Handles)
+    for (VertexHandle* handle : m_Handles)
     {
         LOG("==== Vertex Memory Leak ====\n");
         LOG("Chunk Address: {} Size: {}\n", handle->Address, handle->Size);
     }
-    for (SVertexHandle* handle : HugeHandles)
+    for (VertexHandle* handle : m_HugeHandles)
     {
         LOG("==== Vertex Memory Leak ====\n");
         LOG("Chunk Address: {} Size: {} (Huge)\n", handle->Address, handle->Size);
     }
 }
 
-AStreamedMemoryGPU::AStreamedMemoryGPU(RenderCore::IDevice* pDevice) :
-    pDevice(pDevice), pImmediateContext(pDevice->GetImmediateContext())
+StreamedMemoryGPU::StreamedMemoryGPU(RenderCore::IDevice* pDevice) :
+    m_pDevice(pDevice), m_pImmediateContext(pDevice->GetImmediateContext())
 {
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = STREAMED_MEMORY_GPU_BLOCK_SIZE * STREAMED_MEMORY_GPU_BUFFERS_COUNT;
 
     bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT);
     bufferCI.bImmutableStorage     = true;
 
-    pDevice->CreateBuffer(bufferCI, nullptr, &Buffer);
+    pDevice->CreateBuffer(bufferCI, nullptr, &m_Buffer);
 
-    Buffer->SetDebugName("Streamed memory buffer");
+    m_Buffer->SetDebugName("Streamed memory buffer");
 
-    pMappedMemory = pImmediateContext->MapBuffer(Buffer,
+    m_pMappedMemory = m_pImmediateContext->MapBuffer(m_Buffer,
                                                  RenderCore::MAP_TRANSFER_WRITE,
                                                  RenderCore::MAP_NO_INVALIDATE, //RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
                                                  RenderCore::MAP_PERSISTENT_COHERENT,
@@ -428,110 +428,110 @@ AStreamedMemoryGPU::AStreamedMemoryGPU(RenderCore::IDevice* pDevice) :
                                                  false  // unsynchronized
     );
 
-    if (!pMappedMemory)
+    if (!m_pMappedMemory)
     {
-        CriticalError("AStreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
+        CriticalError("StreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
-    Platform::ZeroMem(ChainBuffer, sizeof(ChainBuffer));
+    Platform::ZeroMem(m_ChainBuffer, sizeof(m_ChainBuffer));
 
-    BufferIndex            = 0;
-    MaxMemoryUsage         = 0;
-    LastAllocatedBlockSize = 0;
+    m_BufferIndex = 0;
+    m_MaxMemoryUsage = 0;
+    m_LastAllocatedBlockSize = 0;
 
-    VertexBufferAlignment   = 32; // TODO: Get from driver!!!
-    IndexBufferAlignment    = 16; // TODO: Get from driver!!!
-    ConstantBufferAlignment = pDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
+    m_VertexBufferAlignment = 32; // TODO: Get from driver!!!
+    m_IndexBufferAlignment = 16;  // TODO: Get from driver!!!
+    m_ConstantBufferAlignment = pDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
 }
 
-AStreamedMemoryGPU::~AStreamedMemoryGPU()
+StreamedMemoryGPU::~StreamedMemoryGPU()
 {
     for (int i = 0; i < STREAMED_MEMORY_GPU_BUFFERS_COUNT; i++)
     {
-        SChainBuffer* pChainBuffer = &ChainBuffer[i];
+        ChainBuffer* pChainBuffer = &m_ChainBuffer[i];
 
         Wait(pChainBuffer->Sync);
-        pImmediateContext->RemoveSync(pChainBuffer->Sync);
+        m_pImmediateContext->RemoveSync(pChainBuffer->Sync);
     }
 
-    if (Buffer)
+    if (m_Buffer)
     {
-        pImmediateContext->UnmapBuffer(Buffer);
+        m_pImmediateContext->UnmapBuffer(m_Buffer);
     }
 }
 
-size_t AStreamedMemoryGPU::AllocateVertex(size_t _SizeInBytes, const void* _Data)
+size_t StreamedMemoryGPU::AllocateVertex(size_t _SizeInBytes, const void* _Data)
 {
-    return Allocate(_SizeInBytes, VertexBufferAlignment, _Data);
+    return Allocate(_SizeInBytes, m_VertexBufferAlignment, _Data);
 }
 
-size_t AStreamedMemoryGPU::AllocateIndex(size_t _SizeInBytes, const void* _Data)
+size_t StreamedMemoryGPU::AllocateIndex(size_t _SizeInBytes, const void* _Data)
 {
-    return Allocate(_SizeInBytes, IndexBufferAlignment, _Data);
+    return Allocate(_SizeInBytes, m_IndexBufferAlignment, _Data);
 }
 
-size_t AStreamedMemoryGPU::AllocateJoint(size_t _SizeInBytes, const void* _Data)
+size_t StreamedMemoryGPU::AllocateJoint(size_t _SizeInBytes, const void* _Data)
 {
-    return Allocate(_SizeInBytes, ConstantBufferAlignment, _Data);
+    return Allocate(_SizeInBytes, m_ConstantBufferAlignment, _Data);
 }
 
-size_t AStreamedMemoryGPU::AllocateConstant(size_t _SizeInBytes, const void* _Data)
+size_t StreamedMemoryGPU::AllocateConstant(size_t _SizeInBytes, const void* _Data)
 {
-    return Allocate(_SizeInBytes, ConstantBufferAlignment, _Data);
+    return Allocate(_SizeInBytes, m_ConstantBufferAlignment, _Data);
 }
 
-size_t AStreamedMemoryGPU::AllocateWithCustomAlignment(size_t _SizeInBytes, int _Alignment, const void* _Data)
+size_t StreamedMemoryGPU::AllocateWithCustomAlignment(size_t _SizeInBytes, int _Alignment, const void* _Data)
 {
     return Allocate(_SizeInBytes, _Alignment, _Data);
 }
 
-void* AStreamedMemoryGPU::Map(size_t _StreamHandle)
+void* StreamedMemoryGPU::Map(size_t _StreamHandle)
 {
-    return (byte*)pMappedMemory + _StreamHandle;
+    return (byte*)m_pMappedMemory + _StreamHandle;
 }
 
-void AStreamedMemoryGPU::GetPhysicalBufferAndOffset(size_t StreamHandle, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void StreamedMemoryGPU::GetPhysicalBufferAndOffset(size_t StreamHandle, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
-    *ppBuffer = Buffer;
+    *ppBuffer = m_Buffer;
     *pOffset = StreamHandle;
 }
 
-RenderCore::IBuffer* AStreamedMemoryGPU::GetBufferGPU()
+RenderCore::IBuffer* StreamedMemoryGPU::GetBufferGPU()
 {
-    return Buffer;
+    return m_Buffer;
 }
 
-void AStreamedMemoryGPU::Wait(RenderCore::SyncObject Sync)
+void StreamedMemoryGPU::Wait(RenderCore::SyncObject Sync)
 {
     const uint64_t timeOutNanoseconds = 1;
     if (Sync)
     {
         RenderCore::CLIENT_WAIT_STATUS status;
         do {
-            status = pImmediateContext->ClientWait(Sync, timeOutNanoseconds);
+            status = m_pImmediateContext->ClientWait(Sync, timeOutNanoseconds);
         } while (status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED);
     }
 }
 
-void AStreamedMemoryGPU::Wait()
+void StreamedMemoryGPU::Wait()
 {
-    Wait(ChainBuffer[BufferIndex].Sync);
+    Wait(m_ChainBuffer[m_BufferIndex].Sync);
 }
 
-void AStreamedMemoryGPU::Swap()
+void StreamedMemoryGPU::Swap()
 {
-    pImmediateContext->RemoveSync(ChainBuffer[BufferIndex].Sync);
-    ChainBuffer[BufferIndex].Sync = pImmediateContext->FenceSync();
+    m_pImmediateContext->RemoveSync(m_ChainBuffer[m_BufferIndex].Sync);
+    m_ChainBuffer[m_BufferIndex].Sync = m_pImmediateContext->FenceSync();
 
-    MaxMemoryUsage                        = Math::Max(MaxMemoryUsage, ChainBuffer[BufferIndex].UsedMemory);
-    BufferIndex                           = (BufferIndex + 1) % STREAMED_MEMORY_GPU_BUFFERS_COUNT;
-    ChainBuffer[BufferIndex].HandlesCount = 0;
-    ChainBuffer[BufferIndex].UsedMemory   = 0;
+    m_MaxMemoryUsage = Math::Max(m_MaxMemoryUsage, m_ChainBuffer[m_BufferIndex].UsedMemory);
+    m_BufferIndex = (m_BufferIndex + 1) % STREAMED_MEMORY_GPU_BUFFERS_COUNT;
+    m_ChainBuffer[m_BufferIndex].HandlesCount = 0;
+    m_ChainBuffer[m_BufferIndex].UsedMemory = 0;
 
-    LastAllocatedBlockSize = 0;
+    m_LastAllocatedBlockSize = 0;
 }
 
-size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const void* _Data)
+size_t StreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const void* _Data)
 {
     HK_ASSERT(_SizeInBytes > 0);
 
@@ -541,36 +541,36 @@ size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const v
         _SizeInBytes = 1;
     }
 
-    SChainBuffer* pChainBuffer = &ChainBuffer[BufferIndex];
+    ChainBuffer* pChainBuffer = &m_ChainBuffer[m_BufferIndex];
 
     size_t alignedOffset = Align(pChainBuffer->UsedMemory, _Alignment);
 
     if (alignedOffset + _SizeInBytes > STREAMED_MEMORY_GPU_BLOCK_SIZE)
     {
-        CriticalError("AStreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
+        CriticalError("StreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
     }
 
-    LastAllocatedBlockSize = _SizeInBytes;
+    m_LastAllocatedBlockSize = _SizeInBytes;
 
     pChainBuffer->UsedMemory = alignedOffset + _SizeInBytes;
     pChainBuffer->HandlesCount++;
 
-    alignedOffset += BufferIndex * STREAMED_MEMORY_GPU_BLOCK_SIZE;
+    alignedOffset += m_BufferIndex * STREAMED_MEMORY_GPU_BLOCK_SIZE;
 
     if (_Data)
     {
-        Platform::Memcpy((byte*)pMappedMemory + alignedOffset, _Data, _SizeInBytes);
+        Platform::Memcpy((byte*)m_pMappedMemory + alignedOffset, _Data, _SizeInBytes);
     }
 
     return alignedOffset;
 }
 
-void AStreamedMemoryGPU::ShrinkLastAllocatedMemoryBlock(size_t _SizeInBytes)
+void StreamedMemoryGPU::ShrinkLastAllocatedMemoryBlock(size_t _SizeInBytes)
 {
-    HK_ASSERT(_SizeInBytes <= LastAllocatedBlockSize);
+    HK_ASSERT(_SizeInBytes <= m_LastAllocatedBlockSize);
 
-    SChainBuffer* pChainBuffer = &ChainBuffer[BufferIndex];
-    pChainBuffer->UsedMemory   = pChainBuffer->UsedMemory - LastAllocatedBlockSize + _SizeInBytes;
+    ChainBuffer* pChainBuffer = &m_ChainBuffer[m_BufferIndex];
+    pChainBuffer->UsedMemory = pChainBuffer->UsedMemory - m_LastAllocatedBlockSize + _SizeInBytes;
 
-    LastAllocatedBlockSize = _SizeInBytes;
+    m_LastAllocatedBlockSize = _SizeInBytes;
 }

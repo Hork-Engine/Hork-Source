@@ -39,7 +39,7 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-AConsoleVar com_DrawRootComponentAxis("com_DrawRootComponentAxis"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawRootComponentAxis("com_DrawRootComponentAxis"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AActor)
 
@@ -53,32 +53,32 @@ AActor::AActor()
 
 void AActor::Destroy()
 {
-    AWorld::DestroyActor(this);
+    World::DestroyActor(this);
 }
 
-AActorComponent* AActor::CreateComponent(uint64_t _ClassId, AStringView InName)
+ActorComponent* AActor::CreateComponent(uint64_t _ClassId, StringView InName)
 {
-    AActorComponent* component = static_cast<AActorComponent*>(AActorComponent::Factory().CreateInstance(_ClassId));
+    ActorComponent* component = static_cast<ActorComponent*>(ActorComponent::Factory().CreateInstance(_ClassId));
     AddComponent(component, InName);
     return component;
 }
 
-AActorComponent* AActor::CreateComponent(const char* _ClassName, AStringView InName)
+ActorComponent* AActor::CreateComponent(const char* _ClassName, StringView InName)
 {
-    AActorComponent* component = static_cast<AActorComponent*>(AActorComponent::Factory().CreateInstance(_ClassName));
+    ActorComponent* component = static_cast<ActorComponent*>(ActorComponent::Factory().CreateInstance(_ClassName));
     AddComponent(component, InName);
     return component;
 }
 
-AActorComponent* AActor::CreateComponent(AClassMeta const* _ClassMeta, AStringView InName)
+ActorComponent* AActor::CreateComponent(ClassMeta const* _ClassMeta, StringView InName)
 {
-    HK_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
-    AActorComponent* component = static_cast<AActorComponent*>(_ClassMeta->CreateInstance());
+    HK_ASSERT(_ClassMeta->Factory() == &ActorComponent::Factory());
+    ActorComponent* component = static_cast<ActorComponent*>(_ClassMeta->CreateInstance());
     AddComponent(component, InName);
     return component;
 }
 
-void AActor::AddComponent(AActorComponent* Component, AStringView InName)
+void AActor::AddComponent(ActorComponent* Component, StringView InName)
 {
     if (!Component)
         return;
@@ -92,9 +92,9 @@ void AActor::AddComponent(AActorComponent* Component, AStringView InName)
     m_Components.Add(Component);
 }
 
-AActorComponent* AActor::GetComponent(uint64_t _ClassId)
+ActorComponent* AActor::GetComponent(uint64_t _ClassId)
 {
-    for (AActorComponent* component : m_Components)
+    for (ActorComponent* component : m_Components)
     {
         if (component->FinalClassId() == _ClassId)
         {
@@ -104,9 +104,9 @@ AActorComponent* AActor::GetComponent(uint64_t _ClassId)
     return nullptr;
 }
 
-AActorComponent* AActor::GetComponent(const char* _ClassName)
+ActorComponent* AActor::GetComponent(const char* _ClassName)
 {
-    for (AActorComponent* component : m_Components)
+    for (ActorComponent* component : m_Components)
     {
         if (!Platform::Strcmp(component->FinalClassName(), _ClassName))
         {
@@ -116,10 +116,10 @@ AActorComponent* AActor::GetComponent(const char* _ClassName)
     return nullptr;
 }
 
-AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
+ActorComponent* AActor::GetComponent(ClassMeta const* _ClassMeta)
 {
-    HK_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
-    for (AActorComponent* component : m_Components)
+    HK_ASSERT(_ClassMeta->Factory() == &ActorComponent::Factory());
+    for (ActorComponent* component : m_Components)
     {
         if (&component->FinalClassMeta() == _ClassMeta)
         {
@@ -133,7 +133,7 @@ AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
     {                                                                        \
         if (m_ScriptModule)                                                  \
         {                                                                    \
-            AActorScript* pScript = AActorScript::GetScript(m_ScriptModule); \
+            ActorScript* pScript = ActorScript::GetScript(m_ScriptModule); \
             pScript->Function(m_ScriptModule);                               \
         }                                                                    \
     }
@@ -142,7 +142,7 @@ AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
     {                                                                        \
         if (m_ScriptModule)                                                  \
         {                                                                    \
-            AActorScript* pScript = AActorScript::GetScript(m_ScriptModule); \
+            ActorScript* pScript = ActorScript::GetScript(m_ScriptModule); \
             pScript->Function(m_ScriptModule, __VA_ARGS__);                  \
         }                                                                    \
     }
@@ -182,9 +182,9 @@ void AActor::CallLateUpdate(float TimeStep)
     CALL_SCRIPT_ARG(LateUpdate, TimeStep);
 }
 
-void AActor::CallDrawDebug(ADebugRenderer* Renderer)
+void AActor::CallDrawDebug(DebugRenderer* Renderer)
 {
-    for (AActorComponent* component : m_Components)
+    for (ActorComponent* component : m_Components)
     {
         component->DrawDebug(Renderer);
     }
@@ -203,7 +203,7 @@ void AActor::CallDrawDebug(ADebugRenderer* Renderer)
     CALL_SCRIPT_ARG(DrawDebug, Renderer);
 }
 
-void AActor::ApplyDamage(SActorDamage const& Damage)
+void AActor::ApplyDamage(ActorDamage const& Damage)
 {
     OnApplyDamage(Damage);
 
@@ -218,14 +218,14 @@ asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
     return m_pWeakRefFlag;
 }
 
-bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
+bool AActor::SetPublicProperty(StringView PublicName, StringView Value)
 {
     if (!m_pActorDef)
         return false;
 
-    auto FindComponent = [this](AClassMeta const* ClassMeta, int ComponentIndex) -> AActorComponent*
+    auto FindComponent = [this](ClassMeta const* ClassMeta, int ComponentIndex) -> ActorComponent*
     {
-        for (AActorComponent* component : GetComponents())
+        for (ActorComponent* component : GetComponents())
         {
             if (component->FinalClassId() == ClassMeta->ClassId && component->m_LocalId == ComponentIndex)
                 return component;
@@ -233,14 +233,14 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
         return {};
     };
 
-    for (AActorDefinition::SPublicProperty const& prop : m_pActorDef->GetPublicProperties())
+    for (ActorDefinition::PublicProperty const& prop : m_pActorDef->GetPublicProperties())
     {
         if (PublicName == prop.PublicName)
         {
             if (prop.ComponentIndex != -1)
             {
                 // NOTE: component->LocalId should match ComponentIndex
-                AActorComponent* component = FindComponent(m_pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
+                ActorComponent* component = FindComponent(m_pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
                 if (component)
                 {
                     return component->SetProperty(prop.PropertyName, Value);
@@ -255,11 +255,11 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 
     if (m_ScriptModule)
     {
-        for (AActorDefinition::SScriptPublicProperty const& prop : m_pActorDef->GetScriptPublicProperties())
+        for (ActorDefinition::ScriptPublicProperty const& prop : m_pActorDef->GetScriptPublicProperties())
         {
             if (prop.PublicName == PublicName)
             {
-                return AActorScript::SetProperty(m_ScriptModule, prop.PropertyName, Value);
+                return ActorScript::SetProperty(m_ScriptModule, prop.PropertyName, Value);
             }
         }
     }
@@ -267,7 +267,7 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
     return false;
 }
 
-ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
+WorldTimer* AActor::AddTimer(TCallback<void()> const& Callback)
 {
     if (m_bPendingKill)
     {
@@ -275,7 +275,7 @@ ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
         return {};
     }
 
-    ATimer* timer = NewObj<ATimer>();
+    WorldTimer* timer = NewObj<WorldTimer>();
     timer->AddRef();
     timer->Callback = Callback;
 
@@ -290,7 +290,7 @@ ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
     return timer;
 }
 
-void AActor::RemoveTimer(ATimer* Timer)
+void AActor::RemoveTimer(WorldTimer* Timer)
 {
     if (!Timer)
     {
@@ -315,7 +315,7 @@ void AActor::RemoveTimer(ATimer* Timer)
 
 void AActor::RemoveAllTimers()
 {
-    for (ATimer* timer = m_TimerList; timer; timer = timer->NextInActor)
+    for (WorldTimer* timer = m_TimerList; timer; timer = timer->NextInActor)
     {
         if (m_World)
         {

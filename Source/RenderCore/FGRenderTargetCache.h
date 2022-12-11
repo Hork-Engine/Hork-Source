@@ -35,12 +35,12 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class FGRenderTargetCache : public ARefCounted
+class FGRenderTargetCache : public RefCounted
 {
 public:
     FGRenderTargetCache(IDevice* pDevice);
 
-    ITexture* Acquire(STextureDesc const& TextureDesc);
+    ITexture* Acquire(TextureDesc const& TextureDesc);
 
     void Release(ITexture* pTexture);
 

@@ -73,9 +73,9 @@ public:
 protected:
     void AdjustSize(Float2 const& size) override;
 
-    void Draw(ACanvas& canvas) override;
+    void Draw(Canvas& canvas) override;
 
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
     
 private:
     enum DRAW

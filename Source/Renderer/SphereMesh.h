@@ -32,15 +32,15 @@ SOFTWARE.
 
 #include <RenderCore/Buffer.h>
 
-class ASphereMesh : public ARefCounted
+class SphereMesh : public RefCounted
 {
 public:
-    ASphereMesh( int _HDiv = 128, int _VDiv = 128 );
+    SphereMesh(int _HDiv = 128, int _VDiv = 128);
 
-    TRef< RenderCore::IBuffer > VertexBuffer;
+    TRef<RenderCore::IBuffer> VertexBuffer;
 
     // Indices format unsigned short
-    TRef< RenderCore::IBuffer > IndexBuffer;
+    TRef<RenderCore::IBuffer> IndexBuffer;
 
     unsigned int IndexCount;
 };

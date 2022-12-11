@@ -347,26 +347,26 @@ void TestPhotometricData(PhotometricData const& photometricData)
 class IesParser
 {
 public:
-    IesParser(AStringView Text);
+    IesParser(StringView Text);
 
     PhotometricData Parse();
 
 private:
-    AStringView NextLine();
-    AStringView NextToken();
+    StringView NextLine();
+    StringView NextToken();
 
     int         m_LineNum{};
     const char* m_Ptr{};
     const char* m_End{};
 };
 
-IesParser::IesParser(AStringView Data) :
+IesParser::IesParser(StringView Data) :
     m_Ptr(Data.Begin()), m_End(Data.End())
 {}
 
 PhotometricData IesParser::Parse()
 {
-    AStringView text = NextLine();
+    StringView text = NextLine();
     if (text.IsEmpty())
     {
         LOG("IesParser::Parse: Empty file\n");
@@ -441,7 +441,7 @@ PhotometricData IesParser::Parse()
     return data;
 }
 
-AStringView IesParser::NextLine()
+StringView IesParser::NextLine()
 {
     const char* lineStart = m_Ptr;
     const char* lineEnd   = m_End;
@@ -469,10 +469,10 @@ AStringView IesParser::NextLine()
     while (lineEnd > lineStart && (Core::CharIsBlank(*(lineEnd - 1)) || *(lineEnd - 1) == '\r'))
         lineEnd--;
 
-    return AStringView(lineStart, lineEnd);
+    return StringView(lineStart, lineEnd);
 }
 
-AStringView IesParser::NextToken()
+StringView IesParser::NextToken()
 {
     while (m_Ptr < m_End && (Core::CharIsBlank(*m_Ptr) || *m_Ptr == '\n' || *m_Ptr == '\r'))
     {
@@ -488,10 +488,10 @@ AStringView IesParser::NextToken()
         m_Ptr++;
     }
 
-    return AStringView(tokenStart, m_Ptr);
+    return StringView(tokenStart, m_Ptr);
 }
 
-PhotometricData ParsePhotometricData(AStringView Text)
+PhotometricData ParsePhotometricData(StringView Text)
 {
     return IesParser(Text).Parse();
 }

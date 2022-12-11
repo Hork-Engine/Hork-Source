@@ -47,7 +47,7 @@ struct WeakRefCounter
     }
 };
 
-class ARefCounted
+class RefCounted
 {
 private:
     int m_RefCount{1};
@@ -55,9 +55,9 @@ private:
     WeakRefCounter* m_WeakRefCounter{};
 
 public:
-    ARefCounted() = default;
+    RefCounted() = default;
 
-    virtual ~ARefCounted()
+    virtual ~RefCounted()
     {
         if (m_WeakRefCounter)
         {
@@ -66,10 +66,10 @@ public:
     }
 
     /** Non-copyable pattern */
-    ARefCounted(ARefCounted const&) = delete;
+    RefCounted(RefCounted const&) = delete;
 
     /** Non-copyable pattern */
-    ARefCounted& operator=(ARefCounted const&) = delete;
+    RefCounted& operator=(RefCounted const&) = delete;
 
     /** Add reference */
     inline void AddRef()
@@ -111,23 +111,23 @@ public:
 
 /**
 
-SInterlockedRef
+InterlockedRef
 
 Reference counter is interlocked variable.
 
 */
-struct SInterlockedRef
+struct InterlockedRef
 {
-    HK_FORBID_COPY(SInterlockedRef)
+    HK_FORBID_COPY(InterlockedRef)
 
 private:
     /** Reference counter */
-    AAtomicInt m_RefCount{1};
+    AtomicInt m_RefCount{1};
 
 public:
-    SInterlockedRef() = default;
+    InterlockedRef() = default;
 
-    virtual ~SInterlockedRef() = default;
+    virtual ~InterlockedRef() = default;
 
     /** Add reference. */
     HK_FORCEINLINE void AddRef()

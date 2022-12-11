@@ -34,30 +34,30 @@ SOFTWARE.
 #include <Geometry/VectorMath.h>
 #include <RenderCore/FrameGraph.h>
 
-class AVirtualTextureFeedback
+class VirtualTextureFeedback
 {
 public:
-    AVirtualTextureFeedback();
-    virtual ~AVirtualTextureFeedback();
+    VirtualTextureFeedback();
+    virtual ~VirtualTextureFeedback();
 
-    void Begin( int Width, int Height );
-    void End( int * pFeedbackSize, const void ** ppData );
+    void Begin(int Width, int Height);
+    void End(int* pFeedbackSize, const void** ppData);
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph);
-    void DrawFeedback(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+    void AddPass(RenderCore::FrameGraph& FrameGraph);
+    void DrawFeedback(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
 
-    RenderCore::ITexture * GetFeedbackTexture() { return FeedbackTexture; }
-    RenderCore::ITexture * GetFeedbackDepth() { return FeedbackDepth; }
-    RenderCore::IBuffer * GetPixelBuffer() { return PixelBufferObject[SwapIndex]; }
-    Float2 const & GetResolutionRatio() const { return ResolutionRatio; }
+    RenderCore::ITexture* GetFeedbackTexture() { return FeedbackTexture; }
+    RenderCore::ITexture* GetFeedbackDepth() { return FeedbackDepth; }
+    RenderCore::IBuffer* GetPixelBuffer() { return PixelBufferObject[SwapIndex]; }
+    Float2 const& GetResolutionRatio() const { return ResolutionRatio; }
 
 private:
-    TRef< RenderCore::ITexture > FeedbackTexture;
-    TRef< RenderCore::ITexture > FeedbackDepth;
-    TRef< RenderCore::IBuffer > PixelBufferObject[2];
-    const void * MappedData[2];
+    TRef<RenderCore::ITexture> FeedbackTexture;
+    TRef<RenderCore::ITexture> FeedbackDepth;
+    TRef<RenderCore::IBuffer> PixelBufferObject[2];
+    const void* MappedData[2];
     int SwapIndex;
     Float2 ResolutionRatio;
     int FeedbackSize[2];
-    TRef< RenderCore::IPipeline > DrawFeedbackPipeline;
+    TRef<RenderCore::IPipeline> DrawFeedbackPipeline;
 };

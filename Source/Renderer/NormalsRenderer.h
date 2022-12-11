@@ -32,4 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-void AddNormalsPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+void AddNormalsPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);

@@ -31,31 +31,31 @@ SOFTWARE.
 #include "UIDecorator.h"
 #include "UIWidget.h"
 
-void UIBrushDecorator::DrawInactive(ACanvas& canvas, UIWidgetGeometry const& geometry)
+void UIBrushDecorator::DrawInactive(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (InactiveBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, InactiveBrush);
 }
 
-void UIBrushDecorator::DrawActive(ACanvas& canvas, UIWidgetGeometry const& geometry)
+void UIBrushDecorator::DrawActive(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (ActiveBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, ActiveBrush);
 }
 
-void UIBrushDecorator::DrawHovered(ACanvas& canvas, UIWidgetGeometry const& geometry)
+void UIBrushDecorator::DrawHovered(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (HoverBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, HoverBrush);
 }
 
-void UIBrushDecorator::DrawSelected(ACanvas& canvas, UIWidgetGeometry const& geometry)
+void UIBrushDecorator::DrawSelected(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (SelectedBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, SelectedBrush);
 }
 
-void UIBrushDecorator::DrawDisabled(ACanvas& canvas, UIWidgetGeometry const& geometry)
+void UIBrushDecorator::DrawDisabled(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (DisabledBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, DisabledBrush);

@@ -38,37 +38,37 @@ enum TIMER_STATE
     TIMER_STATE_TRIGGERED_ON_FIRST_DELAY = 4
 };
 
-HK_CLASS_META(ATimer)
+HK_CLASS_META(WorldTimer)
 
-ATimer::ATimer()
+WorldTimer::WorldTimer()
 {}
 
-ATimer::~ATimer()
+WorldTimer::~WorldTimer()
 {}
 
-void ATimer::Trigger()
+void WorldTimer::Trigger()
 {
     Callback();
 }
 
-void ATimer::Restart()
+void WorldTimer::Restart()
 {
     State       = 0;
     NumPulses   = 0;
     ElapsedTime = 0;
 }
 
-void ATimer::Stop()
+void WorldTimer::Stop()
 {
     State = TIMER_STATE_FINISHED;
 }
 
-bool ATimer::IsStopped() const
+bool WorldTimer::IsStopped() const
 {
     return !!(State & TIMER_STATE_FINISHED);
 }
 
-void ATimer::Tick(AWorld* World, float TimeStep)
+void WorldTimer::Tick(World* World, float TimeStep)
 {
     if (State & TIMER_STATE_FINISHED)
     {

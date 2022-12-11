@@ -38,25 +38,25 @@ SOFTWARE.
 
 
 /**
-SAudioChannel
+AudioChannel
 
 All members can be freely modified before submit to mixer thread
 All ***_COMMIT members are protected by spinlock
 */
-struct SAudioChannel final
+struct AudioChannel final
 {
-    HK_FORBID_COPY( SAudioChannel )
+    HK_FORBID_COPY(AudioChannel)
 
     /** Audio buffer. Read only */
-    SAudioBuffer * pBuffer;
+    AudioBuffer* pBuffer;
 
     /** Stream interface for partial audio streaming. Read only */
-    SAudioStream * pStream;
+    AudioStream* pStream;
 
     /** Playback position in frames.
     Read only for main thread. Modified by mixer thread.
     To change playback position from main thread PlaybackPos_COMMIT is used. */
-    AAtomicInt PlaybackPos;
+    AtomicInt PlaybackPos;
 
     /** PlaybackPos_COMMIT is used to change current playback position.
     Value is valid if PlaybackPos_COMMIT greater or equal to zero. */
@@ -101,17 +101,17 @@ struct SAudioChannel final
     bool bSpatializedStereo_COMMIT : 1;
 
     /** The stop signal. It's setted by mixer thread. If it's true, main thread should reject to use this channel and remove it. */
-    AAtomicBool Stopped;
+    AtomicBool Stopped;
 
     /** Reference counter */
-    AAtomicInt RefCount;
+    AtomicInt RefCount;
 
     /** Channel iterator. Used by mixer thread. */
-    SAudioChannel * Next;
+    AudioChannel* Next;
     /** Channel iterator. Used by mixer thread. */
-    SAudioChannel * Prev;
+    AudioChannel* Prev;
 
-    ASpinLock SpinLock;
+    SpinLock SpinLock;
 
     /** Frame count. Read only. */
     int FrameCount;
@@ -126,7 +126,7 @@ struct SAudioChannel final
     int SampleStride;
 
     /** Audio data. Just a wrapper to simplify access to audio buffer */
-    HK_FORCEINLINE const void * GetFrames() const
+    HK_FORCEINLINE const void* GetFrames() const
     {
         return pBuffer->GetFrames();
     }
@@ -147,36 +147,36 @@ struct SAudioChannel final
     }
 
 public:
-    void * operator new( size_t _SizeInBytes )
+    void* operator new(size_t _SizeInBytes)
     {
-        AMutexGurad lockGuard( PoolMutex );
+        MutexGurad lockGuard(PoolMutex);
         return ChannelPool.Allocate();
     }
 
-    void operator delete( void * _Ptr )
+    void operator delete(void* _Ptr)
     {
-        AMutexGurad lockGuard( PoolMutex );
-        ChannelPool.Deallocate( _Ptr );
+        MutexGurad lockGuard(PoolMutex);
+        ChannelPool.Deallocate(_Ptr);
     }
 
-    SAudioChannel( int _StartFrame,
-                   int _LoopStart,
-                   int _LoopsCount,
-                   SAudioBuffer * _pBuffer,
-                   SAudioStream * _pStream,
-                   bool _bVirtualizeWhenSilent,
-                   const int _Volume[2],
-                   Float3 const & _LocalDir,
-                   bool _bSpatializedStereo,
-                   bool _bPaused );
+    AudioChannel(int _StartFrame,
+                 int _LoopStart,
+                 int _LoopsCount,
+                 AudioBuffer* _pBuffer,
+                 AudioStream* _pStream,
+                 bool _bVirtualizeWhenSilent,
+                 const int _Volume[2],
+                 Float3 const& _LocalDir,
+                 bool _bSpatializedStereo,
+                 bool _bPaused);
 
-    ~SAudioChannel();
+    ~AudioChannel();
 
     /** Commit spatial data. Called from main thread. */
-    void Commit( int _Volume[2], Float3 const & _LocalDir, bool _bSpatializedStereo, bool _bPaused );
+    void Commit(int _Volume[2], Float3 const& _LocalDir, bool _bSpatializedStereo, bool _bPaused);
 
     /** Commit playback position. Called from main thread. */
-    void ChangePlaybackPosition( int _PlaybackPos );
+    void ChangePlaybackPosition(int _PlaybackPos);
 
     /** Add reference. Can be used from both main and mixer threads. */
     HK_FORCEINLINE void AddRef()
@@ -187,7 +187,8 @@ public:
     /** Remove reference. Can be used from both main and mixer threads. */
     HK_FORCEINLINE void RemoveRef()
     {
-        if ( RefCount.Decrement() == 0 ) {
+        if (RefCount.Decrement() == 0)
+        {
             delete this;
         }
     }
@@ -202,6 +203,6 @@ public:
     static void FreePool();
 
 private:
-    static TPoolAllocator< SAudioChannel > ChannelPool;
-    static AMutex PoolMutex;
+    static TPoolAllocator<AudioChannel> ChannelPool;
+    static Mutex PoolMutex;
 };

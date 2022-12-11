@@ -32,10 +32,10 @@ SOFTWARE.
 #include "FrameConstantBuffer.h"
 #include "RenderLocal.h"
 
-AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
+FrameConstantBuffer::FrameConstantBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )
 {
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = BufferSize * SWAP_CHAIN_SIZE;
 
@@ -51,7 +51,7 @@ AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
                                  false ); // unsynchronized
 
     if ( !pMappedMemory ) {
-        CriticalError( "AFrameConstantBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes );
+        CriticalError( "FrameConstantBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes );
     }
 
     for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {
@@ -64,7 +64,7 @@ AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
     UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
 }
 
-AFrameConstantBuffer::~AFrameConstantBuffer()
+FrameConstantBuffer::~FrameConstantBuffer()
 {
     for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {
         Wait( ChainBuffer[i].Sync );
@@ -74,7 +74,7 @@ AFrameConstantBuffer::~AFrameConstantBuffer()
     Buffer->Unmap();
 }
 
-size_t AFrameConstantBuffer::Allocate( size_t InSize )
+size_t FrameConstantBuffer::Allocate( size_t InSize )
 {
     HK_ASSERT( InSize <= BufferSize );
 
@@ -83,12 +83,12 @@ size_t AFrameConstantBuffer::Allocate( size_t InSize )
         InSize = 1;
     }
 
-    SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
+    ChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 
     size_t alignedOffset = Align( pChainBuffer->UsedMemory, UniformBufferOffsetAlignment );
 
     if ( alignedOffset + InSize > BufferSize ) {
-        CriticalError( "AFrameConstantBuffer::Allocate: failed on allocation of {} bytes\nIncrease buffer size\n", InSize );
+        CriticalError( "FrameConstantBuffer::Allocate: failed on allocation of {} bytes\nIncrease buffer size\n", InSize );
     }
 
     pChainBuffer->UsedMemory = alignedOffset + InSize;
@@ -98,14 +98,14 @@ size_t AFrameConstantBuffer::Allocate( size_t InSize )
     return alignedOffset;
 }
 
-void AFrameConstantBuffer::Begin()
+void FrameConstantBuffer::Begin()
 {
     Wait( ChainBuffer[BufferIndex].Sync );
 }
 
-void AFrameConstantBuffer::End()
+void FrameConstantBuffer::End()
 {
-    SChainBuffer * pCurrent = &ChainBuffer[BufferIndex];
+    ChainBuffer * pCurrent = &ChainBuffer[BufferIndex];
     rcmd->RemoveSync( pCurrent->Sync );
 
     pCurrent->Sync = rcmd->FenceSync();
@@ -116,7 +116,7 @@ void AFrameConstantBuffer::End()
     pCurrent->UsedMemory = 0;
 }
 
-void AFrameConstantBuffer::Wait( RenderCore::SyncObject Sync )
+void FrameConstantBuffer::Wait( RenderCore::SyncObject Sync )
 {
     const uint64_t timeOutNanoseconds = 1;
     if ( Sync ) {

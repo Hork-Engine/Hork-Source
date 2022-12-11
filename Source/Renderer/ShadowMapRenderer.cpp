@@ -3,7 +3,7 @@
 
 using namespace RenderCore;
 
-AConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "32"s); // Allowed 16, 32 bits
+ConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "32"s); // Allowed 16, 32 bits
 
 static const float  EVSM_positiveExponent = 40.0;
 static const float  EVSM_negativeExponent = 5.0;
@@ -11,28 +11,28 @@ static const Float2 EVSM_WarpDepth(std::exp(EVSM_positiveExponent), -std::exp(-E
 const Float4        EVSM_ClearValue(EVSM_WarpDepth.X, EVSM_WarpDepth.Y, EVSM_WarpDepth.X* EVSM_WarpDepth.X, EVSM_WarpDepth.Y* EVSM_WarpDepth.Y);
 const Float4        VSM_ClearValue(1.0f);
 
-AShadowMapRenderer::AShadowMapRenderer()
+ShadowMapRenderer::ShadowMapRenderer()
 {
     CreatePipeline();
     CreateLightPortalPipeline();
 
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_D16)
-                               .SetResolution(STextureResolution2DArray(1, 1, 1))
+                               .SetResolution(TextureResolution2DArray(1, 1, 1))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &DummyShadowMap);
     DummyShadowMap->SetDebugName("Dummy Shadow Map");
 
-    SClearValue clearValue;
+    ClearValue clearValue;
     clearValue.Float1.R = 1.0f;
     rcmd->ClearTexture(DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue);
 }
 
-void AShadowMapRenderer::CreatePipeline()
+void ShadowMapRenderer::CreatePipeline()
 {
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
 #if defined SHADOWMAP_VSM
     //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
     Desc.CullMode = POLYGON_CULL_DISABLED;
@@ -49,10 +49,10 @@ void AShadowMapRenderer::CreatePipeline()
     bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_NO_BLEND);
 #endif
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_LESS;
 
-    SVertexBindingInfo vertexBinding[1] = {};
+    VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
     vertexBinding[0].Stride    = sizeof(Float3);
@@ -61,7 +61,7 @@ void AShadowMapRenderer::CreatePipeline()
     pipelineCI.NumVertexBindings = 1;
     pipelineCI.pVertexBindings   = vertexBinding;
 
-    constexpr SVertexAttribInfo vertexAttribs[] = {
+    constexpr VertexAttribInfo vertexAttribs[] = {
         {"InPosition",
          0, // location
          0, // buffer input slot
@@ -73,11 +73,11 @@ void AShadowMapRenderer::CreatePipeline()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs   = vertexAttribs;
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    AShaderFactory::CreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    AShaderFactory::CreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
+    ShaderFactory::CreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
 
     bool bVSM = false;
 
@@ -87,10 +87,10 @@ void AShadowMapRenderer::CreatePipeline()
 
     if (/*_ShadowMasking || */ bVSM)
     {
-        AShaderFactory::CreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
+        ShaderFactory::CreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
     }
 
-    SBufferInfo bufferInfo[4];
+    BufferInfo bufferInfo[4];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -102,19 +102,19 @@ void AShadowMapRenderer::CreatePipeline()
     GDevice->CreatePipeline(pipelineCI, &StaticShadowCasterPipeline);
 }
 
-void AShadowMapRenderer::CreateLightPortalPipeline()
+void ShadowMapRenderer::CreateLightPortalPipeline()
 {
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.bScissorEnable        = false;
     rsd.CullMode              = POLYGON_CULL_FRONT;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_GREATER; //CMPFUNC_LESS;
     dssd.bDepthEnable            = true;
 
-    SVertexBindingInfo vertexBinding[1] = {};
+    VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
     vertexBinding[0].Stride    = sizeof(Float3);
@@ -123,7 +123,7 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     pipelineCI.NumVertexBindings = 1;
     pipelineCI.pVertexBindings   = vertexBinding;
 
-    constexpr SVertexAttribInfo vertexAttribs[] = {
+    constexpr VertexAttribInfo vertexAttribs[] = {
         {"InPosition",
          0, // location
          0, // buffer input slot
@@ -135,17 +135,17 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs   = vertexAttribs;
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    AShaderFactory::CreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    AShaderFactory::CreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
+    ShaderFactory::CreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
 
 #if 0
     CreateFragmentShader( "instance_lightportal.frag", pipelineCI.pFS );
 #endif
 
-    SBufferInfo bufferInfo[4];
+    BufferInfo bufferInfo[4];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants (unused)
     bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants (unused)
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton (unused)
@@ -157,9 +157,9 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     GDevice->CreatePipeline(pipelineCI, &LightPortalPipeline);
 }
 
-bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
+bool ShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, ShadowRenderInstance const* instance)
 {
-    AMaterialGPU* pMaterial = instance->Material;
+    MaterialGPU* pMaterial = instance->Material;
 
     if (pMaterial)
     {
@@ -195,9 +195,9 @@ bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, 
     return true;
 }
 
-bool AShadowMapRenderer::BindMaterialOmniShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
+bool ShadowMapRenderer::BindMaterialOmniShadowMap(IImmediateContext* immediateCtx, ShadowRenderInstance const* instance)
 {
-    AMaterialGPU* pMaterial = instance->Material;
+    MaterialGPU* pMaterial = instance->Material;
 
     if (pMaterial)
     {
@@ -282,12 +282,12 @@ static void BlurDepthMoments()
 }
 #endif
 
-void AShadowMapRenderer::AddDummyShadowMap(AFrameGraph& FrameGraph, FGTextureProxy** ppShadowMapDepth)
+void ShadowMapRenderer::AddDummyShadowMap(FrameGraph& FrameGraph, FGTextureProxy** ppShadowMapDepth)
 {
     *ppShadowMapDepth = FrameGraph.AddExternalResource<FGTextureProxy>("Dummy Shadow Map", DummyShadowMap);
 }
 
-void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInstance const* Light, FGTextureProxy** ppShadowMapDepth)
+void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, DirectionalLightInstance const* Light, FGTextureProxy** ppShadowMapDepth)
 {
     if (Light->ShadowmapIndex < 0)
     {
@@ -295,7 +295,7 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
         return;
     }
 
-    SLightShadowmap const* shadowMap = &GFrameData->LightShadowmaps[Light->ShadowmapIndex];
+    LightShadowmap const* shadowMap = &GFrameData->LightShadowmaps[Light->ShadowmapIndex];
     if (shadowMap->ShadowInstanceCount == 0)
     {
         AddDummyShadowMap(FrameGraph, ppShadowMapDepth);
@@ -315,18 +315,18 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
         depthFormat = TEXTURE_FORMAT_D32;
     }
 
-    ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("ShadowMap Pass");
+    RenderPass& pass = FrameGraph.AddTask<RenderPass>("ShadowMap Pass");
 
     pass.SetRenderArea(cascadeResolution, cascadeResolution);
 
     pass.SetDepthStencilAttachment(
-        STextureAttachment("Shadow Cascade Depth texture",
-                           STextureDesc()
+        TextureAttachment("Shadow Cascade Depth texture",
+                           TextureDesc()
                                .SetFormat(depthFormat)
-                               .SetResolution(STextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades))
+                               .SetResolution(TextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades))
                                .SetBindFlags(BIND_SHADER_RESOURCE))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
-            .SetClearValue(shadowMap->LightPortalsCount > 0 ? SClearDepthStencilValue(0, 0) : SClearDepthStencilValue(1, 0)));
+            .SetClearValue(shadowMap->LightPortalsCount > 0 ? ClearDepthStencilValue(0, 0) : ClearDepthStencilValue(1, 0)));
 
 #if defined SHADOWMAP_EVSM || defined SHADOWMAP_VSM
 #    ifdef SHADOWMAP_EVSM
@@ -356,18 +356,18 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
 #endif
 
     pass.AddSubpass({}, // no color attachments
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
                         BindShadowCascades(Light->ViewProjStreamHandle);
 
-                        SDrawIndexedCmd drawCmd;
+                        DrawIndexedCmd drawCmd;
                         drawCmd.StartInstanceLocation = 0;
 
                         for (int i = 0; i < shadowMap->LightPortalsCount; i++)
                         {
-                            SLightPortalRenderInstance const* instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
+                            LightPortalRenderInstance const* instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
 
                             immediateCtx->BindPipeline(LightPortalPipeline.GetObject());
 
@@ -385,7 +385,7 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
 
                         for (int i = 0; i < shadowMap->ShadowInstanceCount; i++)
                         {
-                            SShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
+                            ShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
 
                             if (!BindMaterialShadowMap(immediateCtx, instance))
                             {
@@ -406,7 +406,7 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
     *ppShadowMapDepth = pass.GetDepthStencilAttachment().pResource;
 }
 
-void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, AOmnidirectionalShadowMapPool& Pool, FGTextureProxy** ppOmnidirectionalShadowMapArray)
+void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, LightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, OmnidirectionalShadowMapPool& Pool, FGTextureProxy** ppOmnidirectionalShadowMapArray)
 {
     FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", Pool.GetTexture());
 
@@ -431,27 +431,27 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const*
         for (int faceIndex = 0; faceIndex < 6; faceIndex++)
         {
             int                    sliceIndex = shadowMapIndex + faceIndex;
-            SLightShadowmap const* shadowMap  = &ShadowMaps[sliceIndex];
+            LightShadowmap const* shadowMap  = &ShadowMaps[sliceIndex];
 
-            ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Omnidirectional Shadow Map Pass");
+            RenderPass& pass = FrameGraph.AddTask<RenderPass>("Omnidirectional Shadow Map Pass");
 
             pass.SetRenderArea(faceResolution, faceResolution);
 
             // Attach view
             pass.SetDepthStencilAttachment(
                 {
-                    STextureAttachment(OmnidirectionalShadowMapArray_R)
+                    TextureAttachment(OmnidirectionalShadowMapArray_R)
                         .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
                         .SetSlice(sliceIndex)
-                        .SetClearValue(SClearDepthStencilValue(0, 0))
+                        .SetClearValue(ClearDepthStencilValue(0, 0))
                 });
 
             pass.AddSubpass({}, // no color attachments
-                            [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                            [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                             {
                                 IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                                SDrawIndexedCmd drawCmd;
+                                DrawIndexedCmd drawCmd;
                                 drawCmd.StartInstanceLocation = 0;
                                 drawCmd.InstanceCount         = 1;
 
@@ -459,7 +459,7 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const*
 
                                 for (int i = 0; i < shadowMap->ShadowInstanceCount; i++)
                                 {
-                                    SShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
+                                    ShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
 
                                     if (!BindMaterialOmniShadowMap(immediateCtx, instance))
                                     {

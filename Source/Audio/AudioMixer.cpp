@@ -36,26 +36,26 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AConsoleVar Snd_MixAhead("Snd_MixAhead"s, "0.1"s);
-AConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"s, "16"s);
-AConsoleVar Snd_HRTF("Snd_HRTF"s, "1"s);
+ConsoleVar Snd_MixAhead("Snd_MixAhead"s, "0.1"s);
+ConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"s, "16"s);
+ConsoleVar Snd_HRTF("Snd_HRTF"s, "1"s);
 
 #if 0
-AConsoleVar Rev_RoomSize( "Rev_RoomSize"s,"0.5"s );
-AConsoleVar Rev_Damp(  "Rev_Damp"s,  "0.5"s );
-AConsoleVar Rev_Wet(  "Rev_Wet"s,  "0.33"s );
-AConsoleVar Rev_Dry(  "Rev_Dry"s,  "1"s );
-AConsoleVar Rev_Width(  "Rev_Width"s,  "1"s );
+ConsoleVar Rev_RoomSize( "Rev_RoomSize"s,"0.5"s );
+ConsoleVar Rev_Damp(  "Rev_Damp"s,  "0.5"s );
+ConsoleVar Rev_Wet(  "Rev_Wet"s,  "0.33"s );
+ConsoleVar Rev_Dry(  "Rev_Dry"s,  "1"s );
+ConsoleVar Rev_Width(  "Rev_Width"s,  "1"s );
 #endif
 
 // u8 to s32 sample convertion
-struct SSampleLookup8Bit
+struct SampleLookup8Bit
 {
     int Data[32][256];
 
     int16_t ToShort[256];
 
-    SSampleLookup8Bit()
+    SampleLookup8Bit()
     {
         for (int v = 0; v < 32; v++)
         {
@@ -73,13 +73,13 @@ struct SSampleLookup8Bit
     }
 };
 
-static const SSampleLookup8Bit SampleLookup8Bit;
+static const SampleLookup8Bit SampleLookup8Bit;
 
-AAudioMixer::AAudioMixer(AAudioDevice* _Device) :
+AudioMixer::AudioMixer(AudioDevice* _Device) :
     pDevice(_Device), DeviceRawPtr(_Device), bAsync(false), RenderFrame(0)
 {
-    Hrtf         = MakeUnique<AAudioHRTF>(DeviceRawPtr->GetSampleRate());
-    ReverbFilter = MakeUnique<AFreeverb>(DeviceRawPtr->GetSampleRate());
+    Hrtf         = MakeUnique<AudioHRTF>(DeviceRawPtr->GetSampleRate());
+    ReverbFilter = MakeUnique<Freeverb>(DeviceRawPtr->GetSampleRate());
 
     Channels        = nullptr;
     ChannelsTail    = nullptr;
@@ -90,7 +90,7 @@ AAudioMixer::AAudioMixer(AAudioDevice* _Device) :
     NumActiveChannels.StoreRelaxed(0);
 }
 
-AAudioMixer::~AAudioMixer()
+AudioMixer::~AudioMixer()
 {
     StopAsync();
 
@@ -98,45 +98,45 @@ AAudioMixer::~AAudioMixer()
     AddPendingChannels();
 
     // Free channels
-    SAudioChannel* next;
-    for (SAudioChannel* chan = Channels; chan; chan = next)
+    AudioChannel* next;
+    for (AudioChannel* chan = Channels; chan; chan = next)
     {
         next = chan->Next;
         chan->RemoveRef();
     }
 
-    SAudioChannel::FreePool();
+    AudioChannel::FreePool();
 }
 
-void AAudioMixer::StartAsync()
+void AudioMixer::StartAsync()
 {
     bAsync = true;
     DeviceRawPtr->SetMixerCallback([this](uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
                                    { UpdateAsync(pTransferBuffer, TransferBufferSizeInFrames, FrameNum, MinFramesToRender); });
 }
 
-void AAudioMixer::StopAsync()
+void AudioMixer::StopAsync()
 {
     bAsync = false;
     DeviceRawPtr->SetMixerCallback(nullptr);
 }
 
-void AAudioMixer::SubmitChannel(SAudioChannel* Channel)
+void AudioMixer::SubmitChannel(AudioChannel* Channel)
 {
     Channel->AddRef();
 
-    ASpinLockGuard lockGuard(SubmitLock);
+    SpinLockGuard lockGuard(SubmitLock);
 
     HK_ASSERT(!INTRUSIVE_EXISTS(Channel, Next, Prev, PendingList, PendingListTail));
     INTRUSIVE_ADD(Channel, Next, Prev, PendingList, PendingListTail);
 }
 
-void AAudioMixer::AddPendingChannels()
+void AudioMixer::AddPendingChannels()
 {
-    SAudioChannel* submittedChannels = nullptr;
+    AudioChannel* submittedChannels = nullptr;
 
     {
-        ASpinLockGuard lockGuard(SubmitLock);
+        SpinLockGuard lockGuard(SubmitLock);
 
         submittedChannels = PendingList;
 
@@ -146,7 +146,7 @@ void AAudioMixer::AddPendingChannels()
     }
 
     int count = 0;
-    for (SAudioChannel* chan = submittedChannels; chan; chan = chan->Next)
+    for (AudioChannel* chan = submittedChannels; chan; chan = chan->Next)
     {
         if (chan->pStream && !chan->bVirtual)
         {
@@ -158,18 +158,18 @@ void AAudioMixer::AddPendingChannels()
     TotalChannels.Add(count);
 }
 
-void AAudioMixer::RejectChannel(SAudioChannel* Channel)
+void AudioMixer::RejectChannel(AudioChannel* Channel)
 {
     INTRUSIVE_REMOVE(Channel, Next, Prev, Channels, ChannelsTail);
     Channel->RemoveRef();
     TotalChannels.Decrement();
 }
 
-void AAudioMixer::Update()
+void AudioMixer::Update()
 {
     if (bAsync)
     {
-        LOG("AAudioMixer::Update: mixer is running in async thread\n");
+        LOG("AudioMixer::Update: mixer is running in async thread\n");
         return;
     }
 
@@ -179,7 +179,7 @@ void AAudioMixer::Update()
 
     if (RenderFrame < frameNum)
     {
-        LOG("AAudioMixer::Update: Missing frames {}\n", frameNum - RenderFrame);
+        LOG("AudioMixer::Update: Missing frames {}\n", frameNum - RenderFrame);
 
         RenderFrame = frameNum;
     }
@@ -218,7 +218,7 @@ void AAudioMixer::Update()
 #endif
 }
 
-void AAudioMixer::UpdateAsync(uint8_t* _pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
+void AudioMixer::UpdateAsync(uint8_t* _pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
 {
     pTransferBuffer = _pTransferBuffer;
 
@@ -239,7 +239,7 @@ void AAudioMixer::UpdateAsync(uint8_t* _pTransferBuffer, int TransferBufferSizeI
     RenderChannels(endFrame);
 }
 
-void AAudioMixer::RenderChannels(int64_t EndFrame)
+void AudioMixer::RenderChannels(int64_t EndFrame)
 {
     int numActiveChan = NumActiveChannels.Load();
 
@@ -260,10 +260,10 @@ void AAudioMixer::RenderChannels(int64_t EndFrame)
 
         int frameCount = end - RenderFrame;
 
-        Platform::ZeroMem(RenderBuffer, frameCount * sizeof(SSamplePair));
+        Platform::ZeroMem(RenderBuffer, frameCount * sizeof(SamplePair));
 
-        SAudioChannel* next;
-        for (SAudioChannel* chan = Channels; chan; chan = next)
+        AudioChannel* next;
+        for (AudioChannel* chan = Channels; chan; chan = next)
         {
             next = chan->Next;
 
@@ -277,7 +277,7 @@ void AAudioMixer::RenderChannels(int64_t EndFrame)
             bool bSeek = false;
 
             {
-                ASpinLockGuard guard(chan->SpinLock);
+                SpinLockGuard guard(chan->SpinLock);
                 NewVol[0]           = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[0];
                 NewVol[1]           = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[1];
                 NewDir              = chan->LocalDir_COMMIT;
@@ -443,7 +443,7 @@ static void ConvertFramesToMonoF32(const void* pFramesIn, int FrameCount, int Sa
 }
 
 // Read frames from current playback position and convert to f32 format.
-void AAudioMixer::ReadFramesF32(SAudioChannel* Chan, int FramesToRead, int HistoryExtraFrames, float* pFrames)
+void AudioMixer::ReadFramesF32(AudioChannel* Chan, int FramesToRead, int HistoryExtraFrames, float* pFrames)
 {
     int         frameCount  = Chan->FrameCount;
     const byte* pRawSamples = (const byte*)Chan->GetFrames();
@@ -513,7 +513,7 @@ void AAudioMixer::ReadFramesF32(SAudioChannel* Chan, int FramesToRead, int Histo
     }
 }
 
-void AAudioMixer::RenderChannel(SAudioChannel* Chan, int64_t EndFrame)
+void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
 {
     int64_t     frameNum       = RenderFrame;
     int         clipFrameCount = Chan->FrameCount;
@@ -551,7 +551,7 @@ void AAudioMixer::RenderChannel(SAudioChannel* Chan, int64_t EndFrame)
                 {
                     void const* pFrames = pRawSamples + PlaybackPos * stride;
 
-                    SSamplePair* pBuffer = &RenderBuffer[frameNum - RenderFrame];
+                    SamplePair* pBuffer = &RenderBuffer[frameNum - RenderFrame];
 
                     if (Snd_HRTF && Chan->bSpatializedStereo_COMMIT)
                     {
@@ -589,7 +589,7 @@ void AAudioMixer::RenderChannel(SAudioChannel* Chan, int64_t EndFrame)
     }
 }
 
-void AAudioMixer::RenderStream(SAudioChannel* Chan, int64_t EndFrame)
+void AudioMixer::RenderStream(AudioChannel* Chan, int64_t EndFrame)
 {
     int64_t frameNum       = RenderFrame;
     int     clipFrameCount = Chan->FrameCount;
@@ -661,7 +661,7 @@ void AAudioMixer::RenderStream(SAudioChannel* Chan, int64_t EndFrame)
     }
 }
 
-void AAudioMixer::MakeVolumeRamp(const int CurVol[2], const int _NewVol[2], int FrameCount, int Scale)
+void AudioMixer::MakeVolumeRamp(const int CurVol[2], const int _NewVol[2], int FrameCount, int Scale)
 {
     if (CurVol[0] == _NewVol[0] && CurVol[1] == _NewVol[1])
     {
@@ -692,7 +692,7 @@ void AAudioMixer::MakeVolumeRamp(const int CurVol[2], const int _NewVol[2], int 
     }
 }
 
-void AAudioMixer::RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSamplePair* pBuffer)
+void AudioMixer::RenderFramesHRTF(AudioChannel* Chan, int FrameCount, SamplePair* pBuffer)
 {
     int total = FrameCount;
 
@@ -711,7 +711,7 @@ void AAudioMixer::RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSampleP
     ReadFramesF32(Chan, total, historyExtraFrames, FramesF32.ToPtr());
 
     // Reallocate (if need) container for filtered samples
-    StreamF32.ResizeInvalidate(sizeof(SSamplePair) * total);
+    StreamF32.ResizeInvalidate(sizeof(SamplePair) * total);
 
     // Apply HRTF filter
     Float3 dir;
@@ -736,7 +736,7 @@ void AAudioMixer::RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSampleP
         }
     }
 
-    SSamplePair* pStreamF32 = StreamF32.ToPtr();
+    SamplePair* pStreamF32 = StreamF32.ToPtr();
 
 #if 0
     // Adjust volume
@@ -777,7 +777,7 @@ void AAudioMixer::RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSampleP
 #endif
 }
 
-void AAudioMixer::RenderFrames(SAudioChannel* Chan, const void* pFrames, int FrameCount, SSamplePair* pBuffer)
+void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int FrameCount, SamplePair* pBuffer)
 {
     int sampleBits = Chan->SampleBits;
     int channels   = Chan->Channels;
@@ -1163,7 +1163,7 @@ static void WriteSamples32_Mono(int const* pIn, float* pOut, int Count)
     }
 }
 
-void AAudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
+void AudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
 {
     int64_t wrapMask = DeviceRawPtr->GetTransferBufferSizeInFrames() - 1;
 

@@ -33,12 +33,12 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
-SResourceRef StringToResourceRef(AStringView String)
+ResourceRef StringToResourceRef(StringView String)
 {
-    SResourceRef ref;
+    ResourceRef ref;
 
-    AStringView token;
-    AStringView s = String;
+    StringView token;
+    StringView s = String;
 
     s = GetToken(token, s);
     if (!token.Compare("("))
@@ -74,7 +74,7 @@ SResourceRef StringToResourceRef(AStringView String)
     return ref;
 }
 
-void AVariant::SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String)
+void Variant::SetFromString(VARIANT_TYPE Type, EnumDef const* EnumDef, StringView String)
 {
     switch (Type)
     {
@@ -161,7 +161,7 @@ void AVariant::SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AString
     }
 }
 
-AString AVariant::ToString() const
+String Variant::ToString() const
 {
     switch (m_Type)
     {
@@ -212,9 +212,9 @@ AString AVariant::ToString() const
         case VARIANT_QUAT:
             return Core::ToString(*Get<Quat>());
         case VARIANT_STRING:
-            return *Get<AString>();
+            return *Get<String>();
         case VARIANT_RESOURCE_REF:
-            return Core::ToString(*Get<SResourceRef>());
+            return Core::ToString(*Get<ResourceRef>());
         case VARIANT_ENUM:
             return FindEnumValue(m_EnumType.EnumDef, m_EnumType.EnumValue);
         default:

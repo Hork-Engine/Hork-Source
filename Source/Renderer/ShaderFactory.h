@@ -37,29 +37,29 @@ SOFTWARE.
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
 
-class AShaderFactory
+class ShaderFactory
 {
 public:
     static void CreateShader(RenderCore::SHADER_TYPE ShaderType, TPodVector<const char*> Sources, TRef<RenderCore::IShaderModule>& Module);
     static void CreateShader(RenderCore::SHADER_TYPE ShaderType, const char* Source, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, AString const& Source, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, String const& Source, TRef<RenderCore::IShaderModule>& Module);
 
-    static void CreateVertexShader(AStringView FileName, RenderCore::SVertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateTessControlShader(AStringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateTessEvalShader(AStringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateGeometryShader(AStringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateFragmentShader(AStringView FileName, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateVertexShader(StringView FileName, RenderCore::VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateTessControlShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateTessEvalShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateGeometryShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateFragmentShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
 
     static void CreateFullscreenQuadPipeline(TRef<RenderCore::IPipeline>*               ppPipeline,
-                                             AStringView                                VertexShader,
-                                             AStringView                                FragmentShader,
-                                             RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
+                                             StringView                                VertexShader,
+                                             StringView                                FragmentShader,
+                                             RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
                                              RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
     static void CreateFullscreenQuadPipelineGS(TRef<RenderCore::IPipeline>*               ppPipeline,
-                                               AStringView                                VertexShader,
-                                               AStringView                                FragmentShader,
-                                               AStringView                                GeometryShader,
-                                               RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
+                                               StringView                                VertexShader,
+                                               StringView                                FragmentShader,
+                                               StringView                                GeometryShader,
+                                               RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
                                                RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 };

@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include "SkinnedComponent.h"
 
-class ASkinningSystem
+class SkinningSystem
 {
 public:
-    TList<ASkinnedComponent> SkinnedMeshes;
+    TList<SkinnedComponent> SkinnedMeshes;
 
     void Update();
 };

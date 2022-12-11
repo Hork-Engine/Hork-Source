@@ -30,21 +30,21 @@ SOFTWARE.
 
 #include "VirtualTextureResource.h"
 
-HK_CLASS_META(AVirtualTextureResource)
+HK_CLASS_META(VirtualTextureResource)
 
-AVirtualTextureResource::AVirtualTextureResource()
+VirtualTextureResource::VirtualTextureResource()
 {
 }
 
-AVirtualTextureResource::~AVirtualTextureResource()
+VirtualTextureResource::~VirtualTextureResource()
 {
 }
 
-void AVirtualTextureResource::LoadInternalResource(AStringView _Path)
+void VirtualTextureResource::LoadInternalResource(StringView _Path)
 {
 }
 
-bool AVirtualTextureResource::LoadResource(IBinaryStreamReadInterface& _Stream)
+bool VirtualTextureResource::LoadResource(IBinaryStreamReadInterface& _Stream)
 {
     // TODO:...
 

@@ -37,10 +37,10 @@ SOFTWARE.
 namespace RenderCore
 {
 
-ATextureViewGLImpl::ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
+TextureViewGLImpl::TextureViewGLImpl(TextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
     ITextureView(TextureViewDesc, pTexture)
 {
-    STextureDesc const& textureDesc = pTexture->GetDesc();
+    TextureDesc const& textureDesc = pTexture->GetDesc();
 
     if (TextureViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET)
     {
@@ -103,7 +103,7 @@ ATextureViewGLImpl::ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, 
                 {
                     glDeleteTextures(1, &id);
                 }
-                LOG("ATextureViewGLImpl::ctor: failed to initialize texture view, incompatible texture formats\n");
+                LOG("TextureViewGLImpl::ctor: failed to initialize texture view, incompatible texture formats\n");
                 return;
             }
 
@@ -112,7 +112,7 @@ ATextureViewGLImpl::ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, 
     }
 }
 
-ATextureViewGLImpl::~ATextureViewGLImpl()
+TextureViewGLImpl::~TextureViewGLImpl()
 {
     if (GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE)
     {

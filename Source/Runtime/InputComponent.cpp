@@ -37,16 +37,16 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/Parse.h>
 
-AConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
-AConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);
-AConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
-AConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
-AConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
-AConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
+ConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
+ConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);
+ConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
+ConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
+ConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
+ConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
 
-HK_CLASS_META(AInputMappings)
+HK_CLASS_META(InputMappings)
 
-HK_BEGIN_CLASS_META(AInputComponent)
+HK_BEGIN_CLASS_META(InputComponent)
 HK_PROPERTY_DIRECT(bIgnoreKeyboardEvents, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bIgnoreMouseEvents, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bIgnoreJoystickEvents, HK_PROPERTY_DEFAULT)
@@ -54,7 +54,7 @@ HK_PROPERTY_DIRECT(bIgnoreCharEvents, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(ControllerId, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-struct AInputComponentStatic
+struct InputComponentStatic
 {
     TArray<const char*, MAX_KEYBOARD_BUTTONS>  KeyNames;
     TArray<const char*, MAX_MOUSE_BUTTONS>     MouseButtonNames;
@@ -68,7 +68,7 @@ struct AInputComponentStatic
     TArray<int, MAX_INPUT_DEVICES>                                DeviceButtonLimits;
     TArray<TArray<float, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT> JoystickAxisState;
 
-    AInputComponentStatic()
+    InputComponentStatic()
     {
 #define InitKey(Key)                KeyNames[Key] = HK_STRINGIFY(Key) + 4
 #define InitKey2(Key, Name)         KeyNames[Key] = Name
@@ -365,12 +365,12 @@ struct AInputComponentStatic
     }
 };
 
-static AInputComponentStatic Static;
+static InputComponentStatic Static;
 
-AInputComponent* AInputComponent::InputComponents     = nullptr;
-AInputComponent* AInputComponent::InputComponentsTail = nullptr;
+InputComponent* InputComponent::InputComponents     = nullptr;
+InputComponent* InputComponent::InputComponentsTail = nullptr;
 
-static bool ValidateDeviceKey(SInputDeviceKey const& DeviceKey)
+static bool ValidateDeviceKey(InputDeviceKey const& DeviceKey)
 {
     if (DeviceKey.DeviceId >= MAX_INPUT_DEVICES)
     {
@@ -387,7 +387,7 @@ static bool ValidateDeviceKey(SInputDeviceKey const& DeviceKey)
     return true;
 }
 
-const char* AInputHelper::TranslateDevice(uint16_t DeviceId)
+const char* InputHelper::TranslateDevice(uint16_t DeviceId)
 {
     if (DeviceId >= MAX_INPUT_DEVICES)
     {
@@ -396,7 +396,7 @@ const char* AInputHelper::TranslateDevice(uint16_t DeviceId)
     return Static.DeviceNames[DeviceId];
 }
 
-const char* AInputHelper::TranslateModifier(int Modifier)
+const char* InputHelper::TranslateModifier(int Modifier)
 {
     if (Modifier < 0 || Modifier > KEY_MOD_LAST)
     {
@@ -405,7 +405,7 @@ const char* AInputHelper::TranslateModifier(int Modifier)
     return Static.ModifierNames[Modifier];
 }
 
-const char* AInputHelper::TranslateDeviceKey(SInputDeviceKey const& DeviceKey)
+const char* InputHelper::TranslateDeviceKey(InputDeviceKey const& DeviceKey)
 {
     switch (DeviceKey.DeviceId)
     {
@@ -450,7 +450,7 @@ const char* AInputHelper::TranslateDeviceKey(SInputDeviceKey const& DeviceKey)
     return "UNKNOWN";
 }
 
-const char* AInputHelper::TranslateController(int ControllerId)
+const char* InputHelper::TranslateController(int ControllerId)
 {
     if (ControllerId < 0 || ControllerId >= MAX_INPUT_CONTROLLERS)
     {
@@ -459,7 +459,7 @@ const char* AInputHelper::TranslateController(int ControllerId)
     return Static.ControllerNames[ControllerId];
 }
 
-uint16_t AInputHelper::LookupDevice(AStringView Device)
+uint16_t InputHelper::LookupDevice(StringView Device)
 {
     for (uint16_t i = 0; i < MAX_INPUT_DEVICES; i++)
     {
@@ -471,7 +471,7 @@ uint16_t AInputHelper::LookupDevice(AStringView Device)
     return ID_UNDEFINED;
 }
 
-int AInputHelper::LookupModifier(AStringView Modifier)
+int InputHelper::LookupModifier(StringView Modifier)
 {
     for (int i = 0; i < MAX_MODIFIERS; i++)
     {
@@ -483,7 +483,7 @@ int AInputHelper::LookupModifier(AStringView Modifier)
     return -1;
 }
 
-uint16_t AInputHelper::LookupDeviceKey(uint16_t DeviceId, AStringView Key)
+uint16_t InputHelper::LookupDeviceKey(uint16_t DeviceId, StringView Key)
 {
     switch (DeviceId)
     {
@@ -533,7 +533,7 @@ uint16_t AInputHelper::LookupDeviceKey(uint16_t DeviceId, AStringView Key)
     return KEY_UNDEFINED;
 }
 
-int AInputHelper::LookupController(AStringView Controller)
+int InputHelper::LookupController(StringView Controller)
 {
     for (int i = 0; i < MAX_INPUT_CONTROLLERS; i++)
     {
@@ -545,7 +545,7 @@ int AInputHelper::LookupController(AStringView Controller)
     return -1;
 }
 
-AInputComponent::AInputComponent()
+InputComponent::InputComponent()
 {
     DeviceButtonDown[ID_KEYBOARD] = KeyboardButtonDown.ToPtr();
     DeviceButtonDown[ID_MOUSE]    = MouseButtonDown.ToPtr();
@@ -563,33 +563,33 @@ AInputComponent::AInputComponent()
     MouseAxisState[1].Clear();
 }
 
-AInputComponent::~AInputComponent()
+InputComponent::~InputComponent()
 {
 }
 
-void AInputComponent::InitializeComponent()
+void InputComponent::InitializeComponent()
 {
     INTRUSIVE_ADD(this, Next, Prev, InputComponents, InputComponentsTail);
 }
 
-void AInputComponent::DeinitializeComponent()
+void InputComponent::DeinitializeComponent()
 {
     INTRUSIVE_REMOVE(this, Next, Prev, InputComponents, InputComponentsTail);
 }
 
-void AInputComponent::SetInputMappings(AInputMappings* Mappings)
+void InputComponent::SetInputMappings(InputMappings* Mappings)
 {
-    InputMappings = Mappings;
+    m_InputMappings = Mappings;
 }
 
-AInputMappings* AInputComponent::GetInputMappings() const
+InputMappings* InputComponent::GetInputMappings() const
 {
-    return InputMappings;
+    return m_InputMappings;
 }
 
-void AInputComponent::UpdateAxes(float TimeStep)
+void InputComponent::UpdateAxes(float TimeStep)
 {
-    if (!InputMappings)
+    if (!m_InputMappings)
     {
         return;
     }
@@ -601,9 +601,9 @@ void AInputComponent::UpdateAxes(float TimeStep)
         it.second.AxisScale = 0.0f;
     }
 
-    for (SPressedKey* key = PressedKeys.ToPtr(); key < &PressedKeys[NumPressedKeys]; key++)
+    for (PressedKey* key = PressedKeys.ToPtr(); key < &PressedKeys[NumPressedKeys]; key++)
     {
-        if (key->BindingType == EBindingType::Axis)
+        if (key->BindingType == BINDING_TYPE::AXIS)
         {
             auto it = AxisBindingsHash.Find(key->Binding);
             if (it != AxisBindingsHash.End())
@@ -633,14 +633,14 @@ void AInputComponent::UpdateAxes(float TimeStep)
     float mouseSens[2]     = {in_MouseSensX.GetFloat() * mouseCurrentSens, in_MouseSensY.GetFloat() * mouseCurrentSens};
 
     // Keep pointer to InputMappings in case if someone call SetInputMappings during callback execution.
-    TRef<AInputMappings> lockedMappings(InputMappings);
+    TRef<InputMappings> lockedMappings(m_InputMappings);
 
     int bindingVersion = BindingVersion;
 
-    //for (SAxisBinding& binding : AxisBindings)
+    //for (AxisBinding& binding : AxisBindings)
     for (auto& it : AxisBindingsHash)
     {
-        SAxisBinding& binding = it.second;
+        AxisBinding& binding = it.second;
 
         if (bPaused && !binding.bExecuteEvenWhenPaused)
         {
@@ -695,24 +695,24 @@ void AInputComponent::UpdateAxes(float TimeStep)
     MouseAxisState[MouseIndex].Clear();
 }
 
-void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp)
+void InputComponent::SetButtonState(InputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp)
 {
     if (!ValidateDeviceKey(DeviceKey))
         return;
 
     if (DeviceKey.DeviceId == ID_KEYBOARD && DeviceKey.KeyId >= MAX_KEYBOARD_BUTTONS)
     {
-        LOG("AInputComponent::SetButtonState: Invalid key\n");
+        LOG("InputComponent::SetButtonState: Invalid key\n");
         return;
     }
     if (DeviceKey.DeviceId == ID_MOUSE && DeviceKey.KeyId >= MAX_MOUSE_BUTTONS)
     {
-        LOG("AInputComponent::SetButtonState: Invalid mouse button\n");
+        LOG("InputComponent::SetButtonState: Invalid mouse button\n");
         return;
     }
     if (DeviceKey.DeviceId >= ID_JOYSTICK_1 && DeviceKey.DeviceId <= ID_JOYSTICK_16 && DeviceKey.KeyId >= MAX_JOYSTICK_BUTTONS)
     {
-        LOG("AInputComponent::SetButtonState: Invalid joystick button\n");
+        LOG("InputComponent::SetButtonState: Invalid joystick button\n");
         return;
     }
 
@@ -739,23 +739,23 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
         {
             if (NumPressedKeys < MAX_PRESSED_KEYS)
             {
-                SPressedKey& pressedKey  = PressedKeys[NumPressedKeys];
+                PressedKey& pressedKey  = PressedKeys[NumPressedKeys];
                 pressedKey.DeviceId      = DeviceKey.DeviceId;
                 pressedKey.Key           = DeviceKey.KeyId;
                 pressedKey.Unbind();
 
-                if (InputMappings)
+                if (m_InputMappings)
                 {
-                    auto it = InputMappings->GetMappings().Find(DeviceKey);
+                    auto it = m_InputMappings->GetMappings().Find(DeviceKey);
 
-                    if (it != InputMappings->GetMappings().End())
+                    if (it != m_InputMappings->GetMappings().End())
                     {
                         auto const& mappings = it->second;
 
                         bool bUseActionMapping = false;
 
                         // Find action mapping with modifiers
-                        for (AInputMappings::SMapping const& mapping : mappings)
+                        for (InputMappings::Mapping const& mapping : mappings)
                         {
                             if (mapping.ControllerId != ControllerId)
                             {
@@ -779,7 +779,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                         // Find action without modifiers
                         if (!bUseActionMapping)
                         {
-                            for (AInputMappings::SMapping const& mapping : mappings)
+                            for (InputMappings::Mapping const& mapping : mappings)
                             {
                                 if (mapping.ControllerId != ControllerId)
                                 {
@@ -804,7 +804,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                         // Find axis mapping
                         if (!bUseActionMapping)
                         {
-                            for (AInputMappings::SMapping const& mapping : mappings)
+                            for (InputMappings::Mapping const& mapping : mappings)
                             {
                                 if (mapping.ControllerId != ControllerId)
                                 {
@@ -826,12 +826,12 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
                 NumPressedKeys++;
 
-                if (pressedKey.BindingType == EBindingType::Action)
+                if (pressedKey.BindingType == BINDING_TYPE::ACTION)
                 {
                     auto it = ActionBindingsHash.Find(pressedKey.Binding);
                     if (it != ActionBindingsHash.End())
                     {
-                        SActionBinding& binding = it->second;
+                        ActionBinding& binding = it->second;
                         if (GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused)
                         {
                             pressedKey.Unbind();
@@ -860,9 +860,9 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
         if (ButtonIndex[DeviceKey.KeyId] != -1)
         {
             int index = ButtonIndex[DeviceKey.KeyId];
-            SPressedKey& pressedKey = PressedKeys[index];
+            PressedKey& pressedKey = PressedKeys[index];
 
-            if (pressedKey.BindingType == EBindingType::Action)
+            if (pressedKey.BindingType == BINDING_TYPE::ACTION)
             {
                 auto it = ActionBindingsHash.Find(pressedKey.Binding);
                 if (it != ActionBindingsHash.End())
@@ -891,31 +891,31 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
     callback();
 }
 
-bool AInputComponent::GetButtonState(SInputDeviceKey const& DeviceKey) const
+bool InputComponent::GetButtonState(InputDeviceKey const& DeviceKey) const
 {
     if (!ValidateDeviceKey(DeviceKey))
         return false;
 
     if (DeviceKey.DeviceId == ID_KEYBOARD && DeviceKey.KeyId >= MAX_KEYBOARD_BUTTONS)
     {
-        LOG("AInputComponent::GetButtonState: Invalid key\n");
+        LOG("InputComponent::GetButtonState: Invalid key\n");
         return false;
     }
     if (DeviceKey.DeviceId == ID_MOUSE && DeviceKey.KeyId >= MAX_MOUSE_BUTTONS)
     {
-        LOG("AInputComponent::GetButtonState: Invalid mouse button\n");
+        LOG("InputComponent::GetButtonState: Invalid mouse button\n");
         return false;
     }
     if (DeviceKey.DeviceId >= ID_JOYSTICK_1 && DeviceKey.DeviceId <= ID_JOYSTICK_16 && DeviceKey.KeyId >= MAX_JOYSTICK_BUTTONS)
     {
-        LOG("AInputComponent::GetButtonState: Invalid joystick button\n");
+        LOG("InputComponent::GetButtonState: Invalid joystick button\n");
         return false;
     }
 
     return DeviceButtonDown[DeviceKey.DeviceId][DeviceKey.KeyId] != -1;
 }
 
-void AInputComponent::UnpressButtons()
+void InputComponent::UnpressButtons()
 {
     double timeStamp = Platform::SysSeconds_d();
     for (uint16_t i = 0; i < MAX_KEYBOARD_BUTTONS; i++)
@@ -935,12 +935,12 @@ void AInputComponent::UnpressButtons()
     }
 }
 
-bool AInputComponent::IsJoyDown(int JoystickId, uint16_t Button) const
+bool InputComponent::IsJoyDown(int JoystickId, uint16_t Button) const
 {
     return GetButtonState({uint16_t(ID_JOYSTICK_1 + JoystickId), Button});
 }
 
-void AInputComponent::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp)
+void InputComponent::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp)
 {
     if (bIgnoreCharEvents)
     {
@@ -960,7 +960,7 @@ void AInputComponent::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModM
     CharacterCallback(UnicodeCharacter, ModMask, TimeStamp);
 }
 
-void AInputComponent::SetMouseAxisState(float X, float Y)
+void InputComponent::SetMouseAxisState(float X, float Y)
 {
     if (bIgnoreMouseEvents)
     {
@@ -971,49 +971,49 @@ void AInputComponent::SetMouseAxisState(float X, float Y)
     MouseAxisState[MouseIndex].Y += Y;
 }
 
-float AInputComponent::GetMouseAxisState(int Axis)
+float InputComponent::GetMouseAxisState(int Axis)
 {
     if (Axis < 0 || Axis > 1)
     {
-        LOG("AInputComponent::GetMouseAxisState: Invalid mouse axis num\n");
+        LOG("InputComponent::GetMouseAxisState: Invalid mouse axis num\n");
         return 0.0f;
     }
     return MouseAxisState[MouseIndex][Axis];
 }
 
-void AInputComponent::SetJoystickAxisState(int Joystick, int Axis, float Value)
+void InputComponent::SetJoystickAxisState(int Joystick, int Axis, float Value)
 {
     if (Joystick < 0 || Joystick >= MAX_JOYSTICKS_COUNT)
     {
-        LOG("AInputComponent::SetJoystickAxisState: Invalid joystick num\n");
+        LOG("InputComponent::SetJoystickAxisState: Invalid joystick num\n");
         return;
     }
     if (Axis < 0 || Axis >= MAX_JOYSTICK_AXES)
     {
-        LOG("AInputComponent::SetJoystickAxisState: Invalid joystick axis num\n");
+        LOG("InputComponent::SetJoystickAxisState: Invalid joystick axis num\n");
         return;
     }
     Static.JoystickAxisState[Joystick][Axis] = Value;
 }
 
-float AInputComponent::GetJoystickAxisState(int Joystick, int Axis)
+float InputComponent::GetJoystickAxisState(int Joystick, int Axis)
 {
     if (Joystick < 0 || Joystick >= MAX_JOYSTICKS_COUNT)
     {
-        LOG("AInputComponent::GetJoystickAxisState: Invalid joystick num\n");
+        LOG("InputComponent::GetJoystickAxisState: Invalid joystick num\n");
         return 0.0f;
     }
     if (Axis < 0 || Axis >= MAX_JOYSTICK_AXES)
     {
-        LOG("AInputComponent::GetJoystickAxisState: Invalid joystick axis num\n");
+        LOG("InputComponent::GetJoystickAxisState: Invalid joystick axis num\n");
         return 0.0f;
     }
     return Static.JoystickAxisState[Joystick][Axis];
 }
 
-void AInputComponent::BindAxis(AStringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused)
+void InputComponent::BindAxis(StringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused)
 {
-    SAxisBinding& binding = AxisBindingsHash[Axis];
+    AxisBinding& binding = AxisBindingsHash[Axis];
 
     binding.Callback               = Callback;
     binding.AxisScale              = 0.0f;
@@ -1022,15 +1022,15 @@ void AInputComponent::BindAxis(AStringView Axis, TCallback<void(float)> const& C
     BindingVersion++;
 }
 
-void AInputComponent::UnbindAxis(AStringView Axis)
+void InputComponent::UnbindAxis(StringView Axis)
 {
     auto it = AxisBindingsHash.Find(Axis);
     if (it == AxisBindingsHash.End())
         return;
 
-    for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
-        if (pressedKey->BindingType == EBindingType::Axis && !pressedKey->Binding.Icmp(Axis))
+        if (pressedKey->BindingType == BINDING_TYPE::AXIS && !pressedKey->Binding.Icmp(Axis))
         {
             pressedKey->Unbind();
         }
@@ -1041,29 +1041,29 @@ void AInputComponent::UnbindAxis(AStringView Axis)
     BindingVersion++;
 }
 
-void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused)
+void InputComponent::BindAction(StringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused)
 {
     if (Event != IA_PRESS && Event != IA_RELEASE)
     {
-        LOG("AInputComponent::BindAction: expected IE_Press or IE_Release event\n");
+        LOG("InputComponent::BindAction: expected IE_Press or IE_Release event\n");
         return;
     }
 
-    SActionBinding& binding = ActionBindingsHash[Action];
+    ActionBinding& binding = ActionBindingsHash[Action];
 
     binding.Callback[Event]        = Callback;
     binding.bExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
 }
 
-void AInputComponent::UnbindAction(AStringView Action)
+void InputComponent::UnbindAction(StringView Action)
 {
     auto it = ActionBindingsHash.Find(Action);
     if (it == ActionBindingsHash.End())
         return;
 
-    for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
-        if (pressedKey->BindingType == EBindingType::Action && !pressedKey->Binding.Icmp(Action))
+        if (pressedKey->BindingType == BINDING_TYPE::ACTION && !pressedKey->Binding.Icmp(Action))
         {
             pressedKey->Unbind();
         }
@@ -1072,63 +1072,63 @@ void AInputComponent::UnbindAction(AStringView Action)
     ActionBindingsHash.Erase(it);
 }
 
-void AInputComponent::UnbindAll()
+void InputComponent::UnbindAll()
 {
     BindingVersion++;
 
     AxisBindingsHash.Clear();
     ActionBindingsHash.Clear();
 
-    for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
         pressedKey->Unbind();
     }
 }
 
-void AInputComponent::SetCharacterCallback(TCallback<void(WideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused)
+void InputComponent::SetCharacterCallback(TCallback<void(WideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused)
 {
     CharacterCallback                       = Callback;
     bCharacterCallbackExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
 }
 
-void AInputComponent::UnsetCharacterCallback()
+void InputComponent::UnsetCharacterCallback()
 {
     CharacterCallback.Clear();
 }
 
-void AInputMappings::InitializeFromDocument(ADocument const& Document)
+void InputMappings::InitializeFromDocument(Document const& Document)
 {
     UnmapAll();
 
-    ADocMember const* mAxes = Document.FindMember("Axes");
+    DocumentMember const* mAxes = Document.FindMember("Axes");
     if (mAxes)
     {
-        for (ADocValue const* mAxis = mAxes->GetArrayValues(); mAxis; mAxis = mAxis->GetNext())
+        for (DocumentValue const* mAxis = mAxes->GetArrayValues(); mAxis; mAxis = mAxis->GetNext())
         {
             if (!mAxis->IsObject())
             {
                 continue;
             }
 
-            ADocMember const* mName = mAxis->FindMember("Name");
+            DocumentMember const* mName = mAxis->FindMember("Name");
             if (!mName)
             {
                 continue;
             }
 
-            ADocMember const* mDevice = mAxis->FindMember("Device");
+            DocumentMember const* mDevice = mAxis->FindMember("Device");
             if (!mDevice)
             {
                 continue;
             }
 
-            ADocMember const* mKey = mAxis->FindMember("Key");
+            DocumentMember const* mKey = mAxis->FindMember("Key");
             if (!mKey)
             {
                 continue;
             }
 
-            ADocMember const* mController = mAxis->FindMember("Controller");
+            DocumentMember const* mController = mAxis->FindMember("Controller");
             if (!mController)
             {
                 continue;
@@ -1139,9 +1139,9 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             auto key        = mKey->GetStringView();
             auto controller = mController->GetStringView();
 
-            uint16_t deviceId     = AInputHelper::LookupDevice(device);
-            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
-            int      controllerId = AInputHelper::LookupController(controller);
+            uint16_t deviceId     = InputHelper::LookupDevice(device);
+            uint16_t deviceKey    = InputHelper::LookupDeviceKey(deviceId, key);
+            int      controllerId = InputHelper::LookupController(controller);
 
             float fScale = mAxis->GetFloat("Scale", 1.0f);
 
@@ -1149,35 +1149,35 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
         }
     }
 
-    ADocMember const* mActions = Document.FindMember("Actions");
+    DocumentMember const* mActions = Document.FindMember("Actions");
     if (mActions)
     {
-        for (ADocValue const* mAction = mActions->GetArrayValues(); mAction; mAction = mAction->GetNext())
+        for (DocumentValue const* mAction = mActions->GetArrayValues(); mAction; mAction = mAction->GetNext())
         {
             if (!mAction->IsObject())
             {
                 continue;
             }
 
-            ADocMember const* mName = mAction->FindMember("Name");
+            DocumentMember const* mName = mAction->FindMember("Name");
             if (!mName)
             {
                 continue;
             }
 
-            ADocMember const* mDevice = mAction->FindMember("Device");
+            DocumentMember const* mDevice = mAction->FindMember("Device");
             if (!mDevice)
             {
                 continue;
             }
 
-            ADocMember const* mKey = mAction->FindMember("Key");
+            DocumentMember const* mKey = mAction->FindMember("Key");
             if (!mKey)
             {
                 continue;
             }
 
-            ADocMember const* mController = mAction->FindMember("Controller");
+            DocumentMember const* mController = mAction->FindMember("Controller");
             if (!mController)
             {
                 continue;
@@ -1190,24 +1190,24 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             auto key        = mKey->GetStringView();
             auto controller = mController->GetStringView();
 
-            uint16_t deviceId     = AInputHelper::LookupDevice(device);
-            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
-            int      controllerId = AInputHelper::LookupController(controller);
+            uint16_t deviceId     = InputHelper::LookupDevice(device);
+            uint16_t deviceKey    = InputHelper::LookupDeviceKey(deviceId, key);
+            int      controllerId = InputHelper::LookupController(controller);
 
             MapAction(name, {deviceId, deviceKey}, modMask, controllerId);
         }
     }
 }
 
-bool AInputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
+bool InputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString script = Stream.AsString();
+    String script = Stream.AsString();
 
-    SDocumentDeserializeInfo deserializeInfo;
+    DocumentDeserializeInfo deserializeInfo;
     deserializeInfo.bInsitu       = true;
     deserializeInfo.pDocumentData = script.CStr();
 
-    ADocument document;
+    Document document;
     document.DeserializeFromString(deserializeInfo);
 
     InitializeFromDocument(document);
@@ -1215,21 +1215,21 @@ bool AInputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AInputMappings::LoadInternalResource(AStringView Path)
+void InputMappings::LoadInternalResource(StringView Path)
 {
     // Empty resource
 
     UnmapAll();
 }
 
-void AInputMappings::MapAxis(AStringView AxisName, SInputDeviceKey const& DeviceKey, float AxisScale, int ControllerId)
+void InputMappings::MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey, float AxisScale, int ControllerId)
 {
     if (!ValidateDeviceKey(DeviceKey))
         return;
 
     UnmapAxis(DeviceKey);
 
-    SMapping mapping;
+    Mapping mapping;
     mapping.Name         = AxisName;
     mapping.NameHash     = mapping.Name.HashCaseInsensitive();
     mapping.bAxis        = true;
@@ -1237,7 +1237,7 @@ void AInputMappings::MapAxis(AStringView AxisName, SInputDeviceKey const& Device
     mapping.ControllerId = ControllerId;
     Mappings[DeviceKey].Add(std::move(mapping));
 
-    SAxisMapping axisMapping;
+    AxisMapping axisMapping;
     axisMapping.DeviceId     = DeviceKey.DeviceId;
     axisMapping.KeyId        = DeviceKey.KeyId;
     axisMapping.ControllerId = ControllerId;
@@ -1245,7 +1245,7 @@ void AInputMappings::MapAxis(AStringView AxisName, SInputDeviceKey const& Device
     AxisMappings[AxisName].Add(axisMapping);
 }
 
-void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
+void InputMappings::UnmapAxis(InputDeviceKey const& DeviceKey)
 {
     if (!ValidateDeviceKey(DeviceKey))
         return;
@@ -1254,7 +1254,7 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
 
     for (auto it = keyMappings.begin(); it != keyMappings.end();)
     {
-        SMapping& mapping = *it;
+        Mapping& mapping = *it;
 
         if (mapping.bAxis)
         {
@@ -1283,7 +1283,7 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
     }
 }
 
-void AInputMappings::MapAction(AStringView ActionName, SInputDeviceKey const& DeviceKey, int ModMask, int ControllerId)
+void InputMappings::MapAction(StringView ActionName, InputDeviceKey const& DeviceKey, int ModMask, int ControllerId)
 {
     if (!ValidateDeviceKey(DeviceKey))
         return;
@@ -1302,7 +1302,7 @@ void AInputMappings::MapAction(AStringView ActionName, SInputDeviceKey const& De
 
     UnmapAction(DeviceKey, ModMask);
 
-    SMapping mapping;
+    Mapping mapping;
     mapping.Name         = ActionName;
     mapping.NameHash     = mapping.Name.HashCaseInsensitive();
     mapping.bAxis        = false;
@@ -1312,7 +1312,7 @@ void AInputMappings::MapAction(AStringView ActionName, SInputDeviceKey const& De
     Mappings[DeviceKey].Add(std::move(mapping));
 }
 
-void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
+void InputMappings::UnmapAction(InputDeviceKey const& DeviceKey, int ModMask)
 {
     if (!ValidateDeviceKey(DeviceKey))
         return;
@@ -1321,7 +1321,7 @@ void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
 
     for (auto it = keyMappings.begin(); it != keyMappings.end();)
     {
-        SMapping& mapping = *it;
+        Mapping& mapping = *it;
 
         if (!mapping.bAxis && mapping.ModMask == ModMask)
         {
@@ -1334,7 +1334,7 @@ void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
     }
 }
 
-void AInputMappings::UnmapAll()
+void InputMappings::UnmapAll()
 {
     Mappings.Clear();
     AxisMappings.Clear();

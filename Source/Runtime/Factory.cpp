@@ -31,18 +31,18 @@ SOFTWARE.
 #include "Factory.h"
 #include "BaseObject.h"
 
-AObjectFactory* AObjectFactory::FactoryList = nullptr;
+ObjectFactory* ObjectFactory::FactoryList = nullptr;
 
-AObjectFactory::AObjectFactory(const char* Tag) :
+ObjectFactory::ObjectFactory(const char* Tag) :
     Tag(Tag), Classes(nullptr), NumClasses(0)
 {
     NextFactory = FactoryList;
     FactoryList = this;
 }
 
-const AClassMeta* AObjectFactory::FindClass(AStringView ClassName) const
+const ClassMeta* ObjectFactory::FindClass(StringView ClassName) const
 {
-    for (AClassMeta const* n = Classes; n; n = n->pNext)
+    for (ClassMeta const* n = Classes; n; n = n->pNext)
     {
         if (!ClassName.Cmp(n->GetName()))
         {
@@ -52,12 +52,12 @@ const AClassMeta* AObjectFactory::FindClass(AStringView ClassName) const
     return nullptr;
 }
 
-const AClassMeta* AObjectFactory::LookupClass(AStringView ClassName) const
+const ClassMeta* ObjectFactory::LookupClass(StringView ClassName) const
 {
     if (LookupTable.IsEmpty())
     {
         // init name table
-        for (AClassMeta* n = Classes; n; n = n->pNext)
+        for (ClassMeta* n = Classes; n; n = n->pNext)
         {
             LookupTable[n->GetName()] = n;
         }
@@ -67,7 +67,7 @@ const AClassMeta* AObjectFactory::LookupClass(AStringView ClassName) const
     return it != LookupTable.End() ? it->second : nullptr;
 }
 
-const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
+const ClassMeta* ObjectFactory::LookupClass(uint64_t ClassId) const
 {
     if (ClassId > NumClasses)
     {
@@ -80,7 +80,7 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
         // init lookup table
         IdTable.Resize(NumClasses + 1);
         IdTable[0] = nullptr;
-        for (AClassMeta* n = Classes; n; n = n->pNext)
+        for (ClassMeta* n = Classes; n; n = n->pNext)
         {
             IdTable[n->GetId()] = n;
         }
@@ -89,9 +89,9 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
     return IdTable[ClassId];
 }
 
-AProperty const* AClassMeta::FindProperty(AStringView PropertyName, bool bRecursive) const
+Property const* ClassMeta::FindProperty(StringView PropertyName, bool bRecursive) const
 {
-    for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
+    for (Property const* prop = PropertyList; prop; prop = prop->Next())
     {
         if (PropertyName == prop->GetName())
         {
@@ -105,36 +105,36 @@ AProperty const* AClassMeta::FindProperty(AStringView PropertyName, bool bRecurs
     return nullptr;
 }
 
-void AClassMeta::GetProperties(APropertyList& Properties, bool bRecursive) const
+void ClassMeta::GetProperties(APropertyList& Properties, bool bRecursive) const
 {
     if (bRecursive && pSuperClass)
     {
         pSuperClass->GetProperties(Properties, true);
     }
-    for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
+    for (Property const* prop = PropertyList; prop; prop = prop->Next())
     {
         Properties.Add(prop);
     }
 }
 
-void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ABaseObject const* Template, ABaseObject* Destination)
+void ClassMeta::CloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination)
 {
     if (Meta)
     {
         CloneProperties_r(Meta->SuperClass(), Template, Destination);
 
-        for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
+        for (Property const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
             prop->CopyValue(Destination, Template);
         }
     }
 }
 
-void AClassMeta::CloneProperties(ABaseObject const* Template, ABaseObject* Destination)
+void ClassMeta::CloneProperties(BaseObject const* Template, BaseObject* Destination)
 {
     if (&Template->FinalClassMeta() != &Destination->FinalClassMeta())
     {
-        LOG("AClassMeta::CloneProperties: Template is not an {} class\n", Destination->FinalClassName());
+        LOG("ClassMeta::CloneProperties: Template is not an {} class\n", Destination->FinalClassName());
         return;
     }
 

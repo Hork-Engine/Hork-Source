@@ -41,34 +41,34 @@ SOFTWARE.
 #include <Geometry/BV/BvIntersect.h>
 #include <Geometry/TangentSpace.h>
 
-HK_CLASS_META(AIndexedMesh)
-HK_CLASS_META(AProceduralMesh)
+HK_CLASS_META(IndexedMesh)
+HK_CLASS_META(ProceduralMesh)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AIndexedMesh::AIndexedMesh()
+IndexedMesh::IndexedMesh()
 {
-    static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
+    static TStaticResourceFinder<Skeleton> SkeletonResource("/Default/Skeleton/Default"s);
     m_Skeleton = SkeletonResource.GetObject();
 
     m_BoundingBox.Clear();
 }
 
-AIndexedMesh::~AIndexedMesh()
+IndexedMesh::~IndexedMesh()
 {
     Purge();
 
     HK_ASSERT(m_LightmapUVs.IsEmpty());
 }
 
-AIndexedMesh* AIndexedMesh::Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
+IndexedMesh* IndexedMesh::Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
 {
-    AIndexedMesh* mesh = NewObj<AIndexedMesh>();
+    IndexedMesh* mesh = NewObj<IndexedMesh>();
     mesh->Initialize(NumVertices, NumIndices, NumSubparts, bSkinnedMesh);
     return mesh;
 }
 
-void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
+void IndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
 {
     Purge();
 
@@ -79,15 +79,15 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
     m_Vertices.ResizeInvalidate(NumVertices);
     m_Indices.ResizeInvalidate(NumIndices);
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertex), nullptr, GetVertexMemory, this);
+    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, GetVertexMemory, this);
     m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, GetIndexMemory, this);
 
     if (m_bSkinnedMesh)
     {
         m_Weights.ResizeInvalidate(NumVertices);
-        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(SMeshVertexSkin), nullptr, GetWeightMemory, this);
+        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(MeshVertexSkin), nullptr, GetWeightMemory, this);
     }
 
     NumSubparts = NumSubparts < 1 ? 1 : NumSubparts;
@@ -95,13 +95,13 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
     m_Subparts.ResizeInvalidate(NumSubparts);
     for (int i = 0; i < NumSubparts; i++)
     {
-        m_Subparts[i]              = new AIndexedMeshSubpart;
+        m_Subparts[i]              = new IndexedMeshSubpart;
         m_Subparts[i]->m_OwnerMesh = this;
     }
 
     if (NumSubparts == 1)
     {
-        AIndexedMeshSubpart* subpart = m_Subparts[0];
+        IndexedMeshSubpart* subpart = m_Subparts[0];
         subpart->m_BaseVertex        = 0;
         subpart->m_FirstIndex        = 0;
         subpart->m_VertexCount       = m_Vertices.Size();
@@ -109,23 +109,23 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
     }
 }
 
-void AIndexedMesh::AddLightmapUVs()
+void IndexedMesh::AddLightmapUVs()
 {
     if (m_LightmapUVs.Size() == m_Vertices.Size())
         return;
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
     if (m_LightmapUVsGPU)
         vertexMemory->Deallocate(m_LightmapUVsGPU);
 
-    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertexUV), nullptr, GetLightmapUVMemory, this);
+    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexUV), nullptr, GetLightmapUVMemory, this);
     m_LightmapUVs.Resize(m_Vertices.Size());
 }
 
-void AIndexedMesh::Purge()
+void IndexedMesh::Purge()
 {
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         subpart->m_OwnerMesh = nullptr;
         subpart->RemoveRef();
@@ -133,7 +133,7 @@ void AIndexedMesh::Purge()
 
     m_Subparts.Clear();
 
-    for (ASocketDef* socket : m_Sockets)
+    for (SocketDef* socket : m_Sockets)
     {
         socket->RemoveRef();
     }
@@ -150,7 +150,7 @@ void AIndexedMesh::Purge()
     m_Indices.Free();
     m_LightmapUVs.Free();
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
     m_VertexHandle = nullptr;
@@ -165,27 +165,27 @@ void AIndexedMesh::Purge()
     m_LightmapUVsGPU = nullptr;
 }
 
-bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
+bool IndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    //AScopedTimer ScopedTime(Stream.GetFileName());
+    //ScopedTimer ScopedTime(Stream.GetFileName());
 
     Purge();
 
-    AString text = Stream.AsString();
+    String text = Stream.AsString();
 
-    SDocumentDeserializeInfo deserializeInfo;
+    DocumentDeserializeInfo deserializeInfo;
     deserializeInfo.pDocumentData = text.CStr();
     deserializeInfo.bInsitu       = true;
 
-    ADocument doc;
+    Document doc;
     doc.DeserializeFromString(deserializeInfo);
 
-    ADocMember* member;
+    DocumentMember* member;
 
     member = doc.FindMember("Mesh");
     if (!member)
     {
-        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("IndexedMesh::LoadResource: invalid mesh\n");
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
@@ -194,26 +194,26 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     auto meshFile = member->GetStringView();
     if (meshFile.IsEmpty())
     {
-        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("IndexedMesh::LoadResource: invalid mesh\n");
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
-    ABinaryResource* meshBinary = AResource::CreateFromFile<ABinaryResource>(meshFile);
+    BinaryResource* meshBinary = Resource::CreateFromFile<BinaryResource>(meshFile);
 
     if (!meshBinary->GetSizeInBytes())
     {
-        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("IndexedMesh::LoadResource: invalid mesh\n");
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
-    AFile meshData = AFile::OpenRead(meshFile, meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes());
+    File meshData = File::OpenRead(meshFile, meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes());
     if (!meshData)
     {
-        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("IndexedMesh::LoadResource: invalid mesh\n");
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
@@ -241,7 +241,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     bool bRaycastBVH;
 
-    AString guidStr = meshData.ReadString();
+    String guidStr = meshData.ReadString();
 
     m_bSkinnedMesh = meshData.ReadBool();
     meshData.ReadObject(m_BoundingBox);
@@ -255,26 +255,26 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Subparts.ResizeInvalidate(subpartsCount);
     for (int i = 0; i < m_Subparts.Size(); i++)
     {
-        m_Subparts[i] = new AIndexedMeshSubpart;
+        m_Subparts[i] = new IndexedMeshSubpart;
         m_Subparts[i]->Read(meshData);
     }
 
     member = doc.FindMember("Subparts");
     if (member)
     {
-        ADocValue* values       = member->GetArrayValues();
+        DocumentValue* values       = member->GetArrayValues();
         int        subpartIndex = 0;
-        for (ADocValue* v = values; v && subpartIndex < m_Subparts.Size(); v = v->GetNext())
+        for (DocumentValue* v = values; v && subpartIndex < m_Subparts.Size(); v = v->GetNext())
         {
             if (v->GetStringView())
-                m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetStringView()));
+                m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<MaterialInstance>(v->GetStringView()));
             subpartIndex++;
         }
     }
 
     if (bRaycastBVH)
     {
-        for (AIndexedMeshSubpart* subpart : m_Subparts)
+        for (IndexedMeshSubpart* subpart : m_Subparts)
         {
             std::unique_ptr<BvhTree> bvh = std::make_unique<BvhTree>();
 
@@ -288,7 +288,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Sockets.ResizeInvalidate(socketsCount);
     for (int i = 0; i < m_Sockets.Size(); i++)
     {
-        ASocketDef* socket = new ASocketDef;
+        SocketDef* socket = new SocketDef;
         socket->Read(meshData);
         m_Sockets[i] = socket;
     }
@@ -299,22 +299,22 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         meshData.ReadArray(m_Skin.OffsetMatrices);
     }
 
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         subpart->m_OwnerMesh = this;
     }
 
     member = doc.FindMember("Skeleton");
-    SetSkeleton(GetOrCreateResource<ASkeleton>(member ? member->GetStringView() : "/Default/Skeleton/Default"));
+    SetSkeleton(GetOrCreateResource<Skeleton>(member ? member->GetStringView() : "/Default/Skeleton/Default"));
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertex), nullptr, GetVertexMemory, this);
+    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, GetVertexMemory, this);
     m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, GetIndexMemory, this);
 
     if (m_bSkinnedMesh)
     {
-        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(SMeshVertexSkin), nullptr, GetWeightMemory, this);
+        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(MeshVertexSkin), nullptr, GetWeightMemory, this);
     }
 
     SendVertexDataToGPU(m_Vertices.Size(), 0);
@@ -338,76 +338,76 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void* AIndexedMesh::GetVertexMemory(void* _This)
+void* IndexedMesh::GetVertexMemory(void* _This)
 {
-    return static_cast<AIndexedMesh*>(_This)->GetVertices();
+    return static_cast<IndexedMesh*>(_This)->GetVertices();
 }
 
-void* AIndexedMesh::GetIndexMemory(void* _This)
+void* IndexedMesh::GetIndexMemory(void* _This)
 {
-    return static_cast<AIndexedMesh*>(_This)->GetIndices();
+    return static_cast<IndexedMesh*>(_This)->GetIndices();
 }
 
-void* AIndexedMesh::GetWeightMemory(void* _This)
+void* IndexedMesh::GetWeightMemory(void* _This)
 {
-    return static_cast<AIndexedMesh*>(_This)->GetWeights();
+    return static_cast<IndexedMesh*>(_This)->GetWeights();
 }
 
-void* AIndexedMesh::GetLightmapUVMemory(void* _This)
+void* IndexedMesh::GetLightmapUVMemory(void* _This)
 {
-    return static_cast<AIndexedMesh*>(_This)->GetLigtmapUVs();
+    return static_cast<IndexedMesh*>(_This)->GetLigtmapUVs();
 }
 
-void AIndexedMesh::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void IndexedMesh::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_VertexHandle)
     {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_VertexHandle, ppBuffer, pOffset);
     }
 }
 
-void AIndexedMesh::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void IndexedMesh::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_IndexHandle)
     {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_IndexHandle, ppBuffer, pOffset);
     }
 }
 
-void AIndexedMesh::GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void IndexedMesh::GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_WeightsHandle)
     {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_WeightsHandle, ppBuffer, pOffset);
     }
 }
 
-void AIndexedMesh::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void IndexedMesh::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_LightmapUVsGPU)
     {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
     }
 }
 
-void AIndexedMesh::AddSocket(ASocketDef* pSocket)
+void IndexedMesh::AddSocket(SocketDef* pSocket)
 {
     if (!pSocket)
     {
-        LOG("AIndexedMesh::AddSocket: nullptr\n");
+        LOG("IndexedMesh::AddSocket: nullptr\n");
         return;
     }
     pSocket->AddRef();
     m_Sockets.Add(pSocket);
 }
 
-ASocketDef* AIndexedMesh::FindSocket(AStringView Name)
+SocketDef* IndexedMesh::FindSocket(StringView Name)
 {
-    for (ASocketDef* socket : m_Sockets)
+    for (SocketDef* socket : m_Sockets)
     {
         if (!socket->Name.Icmp(Name))
         {
@@ -417,13 +417,13 @@ ASocketDef* AIndexedMesh::FindSocket(AStringView Name)
     return nullptr;
 }
 
-void AIndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
+void IndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
 {
-    AScopedTimer ScopedTime("GenerateBVH");
+    ScopedTimer ScopedTime("GenerateBVH");
 
     if (m_bSkinnedMesh)
     {
-        LOG("AIndexedMesh::GenerateBVH: called for skinned mesh\n");
+        LOG("IndexedMesh::GenerateBVH: called for skinned mesh\n");
         return;
     }
 
@@ -435,7 +435,7 @@ void AIndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
         PrimitivesPerLeaf = MaxPrimitivesPerLeaf;
     }
 
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         subpart->GenerateBVH(PrimitivesPerLeaf);
     }
@@ -443,18 +443,18 @@ void AIndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
     m_RaycastPrimitivesPerLeaf = PrimitivesPerLeaf;
 }
 
-void AIndexedMesh::SetSkeleton(ASkeleton* pSkeleton)
+void IndexedMesh::SetSkeleton(Skeleton* pSkeleton)
 {
     m_Skeleton = pSkeleton;
 
     if (!m_Skeleton)
     {
-        static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
+        static TStaticResourceFinder<Skeleton> SkeletonResource("/Default/Skeleton/Default"s);
         m_Skeleton = SkeletonResource.GetObject();
     }
 }
 
-void AIndexedMesh::SetSkin(int32_t const* pJointIndices, Float3x4 const* pOffsetMatrices, int JointsCount)
+void IndexedMesh::SetSkin(int32_t const* pJointIndices, Float3x4 const* pOffsetMatrices, int JointsCount)
 {
     m_Skin.JointIndices.ResizeInvalidate(JointsCount);
     m_Skin.OffsetMatrices.ResizeInvalidate(JointsCount);
@@ -463,14 +463,14 @@ void AIndexedMesh::SetSkin(int32_t const* pJointIndices, Float3x4 const* pOffset
     Platform::Memcpy(m_Skin.OffsetMatrices.ToPtr(), pOffsetMatrices, JointsCount * sizeof(*pOffsetMatrices));
 }
 
-void AIndexedMesh::SetCollisionModel(ACollisionModel* pCollisionModel)
+void IndexedMesh::SetCollisionModel(CollisionModel* pCollisionModel)
 {
     m_CollisionModel = pCollisionModel;
 
     // TODO: Notify users that the collision model has been changed?
 }
 
-void AIndexedMesh::SetMaterialInstance(int SubpartIndex, AMaterialInstance* pMaterialInstance)
+void IndexedMesh::SetMaterialInstance(int SubpartIndex, MaterialInstance* pMaterialInstance)
 {
     if (SubpartIndex < 0 || SubpartIndex >= m_Subparts.Size())
     {
@@ -481,7 +481,7 @@ void AIndexedMesh::SetMaterialInstance(int SubpartIndex, AMaterialInstance* pMat
     // TODO: Notify users that the material instance has been changed?
 }
 
-void AIndexedMesh::SetBoundingBox(int SubpartIndex, BvAxisAlignedBox const& _BoundingBox)
+void IndexedMesh::SetBoundingBox(int SubpartIndex, BvAxisAlignedBox const& _BoundingBox)
 {
     if (SubpartIndex < 0 || SubpartIndex >= m_Subparts.Size())
     {
@@ -492,7 +492,7 @@ void AIndexedMesh::SetBoundingBox(int SubpartIndex, BvAxisAlignedBox const& _Bou
     // TODO: Notify users that the bounding box has been changed?
 }
 
-AIndexedMeshSubpart* AIndexedMesh::GetSubpart(int SubpartIndex)
+IndexedMeshSubpart* IndexedMesh::GetSubpart(int SubpartIndex)
 {
     if (SubpartIndex < 0 || SubpartIndex >= m_Subparts.Size())
     {
@@ -501,7 +501,7 @@ AIndexedMeshSubpart* AIndexedMesh::GetSubpart(int SubpartIndex)
     return m_Subparts[SubpartIndex];
 }
 
-bool AIndexedMesh::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -510,18 +510,18 @@ bool AIndexedMesh::SendVertexDataToGPU(int VerticesCount, int StartVertexLocatio
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    vertexMemory->Update(m_VertexHandle, StartVertexLocation * sizeof(SMeshVertex), VerticesCount * sizeof(SMeshVertex), m_Vertices.ToPtr() + StartVertexLocation);
+    vertexMemory->Update(m_VertexHandle, StartVertexLocation * sizeof(MeshVertex), VerticesCount * sizeof(MeshVertex), m_Vertices.ToPtr() + StartVertexLocation);
 
     return true;
 }
 
-bool AIndexedMesh::WriteVertexData(SMeshVertex const* Vertices, int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::WriteVertexData(MeshVertex const* Vertices, int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -530,13 +530,13 @@ bool AIndexedMesh::WriteVertexData(SMeshVertex const* Vertices, int VerticesCoun
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::WriteVertexData: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::WriteVertexData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
-    Platform::Memcpy(m_Vertices.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(SMeshVertex));
+    Platform::Memcpy(m_Vertices.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(MeshVertex));
 
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         subpart->m_bAABBTreeDirty = true;
     }
@@ -544,11 +544,11 @@ bool AIndexedMesh::WriteVertexData(SMeshVertex const* Vertices, int VerticesCoun
     return SendVertexDataToGPU(VerticesCount, StartVertexLocation);
 }
 
-bool AIndexedMesh::SendJointWeightsToGPU(int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::SendJointWeightsToGPU(int VerticesCount, int StartVertexLocation)
 {
     if (!m_bSkinnedMesh)
     {
-        LOG("AIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n");
+        LOG("IndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n");
         return false;
     }
 
@@ -559,22 +559,22 @@ bool AIndexedMesh::SendJointWeightsToGPU(int VerticesCount, int StartVertexLocat
 
     if (StartVertexLocation + VerticesCount > m_Weights.Size())
     {
-        LOG("AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    vertexMemory->Update(m_WeightsHandle, StartVertexLocation * sizeof(SMeshVertexSkin), VerticesCount * sizeof(SMeshVertexSkin), m_Weights.ToPtr() + StartVertexLocation);
+    vertexMemory->Update(m_WeightsHandle, StartVertexLocation * sizeof(MeshVertexSkin), VerticesCount * sizeof(MeshVertexSkin), m_Weights.ToPtr() + StartVertexLocation);
 
     return true;
 }
 
-bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* Vertices, int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::WriteJointWeights(MeshVertexSkin const* Vertices, int VerticesCount, int StartVertexLocation)
 {
     if (!m_bSkinnedMesh)
     {
-        LOG("AIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n");
+        LOG("IndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n");
         return false;
     }
 
@@ -585,16 +585,16 @@ bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* Vertices, int Vertic
 
     if (StartVertexLocation + VerticesCount > m_Weights.Size())
     {
-        LOG("AIndexedMesh::WriteJointWeights: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::WriteJointWeights: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
-    Platform::Memcpy(m_Weights.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(SMeshVertexSkin));
+    Platform::Memcpy(m_Weights.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(MeshVertexSkin));
 
     return SendJointWeightsToGPU(VerticesCount, StartVertexLocation);
 }
 
-bool AIndexedMesh::SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -603,20 +603,20 @@ bool AIndexedMesh::SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocati
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::SendLightmapUVsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::SendLightmapUVsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
     AddLightmapUVs();
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    vertexMemory->Update(m_LightmapUVsGPU, StartVertexLocation * sizeof(SMeshVertexUV), VerticesCount * sizeof(SMeshVertexUV), m_LightmapUVs.ToPtr() + StartVertexLocation);
+    vertexMemory->Update(m_LightmapUVsGPU, StartVertexLocation * sizeof(MeshVertexUV), VerticesCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + StartVertexLocation);
 
     return true;
 }
 
-bool AIndexedMesh::WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation)
+bool IndexedMesh::WriteLightmapUVsData(MeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -625,18 +625,18 @@ bool AIndexedMesh::WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCo
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::WriteLightmapUVsData: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::WriteLightmapUVsData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
     AddLightmapUVs();
 
-    Platform::Memcpy(m_LightmapUVs.ToPtr() + StartVertexLocation, UVs, VerticesCount * sizeof(SMeshVertexUV));
+    Platform::Memcpy(m_LightmapUVs.ToPtr() + StartVertexLocation, UVs, VerticesCount * sizeof(MeshVertexUV));
 
     return SendLightmapUVsToGPU(VerticesCount, StartVertexLocation);
 }
 
-bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
+bool IndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
 {
     if (!_IndexCount)
     {
@@ -645,18 +645,18 @@ bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
 
     if (_StartIndexLocation + _IndexCount > m_Indices.Size())
     {
-        LOG("AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::SendIndexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
     vertexMemory->Update(m_IndexHandle, _StartIndexLocation * sizeof(unsigned int), _IndexCount * sizeof(unsigned int), m_Indices.ToPtr() + _StartIndexLocation);
 
     return true;
 }
 
-bool AIndexedMesh::WriteIndexData(unsigned int const* Indices, int _IndexCount, int _StartIndexLocation)
+bool IndexedMesh::WriteIndexData(unsigned int const* Indices, int _IndexCount, int _StartIndexLocation)
 {
     if (!_IndexCount)
     {
@@ -665,13 +665,13 @@ bool AIndexedMesh::WriteIndexData(unsigned int const* Indices, int _IndexCount, 
 
     if (_StartIndexLocation + _IndexCount > m_Indices.Size())
     {
-        LOG("AIndexedMesh::WriteIndexData: Referencing outside of buffer ({})\n", GetResourcePath());
+        LOG("IndexedMesh::WriteIndexData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
     Platform::Memcpy(m_Indices.ToPtr() + _StartIndexLocation, Indices, _IndexCount * sizeof(unsigned int));
 
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         if (_StartIndexLocation >= subpart->m_FirstIndex && _StartIndexLocation + _IndexCount <= subpart->m_FirstIndex + subpart->m_IndexCount)
         {
@@ -682,17 +682,17 @@ bool AIndexedMesh::WriteIndexData(unsigned int const* Indices, int _IndexCount, 
     return SendIndexDataToGPU(_IndexCount, _StartIndexLocation);
 }
 
-void AIndexedMesh::UpdateBoundingBox()
+void IndexedMesh::UpdateBoundingBox()
 {
     m_BoundingBox.Clear();
-    for (AIndexedMeshSubpart const* subpart : m_Subparts)
+    for (IndexedMeshSubpart const* subpart : m_Subparts)
     {
         m_BoundingBox.AddAABB(subpart->GetBoundingBox());
     }
     m_bBoundingBoxDirty = false;
 }
 
-BvAxisAlignedBox const& AIndexedMesh::GetBoundingBox() const
+BvAxisAlignedBox const& IndexedMesh::GetBoundingBox() const
 {
     if (m_bBoundingBoxDirty)
     {
@@ -702,15 +702,15 @@ BvAxisAlignedBox const& AIndexedMesh::GetBoundingBox() const
     return m_BoundingBox;
 }
 
-AIndexedMesh* AIndexedMesh::CreateBox(Float3 const& Extents, float TexCoordScale)
+IndexedMesh* IndexedMesh::CreateBox(Float3 const& Extents, float TexCoordScale)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateBoxMesh(vertices, indices, bounds, Extents, TexCoordScale);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -718,15 +718,15 @@ AIndexedMesh* AIndexedMesh::CreateBox(Float3 const& Extents, float TexCoordScale
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateSphere(float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+IndexedMesh* IndexedMesh::CreateSphere(float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateSphereMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -734,15 +734,15 @@ AIndexedMesh* AIndexedMesh::CreateSphere(float Radius, float TexCoordScale, int 
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float Width, float Height, Float2 const& TexCoordScale)
+IndexedMesh* IndexedMesh::CreatePlaneXZ(float Width, float Height, Float2 const& TexCoordScale)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreatePlaneMeshXZ(vertices, indices, bounds, Width, Height, TexCoordScale);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -750,15 +750,15 @@ AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float Width, float Height, Float2 cons
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreatePlaneXY(float Width, float Height, Float2 const& TexCoordScale)
+IndexedMesh* IndexedMesh::CreatePlaneXY(float Width, float Height, Float2 const& TexCoordScale)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreatePlaneMeshXY(vertices, indices, bounds, Width, Height, TexCoordScale);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -766,16 +766,16 @@ AIndexedMesh* AIndexedMesh::CreatePlaneXY(float Width, float Height, Float2 cons
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+IndexedMesh* IndexedMesh::CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreatePatchMesh(vertices, indices, bounds,
                       Corner00, Corner10, Corner01, Corner11, TexCoordScale, bTwoSided, NumVerticalSubdivs, NumHorizontalSubdivs);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -783,15 +783,15 @@ AIndexedMesh* AIndexedMesh::CreatePatch(Float3 const& Corner00, Float3 const& Co
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateCylinder(float Radius, float Height, float TexCoordScale, int NumSubdivs)
+IndexedMesh* IndexedMesh::CreateCylinder(float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateCylinderMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -799,15 +799,15 @@ AIndexedMesh* AIndexedMesh::CreateCylinder(float Radius, float Height, float Tex
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateCone(float Radius, float Height, float TexCoordScale, int NumSubdivs)
+IndexedMesh* IndexedMesh::CreateCone(float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateConeMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -815,15 +815,15 @@ AIndexedMesh* AIndexedMesh::CreateCone(float Radius, float Height, float TexCoor
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateCapsule(float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+IndexedMesh* IndexedMesh::CreateCapsule(float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateCapsuleMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -831,15 +831,15 @@ AIndexedMesh* AIndexedMesh::CreateCapsule(float Radius, float Height, float TexC
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateSkybox(Float3 const& Extents, float TexCoordScale)
+IndexedMesh* IndexedMesh::CreateSkybox(Float3 const& Extents, float TexCoordScale)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateSkyboxMesh(vertices, indices, bounds, Extents, TexCoordScale);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -847,15 +847,15 @@ AIndexedMesh* AIndexedMesh::CreateSkybox(Float3 const& Extents, float TexCoordSc
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreateSkydome(float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
+IndexedMesh* IndexedMesh::CreateSkydome(float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
     ::CreateSkydomeMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs, bHemisphere);
 
-    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
     mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
     mesh->SetBoundingBox(0, bounds);
@@ -863,104 +863,104 @@ AIndexedMesh* AIndexedMesh::CreateSkydome(float Radius, float TexCoordScale, int
     return mesh;
 }
 
-void AIndexedMesh::LoadInternalResource(AStringView _Path)
+void IndexedMesh::LoadInternalResource(StringView _Path)
 {
-    TVertexBufferCPU<SMeshVertex> vertices;
+    TVertexBufferCPU<MeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox              bounds;
-    ACollisionModel*              collisionModel = nullptr;
+    CollisionModel*              collisionModel = nullptr;
 
     if (!_Path.Icmp("/Default/Meshes/Box"))
     {
         ::CreateBoxMesh(vertices, indices, bounds, Float3(1), 1);
 
-        SCollisionBoxDef box;
+        CollisionBoxDef box;
 
-        collisionModel = NewObj<ACollisionModel>(&box);
+        collisionModel = NewObj<CollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/Sphere"))
     {
         ::CreateSphereMesh(vertices, indices, bounds, 0.5f, 1);
 
-        SCollisionSphereDef sphere;
+        CollisionSphereDef sphere;
 
-        collisionModel = NewObj<ACollisionModel>(&sphere);
+        collisionModel = NewObj<CollisionModel>(&sphere);
     }
     else if (!_Path.Icmp("/Default/Meshes/Cylinder"))
     {
         ::CreateCylinderMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
-        SCollisionCylinderDef cylinder;
+        CollisionCylinderDef cylinder;
         cylinder.Radius = 0.5f;
         cylinder.Height = 0.5f;
 
-        collisionModel = NewObj<ACollisionModel>(&cylinder);
+        collisionModel = NewObj<CollisionModel>(&cylinder);
     }
     else if (!_Path.Icmp("/Default/Meshes/Cone"))
     {
         ::CreateConeMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
-        SCollisionConeDef cone;
+        CollisionConeDef cone;
         cone.Radius = 0.5f;
 
-        collisionModel = NewObj<ACollisionModel>(&cone);
+        collisionModel = NewObj<CollisionModel>(&cone);
     }
     else if (!_Path.Icmp("/Default/Meshes/Capsule"))
     {
         ::CreateCapsuleMesh(vertices, indices, bounds, 0.5f, 1.0f, 1);
 
-        SCollisionCapsuleDef capsule;
+        CollisionCapsuleDef capsule;
         capsule.Radius = 0.5f;
 
-        collisionModel = NewObj<ACollisionModel>(&capsule);
+        collisionModel = NewObj<CollisionModel>(&capsule);
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
         ::CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, Float2(256));
 
-        SCollisionBoxDef box;
+        CollisionBoxDef box;
         box.HalfExtents.X = 128;
         box.HalfExtents.Y = 0.1f;
         box.HalfExtents.Z = 128;
         box.Position.Y -= box.HalfExtents.Y;
 
-        collisionModel = NewObj<ACollisionModel>(&box);
+        collisionModel = NewObj<CollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
         ::CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, Float2(256));
 
-        SCollisionBoxDef box;
+        CollisionBoxDef box;
         box.HalfExtents.X = 128;
         box.HalfExtents.Y = 128;
         box.HalfExtents.Z = 0.1f;
         box.Position.Z -= box.HalfExtents.Z;
 
-        collisionModel = NewObj<ACollisionModel>(&box);
+        collisionModel = NewObj<CollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXZ"))
     {
         ::CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, Float2(1));
 
-        SCollisionBoxDef box;
+        CollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
         box.HalfExtents.Y = 0.1f;
         box.HalfExtents.Z = 0.5f;
         box.Position.Y -= box.HalfExtents.Y;
 
-        collisionModel = NewObj<ACollisionModel>(&box);
+        collisionModel = NewObj<CollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXY"))
     {
         ::CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, Float2(1));
 
-        SCollisionBoxDef box;
+        CollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
         box.HalfExtents.Y = 0.5f;
         box.HalfExtents.Z = 0.1f;
         box.Position.Z -= box.HalfExtents.Z;
 
-        collisionModel = NewObj<ACollisionModel>(&box);
+        collisionModel = NewObj<CollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
@@ -989,11 +989,11 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
     SetCollisionModel(collisionModel);
 }
 
-void AIndexedMesh::GenerateRigidbodyCollisions()
+void IndexedMesh::GenerateRigidbodyCollisions()
 {
-    AScopedTimer ScopedTime("GenerateRigidbodyCollisions");
+    ScopedTimer ScopedTime("GenerateRigidbodyCollisions");
 
-    SCollisionTriangleSoupBVHDef bvh;
+    CollisionTriangleSoupBVHDef bvh;
     bvh.pVertices            = &m_Vertices[0].Position;
     bvh.VertexStride         = sizeof(m_Vertices[0]);
     bvh.VertexCount          = m_Vertices.Size();
@@ -1002,16 +1002,16 @@ void AIndexedMesh::GenerateRigidbodyCollisions()
     bvh.pIndexedMeshSubparts = m_Subparts.ToPtr();
     bvh.SubpartCount         = m_Subparts.Size();
 
-    SetCollisionModel(NewObj<ACollisionModel>(&bvh));
+    SetCollisionModel(NewObj<CollisionModel>(&bvh));
 }
 
-void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
+void IndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
 {
-    AScopedTimer ScopedTime("GenerateSoftbodyFacesFromMeshIndices");
+    ScopedTimer ScopedTime("GenerateSoftbodyFacesFromMeshIndices");
 
     int totalIndices = 0;
 
-    for (AIndexedMeshSubpart const* subpart : m_Subparts)
+    for (IndexedMeshSubpart const* subpart : m_Subparts)
     {
         totalIndices += subpart->m_IndexCount;
     }
@@ -1022,11 +1022,11 @@ void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
 
     unsigned int const* indices = m_Indices.ToPtr();
 
-    for (AIndexedMeshSubpart const* subpart : m_Subparts)
+    for (IndexedMeshSubpart const* subpart : m_Subparts)
     {
         for (int i = 0; i < subpart->m_IndexCount; i += 3)
         {
-            SSoftbodyFace& face = m_SoftbodyFaces[faceIndex++];
+            SoftbodyFace& face = m_SoftbodyFaces[faceIndex++];
 
             face.Indices[0] = subpart->m_BaseVertex + indices[subpart->m_FirstIndex + i];
             face.Indices[1] = subpart->m_BaseVertex + indices[subpart->m_FirstIndex + i + 1];
@@ -1035,9 +1035,9 @@ void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
     }
 }
 
-void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
+void IndexedMesh::GenerateSoftbodyLinksFromFaces()
 {
-    AScopedTimer ScopedTime("GenerateSoftbodyLinksFromFaces");
+    ScopedTimer ScopedTime("GenerateSoftbodyLinksFromFaces");
 
     TVector<bool> checks;
     unsigned int* indices;
@@ -1047,7 +1047,7 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
 
     m_SoftbodyLinks.Clear();
 
-    for (SSoftbodyFace& face : m_SoftbodyFaces)
+    for (SoftbodyFace& face : m_SoftbodyFaces)
     {
         indices = face.Indices;
 
@@ -1066,7 +1066,7 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
                 checks[index_j_k] = checks[index_k_j] = true;
 
                 // Add link
-                SSoftbodyLink& link = m_SoftbodyLinks.Add();
+                SoftbodyLink& link = m_SoftbodyLinks.Add();
                 link.Indices[0]     = indices[j];
                 link.Indices[1]     = indices[k];
             }
@@ -1074,7 +1074,7 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
     }
 }
 
-bool AIndexedMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const
+bool IndexedMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
 {
     bool ret = false;
 
@@ -1093,13 +1093,13 @@ bool AIndexedMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float D
 
     for (int i = 0; i < m_Subparts.Size(); i++)
     {
-        AIndexedMeshSubpart* subpart = m_Subparts[i];
+        IndexedMeshSubpart* subpart = m_Subparts[i];
         ret |= subpart->Raycast(RayStart, RayDir, invRayDir, Distance, bCullBackFace, HitResult);
     }
     return ret;
 }
 
-bool AIndexedMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3], int& SubpartIndex) const
+bool IndexedMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3], int& SubpartIndex) const
 {
     bool ret = false;
 
@@ -1118,7 +1118,7 @@ bool AIndexedMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, 
 
     for (int i = 0; i < m_Subparts.Size(); i++)
     {
-        AIndexedMeshSubpart* subpart = m_Subparts[i];
+        IndexedMeshSubpart* subpart = m_Subparts[i];
         if (subpart->RaycastClosest(RayStart, RayDir, invRayDir, Distance, bCullBackFace, HitLocation, HitUV, HitDistance, Indices))
         {
             SubpartIndex  = i;
@@ -1130,17 +1130,17 @@ bool AIndexedMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, 
     return ret;
 }
 
-void AIndexedMesh::DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& TransformMatrix)
+void IndexedMesh::DrawBVH(DebugRenderer* pRenderer, Float3x4 const& TransformMatrix)
 {
-    for (AIndexedMeshSubpart* subpart : m_Subparts)
+    for (IndexedMeshSubpart* subpart : m_Subparts)
     {
         subpart->DrawBVH(pRenderer, TransformMatrix);
     }
 }
 
-void AIndexedMesh::NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
+void IndexedMesh::NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
 {
-    for (TListIterator<AIndexedMeshListener> it(Listeners) ; it ; it++)
+    for (TListIterator<IndexedMeshListener> it(Listeners) ; it ; it++)
     {
         it->OnMeshResourceUpdate(UpdateFlag);
     }
@@ -1148,53 +1148,53 @@ void AIndexedMesh::NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AIndexedMeshSubpart::AIndexedMeshSubpart()
+IndexedMeshSubpart::IndexedMeshSubpart()
 {
     m_BoundingBox.Clear();
 
-    static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
+    static TStaticResourceFinder<MaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
     m_MaterialInstance = DefaultMaterialInstance.GetObject();
 }
 
-AIndexedMeshSubpart::~AIndexedMeshSubpart()
+IndexedMeshSubpart::~IndexedMeshSubpart()
 {
 }
 
-void AIndexedMeshSubpart::SetBaseVertex(int BaseVertex)
+void IndexedMeshSubpart::SetBaseVertex(int BaseVertex)
 {
     m_BaseVertex     = BaseVertex;
     m_bAABBTreeDirty = true;
 }
 
-void AIndexedMeshSubpart::SetFirstIndex(int FirstIndex)
+void IndexedMeshSubpart::SetFirstIndex(int FirstIndex)
 {
     m_FirstIndex     = FirstIndex;
     m_bAABBTreeDirty = true;
 }
 
-void AIndexedMeshSubpart::SetVertexCount(int VertexCount)
+void IndexedMeshSubpart::SetVertexCount(int VertexCount)
 {
     m_VertexCount = VertexCount;
 }
 
-void AIndexedMeshSubpart::SetIndexCount(int IndexCount)
+void IndexedMeshSubpart::SetIndexCount(int IndexCount)
 {
     m_IndexCount     = IndexCount;
     m_bAABBTreeDirty = true;
 }
 
-void AIndexedMeshSubpart::SetMaterialInstance(AMaterialInstance* pMaterialInstance)
+void IndexedMeshSubpart::SetMaterialInstance(MaterialInstance* pMaterialInstance)
 {
     m_MaterialInstance = pMaterialInstance;
 
     if (!m_MaterialInstance)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
+        static TStaticResourceFinder<MaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
         m_MaterialInstance = DefaultMaterialInstance.GetObject();
     }
 }
 
-void AIndexedMeshSubpart::SetBoundingBox(BvAxisAlignedBox const& _BoundingBox)
+void IndexedMeshSubpart::SetBoundingBox(BvAxisAlignedBox const& _BoundingBox)
 {
     m_BoundingBox = _BoundingBox;
 
@@ -1204,29 +1204,29 @@ void AIndexedMeshSubpart::SetBoundingBox(BvAxisAlignedBox const& _BoundingBox)
     }
 }
 
-void AIndexedMeshSubpart::GenerateBVH(unsigned int PrimitivesPerLeaf)
+void IndexedMeshSubpart::GenerateBVH(unsigned int PrimitivesPerLeaf)
 {
     // TODO: Try KD-tree
 
     if (m_OwnerMesh)
     {
-        m_bvhTree        = std::make_unique<BvhTree>(TArrayView<SMeshVertex>(m_OwnerMesh->m_Vertices), TArrayView<unsigned int>(m_OwnerMesh->m_Indices.ToPtr() + m_FirstIndex, (size_t)m_IndexCount), m_BaseVertex, PrimitivesPerLeaf);
+        m_bvhTree        = std::make_unique<BvhTree>(TArrayView<MeshVertex>(m_OwnerMesh->m_Vertices), TArrayView<unsigned int>(m_OwnerMesh->m_Indices.ToPtr() + m_FirstIndex, (size_t)m_IndexCount), m_BaseVertex, PrimitivesPerLeaf);
         m_bAABBTreeDirty = false;
     }
 }
 
-void AIndexedMeshSubpart::SetBVH(std::unique_ptr<BvhTree> BVH)
+void IndexedMeshSubpart::SetBVH(std::unique_ptr<BvhTree> BVH)
 {
     m_bvhTree        = std::move(BVH);
     m_bAABBTreeDirty = false;
 }
 
-bool AIndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const
+bool IndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
 {
     bool                ret = false;
     float               d, u, v;
     unsigned int const* indices  = m_OwnerMesh->GetIndices() + m_FirstIndex;
-    SMeshVertex const*  vertices = m_OwnerMesh->GetVertices();
+    MeshVertex const*  vertices = m_OwnerMesh->GetVertices();
 
     if (Distance < 0.0001f)
     {
@@ -1237,7 +1237,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, 
     {
         if (m_bAABBTreeDirty)
         {
-            LOG("AIndexedMeshSubpart::Raycast: bvh is outdated\n");
+            LOG("IndexedMeshSubpart::Raycast: bvh is outdated\n");
             return false;
         }
 
@@ -1269,7 +1269,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, 
                     {
                         if (Distance > d)
                         {
-                            STriangleHitResult& hitResult = HitResult.Add();
+                            TriangleHitResult& hitResult = HitResult.Add();
                             hitResult.Location            = RayStart + RayDir * d;
                             hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                             hitResult.Distance            = d;
@@ -1313,7 +1313,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, 
             {
                 if (Distance > d)
                 {
-                    STriangleHitResult& hitResult = HitResult.Add();
+                    TriangleHitResult& hitResult = HitResult.Add();
                     hitResult.Location            = RayStart + RayDir * d;
                     hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                     hitResult.Distance            = d;
@@ -1331,12 +1331,12 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, 
     return ret;
 }
 
-bool AIndexedMeshSubpart::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
+bool IndexedMeshSubpart::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
 {
     bool                ret = false;
     float               d, u, v;
     unsigned int const* indices  = m_OwnerMesh->GetIndices() + m_FirstIndex;
-    SMeshVertex const*  vertices = m_OwnerMesh->GetVertices();
+    MeshVertex const*  vertices = m_OwnerMesh->GetVertices();
 
     if (Distance < 0.0001f)
     {
@@ -1347,7 +1347,7 @@ bool AIndexedMeshSubpart::RaycastClosest(Float3 const& RayStart, Float3 const& R
     {
         if (m_bAABBTreeDirty)
         {
-            LOG("AIndexedMeshSubpart::RaycastClosest: bvh is outdated\n");
+            LOG("IndexedMeshSubpart::RaycastClosest: bvh is outdated\n");
             return false;
         }
 
@@ -1437,7 +1437,7 @@ bool AIndexedMeshSubpart::RaycastClosest(Float3 const& RayStart, Float3 const& R
     return ret;
 }
 
-void AIndexedMeshSubpart::DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& TransformMatrix)
+void IndexedMeshSubpart::DrawBVH(DebugRenderer* pRenderer, Float3x4 const& TransformMatrix)
 {
     if (!m_bvhTree)
     {
@@ -1459,7 +1459,7 @@ void AIndexedMeshSubpart::DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& Tra
     }
 }
 
-void AIndexedMeshSubpart::Read(IBinaryStreamReadInterface& stream)
+void IndexedMeshSubpart::Read(IBinaryStreamReadInterface& stream)
 {
     m_Name        = stream.ReadString();
     m_BaseVertex  = stream.ReadInt32();
@@ -1479,24 +1479,24 @@ void AIndexedMeshSubpart::Read(IBinaryStreamReadInterface& stream)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AVertexLight::AVertexLight(AIndexedMesh* pSourceMesh)
+VertexLight::VertexLight(IndexedMesh* pSourceMesh)
 {
     m_Vertices.ResizeInvalidate(pSourceMesh->GetVertexCount());
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    m_VertexBufferGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertexLight), nullptr, GetVertexMemory, this);
+    m_VertexBufferGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexLight), nullptr, GetVertexMemory, this);
 }
 
-AVertexLight::~AVertexLight()
+VertexLight::~VertexLight()
 {
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexBufferGPU);
     m_VertexBufferGPU = nullptr;
 }
 
-bool AVertexLight::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
+bool VertexLight::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -1505,18 +1505,18 @@ bool AVertexLight::SendVertexDataToGPU(int VerticesCount, int StartVertexLocatio
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AVertexLight::SendVertexDataToGPU: Referencing outside of buffer\n");
+        LOG("VertexLight::SendVertexDataToGPU: Referencing outside of buffer\n");
         return false;
     }
 
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
-    vertexMemory->Update(m_VertexBufferGPU, StartVertexLocation * sizeof(SMeshVertexLight), VerticesCount * sizeof(SMeshVertexLight), m_Vertices.ToPtr() + StartVertexLocation);
+    vertexMemory->Update(m_VertexBufferGPU, StartVertexLocation * sizeof(MeshVertexLight), VerticesCount * sizeof(MeshVertexLight), m_Vertices.ToPtr() + StartVertexLocation);
 
     return true;
 }
 
-bool AVertexLight::WriteVertexData(SMeshVertexLight const* Vertices, int VerticesCount, int StartVertexLocation)
+bool VertexLight::WriteVertexData(MeshVertexLight const* Vertices, int VerticesCount, int StartVertexLocation)
 {
     if (!VerticesCount)
     {
@@ -1525,51 +1525,51 @@ bool AVertexLight::WriteVertexData(SMeshVertexLight const* Vertices, int Vertice
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AVertexLight::WriteVertexData: Referencing outside of buffer\n");
+        LOG("VertexLight::WriteVertexData: Referencing outside of buffer\n");
         return false;
     }
 
-    Platform::Memcpy(m_Vertices.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(SMeshVertexLight));
+    Platform::Memcpy(m_Vertices.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(MeshVertexLight));
 
     return SendVertexDataToGPU(VerticesCount, StartVertexLocation);
 }
 
-void AVertexLight::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void VertexLight::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_VertexBufferGPU)
     {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_VertexBufferGPU, ppBuffer, pOffset);
     }
 }
 
-void* AVertexLight::GetVertexMemory(void* _This)
+void* VertexLight::GetVertexMemory(void* _This)
 {
-    return static_cast<AVertexLight*>(_This)->GetVertices();
+    return static_cast<VertexLight*>(_This)->GetVertices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AProceduralMesh::AProceduralMesh()
+ProceduralMesh::ProceduralMesh()
 {
     BoundingBox.Clear();
 }
 
-AProceduralMesh::~AProceduralMesh()
+ProceduralMesh::~ProceduralMesh()
 {
 }
 
-void AProceduralMesh::GetVertexBufferGPU(AStreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_VertexStream, ppBuffer, pOffset);
 }
 
-void AProceduralMesh::GetIndexBufferGPU(AStreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_IndexSteam, ppBuffer, pOffset);
 }
 
-void AProceduralMesh::PreRenderUpdate(SRenderFrontendDef const* pDef)
+void ProceduralMesh::PreRenderUpdate(RenderFrontendDef const* pDef)
 {
     if (m_VisFrame == pDef->FrameNumber)
     {
@@ -1580,14 +1580,14 @@ void AProceduralMesh::PreRenderUpdate(SRenderFrontendDef const* pDef)
 
     if (!VertexCache.IsEmpty() && !IndexCache.IsEmpty())
     {
-        AStreamedMemoryGPU* streamedMemory = pDef->StreamedMemory;
+        StreamedMemoryGPU* streamedMemory = pDef->StreamedMemory;
 
-        m_VertexStream = streamedMemory->AllocateVertex(sizeof(SMeshVertex) * VertexCache.Size(), VertexCache.ToPtr());
+        m_VertexStream = streamedMemory->AllocateVertex(sizeof(MeshVertex) * VertexCache.Size(), VertexCache.ToPtr());
         m_IndexSteam   = streamedMemory->AllocateIndex(sizeof(unsigned int) * IndexCache.Size(), IndexCache.ToPtr());
     }
 }
 
-bool AProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const
+bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
 {
     if (Distance < 0.0001f)
     {
@@ -1613,7 +1613,7 @@ bool AProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, floa
     bool                ret = false;
     float               d, u, v;
     unsigned int const* indices  = IndexCache.ToPtr() + FirstIndex;
-    SMeshVertex const*  vertices = VertexCache.ToPtr();
+    MeshVertex const*  vertices = VertexCache.ToPtr();
 
     const int primCount = IndexCache.Size() / 3;
 
@@ -1631,7 +1631,7 @@ bool AProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, floa
         {
             if (Distance > d)
             {
-                STriangleHitResult& hitResult = HitResult.Add();
+                TriangleHitResult& hitResult = HitResult.Add();
                 hitResult.Location            = RayStart + RayDir * d;
                 hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                 hitResult.Distance            = d;
@@ -1649,7 +1649,7 @@ bool AProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, floa
     return ret;
 }
 
-bool AProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
+bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
 {
     if (Distance < 0.0001f)
     {
@@ -1675,7 +1675,7 @@ bool AProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDi
     bool                ret = false;
     float               d, u, v;
     unsigned int const* indices  = IndexCache.ToPtr() + FirstIndex;
-    SMeshVertex const*  vertices = VertexCache.ToPtr();
+    MeshVertex const*  vertices = VertexCache.ToPtr();
 
     const int primCount = IndexCache.Size() / 3;
 
@@ -1711,7 +1711,7 @@ bool AProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDi
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+void CreateBoxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -1736,7 +1736,7 @@ void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsi
     Float3 const& mins = Bounds.Mins;
     Float3 const& maxs = Bounds.Maxs;
 
-    SMeshVertex* pVerts = Vertices.ToPtr();
+    MeshVertex* pVerts = Vertices.ToPtr();
 
     Half zero = 0.0f;
     Half pos  = 1.0f;
@@ -1846,7 +1846,7 @@ void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsi
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateSphereMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
@@ -1861,7 +1861,7 @@ void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     Bounds.Mins.X = Bounds.Mins.Y = Bounds.Mins.Z = -Radius;
     Bounds.Maxs.X = Bounds.Maxs.Y = Bounds.Maxs.Z = Radius;
 
-    SMeshVertex* pVert = Vertices.ToPtr();
+    MeshVertex* pVert = Vertices.ToPtr();
 
     const float verticalStep    = Math::_PI / NumVerticalSubdivs;
     const float horizontalStep  = Math::_2PI / NumHorizontalSubdivs;
@@ -1912,7 +1912,7 @@ void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXZ(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -1920,13 +1920,13 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     const float halfWidth  = Width * 0.5f;
     const float halfHeight = Height * 0.5f;
 
-    const SMeshVertex Verts[4] = {
+    const MeshVertex Verts[4] = {
         MakeMeshVertex(Float3(-halfWidth, 0, -halfHeight), Float2(0, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
         MakeMeshVertex(Float3(-halfWidth, 0, halfHeight), Float2(0, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
         MakeMeshVertex(Float3(halfWidth, 0, halfHeight), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
         MakeMeshVertex(Float3(halfWidth, 0, -halfHeight), Float2(TexCoordScale.X, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0))};
 
-    Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(SMeshVertex));
+    Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(MeshVertex));
 
     constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
     Platform::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
@@ -1941,7 +1941,7 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Bounds.Maxs.Z  = halfHeight;
 }
 
-void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXY(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -1949,13 +1949,13 @@ void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     const float halfWidth  = Width * 0.5f;
     const float halfHeight = Height * 0.5f;
 
-    const SMeshVertex Verts[4] = {
+    const MeshVertex Verts[4] = {
         MakeMeshVertex(Float3(-halfWidth, -halfHeight, 0), Float2(0, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
         MakeMeshVertex(Float3(halfWidth, -halfHeight, 0), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
         MakeMeshVertex(Float3(halfWidth, halfHeight, 0), Float2(TexCoordScale.X, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
         MakeMeshVertex(Float3(-halfWidth, halfHeight, 0), Float2(0, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1))};
 
-    Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(SMeshVertex));
+    Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(MeshVertex));
 
     constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
     Platform::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
@@ -1970,7 +1970,7 @@ void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Bounds.Maxs.Z  = 0.001f;
 }
 
-void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreatePatchMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 2);
     NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 2);
@@ -1991,7 +1991,7 @@ void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<un
     Vertices.ResizeInvalidate(bTwoSided ? vertexCount << 1 : vertexCount);
     Indices.ResizeInvalidate(bTwoSided ? indexCount << 1 : indexCount);
 
-    SMeshVertex*  pVert    = Vertices.ToPtr();
+    MeshVertex*  pVert    = Vertices.ToPtr();
     unsigned int* pIndices = Indices.ToPtr();
 
     for (int y = 0; y < NumVerticalSubdivs; ++y)
@@ -2103,7 +2103,7 @@ void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<un
     Bounds.AddPoint(Corner11);
 }
 
-void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateCylinderMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -2126,7 +2126,7 @@ void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU
     Bounds.Maxs.Z = Radius;
     Bounds.Maxs.Y  = halfHeight;
 
-    SMeshVertex* pVerts = Vertices.ToPtr();
+    MeshVertex* pVerts = Vertices.ToPtr();
 
     int firstVertex = 0;
 
@@ -2221,7 +2221,7 @@ void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateConeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -2247,7 +2247,7 @@ void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<uns
     Half neg = -1.0f;
     Half zero = 0.0f;
 
-    SMeshVertex* pVerts = Vertices.ToPtr();
+    MeshVertex* pVerts = Vertices.ToPtr();
 
     int firstVertex = 0;
 
@@ -2331,7 +2331,7 @@ void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<uns
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     int          x, y, tcY;
     float        verticalAngle, horizontalAngle;
@@ -2351,7 +2351,7 @@ void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Bounds.Maxs.X = Bounds.Maxs.Z = Radius;
     Bounds.Maxs.Y                 = Radius + halfHeight;
 
-    SMeshVertex* pVert = Vertices.ToPtr();
+    MeshVertex* pVert = Vertices.ToPtr();
 
     const float verticalStep    = Math::_PI / NumVerticalSubdivs;
     const float horizontalStep  = Math::_2PI / NumHorizontalSubdivs;
@@ -2431,7 +2431,7 @@ void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -2462,7 +2462,7 @@ void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     Float3 const& mins = Bounds.Mins;
     Float3 const& maxs = Bounds.Maxs;
 
-    SMeshVertex* pVerts = Vertices.ToPtr();
+    MeshVertex* pVerts = Vertices.ToPtr();
 
     Half     zero = 0.0f;
     Half     pos  = 1.0f;
@@ -2572,7 +2572,7 @@ void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
+void CreateSkydomeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
@@ -2587,7 +2587,7 @@ void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Bounds.Mins.X = Bounds.Mins.Y = Bounds.Mins.Z = -Radius;
     Bounds.Maxs.X = Bounds.Maxs.Y = Bounds.Maxs.Z = Radius;
 
-    SMeshVertex* pVert = Vertices.ToPtr();
+    MeshVertex* pVert = Vertices.ToPtr();
 
     const float verticalRange   = bHemisphere ? Math::_HALF_PI : Math::_PI;
     const float verticalStep    = verticalRange / NumVerticalSubdivs;
@@ -2639,7 +2639,7 @@ void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-MeshRenderView* AIndexedMesh::GetDefaultRenderView() const
+MeshRenderView* IndexedMesh::GetDefaultRenderView() const
 {
     if (m_RenderView.IsExpired())
     {
@@ -2667,7 +2667,7 @@ void MeshRenderView::ClearMaterials()
     m_Materials.Clear();
 }
 
-void MeshRenderView::SetMaterial(int subpartIndex, AMaterialInstance* instance)
+void MeshRenderView::SetMaterial(int subpartIndex, MaterialInstance* instance)
 {
     HK_ASSERT(subpartIndex >= 0);
 
@@ -2679,7 +2679,7 @@ void MeshRenderView::SetMaterial(int subpartIndex, AMaterialInstance* instance)
             m_Materials[i] = nullptr;
     }
 
-    AMaterialInstance* material = m_Materials[subpartIndex];
+    MaterialInstance* material = m_Materials[subpartIndex];
     if (material)
         material->RemoveRef();
 
@@ -2688,7 +2688,7 @@ void MeshRenderView::SetMaterial(int subpartIndex, AMaterialInstance* instance)
         instance->AddRef();
 }
 
-void MeshRenderView::SetMaterials(AIndexedMesh const* indexedMesh)
+void MeshRenderView::SetMaterials(IndexedMesh const* indexedMesh)
 {
     ClearMaterials();
 
@@ -2702,19 +2702,19 @@ void MeshRenderView::SetMaterials(AIndexedMesh const* indexedMesh)
     }
 }
 
-AMaterialInstance* MeshRenderView::GetMaterialUnsafe(int subpartIndex) const
+MaterialInstance* MeshRenderView::GetMaterialUnsafe(int subpartIndex) const
 {
     if (subpartIndex < 0 || subpartIndex >= m_Materials.Size())
         return nullptr;
     return m_Materials[subpartIndex];
 }
 
-AMaterialInstance* MeshRenderView::GetMaterial(int subpartIndex) const
+MaterialInstance* MeshRenderView::GetMaterial(int subpartIndex) const
 {
-    AMaterialInstance* pInstance = GetMaterialUnsafe(subpartIndex);
+    MaterialInstance* pInstance = GetMaterialUnsafe(subpartIndex);
     if (!pInstance)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
+        static TStaticResourceFinder<MaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;

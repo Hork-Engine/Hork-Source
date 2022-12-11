@@ -35,9 +35,9 @@ float FRUSTUM_SLICE_SCALE = -(MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / s
 float FRUSTUM_SLICE_BIAS  = std::log2((double)FRUSTUM_CLUSTER_ZFAR) * (MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2((double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR) - FRUSTUM_SLICE_OFFSET;
 float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];
 
-struct SFrustumSliceZClipInitializer
+struct FrustumSliceZClipInitializer
 {
-    SFrustumSliceZClipInitializer()
+    FrustumSliceZClipInitializer()
     {
         FRUSTUM_SLICE_ZCLIP[0] = 1; // extended near cluster
 
@@ -51,5 +51,5 @@ struct SFrustumSliceZClipInitializer
     }
 };
 
-static SFrustumSliceZClipInitializer FrustumSliceZClipInitializer;
+static FrustumSliceZClipInitializer FrustumSliceZClipInitializer;
 

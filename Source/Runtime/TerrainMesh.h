@@ -32,17 +32,17 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 
-struct STerrainPatch
+struct TerrainPatch
 {
     int IndexCount;
     int BaseVertex;
     int StartIndex;
 };
 
-class ATerrainMesh : public ARefCounted
+class TerrainMesh : public RefCounted
 {
 public:
-    ATerrainMesh(int TextureSize);
+    TerrainMesh(int TextureSize);
 
     int GetTextureSize() const
     {
@@ -55,36 +55,36 @@ public:
     RenderCore::IBuffer* GetIndexBufferGPU() const { return IndexBufferGPU; }
 
     /** Get vertex buffer in CPU. We keep it only for debug draw */
-    STerrainVertex const* GetVertexBufferCPU() const { return VertexBuffer.ToPtr(); }
+    TerrainVertex const* GetVertexBufferCPU() const { return VertexBuffer.ToPtr(); }
     /** Get index buffer in CPU. We keep it only for debug draw */
     unsigned short const* GetIndexBufferCPU() const { return IndexBuffer.ToPtr(); }
 
     int GetVertexCount() const { return VertexBuffer.Size(); }
     int GetIndexCount() const { return IndexBuffer.Size(); }
 
-    STerrainPatch const& GetBlockPatch() const { return BlockPatch; }
-    STerrainPatch const& GetHorGapPatch() const { return HorGapPatch; }
-    STerrainPatch const& GetVertGapPatch() const { return VertGapPatch; }
-    STerrainPatch const& GetInteriorTLPatch() const { return InteriorTLPatch; }
-    STerrainPatch const& GetInteriorTRPatch() const { return InteriorTRPatch; }
-    STerrainPatch const& GetInteriorBLPatch() const { return InteriorBLPatch; }
-    STerrainPatch const& GetInteriorBRPatch() const { return InteriorBRPatch; }
-    STerrainPatch const& GetInteriorFinestPatch() const { return InteriorFinestPatch; }
-    STerrainPatch const& GetCrackPatch() const { return CrackPatch; }
+    TerrainPatch const& GetBlockPatch() const { return BlockPatch; }
+    TerrainPatch const& GetHorGapPatch() const { return HorGapPatch; }
+    TerrainPatch const& GetVertGapPatch() const { return VertGapPatch; }
+    TerrainPatch const& GetInteriorTLPatch() const { return InteriorTLPatch; }
+    TerrainPatch const& GetInteriorTRPatch() const { return InteriorTRPatch; }
+    TerrainPatch const& GetInteriorBLPatch() const { return InteriorBLPatch; }
+    TerrainPatch const& GetInteriorBRPatch() const { return InteriorBRPatch; }
+    TerrainPatch const& GetInteriorFinestPatch() const { return InteriorFinestPatch; }
+    TerrainPatch const& GetCrackPatch() const { return CrackPatch; }
 
 private:
     /** Initial texture size */
     int TextureSize;
 
-    STerrainPatch BlockPatch;
-    STerrainPatch HorGapPatch;
-    STerrainPatch VertGapPatch;
-    STerrainPatch InteriorTLPatch;
-    STerrainPatch InteriorTRPatch;
-    STerrainPatch InteriorBLPatch;
-    STerrainPatch InteriorBRPatch;
-    STerrainPatch InteriorFinestPatch;
-    STerrainPatch CrackPatch;
+    TerrainPatch BlockPatch;
+    TerrainPatch HorGapPatch;
+    TerrainPatch VertGapPatch;
+    TerrainPatch InteriorTLPatch;
+    TerrainPatch InteriorTRPatch;
+    TerrainPatch InteriorBLPatch;
+    TerrainPatch InteriorBRPatch;
+    TerrainPatch InteriorFinestPatch;
+    TerrainPatch CrackPatch;
 
     /** Vertex buffer in GPU */
     TRef<RenderCore::IBuffer> VertexBufferGPU;
@@ -92,7 +92,7 @@ private:
     TRef<RenderCore::IBuffer> IndexBufferGPU;
 
     /** Vertex buffer in CPU. We keep it only for debug draw */
-    TVector<STerrainVertex> VertexBuffer;
+    TVector<TerrainVertex> VertexBuffer;
     /** Index buffer in CPU. We keep it only for debug draw */
     TVector<unsigned short> IndexBuffer;
 };

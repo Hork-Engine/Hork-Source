@@ -59,9 +59,9 @@ public:
     UIDockContainer* GetContainer() { return m_Container; }
 
 protected:
-    void PostDraw(ACanvas& canvas) override;
+    void PostDraw(Canvas& canvas) override;
 
-    bool OnChildrenMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp);
+    bool OnChildrenMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp);
 
 private:
     TWeakRef<UIDockNode> m_Leaf;

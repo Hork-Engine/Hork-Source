@@ -39,16 +39,16 @@ SOFTWARE.
 namespace Core
 {
 
-bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
+bool BinaryToC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85)
 {
-    AFile source = AFile::OpenRead(SourceFile);
+    File source = File::OpenRead(SourceFile);
     if (!source)
     {
         LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    AFile dest = AFile::OpenWrite(DestFile);
+    File dest = File::OpenWrite(DestFile);
     if (!dest)
     {
         LOG("Failed to open {}\n", DestFile);
@@ -60,16 +60,16 @@ bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName
     return true;
 }
 
-bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
+bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85)
 {
-    AFile source = AFile::OpenRead(SourceFile);
+    File source = File::OpenRead(SourceFile);
     if (!source)
     {
         LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    AFile dest = AFile::OpenWrite(DestFile);
+    File dest = File::OpenWrite(DestFile);
     if (!dest)
     {
         LOG("Failed to open {}\n", DestFile);
@@ -87,7 +87,7 @@ bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringVi
     return true;
 }
 
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, BlobRef Blob, bool bEncodeBase85)
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, BlobRef Blob, bool bEncodeBase85)
 {
     const byte* bytes = (const byte*)Blob.GetData();
     size_t      size  = Blob.Size();

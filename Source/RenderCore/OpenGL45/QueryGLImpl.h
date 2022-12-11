@@ -35,15 +35,15 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class AQueryPoolGLImpl final : public IQueryPool
+class QueryPoolGLImpl final : public IQueryPool
 {
-    friend class AImmediateContextGLImpl;
+    friend class ImmediateContextGLImpl;
 
 public:
-    AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const& Desc);
-    ~AQueryPoolGLImpl();
+    QueryPoolGLImpl(DeviceGLImpl* pDevice, QueryPoolDesc const& Desc);
+    ~QueryPoolGLImpl();
 
 private:
     unsigned int* IdPool;

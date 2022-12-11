@@ -92,6 +92,6 @@ HK_FORCEINLINE btMatrix3x3 btMatrixToFloat3x3(Float3x3 const& _In)
                        _In[2][0], _In[2][1], _In[2][2]);
 }
 
-void btDrawCollisionShape(ADebugRenderer* InRenderer, btTransform const& Transform, btCollisionShape const* Shape);
+void btDrawCollisionShape(DebugRenderer* InRenderer, btTransform const& Transform, btCollisionShape const* Shape);
 
-void btDrawCollisionObject(ADebugRenderer* InRenderer, btCollisionObject* CollisionObject);
+void btDrawCollisionObject(DebugRenderer* InRenderer, btCollisionObject* CollisionObject);

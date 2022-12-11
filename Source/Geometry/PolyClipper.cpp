@@ -45,22 +45,22 @@ static const double CLIPPER_TO_FLOAT_CONVERSION_NUMBER  = 0.000000001;
 #define CLIPPER_FLOAT_TO_LONG(p) (static_cast<ClipperLib::cInt>((p)*CLIPPER_TO_LONG_CONVERSION_NUMBER))
 #define CLIPPER_LONG_TO_FLOAT(p) ((p)*CLIPPER_TO_FLOAT_CONVERSION_NUMBER)
 
-APolyClipper::APolyClipper() :
+PolyClipper::PolyClipper() :
     m_pImpl(MakeUnique<ClipperLib::Clipper>()), m_Transform3D(Float3x3::Identity()), m_InvTransform3D(Float3x3::Identity())
 {
 }
 
-APolyClipper::~APolyClipper()
+PolyClipper::~PolyClipper()
 {
 }
 
-void APolyClipper::SetTransform(Float3x3 const& transform3D)
+void PolyClipper::SetTransform(Float3x3 const& transform3D)
 {
     m_Transform3D   = transform3D;
     m_InvTransform3D = m_Transform3D.Transposed();
 }
 
-void APolyClipper::SetTransformFromNormal(Float3 const& normal)
+void PolyClipper::SetTransformFromNormal(Float3 const& normal)
 {
     m_Transform3D[2] = normal;
 
@@ -87,7 +87,7 @@ static void ConstructClipperPath(const double* pointsXY, int pointsCount, SClipp
     }
 }
 
-void APolyClipper::AddSubj2D(Double2 const* points, int pointsCount, bool closed)
+void PolyClipper::AddSubj2D(Double2 const* points, int pointsCount, bool closed)
 {
     SClipperPath Path;
 
@@ -96,7 +96,7 @@ void APolyClipper::AddSubj2D(Double2 const* points, int pointsCount, bool closed
     m_pImpl->AddPath(Path, ClipperLib::ptSubject, closed);
 }
 
-void APolyClipper::AddClip2D(Double2 const* points, int pointsCount, bool closed)
+void PolyClipper::AddClip2D(Double2 const* points, int pointsCount, bool closed)
 {
     SClipperPath Path;
 
@@ -105,7 +105,7 @@ void APolyClipper::AddClip2D(Double2 const* points, int pointsCount, bool closed
     m_pImpl->AddPath(Path, ClipperLib::ptClip, closed);
 }
 
-void APolyClipper::AddSubj3D(Double3 const* points, int pointsCount, bool closed)
+void PolyClipper::AddSubj3D(Double3 const* points, int pointsCount, bool closed)
 {
     SClipperPath Path;
 
@@ -114,7 +114,7 @@ void APolyClipper::AddSubj3D(Double3 const* points, int pointsCount, bool closed
     m_pImpl->AddPath(Path, ClipperLib::ptSubject, closed);
 }
 
-void APolyClipper::AddClip3D(Double3 const* points, int pointsCount, bool closed)
+void PolyClipper::AddClip3D(Double3 const* points, int pointsCount, bool closed)
 {
     SClipperPath Path;
 
@@ -123,7 +123,7 @@ void APolyClipper::AddClip3D(Double3 const* points, int pointsCount, bool closed
     m_pImpl->AddPath(Path, ClipperLib::ptClip, closed);
 }
 
-static void ConstructContour(SClipperPath const& path, AClipperContour& contour)
+static void ConstructContour(SClipperPath const& path, ClipperContour& contour)
 {
     int numPoints = path.size();
 
@@ -136,10 +136,10 @@ static void ConstructContour(SClipperPath const& path, AClipperContour& contour)
     }
 }
 
-static void ComputeNode_r(ClipperLib::PolyNode const& node, TVector<SClipperPolygon>& polygons)
+static void ComputeNode_r(ClipperLib::PolyNode const& node, TVector<ClipperPolygon>& polygons)
 {
-    SClipperPolygon polygon;
-    AClipperContour hole;
+    ClipperPolygon polygon;
+    ClipperContour hole;
 
     ConstructContour(node.Contour, polygon.Outer);
 
@@ -167,7 +167,7 @@ static void ComputeNode_r(ClipperLib::PolyNode const& node, TVector<SClipperPoly
     polygons.Add(polygon);
 }
 
-static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TVector<SClipperPolygon>& polygons)
+static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TVector<ClipperPolygon>& polygons)
 {
     if (polygonTree.Contour.size() > 0 && !polygonTree.IsOpen())
     {
@@ -197,7 +197,7 @@ static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TVector<SCl
     }
 }
 
-bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<SClipperPolygon>& polygons)
+bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<ClipperPolygon>& polygons)
 {
     ClipperLib::PolyTree polygonTree;
 
@@ -212,7 +212,7 @@ bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<SClipperPolygon>& po
     return true;
 }
 
-bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& contours)
+bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<ClipperContour>& contours)
 {
     SClipperPaths resultPaths;
 
@@ -231,7 +231,7 @@ bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& co
     return true;
 }
 
-void APolyClipper::Clear()
+void PolyClipper::Clear()
 {
     m_pImpl->Clear();
 }

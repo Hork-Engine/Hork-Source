@@ -35,7 +35,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class AVertexArrayObjectGL
+class VertexArrayObjectGL
 {
 public:
     uint32_t HandleGL{};
@@ -44,28 +44,28 @@ public:
     uint32_t VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS] = {};
     uint32_t IndexBufferUID{};
 
-    AVertexArrayObjectGL(uint32_t HandleGL) :
+    VertexArrayObjectGL(uint32_t HandleGL) :
         HandleGL(HandleGL)
     {}
 };
 
-class AVertexLayoutGL : public ARefCounted
+class VertexLayoutGL : public RefCounted
 {
 public:
-    AVertexLayoutGL(SVertexLayoutDescGL const& Desc) :
+    VertexLayoutGL(VertexLayoutDescGL const& Desc) :
         Desc(Desc)
     {
-        for (SVertexBindingInfo const* binding = Desc.VertexBindings; binding < &Desc.VertexBindings[Desc.NumVertexBindings]; binding++)
+        for (VertexBindingInfo const* binding = Desc.VertexBindings; binding < &Desc.VertexBindings[Desc.NumVertexBindings]; binding++)
         {
             VertexBindingsStrides[binding->InputSlot] = binding->Stride;
         }
     }
 
-    SVertexLayoutDescGL const& GetDesc() const { return Desc; }
+    VertexLayoutDescGL const& GetDesc() const { return Desc; }
 
     uint32_t const* GetVertexBindingsStrides() const {return VertexBindingsStrides; }
 
-    AVertexArrayObjectGL* GetVAO(AImmediateContextGLImpl* pContext)
+    VertexArrayObjectGL* GetVAO(ImmediateContextGLImpl* pContext)
     {
         // Fast path for apps with single context
         if (pContext->IsMainContext())
@@ -81,20 +81,20 @@ public:
 
         auto vaoHandle = CreateVAO();
 
-        AVertexArrayObjectGL* ptr      = vaoHandle.get();
+        VertexArrayObjectGL* ptr      = vaoHandle.get();
         VaoHandles[pContext->GetUID()] = std::move(vaoHandle);
         return ptr;
     }
 
-    void DestroyVAO(AImmediateContextGLImpl* pContext);
+    void DestroyVAO(ImmediateContextGLImpl* pContext);
 
 private:
-    HK_NODISCARD std::unique_ptr<AVertexArrayObjectGL> CreateVAO();
+    HK_NODISCARD std::unique_ptr<VertexArrayObjectGL> CreateVAO();
 
-    THashMap<uint32_t /* context id */, std::unique_ptr<AVertexArrayObjectGL>> VaoHandles;
-    std::unique_ptr<AVertexArrayObjectGL>                                      VaoHandleMainContext;
-    SVertexLayoutDescGL                                                        Desc;
-    uint32_t                                                                   VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};
+    THashMap<uint32_t /* context id */, std::unique_ptr<VertexArrayObjectGL>> VaoHandles;
+    std::unique_ptr<VertexArrayObjectGL>                                      VaoHandleMainContext;
+    VertexLayoutDescGL                                                        Desc;
+    uint32_t                                                                  VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};
 };
 
 } // namespace RenderCore

@@ -60,21 +60,21 @@ Future:
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-HK_CLASS_META(ATerrain)
+HK_CLASS_META(Terrain)
 
-ATerrain::ATerrain()
+Terrain::Terrain()
 {}
 
-ATerrain::~ATerrain()
+Terrain::~Terrain()
 {
     Purge();
 }
 
-ATerrain::ATerrain(int Resolution, const float* pData)
+Terrain::Terrain(int Resolution, const float* pData)
 {
     if (!IsPowerOfTwo(Resolution - 1))
     {
-        LOG("ATerrain::ctor: invalid resolution\n");
+        LOG("Terrain::ctor: invalid resolution\n");
         return;
     }
 
@@ -98,7 +98,7 @@ ATerrain::ATerrain(int Resolution, const float* pData)
     NotifyTerrainModified();
 }
 
-bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
+bool Terrain::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
@@ -125,7 +125,7 @@ bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void ATerrain::LoadInternalResource(AStringView Path)
+void Terrain::LoadInternalResource(StringView Path)
 {
     Purge();
 
@@ -164,7 +164,7 @@ void ATerrain::LoadInternalResource(AStringView Path)
     NotifyTerrainModified();
 }
 
-void ATerrain::Purge()
+void Terrain::Purge()
 {
     for (int i = 0; i < m_HeightmapLods; i++)
     {
@@ -175,7 +175,7 @@ void ATerrain::Purge()
     m_Heightmap.Clear();
 }
 
-void ATerrain::GenerateLods()
+void Terrain::GenerateLods()
 {
     float h1, h2, h3, h4;
     int   x, y;
@@ -225,7 +225,7 @@ void ATerrain::GenerateLods()
     }
 }
 
-void ATerrain::UpdateTerrainBounds()
+void Terrain::UpdateTerrainBounds()
 {
     // Calc Min/Max height. TODO: should be specified in asset file
     m_MinHeight = std::numeric_limits<float>::max();
@@ -256,7 +256,7 @@ void ATerrain::UpdateTerrainBounds()
     m_BoundingBox.Maxs.Z = m_ClipMax.Y;
 }
 
-void ATerrain::UpdateTerrainShape()
+void Terrain::UpdateTerrainShape()
 {
     /*
     NOTE about btHeightfieldTerrainShape:
@@ -272,7 +272,7 @@ void ATerrain::UpdateTerrainShape()
     m_HeightfieldShape->buildAccelerator();
 }
 
-float ATerrain::ReadHeight(int X, int Z, int Lod) const
+float Terrain::ReadHeight(int X, int Z, int Lod) const
 {
     if (Lod < 0 || Lod >= m_HeightmapLods)
         return 0.0f;
@@ -287,7 +287,7 @@ float ATerrain::ReadHeight(int X, int Z, int Lod) const
     return m_Heightmap[Lod][sampleY * lodResoultion + sampleX];
 }
 
-bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const
+bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
 {
     class ATriangleRaycastCallback : public btTriangleCallback
     {
@@ -297,7 +297,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
         bool   bCullBackFace;
         int    IntersectionCount = 0;
 
-        TPodVector<STriangleHitResult>* Result;
+        TPodVector<TriangleHitResult>* Result;
 
         void processTriangle(btVector3* triangle, int partId, int triangleIndex) override
         {
@@ -307,7 +307,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
             float  d, u, v;
             if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
             {
-                STriangleHitResult& hit = Result->Add();
+                TriangleHitResult& hit = Result->Add();
                 hit.Location            = RayStart + RayDir * d;
                 hit.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                 hit.UV.X                = u;
@@ -357,7 +357,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
     return triangleRaycastCallback.IntersectionCount > 0;
 }
 
-bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, STriangleHitResult& HitResult) const
+bool Terrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TriangleHitResult& HitResult) const
 {
 #define FIRST_INTERSECTION_IS_CLOSEST
 
@@ -370,7 +370,7 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
         bool   bCullBackFace;
         int    IntersectionCount = 0;
 
-        STriangleHitResult* Result;
+        TriangleHitResult* Result;
 
         void processTriangle(btVector3* triangle, int partId, int triangleIndex) override
         {
@@ -459,7 +459,7 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
     return triangleRaycastCallback.IntersectionCount > 0;
 }
 
-float ATerrain::SampleHeight(float X, float Z) const
+float Terrain::SampleHeight(float X, float Z) const
 {
     float minX = Math::Floor(X);
     float minZ = Math::Floor(Z);
@@ -513,7 +513,7 @@ float ATerrain::SampleHeight(float X, float Z) const
     }
 }
 
-bool ATerrain::GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Float3& V2) const
+bool Terrain::GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Float3& V2) const
 {
     float minX = Math::Floor(X);
     float minZ = Math::Floor(Z);
@@ -584,7 +584,7 @@ bool ATerrain::GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Flo
     return true;
 }
 
-bool ATerrain::GetNormal(float X, float Z, Float3& Normal) const
+bool Terrain::GetNormal(float X, float Z, Float3& Normal) const
 {
     Float3 v0, v1, v2;
     if (!GetTriangleVertices(X, Z, v0, v1, v2))
@@ -596,7 +596,7 @@ bool ATerrain::GetNormal(float X, float Z, Float3& Normal) const
     return true;
 }
 
-bool ATerrain::GetTexcoord(float X, float Z, Float2& Texcoord) const
+bool Terrain::GetTexcoord(float X, float Z, Float2& Texcoord) const
 {
     const float invResolution = 1.0f / (m_HeightmapResolution - 1);
 
@@ -606,7 +606,7 @@ bool ATerrain::GetTexcoord(float X, float Z, Float2& Texcoord) const
     return true;
 }
 
-bool ATerrain::GetTriangle(float X, float Z, STerrainTriangle& Triangle) const
+bool Terrain::GetTriangle(float X, float Z, TerrainTriangle& Triangle) const
 {
     if (!GetTriangleVertices(X, Z, Triangle.Vertices[0], Triangle.Vertices[1], Triangle.Vertices[2]))
     {
@@ -622,19 +622,19 @@ bool ATerrain::GetTriangle(float X, float Z, STerrainTriangle& Triangle) const
     return true;
 }
 
-void ATerrain::AddListener(ATerrainComponent* Listener)
+void Terrain::AddListener(TerrainComponent* Listener)
 {
     INTRUSIVE_ADD_UNIQUE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
 }
 
-void ATerrain::RemoveListener(ATerrainComponent* Listener)
+void Terrain::RemoveListener(TerrainComponent* Listener)
 {
     INTRUSIVE_REMOVE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
 }
 
-void ATerrain::NotifyTerrainModified()
+void Terrain::NotifyTerrainModified()
 {
-    for (ATerrainComponent* component = m_Listeners; component; component = component->pNext)
+    for (TerrainComponent* component = m_Listeners; component; component = component->pNext)
     {
         component->OnTerrainModified();
     }
@@ -642,7 +642,7 @@ void ATerrain::NotifyTerrainModified()
     // TODO: Update terrain views
 }
 
-void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const
+void Terrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const
 {
     if (!BvBoxOverlapBox(m_BoundingBox, LocalBounds))
     {

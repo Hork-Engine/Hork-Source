@@ -33,44 +33,44 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AFxaaRenderer::AFxaaRenderer()
+FxaaRenderer::FxaaRenderer()
 {
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter   = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    SBufferInfo bufferInfo;
+    BufferInfo bufferInfo;
     bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &samplerCI;
     resourceLayout.NumBuffers  = 1;
     resourceLayout.Buffers     = &bufferInfo;
 
-    AShaderFactory::CreateFullscreenQuadPipeline(&FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout);
 }
 
-void AFxaaRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppFxaaTexture)
+void FxaaRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppFxaaTexture)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("FXAA Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("FXAA Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
 
     renderPass.AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment("FXAA texture",
-                           STextureDesc()
+        TextureAttachment("FXAA texture",
+                           TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());

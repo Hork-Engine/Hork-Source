@@ -533,7 +533,7 @@ struct RawImageResampleParams
 };
 
 /** Scale image. */
-ARawImage ResampleRawImage(ARawImage const& Source, RawImageResampleParams const& Desc);
+RawImage ResampleRawImage(RawImage const& Source, RawImageResampleParams const& Desc);
 
 enum IMAGE_IMPORT_FLAGS
 {
@@ -546,16 +546,16 @@ enum IMAGE_IMPORT_FLAGS
 HK_FLAG_ENUM_OPERATORS(IMAGE_IMPORT_FLAGS)
 
 /** Create image storage from raw image */
-ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, IMAGE_IMPORT_FLAGS ImportFlags = IMAGE_IMPORT_FLAGS_DEFAULT);
+ImageStorage CreateImage(RawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, IMAGE_IMPORT_FLAGS ImportFlags = IMAGE_IMPORT_FLAGS_DEFAULT);
 
 /** Create image storage from file */
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
 /** Create image storage from file */
-ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
+ImageStorage CreateImage(StringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
 ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(StringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
 
 // Assume normals already normalized. The width and height of the normal map must be a multiple of blockSize if compression is enabled.
 ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
@@ -565,8 +565,8 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
 
 struct NormalRoughnessImportSettings
 {
-    AString NormalMap;
-    AString RoughnessMap;
+    String NormalMap;
+    String RoughnessMap;
 
     // Result normal map packing
     NORMAL_MAP_PACK Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
@@ -606,7 +606,7 @@ enum SKYBOX_IMPORT_TEXTURE_FORMAT
 struct SkyboxImportSettings
 {
     /** Source files for skybox */
-    TArray<AString, 6> Faces;
+    TArray<String, 6> Faces;
 
     SKYBOX_IMPORT_TEXTURE_FORMAT Format{SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT};
 

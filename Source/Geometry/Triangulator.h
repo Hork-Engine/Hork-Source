@@ -34,14 +34,14 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include "VectorMath.h"
 
-class ATriangulatorBase
+class TriangulatorBase
 {
 public:
     void SetBoundary(bool _Flag);
 
 protected:
-    ATriangulatorBase();
-    virtual ~ATriangulatorBase();
+    TriangulatorBase();
+    virtual ~TriangulatorBase();
 
     typedef void (*SCallback)();
 
@@ -91,20 +91,20 @@ void CopyVertex(TriangleVertex& dst, ContourVertex const& src);
 } // namespace TriangulatorTraits
 
 template <typename ContourVertex, typename TriangleVertex>
-class TTriangulator : ATriangulatorBase
+class TTriangulator : TriangulatorBase
 {
 public:
-    struct SPolygon
+    struct Polygon
     {
-        ContourVertex*                             OuterContour;
-        int                                        OuterContourVertexCount;
+        ContourVertex*                          OuterContour;
+        int                                     OuterContourVertexCount;
         TVector<std::pair<ContourVertex*, int>> HoleContours;
-        Double3                                    Normal;
+        Double3                                 Normal;
     };
 
     TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TVector<unsigned int>* pOutputStreamIndices);
 
-    void Triangulate(SPolygon const* polygon);
+    void Triangulate(Polygon const* polygon);
 
 private:
     static void OnBeginData(uint32_t topology, void* polygonData);
@@ -126,7 +126,7 @@ private:
 
     // Current filling contour
     TVector<TriangleVertex*> m_PrimitiveIndices;
-    int                         m_CurrentTopology;
+    int                      m_CurrentTopology;
 
     // Vertex cache
     TVector<TriangleVertex*> m_VertexCache;
@@ -299,7 +299,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnCombineData(double position
 #endif
 
 template <typename ContourVertex, typename TriangleVertex>
-void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(SPolygon const* polygon)
+void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(Polygon const* polygon)
 {
     Double3 tmpPosition;
 

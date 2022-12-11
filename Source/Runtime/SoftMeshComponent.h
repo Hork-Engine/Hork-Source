@@ -35,14 +35,14 @@ SOFTWARE.
 
 /*
 
-ASoftMeshComponent
+SoftMeshComponent
 
 Mesh with softbody physics simulation
 
 */
-class ASoftMeshComponent : public ASkinnedComponent
+class SoftMeshComponent : public SkinnedComponent
 {
-    HK_COMPONENT(ASoftMeshComponent, ASkinnedComponent)
+    HK_COMPONENT(SoftMeshComponent, SkinnedComponent)
 
 public:
     /** Velocities correction factor (Baumgarte) */
@@ -81,7 +81,7 @@ public:
     //Float3x4 BaseTransform;
 
     /** Attach vertex to anchor point */
-    void AttachVertex(int _VertexIndex, AAnchorComponent* _Anchor);
+    void AttachVertex(int _VertexIndex, AnchorComponent* _Anchor);
 
     /** Detach vertex from anchor point */
     void DetachVertex(int _VertexIndex);
@@ -90,7 +90,7 @@ public:
     void DetachAllVertices();
 
     /** Get vertex attachment */
-    AAnchorComponent* GetVertexAnchor(int _VertexIndex) const;
+    AnchorComponent* GetVertexAnchor(int _VertexIndex) const;
 
     /** Set a wind velocity for interaction with the air */
     void SetWindVelocity(Float3 const& _Velocity);
@@ -110,8 +110,8 @@ public:
     Float3 GetVertexVelocity(int _VertexIndex) const;
 
 protected:
-    ASoftMeshComponent();
-    ~ASoftMeshComponent();
+    SoftMeshComponent();
+    ~SoftMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -120,7 +120,7 @@ protected:
 
     void TickComponent(float _TimeStep) override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
     void RecreateSoftBody();
@@ -134,11 +134,11 @@ private:
     //Float3 PrevTransformOrigin;
     //btRigidBody * Anchor;
 
-    struct SAnchorBinding
+    struct AnchorBinding
     {
-        AAnchorComponent* Anchor;
-        int               VertexIndex;
+        AnchorComponent* Anchor;
+        int              VertexIndex;
     };
-    TPodVector<SAnchorBinding> Anchors;
-    bool                       bUpdateAnchors = false;
+    TPodVector<AnchorBinding> m_Anchors;
+    bool m_bUpdateAnchors = false;
 };

@@ -74,7 +74,7 @@ static GLenum ChooseBufferUsageHint(MUTABLE_STORAGE_CLIENT_ACCESS _ClientAccess,
     return GL_STATIC_DRAW;
 }
 
-ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, const void* SysMem) :
+BufferGLImpl::BufferGLImpl(DeviceGLImpl* pDevice, BufferDesc const& Desc, const void* SysMem) :
     IBuffer(pDevice, Desc)
 {
     GLuint id;
@@ -99,7 +99,7 @@ ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, co
     {
         glDeleteBuffers(1, &id);
 
-        LOG("ABufferGLImpl::ctor: couldn't allocate buffer size {} bytes\n", Desc.SizeInBytes);
+        LOG("BufferGLImpl::ctor: couldn't allocate buffer size {} bytes\n", Desc.SizeInBytes);
         return;
     }
 
@@ -112,7 +112,7 @@ ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, co
     // glGetBufferParameteriv          glGetNamedBufferParameteriv
 }
 
-ABufferGLImpl::~ABufferGLImpl()
+BufferGLImpl::~BufferGLImpl()
 {
     GLuint id = GetHandleNativeGL();
 
@@ -121,16 +121,16 @@ ABufferGLImpl::~ABufferGLImpl()
         glDeleteBuffers(1, &id);
     }
 
-    static_cast<ADeviceGLImpl*>(GetDevice())->BufferMemoryAllocated -= GetDesc().SizeInBytes;
+    static_cast<DeviceGLImpl*>(GetDevice())->BufferMemoryAllocated -= GetDesc().SizeInBytes;
 }
 
-bool ABufferGLImpl::CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView)
+bool BufferGLImpl::CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView)
 {
-    *ppBufferView = MakeRef<ABufferViewGLImpl>(BufferViewDesc, this);
+    *ppBufferView = MakeRef<BufferViewGLImpl>(BufferViewDesc, this);
     return true;
 }
 
-bool ABufferGLImpl::Orphan()
+bool BufferGLImpl::Orphan()
 {
     if (GetDesc().bImmutableStorage)
     {
@@ -143,39 +143,39 @@ bool ABufferGLImpl::Orphan()
     return true;
 }
 
-void ABufferGLImpl::Invalidate()
+void BufferGLImpl::Invalidate()
 {
     glInvalidateBufferData(GetHandleNativeGL());
 }
 
-void ABufferGLImpl::InvalidateRange(size_t _RangeOffset, size_t _RangeSize)
+void BufferGLImpl::InvalidateRange(size_t _RangeOffset, size_t _RangeSize)
 {
     glInvalidateBufferSubData(GetHandleNativeGL(), _RangeOffset, _RangeSize);
 }
 
-void ABufferGLImpl::FlushMappedRange(size_t _RangeOffset, size_t _RangeSize)
+void BufferGLImpl::FlushMappedRange(size_t _RangeOffset, size_t _RangeSize)
 {
     glFlushMappedNamedBufferRange(GetHandleNativeGL(), _RangeOffset, _RangeSize);
 }
 
-void ABufferGLImpl::Read(void* _SysMem)
+void BufferGLImpl::Read(void* _SysMem)
 {
     ReadRange(0, GetDesc().SizeInBytes, _SysMem);
 }
 
-void ABufferGLImpl::ReadRange(size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
+void BufferGLImpl::ReadRange(size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
 {
-    AImmediateContextGLImpl::GetCurrent()->ReadBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
+    ImmediateContextGLImpl::GetCurrent()->ReadBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
 }
 
-void ABufferGLImpl::Write(const void* _SysMem)
+void BufferGLImpl::Write(const void* _SysMem)
 {
     WriteRange(0, GetDesc().SizeInBytes, _SysMem);
 }
 
-void ABufferGLImpl::WriteRange(size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
+void BufferGLImpl::WriteRange(size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
 {
-    AImmediateContextGLImpl::GetCurrent()->WriteBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
+    ImmediateContextGLImpl::GetCurrent()->WriteBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
 }
 
 } // namespace RenderCore

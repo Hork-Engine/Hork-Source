@@ -34,7 +34,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-void AFrameGraph::Build()
+void FrameGraph::Build()
 {
     HK_ASSERT(CapturedResources.IsEmpty());
 
@@ -189,7 +189,7 @@ void AFrameGraph::Build()
         int numAcquiredResources = AcquiredResources.Size() - firstAcquiredResource;
         int numReleasedResources = ReleasedResources.Size() - firstReleasedResource;
 
-        STimelineStep& step = Timeline.Add();
+        TimelineStep& step = Timeline.Add();
 
         step.RenderTask            = task.get();
         step.FirstAcquiredResource = firstAcquiredResource;
@@ -199,10 +199,10 @@ void AFrameGraph::Build()
     }
 }
 
-void AFrameGraph::Debug()
+void FrameGraph::Debug()
 {
     LOG("---------- FrameGraph ----------\n");
-    for (STimelineStep& step : Timeline)
+    for (TimelineStep& step : Timeline)
     {
         for (int i = 0; i < step.NumAcquiredResources; i++)
         {
@@ -221,9 +221,9 @@ void AFrameGraph::Debug()
     LOG("--------------------------------\n");
 }
 
-void AFrameGraph::ExportGraphviz(AStringView FileName)
+void FrameGraph::ExportGraphviz(StringView FileName)
 {
-    AFile f = AFile::OpenWrite(FileName);
+    File f = File::OpenWrite(FileName);
     if (!f)
     {
         return;
@@ -294,7 +294,7 @@ void AFrameGraph::ExportGraphviz(AStringView FileName)
     f.FormattedPrint("}}");
 }
 
-void AFrameGraph::ReleaseCapturedResources()
+void FrameGraph::ReleaseCapturedResources()
 {
     for (FGResourceProxyBase* resourceProxy : CapturedResources)
     {

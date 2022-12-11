@@ -63,7 +63,7 @@ namespace RenderCore
 
 struct SamplerInfo
 {
-    SSamplerDesc Desc;
+    SamplerDesc Desc;
     unsigned int Id;
 };
 
@@ -153,9 +153,9 @@ static void Deallocate(void* _Bytes)
     Platform::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
 }
 
-static constexpr SAllocatorCallback DefaultAllocator = { Allocate, Deallocate };
+static constexpr AllocatorCallback DefaultAllocator = { Allocate, Deallocate };
 
-ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
+DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
 {
     BufferMemoryAllocated  = 0;
     TextureMemoryAllocated = 0;
@@ -163,7 +163,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     MainWindowHandle = WindowPool.NewWindow();
 
     SDL_Window*   pWindow   = MainWindowHandle.Handle; //pMainWindow->GetNativeHandle();
-    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<AGenericWindowGLImpl*>(pMainWindow.GetObject())->GetGLContext();
+    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.GetObject())->GetGLContext();
 
     SDL_GL_MakeCurrent(pWindow, windowCtx);
 
@@ -242,7 +242,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     }
 
 #if 0
-    SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
+    MemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
     if ( gpuMemoryInfo.TotalAvailableMegabytes > 0 && gpuMemoryInfo.CurrentAvailableMegabytes > 0 ) {
         LOG( "Total available GPU memory: {} Megs\n", gpuMemoryInfo.TotalAvailableMegabytes );
         LOG( "Current available GPU memory: {} Megs\n", gpuMemoryInfo.CurrentAvailableMegabytes );
@@ -389,8 +389,8 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     Allocator = pAllocator ? *pAllocator : DefaultAllocator;
 
     // Now device is initialized so we can initialize main window context here
-    MainWindowHandle.ImmediateCtx = new AImmediateContextGLImpl(this, MainWindowHandle, true);
-    AImmediateContextGLImpl::MakeCurrent(MainWindowHandle.ImmediateCtx);
+    MainWindowHandle.ImmediateCtx = new ImmediateContextGLImpl(this, MainWindowHandle, true);
+    ImmediateContextGLImpl::MakeCurrent(MainWindowHandle.ImmediateCtx);
 
     #if 0
     // Clear garbage on screen
@@ -406,7 +406,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     #endif
 }
 
-ADeviceGLImpl::~ADeviceGLImpl()
+DeviceGLImpl::~DeviceGLImpl()
 {
     for (auto& it : Samplers)
     {
@@ -440,16 +440,16 @@ ADeviceGLImpl::~ADeviceGLImpl()
     }
 }
 
-IImmediateContext* ADeviceGLImpl::GetImmediateContext()
+IImmediateContext* DeviceGLImpl::GetImmediateContext()
 {
     return MainWindowHandle.ImmediateCtx;
 }
 
-void ADeviceGLImpl::GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
 {
     if (pMainWindow.IsExpired())
     {
-        *ppWindow = MakeRef<AGenericWindowGLImpl>(this, VideoMode, WindowPool, MainWindowHandle);
+        *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, MainWindowHandle);
         pMainWindow = *ppWindow;
     }
     else
@@ -458,83 +458,83 @@ void ADeviceGLImpl::GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGen
     }
 }
 
-void ADeviceGLImpl::CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
 {
-    AWindowPoolGL::SWindowGL dummyHandle = {};
+    WindowPoolGL::WindowGL dummyHandle = {};
 
-    *ppWindow = MakeRef<AGenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
+    *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
 }
 
-void ADeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain)
+void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain)
 {
-    *ppSwapChain = MakeRef<ASwapChainGLImpl>(this, static_cast<AGenericWindowGLImpl*>(pWindow));
+    *ppSwapChain = MakeRef<SwapChainGLImpl>(this, static_cast<GenericWindowGLImpl*>(pWindow));
 }
 
-void ADeviceGLImpl::CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline)
+void DeviceGLImpl::CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline)
 {
-    *ppPipeline = MakeRef<APipelineGLImpl>(this, Desc);
+    *ppPipeline = MakeRef<PipelineGLImpl>(this, Desc);
 }
 
-void ADeviceGLImpl::CreateShaderFromBinary(SShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)
 {
-    *ppShaderModule = MakeRef<AShaderModuleGLImpl>(this, _BinaryData);
+    *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _BinaryData);
 }
 
-void ADeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule)
 {
-    *ppShaderModule = MakeRef<AShaderModuleGLImpl>(this, _ShaderType, _NumSources, _Sources);
+    *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _ShaderType, _NumSources, _Sources);
 }
 
-void ADeviceGLImpl::CreateBuffer(SBufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer)
+void DeviceGLImpl::CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer)
 {
-    *ppBuffer = MakeRef<ABufferGLImpl>(this, Desc, _SysMem);
+    *ppBuffer = MakeRef<BufferGLImpl>(this, Desc, _SysMem);
 }
 
-void ADeviceGLImpl::CreateTexture(STextureDesc const& Desc, TRef<ITexture>* ppTexture)
+void DeviceGLImpl::CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture)
 {
-    *ppTexture = MakeRef<ATextureGLImpl>(this, Desc);
+    *ppTexture = MakeRef<TextureGLImpl>(this, Desc);
 }
 
-void ADeviceGLImpl::CreateSparseTexture(SSparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture)
+void DeviceGLImpl::CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture)
 {
-    *ppTexture = MakeRef<ASparseTextureGLImpl>(this, Desc);
+    *ppTexture = MakeRef<SparseTextureGLImpl>(this, Desc);
 }
 
-void ADeviceGLImpl::CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback)
+void DeviceGLImpl::CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback)
 {
-    *ppTransformFeedback = MakeRef<ATransformFeedbackGLImpl>(this, Desc);
+    *ppTransformFeedback = MakeRef<TransformFeedbackGLImpl>(this, Desc);
 }
 
-void ADeviceGLImpl::CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool)
+void DeviceGLImpl::CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool)
 {
-    *ppQueryPool = MakeRef<AQueryPoolGLImpl>(this, Desc);
+    *ppQueryPool = MakeRef<QueryPoolGLImpl>(this, Desc);
 }
 
-void ADeviceGLImpl::CreateResourceTable(TRef<IResourceTable>* ppResourceTable)
+void DeviceGLImpl::CreateResourceTable(TRef<IResourceTable>* ppResourceTable)
 {
-    *ppResourceTable = MakeRef<AResourceTableGLImpl>(this);
+    *ppResourceTable = MakeRef<ResourceTableGLImpl>(this);
 }
 
 
-bool ADeviceGLImpl::CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
+bool DeviceGLImpl::CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                            unsigned int       _NumSources,
                                            const char* const* _Sources,
-                                           SShaderBinaryData* _BinaryData)
+                                           ShaderBinaryData* _BinaryData)
 {
-    return AShaderModuleGLImpl::CreateShaderBinaryData(this, _ShaderType, _NumSources, _Sources, _BinaryData);
+    return ShaderModuleGLImpl::CreateShaderBinaryData(this, _ShaderType, _NumSources, _Sources, _BinaryData);
 }
 
-void ADeviceGLImpl::DestroyShaderBinaryData(SShaderBinaryData* _BinaryData)
+void DeviceGLImpl::DestroyShaderBinaryData(ShaderBinaryData* _BinaryData)
 {
-    AShaderModuleGLImpl::DestroyShaderBinaryData(this, _BinaryData);
+    ShaderModuleGLImpl::DestroyShaderBinaryData(this, _BinaryData);
 }
 
-SAllocatorCallback const& ADeviceGLImpl::GetAllocator() const
+AllocatorCallback const& DeviceGLImpl::GetAllocator() const
 {
     return Allocator;
 }
 
-int32_t ADeviceGLImpl::GetGPUMemoryTotalAvailable()
+int32_t DeviceGLImpl::GetGPUMemoryTotalAvailable()
 {
     if (FeatureSupport[FEATURE_GPU_MEMORY_INFO])
     {
@@ -542,12 +542,12 @@ int32_t ADeviceGLImpl::GetGPUMemoryTotalAvailable()
     }
     else
     {
-        LOG("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
+        LOG("DeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
     }
     return 0;
 }
 
-int32_t ADeviceGLImpl::GetGPUMemoryCurrentAvailable()
+int32_t DeviceGLImpl::GetGPUMemoryCurrentAvailable()
 {
     if (FeatureSupport[FEATURE_GPU_MEMORY_INFO])
     {
@@ -555,24 +555,24 @@ int32_t ADeviceGLImpl::GetGPUMemoryCurrentAvailable()
     }
     else
     {
-        LOG("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
+        LOG("DeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
     }
     return 0;
 }
 
-AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVertexBindings,
+VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBindings,
                                                 uint32_t                  NumVertexBindings,
-                                                SVertexAttribInfo const*  pVertexAttribs,
+                                                VertexAttribInfo const*  pVertexAttribs,
                                                 uint32_t                  NumVertexAttribs)
 {
-    SVertexLayoutDescGL desc;
+    VertexLayoutDescGL desc;
 
     desc.NumVertexBindings = NumVertexBindings;
     if (desc.NumVertexBindings > MAX_VERTEX_BINDINGS)
     {
         desc.NumVertexBindings = MAX_VERTEX_BINDINGS;
 
-        LOG("ADeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
+        LOG("DeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
     }
     Platform::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
 
@@ -581,7 +581,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     {
         desc.NumVertexAttribs = MAX_VERTEX_ATTRIBS;
 
-        LOG("ADeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
+        LOG("DeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
     }
     Platform::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
 
@@ -591,7 +591,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
         desc.VertexAttribs[i].SemanticName = nullptr;
     }
 
-    AVertexLayoutGL*& vertexLayout = VertexLayouts[desc];
+    VertexLayoutGL*& vertexLayout = VertexLayouts[desc];
     if (vertexLayout)
     {
         //LOG("Caching vertex layout\n");
@@ -600,31 +600,31 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
     // Validate
 
-    for (SVertexBindingInfo const* binding = desc.VertexBindings; binding < &desc.VertexBindings[desc.NumVertexBindings]; binding++)
+    for (VertexBindingInfo const* binding = desc.VertexBindings; binding < &desc.VertexBindings[desc.NumVertexBindings]; binding++)
     {
         HK_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
 
         if (binding->InputSlot >= GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
         {
-            LOG("ADeviceGLImpl::GetVertexLayout: binding->InputSlot >= MaxVertexBufferSlots\n");
+            LOG("DeviceGLImpl::GetVertexLayout: binding->InputSlot >= MaxVertexBufferSlots\n");
         }
 
         if (binding->Stride > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE))
         {
-            LOG("ADeviceGLImpl::GetVertexLayout: binding->Stride > MaxVertexAttribStride\n");
+            LOG("DeviceGLImpl::GetVertexLayout: binding->Stride > MaxVertexAttribStride\n");
         }
     }
 
-    for (SVertexAttribInfo const* attrib = desc.VertexAttribs; attrib < &desc.VertexAttribs[desc.NumVertexAttribs]; attrib++)
+    for (VertexAttribInfo const* attrib = desc.VertexAttribs; attrib < &desc.VertexAttribs[desc.NumVertexAttribs]; attrib++)
     {
         if (attrib->Offset > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET))
         {
-            LOG("ADeviceGLImpl::GetVertexLayout: attrib offset > MaxVertexAttribRelativeOffset\n");
+            LOG("DeviceGLImpl::GetVertexLayout: attrib offset > MaxVertexAttribRelativeOffset\n");
         }
     }
 
-    TRef<AVertexLayoutGL> pVertexLayout;
-    pVertexLayout = MakeRef<AVertexLayoutGL>(desc);
+    TRef<VertexLayoutGL> pVertexLayout;
+    pVertexLayout = MakeRef<VertexLayoutGL>(desc);
     pVertexLayout->AddRef();
     vertexLayout = pVertexLayout;
 
@@ -633,16 +633,16 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     return pVertexLayout;
 }
 
-SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo const& _BlendingState)
+BlendingStateInfo const* DeviceGLImpl::CachedBlendingState(BlendingStateInfo const& _BlendingState)
 {
-    SBlendingStateInfo*& state = BlendingStates[_BlendingState];
+    BlendingStateInfo*& state = BlendingStates[_BlendingState];
     if (state)
     {
         //LOG( "Caching blending state\n" );
         return state;
     }
 
-    state = static_cast<SBlendingStateInfo*>(Allocator.Allocate(sizeof(SBlendingStateInfo)));
+    state = static_cast<BlendingStateInfo*>(Allocator.Allocate(sizeof(BlendingStateInfo)));
     Platform::Memcpy(state, &_BlendingState, sizeof(*state));
 
     //LOG( "Total blending states {}\n", BlendingStates.Size() );
@@ -650,16 +650,16 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
     return state;
 }
 
-SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState)
+RasterizerStateInfo const* DeviceGLImpl::CachedRasterizerState(RasterizerStateInfo const& _RasterizerState)
 {
-    SRasterizerStateInfo*& state = RasterizerStates[_RasterizerState];
+    RasterizerStateInfo*& state = RasterizerStates[_RasterizerState];
     if (state)
     {
         //LOG( "Caching rasterizer state\n" );
         return state;
     }
 
-    state = static_cast<SRasterizerStateInfo*>(Allocator.Allocate(sizeof(SRasterizerStateInfo)));
+    state = static_cast<RasterizerStateInfo*>(Allocator.Allocate(sizeof(RasterizerStateInfo)));
     Platform::Memcpy(state, &_RasterizerState, sizeof(*state));
 
     //LOG( "Total rasterizer states {}\n", RasterizerStates.Size() );
@@ -667,16 +667,16 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
     return state;
 }
 
-SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState)
+DepthStencilStateInfo const* DeviceGLImpl::CachedDepthStencilState(DepthStencilStateInfo const& _DepthStencilState)
 {
-    SDepthStencilStateInfo*& state = DepthStencilStates[_DepthStencilState];
+    DepthStencilStateInfo*& state = DepthStencilStates[_DepthStencilState];
     if (state)
     {
         //LOG( "Caching depth stencil state\n" );
         return state;
     }
 
-    state = static_cast<SDepthStencilStateInfo*>(Allocator.Allocate(sizeof(SDepthStencilStateInfo)));
+    state = static_cast<DepthStencilStateInfo*>(Allocator.Allocate(sizeof(DepthStencilStateInfo)));
     Platform::Memcpy(state, &_DepthStencilState, sizeof(*state));
 
     //LOG( "Total depth stencil states {}\n", DepthStencilStates.Size() );
@@ -684,7 +684,7 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
     return state;
 }
 
-unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
+unsigned int DeviceGLImpl::CachedSampler(SamplerDesc const& SamplerDesc)
 {
     SamplerInfo*& sampler = Samplers[SamplerDesc];
     if (sampler)
@@ -735,7 +735,7 @@ unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
     return id;
 }
 
-bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int* NumPageSizes, int* PageSizesX, int* PageSizesY, int* PageSizesZ)
+bool DeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int* NumPageSizes, int* PageSizesX, int* PageSizesY, int* PageSizesZ)
 {
     GLenum target         = SparseTextureTargetLUT[Type].Target;
     GLenum internalFormat = InternalFormatLUT[Format].InternalFormat;
@@ -746,7 +746,7 @@ bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEX
 
     if (!FeatureSupport[FEATURE_SPARSE_TEXTURES])
     {
-        LOG("ADeviceGLImpl::EnumerateSparseTexturePageSize: sparse textures are not supported by video driver\n");
+        LOG("DeviceGLImpl::EnumerateSparseTexturePageSize: sparse textures are not supported by video driver\n");
         return false;
     }
 
@@ -770,7 +770,7 @@ bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEX
     return *NumPageSizes > 0;
 }
 
-bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX, int* PageSizeY, int* PageSizeZ)
+bool DeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX, int* PageSizeY, int* PageSizeZ)
 {
     HK_ASSERT(PageSizeIndex != nullptr);
 
@@ -967,23 +967,23 @@ static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum s
 
 
 
-AWindowPoolGL::AWindowPoolGL()
+WindowPoolGL::WindowPoolGL()
 {
 }
 
-AWindowPoolGL::~AWindowPoolGL()
+WindowPoolGL::~WindowPoolGL()
 {
-    for (SWindowGL& window : Pool)
+    for (WindowGL& window : Pool)
     {
         Free(window);
     }
 }
 
-AWindowPoolGL::SWindowGL AWindowPoolGL::Create()
+WindowPoolGL::WindowGL WindowPoolGL::Create()
 {
     if (!Pool.IsEmpty())
     {
-        SWindowGL window = Pool.Last();
+        WindowGL window = Pool.Last();
         Pool.RemoveLast();
         return window;
     }
@@ -991,7 +991,7 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::Create()
     return NewWindow();
 }
 
-AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
+WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
 {
     static bool bInitSDLSubsystems = true;
 
@@ -1039,7 +1039,7 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
     //SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
     //SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
 
-    SWindowGL window;
+    WindowGL window;
     window.Handle = SDL_CreateWindow("", 0, 0, 1, 1, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     if (!window.Handle)
     {
@@ -1086,13 +1086,13 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
     return window;
 }
 
-void AWindowPoolGL::Destroy(AWindowPoolGL::SWindowGL Window)
+void WindowPoolGL::Destroy(WindowPoolGL::WindowGL Window)
 {
     SDL_HideWindow(Window.Handle);
     Pool.Add(Window);
 }
 
-void AWindowPoolGL::Free(AWindowPoolGL::SWindowGL Window)
+void WindowPoolGL::Free(WindowPoolGL::WindowGL Window)
 {
     SDL_Window*   prevWindow  = SDL_GL_GetCurrentWindow();
     SDL_GLContext prevContext = SDL_GL_GetCurrentContext();

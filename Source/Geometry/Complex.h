@@ -30,70 +30,70 @@ SOFTWARE.
 
 #pragma once
 
-struct SComplex
+struct Complex
 {
     float R{0};
     float I{0};
 
-    SComplex() = default;
+    Complex() = default;
 
-    constexpr SComplex(float r, float i) :
+    constexpr Complex(float r, float i) :
         R(r), I(i)
     {
     }
 
-    constexpr SComplex operator+(SComplex const& rhs) const
+    constexpr Complex operator+(Complex const& rhs) const
     {
-        return SComplex(R + rhs.R, I + rhs.I);
+        return Complex(R + rhs.R, I + rhs.I);
     }
 
-    constexpr SComplex operator-(SComplex const& rhs) const
+    constexpr Complex operator-(Complex const& rhs) const
     {
-        return SComplex(R - rhs.R, I - rhs.I);
+        return Complex(R - rhs.R, I - rhs.I);
     }
 
-    constexpr SComplex operator*(SComplex const& rhs) const
+    constexpr Complex operator*(Complex const& rhs) const
     {
-        return SComplex(R * rhs.R - I * rhs.I, R * rhs.I + I * rhs.R);
+        return Complex(R * rhs.R - I * rhs.I, R * rhs.I + I * rhs.R);
     }
 
-    SComplex operator/(SComplex const& rhs) const
+    Complex operator/(Complex const& rhs) const
     {
         float d = 1.0f / (rhs.R * rhs.R + rhs.I * rhs.I);
-        return SComplex((R * rhs.R + I * rhs.I) * d,
+        return Complex((R * rhs.R + I * rhs.I) * d,
                         (rhs.R * I - R * rhs.I) * d);
     }
 
-    constexpr SComplex operator*(float rhs) const
+    constexpr Complex operator*(float rhs) const
     {
-        return SComplex(R * rhs, I * rhs);
+        return Complex(R * rhs, I * rhs);
     }
 
-    constexpr SComplex operator/(float rhs) const
+    constexpr Complex operator/(float rhs) const
     {
         return (*this) * (1.0f / rhs);
     }
 
-    void operator+=(SComplex const& rhs)
+    void operator+=(Complex const& rhs)
     {
         R += rhs.R;
         I += rhs.I;
     }    
 
-    void operator-=(SComplex const& rhs)
+    void operator-=(Complex const& rhs)
     {
         R -= rhs.R;
         I -= rhs.I;
     }
 
-    void operator*=(SComplex const& rhs)
+    void operator*=(Complex const& rhs)
     {
         float tempR = R;
         R           = tempR * rhs.R - I * rhs.I;
         I           = tempR * rhs.I + I * rhs.R;
     }
 
-    void operator/=(SComplex const& rhs)
+    void operator/=(Complex const& rhs)
     {
         float d     = 1.0f / (rhs.R * rhs.R + rhs.I * rhs.I);
         float tempR = R;

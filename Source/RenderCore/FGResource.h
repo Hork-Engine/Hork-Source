@@ -112,7 +112,7 @@ private:
     DEVICE_OBJECT_PROXY_TYPE            ProxyType{DEVICE_OBJECT_TYPE_UNKNOWN};
     IDeviceObject*                      pDeviceObject{nullptr};
 
-    friend class AFrameGraph;
+    friend class FrameGraph;
     friend class FGRenderTaskBase;
 };
 
@@ -156,13 +156,13 @@ private:
     TResourceDesc Desc;
 };
 
-class FGTextureProxy : public FGResourceProxy<STextureDesc, ITexture>
+class FGTextureProxy : public FGResourceProxy<TextureDesc, ITexture>
 {
-    using Super = FGResourceProxy<STextureDesc, ITexture>;
+    using Super = FGResourceProxy<TextureDesc, ITexture>;
 
 public:
     // Construct internal (transient) resource
-    explicit FGTextureProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, STextureDesc const& ResourceDesc) :
+    explicit FGTextureProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, TextureDesc const& ResourceDesc) :
         Super(ResourceId, Name, RenderTask, ResourceDesc)
     {}
 
@@ -172,13 +172,13 @@ public:
     {}
 };
 
-class FGBufferViewProxy : public FGResourceProxy<SBufferViewDesc, IBufferView>
+class FGBufferViewProxy : public FGResourceProxy<BufferViewDesc, IBufferView>
 {
-    using Super = FGResourceProxy<SBufferViewDesc, IBufferView>;
+    using Super = FGResourceProxy<BufferViewDesc, IBufferView>;
 
 public:
     // Construct internal (transient) resource
-    explicit FGBufferViewProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, SBufferViewDesc const& ResourceDesc) :
+    explicit FGBufferViewProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, BufferViewDesc const& ResourceDesc) :
         Super(ResourceId, Name, RenderTask, ResourceDesc)
     {}
 

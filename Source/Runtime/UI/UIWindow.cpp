@@ -168,7 +168,7 @@ bool UIWindow::CaptionHitTest(float x, float y) const
     return false;
 }
 
-void UIWindow::Draw(ACanvas& canvas)
+void UIWindow::Draw(Canvas& canvas)
 {
     if (bDropShadow && WindowState != WS_MAXIMIZED)
     {
@@ -199,7 +199,7 @@ void UIWindow::Draw(ACanvas& canvas)
     }
 }
 
-UIWindow* UIMakeWindow(AStringView captionText, UIWidget* centralWidget)
+UIWindow* UIMakeWindow(StringView captionText, UIWidget* centralWidget)
 {
     // TODO: Different caption for Active/Not active window
 

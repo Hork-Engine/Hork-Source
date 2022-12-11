@@ -51,23 +51,23 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"s, "0"s);
-AConsoleVar r_RenderSnapshot("r_RenderSnapshot"s, "0"s, CVAR_CHEAT);
-AConsoleVar r_DebugRenderMode("r_DebugRenderMode"s, "0"s, CVAR_CHEAT);
-AConsoleVar r_BloomScale("r_BloomScale"s, "1"s);
-AConsoleVar r_Bloom("r_Bloom"s, "1"s);
-AConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
-AConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
-AConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
-AConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
-AConsoleVar r_ToneExposure("r_ToneExposure"s, "0.4"s);
-AConsoleVar r_Brightness("r_Brightness"s, "1"s);
-AConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
-AConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
-AConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"s, "10"s);
-AConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"s, "0.1"s);
-AConsoleVar r_HBAO("r_HBAO"s, "1"s, 0, "Required to rebuld materials to apply"s);
-AConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
+ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"s, "0"s);
+ConsoleVar r_RenderSnapshot("r_RenderSnapshot"s, "0"s, CVAR_CHEAT);
+ConsoleVar r_DebugRenderMode("r_DebugRenderMode"s, "0"s, CVAR_CHEAT);
+ConsoleVar r_BloomScale("r_BloomScale"s, "1"s);
+ConsoleVar r_Bloom("r_Bloom"s, "1"s);
+ConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
+ConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
+ConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
+ConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
+ConsoleVar r_ToneExposure("r_ToneExposure"s, "0.4"s);
+ConsoleVar r_Brightness("r_Brightness"s, "1"s);
+ConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
+ConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
+ConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"s, "10"s);
+ConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"s, "0.1"s);
+ConsoleVar r_HBAO("r_HBAO"s, "1"s, 0, "Required to rebuld materials to apply"s);
+ConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
 
 void TestVT();
 
@@ -83,7 +83,7 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth();
 TRef<RenderCore::IPipeline> CreateTerrainMaterialLight();
 TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
 
-ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
+RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
 {
     LOG("Initializing render backend...\n");
 
@@ -91,17 +91,17 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
 
-    m_FrameGraph = MakeRef<AFrameGraph>(GDevice);
+    m_FrameGraph = MakeRef<FrameGraph>(GDevice);
 
-    FrameRenderer  = MakeRef<AFrameRenderer>();
-    CanvasRenderer = MakeRef<ACanvasRenderer>();
+    m_FrameRenderer = MakeRef<FrameRenderer>();
+    m_CanvasRenderer = MakeRef<CanvasRenderer>();
 
-    GCircularBuffer = MakeRef<ACircularBuffer>(2 * 1024 * 1024); // 2MB
-    //GFrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
+    GCircularBuffer = MakeRef<CircularBuffer>(2 * 1024 * 1024); // 2MB
+    //GFrameConstantBuffer = MakeRef< FrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
     //#define QUERY_TIMESTAMP
 
-    SQueryPoolDesc timeQueryCI;
+    QueryPoolDesc timeQueryCI;
 #ifdef QUERY_TIMESTAMP
     timeQueryCI.QueryType = QUERY_TYPE_TIMESTAMP;
     timeQueryCI.PoolSize  = 3;
@@ -110,11 +110,11 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 #else
     timeQueryCI.QueryType = QUERY_TYPE_TIME_ELAPSED;
     timeQueryCI.PoolSize  = 3;
-    GDevice->CreateQueryPool(timeQueryCI, &TimeQuery);
+    GDevice->CreateQueryPool(timeQueryCI, &m_TimeQuery);
 #endif
 
     // Create sphere mesh for cubemap rendering
-    GSphereMesh = MakeRef<ASphereMesh>();
+    GSphereMesh = MakeRef<SphereMesh>();
 
     // Create screen aligned quad
     {
@@ -124,7 +124,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
             {Float2(-1.0f, -1.0f)},
             {Float2(1.0f, -1.0f)}};
 
-        SBufferDesc bufferCI = {};
+        BufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
         bufferCI.SizeInBytes       = sizeof(saqVertices);
         GDevice->CreateBuffer(bufferCI, saqVertices, &GSaq);
@@ -134,12 +134,12 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     // Create white texture
     {
-        GDevice->CreateTexture(STextureDesc()
+        GDevice->CreateTexture(TextureDesc()
                                    .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
-                                   .SetResolution(STextureResolution2D(1, 1))
+                                   .SetResolution(TextureResolution2D(1, 1))
                                    .SetBindFlags(BIND_SHADER_RESOURCE),
                                &GWhiteTexture);
-        STextureRect rect  = {};
+        TextureRect rect  = {};
         rect.Dimension.X   = 1;
         rect.Dimension.Y   = 1;
         rect.Dimension.Z   = 1;
@@ -149,9 +149,9 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     }
 
     // Create cluster lookup 3D texture
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_RG32_UINT)
-                               .SetResolution(STextureResolution3D(MAX_FRUSTUM_CLUSTERS_X,
+                               .SetResolution(TextureResolution3D(MAX_FRUSTUM_CLUSTERS_X,
                                                                    MAX_FRUSTUM_CLUSTERS_Y,
                                                                    MAX_FRUSTUM_CLUSTERS_Z))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
@@ -159,11 +159,11 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     GClusterLookup->SetDebugName("Cluster Lookup");
 
 
-    FeedbackAnalyzerVT  = MakeRef<AVirtualTextureFeedbackAnalyzer>();
-    GFeedbackAnalyzerVT = FeedbackAnalyzerVT;
+    m_FeedbackAnalyzerVT = MakeRef<VirtualTextureFeedbackAnalyzer>();
+    GFeedbackAnalyzerVT = m_FeedbackAnalyzerVT;
 
     {
-        ABRDFGenerator generator;
+        BRDFGenerator generator;
         generator.Render(&GLookupBRDF);
     }
 
@@ -178,18 +178,18 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     #endif
 
     #if 0
-    SVirtualTextureCacheLayerInfo layer;
+    VTCacheLayerInfo layer;
     layer.TextureFormat   = TEXTURE_FORMAT_SRGB8;
     layer.UploadFormat    = FORMAT_UBYTE3;
     layer.PageSizeInBytes = 128 * 128 * 3;
 
-    SVirtualTextureCacheCreateInfo createInfo;
+    VTCacheCreateInfo createInfo;
     createInfo.PageCacheCapacityX = 32;
     createInfo.PageCacheCapacityY = 32;
     createInfo.PageResolutionB    = 128;
     createInfo.NumLayers          = 1;
     createInfo.pLayers            = &layer;
-    PhysCacheVT                   = MakeRef<AVirtualTextureCache>(createInfo);
+    PhysCacheVT                   = MakeRef<VirtualTextureCache>(createInfo);
 
     GPhysCacheVT = PhysCacheVT;
 
@@ -202,7 +202,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 #ifdef SPARSE_TEXTURE_TEST
 #    if 0
     {
-    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8_UNORM, STextureResolution2D( 2048, 2048 ) );
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8_UNORM, TextureResolution2D( 2048, 2048 ) );
     TRef< ISparseTexture > sparseTexture;
     GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
 
@@ -236,7 +236,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     {
         numLods++;
     }
-    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8_UNORM, STextureResolution2DArray(texSize, texSize, maxLayers), STextureSwizzle(), numLods);
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8_UNORM, TextureResolution2DArray(texSize, texSize, maxLayers), TextureSwizzle(), numLods);
 
     TRef<ISparseTexture> sparseTexture;
     GDevice->CreateSparseTexture(sparseTextureCI, &sparseTexture);
@@ -260,7 +260,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     for (int i = 0; i < 10; i++)
     {
-        STextureRect rect;
+        TextureRect rect;
         rect.Offset.Lod = 0;
         rect.Offset.X = 0;
         rect.Offset.Y = 0;
@@ -280,7 +280,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     #if 0
     // Test SPIR-V
     TRef<IShaderModule> shaderModule;
-    SShaderBinaryData   binaryData;
+    ShaderBinaryData   binaryData;
     binaryData.ShaderType   = VERTEX_SHADER;
     binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
     LoadSPIRV(&binaryData.BinaryCode, &binaryData.BinarySize);
@@ -288,25 +288,25 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     #endif
 
 
-    TerrainDepthPipeline = CreateTerrainMaterialDepth();
-    GTerrainDepthPipeline = TerrainDepthPipeline;
+    m_TerrainDepthPipeline = CreateTerrainMaterialDepth();
+    GTerrainDepthPipeline = m_TerrainDepthPipeline;
 
-    TerrainLightPipeline = CreateTerrainMaterialLight();
-    GTerrainLightPipeline = TerrainLightPipeline;
+    m_TerrainLightPipeline = CreateTerrainMaterialLight();
+    GTerrainLightPipeline = m_TerrainLightPipeline;
 
-    TerrainWireframePipeline = CreateTerrainMaterialWireframe();
-    GTerrainWireframePipeline = TerrainWireframePipeline;
+    m_TerrainWireframePipeline = CreateTerrainMaterialWireframe();
+    GTerrainWireframePipeline = m_TerrainWireframePipeline;
 }
 
-ARenderBackend::~ARenderBackend()
+RenderBackend::~RenderBackend()
 {
     LOG("Deinitializing render backend...\n");
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
-    //AVirtualTexture * vt = TestVT.GetObject();
+    //VirtualTexture * vt = TestVT.GetObject();
     //TestVT.Reset();
-    PhysCacheVT.Reset();
-    FeedbackAnalyzerVT.Reset();
+    m_PhysCacheVT.Reset();
+    m_FeedbackAnalyzerVT.Reset();
     //LOG( "VT ref count {}\n", vt->GetRefCount() );
 
     GCircularBuffer.Reset();
@@ -319,28 +319,28 @@ ARenderBackend::~ARenderBackend()
     GClusterItemBuffer.Reset();
 }
 
-void ARenderBackend::GenerateIrradianceMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
 {
-    AIrradianceGenerator irradianceGenerator;
+    IrradianceGenerator irradianceGenerator;
     irradianceGenerator.Generate(pCubemap, ppTexture);
 }
 
-void ARenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
 {
-    AEnvProbeGenerator envProbeGenerator;
+    EnvProbeGenerator envProbeGenerator;
     envProbeGenerator.Generate(7, pCubemap, ppTexture);
 }
 
-void ARenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
 {
-    AAtmosphereRenderer atmosphereRenderer;
+    AtmosphereRenderer atmosphereRenderer;
     atmosphereRenderer.Render(Format, Resolution, LightDir, ppTexture);
 }
 
 #if 0
-void ARenderBackend::InitializeBuffer( TRef< IBuffer > * ppBuffer, size_t _SizeInBytes )
+void RenderBackend::InitializeBuffer( TRef< IBuffer > * ppBuffer, size_t _SizeInBytes )
 {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = _SizeInBytes;
 
@@ -376,17 +376,17 @@ void ARenderBackend::InitializeBuffer( TRef< IBuffer > * ppBuffer, size_t _SizeI
 }
 #endif
 
-int ARenderBackend::ClusterPackedIndicesAlignment() const
+int RenderBackend::ClusterPackedIndicesAlignment() const
 {
     return GDevice->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT);
 }
 
-int ARenderBackend::MaxOmnidirectionalShadowMapsPerView() const
+int RenderBackend::MaxOmnidirectionalShadowMapsPerView() const
 {
-    return FrameRenderer->GetOmniShadowMapPool().GetSize();
+    return m_FrameRenderer->GetOmniShadowMapPool().GetSize();
 }
 
-void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, SRenderFrame* pFrameData)
+void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, RenderFrameData* pFrameData)
 {
     static int timeQueryFrame = 0;
 
@@ -398,19 +398,19 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     {
 #if 0
         // FIXME: Use SSBO?
-        SBufferDesc bufferCI = {};
+        BufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
         bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( SClusterPackedIndex );
+        bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( ClusterPackedIndex );
         GDevice->CreateBuffer( bufferCI, nullptr, &GClusterItemBuffer );
 
         GClusterItemBuffer->SetDebugName( "Cluster item buffer" );
 
-        SBufferViewDesc bufferViewCI = {};
+        BufferViewDesc bufferViewCI = {};
         bufferViewCI.Format = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
         GClusterItemBuffer->CreateView( bufferViewCI, &GClusterItemTBO );
 #else
-        SBufferViewDesc bufferViewCI = {};
+        BufferViewDesc bufferViewCI = {};
         bufferViewCI.Format          = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
 
         GStreamBuffer->CreateView(bufferViewCI, &GClusterItemTBO);
@@ -422,9 +422,9 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
 #ifdef QUERY_TIMESTAMP
         rcmd->RecordTimeStamp(TimeStamp1, timeQueryFrame);
 #else
-        rcmd->BeginQuery(TimeQuery, timeQueryFrame);
+        rcmd->BeginQuery(m_TimeQuery, timeQueryFrame);
 
-        timeQueryFrame = (timeQueryFrame + 1) % TimeQuery->GetPoolSize();
+        timeQueryFrame = (timeQueryFrame + 1) % m_TimeQuery->GetPoolSize();
 #endif
     }
 
@@ -435,20 +435,20 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     //rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
     // Update cache at beggining of the frame to give more time for stream thread
-    if (PhysCacheVT)
-        PhysCacheVT->Update();
+    if (m_PhysCacheVT)
+        m_PhysCacheVT->Update();
 
-    FeedbackAnalyzerVT->Begin(StreamedMemory);
+    m_FeedbackAnalyzerVT->Begin(StreamedMemory);
 
     // TODO: Bind virtual textures in one place
-    FeedbackAnalyzerVT->BindTexture(0, TestVT);
+    m_FeedbackAnalyzerVT->BindTexture(0, m_TestVT);
 
     GRenderViewContext.Clear();
     GRenderViewContext.Resize(GFrameData->NumViews);
 
     for (int i = 0; i < GFrameData->NumViews; i++)
     {
-        SRenderView* pRenderView = &GFrameData->RenderViews[i];
+        RenderViewData* pRenderView = &GFrameData->RenderViews[i];
 
         RenderView(i, pRenderView);
 
@@ -457,7 +457,7 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
         m_FrameGraph->Clear();
     }
 
-    CanvasRenderer->Render(*m_FrameGraph, pBackBuffer);
+    m_CanvasRenderer->Render(*m_FrameGraph, pBackBuffer);
 
     m_FrameGraph->Build();
     //FrameGraph->ExportGraphviz("frame.graphviz");
@@ -470,7 +470,7 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
 
     m_FrameGraph->Clear();
 
-    FeedbackAnalyzerVT->End();
+    m_FeedbackAnalyzerVT->End();
 
     if (r_ShowGPUTime)
     {
@@ -486,10 +486,10 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
 
         LOG("GPU time {} ms\n", (double)(timeStamp2 - timeStamp1) / 1000000.0);
 #else
-        rcmd->EndQuery(TimeQuery);
+        rcmd->EndQuery(m_TimeQuery);
 
         uint64_t timeQueryResult = 0;
-        rcmd->GetQueryPoolResult64(TimeQuery, timeQueryFrame, &timeQueryResult, QUERY_RESULT_WAIT_BIT);
+        rcmd->GetQueryPoolResult64(m_TimeQuery, timeQueryFrame, &timeQueryResult, QUERY_RESULT_WAIT_BIT);
 
         LOG("GPU time {} ms\n", (double)timeQueryResult / 1000000.0);
 #endif
@@ -501,11 +501,11 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     GStreamBuffer = nullptr;
 }
 
-void ARenderBackend::SetViewConstants(int ViewportIndex)
+void RenderBackend::SetViewConstants(int ViewportIndex)
 {
-    size_t offset = GStreamedMemory->AllocateConstant(sizeof(SViewConstantBuffer));
+    size_t offset = GStreamedMemory->AllocateConstant(sizeof(ViewConstantBuffer));
 
-    SViewConstantBuffer* pViewCBuf = (SViewConstantBuffer*)GStreamedMemory->Map(offset);
+    ViewConstantBuffer* pViewCBuf = (ViewConstantBuffer*)GStreamedMemory->Map(offset);
 
     pViewCBuf->ViewProjection          = GRenderView->ViewProjection;
     pViewCBuf->ProjectionMatrix        = GRenderView->ProjectionMatrix;
@@ -570,11 +570,11 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
 
     pViewCBuf->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
 
-    if (PhysCacheVT)
+    if (m_PhysCacheVT)
     {
-        pViewCBuf->VTPageCacheCapacity.X           = (float)PhysCacheVT->GetPageCacheCapacityX();
-        pViewCBuf->VTPageCacheCapacity.Y           = (float)PhysCacheVT->GetPageCacheCapacityY();
-        pViewCBuf->VTPageTranslationOffsetAndScale = PhysCacheVT->GetPageTranslationOffsetAndScale();
+        pViewCBuf->VTPageCacheCapacity.X           = (float)m_PhysCacheVT->GetPageCacheCapacityX();
+        pViewCBuf->VTPageCacheCapacity.Y           = (float)m_PhysCacheVT->GetPageCacheCapacityY();
+        pViewCBuf->VTPageTranslationOffsetAndScale = m_PhysCacheVT->GetPageTranslationOffsetAndScale();
     }
     else
     {
@@ -614,7 +614,7 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
 
     for (int i = 0; i < GRenderView->NumDirectionalLights; i++)
     {
-        SDirectionalLightInstance* light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
+        DirectionalLightInstance* light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
 
         pViewCBuf->LightDirs[i]          = Float4(GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f);
         pViewCBuf->LightColors[i]        = light->ColorAndAmbientIntensity;
@@ -628,7 +628,7 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     rtbl->BindBuffer(0, GStreamBuffer, GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingOffset, GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingSize);
 }
 
-void ARenderBackend::UploadShaderResources(int ViewportIndex)
+void RenderBackend::UploadShaderResources(int ViewportIndex)
 {
     SetViewConstants(ViewportIndex);
 
@@ -642,7 +642,7 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 
 #if 1
     // Perform copy from stream buffer on GPU side
-    STextureRect rect = {};
+    TextureRect rect = {};
     rect.Dimension.X  = MAX_FRUSTUM_CLUSTERS_X;
     rect.Dimension.Y  = MAX_FRUSTUM_CLUSTERS_Y;
     rect.Dimension.Z  = MAX_FRUSTUM_CLUSTERS_Z;
@@ -650,7 +650,7 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 #else
     GClusterLookup->Write(0,
                           FORMAT_UINT2,
-                          sizeof(SClusterHeader) * MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z,
+                          sizeof(ClusterHeader) * MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z,
                           1,
                           GRenderView->LightData.ClusterLookup);
 #endif
@@ -660,14 +660,14 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
     if (GRenderView->ClusterPackedIndexCount > 0)
     {
 #    if 0
-        SBufferCopy range;
+        BufferCopy range;
         range.SrcOffset = GRenderView->ClusterPackedIndicesStreamHandle;
         range.DstOffset = 0;
-        range.SizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
+        range.SizeInBytes = sizeof( ClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
         rcmd->CopyBufferRange( GStreamBuffer, GClusterItemBuffer, 1, &range );
 #    else
         size_t offset = GRenderView->ClusterPackedIndicesStreamHandle;
-        size_t sizeInBytes = sizeof(SClusterPackedIndex) * GRenderView->ClusterPackedIndexCount;
+        size_t sizeInBytes = sizeof(ClusterPackedIndex) * GRenderView->ClusterPackedIndexCount;
         GClusterItemTBO->SetRange(offset, sizeInBytes);
 #    endif
     }
@@ -678,7 +678,7 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 #endif
 }
 
-void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
+void RenderBackend::RenderView(int ViewportIndex, RenderViewData* pRenderView)
 {
     HK_ASSERT(pRenderView->Width > 0);
     HK_ASSERT(pRenderView->Height > 0);
@@ -690,10 +690,10 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
     GRenderViewArea.Height = pRenderView->Height;
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ACustomTask&       task       = m_FrameGraph->AddTask<ACustomTask>("Setup render view");
+    FGCustomTask&       task       = m_FrameGraph->AddTask<FGCustomTask>("Setup render view");
     FGBufferViewProxy* bufferView = m_FrameGraph->AddExternalResource<FGBufferViewProxy>("hack hack", GClusterItemTBO);
     task.AddResource(bufferView, FG_RESOURCE_ACCESS_WRITE);
-    task.SetFunction([=](ACustomTaskContext const& Task)
+    task.SetFunction([=](FGCustomTaskContext const& Task)
                      {
                          IImmediateContext* immediateCtx = Task.pImmediateContext;
                          GRenderView = pRenderView;
@@ -708,7 +708,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
         });
     
 
-    bool bVirtualTexturing = FeedbackAnalyzerVT->HasBindings();
+    bool bVirtualTexturing = m_FeedbackAnalyzerVT->HasBindings();
 
     // !!!!!!!!!!! FIXME: move outside of framegraph filling
     if (bVirtualTexturing)
@@ -716,7 +716,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
         pRenderView->VTFeedback->Begin(pRenderView->Width, pRenderView->Height);
     }
 
-    FrameRenderer->Render(*m_FrameGraph, bVirtualTexturing, PhysCacheVT);
+    m_FrameRenderer->Render(*m_FrameGraph, bVirtualTexturing, m_PhysCacheVT);
 
     // !!!!!!!!!!! FIXME: move outside of framegraph filling
     if (bVirtualTexturing)
@@ -725,14 +725,14 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
         const void* FeedbackData;
         pRenderView->VTFeedback->End(&FeedbackSize, &FeedbackData);
 
-        FeedbackAnalyzerVT->AddFeedbackData(FeedbackSize, FeedbackData);
+        m_FeedbackAnalyzerVT->AddFeedbackData(FeedbackSize, FeedbackData);
     }
 }
 
 
 
 
-bool ARenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile)
+bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile)
 {
     TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
 
@@ -744,8 +744,8 @@ bool ARenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, A
 
     int width = Skybox.GetDesc().Width;
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolutionCubemap(width));
     textureDesc.SetFormat(Skybox.GetDesc().Format);
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -761,7 +761,7 @@ bool ARenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, A
 
     GDevice->CreateTexture(textureDesc, &SourceMap);
 
-    RenderCore::STextureRect rect;
+    RenderCore::TextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;
@@ -792,7 +792,7 @@ bool ARenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, A
     HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
     HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
 
-    AFile f = AFile::OpenWrite(EnvmapFile);
+    File f = File::OpenWrite(EnvmapFile);
     if (!f)
     {
         LOG("Failed to write {}\n", EnvmapFile);
@@ -830,7 +830,7 @@ bool ARenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, A
     return true;
 }
 
-bool ARenderBackend::GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
+bool RenderBackend::GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile)
 {
     ImageStorage image = LoadSkyboxImages(ImportSettings);
 
@@ -842,7 +842,7 @@ bool ARenderBackend::GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& I
     return GenerateAndSaveEnvironmentMap(image, EnvmapFile);
 }
 
-ImageStorage ARenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir)
+ImageStorage RenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir)
 {
     TEXTURE_FORMAT renderFormat;
 
@@ -877,7 +877,7 @@ ImageStorage ARenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORM
     TRef<RenderCore::ITexture> skybox;
     GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
 
-    RenderCore::STextureRect rect;
+    RenderCore::TextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;

@@ -30,26 +30,26 @@ SOFTWARE.
 
 #include "AudioChannel.h"
 
-TPoolAllocator< SAudioChannel > SAudioChannel::ChannelPool;
-AMutex SAudioChannel::PoolMutex;
+TPoolAllocator<AudioChannel> AudioChannel::ChannelPool;
+Mutex AudioChannel::PoolMutex;
 
-SAudioChannel::SAudioChannel( int _StartFrame,
-                              int _LoopStart,
-                              int _LoopsCount,
-                              SAudioBuffer * _pBuffer,
-                              SAudioStream * _pStream,
-                              bool _bVirtualizeWhenSilent,
-                              const int _Volume[2],
-                              Float3 const & _LocalDir,
-                              bool _bSpatializedStereo,
-                              bool _bPaused )
-    : Stopped( false )
-    , RefCount( 1 )
+AudioChannel::AudioChannel(int _StartFrame,
+                           int _LoopStart,
+                           int _LoopsCount,
+                           AudioBuffer* _pBuffer,
+                           AudioStream* _pStream,
+                           bool _bVirtualizeWhenSilent,
+                           const int _Volume[2],
+                           Float3 const& _LocalDir,
+                           bool _bSpatializedStereo,
+                           bool _bPaused) :
+    Stopped(false), RefCount(1)
 {
     pBuffer = nullptr;
     pStream = nullptr;
 
-    if ( _pStream ) {
+    if (_pStream)
+    {
         pStream = _pStream;
         pStream->AddRef();
 
@@ -57,7 +57,9 @@ SAudioChannel::SAudioChannel( int _StartFrame,
         Channels = pStream->GetChannels();
         SampleBits = pStream->GetSampleBits();
         SampleStride = pStream->GetSampleStride();
-    } else if ( _pBuffer ) {
+    }
+    else if (_pBuffer)
+    {
         pBuffer = _pBuffer;
         pBuffer->AddRef();
 
@@ -67,9 +69,9 @@ SAudioChannel::SAudioChannel( int _StartFrame,
         SampleStride = pBuffer->GetSampleStride();
     }
 
-    HK_ASSERT( pBuffer || pStream );
+    HK_ASSERT(pBuffer || pStream);
 
-    PlaybackPos.StoreRelaxed( _StartFrame );
+    PlaybackPos.StoreRelaxed(_StartFrame);
     PlaybackPos_COMMIT = -1;
     PlaybackEnd = 0;
     LoopStart = _LoopStart;
@@ -88,20 +90,22 @@ SAudioChannel::SAudioChannel( int _StartFrame,
     Prev = nullptr;
 }
 
-SAudioChannel::~SAudioChannel()
+AudioChannel::~AudioChannel()
 {
-    if ( pBuffer ) {
+    if (pBuffer)
+    {
         pBuffer->RemoveRef();
     }
 
-    if ( pStream ) {
+    if (pStream)
+    {
         pStream->RemoveRef();
     }
 }
 
-void SAudioChannel::Commit( int _Volume[2], Float3 const & _LocalDir, bool _bSpatializedStereo, bool _bPaused )
+void AudioChannel::Commit(int _Volume[2], Float3 const& _LocalDir, bool _bSpatializedStereo, bool _bPaused)
 {
-    ASpinLockGuard guard( SpinLock );
+    SpinLockGuard guard(SpinLock);
     Volume_COMMIT[0] = _Volume[0];
     Volume_COMMIT[1] = _Volume[1];
     LocalDir_COMMIT = _LocalDir;
@@ -109,13 +113,13 @@ void SAudioChannel::Commit( int _Volume[2], Float3 const & _LocalDir, bool _bSpa
     bPaused_COMMIT = _bPaused;
 }
 
-void SAudioChannel::ChangePlaybackPosition( int _PlaybackPos )
+void AudioChannel::ChangePlaybackPosition(int _PlaybackPos)
 {
-    ASpinLockGuard guard( SpinLock );
+    SpinLockGuard guard(SpinLock);
     PlaybackPos_COMMIT = _PlaybackPos;
 }
 
-void SAudioChannel::FreePool()
+void AudioChannel::FreePool()
 {
     ChannelPool.Free();
 }

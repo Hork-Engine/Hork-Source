@@ -33,19 +33,21 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
-class AEnvProbeGenerator {
+class EnvProbeGenerator
+{
 public:
-    AEnvProbeGenerator();
+    EnvProbeGenerator();
 
-    void GenerateArray( int _MaxLod, int _CubemapsCount, RenderCore::ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray );
-    void Generate( int _MaxLod, RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
+    void GenerateArray(int _MaxLod, int _CubemapsCount, RenderCore::ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray);
+    void Generate(int _MaxLod, RenderCore::ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture);
 
 private:
-    struct SConstantData {
+    struct ConstantData
+    {
         Float4x4 Transform[6];
         Float4 Roughness;
     };
-    TRef< RenderCore::IBuffer > ConstantBuffer;
-    SConstantData ConstantBufferData;
-    TRef< RenderCore::IPipeline > Pipeline;
+    TRef<RenderCore::IBuffer> ConstantBuffer;
+    ConstantData ConstantBufferData;
+    TRef<RenderCore::IPipeline> Pipeline;
 };

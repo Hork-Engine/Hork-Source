@@ -58,7 +58,7 @@ Modify NavMesh
 
 static const unsigned short RESET_INDEX = 0xffff;
 
-static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<STerrainVertex>& Vertices, TVector<unsigned short>& Indices)
+static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<TerrainVertex>& Vertices, TVector<unsigned short>& Indices)
 {
     int numVertsX = NumQuadsX + 1;
     int numVertsY = NumQuadsY + 1;
@@ -75,7 +75,7 @@ static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<STerr
         Indices.Add(RESET_INDEX);
     }
 
-    STerrainVertex* vert = Vertices.ToPtr();
+    TerrainVertex* vert = Vertices.ToPtr();
 
     for (int i = 0; i < numVertsY; i++)
     {
@@ -87,33 +87,33 @@ static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<STerr
     }
 }
 
-HK_FORCEINLINE STerrainVertex MakeVertex(short X, short Y)
+HK_FORCEINLINE TerrainVertex MakeVertex(short X, short Y)
 {
-    STerrainVertex v;
+    TerrainVertex v;
     v.X = X;
     v.Y = Y;
     return v;
 }
 
-ATerrainMesh::ATerrainMesh(int InTextureSize)
+TerrainMesh::TerrainMesh(int InTextureSize)
 {
-    TVector<STerrainVertex> blockVerts;
+    TVector<TerrainVertex> blockVerts;
     TVector<unsigned short> blockIndices;
-    TVector<STerrainVertex> horGapVertices;
+    TVector<TerrainVertex> horGapVertices;
     TVector<unsigned short> horGapIndices;
-    TVector<STerrainVertex> vertGapVertices;
+    TVector<TerrainVertex> vertGapVertices;
     TVector<unsigned short> vertGapIndices;
-    TVector<STerrainVertex> interiorTLVertices;
-    TVector<STerrainVertex> interiorTRVertices;
-    TVector<STerrainVertex> interiorBLVertices;
-    TVector<STerrainVertex> interiorBRVertices;
-    TVector<STerrainVertex> interiorFinestVertices;
+    TVector<TerrainVertex> interiorTLVertices;
+    TVector<TerrainVertex> interiorTRVertices;
+    TVector<TerrainVertex> interiorBLVertices;
+    TVector<TerrainVertex> interiorBRVertices;
+    TVector<TerrainVertex> interiorFinestVertices;
     TVector<unsigned short> interiorTLIndices;
     TVector<unsigned short> interiorTRIndices;
     TVector<unsigned short> interiorBLIndices;
     TVector<unsigned short> interiorBRIndices;
     TVector<unsigned short> interiorFinestIndices;
-    TVector<STerrainVertex> crackVertices;
+    TVector<TerrainVertex> crackVertices;
     TVector<unsigned short> crackIndices;
 
     HK_ASSERT(IsPowerOfTwo(InTextureSize));
@@ -233,22 +233,22 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     interiorBRIndices.Add(i + 1);
     interiorBRIndices.Add(((BlockWidth * 2 + GapWidth) + 1) * 2 - 2);
 
-    for (STerrainVertex& v : interiorTLVertices)
+    for (TerrainVertex& v : interiorTLVertices)
     {
         v.X += BlockWidth;
         v.Y += BlockWidth;
     }
-    for (STerrainVertex& v : interiorTRVertices)
+    for (TerrainVertex& v : interiorTRVertices)
     {
         v.X += BlockWidth;
         v.Y += BlockWidth;
     }
-    for (STerrainVertex& v : interiorBLVertices)
+    for (TerrainVertex& v : interiorBLVertices)
     {
         v.X += BlockWidth;
         v.Y += BlockWidth;
     }
-    for (STerrainVertex& v : interiorBRVertices)
+    for (TerrainVertex& v : interiorBRVertices)
     {
         v.X += BlockWidth;
         v.Y += BlockWidth;
@@ -372,12 +372,12 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     int firstVert  = 0;
     int firstIndex = 0;
 
-    auto AddPatch = [&](STerrainPatch& Patch, TVector<STerrainVertex> const& VB, TVector<unsigned short> const& IB)
+    auto AddPatch = [&](TerrainPatch& Patch, TVector<TerrainVertex> const& VB, TVector<unsigned short> const& IB)
     {
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;
         Patch.IndexCount = IB.Size();
-        Platform::Memcpy(VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof(STerrainVertex));
+        Platform::Memcpy(VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof(TerrainVertex));
         firstVert += VB.Size();
         Platform::Memcpy(IndexBuffer.ToPtr() + firstIndex, IB.ToPtr(), IB.Size() * sizeof(unsigned short));
         firstIndex += IB.Size();
@@ -398,10 +398,10 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
 
     RenderCore::IDevice* device = GEngine->GetRenderDevice();
 
-    RenderCore::SBufferDesc ci = {};
+    RenderCore::BufferDesc ci = {};
     ci.bImmutableStorage       = true;
 
-    ci.SizeInBytes = VertexBuffer.Size() * sizeof(STerrainVertex);
+    ci.SizeInBytes = VertexBuffer.Size() * sizeof(TerrainVertex);
     device->CreateBuffer(ci, VertexBuffer.ToPtr(), &VertexBufferGPU);
 
     ci.SizeInBytes = IndexBuffer.Size() * sizeof(unsigned short);

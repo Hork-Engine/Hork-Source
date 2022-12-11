@@ -58,16 +58,16 @@ public:
     void Update(float timeStep);
 
     /** Draw console to canvas */
-    void Draw(ACanvas& cv, UIBrush* background);
+    void Draw(Canvas& cv, UIBrush* background);
 
     /** Process key event */
-    void OnKeyEvent(struct SKeyEvent const& event, ACommandContext& commandCtx, ACommandProcessor& commandProcessor);
+    void OnKeyEvent(struct KeyEvent const& event, CommandContext& commandCtx, CommandProcessor& commandProcessor);
 
     /** Process char event */
-    void OnCharEvent(struct SCharEvent const& event);
+    void OnCharEvent(struct CharEvent const& event);
 
     /** Process mouse wheel event */
-    void OnMouseWheelEvent(struct SMouseWheelEvent const& event);
+    void OnMouseWheelEvent(struct MouseWheelEvent const& event);
 
     /** Write command line history */
     void WriteStoryLines();
@@ -78,15 +78,15 @@ public:
 private:
     void CopyStoryLine(WideChar const* storyLine);
     void AddStoryLine(WideChar* text, int numChars);
-    void InsertUTF8Text(AStringView utf8);
+    void InsertUTF8Text(StringView utf8);
     void InsertClipboardText();
-    void CompleteString(ACommandContext& commandCtx, AStringView _Str);
-    void DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars);
+    void CompleteString(CommandContext& commandCtx, StringView _Str);
+    void DrawCmdLine(Canvas& cv, int x, int y, int maxLineChars);
 
     static const int MAX_CMD_LINE_CHARS = 256;
     static const int MAX_STORY_LINES    = 64;
 
-    AConsoleBuffer* m_pConBuffer;
+    ConsoleBuffer* m_pConBuffer;
 
     WideChar m_CmdLine[MAX_CMD_LINE_CHARS];
     WideChar m_StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];

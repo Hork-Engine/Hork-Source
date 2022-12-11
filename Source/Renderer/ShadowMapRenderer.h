@@ -5,25 +5,25 @@
 #include "RenderDefs.h"
 #include "OmnidirectionalShadowMapPool.h"
 
-struct SDirectionalLightInstance;
-struct SLightParameters;
-struct SShadowRenderInstance;
+struct DirectionalLightInstance;
+struct LightParameters;
+struct ShadowRenderInstance;
 
-class AShadowMapRenderer
+class ShadowMapRenderer
 {
 public:
-    AShadowMapRenderer();
+    ShadowMapRenderer();
 
-    void AddDummyShadowMap(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppShadowMapDepth);
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, SDirectionalLightInstance const* Light, RenderCore::FGTextureProxy** ppShadowMapDepth);
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, SLightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, AOmnidirectionalShadowMapPool& Pool, RenderCore::FGTextureProxy** ppOmnidirectionalShadowMapArray);
+    void AddDummyShadowMap(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, DirectionalLightInstance const* Light, RenderCore::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, LightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, OmnidirectionalShadowMapPool& Pool, RenderCore::FGTextureProxy** ppOmnidirectionalShadowMapArray);
 
 private:
     void CreatePipeline();
     void CreateLightPortalPipeline();
 
-    bool BindMaterialShadowMap(RenderCore::IImmediateContext* immediateCtx, SShadowRenderInstance const* instance);
-    bool BindMaterialOmniShadowMap(RenderCore::IImmediateContext* immediateCtx, SShadowRenderInstance const* instance);
+    bool BindMaterialShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
+    bool BindMaterialOmniShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
 
     TRef<RenderCore::IPipeline> StaticShadowCasterPipeline;
     TRef<RenderCore::IPipeline> LightPortalPipeline;

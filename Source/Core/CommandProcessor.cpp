@@ -31,29 +31,29 @@ SOFTWARE.
 #include "CommandProcessor.h"
 #include <Platform/Logger.h>
 
-ACommandProcessor::ACommandProcessor()
+CommandProcessor::CommandProcessor()
 {
     ClearBuffer();
 }
 
-void ACommandProcessor::ClearBuffer()
+void CommandProcessor::ClearBuffer()
 {
     Cmdbuf.Clear();
     CmdbufPos = 0;
     ArgsCount = 0;
 }
 
-void ACommandProcessor::Add(AStringView _Text)
+void CommandProcessor::Add(StringView _Text)
 {
     Cmdbuf += _Text;
 }
 
-void ACommandProcessor::Insert(AStringView _Text)
+void CommandProcessor::Insert(StringView _Text)
 {
     Cmdbuf.InsertAt(CmdbufPos, _Text);
 }
 
-void ACommandProcessor::Execute(ICommandContext& _Ctx)
+void CommandProcessor::Execute(ICommandContext& _Ctx)
 {
     if (Cmdbuf.IsEmpty())
     {
@@ -85,7 +85,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
             {
                 if (CmdbufPos >= Cmdbuf.Length())
                 {
-                    LOG("ACommandProcessor::Execute: expected '*/'\n");
+                    LOG("CommandProcessor::Execute: expected '*/'\n");
                     break;
                 }
 
@@ -139,7 +139,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
             {
                 if (bQuoted)
                 {
-                    LOG("ACommandProcessor::Execute: no closed quote\n");
+                    LOG("CommandProcessor::Execute: no closed quote\n");
                 }
                 continue;
             }
@@ -151,7 +151,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
                 {
                     if (bQuoted)
                     {
-                        LOG("ACommandProcessor::Execute: no closed quote\n");
+                        LOG("CommandProcessor::Execute: no closed quote\n");
                     }
                     break;
                 }
@@ -178,7 +178,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
         }
         else
         {
-            LOG("ACommandProcessor::Execute: MAX_ARGS hit\n");
+            LOG("CommandProcessor::Execute: MAX_ARGS hit\n");
             CmdbufPos++;
         }
     }
@@ -194,7 +194,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
     Cmdbuf.Clear();
 }
 
-bool ACommandProcessor::IsValidCommandName(const char* _Name)
+bool CommandProcessor::IsValidCommandName(const char* _Name)
 {
     if (!_Name || !*_Name)
     {

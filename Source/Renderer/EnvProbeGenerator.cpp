@@ -35,118 +35,111 @@ using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
-AEnvProbeGenerator::AEnvProbeGenerator()
+EnvProbeGenerator::EnvProbeGenerator()
 {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SConstantData );
-    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
+    bufferCI.SizeInBytes = sizeof(ConstantData);
+    GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
-    Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
+    Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+    Float4x4 projMat = Float4x4::PerspectiveRevCC(Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f);
 
-    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++)
+    {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo& ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo& depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
-    {
+    VertexBindingInfo vertexBindings[] =
         {
-            0,                              // vertex buffer binding
-            sizeof( Float3 ),               // vertex stride
-            INPUT_RATE_PER_VERTEX,          // per vertex / per instance
-        }
-    };
+            {
+                0,                     // vertex buffer binding
+                sizeof(Float3),        // vertex stride
+                INPUT_RATE_PER_VERTEX, // per vertex / per instance
+            }};
 
-    SVertexAttribInfo vertexAttribs[] =
-    {
+    VertexAttribInfo vertexAttribs[] =
         {
-            "InPosition",
-            0,
-            0,          // vertex buffer binding
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,
-            0
-        }
-    };
+            {"InPosition",
+             0,
+             0, // vertex buffer binding
+             VAT_FLOAT3,
+             VAM_FLOAT,
+             0,
+             0}};
 
-    AShaderFactory::CreateVertexShader( "gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateGeometryShader( "gen/envprobegen.geom", pipelineCI.pGS );
-    AShaderFactory::CreateFragmentShader( "gen/envprobegen.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader("gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderFactory::CreateGeometryShader("gen/envprobegen.geom", pipelineCI.pGS);
+    ShaderFactory::CreateFragmentShader("gen/envprobegen.frag", pipelineCI.pFS);
 
-    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.bCubemapSeamless = true;
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;
-    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(buffers);
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline( pipelineCI, &Pipeline );    
+    GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray )
+void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray)
 {
     int size = 1 << _MaxLod;
 
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_ENVPROBE)
-                               .SetResolution(STextureResolutionCubemapArray(size, _CubemapsCount))
+                               .SetResolution(TextureResolutionCubemapArray(size, _CubemapsCount))
                                .SetMipLevels(_MaxLod + 1),
                            ppTextureArray);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph(GDevice);
 
-    FGTextureProxy*    pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
-    TRef< IResourceTable > resourceTbl;
-    GDevice->CreateResourceTable( &resourceTbl );
+    FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
+    TRef<IResourceTable> resourceTbl;
+    GDevice->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer( 0, ConstantBuffer );
+    resourceTbl->BindBuffer(0, ConstantBuffer);
 
     int lodWidth = size;
 
-    TVector< AString > strs( _MaxLod + 1 );
+    TVector<String> strs(_MaxLod + 1);
 
-    for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
+    for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
+    {
 
         strs[Lod] = HK_FORMAT("Envprobe LOD {} pass", Lod);
 
-        ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
+        RenderPass& pass = frameGraph.AddTask<RenderPass>(strs[Lod].CStr());
 
         //pass.SetRenderArea( lodWidth, lodWidth );
 
         pass.SetColorAttachments(
-            {
-                {
-                    STextureAttachment(pCubemapArrayProxy)
-                    .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-                    .SetMipLevel(Lod)
-                }
-            }
-        );
+            {{TextureAttachment(pCubemapArrayProxy)
+                  .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)
+                  .SetMipLevel(Lod)}});
 
         pass.AddSubpass({0}, // color attachments
-                        [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [&, Lod](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
                             IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
@@ -173,46 +166,46 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture )
+void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture)
 {
     int size = 1 << _MaxLod;
 
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_ENVPROBE)
-                               .SetResolution(STextureResolutionCubemap(size))
+                               .SetResolution(TextureResolutionCubemap(size))
                                .SetMipLevels(_MaxLod + 1),
                            ppTexture);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph(GDevice);
 
-    FGTextureProxy*    pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
-    TRef< IResourceTable > resourceTbl;
-    GDevice->CreateResourceTable( &resourceTbl );
+    FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
+    TRef<IResourceTable> resourceTbl;
+    GDevice->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer( 0, ConstantBuffer );
+    resourceTbl->BindBuffer(0, ConstantBuffer);
 
     ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
 
     int lodWidth = size;
 
-    TVector< AString > strs( _MaxLod + 1 );
+    TVector<String> strs(_MaxLod + 1);
 
-    for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
+    for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
+    {
 
         strs[Lod] = HK_FORMAT("Envprobe LOD {} pass", Lod);
 
-        ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
+        RenderPass& pass = frameGraph.AddTask<RenderPass>(strs[Lod].CStr());
 
-        pass.SetRenderArea( lodWidth, lodWidth );
+        pass.SetRenderArea(lodWidth, lodWidth);
 
         pass.SetColorAttachment(
-            STextureAttachment( pCubemapProxy )
-                .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-                .SetMipLevel(Lod)
-        );
+            TextureAttachment(pCubemapProxy)
+                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)
+                .SetMipLevel(Lod));
 
         pass.AddSubpass({0}, // color attachments
-                        [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        [&, Lod](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
                             IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 

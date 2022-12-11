@@ -38,7 +38,7 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -65,7 +65,7 @@ static const float  DEFAULT_ILLUMINANCE_IN_LUX  = 110000.0f;
 static const float  DEFAULT_TEMPERATURE         = 6590.0f;
 static const Float3 DEFAULT_COLOR(1.0f);
 
-HK_BEGIN_CLASS_META(ADirectionalLightComponent)
+HK_BEGIN_CLASS_META(DirectionalLightComponent)
 HK_PROPERTY(IlluminanceInLux, SetIlluminance, GetIlluminance, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(Color, SetColor, GetColor, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(bCastShadow, SetCastShadow, IsCastShadow, HK_PROPERTY_DEFAULT)
@@ -76,32 +76,32 @@ HK_PROPERTY(ShadowCascadeSplitLambda, SetShadowCascadeSplitLambda, GetShadowCasc
 HK_PROPERTY(MaxShadowCascades, SetMaxShadowCascades, GetMaxShadowCascades, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-ADirectionalLightComponent::ADirectionalLightComponent()
+DirectionalLightComponent::DirectionalLightComponent()
 {
-    IlluminanceInLux         = DEFAULT_ILLUMINANCE_IN_LUX;
-    Temperature              = DEFAULT_TEMPERATURE;
-    Color                    = DEFAULT_COLOR;
-    EffectiveColor           = Float4(0.0f);
-    bCastShadow              = true;
-    ShadowMaxDistance        = 128;
-    ShadowCascadeOffset      = 3;
-    MaxShadowCascades        = DEFAULT_MAX_SHADOW_CASCADES;
-    ShadowCascadeResolution  = 1024;
-    ShadowCascadeSplitLambda = 0.5f;
+    m_IlluminanceInLux = DEFAULT_ILLUMINANCE_IN_LUX;
+    m_Temperature = DEFAULT_TEMPERATURE;
+    m_Color = DEFAULT_COLOR;
+    m_EffectiveColor = Float4(0.0f);
+    m_bCastShadow = true;
+    m_ShadowMaxDistance = 128;
+    m_ShadowCascadeOffset = 3;
+    m_MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
+    m_ShadowCascadeResolution = 1024;
+    m_ShadowCascadeSplitLambda = 0.5f;
 }
 
-void ADirectionalLightComponent::OnCreateAvatar()
+void DirectionalLightComponent::OnCreateAvatar()
 {
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Cylinder"s);
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
+    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Cylinder"s);
+    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
 
     MeshRenderView* meshRender = NewObj<MeshRenderView>();
     meshRender->SetMaterial(MaterialInstance);
 
-    AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("DirectionalLightAvatar");
+    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("DirectionalLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
@@ -115,32 +115,32 @@ void ADirectionalLightComponent::OnCreateAvatar()
     meshComponent->SetHideInEditor(true);
 }
 
-void ADirectionalLightComponent::SetIlluminance(float _IlluminanceInLux)
+void DirectionalLightComponent::SetIlluminance(float illuminanceInLux)
 {
-    IlluminanceInLux     = _IlluminanceInLux;
-    bEffectiveColorDirty = true;
+    m_IlluminanceInLux = illuminanceInLux;
+    m_bEffectiveColorDirty = true;
 }
 
-float ADirectionalLightComponent::GetIlluminance() const
+float DirectionalLightComponent::GetIlluminance() const
 {
-    return IlluminanceInLux;
+    return m_IlluminanceInLux;
 }
 
-void ADirectionalLightComponent::InitializeComponent()
+void DirectionalLightComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
     GetWorld()->LightingSystem.DirectionalLights.Add(this);
 }
 
-void ADirectionalLightComponent::DeinitializeComponent()
+void DirectionalLightComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
     GetWorld()->LightingSystem.DirectionalLights.Remove(this);
 }
 
-void ADirectionalLightComponent::SetDirection(Float3 const& _Direction)
+void DirectionalLightComponent::SetDirection(Float3 const& _Direction)
 {
     Float3x3 orientation;
     Float3   dir = -_Direction.Normalized();
@@ -162,12 +162,12 @@ void ADirectionalLightComponent::SetDirection(Float3 const& _Direction)
     SetRotation(rotation);
 }
 
-Float3 ADirectionalLightComponent::GetDirection() const
+Float3 DirectionalLightComponent::GetDirection() const
 {
     return GetForwardVector();
 }
 
-void ADirectionalLightComponent::SetWorldDirection(Float3 const& _Direction)
+void DirectionalLightComponent::SetWorldDirection(Float3 const& _Direction)
 {
     Float3x3 orientation;
 
@@ -180,69 +180,69 @@ void ADirectionalLightComponent::SetWorldDirection(Float3 const& _Direction)
     SetWorldRotation(rotation);
 }
 
-Float3 ADirectionalLightComponent::GetWorldDirection() const
+Float3 DirectionalLightComponent::GetWorldDirection() const
 {
     return GetWorldForwardVector();
 }
 
-void ADirectionalLightComponent::SetMaxShadowCascades(int _MaxShadowCascades)
+void DirectionalLightComponent::SetMaxShadowCascades(int maxShadowCascades)
 {
-    MaxShadowCascades = Math::Clamp(_MaxShadowCascades, 1, MAX_SHADOW_CASCADES);
+    m_MaxShadowCascades = Math::Clamp(maxShadowCascades, 1, MAX_SHADOW_CASCADES);
 }
 
-int ADirectionalLightComponent::GetMaxShadowCascades() const
+int DirectionalLightComponent::GetMaxShadowCascades() const
 {
-    return MaxShadowCascades;
+    return m_MaxShadowCascades;
 }
 
-void ADirectionalLightComponent::OnTransformDirty()
+void DirectionalLightComponent::OnTransformDirty()
 {
     Super::OnTransformDirty();
 }
 
-void ADirectionalLightComponent::SetColor(Float3 const& _Color)
+void DirectionalLightComponent::SetColor(Float3 const& color)
 {
-    Color                = _Color;
-    bEffectiveColorDirty = true;
+    m_Color = color;
+    m_bEffectiveColorDirty = true;
 }
 
-Float3 const& ADirectionalLightComponent::GetColor() const
+Float3 const& DirectionalLightComponent::GetColor() const
 {
-    return Color;
+    return m_Color;
 }
 
-void ADirectionalLightComponent::SetTemperature(float _Temperature)
+void DirectionalLightComponent::SetTemperature(float temperature)
 {
-    Temperature          = _Temperature;
-    bEffectiveColorDirty = true;
+    m_Temperature = temperature;
+    m_bEffectiveColorDirty = true;
 }
 
-float ADirectionalLightComponent::GetTemperature() const
+float DirectionalLightComponent::GetTemperature() const
 {
-    return Temperature;
+    return m_Temperature;
 }
 
-Float4 const& ADirectionalLightComponent::GetEffectiveColor() const
+Float4 const& DirectionalLightComponent::GetEffectiveColor() const
 {
-    if (bEffectiveColorDirty)
+    if (m_bEffectiveColorDirty)
     {
         const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
 
-        float energy = IlluminanceInLux * EnergyUnitScale * GetAnimationBrightness();
+        float energy = m_IlluminanceInLux * EnergyUnitScale * GetAnimationBrightness();
 
         Color4 temperatureColor;
         temperatureColor.SetTemperature(GetTemperature());
 
-        EffectiveColor[0] = Color[0] * temperatureColor[0] * energy;
-        EffectiveColor[1] = Color[1] * temperatureColor[1] * energy;
-        EffectiveColor[2] = Color[2] * temperatureColor[2] * energy;
+        m_EffectiveColor[0] = m_Color[0] * temperatureColor[0] * energy;
+        m_EffectiveColor[1] = m_Color[1] * temperatureColor[1] * energy;
+        m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * energy;
 
-        bEffectiveColorDirty = false;
+        m_bEffectiveColorDirty = false;
     }
-    return EffectiveColor;
+    return m_EffectiveColor;
 }
 
-void ADirectionalLightComponent::DrawDebug(ADebugRenderer* InRenderer)
+void DirectionalLightComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
@@ -255,18 +255,18 @@ void ADirectionalLightComponent::DrawDebug(ADebugRenderer* InRenderer)
     }
 }
 
-void ADirectionalLightComponent::AddShadowmapCascades(AStreamedMemoryGPU* StreamedMemory, SRenderView* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
+void DirectionalLightComponent::AddShadowmapCascades(StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
 {
     float    cascadeSplits[MAX_CASCADE_SPLITS];
-    int      numSplits = MaxShadowCascades + 1;
+    int      numSplits = m_MaxShadowCascades + 1;
     int      numVisibleSplits;
     Float4x4 lightViewMatrix;
     Float3   worldspaceVerts[MAX_CASCADE_SPLITS][4];
     Float3   right, up;
 
-    HK_ASSERT(MaxShadowCascades > 0 && MaxShadowCascades <= MAX_SHADOW_CASCADES);
+    HK_ASSERT(m_MaxShadowCascades > 0 && m_MaxShadowCascades <= MAX_SHADOW_CASCADES);
 
-    if (!bCastShadow)
+    if (!m_bCastShadow)
     {
         *pFirstCascade = 0;
         *pNumCascades  = 0;
@@ -288,11 +288,11 @@ void ADirectionalLightComponent::AddShadowmapCascades(AStreamedMemoryGPU* Stream
         up                = View->ViewUpVec * Math::Abs(orthoHeight * 0.5f);
     }
 
-    const float shadowMaxDistance = ShadowMaxDistance;
-    const float offset            = ShadowCascadeOffset;
+    const float shadowMaxDistance = m_ShadowMaxDistance;
+    const float offset            = m_ShadowCascadeOffset;
     const float a                 = (shadowMaxDistance - offset) / View->ViewZNear;
     const float b                 = (shadowMaxDistance - offset) - View->ViewZNear;
-    const float lambda            = ShadowCascadeSplitLambda;
+    const float lambda            = m_ShadowCascadeSplitLambda;
 
     // Calc splits
     cascadeSplits[0]                      = View->ViewZNear;
@@ -347,7 +347,7 @@ void ADirectionalLightComponent::AddShadowmapCascades(AStreamedMemoryGPU* Stream
     lightViewMatrix[1] = Float4(basis[1], 0.0f);
     lightViewMatrix[2] = Float4(basis[2], 0.0f);
 
-    const float halfCascadeRes        = ShadowCascadeResolution >> 1;
+    const float halfCascadeRes = m_ShadowCascadeResolution >> 1;
     const float oneOverHalfCascadeRes = 1.0f / halfCascadeRes;
 
     int firstCascade = View->NumShadowMapCascades;

@@ -34,26 +34,25 @@ SOFTWARE.
 
 /*
 
-AAnchorComponent
+AnchorComponent
 
 Anchors is used to attach softbodies
 
 */
-class AAnchorComponent : public ASceneComponent
+class AnchorComponent : public SceneComponent
 {
-    HK_COMPONENT(AAnchorComponent, ASceneComponent)
+    HK_COMPONENT(AnchorComponent, SceneComponent)
 
-    friend class ASoftMeshComponent;
+    friend class SoftMeshComponent;
 
 public:
 protected:
-    AAnchorComponent();
+    AnchorComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
     void OnTransformDirty() override;
-
 
 private:
     class btRigidBody* Anchor      = nullptr;

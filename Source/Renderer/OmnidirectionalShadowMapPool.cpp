@@ -3,10 +3,10 @@
 
 using namespace RenderCore;
 
-AConsoleVar r_OminShadowmapBits("r_OminShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
-AConsoleVar r_OminShadowmapResolution("r_OminShadowmapResolution"s, "1024"s);
+ConsoleVar r_OminShadowmapBits("r_OminShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
+ConsoleVar r_OminShadowmapResolution("r_OminShadowmapResolution"s, "1024"s);
 
-AOmnidirectionalShadowMapPool::AOmnidirectionalShadowMapPool()
+OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
 {
     TEXTURE_FORMAT depthFormat;
     if (r_OminShadowmapBits.GetInteger() <= 16)
@@ -23,19 +23,19 @@ AOmnidirectionalShadowMapPool::AOmnidirectionalShadowMapPool()
     PoolSize = 256;
 
     GDevice->CreateTexture(
-        STextureDesc()
+        TextureDesc()
             .SetFormat(depthFormat)
-            .SetResolution(STextureResolutionCubemapArray(faceResolution, PoolSize))
+            .SetResolution(TextureResolutionCubemapArray(faceResolution, PoolSize))
             .SetBindFlags(BIND_SHADER_RESOURCE | BIND_DEPTH_STENCIL),
         &Texture);
 }
 
-int AOmnidirectionalShadowMapPool::GetResolution() const
+int OmnidirectionalShadowMapPool::GetResolution() const
 {
     return Texture->GetWidth();
 }
 
-int AOmnidirectionalShadowMapPool::GetSize() const
+int OmnidirectionalShadowMapPool::GetSize() const
 {
     return PoolSize;
 }

@@ -32,9 +32,9 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 
-HK_CLASS_META(AActorComponent)
+HK_CLASS_META(ActorComponent)
 
-AActorComponent::AActorComponent()
+ActorComponent::ActorComponent()
 {
     m_bInitialized = false;
     m_bPendingKill = false;
@@ -42,25 +42,25 @@ AActorComponent::AActorComponent()
     m_bTicking      = false;
 }
 
-AWorld* AActorComponent::GetWorld() const
+World* ActorComponent::GetWorld() const
 {
     HK_ASSERT(m_OwnerActor);
     return m_OwnerActor ? m_OwnerActor->GetWorld() : nullptr;
 }
 
-ALevel* AActorComponent::GetLevel() const
+Level* ActorComponent::GetLevel() const
 {
     HK_ASSERT(m_OwnerActor);
     return m_OwnerActor ? m_OwnerActor->GetLevel() : nullptr;
 }
 
-bool AActorComponent::IsInEditor() const
+bool ActorComponent::IsInEditor() const
 {
     HK_ASSERT(m_OwnerActor);
     return m_OwnerActor ? m_OwnerActor->IsInEditor() : false;
 }
 
-void AActorComponent::RegisterComponent()
+void ActorComponent::RegisterComponent()
 {
     if (m_bPendingKill)
     {
@@ -84,7 +84,7 @@ void AActorComponent::RegisterComponent()
     BeginPlay();
 }
 
-void AActorComponent::Destroy()
+void ActorComponent::Destroy()
 {
-    AWorld::DestroyComponent(this);
+    World::DestroyComponent(this);
 }

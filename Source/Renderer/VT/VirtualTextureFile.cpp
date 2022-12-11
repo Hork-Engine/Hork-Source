@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/BaseMath.h>
 
-AVirtualTextureFile::AVirtualTextureFile( const char * FileName )
+VirtualTextureFile::VirtualTextureFile(const char* FileName)
 {
     SFileOffset fileOffset;
     uint32_t version;
@@ -44,35 +44,38 @@ AVirtualTextureFile::AVirtualTextureFile( const char * FileName )
     TextureResolution = 0;
     TextureResolutionLog2 = 0;
 
-    if ( !FileHandle.OpenRead( FileName ) ) {
-        LOG("AVirtualTextureFile::ctor: couldn't open {}\n", FileName);
+    if (!FileHandle.OpenRead(FileName))
+    {
+        LOG("VirtualTextureFile::ctor: couldn't open {}\n", FileName);
         return;
     }
 
     fileOffset = 0;
 
     // read version
-    FileHandle.Read( &version, sizeof( version ), fileOffset );
-    fileOffset += sizeof( version );
+    FileHandle.Read(&version, sizeof(version), fileOffset);
+    fileOffset += sizeof(version);
 
-    if ( version != VT_FILE_ID ) {
+    if (version != VT_FILE_ID)
+    {
         FileHandle.Close();
         return;
     }
 
     // read num Layers
-    FileHandle.Read( &tmp, sizeof( byte ), fileOffset );
-    fileOffset += sizeof( byte );
+    FileHandle.Read(&tmp, sizeof(byte), fileOffset);
+    fileOffset += sizeof(byte);
 
-    Layers.Resize( tmp );
+    Layers.Resize(tmp);
     int LayerOffset = 0;
-    for ( int i = 0 ; i < Layers.Size() ; i++ ) {
+    for (int i = 0; i < Layers.Size(); i++)
+    {
 
-        FileHandle.Read( &Layers[i].SizeInBytes, sizeof( Layers[i].SizeInBytes ), fileOffset );
-        fileOffset += sizeof( Layers[i].SizeInBytes );
+        FileHandle.Read(&Layers[i].SizeInBytes, sizeof(Layers[i].SizeInBytes), fileOffset);
+        fileOffset += sizeof(Layers[i].SizeInBytes);
 
-        FileHandle.Read( &Layers[i].PageDataFormat, sizeof( Layers[i].PageDataFormat ), fileOffset );
-        fileOffset += sizeof( Layers[i].PageDataFormat );
+        FileHandle.Read(&Layers[i].PageDataFormat, sizeof(Layers[i].PageDataFormat), fileOffset);
+        fileOffset += sizeof(Layers[i].PageDataFormat);
 
         //FileHandle.Read( &Layers[i].NumChannels, sizeof( Layers[i].NumChannels ), fileOffset );
         //fileOffset += sizeof( Layers[i].NumChannels );
@@ -80,71 +83,81 @@ AVirtualTextureFile::AVirtualTextureFile( const char * FileName )
         Layers[i].Offset = LayerOffset;
 
         LayerOffset += Layers[i].SizeInBytes;
-
     }
     PageSizeInBytes = LayerOffset;
 
     // read page width
-    FileHandle.Read( &PageResolutionB, sizeof( PageResolutionB ), fileOffset );
-    fileOffset += sizeof( PageResolutionB );
+    FileHandle.Read(&PageResolutionB, sizeof(PageResolutionB), fileOffset);
+    fileOffset += sizeof(PageResolutionB);
 
     // read page info table
-    fileOffset += PageInfoTable.Read( &FileHandle, fileOffset );
+    fileOffset += PageInfoTable.Read(&FileHandle, fileOffset);
 
     // read page address tables
-    fileOffset += AddressTable.Read( &FileHandle, fileOffset );
+    fileOffset += AddressTable.Read(&FileHandle, fileOffset);
 
     FileHeaderSize = fileOffset;
 
     TextureResolution = (1u << (AddressTable.NumLods - 1)) * PageResolutionB;
-    TextureResolutionLog2 = Math::Log2( TextureResolution );
+    TextureResolutionLog2 = Math::Log2(TextureResolution);
 }
 
-AVirtualTextureFile::~AVirtualTextureFile()
+VirtualTextureFile::~VirtualTextureFile()
 {
 }
 
-SFileOffset AVirtualTextureFile::GetPhysAddress( unsigned int _PageIndex ) const
+SFileOffset VirtualTextureFile::GetPhysAddress(unsigned int _PageIndex) const
 {
     SFileOffset physAddr;
-    int pageLod = QuadTreeCalcLod64( _PageIndex );
+    int pageLod = QuadTreeCalcLod64(_PageIndex);
     int addrTableLod = pageLod - 4;
-    if ( addrTableLod < 0 ) {
-        if ( PageInfoTable.Data[_PageIndex] & PF_STORED ) { // FIXME: Is it safe to read flag from async thread? Use interlocked ops?
+    if (addrTableLod < 0)
+    {
+        if (PageInfoTable.Data[_PageIndex] & PF_STORED)
+        { // FIXME: Is it safe to read flag from async thread? Use interlocked ops?
             physAddr = AddressTable.ByteOffsets[_PageIndex];
-        } else {
+        }
+        else
+        {
             return 0;
         }
-    } else {
+    }
+    else
+    {
         int x, y;
-        unsigned int relativeIndex = QuadTreeAbsoluteToRelativeIndex( _PageIndex, pageLod );
-        QuadTreeGetXYFromRelative( x, y, relativeIndex, pageLod );
-        unsigned int addrTableIndex = QuadTreeRelativeToAbsoluteIndex( QuadTreeGetRelativeFromXY( x>>4, y>>4, addrTableLod ), addrTableLod );
+        unsigned int relativeIndex = QuadTreeAbsoluteToRelativeIndex(_PageIndex, pageLod);
+        QuadTreeGetXYFromRelative(x, y, relativeIndex, pageLod);
+        unsigned int addrTableIndex = QuadTreeRelativeToAbsoluteIndex(QuadTreeGetRelativeFromXY(x >> 4, y >> 4, addrTableLod), addrTableLod);
         physAddr = AddressTable.Table[addrTableIndex] + AddressTable.ByteOffsets[_PageIndex];
     }
     return physAddr * PageSizeInBytes + FileHeaderSize;
 }
 
-SFileOffset AVirtualTextureFile::ReadPage( SFileOffset PhysAddress, byte * PageData, int Layer ) const
+SFileOffset VirtualTextureFile::ReadPage(SFileOffset PhysAddress, byte* PageData, int Layer) const
 {
-    if ( FileHandle.IsInvalid() ) {
+    if (FileHandle.IsInvalid())
+    {
         return PhysAddress;
     }
     PhysAddress += Layers[Layer].Offset;
-    if ( PageData ) {
-        FileHandle.Read( PageData, Layers[Layer].SizeInBytes, PhysAddress );
+    if (PageData)
+    {
+        FileHandle.Read(PageData, Layers[Layer].SizeInBytes, PhysAddress);
     }
     return PhysAddress;
 }
 
-SFileOffset AVirtualTextureFile::ReadPage( SFileOffset PhysAddress, byte * PageData[] ) const
+SFileOffset VirtualTextureFile::ReadPage(SFileOffset PhysAddress, byte* PageData[]) const
 {
-    if ( FileHandle.IsInvalid() ) {
+    if (FileHandle.IsInvalid())
+    {
         return PhysAddress;
     }
-    for ( int Layer = 0 ; Layer < Layers.Size() ; Layer++ ) {
-        if ( PageData[Layer] ) {
-            FileHandle.Read( PageData[Layer], Layers[Layer].SizeInBytes, PhysAddress );
+    for (int Layer = 0; Layer < Layers.Size(); Layer++)
+    {
+        if (PageData[Layer])
+        {
+            FileHandle.Read(PageData[Layer], Layers[Layer].SizeInBytes, PhysAddress);
         }
         PhysAddress += Layers[Layer].SizeInBytes;
     }
@@ -152,7 +165,7 @@ SFileOffset AVirtualTextureFile::ReadPage( SFileOffset PhysAddress, byte * PageD
 }
 
 #if 0
-void AVirtualTextureFile::ReadPageEx( SFileOffset PhysAddress, byte * PageData[], int Lod, EVirtualTexturePageDebug Debug ) const
+void VirtualTextureFile::ReadPageEx( SFileOffset PhysAddress, byte * PageData[], int Lod, EVirtualTexturePageDebug Debug ) const
 {
     switch ( Debug ) {
     case VT_PAGE_SHOW_LODS1:

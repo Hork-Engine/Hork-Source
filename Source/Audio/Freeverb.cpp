@@ -34,24 +34,27 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
-AFreeverb::AFreeverb( int SampleRate )
+Freeverb::Freeverb(int SampleRate)
 {
     // These values assume 44.1KHz sample rate
     // they will probably be OK for 48KHz sample rate
     // but would need scaling for 96KHz (or other) sample rates.
     // The values were obtained by listening tests.
-    int combLengths[NUM_COMBs] = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-    int allpassLengths[NUM_ALL_PASSES] = { 556, 441, 341, 225 };
+    int combLengths[NUM_COMBs] = {1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617};
+    int allpassLengths[NUM_ALL_PASSES] = {556, 441, 341, 225};
 
     // Scale for device sample rate
-    if ( SampleRate != 44100 ) {
+    if (SampleRate != 44100)
+    {
         double ratio = (double)SampleRate / 44100.0;
 
-        for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
-            combLengths[i] = (int)floor( ratio * combLengths[i] );
+        for (int i = 0; i < NUM_COMBs; i++)
+        {
+            combLengths[i] = (int)floor(ratio * combLengths[i]);
         }
-        for ( int i = 0 ; i < NUM_ALL_PASSES ; i++ ) {
-            allpassLengths[i] = (int)floor( ratio * allpassLengths[i] );
+        for (int i = 0; i < NUM_ALL_PASSES; i++)
+        {
+            allpassLengths[i] = (int)floor(ratio * allpassLengths[i]);
         }
     }
 
@@ -59,11 +62,13 @@ AFreeverb::AFreeverb( int SampleRate )
 
     // calculate capacity
     int capacity = 0;
-    for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
+    for (int i = 0; i < NUM_COMBs; i++)
+    {
         capacity += combLengths[i];
         capacity += combLengths[i] + stereoSpread;
     }
-    for ( int i = 0 ; i < NUM_ALL_PASSES ; i++ ) {
+    for (int i = 0; i < NUM_ALL_PASSES; i++)
+    {
         capacity += allpassLengths[i];
         capacity += allpassLengths[i] + stereoSpread;
     }
@@ -72,7 +77,8 @@ AFreeverb::AFreeverb( int SampleRate )
     MemoryBlob.Reset(capacity * sizeof(float), nullptr, MALLOC_ZERO);
 
     float* buffer = (float*)MemoryBlob.GetData();
-    for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
+    for (int i = 0; i < NUM_COMBs; i++)
+    {
         CombL[i].pBuffer = buffer;
         CombL[i].BufSize = combLengths[i];
         CombL[i].BufIdx = 0;
@@ -86,7 +92,8 @@ AFreeverb::AFreeverb( int SampleRate )
         buffer += combLengths[i] + stereoSpread;
     }
 
-    for ( int i = 0 ; i < NUM_ALL_PASSES ; i++ ) {
+    for (int i = 0; i < NUM_ALL_PASSES; i++)
+    {
         AllPassL[i].pBuffer = buffer;
         AllPassL[i].BufSize = allpassLengths[i];
         AllPassL[i].BufIdx = 0;
@@ -99,78 +106,50 @@ AFreeverb::AFreeverb( int SampleRate )
     }
 
     // Set default values
-    SetWet( InitialWet );
-    SetRoomSize( InitialRoom );
-    SetDry( InitialDry );
-    SetDamp( InitialDamp );
-    SetWidth( InitialWidth );
+    SetWet(InitialWet);
+    SetRoomSize(InitialRoom);
+    SetDry(InitialDry);
+    SetDamp(InitialDamp);
+    SetWidth(InitialWidth);
     SetFreeze(false);
 }
 
-void AFreeverb::Mute()
+void Freeverb::Mute()
 {
-    if ( bFreeze ) {
+    if (bFreeze)
+    {
         return;
     }
 
     MemoryBlob.ZeroMem();
 }
 
-void AFreeverb::ProcessReplace( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip )
-{
-    float outL,outR,input;
-
-    while ( frameCount-- > 0 ) {
-        outL = outR = 0;
-        input = (*inputL + *inputR) * Gain;
-
-        // Accumulate comb filters in parallel
-        for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
-            outL += CombL[i].Process( input );
-            outR += CombR[i].Process( input );
-        }
-
-        // Feed through allpasses in series
-        for ( int i = 0 ; i < NUM_ALL_PASSES ; i++ ) {
-            outL = AllPassL[i].Process( outL );
-            outR = AllPassR[i].Process( outR );
-        }
-
-        // Calculate output REPLACING anything already there
-        *outputL = outL*Wet1 + outR*Wet2 + *inputL*Dry;
-        *outputR = outR*Wet1 + outL*Wet2 + *inputR*Dry;
-
-        // Increment sample pointers, allowing for interleave (if any)
-        inputL += skip;
-        inputR += skip;
-        outputL += skip;
-        outputR += skip;
-    }
-}
-
-void AFreeverb::ProcessMix( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip )
+void Freeverb::ProcessReplace(float* inputL, float* inputR, float* outputL, float* outputR, int frameCount, int skip)
 {
     float outL, outR, input;
 
-    while ( frameCount-- > 0 ) {
+    while (frameCount-- > 0)
+    {
         outL = outR = 0;
         input = (*inputL + *inputR) * Gain;
 
         // Accumulate comb filters in parallel
-        for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
-            outL += CombL[i].Process( input );
-            outR += CombR[i].Process( input );
+        for (int i = 0; i < NUM_COMBs; i++)
+        {
+            outL += CombL[i].Process(input);
+            outR += CombR[i].Process(input);
         }
 
         // Feed through allpasses in series
-        for ( int i = 0 ; i < NUM_ALL_PASSES ; i++ ) {
-            outL = AllPassL[i].Process( outL );
-            outR = AllPassR[i].Process( outR );
+        for (int i = 0; i < NUM_ALL_PASSES; i++)
+        {
+            outL = AllPassL[i].Process(outL);
+            outR = AllPassR[i].Process(outR);
         }
 
-        // Calculate output MIXING with anything already there
-        *outputL += outL*Wet1 + outR*Wet2 + *inputL*Dry;
-        *outputR += outR*Wet1 + outL*Wet2 + *inputR*Dry;
+        // Calculate output REPLACING anything already there
+        *outputL = outL * Wet1 + outR * Wet2 + *inputL * Dry;
+        *outputR = outR * Wet1 + outL * Wet2 + *inputR * Dry;
 
         // Increment sample pointers, allowing for interleave (if any)
         inputL += skip;
@@ -180,30 +159,68 @@ void AFreeverb::ProcessMix( float * inputL, float * inputR, float * outputL, flo
     }
 }
 
-void AFreeverb::Update()
+void Freeverb::ProcessMix(float* inputL, float* inputR, float* outputL, float* outputR, int frameCount, int skip)
+{
+    float outL, outR, input;
+
+    while (frameCount-- > 0)
+    {
+        outL = outR = 0;
+        input = (*inputL + *inputR) * Gain;
+
+        // Accumulate comb filters in parallel
+        for (int i = 0; i < NUM_COMBs; i++)
+        {
+            outL += CombL[i].Process(input);
+            outR += CombR[i].Process(input);
+        }
+
+        // Feed through allpasses in series
+        for (int i = 0; i < NUM_ALL_PASSES; i++)
+        {
+            outL = AllPassL[i].Process(outL);
+            outR = AllPassR[i].Process(outR);
+        }
+
+        // Calculate output MIXING with anything already there
+        *outputL += outL * Wet1 + outR * Wet2 + *inputL * Dry;
+        *outputR += outR * Wet1 + outL * Wet2 + *inputR * Dry;
+
+        // Increment sample pointers, allowing for interleave (if any)
+        inputL += skip;
+        inputR += skip;
+        outputL += skip;
+        outputR += skip;
+    }
+}
+
+void Freeverb::Update()
 {
     // Recalculate internal values after parameter change
 
-    Wet1 = Wet * ( Width * 0.5f + 0.5f );
-    Wet2 = Wet * ( 0.5f - Width * 0.5f );
+    Wet1 = Wet * (Width * 0.5f + 0.5f);
+    Wet2 = Wet * (0.5f - Width * 0.5f);
 
-    if ( bFreeze ) {
+    if (bFreeze)
+    {
         RoomSize1 = 1;
         Damp1 = 0;
         Gain = MutedGain;
     }
-    else {
+    else
+    {
         RoomSize1 = RoomSize;
         Damp1 = Damp;
         Gain = FixedGain;
     }
 
-    for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
-        CombL[i].SetFeedback( RoomSize1 );
-        CombR[i].SetFeedback( RoomSize1 );
+    for (int i = 0; i < NUM_COMBs; i++)
+    {
+        CombL[i].SetFeedback(RoomSize1);
+        CombR[i].SetFeedback(RoomSize1);
 
-        CombL[i].SetDamp( Damp1 );
-        CombR[i].SetDamp( Damp1 );
+        CombL[i].SetDamp(Damp1);
+        CombR[i].SetDamp(Damp1);
     }
 }
 
@@ -212,67 +229,67 @@ void AFreeverb::Update()
 // because as you develop the reverb model, you may
 // wish to take dynamic action when they are called.
 
-void AFreeverb::SetRoomSize( float InRoomSize )
+void Freeverb::SetRoomSize(float InRoomSize)
 {
-    RoomSize = ( InRoomSize * ScaleRoom ) + OffsetRoom;
+    RoomSize = (InRoomSize * ScaleRoom) + OffsetRoom;
     Update();
 }
 
-float AFreeverb::GetRoomSize() const
+float Freeverb::GetRoomSize() const
 {
-    return ( RoomSize - OffsetRoom ) / ScaleRoom;
+    return (RoomSize - OffsetRoom) / ScaleRoom;
 }
 
-void AFreeverb::SetDamp( float InDamp )
+void Freeverb::SetDamp(float InDamp)
 {
     Damp = InDamp * ScaleDamp;
     Update();
 }
 
-float AFreeverb::GetDamp() const
+float Freeverb::GetDamp() const
 {
     return Damp / ScaleDamp;
 }
 
-void AFreeverb::SetWet( float InWet )
+void Freeverb::SetWet(float InWet)
 {
     Wet = InWet * ScaleWet;
     Update();
 }
 
-float AFreeverb::GetWet() const
+float Freeverb::GetWet() const
 {
     return Wet / ScaleWet;
 }
 
-void AFreeverb::SetDry( float InDry )
+void Freeverb::SetDry(float InDry)
 {
     Dry = InDry * ScaleDry;
 }
 
-float AFreeverb::GetDry() const
+float Freeverb::GetDry() const
 {
     return Dry / ScaleDry;
 }
 
-void AFreeverb::SetWidth( float InWidth )
+void Freeverb::SetWidth(float InWidth)
 {
     Width = InWidth;
     Update();
 }
 
-float AFreeverb::GetWidth() const
+float Freeverb::GetWidth() const
 {
     return Width;
 }
 
-void AFreeverb::SetFreeze( bool InbFreeze )
+void Freeverb::SetFreeze(bool InbFreeze)
 {
     bFreeze = InbFreeze;
     Update();
 }
 
-bool AFreeverb::IsFreeze() const
+bool Freeverb::IsFreeze() const
 {
     return bFreeze;
 }

@@ -296,7 +296,7 @@ static char** CommandLineToArgvA(const char* lpCmdline, int* numargs)
 
 } // namespace
 
-SCommandLine::SCommandLine(const char* _CommandLine)
+CommandLine::CommandLine(const char* _CommandLine)
 {
     Arguments = CommandLineToArgvA(_CommandLine, &NumArguments);
     bNeedFree = true;
@@ -304,13 +304,13 @@ SCommandLine::SCommandLine(const char* _CommandLine)
     Validate();
 }
 
-SCommandLine::SCommandLine(int _Argc, char** _Argv) :
+CommandLine::CommandLine(int _Argc, char** _Argv) :
     NumArguments(_Argc), Arguments(_Argv)
 {
     Validate();
 }
 
-SCommandLine::~SCommandLine()
+CommandLine::~CommandLine()
 {
     if (bNeedFree)
     {
@@ -318,7 +318,7 @@ SCommandLine::~SCommandLine()
     }
 }
 
-void SCommandLine::Validate()
+void CommandLine::Validate()
 {
     if (NumArguments < 1)
     {
@@ -329,7 +329,7 @@ void SCommandLine::Validate()
     Platform::FixSeparator(Arguments[0]);
 }
 
-int SCommandLine::CheckArg(const char* _Arg) const
+int CommandLine::CheckArg(const char* _Arg) const
 {
     for (int i = 0; i < NumArguments; i++)
     {
@@ -344,7 +344,7 @@ int SCommandLine::CheckArg(const char* _Arg) const
     return -1;
 }
 
-bool SCommandLine::HasArg(const char* _Arg) const
+bool CommandLine::HasArg(const char* _Arg) const
 {
     return CheckArg(_Arg) != -1;
 }
@@ -361,9 +361,9 @@ namespace
 #ifdef HK_OS_WIN32
 static HANDLE ProcessMutex = nullptr;
 #endif
-static FILE*        ProcessLogFile = nullptr;
-static AMutex       ProcessLogWriterSync;
-static SProcessInfo ProcessInfo;
+static FILE*       ProcessLogFile = nullptr;
+static Mutex       ProcessLogWriterSync;
+static ProcessInfo Process;
 
 static void InitializeProcess()
 {
@@ -386,12 +386,12 @@ static void InitializeProcess()
     int curLen = 256;
     int len    = 0;
 
-    ProcessInfo.Executable = nullptr;
+    Process.Executable = nullptr;
     while (1)
     {
-        ProcessInfo.Executable = (char*)realloc(ProcessInfo.Executable, curLen + 1);
+        Process.Executable = (char*)realloc(Process.Executable, curLen + 1);
 
-        len = GetModuleFileNameA(NULL, ProcessInfo.Executable, curLen);
+        len = GetModuleFileNameA(NULL, Process.Executable, curLen);
         if (len < curLen && len != 0)
         {
             break;
@@ -406,36 +406,36 @@ static void InitializeProcess()
             break;
         }
     }
-    ProcessInfo.Executable[len] = 0;
+    Process.Executable[len] = 0;
 
-    Platform::FixSeparator(ProcessInfo.Executable);
+    Platform::FixSeparator(Process.Executable);
 
-    uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
+    uint32_t appHash = SDBMHash(Process.Executable, len);
 
     char pid[32];
     Platform::Sprintf(pid, sizeof(pid), "hork_%x", appHash);
     ProcessMutex = CreateMutexA(NULL, FALSE, pid);
     if (!ProcessMutex)
     {
-        ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
+        Process.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
     }
     else if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
-        ProcessInfo.ProcessAttribute = PROCESS_ALREADY_EXISTS;
+        Process.ProcessAttribute = PROCESS_ALREADY_EXISTS;
     }
     else
     {
-        ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
+        Process.ProcessAttribute = PROCESS_UNIQUE;
     }
 #elif defined HK_OS_LINUX
     int curLen = 256;
     int len = 0;
 
-    ProcessInfo.Executable = nullptr;
+    Process.Executable = nullptr;
     while (1)
     {
-        ProcessInfo.Executable = (char*)realloc(ProcessInfo.Executable, curLen + 1);
-        len = readlink("/proc/self/exe", ProcessInfo.Executable, curLen);
+        Process.Executable = (char*)realloc(Process.Executable, curLen + 1);
+        len = readlink("/proc/self/exe", Process.Executable, curLen);
         if (len == -1)
         {
             CriticalError("InitializeProcess: Failed on readlink\n");
@@ -448,9 +448,9 @@ static void InitializeProcess()
         }
         curLen <<= 1;
     }
-    ProcessInfo.Executable[len] = 0;
+    Process.Executable[len] = 0;
 
-    uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
+    uint32_t appHash = SDBMHash(Process.Executable, len);
     char pid[32];
     Platform::Sprintf(pid, sizeof(pid), "/tmp/hork_%x.pid", appHash);
     int f = open(pid, O_RDWR | O_CREAT, 0666);
@@ -459,16 +459,16 @@ static void InitializeProcess()
     {
         if (errno == EWOULDBLOCK)
         {
-            ProcessInfo.ProcessAttribute = PROCESS_ALREADY_EXISTS;
+            Process.ProcessAttribute = PROCESS_ALREADY_EXISTS;
         }
         else
         {
-            ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
+            Process.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
         }
     }
     else
     {
-        ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
+        Process.ProcessAttribute = PROCESS_UNIQUE;
     }
 #else
 #    error "Not implemented under current platform"
@@ -490,10 +490,10 @@ static void DeinitializeProcess()
         ProcessLogFile = nullptr;
     }
 
-    if (ProcessInfo.Executable)
+    if (Process.Executable)
     {
-        free(ProcessInfo.Executable);
-        ProcessInfo.Executable = nullptr;
+        free(Process.Executable);
+        Process.Executable = nullptr;
     }
 
 #ifdef HK_OS_WIN32
@@ -581,14 +581,14 @@ static BOOL IsWow64()
 #endif
 
 
-static SCommandLine const* pCommandLine;
+static CommandLine const* pCommandLine;
 
 static int64_t StartSeconds;
 static int64_t StartMilliseconds;
 static int64_t StartMicroseconds;
 
 static char* Clipboard = nullptr;
-static AConsoleBuffer ConBuffer;
+static ConsoleBuffer ConBuffer;
 
 void* operator new(std::size_t sz)
 {
@@ -612,7 +612,7 @@ void operator delete(void* ptr) noexcept
 namespace Platform
 {
 
-void Initialize(SPlatformInitialize const& CoreInitialize)
+void Initialize(PlatformInitialize const& CoreInitialize)
 {
 #if defined(HK_DEBUG) && defined(HK_COMPILER_MSVC)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -620,18 +620,18 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     if (CoreInitialize.pCommandLine)
     {
-        static SCommandLine cmdLine(CoreInitialize.pCommandLine);
+        static CommandLine cmdLine(CoreInitialize.pCommandLine);
         pCommandLine = &cmdLine;
     }
     else
     {
-        static SCommandLine cmdLine(CoreInitialize.Argc, CoreInitialize.Argv);
+        static CommandLine cmdLine(CoreInitialize.Argc, CoreInitialize.Argv);
         pCommandLine = &cmdLine;
     }
 
     InitializeProcess();
 
-    SProcessInfo const& processInfo = Platform::GetProcessInfo();
+    ProcessInfo const& processInfo = Platform::GetProcessInfo();
 
     if (!pCommandLine->HasArg("-bAllowMultipleInstances"))
     {
@@ -670,7 +670,7 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
     }
 #endif
 
-    SMemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
+    MemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
     LOG("Memory page size: {} bytes\n", physMemoryInfo.PageSize);
     if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
     {
@@ -744,20 +744,20 @@ bool HasArg(const char* _Arg)
     return pCommandLine->HasArg(_Arg);
 }
 
-SCommandLine const* GetCommandLine()
+CommandLine const* GetCommandLine()
 {
     return pCommandLine;
 }
 
-AConsoleBuffer& GetConsoleBuffer()
+ConsoleBuffer& GetConsoleBuffer()
 {
     return ConBuffer;
 }
 
-SCPUInfo const* CPUInfo()
+CPUInfo const* GetCPUInfo()
 {
-    static SCPUInfo* pCPUInfo = nullptr;
-    static SCPUInfo  info;
+    static CPUInfo* pCPUInfo = nullptr;
+    static CPUInfo  info;
 
     if (pCPUInfo)
     {
@@ -876,9 +876,9 @@ SCPUInfo const* CPUInfo()
     return pCPUInfo;
 }
 
-SProcessInfo const& GetProcessInfo()
+ProcessInfo const& GetProcessInfo()
 {
-    return ProcessInfo;
+    return Process;
 }
 
 int64_t SysStartSeconds()
@@ -928,7 +928,7 @@ double SysMicroseconds_d()
 
 void PrintCPUFeatures()
 {
-    SCPUInfo const* pCPUInfo = Platform::CPUInfo();
+    CPUInfo const* pCPUInfo = Platform::GetCPUInfo();
 
     LOG("CPU: {}\n", pCPUInfo->Intel ? "Intel" : "AMD");
     LOG("CPU Features:");
@@ -987,7 +987,7 @@ void WriteLog(const char* _Message)
 {
     if (ProcessLogFile)
     {
-        AMutexGurad syncGuard(ProcessLogWriterSync);
+        MutexGurad syncGuard(ProcessLogWriterSync);
         fprintf(ProcessLogFile, "%s", _Message);
         fflush(ProcessLogFile);
     }
@@ -1068,9 +1068,9 @@ const char* GetClipboard()
     return Clipboard;
 }
 
-SMemoryInfo GetPhysMemoryInfo()
+MemoryInfo GetPhysMemoryInfo()
 {
-    SMemoryInfo info = {};
+    MemoryInfo info = {};
 
 #if defined HK_OS_WIN32
     MEMORYSTATUSEX memstat = {};

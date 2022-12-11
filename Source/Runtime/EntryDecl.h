@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
-struct SEntryDecl
+struct EntryDecl
 {
-    const char*             GameTitle;
-    const char*             RootPath;
-    class AClassMeta const* ModuleClass;
+    const char*            GameTitle;
+    const char*            RootPath;
+    class ClassMeta const* ModuleClass;
 };
 
 #ifdef HK_OS_WIN32
@@ -44,7 +44,7 @@ struct SEntryDecl
 #    include <Platform/WindowsDefs.h>
 
 /** Runtime entry point */
-void RunEngine(SEntryDecl const& _EntryDecl);
+void RunEngine(EntryDecl const& _EntryDecl);
 
 #    define HK_ENTRY_DECL(_EntryDecl)                                                                     \
         int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
@@ -61,7 +61,7 @@ void RunEngine(SEntryDecl const& _EntryDecl);
 #else
 
 /** Runtime entry point */
-void RunEngine(int _Argc, char** _Argv, SEntryDecl const& _EntryDecl);
+void RunEngine(int _Argc, char** _Argv, EntryDecl const& _EntryDecl);
 
 #    define HK_ENTRY_DECL(_EntryDecl)          \
         int main(int argc, char* argv[])       \

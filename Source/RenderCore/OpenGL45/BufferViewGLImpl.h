@@ -37,13 +37,13 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class ABufferViewGLImpl final : public IBufferView
+class BufferViewGLImpl final : public IBufferView
 {
 public:
-    ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl* pBuffer);
-    ~ABufferViewGLImpl();
+    BufferViewGLImpl(BufferViewDesc const& Desc, BufferGLImpl* pBuffer);
+    ~BufferViewGLImpl();
 
     void SetRange(size_t Offset, size_t SizeInBytes) override;
 
@@ -51,8 +51,8 @@ public:
     size_t GetBufferSizeInBytes(uint16_t MipLevel) const override;
 
 private:
-    ABufferGLImpl* pSrcBuffer;
-    int            InternalFormat;
+    BufferGLImpl* pSrcBuffer;
+    int           InternalFormat;
 };
 
 } // namespace RenderCore

@@ -39,11 +39,11 @@ class UIDecorator : public UIObject
     UI_CLASS(UIDecorator, UIObject)
 
 public:
-    virtual void DrawInactive(ACanvas& canvas, UIWidgetGeometry const& geometry) = 0;
-    virtual void DrawActive(ACanvas& canvas, UIWidgetGeometry const& geometry)   = 0;
-    virtual void DrawHovered(ACanvas& canvas, UIWidgetGeometry const& geometry)  = 0;
-    virtual void DrawSelected(ACanvas& canvas, UIWidgetGeometry const& geometry) = 0;
-    virtual void DrawDisabled(ACanvas& canvas, UIWidgetGeometry const& geometry) = 0;
+    virtual void DrawInactive(Canvas& canvas, UIWidgetGeometry const& geometry) = 0;
+    virtual void DrawActive(Canvas& canvas, UIWidgetGeometry const& geometry)   = 0;
+    virtual void DrawHovered(Canvas& canvas, UIWidgetGeometry const& geometry)  = 0;
+    virtual void DrawSelected(Canvas& canvas, UIWidgetGeometry const& geometry) = 0;
+    virtual void DrawDisabled(Canvas& canvas, UIWidgetGeometry const& geometry) = 0;
 };
 
 class UIBrushDecorator : public UIDecorator
@@ -87,9 +87,9 @@ public:
         return *this;
     }
     
-    void DrawInactive(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
-    void DrawActive(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
-    void DrawHovered(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
-    void DrawSelected(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
-    void DrawDisabled(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
+    void DrawInactive(Canvas& canvas, UIWidgetGeometry const& geometry) override;
+    void DrawActive(Canvas& canvas, UIWidgetGeometry const& geometry) override;
+    void DrawHovered(Canvas& canvas, UIWidgetGeometry const& geometry) override;
+    void DrawSelected(Canvas& canvas, UIWidgetGeometry const& geometry) override;
+    void DrawDisabled(Canvas& canvas, UIWidgetGeometry const& geometry) override;
 };

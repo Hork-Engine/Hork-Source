@@ -37,28 +37,28 @@ SOFTWARE.
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioMixer.h>
 
-AConsoleVar Snd_MasterVolume("Snd_MasterVolume"s, "1"s);
-AConsoleVar Snd_RefreshRate("Snd_RefreshRate"s, "16"s);
+ConsoleVar Snd_MasterVolume("Snd_MasterVolume"s, "1"s);
+ConsoleVar Snd_RefreshRate("Snd_RefreshRate"s, "16"s);
 
-AAudioSystem::AAudioSystem()
+AudioSystem::AudioSystem()
 {
     LOG("Initializing audio system...\n");
 
-    m_pPlaybackDevice = MakeRef<AAudioDevice>(44100);
+    m_pPlaybackDevice = MakeRef<AudioDevice>(44100);
 
-    m_pMixer = MakeUnique<AAudioMixer>(m_pPlaybackDevice);
+    m_pMixer = MakeUnique<AudioMixer>(m_pPlaybackDevice);
     m_pMixer->StartAsync();
 }
 
-AAudioSystem::~AAudioSystem()
+AudioSystem::~AudioSystem()
 {
     LOG("Deinitializing audio system...\n");
 }
 
-void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)
+void AudioSystem::Update(APlayerController* _Controller, float _TimeStep)
 {
-    ASceneComponent*  audioListener   = _Controller ? _Controller->GetAudioListener() : nullptr;
-    AAudioParameters* audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;
+    SceneComponent*  audioListener = _Controller ? _Controller->GetAudioListener() : nullptr;
+    AudioParameters* audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;
 
     if (audioListener)
     {
@@ -100,7 +100,7 @@ void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)
     {
         time = 0;
 
-        ASoundEmitter::UpdateSounds();
+        SoundEmitter::UpdateSounds();
     }
 
     if (!m_pMixer->IsAsync())

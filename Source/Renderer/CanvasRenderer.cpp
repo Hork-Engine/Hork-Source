@@ -34,11 +34,11 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static void SetBlendingFromCompositeState(SBlendingStateInfo& blend, CANVAS_COMPOSITE composite)
+static void SetBlendingFromCompositeState(BlendingStateInfo& blend, CANVAS_COMPOSITE composite)
 {
     BLEND_FUNC sfactor, dfactor;
 
-    SRenderTargetBlendingInfo& rtblend = blend.RenderTargetSlots[0];
+    RenderTargetBlendingInfo& rtblend = blend.RenderTargetSlots[0];
 
     rtblend.bBlendEnable = true;
 
@@ -101,11 +101,11 @@ static void SetBlendingFromCompositeState(SBlendingStateInfo& blend, CANVAS_COMP
     rtblend.Func.DstFactorRGB = rtblend.Func.DstFactorAlpha = dfactor;
 }
 
-ACanvasRenderer::ACanvasRenderer()
+CanvasRenderer::CanvasRenderer()
 {
     m_bEdgeAntialias = true; // TODO: set from config?
 
-    static const SVertexAttribInfo vertexAttribs[] = {
+    static const VertexAttribInfo vertexAttribs[] = {
         {"InPosition",
          0, // location
          0, // buffer input slot
@@ -121,37 +121,37 @@ ACanvasRenderer::ACanvasRenderer()
          0, // InstanceDataStepRate
          HK_OFS(CanvasVertex, u)}};
 
-    AShaderFactory::CreateVertexShader("canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
+    ShaderFactory::CreateVertexShader("canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
     if (m_bEdgeAntialias)
     {
-        AShaderFactory::CreateFragmentShader("canvas/canvas_aa.frag", m_FragmentShader);
+        ShaderFactory::CreateFragmentShader("canvas/canvas_aa.frag", m_FragmentShader);
     }
     else
     {
-        AShaderFactory::CreateFragmentShader("canvas/canvas.frag", m_FragmentShader);
+        ShaderFactory::CreateFragmentShader("canvas/canvas.frag", m_FragmentShader);
     }
 
     PRIMITIVE_TOPOLOGY primitiveTopology[TOPOLOGY_MAX] = {PRIMITIVE_TRIANGLES, PRIMITIVE_TRIANGLE_STRIP};
 
-    SRasterizerStateInfo rasterState[RASTER_STATE_MAX];
+    RasterizerStateInfo rasterState[RASTER_STATE_MAX];
     {
-        SRasterizerStateInfo& rasterStateCull = rasterState[RASTER_STATE_CULL];
+        RasterizerStateInfo& rasterStateCull = rasterState[RASTER_STATE_CULL];
 
         rasterStateCull.CullMode        = POLYGON_CULL_BACK;
         rasterStateCull.bFrontClockwise = true;
     }
 
-    SBlendingStateInfo blendState[CANVAS_COMPOSITE_LAST + 1];
+    BlendingStateInfo blendState[CANVAS_COMPOSITE_LAST + 1];
     for (int i = 0; i <= CANVAS_COMPOSITE_LAST ; i++)
     {
-        SBlendingStateInfo& blendAlpha = blendState[i];
+        BlendingStateInfo& blendAlpha = blendState[i];
 
         SetBlendingFromCompositeState(blendAlpha, CANVAS_COMPOSITE(i));
     }
 
-    SDepthStencilStateInfo depthStencil[DEPTH_STENCIL_MAX];
+    DepthStencilStateInfo depthStencil[DEPTH_STENCIL_MAX];
     {
-        SDepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_DRAW_AA];
+        DepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_DRAW_AA];
 
         drawShapes.bDepthEnable   = false;
         drawShapes.bDepthWrite    = false;
@@ -168,7 +168,7 @@ ACanvasRenderer::ACanvasRenderer()
         drawShapes.BackFace.StencilFunc   = CMPFUNC_EQUAL;
     }
     {
-        SDepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_FILL];
+        DepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_FILL];
 
         drawShapes.bDepthEnable   = false;
         drawShapes.bDepthWrite    = false;
@@ -185,7 +185,7 @@ ACanvasRenderer::ACanvasRenderer()
         drawShapes.BackFace.StencilFunc   = CMPFUNC_NOT_EQUAL;
     }
     {
-        SDepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_DEFAULT];
+        DepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_DEFAULT];
 
         drawShapes.bDepthEnable   = false;
         drawShapes.bDepthWrite    = false;
@@ -202,7 +202,7 @@ ACanvasRenderer::ACanvasRenderer()
         drawShapes.BackFace.StencilFunc   = CMPFUNC_ALWAYS;
     }
     {
-        SDepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_STROKE_FILL];
+        DepthStencilStateInfo& drawShapes = depthStencil[DEPTH_STENCIL_STROKE_FILL];
 
         drawShapes.bDepthEnable = false;
         drawShapes.bDepthWrite = false;
@@ -219,9 +219,9 @@ ACanvasRenderer::ACanvasRenderer()
         drawShapes.BackFace.StencilFunc = CMPFUNC_EQUAL;
     }
 
-    SSamplerDesc sampler[SAMPLER_STATE_MAX];
+    SamplerDesc sampler[SAMPLER_STATE_MAX];
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_CLAMP_LINEAR];        
+        SamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_CLAMP_LINEAR];        
 
         smp.Filter         = FILTER_LINEAR;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -230,7 +230,7 @@ ACanvasRenderer::ACanvasRenderer()
 
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_CLAMP_LINEAR];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_CLAMP_LINEAR];
 
         smp.Filter         = FILTER_LINEAR;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -238,7 +238,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_CLAMP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_WRAP_LINEAR];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_WRAP_LINEAR];
 
         smp.Filter         = FILTER_LINEAR;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -246,7 +246,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_WRAP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_WRAP_LINEAR];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_WRAP_LINEAR];
 
         smp.Filter         = FILTER_LINEAR;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -254,7 +254,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_WRAP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_CLAMP_NEAREST];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_CLAMP_NEAREST];
 
         smp.Filter         = FILTER_NEAREST;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -262,7 +262,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_CLAMP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_CLAMP_NEAREST];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_CLAMP_NEAREST];
 
         smp.Filter         = FILTER_NEAREST;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -270,7 +270,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_CLAMP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_WRAP_NEAREST];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_CLAMP_WRAP_NEAREST];
 
         smp.Filter         = FILTER_NEAREST;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -278,7 +278,7 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_WRAP;
     }
     {
-        SSamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_WRAP_NEAREST];
+        SamplerDesc& smp = sampler[SAMPLER_STATE_WRAP_WRAP_NEAREST];
 
         smp.Filter         = FILTER_NEAREST;
         smp.ComparisonFunc = CMPFUNC_NEVER;
@@ -286,12 +286,12 @@ ACanvasRenderer::ACanvasRenderer()
         smp.AddressV       = SAMPLER_ADDRESS_WRAP;
     }
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
     pipelineCI.pVS = m_VertexShader;
     pipelineCI.pFS = m_FragmentShader;
 
-    SVertexBindingInfo vertexBinding[1] = {};
+    VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
     vertexBinding[0].Stride    = sizeof(CanvasVertex);
@@ -305,7 +305,7 @@ ACanvasRenderer::ACanvasRenderer()
 
     pipelineCI.ResourceLayout.NumSamplers = 1;
 
-    SBufferInfo bufferInfo[2];
+    BufferInfo bufferInfo[2];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
     bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT;
 
@@ -338,18 +338,18 @@ ACanvasRenderer::ACanvasRenderer()
     {
         pipelineCI.IA.Topology = PRIMITIVE_TRIANGLES;
 
-        SRasterizerStateInfo rasterStateNoCull;
+        RasterizerStateInfo rasterStateNoCull;
         rasterStateNoCull.CullMode        = POLYGON_CULL_DISABLED;
         rasterStateNoCull.bFrontClockwise = true;
 
         pipelineCI.RS = rasterStateNoCull;
             
-        SBlendingStateInfo noWrite;
+        BlendingStateInfo noWrite;
         noWrite.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
 
         pipelineCI.BS = noWrite;
         
-        SDepthStencilStateInfo ds;
+        DepthStencilStateInfo ds;
 
         ds.bDepthEnable   = false;
         ds.bDepthWrite    = false;
@@ -375,18 +375,18 @@ ACanvasRenderer::ACanvasRenderer()
     {
         pipelineCI.IA.Topology = PRIMITIVE_TRIANGLE_STRIP;
 
-        SRasterizerStateInfo rs;
+        RasterizerStateInfo rs;
         rs.CullMode = POLYGON_CULL_BACK;
         rs.bFrontClockwise = true;
 
         pipelineCI.RS = rs;
 
-        SBlendingStateInfo noWrite;
+        BlendingStateInfo noWrite;
         noWrite.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
 
         pipelineCI.BS = noWrite;
 
-        SDepthStencilStateInfo ds;
+        DepthStencilStateInfo ds;
 
         ds.bDepthEnable = false;
         ds.bDepthWrite = false;
@@ -412,34 +412,34 @@ ACanvasRenderer::ACanvasRenderer()
     BuildFanIndices(3, false);
 }
 
-ACanvasRenderer::~ACanvasRenderer()
+CanvasRenderer::~CanvasRenderer()
 {
 }
 
-void ACanvasRenderer::Render(AFrameGraph& FrameGraph, ITexture* pBackBuffer)
+void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 {
     if (GFrameData->CanvasDrawData->NumDrawCommands == 0)
     {
         return;
     }
 
-    ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Draw HUD");
+    RenderPass& pass = FrameGraph.AddTask<RenderPass>("Draw HUD");
 
     FGTextureProxy* SwapChainColorBuffer = FrameGraph.AddExternalResource<FGTextureProxy>("SwapChainColorAttachment", pBackBuffer);
 
-    pass.SetColorAttachment(STextureAttachment(SwapChainColorBuffer)
+    pass.SetColorAttachment(TextureAttachment(SwapChainColorBuffer)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
     pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
     pass.AddSubpass({0},
-                    [this](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [this](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
-                        struct SCanvasConstants
+                        struct CanvasConstants
                         {
                             Float4x4 OrthoProjection;
                             Float4   ViewSize;
                         };
 
-                        struct SCanvasBinding
+                        struct CanvasBinding
                         {
                             size_t Offset;
                             size_t Size;
@@ -447,12 +447,12 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, ITexture* pBackBuffer)
 
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                        SCanvasBinding canvasBinding;
+                        CanvasBinding canvasBinding;
 
-                        canvasBinding.Size            = sizeof(SCanvasConstants);
+                        canvasBinding.Size            = sizeof(CanvasConstants);
                         canvasBinding.Offset          = GStreamedMemory->AllocateConstant(canvasBinding.Size);
                         void*             pMemory     = GStreamedMemory->Map(canvasBinding.Offset);
-                        SCanvasConstants* pCanvasCBuf = (SCanvasConstants*)pMemory;
+                        CanvasConstants* pCanvasCBuf = (CanvasConstants*)pMemory;
 
                         pCanvasCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
                         pCanvasCBuf->ViewSize.X      = GFrameData->CanvasWidth;
@@ -464,7 +464,7 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, ITexture* pBackBuffer)
                     });
 }
 
-void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData)
+void CanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData)
 {
     m_pDrawData = pDrawData;
     m_ImmediateCtx = immediateCtx;
@@ -517,7 +517,7 @@ void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData c
     }
 }
 
-void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
+void CanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
 {
     CanvasPath const* paths = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               i, npaths = drawCommand->PathCount;
@@ -534,7 +534,7 @@ void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITe
 
         BuildFanIndices(numIndices);
 
-        SDrawIndexedCmd cmd;
+        DrawIndexedCmd cmd;
 
         cmd.IndexCountPerInstance = numIndices;
         cmd.InstanceCount = 1;
@@ -559,7 +559,7 @@ void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITe
         // Draw fringes
         for (i = 0; i < npaths; i++)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount = 1;
@@ -576,7 +576,7 @@ void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITe
 
     BindPipeline(TOPOLOGY_TRIANGLE_STRIP);
 
-    SDrawCmd cmd;
+    DrawCmd cmd;
     cmd.VertexCountPerInstance = drawCommand->VertexCount;
     cmd.InstanceCount          = 1;
     cmd.StartVertexLocation    = drawCommand->FirstVertex;
@@ -584,7 +584,7 @@ void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITe
     m_ImmediateCtx->Draw(&cmd);
 }
 
-void ACanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture* pTexture)
+void CanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture* pTexture)
 {
     CanvasPath const* paths = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               i, npaths = drawCommand->PathCount;
@@ -601,7 +601,7 @@ void ACanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture*
 
             BuildFanIndices(numIndices);
 
-            SDrawIndexedCmd cmd;
+            DrawIndexedCmd cmd;
             cmd.IndexCountPerInstance = numIndices;
             cmd.InstanceCount = 1;
             cmd.StartIndexLocation = 0;
@@ -618,7 +618,7 @@ void ACanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture*
     {
         if (paths[i].StrokeCount > 0)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount          = 1;
@@ -630,7 +630,7 @@ void ACanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture*
     }
 }
 
-void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke)
+void CanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke)
 {
     CanvasPath const* paths  = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               npaths = drawCommand->PathCount, i;
@@ -644,7 +644,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::I
         BindPipeline(TOPOLOGY_TRIANGLE_STRIP);
         for (i = 0; i < npaths; i++)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount          = 1;
@@ -661,7 +661,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::I
         BindPipeline(TOPOLOGY_TRIANGLE_STRIP);
         for (i = 0; i < npaths; i++)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount          = 1;
@@ -675,7 +675,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::I
         m_ImmediateCtx->BindPipeline(m_PipelineClearStencil);
         for (i = 0; i < npaths; i++)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount          = 1;
@@ -696,7 +696,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::I
         // Draw Strokes
         for (i = 0; i < npaths; i++)
         {
-            SDrawCmd cmd;
+            DrawCmd cmd;
 
             cmd.VertexCountPerInstance = paths[i].StrokeCount;
             cmd.InstanceCount          = 1;
@@ -708,12 +708,12 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::I
     }
 }
 
-void ACanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
+void CanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
 {
     SetUniforms(drawCommand->UniformOffset, pTexture);
     BindPipeline(TOPOLOGY_TRIANGLE_LIST);
 
-    SDrawCmd cmd;
+    DrawCmd cmd;
     cmd.VertexCountPerInstance = drawCommand->VertexCount;
     cmd.InstanceCount          = 1;
     cmd.StartVertexLocation    = drawCommand->FirstVertex;
@@ -721,7 +721,7 @@ void ACanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore
     m_ImmediateCtx->Draw(&cmd);
 }
 
-void ACanvasRenderer::SetUniforms(int uniformOffset, RenderCore::ITexture* pTexture)
+void CanvasRenderer::SetUniforms(int uniformOffset, RenderCore::ITexture* pTexture)
 {
     CanvasUniforms* frag = (CanvasUniforms*)&m_pDrawData->Uniforms[uniformOffset];
 
@@ -734,13 +734,13 @@ void ACanvasRenderer::SetUniforms(int uniformOffset, RenderCore::ITexture* pText
     }
 }
 
-void ACanvasRenderer::SetBuffers()
+void CanvasRenderer::SetBuffers()
 {
     m_ImmediateCtx->BindVertexBuffer(0, GStreamBuffer, GFrameData->CanvasVertexData);
     m_ImmediateCtx->BindIndexBuffer(m_pFanIndexBuffer, INDEX_TYPE_UINT32, 0);
 }
 
-void ACanvasRenderer::BuildFanIndices(int numIndices, bool bRebind)
+void CanvasRenderer::BuildFanIndices(int numIndices, bool bRebind)
 {
     if (numIndices <= m_FanIndices.Size())
         return;
@@ -771,7 +771,7 @@ void ACanvasRenderer::BuildFanIndices(int numIndices, bool bRebind)
         pData[current++] = index;
     }
 
-    RenderCore::SBufferDesc bufferDesc;
+    RenderCore::BufferDesc bufferDesc;
     bufferDesc.bImmutableStorage = true;
     bufferDesc.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferDesc.SizeInBytes = sizeof(uint32_t) * m_FanIndices.Size();
@@ -781,7 +781,7 @@ void ACanvasRenderer::BuildFanIndices(int numIndices, bool bRebind)
         m_ImmediateCtx->BindIndexBuffer(m_pFanIndexBuffer, INDEX_TYPE_UINT32, 0);
 }
 
-void ACanvasRenderer::BindPipeline(int Topology)
+void CanvasRenderer::BindPipeline(int Topology)
 {
     m_ImmediateCtx->BindPipeline(m_PipelinePermut[Topology][m_RasterState][m_BlendState][m_DepthStencil][m_SamplerState]);
 }

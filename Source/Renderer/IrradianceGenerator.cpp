@@ -35,105 +35,101 @@ using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
-AIrradianceGenerator::AIrradianceGenerator()
+IrradianceGenerator::IrradianceGenerator()
 {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SConstantData );
-    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
+    bufferCI.SizeInBytes = sizeof(ConstantData);
+    GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
-    Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
+    Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+    Float4x4 projMat = Float4x4::PerspectiveRevCC(Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f);
 
-    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++)
+    {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo& ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo& depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
-    {
+    VertexBindingInfo vertexBindings[] =
         {
-            0,                              // vertex buffer binding
-            sizeof( Float3 ),               // vertex stride
-            INPUT_RATE_PER_VERTEX,          // per vertex / per instance
-        }
-    };
+            {
+                0,                     // vertex buffer binding
+                sizeof(Float3),        // vertex stride
+                INPUT_RATE_PER_VERTEX, // per vertex / per instance
+            }};
 
-    SVertexAttribInfo vertexAttribs[] =
-    {
+    VertexAttribInfo vertexAttribs[] =
         {
-            "InPosition",
-            0,
-            0,          // vertex buffer binding
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,
-            0
-        }
-    };
+            {"InPosition",
+             0,
+             0, // vertex buffer binding
+             VAT_FLOAT3,
+             VAM_FLOAT,
+             0,
+             0}};
 
-    AShaderFactory::CreateVertexShader( "gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateGeometryShader( "gen/irradiancegen.geom", pipelineCI.pGS );
-    AShaderFactory::CreateFragmentShader( "gen/irradiancegen.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader("gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderFactory::CreateGeometryShader("gen/irradiancegen.geom", pipelineCI.pGS);
+    ShaderFactory::CreateFragmentShader("gen/irradiancegen.frag", pipelineCI.pFS);
 
-    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.bCubemapSeamless = true;
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;
-    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(buffers);
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline( pipelineCI, &Pipeline );
+    GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray )
+void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray)
 {
     int size = 32;
 
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_IRRADIANCE)
-                               .SetResolution(STextureResolutionCubemapArray(size, _CubemapsCount)),
+                               .SetResolution(TextureResolutionCubemapArray(size, _CubemapsCount)),
                            ppTextureArray);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph(GDevice);
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
 
-    TRef< IResourceTable > resourceTbl;
-    GDevice->CreateResourceTable( &resourceTbl );
+    TRef<IResourceTable> resourceTbl;
+    GDevice->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer( 0, ConstantBuffer );
+    resourceTbl->BindBuffer(0, ConstantBuffer);
 
-    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
+    RenderPass& pass = frameGraph.AddTask<RenderPass>("Irradiance gen pass");
 
-    pass.SetRenderArea( size, size );
+    pass.SetRenderArea(size, size);
 
     pass.SetColorAttachment(
-        STextureAttachment(pCubemapArrayProxy)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-    );
+        TextureAttachment(pCubemapArrayProxy)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
@@ -156,35 +152,34 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture )
+void IrradianceGenerator::Generate(ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture)
 {
     int size = 32;
 
-    GDevice->CreateTexture(STextureDesc()
+    GDevice->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_IRRADIANCE)
-                               .SetResolution(STextureResolutionCubemap(size)),
+                               .SetResolution(TextureResolutionCubemap(size)),
                            ppTexture);
 
-    AFrameGraph frameGraph( GDevice );
+    FrameGraph frameGraph(GDevice);
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
 
-    TRef< IResourceTable > resourceTbl;
-    GDevice->CreateResourceTable( &resourceTbl );
+    TRef<IResourceTable> resourceTbl;
+    GDevice->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer( 0, ConstantBuffer );
+    resourceTbl->BindBuffer(0, ConstantBuffer);
 
-    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
+    RenderPass& pass = frameGraph.AddTask<RenderPass>("Irradiance gen pass");
 
-    pass.SetRenderArea( size, size );
+    pass.SetRenderArea(size, size);
 
     pass.SetColorAttachment(
-        STextureAttachment(pCubemapProxy)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-    );
+        TextureAttachment(pCubemapProxy)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 

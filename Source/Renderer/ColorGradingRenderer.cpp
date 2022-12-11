@@ -33,26 +33,26 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AColorGradingRenderer::AColorGradingRenderer()
+ColorGradingRenderer::ColorGradingRenderer()
 {
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter   = FILTER_NEAREST; // FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &samplerCI;
 
-    SBufferInfo bufferInfo[2];
+    BufferInfo bufferInfo[2];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
 
     resourceLayout.Buffers = bufferInfo;
 
     resourceLayout.NumBuffers = 1;
-    AShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineLUT,
+    ShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineLUT,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading.frag",
                                                    "postprocess/colorgrading.geom",
@@ -60,7 +60,7 @@ AColorGradingRenderer::AColorGradingRenderer()
                                                    RenderCore::BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 2;
-    AShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineProcedural,
+    ShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineProcedural,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading_procedural.frag",
                                                    "postprocess/colorgrading.geom",
@@ -68,7 +68,7 @@ AColorGradingRenderer::AColorGradingRenderer()
                                                    RenderCore::BLENDING_ALPHA);
 }
 
-void AColorGradingRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy** ppColorGrading)
+void ColorGradingRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy** ppColorGrading)
 {
     if (!GRenderView->CurrentColorGradingLUT)
     {
@@ -82,15 +82,15 @@ void AColorGradingRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy** pp
     {
         auto source = FrameGraph.AddExternalResource<FGTextureProxy>("ColorGradingLUT", GRenderView->ColorGradingLUT);
 
-        ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Color Grading Pass");
+        RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("Color Grading Pass");
 
         renderPass.SetRenderArea(16, 16);
         renderPass.SetColorAttachments(
-            {{STextureAttachment(ColorGrading_R)
+            {{TextureAttachment(ColorGrading_R)
                   .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD)}});
         renderPass.AddResource(source, FG_RESOURCE_ACCESS_READ);
         renderPass.AddSubpass({0},
-                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer) {
+                              [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer) {
                                   rtbl->BindTexture(0, source->Actual());
 
                                   DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
@@ -98,15 +98,15 @@ void AColorGradingRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy** pp
     }
     else
     {
-        ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Color Grading Procedural Pass");
+        RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("Color Grading Procedural Pass");
 
         renderPass.SetRenderArea(16, 16);
         renderPass.SetColorAttachments(
-            {{STextureAttachment(ColorGrading_R)
+            {{TextureAttachment(ColorGrading_R)
                   .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD)}});
         renderPass.AddSubpass({0},
-                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer) {
-                                  struct SDrawCall
+                              [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer) {
+                                  struct DrawCall
                                   {
                                       Float4 TemperatureScale;
                                       Float4 TemperatureStrength;
@@ -117,7 +117,7 @@ void AColorGradingRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy** pp
                                       Float4 LuminanceNormalization;
                                   };
 
-                                  SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
+                                  DrawCall* drawCall = MapDrawCallConstants<DrawCall>();
 
                                   drawCall->TemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
                                   drawCall->TemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;

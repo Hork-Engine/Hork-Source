@@ -31,7 +31,7 @@ SOFTWARE.
 #include "UIManager.h"
 #include <Runtime/FrameLoop.h>
 
-static AConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"s, "1"s);
+static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"s, "1"s);
 
 UIManager* GUIManager = nullptr;
 
@@ -109,7 +109,7 @@ bool UIManager::IsInsertMode() const
 
 void UIManager::Update(float timeStep)
 {
-    SVideoMode const& videoMode = m_MainWindow->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
 
     m_Console.SetFullscreen(m_ActiveDesktop ? false : true);
     m_Console.Update(timeStep);
@@ -196,7 +196,7 @@ void UIManager::Update(float timeStep)
     }
 }
 
-void UIManager::GenerateKeyEvents(SKeyEvent const& event, double timeStamp, ACommandContext& commandCtx, ACommandProcessor& commandProcessor)
+void UIManager::GenerateKeyEvents(KeyEvent const& event, double timeStamp, CommandContext& commandCtx, CommandProcessor& commandProcessor)
 {
     if (bAllowConsole)
     {
@@ -236,7 +236,7 @@ void UIManager::GenerateKeyEvents(SKeyEvent const& event, double timeStamp, ACom
         m_ActiveDesktop->GenerateKeyEvents(event, timeStamp);
 }
 
-void UIManager::GenerateMouseButtonEvents(SMouseButtonEvent const& event, double timeStamp)
+void UIManager::GenerateMouseButtonEvents(MouseButtonEvent const& event, double timeStamp)
 {
     if (m_Console.IsActive() && event.Action != IA_RELEASE)
     {
@@ -247,7 +247,7 @@ void UIManager::GenerateMouseButtonEvents(SMouseButtonEvent const& event, double
         m_ActiveDesktop->GenerateMouseButtonEvents(event, timeStamp);
 }
 
-void UIManager::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double timeStamp)
+void UIManager::GenerateMouseWheelEvents(MouseWheelEvent const& event, double timeStamp)
 {
     if (m_Console.IsActive())
     {
@@ -259,9 +259,9 @@ void UIManager::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double t
         m_ActiveDesktop->GenerateMouseWheelEvents(event, timeStamp);
 }
 
-void UIManager::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double timeStamp)
+void UIManager::GenerateMouseMoveEvents(MouseMoveEvent const& event, double timeStamp)
 {
-    SVideoMode const& videoMode = m_MainWindow->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
 
     if (Platform::IsCursorEnabled())
     {
@@ -297,7 +297,7 @@ void UIManager::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double tim
         m_ActiveDesktop->GenerateMouseMoveEvents(event, timeStamp);
 }
 
-void UIManager::GenerateJoystickButtonEvents(SJoystickButtonEvent const& event, double timeStamp)
+void UIManager::GenerateJoystickButtonEvents(JoystickButtonEvent const& event, double timeStamp)
 {
     if (m_Console.IsActive() && event.Action != IA_RELEASE)
     {
@@ -308,13 +308,13 @@ void UIManager::GenerateJoystickButtonEvents(SJoystickButtonEvent const& event, 
         m_ActiveDesktop->GenerateJoystickButtonEvents(event, timeStamp);
 }
 
-void UIManager::GenerateJoystickAxisEvents(SJoystickAxisEvent const& event, double timeStamp)
+void UIManager::GenerateJoystickAxisEvents(JoystickAxisEvent const& event, double timeStamp)
 {
     if (m_ActiveDesktop)
         m_ActiveDesktop->GenerateJoystickAxisEvents(event, timeStamp);
 }
 
-void UIManager::GenerateCharEvents(SCharEvent const& event, double timeStamp)
+void UIManager::GenerateCharEvents(CharEvent const& event, double timeStamp)
 {
     if (event.UnicodeCharacter == '`')
         return;
@@ -329,7 +329,7 @@ void UIManager::GenerateCharEvents(SCharEvent const& event, double timeStamp)
         m_ActiveDesktop->GenerateCharEvents(event, timeStamp);
 }
 
-void UIManager::Draw(ACanvas& cv)
+void UIManager::Draw(Canvas& cv)
 {
     if (m_ActiveDesktop)
         m_ActiveDesktop->Draw(cv);
@@ -337,7 +337,7 @@ void UIManager::Draw(ACanvas& cv)
 
     if (m_TooltipWidget && m_TooltipTime < 0)
     {
-        SVideoMode const& videoMode = m_MainWindow->GetVideoMode();
+        DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
 
         Float2 clipMins(0.0f);
         Float2 clipMaxs(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
@@ -353,7 +353,7 @@ void UIManager::Draw(ACanvas& cv)
     m_Console.Draw(cv, ConsoleBackground);
 }
 
-void UIManager::DrawCursor(ACanvas& cv)
+void UIManager::DrawCursor(Canvas& cv)
 {
     if (!bCursorVisible)
         return;

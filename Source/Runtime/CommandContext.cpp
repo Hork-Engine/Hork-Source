@@ -32,21 +32,21 @@ SOFTWARE.
 #include "CommandContext.h"
 #include <Platform/Logger.h>
 
-ACommandContext::ACommandContext()
+CommandContext::CommandContext()
 {
 }
 
-ACommandContext::~ACommandContext()
+CommandContext::~CommandContext()
 {
 }
 
-void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
+void CommandContext::ExecuteCommand(CommandProcessor const& _Proc)
 {
     HK_ASSERT(_Proc.GetArgsCount() > 0);
 
     const char* name = _Proc.GetArg(0);
 
-    for (ARuntimeCommand& cmd : Commands)
+    for (RuntimeCommand& cmd : Commands)
     {
         if (!Platform::Stricmp(cmd.GetName(), name))
         {
@@ -55,8 +55,8 @@ void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
         }
     }
 
-    AConsoleVar* var;
-    if (nullptr != (var = AConsoleVar::FindVariable(name)))
+    ConsoleVar* var;
+    if (nullptr != (var = ConsoleVar::FindVariable(name)))
     {
         if (_Proc.GetArgsCount() < 2)
         {
@@ -72,21 +72,21 @@ void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
     LOG("Unknown command \"{}\"\n", name);
 }
 
-void ACommandContext::AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment)
+void CommandContext::AddCommand(GlobalStringView _Name, TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment)
 {
-    if (!ACommandProcessor::IsValidCommandName(_Name.CStr()))
+    if (!CommandProcessor::IsValidCommandName(_Name.CStr()))
     {
-        LOG("ACommandContext::AddCommand: invalid command name\n");
+        LOG("CommandContext::AddCommand: invalid command name\n");
         return;
     }
 
-    if (AConsoleVar::FindVariable(_Name))
+    if (ConsoleVar::FindVariable(_Name))
     {
         LOG("Name conflict: {} already registered as variable\n", _Name);
         return;
     }
 
-    for (ARuntimeCommand& cmd : Commands)
+    for (RuntimeCommand& cmd : Commands)
     {
         if (!Platform::Stricmp(cmd.GetName(), _Name.CStr()))
         {
@@ -101,11 +101,11 @@ void ACommandContext::AddCommand(AGlobalStringView _Name, TCallback<void(AComman
     Commands.EmplaceBack(_Name, _Callback, _Comment);
 }
 
-void ACommandContext::RemoveCommand(AStringView _Name)
+void CommandContext::RemoveCommand(StringView _Name)
 {
-    for (TVector<ARuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
+    for (TVector<RuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
     {
-        ARuntimeCommand& command = *it;
+        RuntimeCommand& command = *it;
 
         if (!_Name.Icmp(command.GetName()))
         {
@@ -115,7 +115,7 @@ void ACommandContext::RemoveCommand(AStringView _Name)
     }
 }
 
-void ACommandContext::RemoveCommands()
+void CommandContext::RemoveCommands()
 {
     Commands.Clear();
 }
@@ -130,7 +130,7 @@ HK_FORCEINLINE bool CompareChar(char _Ch1, char _Ch2)
 
 } // namespace
 
-int ACommandContext::CompleteString(AStringView Str, AString& _Result)
+int CommandContext::CompleteString(StringView Str, String& _Result)
 {
     int count = 0;
     const char* s     = Str.Begin();
@@ -150,7 +150,7 @@ int ACommandContext::CompleteString(AStringView Str, AString& _Result)
         return 0;
     }
 
-    for (ARuntimeCommand const& cmd : Commands)
+    for (RuntimeCommand const& cmd : Commands)
     {
         if (!Platform::StricmpN(cmd.GetName(), s, len))
         {
@@ -169,7 +169,7 @@ int ACommandContext::CompleteString(AStringView Str, AString& _Result)
         }
     }
 
-    for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
+    for (ConsoleVar* var = ConsoleVar::GlobalVariableList(); var; var = var->GetNext())
     {
         if (!Platform::StricmpN(var->GetName(), s, len))
         {
@@ -191,14 +191,14 @@ int ACommandContext::CompleteString(AStringView Str, AString& _Result)
     return count;
 }
 
-void ACommandContext::Print(AStringView Str)
+void CommandContext::Print(StringView Str)
 {
-    TPodVector<ARuntimeCommand*>  cmds;
-    TPodVector<AConsoleVar*> vars;
+    TPodVector<RuntimeCommand*>  cmds;
+    TPodVector<ConsoleVar*> vars;
 
     if (!Str.IsEmpty())
     {
-        for (ARuntimeCommand& cmd : Commands)
+        for (RuntimeCommand& cmd : Commands)
         {
             if (!Str.IcmpN(cmd.GetName(), Str.Size()))
             {
@@ -208,7 +208,7 @@ void ACommandContext::Print(AStringView Str)
 
         struct
         {
-            bool operator()(ARuntimeCommand const* _A, ARuntimeCommand* _B)
+            bool operator()(RuntimeCommand const* _A, RuntimeCommand* _B)
             {
                 return Platform::Stricmp(_A->GetName(), _B->GetName()) < 0;
             }
@@ -216,7 +216,7 @@ void ACommandContext::Print(AStringView Str)
 
         std::sort(cmds.Begin(), cmds.End(), CmdSortFunction);
 
-        for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
+        for (ConsoleVar* var = ConsoleVar::GlobalVariableList(); var; var = var->GetNext())
         {
             if (!Str.IcmpN(var->GetName(), Str.Size()))
             {
@@ -226,7 +226,7 @@ void ACommandContext::Print(AStringView Str)
 
         struct
         {
-            bool operator()(AConsoleVar const* _A, AConsoleVar* _B)
+            bool operator()(ConsoleVar const* _A, ConsoleVar* _B)
             {
                 return Platform::Stricmp(_A->GetName(), _B->GetName()) < 0;
             }
@@ -237,7 +237,7 @@ void ACommandContext::Print(AStringView Str)
         LOG("Total commands found: {}\n"
             "Total variables found: {}\n",
             cmds.Size(), vars.Size());
-        for (ARuntimeCommand* cmd : cmds)
+        for (RuntimeCommand* cmd : cmds)
         {
             if (*cmd->GetComment())
             {
@@ -248,7 +248,7 @@ void ACommandContext::Print(AStringView Str)
                 LOG("    {}\n", cmd->GetName());
             }
         }
-        for (AConsoleVar* var : vars)
+        for (ConsoleVar* var : vars)
         {
             if (*var->GetComment())
             {

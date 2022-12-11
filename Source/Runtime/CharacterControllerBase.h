@@ -34,17 +34,16 @@ SOFTWARE.
 
 #include "Collision.h"
 
-struct SCharacterControllerTrace
+struct CharacterControllerTrace
 {
-    AHitProxy* HitProxy;
-    Float3     Position;
-    Float3     Normal;
-    float      Fraction;
+    HitProxy* HitProxy;
+    Float3    Position;
+    Float3    Normal;
+    float     Fraction;
 
-    SCharacterControllerTrace() :
+    CharacterControllerTrace() :
         HitProxy(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
-    {
-    }
+    {}
 
     void Clear()
     {
@@ -60,67 +59,67 @@ struct SCharacterControllerTrace
     }
 };
 
-struct SCharacterControllerContact
+struct CharacterControllerContact
 {
-    AHitProxy* HitProxy;
-    Float3     Position;
-    Float3     Normal;
+    HitProxy* HitProxy;
+    Float3    Position;
+    Float3    Normal;
 };
 
-class ACharacterControllerBase : public ASceneComponent
+class CharacterControllerBase : public SceneComponent
 {
-    HK_COMPONENT(ACharacterControllerBase, ASceneComponent)
+    HK_COMPONENT(CharacterControllerBase, SceneComponent)
 
 public:
-    AHitProxy* GetHitProxy() const
+    HitProxy* GetHitProxy() const
     {
-        return HitProxy;
+        return m_HitProxy;
     }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     void SetDispatchContactEvents(bool bDispatch)
     {
-        HitProxy->bDispatchContactEvents = bDispatch;
+        m_HitProxy->bDispatchContactEvents = bDispatch;
     }
 
     bool ShouldDispatchContactEvents() const
     {
-        return HitProxy->bDispatchContactEvents;
+        return m_HitProxy->bDispatchContactEvents;
     }
 
     /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
     void SetDispatchOverlapEvents(bool bDispatch)
     {
-        HitProxy->bDispatchOverlapEvents = bDispatch;
+        m_HitProxy->bDispatchOverlapEvents = bDispatch;
     }
 
     bool ShouldDispatchOverlapEvents() const
     {
-        return HitProxy->bDispatchOverlapEvents;
+        return m_HitProxy->bDispatchOverlapEvents;
     }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     void SetGenerateContactPoints(bool bGenerate)
     {
-        HitProxy->bGenerateContactPoints = bGenerate;
+        m_HitProxy->bGenerateContactPoints = bGenerate;
     }
 
     bool ShouldGenerateContactPoints() const
     {
-        return HitProxy->bGenerateContactPoints;
+        return m_HitProxy->bGenerateContactPoints;
     }
 
     /** Set collision group/layer. See COLLISION_MASK. */
     void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
 
     /** Get collision group. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+    COLLISION_MASK GetCollisionGroup() const { return m_HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See COLLISION_MASK. */
     void SetCollisionMask(COLLISION_MASK _CollisionMask);
 
     /** Get collision mask. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+    COLLISION_MASK GetCollisionMask() const { return m_HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See COLLISION_MASK. */
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
@@ -179,18 +178,18 @@ public:
 
     Float3 GetCenterWorldPosition() const;
 
-    void TraceSelf(Float3 const& Start, Float3 const& End, Float3 const& Up, float MinSlopeDot, SCharacterControllerTrace& Trace, bool bCylinder = false) const;
+    void TraceSelf(Float3 const& Start, Float3 const& End, Float3 const& Up, float MinSlopeDot, CharacterControllerTrace& Trace, bool bCylinder = false) const;
 
-    void TraceSelf(Float3 const& Start, Float3 const& End, SCharacterControllerTrace& Trace, bool bCylinder = false) const;
+    void TraceSelf(Float3 const& Start, Float3 const& End, CharacterControllerTrace& Trace, bool bCylinder = false) const;
 
     void RecoverFromPenetration(float MaxPenetrationDepth, int MaxIterations);
 
-    void SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped = nullptr, TPodVector<SCharacterControllerContact>* pContacts = nullptr);
+    void SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped = nullptr, TPodVector<CharacterControllerContact>* pContacts = nullptr);
 
-    void SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped = nullptr, TPodVector<SCharacterControllerContact>* pContacts = nullptr);
+    void SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped = nullptr, TPodVector<CharacterControllerContact>* pContacts = nullptr);
 
 protected:
-    ACharacterControllerBase();
+    CharacterControllerBase();
 
     void InitializeComponent() override;
 
@@ -200,7 +199,7 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
     void UpdateCapsuleShape();
 
@@ -211,7 +210,7 @@ protected:
     void ClipVelocity(Float3 const& InVelocity, Float3 const& InNormal, Float3& OutVelocity, float Overbounce = 1.001f);
 
 private:
-    friend class ACharacterControllerActionInterface;
+    friend class CharacterControllerActionInterface;
     void _Update(float _TimeStep);
 
     bool _RecoverFromPenetration(float MaxPenetrationDepth);
@@ -223,13 +222,13 @@ private:
     bool ClipVelocityByContactNormals(Float3 const* ContactNormals, int NumContacts, Float3& Velocity);
 
     // Collision hit proxy
-    TRef<AHitProxy> HitProxy;
+    TRef<HitProxy> m_HitProxy;
 
-    class ACharacterControllerActionInterface* ActionInterface;
-    class btPairCachingGhostObject*            GhostObject;
-    class btConvexShape*                       ConvexShape;
-    class btConvexShape*                       CylinderShape;
-    class btDiscreteDynamicsWorld*             World;
+    class CharacterControllerActionInterface* ActionInterface;
+    class btPairCachingGhostObject*           GhostObject;
+    class btConvexShape*                      ConvexShape;
+    class btConvexShape*                      CylinderShape;
+    class btDiscreteDynamicsWorld*            World;
 
     float AnglePitch;
     float AngleYaw;
@@ -242,17 +241,16 @@ private:
     bool bInsideUpdate        = false;
 };
 
-struct SProjectileTrace
+struct ProjectileTrace
 {
-    AHitProxy* HitProxy;
-    Float3     Position;
-    Float3     Normal;
-    float      Fraction;
+    HitProxy* HitProxy;
+    Float3    Position;
+    Float3    Normal;
+    float     Fraction;
 
-    SProjectileTrace() :
+    ProjectileTrace() :
         HitProxy(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
-    {
-    }
+    {}
 
     void Clear()
     {
@@ -268,62 +266,62 @@ struct SProjectileTrace
     }
 };
 
-class AProjectileExperimental : public ASceneComponent
+class ProjectileExperimental : public SceneComponent
 {
-    HK_COMPONENT(AProjectileExperimental, ASceneComponent)
+    HK_COMPONENT(ProjectileExperimental, SceneComponent)
 
 public:
-    TEvent<AHitProxy*, Float3 const&, Float3 const&> OnHit;
+    TEvent<HitProxy*, Float3 const&, Float3 const&> OnHit;
 
-    AHitProxy* GetHitProxy() const
+    HitProxy* GetHitProxy() const
     {
-        return HitProxy;
+        return m_HitProxy;
     }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     void SetDispatchContactEvents(bool bDispatch)
     {
-        HitProxy->bDispatchContactEvents = bDispatch;
+        m_HitProxy->bDispatchContactEvents = bDispatch;
     }
 
     bool ShouldDispatchContactEvents() const
     {
-        return HitProxy->bDispatchContactEvents;
+        return m_HitProxy->bDispatchContactEvents;
     }
 
     /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
     void SetDispatchOverlapEvents(bool bDispatch)
     {
-        HitProxy->bDispatchOverlapEvents = bDispatch;
+        m_HitProxy->bDispatchOverlapEvents = bDispatch;
     }
 
     bool ShouldDispatchOverlapEvents() const
     {
-        return HitProxy->bDispatchOverlapEvents;
+        return m_HitProxy->bDispatchOverlapEvents;
     }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     void SetGenerateContactPoints(bool bGenerate)
     {
-        HitProxy->bGenerateContactPoints = bGenerate;
+        m_HitProxy->bGenerateContactPoints = bGenerate;
     }
 
     bool ShouldGenerateContactPoints() const
     {
-        return HitProxy->bGenerateContactPoints;
+        return m_HitProxy->bGenerateContactPoints;
     }
 
     /** Set collision group/layer. See COLLISION_MASK. */
     void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
 
     /** Get collision group. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+    COLLISION_MASK GetCollisionGroup() const { return m_HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See COLLISION_MASK. */
     void SetCollisionMask(COLLISION_MASK _CollisionMask);
 
     /** Get collision mask. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+    COLLISION_MASK GetCollisionMask() const { return m_HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See COLLISION_MASK. */
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
@@ -334,8 +332,8 @@ public:
     /** Unset actor to ignore collisions with this component */
     void RemoveCollisionIgnoreActor(AActor* _Actor);
 
-    void TraceSelf(Float3 const& Start, Float3 const& End, SProjectileTrace& Trace) const;
-    void TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, SProjectileTrace& Trace) const;
+    void TraceSelf(Float3 const& Start, Float3 const& End, ProjectileTrace& Trace) const;
+    void TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, ProjectileTrace& Trace) const;
 
     Float3 LinearVelocity  = Float3(0.0f);
     Float3 AngularVelocity = Float3(0.0f);
@@ -352,7 +350,7 @@ public:
     void ClearForces();
 
 protected:
-    AProjectileExperimental();
+    ProjectileExperimental();
 
     void InitializeComponent() override;
 
@@ -362,7 +360,7 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
     //void UpdateCapsuleShape();
 
@@ -373,15 +371,15 @@ protected:
     //void ClipVelocity( Float3 const & InVelocity, Float3 const & InNormal, Float3 & OutVelocity, float Overbounce );
 
 private:
-    friend class AProjectileActionInterface;
+    friend class ProjectileActionInterface;
     void _Update(float _TimeStep);
 
     void HandlePostPhysicsUpdate(float TimeStep);
 
     // Collision hit proxy
-    TRef<AHitProxy> HitProxy;
+    TRef<HitProxy> m_HitProxy;
 
-    class AProjectileActionInterface* ActionInterface;
+    class ProjectileActionInterface* ActionInterface;
     //class btPairCachingGhostObject * GhostObject;
     class btGhostObject*           GhostObject;
     class btConvexShape*           ConvexShape;

@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class AFxaaRenderer
+class FxaaRenderer
 {
 public:
-    AFxaaRenderer();
+    FxaaRenderer();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppFxaaTexture);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppFxaaTexture);
 
 private:
     void CreateSampler();

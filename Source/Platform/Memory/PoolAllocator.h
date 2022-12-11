@@ -93,21 +93,21 @@ private:
         byte    Data[ChunkSize];
         SChunk* Next;
     };
-    struct SBlock
+    struct Block
     {
         SChunk  Chunks[BlockCapacity];
         SChunk* FreeList;
-        SBlock* Next;
+        Block* Next;
         int     Allocated;
     };
-    SBlock* Blocks;
-    SBlock* CurBlock;
+    Block* Blocks;
+    Block* CurBlock;
     //SChunk * FreeList;
     int TotalChunks;
     int TotalBlocks;
 
     /** Create a new block */
-    SBlock* AllocateBlock();
+    Block* AllocateBlock();
 };
 
 template <typename T, size_t BlockCapacity>
@@ -131,7 +131,7 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::Free()
 {
     while (Blocks)
     {
-        SBlock* block = Blocks;
+        Block* block = Blocks;
         Blocks        = block->Next;
         Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
     }
@@ -144,13 +144,13 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::Free()
 template <typename T, size_t BlockCapacity>
 HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
 {
-    SBlock* prev = nullptr;
-    SBlock* next;
+    Block* prev = nullptr;
+    Block* next;
 
     //DEBUG( "TPoolAllocator: total blocks {}\n", TotalBlocks );
 
     // Keep at least one block allocated
-    for (SBlock* block = Blocks; block && TotalBlocks > 1; block = next)
+    for (Block* block = Blocks; block && TotalBlocks > 1; block = next)
     {
         next = block->Next;
 
@@ -179,7 +179,7 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
 
     if (!CurBlock)
     {
-        for (SBlock* block = Blocks; block; block = block->Next)
+        for (Block* block = Blocks; block; block = block->Next)
         {
             if (block->FreeList)
             {
@@ -191,9 +191,9 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE typename TPoolAllocator<T, BlockCapacity>::SBlock* TPoolAllocator<T, BlockCapacity>::AllocateBlock()
+HK_INLINE typename TPoolAllocator<T, BlockCapacity>::Block* TPoolAllocator<T, BlockCapacity>::AllocateBlock()
 {
-    SBlock* block   = (SBlock*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SBlock), Alignment);
+    Block* block   = (Block*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Block), Alignment);
     block->FreeList = block->Chunks;
 #if 0
     for ( int i = 0 ; i < BlockCapacity ; ++i ) {
@@ -223,7 +223,7 @@ HK_INLINE T* TPoolAllocator<T, BlockCapacity>::Allocate()
     if (CurBlock && !CurBlock->FreeList)
     {
         // Try to find a block with free chunks
-        for (SBlock* block = Blocks; block; block = block->Next)
+        for (Block* block = Blocks; block; block = block->Next)
         {
             if (block->FreeList)
             {
@@ -251,7 +251,7 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::Deallocate(void* _Bytes)
 {
     SChunk* chunk = (SChunk*)_Bytes;
     CurBlock      = nullptr;
-    for (SBlock* block = Blocks; block; block = block->Next)
+    for (Block* block = Blocks; block; block = block->Next)
     {
         if (chunk >= &block->Chunks[0] && chunk < &block->Chunks[BlockCapacity])
         {

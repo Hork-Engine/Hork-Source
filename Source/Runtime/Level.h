@@ -37,46 +37,46 @@ SOFTWARE.
 #include "VisibilitySystem.h"
 
 class AActor;
-class AWorld;
-class ALevel;
-class ATexture;
-class ASceneComponent;
-class AConvexHull;
-class AIndexedMesh;
-class AVertexLight;
-class ADebugRenderer;
-struct SVisArea;
-struct SPrimitiveDef;
-struct SPortalLink;
-struct SPrimitiveLink;
+class World;
+class Level;
+class Texture;
+class SceneComponent;
+class ConvexHull;
+class IndexedMesh;
+class VertexLight;
+class DebugRenderer;
+struct VisArea;
+struct PrimitiveDef;
+struct PortalLink;
+struct PrimitiveLink;
 
-struct SLightingSystemCreateInfo
+struct LightingSystemCreateInfo
 {
-    LIGHTMAP_FORMAT        LightmapFormat;
-    void*                  LightData;
-    size_t                 LightDataSize;
-    int                    LightmapBlockWidth;
-    int                    LightmapBlockHeight;
-    int                    LightmapBlockCount;
+    LIGHTMAP_FORMAT       LightmapFormat;
+    void*                 LightData;
+    size_t                LightDataSize;
+    int                   LightmapBlockWidth;
+    int                   LightmapBlockHeight;
+    int                   LightmapBlockCount;
 
     // FUTURE: split shadow casters to chunks for culling
-    Float3 const*          ShadowCasterVertices;
-    int                    ShadowCasterVertexCount;
-    unsigned int const*    ShadowCasterIndices;
-    int                    ShadowCasterIndexCount;
-    SLightPortalDef const* LightPortals;
-    int                    LightPortalsCount;
-    Float3 const*          LightPortalVertices;
-    int                    LightPortalVertexCount;
-    unsigned int const*    LightPortalIndices;
-    int                    LightPortalIndexCount;
+    Float3 const*         ShadowCasterVertices;
+    int                   ShadowCasterVertexCount;
+    unsigned int const*   ShadowCasterIndices;
+    int                   ShadowCasterIndexCount;
+    LightPortalDef const* LightPortals;
+    int                   LightPortalsCount;
+    Float3 const*         LightPortalVertices;
+    int                   LightPortalVertexCount;
+    unsigned int const*   LightPortalIndices;
+    int                   LightPortalIndexCount;
 };
 
-class ALevelLighting : public ARefCounted
+class LevelLighting : public RefCounted
 {
 public:
-    ALevelLighting(SLightingSystemCreateInfo const& CreateInfo);
-    ~ALevelLighting();
+    LevelLighting(LightingSystemCreateInfo const& CreateInfo);
+    ~LevelLighting();
 
     Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
 
@@ -90,7 +90,7 @@ public:
     RenderCore::IBuffer* GetLightPortalsVB() { return LightPortalsVB; }
     RenderCore::IBuffer* GetLightPortalsIB() { return LightPortalsIB; }
 
-    TPodVector<SLightPortalDef> const& GetLightPortals() const { return LightPortals; }
+    TPodVector<LightPortalDef> const& GetLightPortals() const { return LightPortals; }
 
     /** Lightmap pixel format */
     LIGHTMAP_FORMAT LightmapFormat = LIGHTMAP_GRAYSCALED16_FLOAT;
@@ -116,14 +116,14 @@ public:
     int ShadowCasterIndexCount{};
 
     /** Light portals */
-    TPodVector<SLightPortalDef>  LightPortals;
+    TPodVector<LightPortalDef>  LightPortals;
     TVector<Float3>       LightPortalVertexBuffer;
     TVector<unsigned int> LightPortalIndexBuffer;
 };
 
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
 
-struct SAudioArea
+struct AudioArea
 {
     /** Baked leaf audio clip */
     uint16_t AmbientSound[MAX_AMBIENT_SOUNDS_IN_AREA];
@@ -132,51 +132,51 @@ struct SAudioArea
     uint8_t AmbientVolume[MAX_AMBIENT_SOUNDS_IN_AREA];
 };
 
-struct SLevelAudioCreateInfo
+struct LevelAudioCreateInfo
 {
-    SAudioArea* AudioAreas;
+    AudioArea* AudioAreas;
     int NumAudioAreas;
 
-    TVector<TRef<ASoundResource>> AmbientSounds;
+    TVector<TRef<SoundResource>> AmbientSounds;
 };
 
-class ALevelAudio : public ARefCounted
+class LevelAudio : public RefCounted
 {
 public:
-    ALevelAudio(SLevelAudioCreateInfo const& CreateInfo);
+    LevelAudio(LevelAudioCreateInfo const& CreateInfo);
 
     /** Baked audio */
-    TPodVector<SAudioArea> AudioAreas;
+    TPodVector<AudioArea> AudioAreas;
 
     /** Ambient sounds */
-    TVector<TRef<ASoundResource>> AmbientSounds;
+    TVector<TRef<SoundResource>> AmbientSounds;
 };
 
 
 /**
 
-ALevel
+Level
 
 Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class ALevel : public GCObject
+class Level : public GCObject
 {
-    friend class AWorld;
+    friend class World;
     friend class AActor;
 
 public:
-    TRef<AVisibilityLevel> Visibility;
-    TRef<ALevelLighting>   Lighting;
-    TRef<ALevelAudio>      Audio;
+    TRef<VisibilityLevel> Visibility;
+    TRef<LevelLighting>   Lighting;
+    TRef<LevelAudio>      Audio;
 
-    ALevel() = default;
+    Level() = default;
     
     /** Level is persistent if created by owner world */
     bool IsPersistentLevel() const { return m_bIsPersistent; }
 
     /** Get level world */
-    AWorld* GetOwnerWorld() const { return m_OwnerWorld; }
+    World* GetOwnerWorld() const { return m_OwnerWorld; }
 
     /** Get actors in level */
     TVector<AActor*> const& GetActors() const { return m_Actors; }
@@ -185,24 +185,24 @@ public:
     void DestroyActors();
 
     /** Create vertex light channel for a mesh to store light colors */
-    uint32_t AddVertexLightChannel(AIndexedMesh* InSourceMesh);
+    uint32_t AddVertexLightChannel(IndexedMesh* InSourceMesh);
 
     void RemoveVertexLightChannel(uint32_t VertexLightChannel);
 
     /** Remove all vertex light channels inside the level */
     void RemoveVertexLightChannels();
 
-    AVertexLight* GetVertexLight(uint32_t VertexLightChannel);
+    VertexLight* GetVertexLight(uint32_t VertexLightChannel);
 
     /** Get all vertex light channels inside the level */
-    TVector<AVertexLight*> const& GetVertexLightChannels() const { return m_VertexLightChannels; }
+    TVector<VertexLight*> const& GetVertexLightChannels() const { return m_VertexLightChannels; }
 
     /** Sample lightmap by texture coordinate */
     Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
 
 protected:
     /** Draw debug. Called by owner world. */
-    void DrawDebug(ADebugRenderer* InRenderer);
+    void DrawDebug(DebugRenderer* InRenderer);
 
 private:
     /** Callback on add level to world. Called by owner world. */
@@ -212,13 +212,13 @@ private:
     void OnRemoveLevelFromWorld();
 
     /** Parent world */
-    AWorld* m_OwnerWorld = nullptr;
+    World* m_OwnerWorld = nullptr;
 
     bool m_bIsPersistent = false;
 
     /** Array of actors */
     TVector<AActor*> m_Actors;
 
-    TVector<AVertexLight*> m_VertexLightChannels;
+    TVector<VertexLight*> m_VertexLightChannels;
     TVector<uint32_t> m_FreeVertexLightChannels;
 };

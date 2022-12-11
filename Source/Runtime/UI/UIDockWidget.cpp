@@ -46,7 +46,7 @@ UIDockWidget::UIDockWidget(UIDockContainer* container) :
     Layout = UINew(UIBoxLayout, UIBoxLayout::HALIGNMENT_STRETCH, UIBoxLayout::VALIGNMENT_STRETCH);
 }
 
-bool UIDockWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+bool UIDockWidget::OnChildrenMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (event.Button == 0 && event.Action == IA_PRESS)
     {
@@ -67,7 +67,7 @@ bool UIDockWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, do
     return false;
 }
 
-void UIDockWidget::PostDraw(ACanvas& canvas)
+void UIDockWidget::PostDraw(Canvas& canvas)
 {
     Float2 mins = Float2(m_Geometry.Maxs.X - 10, m_Geometry.Mins.Y);
     Float2 maxs = mins + 10.0f;

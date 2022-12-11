@@ -36,17 +36,17 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class AGenericWindowGLImpl final : public IGenericWindow
+class GenericWindowGLImpl final : public IGenericWindow
 {
 public:
-    AGenericWindowGLImpl(ADeviceGLImpl* pDevice, SVideoMode const& VideoMode, AWindowPoolGL& WindowPool, AWindowPoolGL::SWindowGL WindowHandle);
-    ~AGenericWindowGLImpl();
+    GenericWindowGLImpl(DeviceGLImpl* pDevice, DisplayVideoMode const& VideoMode, WindowPoolGL& WindowPool, WindowPoolGL::WindowGL WindowHandle);
+    ~GenericWindowGLImpl();
 
-    void SetVideoMode(SVideoMode const& DesiredMode) override;
+    void SetVideoMode(DisplayVideoMode const& DesiredMode) override;
 
-    AImmediateContextGLImpl* GetImmediateContext() { return WindowGL.ImmediateCtx; }
+    ImmediateContextGLImpl* GetImmediateContext() { return WindowGL.ImmediateCtx; }
 
     void SetSwapChain(ISwapChain* SwapChain);
 
@@ -54,8 +54,8 @@ public:
     int CurrentSwapInterval = 666;
 
 private:
-    AWindowPoolGL& WindowPool;
-    AWindowPoolGL::SWindowGL WindowGL;
+    WindowPoolGL& WindowPool;
+    WindowPoolGL::WindowGL WindowGL;
     bool bUseExternalHandle;
 };
 

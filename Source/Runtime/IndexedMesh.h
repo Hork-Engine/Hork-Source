@@ -40,8 +40,8 @@ SOFTWARE.
 #include <Geometry/BV/BvhTree.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-class AIndexedMesh;
-struct SVertexHandle;
+class IndexedMesh;
+struct VertexHandle;
 
 template <typename VertexType>
 using TVertexBufferCPU = TVector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
@@ -51,15 +51,15 @@ using TIndexBufferCPU = TVector<IndexType, Allocators::HeapMemoryAllocator<HEAP_
 
 /**
 
-ASocketDef
+SocketDef
 
 Socket for attaching
 
 */
-class ASocketDef : public ARefCounted
+class SocketDef : public RefCounted
 {
 public:
-    AString Name;
+    String Name;
     Float3  Position;
     Float3  Scale = Float3(1);
     Quat    Rotation;
@@ -77,25 +77,25 @@ public:
 
 /**
 
-AIndexedMeshSubpart
+IndexedMeshSubpart
 
 Part of indexed mesh (submesh / element)
 
 */
-class AIndexedMeshSubpart : public ARefCounted
+class IndexedMeshSubpart : public RefCounted
 {
-    friend class AIndexedMesh;
+    friend class IndexedMesh;
 
 public:
-    AIndexedMeshSubpart();
-    ~AIndexedMeshSubpart();
+    IndexedMeshSubpart();
+    ~IndexedMeshSubpart();
 
-    void SetName(AStringView Name)
+    void SetName(StringView Name)
     {
         m_Name = Name;
     }
 
-    AString const& GetName() const
+    String const& GetName() const
     {
         return m_Name;
     }
@@ -104,82 +104,82 @@ public:
     void SetFirstIndex(int FirstIndex);
     void SetVertexCount(int VertexCount);
     void SetIndexCount(int IndexCount);
-    void SetMaterialInstance(AMaterialInstance* pMaterialInstance);
+    void SetMaterialInstance(MaterialInstance* pMaterialInstance);
     void SetBoundingBox(BvAxisAlignedBox const& BoundingBox);
 
     int                     GetBaseVertex() const { return m_BaseVertex; }
     int                     GetFirstIndex() const { return m_FirstIndex; }
     int                     GetVertexCount() const { return m_VertexCount; }
     int                     GetIndexCount() const { return m_IndexCount; }
-    AMaterialInstance*      GetMaterialInstance() { return m_MaterialInstance; }
+    MaterialInstance*       GetMaterialInstance() { return m_MaterialInstance; }
     BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
 
-    AIndexedMesh* GetOwner() { return m_OwnerMesh; }
+    IndexedMesh* GetOwner() { return m_OwnerMesh; }
 
     void GenerateBVH(unsigned int PrimitivesPerLeaf = 16);
 
     void SetBVH(std::unique_ptr<BvhTree> BVH);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
 
-    void DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& TransformMatrix);
+    void DrawBVH(DebugRenderer* pRenderer, Float3x4 const& TransformMatrix);
 
     void Read(IBinaryStreamReadInterface& stream);
 
 private:
-    AIndexedMesh*            m_OwnerMesh = nullptr;
+    IndexedMesh*             m_OwnerMesh = nullptr;
     BvAxisAlignedBox         m_BoundingBox;
     int                      m_BaseVertex  = 0;
     int                      m_FirstIndex  = 0;
     int                      m_VertexCount = 0;
     int                      m_IndexCount  = 0;
-    TRef<AMaterialInstance>  m_MaterialInstance;
+    TRef<MaterialInstance>   m_MaterialInstance;
     std::unique_ptr<BvhTree> m_bvhTree;
     bool                     m_bAABBTreeDirty = false;
-    AString                  m_Name;
+    String                   m_Name;
 };
 
 /**
 
-AVertexLight
+VertexLight
 
 Vertex light channel
 
 */
-class AVertexLight : public ARefCounted
+class VertexLight : public RefCounted
 {
 public:
-    AVertexLight(AIndexedMesh* pSourceMesh);
-    ~AVertexLight();
+    VertexLight(IndexedMesh* pSourceMesh);
+    ~VertexLight();
 
-    SMeshVertexLight*       GetVertices() { return m_Vertices.ToPtr(); }
-    SMeshVertexLight const* GetVertices() const { return m_Vertices.ToPtr(); }
-    int                     GetVertexCount() const { return m_Vertices.Size(); }
+    MeshVertexLight*       GetVertices() { return m_Vertices.ToPtr(); }
+    MeshVertexLight const* GetVertices() const { return m_Vertices.ToPtr(); }
+    int                    GetVertexCount() const { return m_Vertices.Size(); }
 
     bool SendVertexDataToGPU(int VerticesCount, int StartVertexLocation);
-    bool WriteVertexData(SMeshVertexLight const* Vertices, int VerticesCount, int StartVertexLocation);
+    bool WriteVertexData(MeshVertexLight const* Vertices, int VerticesCount, int StartVertexLocation);
 
     void GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
 private:
     static void* GetVertexMemory(void* _This);
 
-    SVertexHandle*                     m_VertexBufferGPU = nullptr;
-    TVertexBufferCPU<SMeshVertexLight> m_Vertices;
+    VertexHandle*                     m_VertexBufferGPU = nullptr;
+    TVertexBufferCPU<MeshVertexLight> m_Vertices;
 };
 
-using AIndexedMeshSubpartArray = TVector<AIndexedMeshSubpart*>;
+using IndexedMeshSubpartArray = TVector<IndexedMeshSubpart*>;
 
-struct SSoftbodyLink
+struct SoftbodyLink
 {
     unsigned int Indices[2];
 };
 
-struct SSoftbodyFace
+struct SoftbodyFace
 {
     unsigned int Indices[3];
 };
@@ -193,29 +193,29 @@ public:
     void ClearMaterials();
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterial(AMaterialInstance* instance) { SetMaterial(0, instance); }
+    void SetMaterial(MaterialInstance* instance) { SetMaterial(0, instance); }
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterial(int subpartIndex, AMaterialInstance* instance);
+    void SetMaterial(int subpartIndex, MaterialInstance* instance);
 
     /** Set materials from mesh resource */
-    void SetMaterials(AIndexedMesh const* indexedMesh);
+    void SetMaterials(IndexedMesh const* indexedMesh);
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance* GetMaterial() const { return GetMaterial(0); }
+    MaterialInstance* GetMaterial() const { return GetMaterial(0); }
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance* GetMaterial(int subpartIndex) const;
+    MaterialInstance* GetMaterial(int subpartIndex) const;
 
     void SetEnabled(bool bEnabled);
 
     bool IsEnabled() const { return m_bEnabled; }
 
 private:
-    AMaterialInstance* GetMaterialUnsafe(int subpartIndex) const;
+    MaterialInstance* GetMaterialUnsafe(int subpartIndex) const;
 
     bool m_bEnabled{true};
-    TVector<AMaterialInstance*> m_Materials;
+    TVector<MaterialInstance*> m_Materials;
 };
 
 enum INDEXED_MESH_UPDATE_FLAG : uint8_t
@@ -229,10 +229,10 @@ enum INDEXED_MESH_UPDATE_FLAG : uint8_t
 
 HK_FLAG_ENUM_OPERATORS(INDEXED_MESH_UPDATE_FLAG)
 
-class AIndexedMeshListener
+class IndexedMeshListener
 {
 public:
-    TLink<AIndexedMeshListener> Link;
+    TLink<IndexedMeshListener> Link;
 
     virtual void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) = 0;
 };
@@ -240,56 +240,56 @@ public:
 
 /**
 
-AIndexedMesh
+IndexedMesh
 
 Triangulated 3d surfaces with indexed vertices
 Note that if you modify the mesh, you must call the NotifyMeshResourceUpdate method to let the listeners know that the mesh has been updated.
 
 */
-class AIndexedMesh : public AResource
+class IndexedMesh : public Resource
 {
-    HK_CLASS(AIndexedMesh, AResource)
+    HK_CLASS(IndexedMesh, Resource)
 
-    friend class AIndexedMeshSubpart;
+    friend class IndexedMeshSubpart;
 
 public:
-    TList<AIndexedMeshListener> Listeners;
+    TList<IndexedMeshListener> Listeners;
 
-    AIndexedMesh();
-    ~AIndexedMesh();
+    IndexedMesh();
+    ~IndexedMesh();
 
     /** Allocate mesh */
-    static AIndexedMesh* Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh = false);
+    static IndexedMesh* Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh = false);
 
     /** Helper. Create box mesh */
-    static AIndexedMesh* CreateBox(Float3 const& Extents, float TexCoordScale);
+    static IndexedMesh* CreateBox(Float3 const& Extents, float TexCoordScale);
 
     /** Helper. Create sphere mesh */
-    static AIndexedMesh* CreateSphere(float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
+    static IndexedMesh* CreateSphere(float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
 
     /** Helper. Create plane mesh */
-    static AIndexedMesh* CreatePlaneXZ(float Width, float Height, Float2 const& TexCoordScale);
+    static IndexedMesh* CreatePlaneXZ(float Width, float Height, Float2 const& TexCoordScale);
 
     /** Helper. Create plane mesh */
-    static AIndexedMesh* CreatePlaneXY(float Width, float Height, Float2 const& TexCoordScale);
+    static IndexedMesh* CreatePlaneXY(float Width, float Height, Float2 const& TexCoordScale);
 
     /** Helper. Create patch mesh */
-    static AIndexedMesh* CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
+    static IndexedMesh* CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
 
     /** Helper. Create cylinder mesh */
-    static AIndexedMesh* CreateCylinder(float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+    static IndexedMesh* CreateCylinder(float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
     /** Helper. Create cone mesh */
-    static AIndexedMesh* CreateCone(float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+    static IndexedMesh* CreateCone(float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
     /** Helper. Create capsule mesh */
-    static AIndexedMesh* CreateCapsule(float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
+    static IndexedMesh* CreateCapsule(float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
 
     /** Helper. Create skybox mesh */
-    static AIndexedMesh* CreateSkybox(Float3 const& Extents, float TexCoordScale);
+    static IndexedMesh* CreateSkybox(Float3 const& Extents, float TexCoordScale);
 
     /** Helper. Create skydome mesh */
-    static AIndexedMesh* CreateSkydome(float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
+    static IndexedMesh* CreateSkydome(float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
 
     /** Purge model data */
     void Purge();
@@ -298,63 +298,63 @@ public:
     bool IsSkinned() const { return m_bSkinnedMesh; }
 
     /** Get mesh part */
-    AIndexedMeshSubpart* GetSubpart(int SubpartIndex);
+    IndexedMeshSubpart* GetSubpart(int SubpartIndex);
 
     /** Add the socket */
-    void AddSocket(ASocketDef* Socket);
+    void AddSocket(SocketDef* Socket);
     // TODO: RemoveSocket?
 
     /** Find socket by name */
-    ASocketDef* FindSocket(AStringView Name);
+    SocketDef* FindSocket(StringView Name);
 
     /** Get array of sockets */
-    TVector<ASocketDef*> const& GetSockets() const { return m_Sockets; }
+    TVector<SocketDef*> const& GetSockets() const { return m_Sockets; }
 
     /** Set skeleton for the mesh. */
-    void SetSkeleton(ASkeleton* pSkeleton);
+    void SetSkeleton(Skeleton* pSkeleton);
 
     /** Skeleton for the mesh. Never return null. */
-    ASkeleton* GetSkeleton() const { return m_Skeleton; }
+    Skeleton* GetSkeleton() const { return m_Skeleton; }
 
     /** Set mesh skin */
     void SetSkin(int32_t const* pJointIndices, Float3x4 const* pOffsetMatrices, int JointsCount);
 
     /** Get mesh skin */
-    ASkin const& GetSkin() const { return m_Skin; }
+    MeshSkin const& GetSkin() const { return m_Skin; }
 
     /** Collision model for the mesh. */
-    void SetCollisionModel(ACollisionModel* pCollisionModel);
+    void SetCollisionModel(CollisionModel* pCollisionModel);
 
     /** Collision model for the mesh. */
-    ACollisionModel* GetCollisionModel() const { return m_CollisionModel; }
+    CollisionModel* GetCollisionModel() const { return m_CollisionModel; }
 
     MeshRenderView* GetDefaultRenderView() const;
 
     /** Soft body collision model */
-    TPodVector<SSoftbodyLink> /*const*/& GetSoftbodyLinks() /*const*/ { return m_SoftbodyLinks; }
+    TPodVector<SoftbodyLink> /*const*/& GetSoftbodyLinks() /*const*/ { return m_SoftbodyLinks; }
     /** Soft body collision model */
-    TPodVector<SSoftbodyFace> /*const*/& GetSoftbodyFaces() /*const*/ { return m_SoftbodyFaces; }
+    TPodVector<SoftbodyFace> /*const*/& GetSoftbodyFaces() /*const*/ { return m_SoftbodyFaces; }
 
     /** Set subpart material */
-    void SetMaterialInstance(int SubpartIndex, AMaterialInstance* pMaterialInstance);
+    void SetMaterialInstance(int SubpartIndex, MaterialInstance* pMaterialInstance);
 
     /** Set subpart bounding box */
     void SetBoundingBox(int SubpartIndex, BvAxisAlignedBox const& BoundingBox);
 
     /** Get mesh vertices */
-    SMeshVertex* GetVertices() { return m_Vertices.ToPtr(); }
+    MeshVertex* GetVertices() { return m_Vertices.ToPtr(); }
 
     /** Get mesh vertices */
-    SMeshVertex const* GetVertices() const { return m_Vertices.ToPtr(); }
+    MeshVertex const* GetVertices() const { return m_Vertices.ToPtr(); }
 
     /** Get weights for vertex skinning */
-    SMeshVertexSkin* GetWeights() { return m_Weights.ToPtr(); }
+    MeshVertexSkin* GetWeights() { return m_Weights.ToPtr(); }
 
     /** Get weights for vertex skinning */
-    SMeshVertexSkin const* GetWeights() const { return m_Weights.ToPtr(); }
+    MeshVertexSkin const* GetWeights() const { return m_Weights.ToPtr(); }
 
-    SMeshVertexUV* GetLigtmapUVs() { return m_LightmapUVs.ToPtr(); }
-    SMeshVertexUV const* GetLigtmapUVs() const { return m_LightmapUVs.ToPtr(); }
+    MeshVertexUV* GetLigtmapUVs() { return m_LightmapUVs.ToPtr(); }
+    MeshVertexUV const* GetLigtmapUVs() const { return m_LightmapUVs.ToPtr(); }
 
     /** Get mesh indices */
     unsigned int* GetIndices() { return m_Indices.ToPtr(); }
@@ -369,7 +369,7 @@ public:
     int GetIndexCount() const { return m_Indices.Size(); }
 
     /** Get all mesh subparts */
-    AIndexedMeshSubpartArray const& GetSubparts() const { return m_Subparts; }
+    IndexedMeshSubpartArray const& GetSubparts() const { return m_Subparts; }
 
     /** Max primitives per leaf. For raycasting */
     unsigned int GetRaycastPrimitivesPerLeaf() const { return m_RaycastPrimitivesPerLeaf; }
@@ -378,16 +378,16 @@ public:
     bool SendVertexDataToGPU(int VerticesCount, int StartVertexLocation);
 
     /** Write vertices at location and send them to GPU */
-    bool WriteVertexData(SMeshVertex const* Vertices, int VerticesCount, int StartVertexLocation);
+    bool WriteVertexData(MeshVertex const* Vertices, int VerticesCount, int StartVertexLocation);
 
     /** Write joint weights at location and send them to GPU */
     bool SendJointWeightsToGPU(int VerticesCount, int StartVertexLocation);
 
     /** Write joint weights at location and send them to GPU */
-    bool WriteJointWeights(SMeshVertexSkin const* Vertices, int VerticesCount, int StartVertexLocation);
+    bool WriteJointWeights(MeshVertexSkin const* Vertices, int VerticesCount, int StartVertexLocation);
 
     bool SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocation);
-    bool WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation);
+    bool WriteLightmapUVsData(MeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation);
 
     /** Write indices at location and send them to GPU */
     bool SendIndexDataToGPU(int IndexCount, int StartIndexLocation);
@@ -406,7 +406,7 @@ public:
     void GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3], int& SubpartIndex) const;
@@ -423,7 +423,7 @@ public:
     /** Generate soft body collisions */
     void GenerateSoftbodyLinksFromFaces();
 
-    void DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& TransformMatrix);
+    void DrawBVH(DebugRenderer* pRenderer, Float3x4 const& TransformMatrix);
 
     void NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag);
 
@@ -436,7 +436,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Meshes/Box"; }
 
@@ -448,48 +448,48 @@ private:
 
     void AddLightmapUVs();
 
-    SVertexHandle*            m_VertexHandle  = nullptr;
-    SVertexHandle*            m_IndexHandle   = nullptr;
-    SVertexHandle*            m_WeightsHandle = nullptr;
-    AIndexedMeshSubpartArray  m_Subparts;
+    VertexHandle*            m_VertexHandle  = nullptr;
+    VertexHandle*            m_IndexHandle   = nullptr;
+    VertexHandle*            m_WeightsHandle = nullptr;
+    IndexedMeshSubpartArray  m_Subparts;
     mutable TWeakRef<MeshRenderView> m_RenderView;
 
-    SVertexHandle*                  m_LightmapUVsGPU = nullptr;
-    TVertexBufferCPU<SMeshVertexUV> m_LightmapUVs;
+    VertexHandle*                  m_LightmapUVsGPU = nullptr;
+    TVertexBufferCPU<MeshVertexUV> m_LightmapUVs;
 
-    TVertexBufferCPU<SMeshVertex>     m_Vertices;
-    TVertexBufferCPU<SMeshVertexSkin> m_Weights;
-    TIndexBufferCPU<unsigned int>     m_Indices;
+    TVertexBufferCPU<MeshVertex>     m_Vertices;
+    TVertexBufferCPU<MeshVertexSkin> m_Weights;
+    TIndexBufferCPU<unsigned int>    m_Indices;
 
-    TVector<ASocketDef*>      m_Sockets;
-    TRef<ASkeleton>           m_Skeleton;
-    TRef<ACollisionModel>     m_CollisionModel;
-    TPodVector<SSoftbodyLink> m_SoftbodyLinks;
-    TPodVector<SSoftbodyFace> m_SoftbodyFaces;
-    ASkin                     m_Skin;
-    BvAxisAlignedBox          m_BoundingBox;
-    uint16_t                  m_RaycastPrimitivesPerLeaf = 16;
-    bool                      m_bSkinnedMesh             = false;
-    mutable bool              m_bBoundingBoxDirty        = false;
+    TVector<SocketDef*>      m_Sockets;
+    TRef<Skeleton>           m_Skeleton;
+    TRef<CollisionModel>     m_CollisionModel;
+    TPodVector<SoftbodyLink> m_SoftbodyLinks;
+    TPodVector<SoftbodyFace> m_SoftbodyFaces;
+    MeshSkin                 m_Skin;
+    BvAxisAlignedBox         m_BoundingBox;
+    uint16_t                 m_RaycastPrimitivesPerLeaf = 16;
+    bool                     m_bSkinnedMesh             = false;
+    mutable bool             m_bBoundingBoxDirty        = false;
 };
 
-class AStreamedMemoryGPU;
-struct SRenderFrontendDef;
+class StreamedMemoryGPU;
+struct RenderFrontendDef;
 
 /**
 
-AProceduralMesh
+ProceduralMesh
 
 Runtime-generated procedural mesh.
 
 */
-class AProceduralMesh : public ABaseObject
+class ProceduralMesh : public BaseObject
 {
-    HK_CLASS(AProceduralMesh, ABaseObject)
+    HK_CLASS(ProceduralMesh, BaseObject)
 
 public:
     /** Update vertex cache occasionally or every frame */
-    TVertexBufferCPU<SMeshVertex> VertexCache;
+    TVertexBufferCPU<MeshVertex> VertexCache;
 
     /** Update index cache occasionally or every frame */
     TIndexBufferCPU<unsigned int> IndexCache;
@@ -498,24 +498,24 @@ public:
     BvAxisAlignedBox BoundingBox;
 
     /** Get mesh GPU buffers */
-    void GetVertexBufferGPU(AStreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Get mesh GPU buffers */
-    void GetIndexBufferGPU(AStreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
 
     /** Called before rendering. Don't call directly. */
-    void PreRenderUpdate(SRenderFrontendDef const* pDef);
+    void PreRenderUpdate(RenderFrontendDef const* pDef);
 
     // TODO: Add methods like AddTriangle, AddQuad, etc.
 
-    AProceduralMesh();
-    ~AProceduralMesh();
+    ProceduralMesh();
+    ~ProceduralMesh();
 
 private:
     size_t m_VertexStream = 0;
@@ -533,22 +533,22 @@ Utilites
 
 */
 
-void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
+void CreateBoxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
-void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
+void CreateSphereMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
 
-void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
+void CreatePlaneMeshXZ(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
 
-void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
+void CreatePlaneMeshXY(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
 
-void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
+void CreatePatchMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
 
-void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+void CreateCylinderMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
-void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+void CreateConeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
-void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
+void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
 
-void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
+void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
-void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
+void CreateSkydomeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);

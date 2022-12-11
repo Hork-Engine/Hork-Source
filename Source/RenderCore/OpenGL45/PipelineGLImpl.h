@@ -37,46 +37,46 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-struct SImageInfoGL
+struct ImageInfoGL
 {
     unsigned int AccessMode;
     unsigned int InternalFormat;
 };
 
-struct SBufferInfoGL
+struct BufferInfoGL
 {
     unsigned int BufferType;
 };
 
-class APipelineGLImpl final : public IPipeline
+class PipelineGLImpl final : public IPipeline
 {
-    friend class AImmediateContextGLImpl;
+    friend class ImmediateContextGLImpl;
 
 public:
-    APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& Desc);
-    ~APipelineGLImpl();
+    PipelineGLImpl(DeviceGLImpl* pDevice, PipelineDesc const& Desc);
+    ~PipelineGLImpl();
 
 private:
-    AVertexLayoutGL*              pVertexLayout;
-    SBlendingStateInfo const*     BlendingState;
-    SRasterizerStateInfo const*   RasterizerState;
-    SDepthStencilStateInfo const* DepthStencilState;
-    unsigned int*                 SamplerObjects;
-    int                           NumSamplerObjects;
-    SImageInfoGL*                 Images;
-    int                           NumImages;
-    SBufferInfoGL*                Buffers;
-    int                           NumBuffers;
-    unsigned int                  PrimitiveTopology;
-    int                           NumPatchVertices;
-    TRef<IShaderModule>           pVS;
-    TRef<IShaderModule>           pTCS;
-    TRef<IShaderModule>           pTES;
-    TRef<IShaderModule>           pGS;
-    TRef<IShaderModule>           pFS;
-    TRef<IShaderModule>           pCS;
+    VertexLayoutGL*              pVertexLayout;
+    BlendingStateInfo const*     BlendingState;
+    RasterizerStateInfo const*   RasterizerState;
+    DepthStencilStateInfo const* DepthStencilState;
+    unsigned int*                SamplerObjects;
+    int                          NumSamplerObjects;
+    ImageInfoGL*                 Images;
+    int                          NumImages;
+    BufferInfoGL*                Buffers;
+    int                          NumBuffers;
+    unsigned int                 PrimitiveTopology;
+    int                          NumPatchVertices;
+    TRef<IShaderModule>          pVS;
+    TRef<IShaderModule>          pTCS;
+    TRef<IShaderModule>          pTES;
+    TRef<IShaderModule>          pGS;
+    TRef<IShaderModule>          pFS;
+    TRef<IShaderModule>          pCS;
 };
 
 } // namespace RenderCore

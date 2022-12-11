@@ -35,34 +35,34 @@ SOFTWARE.
 
 #include <unordered_map>
 
-class AVirtualTexture : public AVirtualTextureFile
+class VirtualTexture : public VirtualTextureFile
 {
 public:
-    AVirtualTexture( const char * FileName, AVirtualTextureCache * Cache );
-    ~AVirtualTexture();
+    VirtualTexture(const char* FileName, VirtualTextureCache* Cache);
+    ~VirtualTexture();
 
     bool IsLoaded() const;
 
-    void MakePageResident( uint32_t AbsIndex, int PhysPageIndex );
+    void MakePageResident(uint32_t AbsIndex, int PhysPageIndex);
 
-    void MakePageNonResident( uint32_t AbsIndex );
+    void MakePageNonResident(uint32_t AbsIndex);
 
     /** Update indirection table on GPU */
     void CommitPageResidency();
 
     /** Update LRU time for cached page. Note, page must be in cache and texture must be registered,
     and AbsIndex must be valid. If not, behavior is undefined */
-    void UpdateLRU( uint32_t AbsIndex );
+    void UpdateLRU(uint32_t AbsIndex);
 
     /** Get page indirection data in format:
     [xxxxyyyyyyyyyyyy]
     xxxx - level of detail
     yyyyyyyyyyyy - position in physical cache
     */
-    const uint16_t * GetIndirectionData();
+    const uint16_t* GetIndirectionData();
 
     /** Get page indirection texture */
-    RenderCore::ITexture * GetIndirectionTexture() { return IndirectionTexture; }
+    RenderCore::ITexture* GetIndirectionTexture() { return IndirectionTexture; }
 
     /** Actual number of texture mipmaps */
     uint32_t GetStoredLods() const { return NumLods; }
@@ -72,10 +72,10 @@ public:
 
 private:
     /** Recursively updates quadtree branch */
-    void UpdateBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep );
+    void UpdateBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
 
     /** Recursively updates quadtree branch */
-    void UpdateChildsBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep );
+    void UpdateChildsBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
 
     /** Update full quad tree */
     void UpdateAllBranches();
@@ -95,7 +95,7 @@ private:
 #endif
 
     /** Table of indirection */
-    TRef< RenderCore::ITexture > IndirectionTexture;
+    TRef<RenderCore::ITexture> IndirectionTexture;
 
     /**
     [xxxxyyyyyyyyyyyy]
@@ -104,8 +104,8 @@ private:
     Max pages in cache may reach to 4096
     Duplicates Indirection texture in video memory
     */
-    TRef< RenderCore::IBuffer > IndirectionData;
-    uint16_t * pIndirectionData;
+    TRef<RenderCore::IBuffer> IndirectionData;
+    uint16_t* pIndirectionData;
 
     int bDirtyLods[VT_MAX_LODS];
 
@@ -115,16 +115,16 @@ private:
     xxxx - max LOD
     yyyy - PageFlags4bit
     */
-    byte * PIT;
+    byte* PIT;
 
     // Used only by cache to update page LRU
-    TPodVector< uint32_t > PendingUpdateLRU;
+    TPodVector<uint32_t> PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
     THashMap<uint32_t, int64_t> StreamedPages;
 
-    AVirtualTextureCache * pCache;
+    VirtualTextureCache* pCache;
 
-    friend class AVirtualTextureCache;
-    friend class AVirtualTextureFeedbackAnalyzer;
+    friend class VirtualTextureCache;
+    friend class VirtualTextureFeedbackAnalyzer;
 };

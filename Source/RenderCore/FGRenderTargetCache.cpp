@@ -37,7 +37,7 @@ FGRenderTargetCache::FGRenderTargetCache(IDevice* pDevice) :
     pDevice(pDevice)
 {}
 
-ITexture* FGRenderTargetCache::Acquire(STextureDesc const& TextureDesc)
+ITexture* FGRenderTargetCache::Acquire(TextureDesc const& TextureDesc)
 {
     // Find free appropriate texture
     for (auto it = FreeTextures.Begin(); it != FreeTextures.End(); it++)

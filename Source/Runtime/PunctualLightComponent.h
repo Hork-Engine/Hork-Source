@@ -33,35 +33,35 @@ SOFTWARE.
 #include "LightComponent.h"
 #include "Level.h"
 
-class APunctualLightComponent : public ALightComponent
+class PunctualLightComponent : public LightComponent
 {
-    HK_COMPONENT(APunctualLightComponent, ALightComponent)
+    HK_COMPONENT(PunctualLightComponent, LightComponent)
 
 public:
     void SetEnabled(bool _Enabled) override;
 
-    BvAxisAlignedBox const& GetWorldBounds() const { return AABBWorldBounds; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return m_AABBWorldBounds; }
 
-    Float4x4 const& GetOBBTransformInverse() const { return OBBTransformInverse; }
+    Float4x4 const& GetOBBTransformInverse() const { return m_OBBTransformInverse; }
 
     void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
     {
-        Primitive->SetVisibilityGroup(VisibilityGroup);
+        m_Primitive->SetVisibilityGroup(VisibilityGroup);
     }
 
     VISIBILITY_GROUP GetVisibilityGroup() const
     {
-        return Primitive->GetVisibilityGroup();
+        return m_Primitive->GetVisibilityGroup();
     }
 
 protected:
-    APunctualLightComponent();
-    ~APunctualLightComponent();
+    PunctualLightComponent();
+    ~PunctualLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    BvAxisAlignedBox AABBWorldBounds;
-    Float4x4         OBBTransformInverse;
-    SPrimitiveDef*   Primitive;
+    BvAxisAlignedBox m_AABBWorldBounds;
+    Float4x4         m_OBBTransformInverse;
+    PrimitiveDef*    m_Primitive;
 };

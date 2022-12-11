@@ -36,17 +36,17 @@ SOFTWARE.
 /**
 An environment map in terms of the engine is both an irradiance map for image-based lighting and a prefiltered reflection map.
 */
-class AEnvironmentMap : public AResource
+class EnvironmentMap : public Resource
 {
-    HK_CLASS(AEnvironmentMap, AResource)
+    HK_CLASS(EnvironmentMap, Resource)
 
 public:
-    AEnvironmentMap()
+    EnvironmentMap()
     {}
 
-    static AEnvironmentMap* CreateFromImage(ImageStorage const& Image)
+    static EnvironmentMap* CreateFromImage(ImageStorage const& Image)
     {
-        AEnvironmentMap* envmap = NewObj<AEnvironmentMap>();
+        EnvironmentMap* envmap = NewObj<EnvironmentMap>();
         envmap->InitializeFromImage(Image);
         return envmap;
     }
@@ -61,7 +61,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/EnvMaps/Default"; }
 

@@ -97,49 +97,49 @@ enum GRAPHICS_VENDOR
     VENDOR_INTEL
 };
 
-struct SAllocatorCallback
+struct AllocatorCallback
 {
     void* (*Allocate)(size_t _BytesCount);
     void (*Deallocate)(void* _Bytes);
 };
 
-class IDevice : public ARefCounted
+class IDevice : public RefCounted
 {
 public:
     ~IDevice();
 
     virtual IImmediateContext* GetImmediateContext() = 0;
 
-    virtual void GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+    virtual void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
 
-    virtual void CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+    virtual void CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
 
     virtual void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) = 0;
 
-    virtual void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) = 0;
+    virtual void CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) = 0;
 
-    virtual void CreateShaderFromBinary(SShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)                                         = 0;
+    virtual void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)                                         = 0;
     virtual void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) = 0;
 
-    virtual void CreateBuffer(SBufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) = 0;
+    virtual void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) = 0;
 
-    virtual void CreateTexture(STextureDesc const& Desc, TRef<ITexture>* ppTexture) = 0;
+    virtual void CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture) = 0;
 
     /** FEATURE_SPARSE_TEXTURES must be supported */
-    virtual void CreateSparseTexture(SSparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) = 0;
+    virtual void CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) = 0;
 
-    virtual void CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) = 0;
+    virtual void CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) = 0;
 
-    virtual void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) = 0;
+    virtual void CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) = 0;
 
     virtual void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) = 0;
 
     virtual bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                         unsigned int       _NumSources,
                                         const char* const* _Sources,
-                                        SShaderBinaryData* _BinaryData) = 0;
+                                        ShaderBinaryData* _BinaryData) = 0;
 
-    virtual void DestroyShaderBinaryData(SShaderBinaryData* _BinaryData) = 0;
+    virtual void DestroyShaderBinaryData(ShaderBinaryData* _BinaryData) = 0;
 
     /** Get total available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
     virtual int32_t GetGPUMemoryTotalAvailable() = 0;
@@ -151,7 +151,7 @@ public:
 
     virtual bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) = 0;
 
-    virtual SAllocatorCallback const& GetAllocator() const = 0;
+    virtual AllocatorCallback const& GetAllocator() const = 0;
 
     GRAPHICS_VENDOR GetGraphicsVendor() const
     {
@@ -208,8 +208,8 @@ private:
     friend class IDeviceObject;
 };
 
-void CreateLogicalDevice(const char*               Backend,
-                         SAllocatorCallback const* Allocator,
-                         TRef<IDevice>*            ppDevice);
+void CreateLogicalDevice(const char*              Backend,
+                         AllocatorCallback const* Allocator,
+                         TRef<IDevice>*           ppDevice);
 
 } // namespace RenderCore

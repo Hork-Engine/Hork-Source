@@ -33,21 +33,21 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
-class ACubemapGenerator
+class CubemapGenerator
 {
 public:
-    ACubemapGenerator();
+    CubemapGenerator();
 
     void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture** _Sources, TRef<RenderCore::ITexture>* ppTextureArray);
     void Generate(TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture);
 
 private:
-    struct SConstantData
+    struct ConstantData
     {
         Float4x4 Transform[6];
         Float4   Index;
     };
     TRef<RenderCore::IBuffer>   ConstantBuffer;
-    SConstantData               ConstantBufferData;
+    ConstantData               ConstantBufferData;
     TRef<RenderCore::IPipeline> Pipeline;
 };

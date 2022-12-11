@@ -32,4 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-void AddWireframePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+void AddWireframePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);

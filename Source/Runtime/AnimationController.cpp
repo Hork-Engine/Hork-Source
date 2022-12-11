@@ -32,9 +32,9 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "Animation.h"
 
-HK_CLASS_META(AAnimationController)
+HK_CLASS_META(AnimationController)
 
-AAnimationController::AAnimationController()
+AnimationController::AnimationController()
 {
     Owner     = nullptr;
     TimeLine  = 0.0f;
@@ -47,74 +47,74 @@ AAnimationController::AAnimationController()
     bEnabled  = true;
 }
 
-void AAnimationController::SetAnimation(ASkeletalAnimation* _Animation)
+void AnimationController::SetAnimation(SkeletalAnimation* _Animation)
 {
     Animation = _Animation;
 
     if (Owner)
     {
-        Owner->bUpdateRelativeTransforms = true;
-        Owner->bUpdateBounds             = true;
+        Owner->m_bUpdateRelativeTransforms = true;
+        Owner->m_bUpdateBounds = true;
     }
 }
 
-void AAnimationController::SetTime(float _Time)
+void AnimationController::SetTime(float _Time)
 {
     TimeLine = _Time;
 
     if (Owner)
     {
-        Owner->bUpdateControllers = true;
+        Owner->m_bUpdateControllers = true;
     }
 }
 
-void AAnimationController::AddTimeDelta(float _TimeDelta)
+void AnimationController::AddTimeDelta(float _TimeDelta)
 {
     TimeLine += _TimeDelta;
 
     if (Owner)
     {
-        Owner->bUpdateControllers = true;
+        Owner->m_bUpdateControllers = true;
     }
 }
 
-void AAnimationController::SetPlayMode(EAnimationPlayMode _PlayMode)
+void AnimationController::SetPlayMode(ANIMATION_PLAY_MODE _PlayMode)
 {
     PlayMode = _PlayMode;
 
     if (Owner)
     {
-        Owner->bUpdateControllers = true;
+        Owner->m_bUpdateControllers = true;
     }
 }
 
-void AAnimationController::SetQuantizer(float _Quantizer)
+void AnimationController::SetQuantizer(float _Quantizer)
 {
     Quantizer = Math::Min(_Quantizer, 1.0f);
 
     if (Owner)
     {
-        Owner->bUpdateControllers = true;
+        Owner->m_bUpdateControllers = true;
     }
 }
 
-void AAnimationController::SetWeight(float _Weight)
+void AnimationController::SetWeight(float _Weight)
 {
     Weight = _Weight;
 
     if (Owner)
     {
-        Owner->bUpdateRelativeTransforms = true;
+        Owner->m_bUpdateRelativeTransforms = true;
     }
 }
 
-void AAnimationController::SetEnabled(bool _Enabled)
+void AnimationController::SetEnabled(bool _Enabled)
 {
     bEnabled = _Enabled;
 
     if (Owner)
     {
-        Owner->bUpdateRelativeTransforms = true;
-        Owner->bUpdateBounds             = true;
+        Owner->m_bUpdateRelativeTransforms = true;
+        Owner->m_bUpdateBounds = true;
     }
 }

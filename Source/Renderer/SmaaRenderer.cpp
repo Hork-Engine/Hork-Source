@@ -35,9 +35,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ASmaaRenderer::ASmaaRenderer()
+SmaaRenderer::SmaaRenderer()
 {
-    SSamplerDesc samplerCI[3];
+    SamplerDesc samplerCI[3];
     for (int i = 0; i < HK_ARRAY_SIZE(samplerCI); i++)
     {
         samplerCI[i].Filter   = FILTER_LINEAR;
@@ -46,28 +46,28 @@ ASmaaRenderer::ASmaaRenderer()
         samplerCI[i].AddressW = SAMPLER_ADDRESS_CLAMP;
     }
 
-    SBufferInfo bufferInfo;
+    BufferInfo bufferInfo;
     bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
 
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;
     resourceLayout.Samplers = samplerCI;
 
     resourceLayout.NumSamplers = 1;
-    AShaderFactory::CreateFullscreenQuadPipeline(&EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 3;
-    AShaderFactory::CreateFullscreenQuadPipeline(&BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 2;
-    AShaderFactory::CreateFullscreenQuadPipeline(&NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
 
     CreateTextures();
 }
 
-void ASmaaRenderer::CreateTextures()
+void SmaaRenderer::CreateTextures()
 {
     /*
     Note from SMAA authors:
@@ -77,22 +77,22 @@ void ASmaaRenderer::CreateTextures()
     marginal performance increase.
     */
 
-    GDevice->CreateTexture(STextureDesc()
-                               .SetResolution(STextureResolution2D(AREATEX_WIDTH, AREATEX_HEIGHT))
+    GDevice->CreateTexture(TextureDesc()
+                               .SetResolution(TextureResolution2D(AREATEX_WIDTH, AREATEX_HEIGHT))
                                .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &AreaTex);
     AreaTex->Write(0, sizeof(areaTexBytes), 1, areaTexBytes);
 
-    GDevice->CreateTexture(STextureDesc()
-                               .SetResolution(STextureResolution2D(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT))
+    GDevice->CreateTexture(TextureDesc()
+                               .SetResolution(TextureResolution2D(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT))
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &SearchTex);
     SearchTex->Write(0, sizeof(searchTexBytes), 1, searchTexBytes);
 }
 
-void ASmaaRenderer::AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture)
+void SmaaRenderer::AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture)
 {
     FGTextureProxy* EdgeTexture;
     FGTextureProxy* BlendTexture;
@@ -107,22 +107,22 @@ void ASmaaRenderer::AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGT
     //HK_UNUSED(BlendTexture);
 }
 
-void ASmaaRenderer::EdgeDetectionPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppEdgeTexture)
+void SmaaRenderer::EdgeDetectionPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppEdgeTexture)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("SMAA Edge Detection Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("SMAA Edge Detection Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
     renderPass.AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment("SMAA edge texture",
-                           STextureDesc()
+        TextureAttachment("SMAA edge texture",
+                           TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());
 
@@ -132,22 +132,22 @@ void ASmaaRenderer::EdgeDetectionPass(AFrameGraph& FrameGraph, FGTextureProxy* S
     *ppEdgeTexture = renderPass.GetColorAttachments()[0].pResource;
 }
 
-void ASmaaRenderer::BlendingWeightCalculationPass(AFrameGraph& FrameGraph, FGTextureProxy* EdgeTexture, FGTextureProxy** ppBlendTexture)
+void SmaaRenderer::BlendingWeightCalculationPass(FrameGraph& FrameGraph, FGTextureProxy* EdgeTexture, FGTextureProxy** ppBlendTexture)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("SMAA Blending Weight Calculation Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("SMAA Blending Weight Calculation Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
     renderPass.AddResource(EdgeTexture, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment("SMAA blend texture",
-                           STextureDesc()
+        TextureAttachment("SMAA blend texture",
+                           TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                           {
                               rtbl->BindTexture(0, EdgeTexture->Actual());
                               rtbl->BindTexture(1, AreaTex);
@@ -159,23 +159,23 @@ void ASmaaRenderer::BlendingWeightCalculationPass(AFrameGraph& FrameGraph, FGTex
     *ppBlendTexture = renderPass.GetColorAttachments()[0].pResource;
 }
 
-void ASmaaRenderer::NeighborhoodBlendingPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy* BlendTexture, FGTextureProxy** ppResultTexture)
+void SmaaRenderer::NeighborhoodBlendingPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy* BlendTexture, FGTextureProxy** ppResultTexture)
 {
-    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("SMAA Neighborhood Blending Pass");
+    RenderPass& renderPass = FrameGraph.AddTask<RenderPass>("SMAA Neighborhood Blending Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
     renderPass.AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ);
     renderPass.AddResource(BlendTexture, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
-        STextureAttachment("SMAA result texture",
-                           STextureDesc()
+        TextureAttachment("SMAA result texture",
+                           TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT/*TEXTURE_FORMAT_RGBA8_UNORM*/)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());
                               rtbl->BindTexture(1, BlendTexture->Actual());

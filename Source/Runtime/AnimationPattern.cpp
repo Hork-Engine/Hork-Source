@@ -30,14 +30,14 @@ SOFTWARE.
 
 #include "AnimationPattern.h"
 
-HK_CLASS_META(AAnimationPattern)
+HK_CLASS_META(AnimationPattern)
 
 HK_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
 {
     return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }
 
-float AAnimationPattern::Calculate(float _Time)
+float AnimationPattern::Calculate(float _Time)
 {
     int numFrames = Pattern.Length();
 

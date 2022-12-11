@@ -32,23 +32,24 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class AExposureRenderer {
+class ExposureRenderer
+{
 public:
-    AExposureRenderer();
+    ExposureRenderer();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppExposure);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppExposure);
 
-    RenderCore::ITexture * GetDefaultLuminance() { return DefaultLuminance; }
+    RenderCore::ITexture* GetDefaultLuminance() { return DefaultLuminance; }
 
 private:
-    TRef< RenderCore::IPipeline > MakeLuminanceMapPipe;
-    TRef< RenderCore::IPipeline > SumLuminanceMapPipe;
-    TRef< RenderCore::IPipeline > DynamicExposurePipe;
-    TRef< RenderCore::ITexture > Luminance64;
-    TRef< RenderCore::ITexture > Luminance32;
-    TRef< RenderCore::ITexture > Luminance16;
-    TRef< RenderCore::ITexture > Luminance8;
-    TRef< RenderCore::ITexture > Luminance4;
-    TRef< RenderCore::ITexture > Luminance2;
-    TRef< RenderCore::ITexture > DefaultLuminance;
+    TRef<RenderCore::IPipeline> MakeLuminanceMapPipe;
+    TRef<RenderCore::IPipeline> SumLuminanceMapPipe;
+    TRef<RenderCore::IPipeline> DynamicExposurePipe;
+    TRef<RenderCore::ITexture> Luminance64;
+    TRef<RenderCore::ITexture> Luminance32;
+    TRef<RenderCore::ITexture> Luminance16;
+    TRef<RenderCore::ITexture> Luminance8;
+    TRef<RenderCore::ITexture> Luminance4;
+    TRef<RenderCore::ITexture> Luminance2;
+    TRef<RenderCore::ITexture> DefaultLuminance;
 };

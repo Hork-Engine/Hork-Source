@@ -34,13 +34,13 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class ACanvasRenderer : public ARefCounted
+class CanvasRenderer : public RefCounted
 {
 public:
-    ACanvasRenderer();
-    ~ACanvasRenderer();
+    CanvasRenderer();
+    ~CanvasRenderer();
 
-    void Render(RenderCore::AFrameGraph& FrameGraph, RenderCore::ITexture* pBackBuffer);
+    void Render(RenderCore::FrameGraph& FrameGraph, RenderCore::ITexture* pBackBuffer);
 
 private:
     void RenderVG(RenderCore::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData);

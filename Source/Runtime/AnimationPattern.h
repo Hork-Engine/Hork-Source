@@ -32,16 +32,16 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class AAnimationPattern : public ABaseObject
+class AnimationPattern : public BaseObject
 {
-    HK_CLASS(AAnimationPattern, ABaseObject)
+    HK_CLASS(AnimationPattern, BaseObject)
 
 public:
-    AString Pattern;
+    String  Pattern;
     float   Speed     = 1.0f;
     float   Quantizer = 0.0f;
 
     float Calculate(float _Time);
 
-    AAnimationPattern() {}
+    AnimationPattern() {}
 };

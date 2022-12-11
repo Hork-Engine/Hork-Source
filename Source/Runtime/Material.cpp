@@ -37,54 +37,54 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
-HK_CLASS_META(AMaterial)
-HK_CLASS_META(AMaterialInstance)
+HK_CLASS_META(Material)
+HK_CLASS_META(MaterialInstance)
 
-TList<AMaterial> AMaterial::MaterialRegistry;
+TList<Material> Material::MaterialRegistry;
 
-AMaterial::AMaterial()
+Material::Material()
 {
     MaterialRegistry.Add(this);
 }
 
-AMaterial::AMaterial(ACompiledMaterial* pCompiledMaterial) :
+Material::Material(CompiledMaterial* pCompiledMaterial) :
     m_pCompiledMaterial(pCompiledMaterial)
 {
     HK_ASSERT(pCompiledMaterial);
 
-    m_GpuMaterial = MakeRef<AMaterialGPU>(pCompiledMaterial);
+    m_GpuMaterial = MakeRef<MaterialGPU>(pCompiledMaterial);
 
     MaterialRegistry.Add(this);
 }
 
-AMaterial::~AMaterial()
+Material::~Material()
 {
     MaterialRegistry.Remove(this);
 }
 
-AMaterialInstance* AMaterial::Instantiate()
+MaterialInstance* Material::Instantiate()
 {
-    return NewObj<AMaterialInstance>(this);
+    return NewObj<MaterialInstance>(this);
 }
 
-uint32_t AMaterial::GetTextureSlotByName(AStringView Name) const
-{
-    // TODO
-    return ~0u;
-}
-
-uint32_t AMaterial::GetConstantOffsetByName(AStringView Name) const
+uint32_t Material::GetTextureSlotByName(StringView Name) const
 {
     // TODO
     return ~0u;
 }
 
-uint32_t AMaterial::NumTextureSlots() const
+uint32_t Material::GetConstantOffsetByName(StringView Name) const
+{
+    // TODO
+    return ~0u;
+}
+
+uint32_t Material::NumTextureSlots() const
 {
     return m_pCompiledMaterial->Samplers.Size();
 }
 
-bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
+bool Material::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 
@@ -102,15 +102,15 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    m_pCompiledMaterial = MakeRef<ACompiledMaterial>(Stream);
-    m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+    m_pCompiledMaterial = MakeRef<CompiledMaterial>(Stream);
+    m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
 
     return true;
 }
 
-bool WriteMaterial(AString const& Path, ACompiledMaterial const* pCompiledMaterial)
+bool WriteMaterial(String const& Path, CompiledMaterial const* pCompiledMaterial)
 {
-    AFile f = AFile::OpenWrite(Path);
+    File f = File::OpenWrite(Path);
     if (!f)
     {
         return false;
@@ -124,7 +124,7 @@ bool WriteMaterial(AString const& Path, ACompiledMaterial const* pCompiledMateri
     return true;
 }
 
-void AMaterial::LoadInternalResource(AStringView Path)
+void Material::LoadInternalResource(StringView Path)
 {
     if (!Path.Icmp("/Default/Materials/Unlit"))
     {
@@ -141,7 +141,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -166,7 +166,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -194,7 +194,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->bTwoSided    = true;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -216,7 +216,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_BASELIGHT;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -263,7 +263,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -319,7 +319,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -378,7 +378,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -439,7 +439,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->bTwoSided    = true;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -527,7 +527,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -618,7 +618,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -711,7 +711,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->bTwoSided    = true;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -743,7 +743,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->MaterialType = MATERIAL_TYPE_PBR;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -770,7 +770,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         graph->DepthHack    = MATERIAL_DEPTH_HACK_SKYBOX;
 
         m_pCompiledMaterial = graph->Compile();
-        m_GpuMaterial       = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
+        m_GpuMaterial       = MakeRef<MaterialGPU>(m_pCompiledMaterial);
         return;
     }
 
@@ -780,36 +780,36 @@ void AMaterial::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/Materials/BaseLight");
 }
 
-AMaterialInstance::AMaterialInstance()
+MaterialInstance::MaterialInstance()
 {
-    static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
-    static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
+    static TStaticResourceFinder<Material> MaterialResource("/Default/Materials/Unlit"s);
+    static TStaticResourceFinder<Texture>  TextureResource("/Common/grid8.webp"s);
 
     m_pMaterial = MaterialResource;
     SetTexture(0, TextureResource);
 }
 
-AMaterialInstance::AMaterialInstance(AMaterial* pMaterial) :
+MaterialInstance::MaterialInstance(Material* pMaterial) :
     m_pMaterial(pMaterial)
 {
     HK_ASSERT(pMaterial);
 
     if (!pMaterial)
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
-        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
+        static TStaticResourceFinder<Material> MaterialResource("/Default/Materials/Unlit"s);
+        static TStaticResourceFinder<Texture>  TextureResource("/Common/grid8.webp"s);
 
         m_pMaterial = MaterialResource;
         SetTexture(0, TextureResource);
     }
 }
 
-void AMaterialInstance::LoadInternalResource(AStringView Path)
+void MaterialInstance::LoadInternalResource(StringView Path)
 {
     if (!Path.Icmp("/Default/MaterialInstance/BaseLight"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/BaseLight"s);
-        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
+        static TStaticResourceFinder<Material> MaterialResource("/Default/Materials/BaseLight"s);
+        static TStaticResourceFinder<Texture>  TextureResource("/Common/grid8.webp"s);
 
         m_pMaterial = MaterialResource;
 
@@ -818,7 +818,7 @@ void AMaterialInstance::LoadInternalResource(AStringView Path)
     }
     if (!Path.Icmp("/Default/MaterialInstance/Metal"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
+        static TStaticResourceFinder<Material> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
         m_pMaterial = MaterialResource;
 
@@ -834,7 +834,7 @@ void AMaterialInstance::LoadInternalResource(AStringView Path)
     }
     if (!Path.Icmp("/Default/MaterialInstance/Dielectric") || !Path.Icmp("/Default/MaterialInstance/Default"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
+        static TStaticResourceFinder<Material> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
         m_pMaterial = MaterialResource;
 
@@ -853,7 +853,7 @@ void AMaterialInstance::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/MaterialInstance/Default");
 }
 
-bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
+bool MaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat;
     uint32_t fileVersion;
@@ -876,16 +876,16 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AString material = Stream.ReadString();
+    String material = Stream.ReadString();
 
-    m_pMaterial = GetOrCreateResource<AMaterial>(material);
+    m_pMaterial = GetOrCreateResource<Material>(material);
 
     uint32_t texCount = Stream.ReadUInt32();
     for (uint32_t slot = 0; slot < texCount; slot++)
     {
-        AString textureGUID = Stream.ReadString();
+        String textureGUID = Stream.ReadString();
 
-        SetTexture(slot, GetOrCreateResource<ATexture>(textureGUID));
+        SetTexture(slot, GetOrCreateResource<Texture>(textureGUID));
     }
 
     for (int i = 0; i < MAX_MATERIAL_UNIFORMS; i++)
@@ -896,40 +896,40 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
+bool MaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
 {
-    AString text = Stream.AsString();
+    String text = Stream.AsString();
 
-    SDocumentDeserializeInfo deserializeInfo;
+    DocumentDeserializeInfo deserializeInfo;
     deserializeInfo.pDocumentData = text.CStr();
     deserializeInfo.bInsitu       = true;
 
-    ADocument doc;
+    Document doc;
     doc.DeserializeFromString(deserializeInfo);
 
-    ADocMember* member;
+    DocumentMember* member;
 
     member = doc.FindMember("Material");
 
-    m_pMaterial = GetOrCreateResource<AMaterial>(member ? member->GetStringView() : "/Default/Materials/Unlit");
+    m_pMaterial = GetOrCreateResource<Material>(member ? member->GetStringView() : "/Default/Materials/Unlit");
 
     member = doc.FindMember("Textures");
     if (member)
     {
-        ADocValue* values  = member->GetArrayValues();
+        DocumentValue* values  = member->GetArrayValues();
         int        texSlot = 0;
-        for (ADocValue* v = values; v && texSlot < MAX_MATERIAL_TEXTURES; v = v->GetNext())
+        for (DocumentValue* v = values; v && texSlot < MAX_MATERIAL_TEXTURES; v = v->GetNext())
         {
-            SetTexture(texSlot++, GetOrCreateResource<ATexture>(v->GetStringView()));
+            SetTexture(texSlot++, GetOrCreateResource<Texture>(v->GetStringView()));
         }
     }
 
     member = doc.FindMember("Uniforms");
     if (member)
     {
-        ADocValue* values     = member->GetArrayValues();
+        DocumentValue* values     = member->GetArrayValues();
         int        uniformNum = 0;
-        for (ADocValue* v = values; v && uniformNum < MAX_MATERIAL_UNIFORMS; v = v->GetNext())
+        for (DocumentValue* v = values; v && uniformNum < MAX_MATERIAL_UNIFORMS; v = v->GetNext())
         {
             m_Uniforms[uniformNum++] = Core::ParseFloat(v->GetStringView());
         }
@@ -938,127 +938,127 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AMaterialInstance::SetTexture(AStringView Name, ATextureView* pView)
+void MaterialInstance::SetTexture(StringView Name, TextureView* pView)
 {
     uint32_t slot = GetTextureSlotByName(Name);
     if (slot < NumTextureSlots())
         m_Textures[slot] = pView;
     else
-        LOG("AMaterialInstance::SetTexture: Unknown texture slot {}\n", Name);
+        LOG("MaterialInstance::SetTexture: Unknown texture slot {}\n", Name);
 }
 
-void AMaterialInstance::SetTexture(AStringView Name, ATexture* pTexture)
+void MaterialInstance::SetTexture(StringView Name, Texture* pTexture)
 {
     SetTexture(Name, pTexture->GetView());
 }
 
-void AMaterialInstance::SetTexture(uint32_t Slot, ATextureView* pView)
+void MaterialInstance::SetTexture(uint32_t Slot, TextureView* pView)
 {
     if (Slot < NumTextureSlots())
         m_Textures[Slot] = pView;
     else
-        LOG("AMaterialInstance::SetTexture: Invalid texture slot {}\n", Slot);
+        LOG("MaterialInstance::SetTexture: Invalid texture slot {}\n", Slot);
 }
 
-void AMaterialInstance::SetTexture(uint32_t Slot, ATexture* pTexture)
+void MaterialInstance::SetTexture(uint32_t Slot, Texture* pTexture)
 {
     SetTexture(Slot, pTexture->GetView());
 }
 
-void AMaterialInstance::UnsetTextures()
+void MaterialInstance::UnsetTextures()
 {
     for (uint32_t slot = 0; slot < MAX_MATERIAL_TEXTURES; slot++)
         m_Textures[slot].Reset();
 }
 
-void AMaterialInstance::SetConstant(AStringView Name, float Value)
+void MaterialInstance::SetConstant(StringView Name, float Value)
 {
     uint32_t offset = GetConstantOffsetByName(Name);
     if (offset < MAX_MATERIAL_UNIFORMS)
         m_Uniforms[offset] = Value;
     else
-        LOG("AMaterialInstance::SetConstant: Unknown constant {}\n", Name);
+        LOG("MaterialInstance::SetConstant: Unknown constant {}\n", Name);
 }
 
-void AMaterialInstance::SetConstant(uint32_t Offset, float Value)
+void MaterialInstance::SetConstant(uint32_t Offset, float Value)
 {
     if (Offset < MAX_MATERIAL_UNIFORMS)
         m_Uniforms[Offset] = Value;
     else
-        LOG("AMaterialInstance::SetConstant: Invalid offset {}\n", Offset);
+        LOG("MaterialInstance::SetConstant: Invalid offset {}\n", Offset);
 }
 
-void AMaterialInstance::SetVector(AStringView Name, Float4 const& Value)
+void MaterialInstance::SetVector(StringView Name, Float4 const& Value)
 {
     uint32_t offset = GetConstantOffsetByName(Name);
     if (offset < MAX_MATERIAL_UNIFORM_VECTORS)
         m_UniformVectors[offset] = Value;
     else
-        LOG("AMaterialInstance::SetVector: Unknown vector {}\n", Name);
+        LOG("MaterialInstance::SetVector: Unknown vector {}\n", Name);
 }
 
-void AMaterialInstance::SetVector(uint32_t Offset, Float4 const& Value)
+void MaterialInstance::SetVector(uint32_t Offset, Float4 const& Value)
 {
     if (Offset < MAX_MATERIAL_UNIFORM_VECTORS)
         m_UniformVectors[Offset] = Value;
     else
-        LOG("AMaterialInstance::SetVector: Invalid offset {}\n", Offset);
+        LOG("MaterialInstance::SetVector: Invalid offset {}\n", Offset);
 }
 
-uint32_t AMaterialInstance::GetTextureSlotByName(AStringView Name) const
+uint32_t MaterialInstance::GetTextureSlotByName(StringView Name) const
 {
     return m_pMaterial->GetTextureSlotByName(Name);
 }
 
-uint32_t AMaterialInstance::GetConstantOffsetByName(AStringView Name) const
+uint32_t MaterialInstance::GetConstantOffsetByName(StringView Name) const
 {
     return m_pMaterial->GetConstantOffsetByName(Name);
 }
 
-uint32_t AMaterialInstance::NumTextureSlots() const
+uint32_t MaterialInstance::NumTextureSlots() const
 {
     return m_pMaterial->NumTextureSlots();
 }
 
 /** Get material. Never return null. */
-AMaterial* AMaterialInstance::GetMaterial() const
+Material* MaterialInstance::GetMaterial() const
 {
     return m_pMaterial;
 }
 
-ATextureView* AMaterialInstance::GetTexture(uint32_t Slot)
+TextureView* MaterialInstance::GetTexture(uint32_t Slot)
 {
     if (Slot < NumTextureSlots())
         return m_Textures[Slot];
 
-    LOG("AMaterialInstance::GetTexture: Invalid texture slot {}\n", Slot);
+    LOG("MaterialInstance::GetTexture: Invalid texture slot {}\n", Slot);
     return nullptr;
 }
 
-float AMaterialInstance::GetConstant(uint32_t Offset)
+float MaterialInstance::GetConstant(uint32_t Offset)
 {
     if (Offset < MAX_MATERIAL_UNIFORMS)
         return m_Uniforms[Offset];
 
-    LOG("AMaterialInstance::GetConstant: Invalid offset {}\n", Offset);
+    LOG("MaterialInstance::GetConstant: Invalid offset {}\n", Offset);
     return 0.0f;
 }
 
-Float4 const& AMaterialInstance::GetVector(uint32_t Offset)
+Float4 const& MaterialInstance::GetVector(uint32_t Offset)
 {
     if (Offset < MAX_MATERIAL_UNIFORM_VECTORS)
         return m_UniformVectors[Offset];
 
-    LOG("AMaterialInstance::GetVector: Invalid offset {}\n", Offset);
+    LOG("MaterialInstance::GetVector: Invalid offset {}\n", Offset);
     return Float4::Zero();
 }
 
-void AMaterialInstance::SetVirtualTexture(AVirtualTextureResource* VirtualTex)
+void MaterialInstance::SetVirtualTexture(VirtualTextureResource* VirtualTex)
 {
     m_VirtualTexture = VirtualTex;
 }
 
-SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, int _FrameNumber)
+MaterialFrameData* MaterialInstance::PreRenderUpdate(FrameLoop* FrameLoop, int _FrameNumber)
 {
     if (m_VisFrame == _FrameNumber)
     {
@@ -1067,7 +1067,7 @@ SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, in
 
     m_VisFrame = _FrameNumber;
 
-    m_FrameData = (SMaterialFrameData*)FrameLoop->AllocFrameMem(sizeof(SMaterialFrameData));
+    m_FrameData = (MaterialFrameData*)FrameLoop->AllocFrameMem(sizeof(MaterialFrameData));
 
     m_FrameData->Material = m_pMaterial->GetGPUResource();
 

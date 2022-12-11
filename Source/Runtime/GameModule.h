@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include "CommandContext.h"
 
-class AGameModule : public ABaseObject
+class GameModule : public BaseObject
 {
-    HK_CLASS(AGameModule, ABaseObject)
+    HK_CLASS(GameModule, BaseObject)
 
 public:
     /** Quit when user press ESCAPE */
@@ -43,19 +43,19 @@ public:
     /** Toggle fullscreen on ALT+ENTER */
     bool bToggleFullscreenAltEnter = true;
 
-    ACommandContext CommandContext;
+    CommandContext CommandContext;
 
-    AGameModule();
+    GameModule();
 
     virtual void OnGameClose();
 
     /** Add global console command */
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
+    void AddCommand(GlobalStringView _Name, TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment = ""s);
 
     /** Remove global console command */
-    void RemoveCommand(AStringView _Name);
+    void RemoveCommand(StringView _Name);
 
 private:
-    void Quit(ACommandProcessor const& _Proc);
-    void RebuildMaterials(ACommandProcessor const& _Proc);
+    void Quit(CommandProcessor const& _Proc);
+    void RebuildMaterials(CommandProcessor const& _Proc);
 };

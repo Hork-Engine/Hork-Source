@@ -102,11 +102,11 @@ protected:
 
     bool IsVertical() const { return m_bVerticalOrientation; }
 
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
 
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
 
-    void Draw(ACanvas& cv) override;
+    void Draw(Canvas& cv) override;
 
 private:
     void UpdateSliderGeometry();

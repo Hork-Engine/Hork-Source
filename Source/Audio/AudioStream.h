@@ -33,26 +33,26 @@ SOFTWARE.
 #include <Core/Ref.h>
 
 /** Immutable structure that holds heap pointer and size in bytes. Owns the heap pointer. */
-struct SFileInMemory : SInterlockedRef
+struct FileInMemory : InterlockedRef
 {
 private:
-    void * pHeapPtr;
+    void* pHeapPtr;
 
     size_t SizeInBytes;
 
 public:
-    SFileInMemory( void * _pHeapPtr, size_t _SizeInBytes )
+    FileInMemory(void* _pHeapPtr, size_t _SizeInBytes)
     {
         pHeapPtr = _pHeapPtr;
         SizeInBytes = _SizeInBytes;
     }
 
-    ~SFileInMemory()
+    ~FileInMemory()
     {
-        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free( pHeapPtr );
+        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pHeapPtr);
     }
 
-    const void * GetHeapPtr() const
+    const void* GetHeapPtr() const
     {
         return pHeapPtr;
     }
@@ -63,17 +63,17 @@ public:
     }
 };
 
-/** SAudioStream
+/** AudioStream
 Designed as immutable structure, so we can use it from several threads.
 NOTE: SeekToFrame and ReadFrames are not thread safe without your own synchronization. */
-struct SAudioStream : SInterlockedRef
+struct AudioStream : InterlockedRef
 {
 private:
     /** Audio decoder */
-    struct ma_decoder * Decoder;
+    struct ma_decoder* Decoder;
 
     /** Audio source */
-    TRef< SFileInMemory > pFileInMemory;
+    TRef<FileInMemory> pFileInMemory;
 
     /** Frame count */
     int FrameCount;
@@ -88,9 +88,9 @@ private:
     int SampleStride;
 
 public:
-    SAudioStream( SFileInMemory * pFileInMemory, int FrameCount, int SampleRate, int SampleBits, int Channels );
+    AudioStream(FileInMemory* pFileInMemory, int FrameCount, int SampleRate, int SampleBits, int Channels);
 
-    ~SAudioStream();
+    ~AudioStream();
 
     /** Frame count */
     HK_FORCEINLINE int GetFrameCount() const
@@ -117,8 +117,8 @@ public:
     }
 
     /** Seeks to a PCM frame based on it's absolute index. */
-    void SeekToFrame( int FrameNum );
+    void SeekToFrame(int FrameNum);
 
     /** Reads PCM frames from the stream. */
-    int ReadFrames( void * pFrames, int FrameCount, size_t SizeInBytes );
+    int ReadFrames(void* pFrames, int FrameCount, size_t SizeInBytes);
 };

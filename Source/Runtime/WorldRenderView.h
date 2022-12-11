@@ -36,16 +36,16 @@ SOFTWARE.
 #include "Terrain.h"
 #include <Renderer/VT/VirtualTextureFeedback.h>
 
-class ColorGradingParameters : public ABaseObject
+class ColorGradingParameters : public BaseObject
 {
-    HK_CLASS(ColorGradingParameters, ABaseObject)
+    HK_CLASS(ColorGradingParameters, BaseObject)
 
 public:
     ColorGradingParameters();
 
-    void SetLUT(ATexture* Texture);
+    void SetLUT(Texture* Texture);
 
-    ATexture* GetLUT() { return m_LUT; }
+    Texture* GetLUT() { return m_LUT; }
 
     void SetGrain(Float3 const& grain);
 
@@ -84,21 +84,21 @@ public:
     void SetDefaults();
 
 private:
-    TRef<ATexture> m_LUT;
-    Float3         m_Grain;
-    Float3         m_Gamma;
-    Float3         m_Lift;
-    Float3         m_Presaturation;
-    float          m_Temperature;
-    Float3         m_TemperatureScale = Float3(1.0f);
-    Float3         m_TemperatureStrength;
-    float          m_BrightnessNormalization;
-    float          m_AdaptationSpeed;
+    TRef<Texture> m_LUT;
+    Float3        m_Grain;
+    Float3        m_Gamma;
+    Float3        m_Lift;
+    Float3        m_Presaturation;
+    float         m_Temperature;
+    Float3        m_TemperatureScale = Float3(1.0f);
+    Float3        m_TemperatureStrength;
+    float         m_BrightnessNormalization;
+    float         m_AdaptationSpeed;
 };
 
-class VignetteParameters : public ABaseObject
+class VignetteParameters : public BaseObject
 {
-    HK_CLASS(VignetteParameters, ABaseObject)
+    HK_CLASS(VignetteParameters, BaseObject)
 
 public:
     VignetteParameters() = default;
@@ -122,9 +122,9 @@ public:
     float  InnerRadiusSqr = Math::Square(0.6f);
 };
 
-class WorldRenderView : public ABaseObject
+class WorldRenderView : public BaseObject
 {
-    HK_CLASS(WorldRenderView, ABaseObject)
+    HK_CLASS(WorldRenderView, BaseObject)
 
 public:
     Color4                       BackgroundColor  = Color4(0.3f, 0.3f, 0.8f);
@@ -146,15 +146,15 @@ public:
 
     void SetViewport(uint32_t width, uint32_t height);
 
-    void SetCamera(ACameraComponent* camera);
+    void SetCamera(CameraComponent* camera);
 
     // NOTE: The culling camera has not yet been implemented. It is reserved for the future.
-    void SetCullingCamera(ACameraComponent* camera);
+    void SetCullingCamera(CameraComponent* camera);
 
-    ATexture* GetCurrentExposure() { return m_CurrentExposure; }
-    ATexture* GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
+    Texture* GetCurrentExposure() { return m_CurrentExposure; }
+    Texture* GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
 
-    ATextureView* GetTextureView();
+    TextureView* GetTextureView();
 
     /*
     TODO    
@@ -195,7 +195,7 @@ public:
     // TODO: Render mode: Polygons,Triangles,Solid,Solid+Triangles,Solid+Polygons,etc (for editor)
 
 private:
-    class TextureViewImpl : public ATextureView
+    class TextureViewImpl : public TextureView
     {
     public:
         TextureViewImpl(WorldRenderView* pWorldRenderView) :
@@ -222,24 +222,24 @@ private:
     RenderCore::ITexture* AcquireHBAOMaps();
     void                  ReleaseHBAOMaps();
 
-    TWeakRef<ACameraComponent>              m_pCamera;
-    TWeakRef<ACameraComponent>              m_pCullingCamera;
-    TWeakRef<TextureViewImpl>               m_WorldViewTex;
-    uint32_t                                m_Width{};
-    uint32_t                                m_Height{};
-    TRef<RenderCore::ITexture>              m_LightTexture;
-    TRef<RenderCore::ITexture>              m_DepthTexture;
-    TRef<RenderCore::ITexture>              m_RenderTarget;
-    TRef<RenderCore::ITexture>              m_HBAOMaps;
-    THashMap<uint64_t, class ATerrainView*> m_TerrainViews;     // TODO: Needs to be cleaned from time to time
-    Float4x4                                m_ProjectionMatrix; // last rendered projection
-    Float4x4                                m_ViewMatrix;       // last rendered view
-    float                                   m_ScaledWidth{};
-    float                                   m_ScaledHeight{};
-    AVirtualTextureFeedback                 m_VTFeedback;
-    TRef<ATexture>                          m_CurrentColorGradingLUT;
-    TRef<ATexture>                          m_CurrentExposure;
-    int                                     m_FrameNum{};
+    TWeakRef<CameraComponent>              m_pCamera;
+    TWeakRef<CameraComponent>              m_pCullingCamera;
+    TWeakRef<TextureViewImpl>              m_WorldViewTex;
+    uint32_t                               m_Width{};
+    uint32_t                               m_Height{};
+    TRef<RenderCore::ITexture>             m_LightTexture;
+    TRef<RenderCore::ITexture>             m_DepthTexture;
+    TRef<RenderCore::ITexture>             m_RenderTarget;
+    TRef<RenderCore::ITexture>             m_HBAOMaps;
+    THashMap<uint64_t, class TerrainView*> m_TerrainViews;     // TODO: Needs to be cleaned from time to time
+    Float4x4                               m_ProjectionMatrix; // last rendered projection
+    Float4x4                               m_ViewMatrix;       // last rendered view
+    float                                  m_ScaledWidth{};
+    float                                  m_ScaledHeight{};
+    VirtualTextureFeedback                 m_VTFeedback;
+    TRef<Texture>                          m_CurrentColorGradingLUT;
+    TRef<Texture>                          m_CurrentExposure;
+    int                                    m_FrameNum{};
 
-    friend class ARenderFrontend;
+    friend class RenderFrontend;
 };

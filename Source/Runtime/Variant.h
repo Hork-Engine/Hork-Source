@@ -65,38 +65,38 @@ enum VARIANT_TYPE : uint32_t
     VARIANT_ENUM
 };
 
-struct SResourceRef
+struct ResourceRef
 {
     uint32_t ResourceType;
     uint64_t ResourceId;
 };
 
-HK_FORMAT_DEF_(SResourceRef, "( {} {} )", v.ResourceType, v.ResourceId)
+HK_FORMAT_DEF_(ResourceRef, "( {} {} )", v.ResourceType, v.ResourceId)
 
-struct SEnumDef
+struct EnumDef
 {
     int64_t     Value;
     const char* HumanReadableName;
 };
 
 template <typename T>
-SEnumDef const* EnumDefinition();
+EnumDef const* EnumDefinition();
 
-HK_INLINE const char* FindEnumValue(SEnumDef const* EnumDef, int64_t EnumValue)
+HK_INLINE const char* FindEnumValue(EnumDef const* enumDef, int64_t enumValue)
 {
-    for (SEnumDef const* e = EnumDef ; e->HumanReadableName ; e++)
+    for (EnumDef const* e = enumDef; e->HumanReadableName; e++)
     {
-        if (e->Value == EnumValue)
+        if (e->Value == enumValue)
             return e->HumanReadableName;
     }
     return "[Undefined]";
 }
 
-HK_INLINE int64_t EnumFromString(SEnumDef const* EnumDef, AStringView String)
+HK_INLINE int64_t EnumFromString(EnumDef const* enumDef, StringView string)
 {
-    for (SEnumDef const* e = EnumDef ; e->HumanReadableName ; e++)
+    for (EnumDef const* e = enumDef; e->HumanReadableName; e++)
     {
-        if (String == e->HumanReadableName)
+        if (string == e->HumanReadableName)
             return e->Value;
     }
     return 0;
@@ -217,12 +217,12 @@ template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<Quat>()
     return VARIANT_QUAT;
 }
 
-template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<AString>()
+template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<String>()
 {
     return VARIANT_STRING;
 }
 
-template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<SResourceRef>()
+template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<ResourceRef>()
 {
     return VARIANT_RESOURCE_REF;
 }
@@ -240,13 +240,13 @@ HK_FORCEINLINE VARIANT_TYPE GetVariantType()
 }
 
 template <typename T>
-SEnumDef const* GetVariantEnum(typename std::enable_if<!std::is_enum<T>::value>::type* = 0)
+EnumDef const* GetVariantEnum(typename std::enable_if<!std::is_enum<T>::value>::type* = 0)
 {
     return nullptr;
 }
 
 template <typename T>
-SEnumDef const* GetVariantEnum(typename std::enable_if<std::is_enum<T>::value>::type* = 0)
+EnumDef const* GetVariantEnum(typename std::enable_if<std::is_enum<T>::value>::type* = 0)
 {
     return EnumDefinition<T>();
 }
@@ -255,7 +255,7 @@ SEnumDef const* GetVariantEnum(typename std::enable_if<std::is_enum<T>::value>::
 
 
 /** Variant is used to store property value */
-class AVariant final
+class Variant final
 {
     static constexpr size_t SizeOf =
         std::max({sizeof(bool),
@@ -280,14 +280,14 @@ class AVariant final
                   sizeof(Float3x4),
                   sizeof(Float4x4),
                   sizeof(Quat),
-                  sizeof(AString),
-                  sizeof(SResourceRef)});
+                  sizeof(String),
+                  sizeof(ResourceRef)});
 
-    struct SEnumType
+    struct EnumType
     {
         uint8_t EnumData[8];
         int64_t EnumValue;
-        SEnumDef const* EnumDef;
+        EnumDef const* EnumDef;
     };
 
     VARIANT_TYPE m_Type{VARIANT_UNDEFINED};
@@ -295,25 +295,25 @@ class AVariant final
     union
     {
         alignas(16) uint8_t m_RawData[SizeOf];
-        SEnumType m_EnumType;
+        EnumType m_EnumType;
     };
 
 public:
-    AVariant() = default;
+    Variant() = default;
 
-    ~AVariant()
+    ~Variant()
     {
         Reset();
     }
 
-    AVariant(AVariant const& Rhs) :
+    Variant(Variant const& Rhs) :
         m_Type(Rhs.m_Type)
     {
         switch (Rhs.m_Type)
         {
             case VARIANT_STRING:
-                new (m_RawData) AString;
-                *(AString*)&m_RawData[0] = *(AString*)&Rhs.m_RawData[0];
+                new (m_RawData) String;
+                *(String*)&m_RawData[0] = *(String*)&Rhs.m_RawData[0];
                 break;
             case VARIANT_ENUM:
                 m_EnumType = Rhs.m_EnumType;
@@ -326,7 +326,7 @@ public:
         }
     }
 
-    AVariant& operator=(AVariant const& Rhs)
+    Variant& operator=(Variant const& Rhs)
     {
         Reset();
 
@@ -335,8 +335,8 @@ public:
         switch (Rhs.m_Type)
         {
             case VARIANT_STRING:
-                new (m_RawData) AString;
-                *(AString*)&m_RawData[0] = *(AString*)&Rhs.m_RawData[0];
+                new (m_RawData) String;
+                *(String*)&m_RawData[0] = *(String*)&Rhs.m_RawData[0];
                 break;
             case VARIANT_ENUM:
                 m_EnumType = Rhs.m_EnumType;
@@ -350,13 +350,13 @@ public:
         return *this;
     }
 
-    AVariant(AVariant&& Rhs) noexcept :
+    Variant(Variant&& Rhs) noexcept :
         m_Type(Rhs.m_Type)
     {
         switch (Rhs.m_Type)
         {
             case VARIANT_STRING:
-                new (m_RawData) AString(std::move(*(AString*)&Rhs.m_RawData[0]));
+                new (m_RawData) String(std::move(*(String*)&Rhs.m_RawData[0]));
                 break;
             case VARIANT_ENUM:
                 m_EnumType = Rhs.m_EnumType;
@@ -371,7 +371,7 @@ public:
         Rhs.m_Type = VARIANT_UNDEFINED;
     }
 
-    AVariant& operator=(AVariant&& Rhs) noexcept
+    Variant& operator=(Variant&& Rhs) noexcept
     {
         Reset();
 
@@ -380,7 +380,7 @@ public:
         switch (Rhs.m_Type)
         {
             case VARIANT_STRING:
-                new (m_RawData) AString(std::move(*(AString*)&Rhs.m_RawData[0]));
+                new (m_RawData) String(std::move(*(String*)&Rhs.m_RawData[0]));
                 break;
             case VARIANT_ENUM:
                 m_EnumType = Rhs.m_EnumType;
@@ -396,35 +396,35 @@ public:
         return *this;
     }
 
-    AVariant(const char *Rhs) :
+    Variant(const char *Rhs) :
         m_Type(VARIANT_STRING)
     {
-        new (m_RawData) AString;
+        new (m_RawData) String;
 
-        *(AString*)&m_RawData[0] = Rhs;
+        *(String*)&m_RawData[0] = Rhs;
     }
 
-    AVariant(AStringView Rhs) :
+    Variant(StringView Rhs) :
         m_Type(VARIANT_STRING)
     {
-        new (m_RawData) AString;
+        new (m_RawData) String;
 
-        *(AString*)&m_RawData[0] = Rhs;
+        *(String*)&m_RawData[0] = Rhs;
     }
 
     template <typename T, std::enable_if_t<!std::is_enum<T>::value, bool> = true>
-    AVariant(T const& Rhs) :
+    Variant(T const& Rhs) :
         m_Type(VariantTraits::DeduceVariantType<T>())
     {
-        if (std::is_same<T, AString>())
+        if (std::is_same<T, String>())
         {
-            new (m_RawData) AString;
+            new (m_RawData) String;
         }
         *(T*)&m_RawData[0] = Rhs;
     }
 
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
-    AVariant(T const& Rhs) :
+    Variant(T const& Rhs) :
         m_Type(VARIANT_ENUM)
     {
         static_assert(sizeof(m_EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
@@ -434,51 +434,51 @@ public:
         m_EnumType.EnumDef           = EnumDefinition<T>();
     }
 
-    AVariant(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String)
+    Variant(VARIANT_TYPE Type, EnumDef const* EnumDef, StringView String)
     {
         SetFromString(Type, EnumDef, String);
     }
 
-    AVariant& operator=(const char* Rhs)
+    Variant& operator=(const char* Rhs)
     {
         if (m_Type != VARIANT_STRING)
         {
-            new (m_RawData) AString;
+            new (m_RawData) String;
         }
 
         m_Type = VARIANT_STRING;
 
-        *(AString*)&m_RawData[0] = Rhs;
+        *(String*)&m_RawData[0] = Rhs;
         return *this;
     }
 
-    AVariant& operator=(AStringView Rhs)
+    Variant& operator=(StringView Rhs)
     {
         if (m_Type != VARIANT_STRING)
         {
-            new (m_RawData) AString;
+            new (m_RawData) String;
         }
 
         m_Type = VARIANT_STRING;
 
-        *(AString*)&m_RawData[0] = Rhs;
+        *(String*)&m_RawData[0] = Rhs;
         return *this;
     }
 
     template <typename T, std::enable_if_t<!std::is_enum<T>::value, bool> = true>
-    AVariant& operator=(T const& Rhs)
+    Variant& operator=(T const& Rhs)
     {
-        if (std::is_same<T, AString>())
+        if (std::is_same<T, String>())
         {
             if (m_Type != VARIANT_STRING)
             {
-                new (m_RawData) AString;
+                new (m_RawData) String;
             }
         }
         else
         {
             if (m_Type == VARIANT_STRING)
-                ((AString*)&m_RawData[0])->~AString();
+                ((String*)&m_RawData[0])->~String();
         }
 
         m_Type = VariantTraits::DeduceVariantType<T>();
@@ -488,10 +488,10 @@ public:
     }
 
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
-    AVariant& operator=(T const& Rhs)
+    Variant& operator=(T const& Rhs)
     {
         if (m_Type == VARIANT_STRING)
-            ((AString*)&m_RawData[0])->~AString();
+            ((String*)&m_RawData[0])->~String();
 
         m_Type = VARIANT_ENUM;
 
@@ -527,22 +527,22 @@ public:
         return m_Type;
     }
 
-    void SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String);
+    void SetFromString(VARIANT_TYPE Type, EnumDef const* EnumDef, StringView String);
 
     void Reset()
     {
         if (m_Type == VARIANT_STRING)
-            ((AString*)&m_RawData[0])->~AString();
+            ((String*)&m_RawData[0])->~String();
         m_Type = VARIANT_UNDEFINED;
     }
 
-    AString ToString() const;
+    String ToString() const;
 
 private:
-    void SetEnum(SEnumDef const* EnumDef, int64_t EnumValue)
+    void SetEnum(EnumDef const* EnumDef, int64_t EnumValue)
     {
         if (m_Type == VARIANT_STRING)
-            ((AString*)&m_RawData[0])->~AString();
+            ((String*)&m_RawData[0])->~String();
 
         m_Type = VARIANT_ENUM;
 
@@ -552,14 +552,14 @@ private:
     }
 };
 
-HK_FORMAT_DEF_TO_STRING(AVariant)
+HK_FORMAT_DEF_TO_STRING(Variant)
 
 
 // TODO: Move to Parse.h?
 
 #include <Containers/Vector.h>
 
-HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCrossLine = true)
+HK_INLINE StringView GetToken(StringView& Token, StringView String, bool bCrossLine = true)
 {
     const char* p   = String.Begin();
     const char* end = String.End();
@@ -571,13 +571,13 @@ HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCro
     {
         if (p == end)
         {
-            return AStringView(p, (StringSizeType)(end - p));
+            return StringView(p, (StringSizeType)(end - p));
         }
 
         if (*p == '\n' && !bCrossLine)
         {
             LOG("Unexpected new line\n");
-            return AStringView(p, (StringSizeType)(end - p));
+            return StringView(p, (StringSizeType)(end - p));
         }
 
         if (*p > 32)
@@ -608,24 +608,24 @@ HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCro
         ++p;
     }
 
-    Token = AStringView(token, p);
+    Token = StringView(token, p);
 
-    return AStringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
+    return StringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
 }
 
 
 template <typename VectorType>
-HK_INLINE VectorType ParseVector(AStringView String, AStringView* NewString = nullptr)
+HK_INLINE VectorType ParseVector(StringView String, StringView* NewString = nullptr)
 {
     VectorType v;
 
-    AStringView token;
-    AStringView tmp;
+    StringView token;
+    StringView tmp;
 
     if (!NewString)
         NewString = &tmp;
 
-    AStringView& s = *NewString;
+    StringView& s = *NewString;
 
     s = GetToken(token, String);
     if (!token.Compare("("))
@@ -658,13 +658,13 @@ HK_INLINE VectorType ParseVector(AStringView String, AStringView* NewString = nu
 }
 
 // Parses a vector of variable length. Returns false if there were errors.
-HK_INLINE bool ParseVector(AStringView String, TVector<AStringView>& v)
+HK_INLINE bool ParseVector(StringView String, TVector<StringView>& v)
 {
-    AStringView token;
+    StringView token;
 
     v.Clear();
 
-    AStringView s = GetToken(token, String);
+    StringView s = GetToken(token, String);
     if (!token.Compare("("))
     {
         v.Add(token);
@@ -699,12 +699,12 @@ HK_INLINE bool ParseVector(AStringView String, TVector<AStringView>& v)
 }
 
 template <typename MatrixType>
-HK_INLINE MatrixType ParseMatrix(AStringView String)
+HK_INLINE MatrixType ParseMatrix(StringView String)
 {
     MatrixType matrix(1);
 
-    AStringView token;
-    AStringView s = String;
+    StringView token;
+    StringView s = String;
 
     s = GetToken(token, s);
     if (!token.Compare("("))

@@ -35,23 +35,23 @@ SOFTWARE.
 
 /**
 
-AVirtualTextureResource
+VirtualTextureResource
 
 */
-class AVirtualTextureResource : public AResource
+class VirtualTextureResource : public Resource
 {
-    HK_CLASS(AVirtualTextureResource, AResource)
+    HK_CLASS(VirtualTextureResource, Resource)
 
 public:
 protected:
-    AVirtualTextureResource();
-    ~AVirtualTextureResource();
+    VirtualTextureResource();
+    ~VirtualTextureResource();
 
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Textures/DefaultVT"; }
 };

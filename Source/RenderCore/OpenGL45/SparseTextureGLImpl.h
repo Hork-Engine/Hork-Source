@@ -34,13 +34,13 @@ SOFTWARE.
 
 namespace RenderCore {
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class ASparseTextureGLImpl final : public ISparseTexture
+class SparseTextureGLImpl final : public ISparseTexture
 {
 public:
-    ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextureDesc const& Desc);
-    ~ASparseTextureGLImpl();
+    SparseTextureGLImpl(DeviceGLImpl* pDevice, SparseTextureDesc const& Desc);
+    ~SparseTextureGLImpl();
 };
 
 }

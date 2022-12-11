@@ -30,4 +30,4 @@ SOFTWARE.
 
 #include "QuadTree.h"
 
-const SQuadTreeRemapTable QuadTreeRemapTable;
+const QuadTreeRemapTable GQuadTreeRemapTable;

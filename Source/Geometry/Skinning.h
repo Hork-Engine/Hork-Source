@@ -39,10 +39,10 @@ constexpr int MAX_SKELETON_JOINTS = 256;
 
 /**
 
-ASkin
+MeshSkin
 
 */
-struct ASkin
+struct MeshSkin
 {
     /** Index of the joint in skeleton */
     TVector<int32_t> JointIndices;
@@ -53,12 +53,12 @@ struct ASkin
 
 /**
 
-SJoint
+SkeletonJoint
 
 Joint properties
 
 */
-struct SJoint
+struct SkeletonJoint
 {
     /** Parent node index. For root = -1 */
     int32_t Parent;
@@ -86,12 +86,12 @@ struct SJoint
 
 /**
 
-SAnimationChannel
+AnimationChannel
 
 Animation for single joint
 
 */
-struct SAnimationChannel
+struct AnimationChannel
 {
     /** Joint index in skeleton */
     int32_t JointIndex;
@@ -126,23 +126,23 @@ struct SAnimationChannel
 namespace Geometry
 {
 
-BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
-                                    SMeshVertexSkin const* Weights,
+BvAxisAlignedBox CalcBindposeBounds(MeshVertex const*     Vertices,
+                                    MeshVertexSkin const* Weights,
                                     int                    VertexCount,
-                                    ASkin const*           Skin,
-                                    SJoint*                Joints,
+                                    MeshSkin const*        Skin,
+                                    SkeletonJoint*         Joints,
                                     int                    JointsCount);
 
-void CalcBoundingBoxes(SMeshVertex const*         Vertices,
-                       SMeshVertexSkin const*     Weights,
+void CalcBoundingBoxes(MeshVertex const*         Vertices,
+                       MeshVertexSkin const*     Weights,
                        int                        VertexCount,
-                       ASkin const*               Skin,
-                       SJoint const*              Joints,
+                       MeshSkin const*            Skin,
+                       SkeletonJoint const*       Joints,
                        int                        NumJoints,
                        uint32_t                   FrameCount,
-                       SAnimationChannel const*   Channels,
+                       AnimationChannel const*    Channels,
                        int                        ChannelsCount,
-                       STransform const*          Transforms,
+                       Transform const*          Transforms,
                        TVector<BvAxisAlignedBox>& Bounds);
 
 } // namespace Geometry

@@ -36,13 +36,13 @@ SOFTWARE.
 
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 
-struct SFeedbackChain
+struct VTFeedbackChain
 {
     int Size;
-    const void * Data;
+    const void* Data;
 };
 
-struct SFeedbackData
+struct VTFeedbackData
 {
     byte Byte1; // B
     byte Byte2; // G
@@ -50,35 +50,35 @@ struct SFeedbackData
     byte Byte0; // A
 };
 
-struct SPageDesc
+struct VTPageDesc
 {
-    AVirtualTexture * pTexture;
+    VirtualTexture* pTexture;
     uint32_t Hash;
     uint32_t Refs;
     uint32_t PageIndex;
     //uint8_t  Lod;
 };
 
-struct SVirtualTextureUnit
+struct VTUnit
 {
     float MaxLod;
     float Log2Size;
 };
 
-class AVirtualTextureFeedbackAnalyzer : public ARefCounted
+class VirtualTextureFeedbackAnalyzer : public RefCounted
 {
 public:
-    AVirtualTextureFeedbackAnalyzer();
-    virtual ~AVirtualTextureFeedbackAnalyzer();
+    VirtualTextureFeedbackAnalyzer();
+    virtual ~VirtualTextureFeedbackAnalyzer();
 
-    void AddFeedbackData( int FeedbackSize, const void * FeedbackData );
+    void AddFeedbackData(int FeedbackSize, const void* FeedbackData);
 
     /** Bind texture once per frame between Begin() and End() */
-    void BindTexture( int Unit, AVirtualTexture * Texture );
+    void BindTexture(int Unit, VirtualTexture* Texture);
 
-    AVirtualTexture * GetTexture( int Unit );
+    VirtualTexture* GetTexture(int Unit);
 
-    void Begin(class AStreamedMemoryGPU* StreamedMemory);
+    void Begin(class StreamedMemoryGPU* StreamedMemory);
 
     void End();
 
@@ -87,33 +87,36 @@ public:
 private:
     void DecodePages();
     void ClearQueue();
-    void SubmitPages( TVector< SPageDesc > const & Pages );
+    void SubmitPages(TVector<VTPageDesc> const& Pages);
     void WaitForNewPages();
     void StreamThreadMain();
 
     // Per-frame texture bindings
-    AVirtualTexture * Textures[2][VT_MAX_TEXTURE_UNITS];
+    VirtualTexture* Textures[2][VT_MAX_TEXTURE_UNITS];
     int SwapIndex;
 
     // Per-frame binding data for shaders
-    SVirtualTextureUnit * Bindings;
+    VTUnit* Bindings;
     int NumBindings;
 
     // Actually feedback data is from previous frame
-    TPodVector< SFeedbackChain > Feedbacks;
+    TPodVector<VTFeedbackChain> Feedbacks;
 
     // Unique pages from feedback
     THashMap<uint32_t, uint32_t> PendingPageSet;
-    TVector<SPageDesc>           PendingPages;
+    TVector<VTPageDesc> PendingPages;
 
     // Page queue for async loading
-    enum { MAX_QUEUE_LENGTH = 256 };
-    SPageDesc QuedPages[MAX_QUEUE_LENGTH];
+    enum
+    {
+        MAX_QUEUE_LENGTH = 256
+    };
+    VTPageDesc QuedPages[MAX_QUEUE_LENGTH];
     int QueueLoadPos; // pointer to a page that will be loaded first
 
-    AThread StreamThread;
-    AMutex EnqueLock;
-    ASyncEvent PageSubmitEvent;
-    ASyncEvent StreamThreadStopped;
-    AAtomicBool bStopStreamThread;
+    Thread StreamThread;
+    Mutex EnqueLock;
+    SyncEvent PageSubmitEvent;
+    SyncEvent StreamThreadStopped;
+    AtomicBool bStopStreamThread;
 };

@@ -40,18 +40,18 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCylinderShape.h>
 #include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
 
-AConsoleVar com_DrawCharacterControllerCapsule("com_DrawCharacterControllerCapsule"s, "0"s, CVAR_CHEAT);
-AConsoleVar com_RecoverFromPenetration("com_RecoverFromPenetration"s, "1"s);
-AConsoleVar com_UseGhostObjectSweepTest("com_UseGhostObjectSweepTest"s, "1"s);
-AConsoleVar com_CharacterCcdPenetration("com_CharacterCcdPenetration"s, "0"s);
+ConsoleVar com_DrawCharacterControllerCapsule("com_DrawCharacterControllerCapsule"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_RecoverFromPenetration("com_RecoverFromPenetration"s, "1"s);
+ConsoleVar com_UseGhostObjectSweepTest("com_UseGhostObjectSweepTest"s, "1"s);
+ConsoleVar com_CharacterCcdPenetration("com_CharacterCcdPenetration"s, "0"s);
 
 ATTRIBUTE_ALIGNED16(class)
-ACharacterControllerActionInterface : public btActionInterface
+CharacterControllerActionInterface : public btActionInterface
 {
 public:
     BT_DECLARE_ALIGNED_ALLOCATOR();
 
-    ACharacterControllerBase* CharacterController;
+    CharacterControllerBase* CharacterController;
 
     btManifoldArray ManifoldArray;
 
@@ -68,13 +68,13 @@ public:
 };
 
 
-HK_CLASS_META(ACharacterControllerBase)
+HK_CLASS_META(CharacterControllerBase)
 
-ACharacterControllerBase::ACharacterControllerBase()
+CharacterControllerBase::CharacterControllerBase()
 {
-    HitProxy = NewObj<AHitProxy>();
-    HitProxy->SetCollisionGroup(CM_CHARACTER_CONTROLLER);
-    HitProxy->SetCollisionMask(CM_ALL);
+    m_HitProxy = NewObj<HitProxy>();
+    m_HitProxy->SetCollisionGroup(CM_CHARACTER_CONTROLLER);
+    m_HitProxy->SetCollisionMask(CM_ALL);
 
     AnglePitch = 0;
     AngleYaw   = 0;
@@ -82,7 +82,7 @@ ACharacterControllerBase::ACharacterControllerBase()
     SetAbsoluteScale(true);
 }
 
-void ACharacterControllerBase::InitializeComponent()
+void CharacterControllerBase::InitializeComponent()
 {
     Super::InitializeComponent();
 
@@ -91,7 +91,7 @@ void ACharacterControllerBase::InitializeComponent()
     startTransform.setOrigin(btVectorToFloat3(GetWorldPosition() + Float3(0, GetCharacterHeight() * 0.5f, 0)));
 
     // Just a bridge between the character controller and btActionInterface
-    ActionInterface                      = new ACharacterControllerActionInterface;
+    ActionInterface                      = new CharacterControllerActionInterface;
     ActionInterface->CharacterController = this;
 
     btVector3 halfExtents;
@@ -106,19 +106,19 @@ void ACharacterControllerBase::InitializeComponent()
     World = GetWorld()->PhysicsSystem.GetInternal();
 
     GhostObject = new btPairCachingGhostObject;
-    GhostObject->setUserPointer(HitProxy.GetObject());
+    GhostObject->setUserPointer(m_HitProxy.GetObject());
     GhostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
     GhostObject->setWorldTransform(startTransform);
     GhostObject->setCollisionShape(ConvexShape);
 
     World->addAction(ActionInterface);
 
-    HitProxy->Initialize(this, GhostObject);
+    m_HitProxy->Initialize(this, GhostObject);
 }
 
-void ACharacterControllerBase::DeinitializeComponent()
+void CharacterControllerBase::DeinitializeComponent()
 {
-    HitProxy->Deinitialize();
+    m_HitProxy->Deinitialize();
 
     World->removeAction(ActionInterface);
 
@@ -130,7 +130,7 @@ void ACharacterControllerBase::DeinitializeComponent()
     Super::DeinitializeComponent();
 }
 
-void ACharacterControllerBase::BeginPlay()
+void CharacterControllerBase::BeginPlay()
 {
     Super::BeginPlay();
 
@@ -140,7 +140,7 @@ void ACharacterControllerBase::BeginPlay()
     SetWorldRotation(GetAngleQuaternion());
 }
 
-void ACharacterControllerBase::OnTransformDirty()
+void CharacterControllerBase::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
@@ -153,7 +153,7 @@ void ACharacterControllerBase::OnTransformDirty()
     }
 }
 
-void ACharacterControllerBase::CalcYawAndPitch(float& Yaw, float& Pitch)
+void CharacterControllerBase::CalcYawAndPitch(float& Yaw, float& Pitch)
 {
     Float3 right = GetWorldRightVector();
     right.Y      = 0.0f; // remove roll
@@ -172,19 +172,19 @@ void ACharacterControllerBase::CalcYawAndPitch(float& Yaw, float& Pitch)
     Pitch = Math::Clamp(Math::Degrees(std::acos(Math::Clamp(-forward.Y, -1.0f, 1.0f))) - 90.0f, -90.0f, 90.0f);
 }
 
-void ACharacterControllerBase::SetCharacterYaw(float _Yaw)
+void CharacterControllerBase::SetCharacterYaw(float _Yaw)
 {
     AngleYaw = Angl::Normalize180(_Yaw);
     SetWorldRotation(GetAngleQuaternion());
 }
 
-void ACharacterControllerBase::SetCharacterPitch(float _Pitch)
+void CharacterControllerBase::SetCharacterPitch(float _Pitch)
 {
     AnglePitch = Math::Clamp(_Pitch, -90.0f, 90.0f);
     SetWorldRotation(GetAngleQuaternion());
 }
 
-Quat ACharacterControllerBase::GetAngleQuaternion() const
+Quat CharacterControllerBase::GetAngleQuaternion() const
 {
     float sx, sy, cx, cy;
 
@@ -194,39 +194,39 @@ Quat ACharacterControllerBase::GetAngleQuaternion() const
     return Quat(cy * cx, cy * sx, sy * cx, -sy * sx);
 }
 
-Float3 ACharacterControllerBase::GetCenterWorldPosition() const
+Float3 CharacterControllerBase::GetCenterWorldPosition() const
 {
     Float3 worldPosition = GetWorldPosition();
     worldPosition[1] += GetCharacterHeight() * 0.5f;
     return worldPosition;
 }
 
-void ACharacterControllerBase::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
+void CharacterControllerBase::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
-    HitProxy->SetCollisionGroup(_CollisionGroup);
+    m_HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void ACharacterControllerBase::SetCollisionMask(COLLISION_MASK _CollisionMask)
+void CharacterControllerBase::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionMask(_CollisionMask);
+    m_HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void ACharacterControllerBase::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
+void CharacterControllerBase::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
+    m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void ACharacterControllerBase::AddCollisionIgnoreActor(AActor* _Actor)
+void CharacterControllerBase::AddCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->AddCollisionIgnoreActor(_Actor);
+    m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void ACharacterControllerBase::RemoveCollisionIgnoreActor(AActor* _Actor)
+void CharacterControllerBase::RemoveCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->RemoveCollisionIgnoreActor(_Actor);
+    m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
 
-void ACharacterControllerBase::UpdateCapsuleShape()
+void CharacterControllerBase::UpdateCapsuleShape()
 {
     if (!bNeedToUpdateCapsule)
     {
@@ -242,7 +242,7 @@ void ACharacterControllerBase::UpdateCapsuleShape()
     bNeedToUpdateCapsule = false;
 }
 
-void ACharacterControllerBase::SetCapsuleWorldPosition(Float3 const& InPosition)
+void CharacterControllerBase::SetCapsuleWorldPosition(Float3 const& InPosition)
 {
     btTransform transform = GhostObject->getWorldTransform();
     btVector3   position  = btVectorToFloat3(InPosition + Float3(0, GetCharacterHeight() * 0.5f, 0));
@@ -253,7 +253,7 @@ void ACharacterControllerBase::SetCapsuleWorldPosition(Float3 const& InPosition)
     }
 }
 
-void ACharacterControllerBase::_Update(float _TimeStep)
+void CharacterControllerBase::_Update(float _TimeStep)
 {
     if (!GhostObject->getBroadphaseHandle())
     {
@@ -276,7 +276,7 @@ class ACharacterControllerTraceCallback : public btCollisionWorld::ConvexResultC
 
 public:
     ACharacterControllerTraceCallback(btCollisionObject* _Self, Float3 const& _UpVec, float _MinSlopeDot) :
-        HitProxy(nullptr), Self(_Self), UpVec(btVectorToFloat3(_UpVec)), MinSlopeDot(_MinSlopeDot)
+        m_HitProxy(nullptr), m_Self(_Self), m_UpVec(btVectorToFloat3(_UpVec)), m_MinSlopeDot(_MinSlopeDot)
     {
         m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
         m_collisionFilterMask  = _Self->getBroadphaseHandle()->m_collisionFilterMask;
@@ -289,8 +289,8 @@ public:
             return false;
         }
 
-        AHitProxy const* hitProxy0 = static_cast<AHitProxy const*>(Self->getUserPointer());
-        AHitProxy const* hitProxy1 = static_cast<AHitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
+        HitProxy const* hitProxy0 = static_cast<HitProxy const*>(m_Self->getUserPointer());
+        HitProxy const* hitProxy1 = static_cast<HitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
 
         if (!hitProxy0 || !hitProxy1)
         {
@@ -315,7 +315,7 @@ public:
 
     btScalar addSingleResult(btCollisionWorld::LocalConvexResult& result, bool normalInWorldSpace) override
     {
-        if (result.m_hitCollisionObject == Self)
+        if (result.m_hitCollisionObject == m_Self)
         {
             return 1;
         }
@@ -327,8 +327,8 @@ public:
 
         btVector3 hitNormalWorld = normalInWorldSpace ? result.m_hitNormalLocal : result.m_hitCollisionObject->getWorldTransform().getBasis() * result.m_hitNormalLocal;
 
-        btScalar dotUp = UpVec.dot(hitNormalWorld);
-        if (dotUp < MinSlopeDot)
+        btScalar dotUp = m_UpVec.dot(hitNormalWorld);
+        if (dotUp < m_MinSlopeDot)
         {
             return 1;
         }
@@ -336,21 +336,21 @@ public:
         HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
-        HitNormalWorld       = hitNormalWorld;
-        HitPointWorld        = result.m_hitPointLocal;
-        HitProxy             = static_cast<AHitProxy*>(result.m_hitCollisionObject->getUserPointer());
+        m_HitNormalWorld = hitNormalWorld;
+        m_HitPointWorld = result.m_hitPointLocal;
+        m_HitProxy = static_cast<HitProxy*>(result.m_hitCollisionObject->getUserPointer());
 
         return result.m_hitFraction;
     }
 
-    btVector3  HitNormalWorld;
-    btVector3  HitPointWorld;
-    AHitProxy* HitProxy;
+    btVector3 m_HitNormalWorld;
+    btVector3 m_HitPointWorld;
+    HitProxy* m_HitProxy;
 
 protected:
-    btCollisionObject* Self;
-    btVector3          UpVec;
-    btScalar           MinSlopeDot;
+    btCollisionObject* m_Self;
+    btVector3 m_UpVec;
+    btScalar m_MinSlopeDot;
 };
 
 class ACharacterControllerTraceNoSlopeCallback : public btCollisionWorld::ConvexResultCallback
@@ -359,7 +359,7 @@ class ACharacterControllerTraceNoSlopeCallback : public btCollisionWorld::Convex
 
 public:
     ACharacterControllerTraceNoSlopeCallback(btCollisionObject* _Self) :
-        HitProxy(nullptr), Self(_Self)
+        m_HitProxy(nullptr), m_Self(_Self)
     {
         m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
         m_collisionFilterMask  = _Self->getBroadphaseHandle()->m_collisionFilterMask;
@@ -372,8 +372,8 @@ public:
             return false;
         }
 
-        AHitProxy const* hitProxy0 = static_cast<AHitProxy const*>(Self->getUserPointer());
-        AHitProxy const* hitProxy1 = static_cast<AHitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
+        HitProxy const* hitProxy0 = static_cast<HitProxy const*>(m_Self->getUserPointer());
+        HitProxy const* hitProxy1 = static_cast<HitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
 
         if (!hitProxy0 || !hitProxy1)
         {
@@ -398,7 +398,7 @@ public:
 
     btScalar addSingleResult(btCollisionWorld::LocalConvexResult& result, bool normalInWorldSpace) override
     {
-        if (result.m_hitCollisionObject == Self)
+        if (result.m_hitCollisionObject == m_Self)
         {
             return 1;
         }
@@ -413,22 +413,22 @@ public:
         HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
-        HitNormalWorld       = hitNormalWorld;
-        HitPointWorld        = result.m_hitPointLocal;
-        HitProxy             = static_cast<AHitProxy*>(result.m_hitCollisionObject->getUserPointer());
+        m_HitNormalWorld = hitNormalWorld;
+        m_HitPointWorld = result.m_hitPointLocal;
+        m_HitProxy = static_cast<HitProxy*>(result.m_hitCollisionObject->getUserPointer());
 
         return result.m_hitFraction;
     }
 
-    btVector3  HitNormalWorld;
-    btVector3  HitPointWorld;
-    AHitProxy* HitProxy;
+    btVector3 m_HitNormalWorld;
+    btVector3 m_HitPointWorld;
+    HitProxy* m_HitProxy;
 
 protected:
-    btCollisionObject* Self;
+    btCollisionObject* m_Self;
 };
 
-void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, Float3 const& Up, float MinSlopeDot, SCharacterControllerTrace& Trace, bool bCylinder) const
+void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, Float3 const& Up, float MinSlopeDot, CharacterControllerTrace& Trace, bool bCylinder) const
 {
     ACharacterControllerTraceCallback callback(GhostObject, Up, MinSlopeDot);
 
@@ -453,15 +453,15 @@ void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End,
         World->convexSweepTest(shape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.HitProxy;
-    Trace.Position = btVectorToFloat3(callback.HitPointWorld);
-    Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
+    Trace.HitProxy = callback.m_HitProxy;
+    Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
+    Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
     HK_ASSERT(GhostObject->hasContactResponse());
 }
 
-void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, SCharacterControllerTrace& Trace, bool bCylinder) const
+void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, CharacterControllerTrace& Trace, bool bCylinder) const
 {
     ACharacterControllerTraceNoSlopeCallback callback(GhostObject);
 
@@ -486,15 +486,15 @@ void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End,
         World->convexSweepTest(shape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.HitProxy;
-    Trace.Position = btVectorToFloat3(callback.HitPointWorld);
-    Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
+    Trace.HitProxy = callback.m_HitProxy;
+    Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
+    Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
     HK_ASSERT(GhostObject->hasContactResponse());
 }
 
-void ACharacterControllerBase::RecoverFromPenetration(float MaxPenetrationDepth, int MaxIterations)
+void CharacterControllerBase::RecoverFromPenetration(float MaxPenetrationDepth, int MaxIterations)
 {
     //bool touchingContact = false;
     int numPenetrationLoops = 0;
@@ -507,7 +507,7 @@ void ACharacterControllerBase::RecoverFromPenetration(float MaxPenetrationDepth,
 
             if (numPenetrationLoops > MaxIterations)
             {
-                LOG("ACharacterControllerBase::RecoverFromPenetration: couldn't recover from penetration (num iterations {})\n", numPenetrationLoops);
+                LOG("CharacterControllerBase::RecoverFromPenetration: couldn't recover from penetration (num iterations {})\n", numPenetrationLoops);
                 break;
             }
         }
@@ -527,7 +527,7 @@ static bool NeedsCollision(const btCollisionObject* body0, const btCollisionObje
     return collides;
 }
 
-bool ACharacterControllerBase::_RecoverFromPenetration(float MaxPenetrationDepth)
+bool CharacterControllerBase::_RecoverFromPenetration(float MaxPenetrationDepth)
 {
     // Note from btKinematicCharacterController:
     // Here we must refresh the overlapping paircache as the penetrating movement itself or the
@@ -615,7 +615,7 @@ bool ACharacterControllerBase::_RecoverFromPenetration(float MaxPenetrationDepth
     return penetration;
 }
 
-void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped, TPodVector<SCharacterControllerContact>* pContacts)
+void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped, TPodVector<CharacterControllerContact>* pContacts)
 {
     Float3 linearVelocity = (TargetPos - StartPos) / TimeStep;
     Float3 finalVelocity;
@@ -636,7 +636,7 @@ static HK_FORCEINLINE bool FindHitNormal(Float3 const* ContactNormals, int NumCo
     return false;
 }
 
-bool ACharacterControllerBase::ClipVelocityByContactNormals(Float3 const* ContactNormals, int NumContacts, Float3& Velocity)
+bool CharacterControllerBase::ClipVelocityByContactNormals(Float3 const* ContactNormals, int NumContacts, Float3& Velocity)
 {
     int i, j;
 
@@ -669,7 +669,7 @@ bool ACharacterControllerBase::ClipVelocityByContactNormals(Float3 const* Contac
     return true;
 }
 
-void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float _TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped, TPodVector<SCharacterControllerContact>* pContacts)
+void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float _TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped, TPodVector<CharacterControllerContact>* pContacts)
 {
     const int                 MAX_CONTACTS = 5;
     Float3                    contactNormals[MAX_CONTACTS];
@@ -680,7 +680,7 @@ void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& L
     Float3                    currentPosition = StartPos;
     float                     dt              = _TimeStep;
     bool                      clipped         = false;
-    SCharacterControllerTrace trace;
+    CharacterControllerTrace trace;
 
     for (iteration = 0; iteration < MAX_ITERATIONS; iteration++)
     {
@@ -713,7 +713,7 @@ void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& L
         // Add touched objects
         if (pContacts && trace.HitProxy)
         {
-            SCharacterControllerContact& contact = pContacts->Add();
+            CharacterControllerContact& contact = pContacts->Add();
             contact.HitProxy                     = trace.HitProxy;
             contact.Position                     = trace.Position;
             contact.Normal                       = trace.Normal;
@@ -766,7 +766,7 @@ void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& L
     }
 }
 
-void ACharacterControllerBase::ClipVelocity(Float3 const& InVelocity, Float3 const& InNormal, Float3& OutVelocity, float Overbounce)
+void CharacterControllerBase::ClipVelocity(Float3 const& InVelocity, Float3 const& InNormal, Float3& OutVelocity, float Overbounce)
 {
     OutVelocity = Math::ProjectVector(InVelocity, InNormal, Overbounce);
 
@@ -779,7 +779,7 @@ void ACharacterControllerBase::ClipVelocity(Float3 const& InVelocity, Float3 con
     }
 }
 
-void ACharacterControllerBase::DrawDebug(ADebugRenderer* InRenderer)
+void CharacterControllerBase::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
@@ -797,12 +797,12 @@ void ACharacterControllerBase::DrawDebug(ADebugRenderer* InRenderer)
 
 
 ATTRIBUTE_ALIGNED16(class)
-AProjectileActionInterface : public btActionInterface
+ProjectileActionInterface : public btActionInterface
 {
 public:
     BT_DECLARE_ALIGNED_ALLOCATOR();
 
-    AProjectileExperimental* Projectile;
+    ProjectileExperimental* Projectile;
 
     //btManifoldArray ManifoldArray;
 
@@ -819,16 +819,16 @@ public:
 };
 
 
-HK_CLASS_META(AProjectileExperimental)
+HK_CLASS_META(ProjectileExperimental)
 
-AProjectileExperimental::AProjectileExperimental()
+ProjectileExperimental::ProjectileExperimental()
 {
-    HitProxy = NewObj<AHitProxy>();
-    HitProxy->SetCollisionGroup(CM_PROJECTILE);
-    HitProxy->SetCollisionMask(CM_ALL);
+    m_HitProxy = NewObj<HitProxy>();
+    m_HitProxy->SetCollisionGroup(CM_PROJECTILE);
+    m_HitProxy->SetCollisionMask(CM_ALL);
 }
 
-void AProjectileExperimental::InitializeComponent()
+void ProjectileExperimental::InitializeComponent()
 {
     Super::InitializeComponent();
 
@@ -837,7 +837,7 @@ void AProjectileExperimental::InitializeComponent()
     startTransform.setRotation(btQuaternionToQuat(GetWorldRotation()));
 
     // Just a bridge between the projectile and btActionInterface
-    ActionInterface             = new AProjectileActionInterface;
+    ActionInterface             = new ProjectileActionInterface;
     ActionInterface->Projectile = this;
 
     ConvexShape = new btCapsuleShapeZ(0.1f, 0.35f);
@@ -846,21 +846,21 @@ void AProjectileExperimental::InitializeComponent()
 
     //GhostObject = new btPairCachingGhostObject;
     GhostObject = new btGhostObject;
-    GhostObject->setUserPointer(HitProxy.GetObject());
+    GhostObject->setUserPointer(m_HitProxy.GetObject());
     GhostObject->setCollisionFlags(btCollisionObject::CF_CHARACTER_OBJECT);
     GhostObject->setWorldTransform(startTransform);
     GhostObject->setCollisionShape(ConvexShape);
 
     World->addAction(ActionInterface);
 
-    HitProxy->Initialize(this, GhostObject);
+    m_HitProxy->Initialize(this, GhostObject);
 }
 
-void AProjectileExperimental::DeinitializeComponent()
+void ProjectileExperimental::DeinitializeComponent()
 {
     GetWorld()->E_OnPostPhysicsUpdate.Remove(this);
 
-    HitProxy->Deinitialize();
+    m_HitProxy->Deinitialize();
 
     World->removeAction(ActionInterface);
 
@@ -871,25 +871,25 @@ void AProjectileExperimental::DeinitializeComponent()
     Super::DeinitializeComponent();
 }
 
-void AProjectileExperimental::BeginPlay()
+void ProjectileExperimental::BeginPlay()
 {
     Super::BeginPlay();
 
-    GetWorld()->E_OnPostPhysicsUpdate.Add(this, &AProjectileExperimental::HandlePostPhysicsUpdate);
+    GetWorld()->E_OnPostPhysicsUpdate.Add(this, &ProjectileExperimental::HandlePostPhysicsUpdate);
 }
 
-void AProjectileExperimental::HandlePostPhysicsUpdate(float TimeStep)
+void ProjectileExperimental::HandlePostPhysicsUpdate(float TimeStep)
 {
     ClearForces();
 }
 
-void AProjectileExperimental::ClearForces()
+void ProjectileExperimental::ClearForces()
 {
     m_totalForce.Clear();
     m_totalTorque.Clear();
 }
 
-void AProjectileExperimental::OnTransformDirty()
+void ProjectileExperimental::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
@@ -903,32 +903,32 @@ void AProjectileExperimental::OnTransformDirty()
     }
 }
 
-void AProjectileExperimental::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
+void ProjectileExperimental::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
-    HitProxy->SetCollisionGroup(_CollisionGroup);
+    m_HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void AProjectileExperimental::SetCollisionMask(COLLISION_MASK _CollisionMask)
+void ProjectileExperimental::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionMask(_CollisionMask);
+    m_HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void AProjectileExperimental::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
+void ProjectileExperimental::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
+    m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void AProjectileExperimental::AddCollisionIgnoreActor(AActor* _Actor)
+void ProjectileExperimental::AddCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->AddCollisionIgnoreActor(_Actor);
+    m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void AProjectileExperimental::RemoveCollisionIgnoreActor(AActor* _Actor)
+void ProjectileExperimental::RemoveCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->RemoveCollisionIgnoreActor(_Actor);
+    m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
 
-//void AProjectileExperimental::UpdateCapsuleShape()
+//void ProjectileExperimental::UpdateCapsuleShape()
 //{
 //    if ( !bNeedToUpdateCapsule )
 //    {
@@ -944,7 +944,7 @@ void AProjectileExperimental::RemoveCollisionIgnoreActor(AActor* _Actor)
 //    bNeedToUpdateCapsule = false;
 //}
 
-//void AProjectileExperimental::SetCapsuleWorldPosition( Float3 const & InPosition )
+//void ProjectileExperimental::SetCapsuleWorldPosition( Float3 const & InPosition )
 //{
 //    btTransform transform = GhostObject->getWorldTransform();
 //    btVector3 position = btVectorToFloat3( InPosition + Float3( 0, GetCharacterHeight()*0.5f, 0 ) );
@@ -954,7 +954,7 @@ void AProjectileExperimental::RemoveCollisionIgnoreActor(AActor* _Actor)
 //    }
 //}
 
-void AProjectileExperimental::_Update(float _TimeStep)
+void ProjectileExperimental::_Update(float _TimeStep)
 {
     if (!GhostObject->getBroadphaseHandle())
     {
@@ -971,13 +971,13 @@ void AProjectileExperimental::_Update(float _TimeStep)
     bInsideUpdate = false;
 }
 
-class AProjectileTraceCallback : public btCollisionWorld::ConvexResultCallback
+class ProjectileTraceCallback : public btCollisionWorld::ConvexResultCallback
 {
     using Super = btCollisionWorld::ConvexResultCallback;
 
 public:
-    AProjectileTraceCallback(btCollisionObject* _Self) :
-        HitProxy(nullptr), Self(_Self)
+    ProjectileTraceCallback(btCollisionObject* _Self) :
+        m_HitProxy(nullptr), m_Self(_Self)
     {
         m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
         m_collisionFilterMask  = _Self->getBroadphaseHandle()->m_collisionFilterMask;
@@ -990,8 +990,8 @@ public:
             return false;
         }
 
-        AHitProxy const* hitProxy0 = static_cast<AHitProxy const*>(Self->getUserPointer());
-        AHitProxy const* hitProxy1 = static_cast<AHitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
+        HitProxy const* hitProxy0 = static_cast<HitProxy const*>(m_Self->getUserPointer());
+        HitProxy const* hitProxy1 = static_cast<HitProxy const*>(static_cast<btCollisionObject const*>(proxy0->m_clientObject)->getUserPointer());
 
         if (!hitProxy0 || !hitProxy1)
         {
@@ -1016,7 +1016,7 @@ public:
 
     btScalar addSingleResult(btCollisionWorld::LocalConvexResult& result, bool normalInWorldSpace) override
     {
-        if (result.m_hitCollisionObject == Self)
+        if (result.m_hitCollisionObject == m_Self)
         {
             return 1;
         }
@@ -1031,24 +1031,24 @@ public:
         HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
-        HitNormalWorld       = hitNormalWorld;
-        HitPointWorld        = result.m_hitPointLocal;
-        HitProxy             = static_cast<AHitProxy*>(result.m_hitCollisionObject->getUserPointer());
+        m_HitNormalWorld = hitNormalWorld;
+        m_HitPointWorld = result.m_hitPointLocal;
+        m_HitProxy = static_cast<HitProxy*>(result.m_hitCollisionObject->getUserPointer());
 
         return result.m_hitFraction;
     }
 
-    btVector3  HitNormalWorld;
-    btVector3  HitPointWorld;
-    AHitProxy* HitProxy;
+    btVector3 m_HitNormalWorld;
+    btVector3 m_HitPointWorld;
+    HitProxy* m_HitProxy;
 
 protected:
-    btCollisionObject* Self;
+    btCollisionObject* m_Self;
 };
 
-void AProjectileExperimental::TraceSelf(Float3 const& Start, Float3 const& End, SProjectileTrace& Trace) const
+void ProjectileExperimental::TraceSelf(Float3 const& Start, Float3 const& End, ProjectileTrace& Trace) const
 {
-    AProjectileTraceCallback callback(GhostObject);
+    ProjectileTraceCallback callback(GhostObject);
 
     const float ccdPenetration = 0.0f;
 
@@ -1071,17 +1071,17 @@ void AProjectileExperimental::TraceSelf(Float3 const& Start, Float3 const& End, 
         World->convexSweepTest(ConvexShape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.HitProxy;
-    Trace.Position = btVectorToFloat3(callback.HitPointWorld);
-    Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
+    Trace.HitProxy = callback.m_HitProxy;
+    Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
+    Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
     HK_ASSERT(GhostObject->hasContactResponse());
 }
 
-void AProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, SProjectileTrace& Trace) const
+void ProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, ProjectileTrace& Trace) const
 {
-    AProjectileTraceCallback callback(GhostObject);
+    ProjectileTraceCallback callback(GhostObject);
 
     const float ccdPenetration = 0.0f;
 
@@ -1102,15 +1102,15 @@ void AProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRo
         World->convexSweepTest(ConvexShape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.HitProxy;
-    Trace.Position = btVectorToFloat3(callback.HitPointWorld);
-    Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
+    Trace.HitProxy = callback.m_HitProxy;
+    Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
+    Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
     HK_ASSERT(GhostObject->hasContactResponse());
 }
 
-void AProjectileExperimental::DrawDebug(ADebugRenderer* InRenderer)
+void ProjectileExperimental::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
@@ -1121,13 +1121,13 @@ void AProjectileExperimental::DrawDebug(ADebugRenderer* InRenderer)
     //}
 }
 
-void AProjectileExperimental::ApplyForce(Float3 const& force, Float3 const& rel_pos)
+void ProjectileExperimental::ApplyForce(Float3 const& force, Float3 const& rel_pos)
 {
     ApplyCentralForce(force);
     ApplyTorque(Math::Cross(rel_pos, force /* * m_linearFactor*/));
 }
 
-void AProjectileExperimental::ApplyTorque(Float3 const& torque)
+void ProjectileExperimental::ApplyTorque(Float3 const& torque)
 {
     m_totalTorque += torque; // * m_angularFactor;
     //#if defined(BT_CLAMP_VELOCITY_TO) && BT_CLAMP_VELOCITY_TO > 0
@@ -1135,12 +1135,12 @@ void AProjectileExperimental::ApplyTorque(Float3 const& torque)
     //#endif
 }
 
-void AProjectileExperimental::ApplyCentralForce(Float3 const& force)
+void ProjectileExperimental::ApplyCentralForce(Float3 const& force)
 {
     m_totalForce += force; // * m_linearFactor;
 }
 
-void AProjectileExperimental::Update(float _TimeStep)
+void ProjectileExperimental::Update(float _TimeStep)
 {
 #if 1
     if (LinearVelocity.LengthSqr() > 0.001f)
@@ -1149,7 +1149,7 @@ void AProjectileExperimental::Update(float _TimeStep)
 
         Float3 targetPosition = currentPosition + LinearVelocity * _TimeStep;
 
-        SProjectileTrace trace;
+        ProjectileTrace trace;
         TraceSelf(currentPosition, targetPosition, trace);
 
         currentPosition = Math::Lerp(currentPosition, targetPosition, trace.Fraction);
@@ -1167,7 +1167,7 @@ void AProjectileExperimental::Update(float _TimeStep)
 
             LinearVelocity.Clear();
 
-            //AHitProxy * HitProxy;
+            //HitProxy * HitProxy;
             //Float3 Position;
             //Float3 Normal;
             //float Fraction;
@@ -1211,7 +1211,7 @@ void AProjectileExperimental::Update(float _TimeStep)
         Quat   targetRotation = q * GetWorldRotation();
         targetRotation.NormalizeSelf();
 
-        SProjectileTrace trace;
+        ProjectileTrace trace;
         TraceSelf(currentPosition, currentRotation, targetPosition, targetRotation, trace);
         //currentRotation = targetRotation;
         if (!trace.HasHit())

@@ -50,22 +50,22 @@ public:
     UIViewport& WithTint(Color4 const& tintColor);
     UIViewport& WithComposite(CANVAS_COMPOSITE composite);
 
-    void Draw(ACanvas& canvas) override;
+    void Draw(Canvas& canvas) override;
 
 protected:
-    void OnKeyEvent(struct SKeyEvent const& event, double timeStamp) override;
+    void OnKeyEvent(struct KeyEvent const& event, double timeStamp) override;
 
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
 
-    void OnMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp) override;
+    void OnMouseWheelEvent(struct MouseWheelEvent const& event, double timeStamp) override;
 
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
 
-    void OnJoystickButtonEvent(struct SJoystickButtonEvent const& event, double timeStamp) override;
+    void OnJoystickButtonEvent(struct JoystickButtonEvent const& event, double timeStamp) override;
 
-    void OnJoystickAxisEvent(struct SJoystickAxisEvent const& event, double timeStamp) override;
+    void OnJoystickAxisEvent(struct JoystickAxisEvent const& event, double timeStamp) override;
 
-    void OnCharEvent(struct SCharEvent const& event, double timeStamp) override;
+    void OnCharEvent(struct CharEvent const& event, double timeStamp) override;
 
     void OnFocusLost() override;
 

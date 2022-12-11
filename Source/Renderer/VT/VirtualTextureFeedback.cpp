@@ -35,7 +35,7 @@ SOFTWARE.
 
 Usage:
 
-AVirtualTextureFeedback * feedbackBuffer = GRenderView->FeedbackBuffer;
+VirtualTextureFeedback * feedbackBuffer = GRenderView->FeedbackBuffer;
 
 feedbackBuffer->Begin( GRenderView->Width, GRenderView->Height );
 
@@ -47,23 +47,22 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 using namespace RenderCore;
 
-AConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s);
-AConsoleVar r_RenderFeedback("r_RenderFeedback"s, "1"s);
+ConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s);
+ConsoleVar r_RenderFeedback("r_RenderFeedback"s, "1"s);
 
 // TODO: Move to project settings?
 //static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D16;
 static const TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D32;
 
-AVirtualTextureFeedback::AVirtualTextureFeedback()
-    : SwapIndex( 0 )
-    , ResolutionRatio( 0.0f )
+VirtualTextureFeedback::VirtualTextureFeedback() :
+    SwapIndex(0), ResolutionRatio(0.0f)
 {
     FeedbackSize[0] = FeedbackSize[1] = 0;
     MappedData[0] = MappedData[1] = 0;
 
-    SPipelineResourceLayout resourceLayout;
+    PipelineResourceLayout resourceLayout;
 
-    SSamplerDesc nearestSampler;
+    SamplerDesc nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -72,19 +71,20 @@ AVirtualTextureFeedback::AVirtualTextureFeedback()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &nearestSampler;
 
-    AShaderFactory::CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout );
+    ShaderFactory::CreateFullscreenQuadPipeline(&DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout);
 }
 
-AVirtualTextureFeedback::~AVirtualTextureFeedback()
+VirtualTextureFeedback::~VirtualTextureFeedback()
 {
-    if ( MappedData[SwapIndex] ) {
+    if (MappedData[SwapIndex])
+    {
         rcmd->UnmapBuffer(PixelBufferObject[SwapIndex]);
     }
 }
 
-void AVirtualTextureFeedback::Begin( int Width, int Height )
+void VirtualTextureFeedback::Begin(int Width, int Height)
 {
-    float resolutionScale = Math::Max( r_FeedbackResolutionFactorVT.GetFloat(), 1.0f );
+    float resolutionScale = Math::Max(r_FeedbackResolutionFactorVT.GetFloat(), 1.0f);
     resolutionScale = 1.0f / resolutionScale;
 
     uint32_t feedbackWidth = Width * resolutionScale;
@@ -92,12 +92,13 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 
     // Choose acceptable size of feedback buffer
     // Max feedback buffer size is 0xffff
-    if ( feedbackWidth * feedbackHeight >= 0xffff ) {
+    if (feedbackWidth * feedbackHeight >= 0xffff)
+    {
         float aspect = (float)feedbackWidth / Width;
-        float w = Math::Floor( Math::Sqrt( float( 0xffff-1 )*aspect ) );
+        float w = Math::Floor(Math::Sqrt(float(0xffff - 1) * aspect));
         feedbackWidth = w;
-        feedbackHeight = Math::Floor( w / aspect );
-        HK_ASSERT( feedbackWidth*feedbackHeight < 0xffff );
+        feedbackHeight = Math::Floor(w / aspect);
+        HK_ASSERT(feedbackWidth * feedbackHeight < 0xffff);
     }
 
     FeedbackSize[SwapIndex] = feedbackWidth * feedbackHeight;
@@ -105,21 +106,22 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
     ResolutionRatio.X = (float)feedbackWidth / Width;
     ResolutionRatio.Y = (float)feedbackHeight / Height;
 
-    if ( MappedData[SwapIndex] ) {
+    if (MappedData[SwapIndex])
+    {
         MappedData[SwapIndex] = nullptr;
         rcmd->UnmapBuffer(PixelBufferObject[SwapIndex]);
     }
 
-    if ( !FeedbackTexture || FeedbackTexture->GetWidth() != feedbackWidth || FeedbackTexture->GetHeight() != feedbackHeight )
+    if (!FeedbackTexture || FeedbackTexture->GetWidth() != feedbackWidth || FeedbackTexture->GetHeight() != feedbackHeight)
     {
-        GDevice->CreateTexture(STextureDesc()
+        GDevice->CreateTexture(TextureDesc()
                                    .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
-                                   .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
+                                   .SetResolution(TextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackTexture);
         FeedbackTexture->SetDebugName("VT Feedback Texture");
-        GDevice->CreateTexture(STextureDesc()
+        GDevice->CreateTexture(TextureDesc()
                                    .SetFormat(FEEDBACK_DEPTH_FORMAT)
-                                   .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
+                                   .SetResolution(TextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackDepth);
         FeedbackDepth->SetDebugName("VT Feedback Depth");
     }
@@ -128,22 +130,19 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 
     if (!PixelBufferObject[SwapIndex] || PixelBufferObject[SwapIndex]->GetDesc().SizeInBytes != feedbackSizeInBytes)
     {
-        SBufferDesc bufferCI = {};
+        BufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
-        bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(
-            IMMUTABLE_MAP_READ
-            //| IMMUTABLE_MAP_CLIENT_STORAGE
-            | IMMUTABLE_MAP_PERSISTENT
-            | IMMUTABLE_MAP_COHERENT
-            );
+        bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(IMMUTABLE_MAP_READ
+                                                                   //| IMMUTABLE_MAP_CLIENT_STORAGE
+                                                                   | IMMUTABLE_MAP_PERSISTENT | IMMUTABLE_MAP_COHERENT);
         bufferCI.SizeInBytes = feedbackSizeInBytes;
 
-        GDevice->CreateBuffer( bufferCI, nullptr, &PixelBufferObject[SwapIndex] );
-        PixelBufferObject[SwapIndex]->SetDebugName( "Virtual texture feedback PBO" );
+        GDevice->CreateBuffer(bufferCI, nullptr, &PixelBufferObject[SwapIndex]);
+        PixelBufferObject[SwapIndex]->SetDebugName("Virtual texture feedback PBO");
     }
 }
 
-void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
+void VirtualTextureFeedback::End(int* pFeedbackSize, const void** ppData)
 {
     SwapIndex = (SwapIndex + 1) & 1;
 
@@ -152,8 +151,10 @@ void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
     *ppData = nullptr;
     *pFeedbackSize = 0;
 
-    if ( sizeInBytes > 0 ) {
-        if ( PixelBufferObject[SwapIndex] ) {
+    if (sizeInBytes > 0)
+    {
+        if (PixelBufferObject[SwapIndex])
+        {
             MappedData[SwapIndex] = rcmd->MapBuffer(PixelBufferObject[SwapIndex],
                                                     MAP_TRANSFER_READ,
                                                     MAP_NO_INVALIDATE,
@@ -169,28 +170,30 @@ void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
     }
 }
 
-static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, SRenderInstance const * Instance )
+static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, RenderInstance const* Instance)
 {
-    AMaterialGPU * pMaterial = Instance->Material;
-    IBuffer * pSecondVertexBuffer = nullptr;
+    MaterialGPU* pMaterial = Instance->Material;
+    IBuffer* pSecondVertexBuffer = nullptr;
     size_t secondBufferOffset = 0;
 
-    HK_ASSERT( pMaterial );
+    HK_ASSERT(pMaterial);
 
     int bSkinned = Instance->SkeletonSize > 0;
 
-    IPipeline * pPipeline = pMaterial->FeedbackPass[bSkinned];
-    if ( !pPipeline ) {
+    IPipeline* pPipeline = pMaterial->FeedbackPass[bSkinned];
+    if (!pPipeline)
+    {
         return false;
     }
 
-    if ( bSkinned ) {
+    if (bSkinned)
+    {
         pSecondVertexBuffer = Instance->WeightsBuffer;
         secondBufferOffset = Instance->WeightsBufferOffset;
     }
 
     // Bind pipeline
-    immediateCtx->BindPipeline( pPipeline );
+    immediateCtx->BindPipeline(pPipeline);
 
     // Bind second vertex buffer
     immediateCtx->BindVertexBuffer(1, pSecondVertexBuffer, secondBufferOffset);
@@ -201,71 +204,72 @@ static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, SRenderIns
     return true;
 }
 
-void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
+void VirtualTextureFeedback::AddPass(FrameGraph& FrameGraph)
 {
-    if ( !r_RenderFeedback )
+    if (!r_RenderFeedback)
         return;
 
-    FGTextureProxy* FeedbackDepth_R   = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback depth", GetFeedbackDepth());
+    FGTextureProxy* FeedbackDepth_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback depth", GetFeedbackDepth());
     FGTextureProxy* FeedbackTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback texture", GetFeedbackTexture());
 
-    ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Feedback Pass" );
+    RenderPass& pass = FrameGraph.AddTask<RenderPass>("VT Feedback Pass");
 
-    pass.SetRenderArea( GetFeedbackTexture()->GetWidth(), GetFeedbackTexture()->GetHeight() );
+    pass.SetRenderArea(GetFeedbackTexture()->GetWidth(), GetFeedbackTexture()->GetHeight());
 
     pass.SetColorAttachment(
-        STextureAttachment(FeedbackTexture_R)
+        TextureAttachment(FeedbackTexture_R)
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
             .SetClearValue(MakeClearColorValue(0.0f, 0.0f, 0.0f, 0.0f)));
 
     pass.SetDepthStencilAttachment(
-        STextureAttachment(FeedbackDepth_R)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
+        TextureAttachment(FeedbackDepth_R)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
         //.SetStoreOp( ATTACHMENT_STORE_OP_DONT_CARE )  // TODO: Check
     );
 
-    pass.AddSubpass( { 0 }, // color attachment refs
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-    {
-        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+    pass.AddSubpass({0}, // color attachment refs
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-        SDrawIndexedCmd drawCmd;
-        drawCmd.InstanceCount = 1;
-        drawCmd.StartInstanceLocation = 0;
+                        DrawIndexedCmd drawCmd;
+                        drawCmd.InstanceCount = 1;
+                        drawCmd.StartInstanceLocation = 0;
 
-        // NOTE:
-        // 1. Meshes with one material and same virtual texture can be batched to one mesh/drawcall
-        // 2. We can draw geometry only with virtual texturing
+                        // NOTE:
+                        // 1. Meshes with one material and same virtual texture can be batched to one mesh/drawcall
+                        // 2. We can draw geometry only with virtual texturing
 
-        for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                        for (int i = 0; i < GRenderView->InstanceCount; i++)
+                        {
+                            RenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            // Choose pipeline and second vertex buffer
-            if (!BindMaterialFeedbackPass(immediateCtx, instance))
-            {
-                continue;
-            }
+                            // Choose pipeline and second vertex buffer
+                            if (!BindMaterialFeedbackPass(immediateCtx, instance))
+                            {
+                                continue;
+                            }
 
-            // Bind skeleton
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+                            // Bind skeleton
+                            BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
 
-            // Set instance constants
-            BindInstanceConstantsFB( instance );
+                            // Set instance constants
+                            BindInstanceConstantsFB(instance);
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                            drawCmd.IndexCountPerInstance = instance->IndexCount;
+                            drawCmd.StartIndexLocation = instance->StartIndexLocation;
+                            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
-            immediateCtx->Draw(&drawCmd);
-        }
+                            immediateCtx->Draw(&drawCmd);
+                        }
 
-        SRect2D r;
-        r.X = 0;
-        r.Y = 0;
-        r.Width  = RenderPassContext.RenderArea.Width;
-        r.Height = RenderPassContext.RenderArea.Height;
+                        Rect2D r;
+                        r.X = 0;
+                        r.Y = 0;
+                        r.Width = RenderPassContext.RenderArea.Width;
+                        r.Height = RenderPassContext.RenderArea.Height;
 
-        immediateCtx->CopyColorAttachmentToBuffer(RenderPassContext,
+                        immediateCtx->CopyColorAttachmentToBuffer(RenderPassContext,
                                                                   GetPixelBuffer(),
                                                                   0,
                                                                   r,
@@ -275,36 +279,34 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
                                                                   r.Width * r.Height * 4,
                                                                   0,
                                                                   4);
-    } );
+                    });
 }
 
-void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
+void VirtualTextureFeedback::DrawFeedback(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 {
     FGTextureProxy* FeedbackTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback texture", GetFeedbackTexture());
 
-    ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Draw Feedback Pass" );
+    RenderPass& pass = FrameGraph.AddTask<RenderPass>("VT Draw Feedback Pass");
 
     pass.SetRenderArea(
-                GRenderView->Width * 0.25f,
-                GRenderView->Height * 0.25f,
-                GRenderView->Width * 0.5f,
-                GRenderView->Height * 0.5f
-                );
+        GRenderView->Width * 0.25f,
+        GRenderView->Height * 0.25f,
+        GRenderView->Width * 0.5f,
+        GRenderView->Height * 0.5f);
 
-    pass.AddResource( FeedbackTexture_R, FG_RESOURCE_ACCESS_READ );
+    pass.AddResource(FeedbackTexture_R, FG_RESOURCE_ACCESS_READ);
 
     pass.SetColorAttachment(
-        STextureAttachment(RenderTarget)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-    );
+        TextureAttachment(RenderTarget)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
-    pass.AddSubpass( { 0 }, // color attachment refs
-                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-    {
-        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+    pass.AddSubpass({0}, // color attachment refs
+                    [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-        rtbl->BindTexture( 0, FeedbackTexture_R->Actual() );
+                        rtbl->BindTexture(0, FeedbackTexture_R->Actual());
 
-        DrawSAQ(immediateCtx, DrawFeedbackPipeline);
-    } );
+                        DrawSAQ(immediateCtx, DrawFeedbackPipeline);
+                    });
 }

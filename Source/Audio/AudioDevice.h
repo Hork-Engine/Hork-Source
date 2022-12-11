@@ -33,11 +33,11 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Core/Ref.h>
 
-class AAudioDevice : public ARefCounted
+class AudioDevice : public RefCounted
 {
 public:
-    AAudioDevice(int InSampleRate);
-    virtual ~AAudioDevice();
+    AudioDevice(int InSampleRate);
+    virtual ~AudioDevice();
 
     /** Playback frequency */
     int GetSampleRate() const

@@ -34,7 +34,7 @@ SOFTWARE.
 #include "Font.h"
 
 class APlayerController;
-class ACanvas;
+class Canvas;
 
 class AHUD : public AActor
 {
@@ -43,7 +43,7 @@ class AHUD : public AActor
     friend class APlayerController;
 
 public:
-    void Draw(ACanvas& canvas, int x, int y, int width, int height);
+    void Draw(Canvas& canvas, int x, int y, int width, int height);
 
     int GetViewportX() const { return m_ViewportX; }
     int GetViewportY() const { return m_ViewportY; }
@@ -55,7 +55,7 @@ public:
 protected:
     AHUD();
 
-    virtual void DrawHUD(ACanvas& canvas) {}
+    virtual void DrawHUD(Canvas& canvas) {}
 
 private:
     int m_ViewportX = 0;

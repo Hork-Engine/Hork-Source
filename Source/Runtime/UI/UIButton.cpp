@@ -75,7 +75,7 @@ void UIButton::AdjustSize(Float2 const& size)
         m_AdjustedSize.Y = boxSize.Y;
 }
 
-void UIButton::Draw(ACanvas& canvas)
+void UIButton::Draw(Canvas& canvas)
 {
     if (m_Decorator)
     {
@@ -102,7 +102,7 @@ void UIButton::Draw(ACanvas& canvas)
         m_Text->Draw(canvas, m_Geometry.PaddedMins, m_Geometry.PaddedMaxs);
 }
 
-void UIButton::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIButton::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (IsDisabled() || !m_Action || event.Button != 0)
         return;

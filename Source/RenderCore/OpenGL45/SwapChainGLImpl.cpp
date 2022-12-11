@@ -37,32 +37,32 @@ SOFTWARE.
 namespace RenderCore
 {
 
-ASwapChainGLImpl::ASwapChainGLImpl(ADeviceGLImpl* pDevice, AGenericWindowGLImpl* pWindow) :
+SwapChainGLImpl::SwapChainGLImpl(DeviceGLImpl* pDevice, GenericWindowGLImpl* pWindow) :
     ISwapChain(pDevice), pWindow(pWindow)
 {
     SDL_GL_GetDrawableSize((SDL_Window*)pWindow->GetHandle(), &Width, &Height);
 
-    STextureDesc textureDesc;
-    textureDesc.SetResolution(STextureResolution2D(Width, Height));
+    TextureDesc textureDesc;
+    textureDesc.SetResolution(TextureResolution2D(Width, Height));
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_RGBA8_UNORM);
 
-    BackBuffer = MakeRef<ATextureGLImpl>(pDevice, textureDesc, true);
-    BackBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
+    BackBuffer = MakeRef<TextureGLImpl>(pDevice, textureDesc, true);
+    BackBuffer->pContext = static_cast<ImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_D32);
 
-    DepthBuffer = MakeRef<ATextureGLImpl>(pDevice, textureDesc, true);
-    DepthBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
+    DepthBuffer = MakeRef<TextureGLImpl>(pDevice, textureDesc, true);
+    DepthBuffer->pContext = static_cast<ImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 
     pWindow->SetSwapChain(this);
 }
 
-void ASwapChainGLImpl::Present(int SwapInterval)
+void SwapChainGLImpl::Present(int SwapInterval)
 {
-    SScopedContextGL ScopedContext(pWindow->GetImmediateContext());
+    ScopedContextGL ScopedContext(pWindow->GetImmediateContext());
 
     SwapInterval = Math::Clamp(SwapInterval, -1, 1);
     if (SwapInterval == -1 && !GetDevice()->IsFeatureSupported(FEATURE_SWAP_CONTROL_TEAR))
@@ -82,7 +82,7 @@ void ASwapChainGLImpl::Present(int SwapInterval)
     SDL_GL_SwapWindow((SDL_Window*)pWindow->GetHandle());
 }
 
-void ASwapChainGLImpl::Resize(int InWidth, int InHeight)
+void SwapChainGLImpl::Resize(int InWidth, int InHeight)
 {
     if (Width == InWidth && Height == InHeight)
     {
@@ -92,28 +92,28 @@ void ASwapChainGLImpl::Resize(int InWidth, int InHeight)
     Width = InWidth;
     Height = InHeight;
 
-    STextureDesc textureDesc;
-    textureDesc.SetResolution(STextureResolution2D(Width, Height));
+    TextureDesc textureDesc;
+    textureDesc.SetResolution(TextureResolution2D(Width, Height));
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_RGBA8_UNORM);
 
-    BackBuffer = MakeRef<ATextureGLImpl>(static_cast<ADeviceGLImpl*>(GetDevice()), textureDesc, true);
-    BackBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
+    BackBuffer = MakeRef<TextureGLImpl>(static_cast<DeviceGLImpl*>(GetDevice()), textureDesc, true);
+    BackBuffer->pContext = static_cast<ImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_D32);
 
-    DepthBuffer = MakeRef<ATextureGLImpl>(static_cast<ADeviceGLImpl*>(GetDevice()), textureDesc, true);
-    DepthBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
+    DepthBuffer = MakeRef<TextureGLImpl>(static_cast<DeviceGLImpl*>(GetDevice()), textureDesc, true);
+    DepthBuffer->pContext = static_cast<ImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 }
 
-ITexture* ASwapChainGLImpl::GetBackBuffer()
+ITexture* SwapChainGLImpl::GetBackBuffer()
 {
     return BackBuffer;
 }
 
-ITexture* ASwapChainGLImpl::GetDepthBuffer()
+ITexture* SwapChainGLImpl::GetDepthBuffer()
 {
     return DepthBuffer;
 }

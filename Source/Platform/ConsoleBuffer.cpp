@@ -31,14 +31,14 @@ SOFTWARE.
 #include <Platform/ConsoleBuffer.h>
 #include <Platform/Memory/Memory.h>
 
-void AConsoleBuffer::Resize(int _VidWidth)
+void ConsoleBuffer::Resize(int _VidWidth)
 {
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
 
     _Resize(_VidWidth);
 }
 
-void AConsoleBuffer::_Resize(int _VidWidth)
+void ConsoleBuffer::_Resize(int _VidWidth)
 {
     int prevMaxLines     = MaxLines;
     int prevMaxLineChars = MaxLineChars;
@@ -78,14 +78,14 @@ void AConsoleBuffer::_Resize(int _VidWidth)
     Scroll    = 0;
 }
 
-void AConsoleBuffer::Print(const char* _Text)
+void ConsoleBuffer::Print(const char* _Text)
 {
     const char* wordStr;
     int         wordLength;
     WideChar   ch;
     int         byteLen;
 
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
 
     if (!bInitialized)
     {
@@ -186,12 +186,12 @@ void AConsoleBuffer::Print(const char* _Text)
     }
 }
 
-void AConsoleBuffer::WidePrint(WideChar const* _Text)
+void ConsoleBuffer::WidePrint(WideChar const* _Text)
 {
     WideChar const* wordStr;
-    int              wordLength;
+    int             wordLength;
 
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
 
     if (!bInitialized)
     {
@@ -280,29 +280,29 @@ void AConsoleBuffer::WidePrint(WideChar const* _Text)
     }
 }
 
-void AConsoleBuffer::Clear()
+void ConsoleBuffer::Clear()
 {
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
 
     Platform::ZeroMem(pImage, sizeof(*pImage) * CON_IMAGE_SIZE);
     Scroll = 0;
 }
 
-void AConsoleBuffer::ScrollStart()
+void ConsoleBuffer::ScrollStart()
 {
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
     Scroll = NumLines - 1;
 }
 
-void AConsoleBuffer::ScrollEnd()
+void ConsoleBuffer::ScrollEnd()
 {
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
     Scroll = 0;
 }
 
-void AConsoleBuffer::ScrollDelta(int Delta)
+void ConsoleBuffer::ScrollDelta(int Delta)
 {
-    AMutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(Mutex);
 
     Scroll += Delta;
     if (Scroll < 0)
@@ -311,11 +311,11 @@ void AConsoleBuffer::ScrollDelta(int Delta)
     }
 }
 
-AConsoleBuffer::SLock AConsoleBuffer::Lock()
+ConsoleBuffer::LockedData ConsoleBuffer::Lock()
 {
     Mutex.Lock();
 
-    SLock lock;
+    LockedData lock;
     lock.pImage       = pImage;
     lock.Scroll       = Scroll;
     lock.MaxLines     = MaxLines;
@@ -325,7 +325,7 @@ AConsoleBuffer::SLock AConsoleBuffer::Lock()
     return lock;
 }
 
-void AConsoleBuffer::Unlock()
+void ConsoleBuffer::Unlock()
 {
     Mutex.Unlock();
 }

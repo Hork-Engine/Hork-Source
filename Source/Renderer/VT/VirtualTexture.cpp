@@ -36,15 +36,16 @@ using namespace RenderCore;
 
 #define USE_PBO
 
-AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * Cache )
-    : AVirtualTextureFile( FileName )
+VirtualTexture::VirtualTexture(const char* FileName, VirtualTextureCache* Cache) :
+    VirtualTextureFile(FileName)
 {
     PIT = nullptr;
     pIndirectionData = nullptr;
     pCache = nullptr;
     NumLods = 0;
 
-    if ( FileHandle.IsInvalid() ) {
+    if (FileHandle.IsInvalid())
+    {
         return;
     }
 
@@ -52,60 +53,58 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     pCache = Cache;
 
     //if ( !IsCompatibleFormat( Cache ) ) {
-    //    LOG( "AVirtualTexture::Load: incompatible file format\n" );
+    //    LOG( "VirtualTexture::Load: incompatible file format\n" );
 
     //    Purge();
     //    return false;
     //}
 
-    HK_ASSERT( AddressTable.NumLods <= VT_MAX_LODS );
+    HK_ASSERT(AddressTable.NumLods <= VT_MAX_LODS);
 
     PIT = PageInfoTable.Data;
 
     NumLods = AddressTable.NumLods;
 
 #ifdef USE_PBO
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
-    bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(
-        IMMUTABLE_MAP_READ
-        | IMMUTABLE_MAP_WRITE
-        //| IMMUTABLE_MAP_CLIENT_STORAGE
-        | IMMUTABLE_MAP_PERSISTENT
-        | IMMUTABLE_MAP_COHERENT
-        );
-    bufferCI.SizeInBytes = sizeof( pIndirectionData[0] ) * AddressTable.TotalPages;
-    GDevice->CreateBuffer( bufferCI, nullptr, &IndirectionData );
-    IndirectionData->SetDebugName( "Virtual texture indirection data" );
+    bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(IMMUTABLE_MAP_READ | IMMUTABLE_MAP_WRITE
+                                                               //| IMMUTABLE_MAP_CLIENT_STORAGE
+                                                               | IMMUTABLE_MAP_PERSISTENT | IMMUTABLE_MAP_COHERENT);
+    bufferCI.SizeInBytes = sizeof(pIndirectionData[0]) * AddressTable.TotalPages;
+    GDevice->CreateBuffer(bufferCI, nullptr, &IndirectionData);
+    IndirectionData->SetDebugName("Virtual texture indirection data");
 #else
     pIndirectionData = (uint16_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(pIndirectionData[0]) * AddressTable.TotalPages, 0, true);
 #endif
 
-    Platform::ZeroMem( bDirtyLods, sizeof( bDirtyLods ) );
+    Platform::ZeroMem(bDirtyLods, sizeof(bDirtyLods));
 
     // Init indirection table
-    if ( NumLods > 0 ) {
+    if (NumLods > 0)
+    {
         uint32_t indirectionTableSize = 1u << (NumLods - 1);
 
         GDevice->CreateTexture(
-            STextureDesc()
+            TextureDesc()
                 .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
-                .SetResolution(STextureResolution2D(indirectionTableSize, indirectionTableSize))
+                .SetResolution(TextureResolution2D(indirectionTableSize, indirectionTableSize))
                 .SetMipLevels(NumLods)
                 .SetBindFlags(BIND_SHADER_RESOURCE),
             &IndirectionTexture);
 
-        IndirectionTexture->SetDebugName( "Indirection texture" );
+        IndirectionTexture->SetDebugName("Indirection texture");
 
-        const SClearValue clearValue[2] = { 0,0 };
+        const ClearValue clearValue[2] = {0, 0};
 
-        for ( int level = 0 ; level < NumLods ; level++ ) {
-            rcmd->ClearTexture( IndirectionTexture, level, FORMAT_UBYTE2, clearValue );
+        for (int level = 0; level < NumLods; level++)
+        {
+            rcmd->ClearTexture(IndirectionTexture, level, FORMAT_UBYTE2, clearValue);
         }
     }
 }
 
-AVirtualTexture::~AVirtualTexture()
+VirtualTexture::~VirtualTexture()
 {
 #ifdef USE_PBO
     UnmapIndirectionData();
@@ -115,12 +114,12 @@ AVirtualTexture::~AVirtualTexture()
 #endif
 }
 
-bool AVirtualTexture::IsLoaded() const
+bool VirtualTexture::IsLoaded() const
 {
     return !FileHandle.IsInvalid();
 }
 
-const uint16_t * AVirtualTexture::GetIndirectionData()
+const uint16_t* VirtualTexture::GetIndirectionData()
 {
 #ifdef USE_PBO
     MapIndirectionData();
@@ -128,10 +127,11 @@ const uint16_t * AVirtualTexture::GetIndirectionData()
     return pIndirectionData;
 }
 
-void AVirtualTexture::MapIndirectionData()
+void VirtualTexture::MapIndirectionData()
 {
 #ifdef USE_PBO
-    if ( !pIndirectionData ) {
+    if (!pIndirectionData)
+    {
         pIndirectionData = (uint16_t*)rcmd->MapBuffer(IndirectionData,
                                                       MAP_TRANSFER_RW,
                                                       MAP_NO_INVALIDATE,
@@ -142,10 +142,11 @@ void AVirtualTexture::MapIndirectionData()
 #endif
 }
 
-void AVirtualTexture::UnmapIndirectionData()
+void VirtualTexture::UnmapIndirectionData()
 {
 #ifdef USE_PBO
-    if ( pIndirectionData ) {
+    if (pIndirectionData)
+    {
         rcmd->UnmapBuffer(IndirectionData);
         pIndirectionData = nullptr;
     }
@@ -153,19 +154,22 @@ void AVirtualTexture::UnmapIndirectionData()
 }
 
 #if 0
-void AVirtualTexture::UpdateBranch( uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
+void VirtualTexture::UpdateBranch( uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
     UpdateBranch_r( QuadTreeCalcLod64( PageIndex ), PageIndex, Bits16, MaxDeep );
 }
 #endif
 
-void AVirtualTexture::UpdateBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
+void VirtualTexture::UpdateBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep)
+{
     // NOTE: This function must be VERY fast!
 
-    if ( --MaxDeep <= 0 ) {
+    if (--MaxDeep <= 0)
+    {
         return;
     }
 
-    if ( !(PIT[PageIndex] & PF_CACHED) ) {
+    if (!(PIT[PageIndex] & PF_CACHED))
+    {
 
         //if ( pIndirectionData[ PageIndex ] != bits16 )
         {
@@ -174,52 +178,55 @@ void AVirtualTexture::UpdateBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits
 
             ++bDirtyLods[Lod];
 
-            if ( Lod + 1 < NumLods ) {
+            if (Lod + 1 < NumLods)
+            {
                 uint32_t div = 1 << Lod;
-                uint32_t relativeNode = PageIndex - QuadTreeRemapTable.Rel2Abs[Lod];
-                uint32_t chil0 = ((relativeNode >> Lod) << (Lod+2)) + ((relativeNode & (div-1)) << 1) + QuadTreeRemapTable.Rel2Abs[Lod+1];
+                uint32_t relativeNode = PageIndex - GQuadTreeRemapTable.Rel2Abs[Lod];
+                uint32_t chil0 = ((relativeNode >> Lod) << (Lod + 2)) + ((relativeNode & (div - 1)) << 1) + GQuadTreeRemapTable.Rel2Abs[Lod + 1];
                 uint32_t chil2 = chil0 + (div << 1);
 
                 ++Lod;
 
-                UpdateBranch_r( Lod, chil0, Bits16, MaxDeep );
-                UpdateBranch_r( Lod, chil0+1, Bits16, MaxDeep );
-                UpdateBranch_r( Lod, chil2, Bits16, MaxDeep );
-                UpdateBranch_r( Lod, chil2+1, Bits16, MaxDeep );
+                UpdateBranch_r(Lod, chil0, Bits16, MaxDeep);
+                UpdateBranch_r(Lod, chil0 + 1, Bits16, MaxDeep);
+                UpdateBranch_r(Lod, chil2, Bits16, MaxDeep);
+                UpdateBranch_r(Lod, chil2 + 1, Bits16, MaxDeep);
             }
-
         }
         //else {
-        //    LOG( "AVirtualTexture::UpdateBranch_r: optimizing..." );
+        //    LOG( "VirtualTexture::UpdateBranch_r: optimizing..." );
         //}
     }
 }
 
 #if 0
-void AVirtualTexture::UpdateChildsBranch( uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
+void VirtualTexture::UpdateChildsBranch( uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
     UpdateChildsBranch_r( QuadTreeCalcLod64( PageIndex ), PageIndex, Bits16, MaxDeep );
 }
 #endif
 
-void AVirtualTexture::UpdateChildsBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep ) {
+void VirtualTexture::UpdateChildsBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep)
+{
     ++bDirtyLods[Lod];
 
-    if ( Lod + 1 < NumLods ) {
+    if (Lod + 1 < NumLods)
+    {
         uint32_t div = 1 << Lod;
-        uint32_t relativeNode = PageIndex - QuadTreeRemapTable.Rel2Abs[Lod];
-        uint32_t chil0 = ((relativeNode >> Lod) << (Lod+2)) + ((relativeNode & (div-1)) << 1) + QuadTreeRemapTable.Rel2Abs[Lod+1];
+        uint32_t relativeNode = PageIndex - GQuadTreeRemapTable.Rel2Abs[Lod];
+        uint32_t chil0 = ((relativeNode >> Lod) << (Lod + 2)) + ((relativeNode & (div - 1)) << 1) + GQuadTreeRemapTable.Rel2Abs[Lod + 1];
         uint32_t chil2 = chil0 + (div << 1);
 
         ++Lod;
 
-        UpdateBranch_r( Lod, chil0, Bits16, MaxDeep );
-        UpdateBranch_r( Lod, chil0+1, Bits16, MaxDeep );
-        UpdateBranch_r( Lod, chil2, Bits16, MaxDeep );
-        UpdateBranch_r( Lod, chil2+1, Bits16, MaxDeep );
+        UpdateBranch_r(Lod, chil0, Bits16, MaxDeep);
+        UpdateBranch_r(Lod, chil0 + 1, Bits16, MaxDeep);
+        UpdateBranch_r(Lod, chil2, Bits16, MaxDeep);
+        UpdateBranch_r(Lod, chil2 + 1, Bits16, MaxDeep);
     }
 }
 
-void AVirtualTexture::UpdateAllBranches() {
+void VirtualTexture::UpdateAllBranches()
+{
     uint32_t relativeIndex;
     uint32_t parentIndex;
     uint32_t pageIndex = 0;
@@ -227,16 +234,19 @@ void AVirtualTexture::UpdateAllBranches() {
 
     MapIndirectionData();
 
-    for ( int lod = 0 ; lod < NumLods ; lod++ ) {
+    for (int lod = 0; lod < NumLods; lod++)
+    {
 
-        lastIndex += QuadTreeCalcLodNodes( lod );
+        lastIndex += QuadTreeCalcLodNodes(lod);
 
-        while ( pageIndex < lastIndex ) {
+        while (pageIndex < lastIndex)
+        {
 
-            if ( !(PIT[pageIndex] & PF_CACHED) ) {
+            if (!(PIT[pageIndex] & PF_CACHED))
+            {
                 // FIXME: is there better way to find parent?
-                relativeIndex = pageIndex - QuadTreeRemapTable.Rel2Abs[lod];
-                parentIndex = QuadTreeGetParentFromRelative( relativeIndex, lod );
+                relativeIndex = pageIndex - GQuadTreeRemapTable.Rel2Abs[lod];
+                parentIndex = QuadTreeGetParentFromRelative(relativeIndex, lod);
                 pIndirectionData[pageIndex] = pIndirectionData[parentIndex];
             }
 
@@ -245,17 +255,20 @@ void AVirtualTexture::UpdateAllBranches() {
     }
 }
 
-void AVirtualTexture::CommitPageResidency() {
-    STextureRect rect;
+void VirtualTexture::CommitPageResidency()
+{
+    TextureRect rect;
 
     rect.Offset.X = 0;
     rect.Offset.Y = 0;
     rect.Offset.Z = 0;
     rect.Dimension.Z = 1;
 
-    for ( int level = 0 ; level < NumLods ; level++ ) {
-        if ( bDirtyLods[level] > 0 ) {
-            uint32_t page = QuadTreeRelativeToAbsoluteIndex( 0, level );
+    for (int level = 0; level < NumLods; level++)
+    {
+        if (bDirtyLods[level] > 0)
+        {
+            uint32_t page = QuadTreeRelativeToAbsoluteIndex(0, level);
             int size = 1 << level;
 
             rect.Offset.MipLevel = NumLods - level - 1;
@@ -266,21 +279,21 @@ void AVirtualTexture::CommitPageResidency() {
             // TODO: Update only changed pixels
 
 #ifdef USE_PBO
-            rcmd->CopyBufferToTexture( IndirectionData,
-                                       IndirectionTexture,
-                                       rect,
-                                       FORMAT_UBYTE2,
-                                       0,
-                                       page * sizeof( pIndirectionData[0] ),
-                                       2 );
+            rcmd->CopyBufferToTexture(IndirectionData,
+                                      IndirectionTexture,
+                                      rect,
+                                      FORMAT_UBYTE2,
+                                      0,
+                                      page * sizeof(pIndirectionData[0]),
+                                      2);
 #else
             size_t sizeInBytes = size * size * 2;
 
-            IndirectionTexture.WriteRect( rect,
-                                          FORMAT_UBYTE2,
-                                          sizeInBytes,
-                                          1,
-                                          &pIndirectionData[page] );
+            IndirectionTexture.WriteRect(rect,
+                                         FORMAT_UBYTE2,
+                                         sizeInBytes,
+                                         1,
+                                         &pIndirectionData[page]);
 #endif
         }
 
@@ -288,9 +301,9 @@ void AVirtualTexture::CommitPageResidency() {
     }
 }
 
-void AVirtualTexture::UpdateLRU( uint32_t AbsIndex )
+void VirtualTexture::UpdateLRU(uint32_t AbsIndex)
 {
-    HK_ASSERT( pCache );
+    HK_ASSERT(pCache);
 
     // NOTE: Assume that texture is registered in cache.
     // We don't check even validness of AbsIndex
@@ -298,45 +311,48 @@ void AVirtualTexture::UpdateLRU( uint32_t AbsIndex )
     PendingUpdateLRU.Add(AbsIndex);
 }
 
-void AVirtualTexture::MakePageResident( uint32_t AbsIndex, int PhysPageIndex )
+void VirtualTexture::MakePageResident(uint32_t AbsIndex, int PhysPageIndex)
 {
     MapIndirectionData();
 
-    int lod = QuadTreeCalcLod64( AbsIndex );
+    int lod = QuadTreeCalcLod64(AbsIndex);
 
     PIT[AbsIndex] |= PF_CACHED;
 
     uint16_t bits16 = PhysPageIndex | (lod << 12);
     pIndirectionData[AbsIndex] = bits16;
 
-    UpdateChildsBranch_r( lod,
-                          AbsIndex,
-                          bits16,
-                          AddressTable.NumLods );
+    UpdateChildsBranch_r(lod,
+                         AbsIndex,
+                         bits16,
+                         AddressTable.NumLods);
 }
 
-void AVirtualTexture::MakePageNonResident( uint32_t AbsIndex )
+void VirtualTexture::MakePageNonResident(uint32_t AbsIndex)
 {
     MapIndirectionData();
 
-    HK_ASSERT( PIT[AbsIndex] & PF_CACHED );
+    HK_ASSERT(PIT[AbsIndex] & PF_CACHED);
 
     PIT[AbsIndex] &= ~PF_CACHED;
 
-    int lod = QuadTreeCalcLod64( AbsIndex );
-    uint32_t relativeIndex = QuadTreeAbsoluteToRelativeIndex( AbsIndex, lod );
+    int lod = QuadTreeCalcLod64(AbsIndex);
+    uint32_t relativeIndex = QuadTreeAbsoluteToRelativeIndex(AbsIndex, lod);
 
-    if ( lod > 0 ) {
-        uint32_t parent = QuadTreeGetParentFromRelative( relativeIndex, lod );
+    if (lod > 0)
+    {
+        uint32_t parent = QuadTreeGetParentFromRelative(relativeIndex, lod);
 
-        UpdateBranch_r( lod,
-                        AbsIndex,
-                        pIndirectionData[parent],
-                        AddressTable.NumLods );
-    } else {
-        UpdateBranch_r( lod,
-                        AbsIndex,
-                        0,
-                        AddressTable.NumLods );
+        UpdateBranch_r(lod,
+                       AbsIndex,
+                       pIndirectionData[parent],
+                       AddressTable.NumLods);
+    }
+    else
+    {
+        UpdateBranch_r(lod,
+                       AbsIndex,
+                       0,
+                       AddressTable.NumLods);
     }
 }

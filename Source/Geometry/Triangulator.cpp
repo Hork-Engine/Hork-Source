@@ -32,52 +32,52 @@ SOFTWARE.
 
 #include "glutess/glutess.h"
 
-ATriangulatorBase::ATriangulatorBase()
+TriangulatorBase::TriangulatorBase()
 {
     m_Tesselator = gluNewTess();
 }
 
-ATriangulatorBase::~ATriangulatorBase()
+TriangulatorBase::~TriangulatorBase()
 {
     gluDeleteTess(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
-void ATriangulatorBase::SetCallback(uint32_t name, SCallback callback)
+void TriangulatorBase::SetCallback(uint32_t name, SCallback callback)
 {
     gluTessCallback(static_cast<GLUtesselator*>(m_Tesselator), name, callback);
 }
 
-void ATriangulatorBase::SetBoundary(bool flag)
+void TriangulatorBase::SetBoundary(bool flag)
 {
     gluTessProperty(static_cast<GLUtesselator*>(m_Tesselator), GLU_TESS_BOUNDARY_ONLY, flag);
 }
 
-void ATriangulatorBase::SetNormal(Double3 const& normal)
+void TriangulatorBase::SetNormal(Double3 const& normal)
 {
     gluTessNormal(static_cast<GLUtesselator*>(m_Tesselator), normal.X, normal.Y, normal.Z);
 }
 
-void ATriangulatorBase::BeginPolygon(void* data)
+void TriangulatorBase::BeginPolygon(void* data)
 {
     gluTessBeginPolygon(static_cast<GLUtesselator*>(m_Tesselator), data);
 }
 
-void ATriangulatorBase::EndPolygon()
+void TriangulatorBase::EndPolygon()
 {
     gluTessEndPolygon(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
-void ATriangulatorBase::BeginContour()
+void TriangulatorBase::BeginContour()
 {
     gluTessBeginContour(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
-void ATriangulatorBase::EndContour()
+void TriangulatorBase::EndContour()
 {
     gluTessEndContour(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
-void ATriangulatorBase::ProcessVertex(Double3& vertex, const void* data)
+void TriangulatorBase::ProcessVertex(Double3& vertex, const void* data)
 {
     gluTessVertex(static_cast<GLUtesselator*>(m_Tesselator), &vertex.X, const_cast<void*>(data));
 }

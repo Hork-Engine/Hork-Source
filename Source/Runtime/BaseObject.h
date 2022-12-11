@@ -37,24 +37,24 @@ SOFTWARE.
 
 /**
 
-ABaseObject
+BaseObject
 
 Base object class.
 
 */
-class ABaseObject : public GCObject
+class BaseObject : public GCObject
 {
 public:
-    typedef ABaseObject                                         ThisClass;
+    typedef BaseObject                                          ThisClass;
     typedef Allocators::HeapMemoryAllocator<HEAP_WORLD_OBJECTS> Allocator;
-    class ThisClassMeta : public AClassMeta
+    class ThisClassMeta : public ClassMeta
     {
     public:
         ThisClassMeta() :
-            AClassMeta(AClassMeta::DummyFactory(), "ABaseObject"s, nullptr)
+            ClassMeta(ClassMeta::DummyFactory(), "BaseObject"s, nullptr)
         {}
 
-        ABaseObject* CreateInstance() const override
+        BaseObject* CreateInstance() const override
         {
             return NewObj<ThisClass>();
         }
@@ -65,28 +65,28 @@ public:
     /** Object unique identifier */
     const uint64_t Id;
 
-    ABaseObject();
-    ~ABaseObject();
+    BaseObject();
+    ~BaseObject();
 
-    void SetProperties(TStringHashMap<AString> const& Properties);
+    void SetProperties(TStringHashMap<String> const& Properties);
 
-    bool SetProperty(AStringView PropertyName, AStringView PropertyValue);
+    bool SetProperty(StringView PropertyName, StringView PropertyValue);
 
-    //bool SetProperty(AStringView PropertyName, AVariant const& PropertyValue);
+    //bool SetProperty(StringView PropertyName, Variant const& PropertyValue);
 
-    AProperty const* FindProperty(AStringView PropertyName, bool bRecursive) const;
+    Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
 
-    void GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
+    void GetProperties(TPodVector<Property const*>& Properties, bool bRecursive = true) const;
 
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return m_TotalObjects; }
 
-    static ABaseObject* FindObject(uint64_t _Id);
+    static BaseObject* FindObject(uint64_t _Id);
 
     template <typename T>
     static T* FindObject(uint64_t _Id)
     {
-        ABaseObject* object = FindObject(_Id);
+        BaseObject* object = FindObject(_Id);
         if (!object)
         {
             return nullptr;
@@ -99,17 +99,17 @@ public:
     }
 
 private:
-    void SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties);
+    void SetProperties_r(ClassMeta const* Meta, TStringHashMap<String> const& Properties);
 
     /** Object global list */
-    ABaseObject* m_NextObject{};
-    ABaseObject* m_PrevObject{};
+    BaseObject* m_NextObject{};
+    BaseObject* m_PrevObject{};
 
     /** Total existing objects */
     static uint64_t m_TotalObjects;
 
-    static ABaseObject* m_Objects;
-    static ABaseObject* m_ObjectsTail;
+    static BaseObject* m_Objects;
+    static BaseObject* m_ObjectsTail;
 };
 
 /**
@@ -119,7 +119,7 @@ Utilites
 */
 
 template <typename T>
-T* Upcast(ABaseObject* pObject)
+T* Upcast(BaseObject* pObject)
 {
     if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
     {
@@ -129,7 +129,7 @@ T* Upcast(ABaseObject* pObject)
 }
 
 template <typename T>
-T const* Upcast(ABaseObject const* pObject)
+T const* Upcast(BaseObject const* pObject)
 {
     if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
     {

@@ -33,9 +33,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, SRenderInstance const* instance)
+static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, RenderInstance const* instance)
 {
-    AMaterialGPU* pMaterial = instance->Material;
+    MaterialGPU* pMaterial = instance->Material;
 
     HK_ASSERT(pMaterial);
 
@@ -64,29 +64,29 @@ static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, SRenderInsta
     return true;
 }
 
-void AddNormalsPass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
+void AddNormalsPass(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 {
-    ARenderPass& normalPass = FrameGraph.AddTask<ARenderPass>("Normal Pass");
+    RenderPass& normalPass = FrameGraph.AddTask<RenderPass>("Normal Pass");
 
     normalPass.SetRenderArea(GRenderViewArea);
 
     normalPass.SetColorAttachment(
-        STextureAttachment(RenderTarget)
+        TextureAttachment(RenderTarget)
             .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
     normalPass.AddSubpass({0}, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
                           {
                               IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                              SDrawIndexedCmd drawCmd;
+                              DrawIndexedCmd drawCmd;
                               drawCmd.InstanceCount         = 1;
                               drawCmd.StartInstanceLocation = 0;
 
                               for (int i = 0; i < GRenderView->InstanceCount; i++)
                               {
-                                  SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                                  RenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
                                   if (!BindMaterialNormalPass(immediateCtx, instance))
                                   {

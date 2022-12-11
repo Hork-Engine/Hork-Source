@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class ABloomRenderer
+class BloomRenderer
 {
 public:
-    ABloomRenderer();
+    BloomRenderer();
 
-    struct STextures
+    struct Textures
     {
         RenderCore::FGTextureProxy* BloomTexture0;
         RenderCore::FGTextureProxy* BloomTexture1;
@@ -45,7 +45,7 @@ public:
         RenderCore::FGTextureProxy* BloomTexture3;
     };
 
-    void AddPasses(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, ABloomRenderer::STextures* pResult);
+    void AddPasses(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult);
 
 private:
     TRef<RenderCore::IPipeline> BrightPipeline;

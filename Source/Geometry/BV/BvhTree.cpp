@@ -205,7 +205,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
 }
 
 #if 0
-BvhTree::BvhTree(TArrayView<SPrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf)
+BvhTree::BvhTree(TArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf)
 {
     PrimitivesPerLeaf = Math::Max(PrimitivesPerLeaf, 16u);
 
@@ -225,7 +225,7 @@ BvhTree::BvhTree(TArrayView<SPrimitiveDef> Primitives, unsigned int PrimitivesPe
     int primitiveIndex;
     for (primitiveIndex = 0; primitiveIndex < numPrimitives; primitiveIndex++)
     {
-        SPrimitiveDef const* primitiveDef = &Primitives[primitiveIndex];
+        PrimitiveDef const* primitiveDef = &Primitives[primitiveIndex];
         BvhPrimitiveBounds&    primitive    = build.Primitives[0][primitiveIndex];
 
         switch (primitiveDef->Type)

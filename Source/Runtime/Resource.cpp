@@ -34,14 +34,14 @@ SOFTWARE.
 #include "EmbeddedResources.h"
 #include <Platform/Logger.h>
 
-HK_CLASS_META(AResource)
+HK_CLASS_META(Resource)
 
-void AResource::InitializeDefaultObject()
+void Resource::InitializeDefaultObject()
 {
     InitializeFromFile(GetDefaultResourcePath());
 }
 
-void AResource::InitializeFromFile(AStringView path)
+void Resource::InitializeFromFile(StringView path)
 {
     if (!LoadFromPath(path))
     {
@@ -49,7 +49,7 @@ void AResource::InitializeFromFile(AStringView path)
     }
 }
 
-bool AResource::LoadFromPath(AStringView path)
+bool Resource::LoadFromPath(StringView path)
 {
     if (!path.IcmpN("/Default/", 9))
     {
@@ -57,21 +57,21 @@ bool AResource::LoadFromPath(AStringView path)
         return true;
     }
 
-    AFile f = GEngine->GetResourceManager()->OpenResource(path);
+    File f = GEngine->GetResourceManager()->OpenResource(path);
     if (!f)
         return false;
 
     return LoadResource(f);
 }
 
-HK_CLASS_META(ABinaryResource)
+HK_CLASS_META(BinaryResource)
 
-ABinaryResource::~ABinaryResource()
+BinaryResource::~BinaryResource()
 {
     Purge();
 }
 
-void ABinaryResource::Purge()
+void BinaryResource::Purge()
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_pBinaryData);
     m_pBinaryData = nullptr;
@@ -79,14 +79,14 @@ void ABinaryResource::Purge()
     m_SizeInBytes = 0;
 }
 
-bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& stream)
+bool BinaryResource::LoadResource(IBinaryStreamReadInterface& stream)
 {
     Purge();
 
     m_SizeInBytes = stream.SizeInBytes();
     if (!m_SizeInBytes)
     {
-        LOG("ABinaryResource::LoadResource: empty file\n");
+        LOG("BinaryResource::LoadResource: empty file\n");
         return false;
     }
 
@@ -97,7 +97,7 @@ bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& stream)
     return true;
 }
 
-void ABinaryResource::LoadInternalResource(AStringView path)
+void BinaryResource::LoadInternalResource(StringView path)
 {
     Purge();
 }

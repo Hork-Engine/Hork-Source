@@ -33,17 +33,17 @@ SOFTWARE.
 #include "BaseObject.h"
 
 class AActor;
-class AHitProxy;
+class HitProxy;
 
-struct SOverlapEvent
+struct OverlapEvent
 {
-    AActor*    SelfActor;
-    AHitProxy* SelfBody;
-    AActor*    OtherActor;
-    AHitProxy* OtherBody;
+    AActor*   SelfActor;
+    HitProxy* SelfBody;
+    AActor*   OtherActor;
+    HitProxy* OtherBody;
 };
 
-struct SContactPoint
+struct ContactPoint
 {
     Float3 Position;
     Float3 Normal;
@@ -51,15 +51,15 @@ struct SContactPoint
     float  Impulse;
 };
 
-struct SContactEvent
+struct ContactEvent
 {
-    AActor*              SelfActor;
-    AHitProxy*           SelfBody;
-    AActor*              OtherActor;
-    AHitProxy*           OtherBody;
-    SContactPoint const* Points;
-    int                  NumPoints;
+    AActor*             SelfActor;
+    HitProxy*           SelfBody;
+    AActor*             OtherActor;
+    HitProxy*           OtherBody;
+    ContactPoint const* Points;
+    int                 NumPoints;
 };
 
-using AOverlapDelegate = TEvent<SOverlapEvent const&>;
-using AContactDelegate = TEvent<SContactEvent const&>;
+using OverlapDelegate = TEvent<OverlapEvent const&>;
+using ContactDelegate = TEvent<ContactEvent const&>;

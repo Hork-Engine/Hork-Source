@@ -33,11 +33,11 @@ SOFTWARE.
 #include "BinaryStream.h"
 #include "String.h"
 
-struct AFileHandle
+struct FileHandle
 {
-    AFileHandle() = default;
+    FileHandle() = default;
     
-    constexpr explicit AFileHandle(int h) :
+    constexpr explicit FileHandle(int h) :
         h(h)
     {}
     
@@ -61,9 +61,9 @@ struct AFileHandle
         h = -1;
     }
     
-    constexpr static AFileHandle Invalid()
+    constexpr static FileHandle Invalid()
     {
-        return AFileHandle(-1);
+        return FileHandle(-1);
     }
     
 private:
@@ -73,26 +73,26 @@ private:
 
 /**
 
-AArchive
+Archive
 
 Read file from archive
 
 */
-class AArchive final
+class Archive final
 {
-    HK_FORBID_COPY(AArchive)
+    HK_FORBID_COPY(Archive)
 
 public:
-    AArchive() = default;
-    ~AArchive();
+    Archive() = default;
+    ~Archive();
 
-    AArchive(AArchive&& Rhs) noexcept :
+    Archive(Archive&& Rhs) noexcept :
         m_Handle(Rhs.m_Handle)
     {
         Rhs.m_Handle = nullptr;
     }
 
-    AArchive& operator=(AArchive&& Rhs) noexcept
+    Archive& operator=(Archive&& Rhs) noexcept
     {
         Close();
         Core::Swap(m_Handle, Rhs.m_Handle);
@@ -105,10 +105,10 @@ public:
     }
 
     /** Open archive from file */
-    static AArchive Open(AStringView ArchiveName, bool bResourcePack = false);
+    static Archive Open(StringView ArchiveName, bool bResourcePack = false);
 
     /** Open archive from memory */
-    static AArchive OpenFromMemory(const void* pMemory, size_t SizeInBytes);
+    static Archive OpenFromMemory(const void* pMemory, size_t SizeInBytes);
 
     /** Close archive */
     void Close();
@@ -122,60 +122,60 @@ public:
     int GetNumFiles() const;
 
     /** Get file handle. Returns an invalid handle if file wasn't found. */
-    AFileHandle LocateFile(AStringView FileName) const;
+    FileHandle LocateFile(StringView FileName) const;
 
     /** Get file compressed and uncompressed size */
-    bool GetFileSize(AFileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const;
+    bool GetFileSize(FileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const;
 
     /** Get file name by index */
-    bool GetFileName(AFileHandle FileHandle, AString& FileName) const;
+    bool GetFileName(FileHandle FileHandle, String& FileName) const;
 
     /** Decompress file to memory buffer */
-    bool ExtractFileToMemory(AFileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const;
+    bool ExtractFileToMemory(FileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
+    bool ExtractFileToHeapMemory(StringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(AFileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
+    bool ExtractFileToHeapMemory(FileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
 private:
     void* m_Handle{};
 };
 
-class AFile final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
+class File final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
 {
 public:
     /** Open file for reading form specified path. */
-    static AFile OpenRead(AStringView FileName);
+    static File OpenRead(StringView FileName);
 
     /** Read from specified memory buffer. */
-    static AFile OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
+    static File OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Read from specified memory buffer. */
-    static AFile OpenRead(AStringView FileName, BlobRef Blob);
+    static File OpenRead(StringView FileName, BlobRef Blob);
 
     /** Read file from archive by file name. */
-    static AFile OpenRead(AStringView FileName, AArchive const& Archive);
+    static File OpenRead(StringView FileName, Archive const& Archive);
 
     /** Read file from archive by file index. */
-    static AFile OpenRead(AFileHandle FileHandle, AArchive const& Archive);
+    static File OpenRead(FileHandle FileHandle, Archive const& Archive);
 
     /** Open file for writing. */
-    static AFile OpenWrite(AStringView FileName);
+    static File OpenWrite(StringView FileName);
 
     /** Write to specified memory buffer */
-    static AFile OpenWrite(AStringView StreamName, void* pMemoryBuffer, size_t SizeInBytes);
+    static File OpenWrite(StringView StreamName, void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Write to inner memory buffer */
-    static AFile OpenWriteToMemory(AStringView StreamName, size_t ReservedSize = 32);
+    static File OpenWriteToMemory(StringView StreamName, size_t ReservedSize = 32);
 
     /** Open or create file for writing at end-of-file. */
-    static AFile OpenAppend(AStringView FileName);
+    static File OpenAppend(StringView FileName);
 
-    AFile() = default;
+    File() = default;
 
-    AFile(AFile&& Rhs) noexcept :
+    File(File&& Rhs) noexcept :
         m_Name(std::move(Rhs.m_Name)),
         m_Type(Rhs.m_Type),
         m_Handle(Rhs.m_Handle),
@@ -194,7 +194,7 @@ public:
         Rhs.m_bMemoryBufferOwner = true;
     }
 
-    AFile& operator=(AFile&& Rhs) noexcept
+    File& operator=(File&& Rhs) noexcept
     {
         Close();
 
@@ -218,7 +218,7 @@ public:
         return *this;
     }
 
-    ~AFile();
+    ~File();
 
     /** Close file */
     void Close();
@@ -273,7 +273,7 @@ public:
 
     void SetMemoryGrowGranularity(uint32_t Granularity) { m_Granularity = Granularity; }
 
-    AString const& GetName() const override
+    String const& GetName() const override
     {
         return m_Name;
     }
@@ -300,12 +300,12 @@ private:
         FILE_TYPE_APPEND_FILE_SYSTEM
     };
 
-    static AFile OpenFromFileSystem(AStringView FileName, FILE_TYPE Type);
+    static File OpenFromFileSystem(StringView FileName, FILE_TYPE Type);
     static void* Alloc(size_t SizeInBytes);
     static void* Realloc(void* pMemory, size_t SizeInBytes);
     static void  Free(void* pMemory);
 
-    AString   m_Name;
+    String   m_Name;
     FILE_TYPE m_Type{FILE_TYPE_UNDEFINED};
     union
     {
@@ -323,19 +323,19 @@ namespace Core
 {
 
 /** Make file system directory */
-void CreateDirectory(AStringView Directory, bool bFileName);
+void CreateDirectory(StringView Directory, bool bFileName);
 
 /** Check is file exists */
-bool IsFileExists(AStringView FileName);
+bool IsFileExists(StringView FileName);
 
 /** Remove file from disk */
-void RemoveFile(AStringView FileName);
+void RemoveFile(StringView FileName);
 
-using STraverseDirectoryCB = std::function<void(AStringView FileName, bool bIsDirectory)>;
+using STraverseDirectoryCB = std::function<void(StringView FileName, bool bIsDirectory)>;
 /** Traverse the directory */
-void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback);
+void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback);
 
 /** Write game resource pack */
-bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile);
+bool WriteResourcePack(StringView SourcePath, StringView ResultFile);
 
 } // namespace Core

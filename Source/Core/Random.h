@@ -36,10 +36,10 @@ SOFTWARE.
 Interface of the random number generators.
 */
 template <typename Derived>
-class ARandom
+class Random
 {
 public:
-    virtual ~ARandom() {}
+    virtual ~Random() {}
 
     /** Get a random number on [0, max] interval. */
     uint32_t Get(uint32_t Max)
@@ -82,11 +82,11 @@ public:
 /**
 Very simple random number generator with low storage requirements.
 */
-class ASimpleRand : public ARandom<ASimpleRand>
+class SimpleRand : public Random<SimpleRand>
 {
 public:
     /** Constructor that uses the given seed. */
-    ASimpleRand(uint32_t InSeed = 0)
+    SimpleRand(uint32_t InSeed = 0)
     {
         Seed(InSeed);
     }
@@ -110,11 +110,11 @@ private:
 /**
 Mersenne twister random number generator.
 */
-class AMersenneTwisterRand : public ARandom<AMersenneTwisterRand>
+class MersenneTwisterRand : public Random<MersenneTwisterRand>
 {
 public:
     /** Constructor that uses the given seed. */
-    AMersenneTwisterRand(uint32_t InSeed = 0)
+    MersenneTwisterRand(uint32_t InSeed = 0)
     {
         Seed(InSeed);
     }

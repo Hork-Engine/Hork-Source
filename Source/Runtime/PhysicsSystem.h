@@ -33,15 +33,15 @@ SOFTWARE.
 #include "Collision.h"
 #include "CollisionModel.h"
 
-class ADebugRenderer;
-class APhysicalBody;
-class ATerrainComponent;
+class DebugRenderer;
+class PhysicalBody;
+class TerrainComponent;
 
 /** Collision trace result */
-struct SCollisionTraceResult
+struct CollisionTraceResult
 {
     /** Colliding body */
-    AHitProxy* HitProxy;
+    HitProxy* HitProxy;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -59,14 +59,14 @@ struct SCollisionTraceResult
 };
 
 /** Collision query filter */
-struct SCollisionQueryFilter
+struct CollisionQueryFilter
 {
     /** List of actors that will be ignored during collision query */
     AActor** IgnoreActors;
     int      ActorsCount;
 
     /** List of bodies that will be ignored during collision query */
-    APhysicalBody** IgnoreBodies;
+    PhysicalBody** IgnoreBodies;
     int             BodiesCount;
 
     /** Physical body collision mask */
@@ -78,7 +78,7 @@ struct SCollisionQueryFilter
     /** Sort result by the distance */
     bool bSortByDistance;
 
-    SCollisionQueryFilter()
+    CollisionQueryFilter()
     {
         IgnoreActors = nullptr;
         ActorsCount  = 0;
@@ -95,18 +95,18 @@ struct SCollisionQueryFilter
 };
 
 /** Convex sweep tracing */
-struct SConvexSweepTest
+struct ConvexSweepTest
 {
     /** Convex collision body */
     union
     {
-        SCollisionSphereDef*      CollisionSphere;
-        SCollisionSphereRadiiDef* CollisionSphereRADII;
-        SCollisionBoxDef*         CollisionBox;
-        SCollisionCylinderDef*    CollisionCylinder;
-        SCollisionConeDef*        CollisionCone;
-        SCollisionCapsuleDef*     CollisionCapsule;
-        SCollisionConvexHullDef*  CollisionConvexHull;
+        CollisionSphereDef*      CollisionSphere;
+        CollisionSphereRadiiDef* CollisionSphereRADII;
+        CollisionBoxDef*         CollisionBox;
+        CollisionCylinderDef*    CollisionCylinder;
+        CollisionConeDef*        CollisionCone;
+        CollisionCapsuleDef*     CollisionCapsule;
+        CollisionConvexHullDef*  CollisionConvexHull;
     };
     /** Start position for convex sweep trace */
     Float3 StartPosition;
@@ -117,20 +117,18 @@ struct SConvexSweepTest
     /** End rotation for convex sweep trace */
     Quat EndRotation;
     /** Query filter */
-    SCollisionQueryFilter QueryFilter;
+    CollisionQueryFilter QueryFilter;
 };
 
-
-
 /** Collision contact */
-struct SCollisionContact
+struct CollisionContact
 {
     class btPersistentManifold* Manifold;
 
-    TRef<AActor>    ActorA;
-    TRef<AActor>    ActorB;
-    TRef<AHitProxy> ComponentA;
-    TRef<AHitProxy> ComponentB;
+    TRef<AActor>   ActorA;
+    TRef<AActor>   ActorB;
+    TRef<HitProxy> ComponentA;
+    TRef<HitProxy> ComponentB;
 
     bool bActorADispatchContactEvents;
     bool bActorBDispatchContactEvents;
@@ -143,19 +141,19 @@ struct SCollisionContact
     bool bComponentBDispatchOverlapEvents;
 };
 
-struct SContactKey
+struct ContactKey
 {
     uint64_t Id[2];
 
-    //SContactKey() = default;
+    //ContactKey() = default;
 
-    explicit SContactKey(SCollisionContact const& Contact)
+    explicit ContactKey(CollisionContact const& Contact)
     {
         Id[0] = Contact.ComponentA->Id;
         Id[1] = Contact.ComponentB->Id;
     }
 
-    bool operator==(SContactKey const& Rhs) const
+    bool operator==(ContactKey const& Rhs) const
     {
         return Id[0] == Rhs.Id[0] && Id[1] == Rhs.Id[1];
     }
@@ -168,12 +166,10 @@ struct SContactKey
     }
 };
 
-
-
-struct SCollisionQueryResult
+struct CollisionQueryResult
 {
     /** Colliding body */
-    AHitProxy* HitProxy;
+    HitProxy* HitProxy;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -190,9 +186,9 @@ struct SCollisionQueryResult
     }
 };
 
-class APhysicsSystem
+class PhysicsSystem
 {
-    HK_FORBID_COPY(APhysicsSystem)
+    HK_FORBID_COPY(PhysicsSystem)
 
 public:
     /** Physics refresh rate */
@@ -213,61 +209,61 @@ public:
 
     bool bDuringPhysicsUpdate = false;
 
-    APhysicsSystem();
-    virtual ~APhysicsSystem();
+    PhysicsSystem();
+    virtual ~PhysicsSystem();
 
     /** Trace collision bodies */
-    bool Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool Trace(TPodVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceClosest(SCollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceClosest(CollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceSphere(SCollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceSphere(CollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceBox(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Experimental trace box with array of collisions */
-    bool TraceBox2(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceBox2(TPodVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceCylinder(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceCylinder(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceCapsule(SCollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceCapsule(CollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
-    bool TraceConvex(SCollisionTraceResult& _Result, SConvexSweepTest const& _SweepTest) const;
+    bool TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest const& _SweepTest) const;
 
     /** Query objects in sphere */
-    void QueryHitProxies_Sphere(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies_Sphere(TPodVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in box */
-    void QueryHitProxies_Box(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies_Box(TPodVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in AABB */
-    void QueryHitProxies(TPodVector<AHitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in sphere */
-    void QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in box */
-    void QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in AABB */
-    void QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
-    void QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const;
 
-    void QueryCollision_Box(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision_Box(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const;
 
-    void QueryCollision(TPodVector<SCollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision(TPodVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const;
 
     /** Simulate the physics */
     void Simulate(float _TimeStep);
 
-    void DrawDebug(ADebugRenderer* InRenderer);
+    void DrawDebug(DebugRenderer* InRenderer);
 
     // Internal
     class btSoftRigidDynamicsWorld* GetInternal() const { return DynamicsWorld.GetObject(); }
@@ -275,25 +271,25 @@ public:
     struct btSoftBodyWorldInfo* GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
 
 private:
-    friend class AHitProxy;
+    friend class HitProxy;
 
     /** Add or re-add physical body to the world */
-    void AddHitProxy(AHitProxy* HitProxy);
+    void AddHitProxy(HitProxy* HitProxy);
 
     /** Remove physical body from the world */
-    void RemoveHitProxy(AHitProxy* HitProxy);
+    void RemoveHitProxy(HitProxy* HitProxy);
 
 private:
     /** Add physical body to pending list */
-    void AddPendingBody(AHitProxy* InPhysicalBody);
+    void AddPendingBody(HitProxy* InPhysicalBody);
 
     /** Remove physical body from pending list */
-    void RemovePendingBody(AHitProxy* InPhysicalBody);
+    void RemovePendingBody(HitProxy* InPhysicalBody);
 
     /** Add physical bodies in pending list to physics world */
     void AddPendingBodies();
 
-    void GenerateContactPoints(int _ContactIndex, SCollisionContact& _Contact);
+    void GenerateContactPoints(int _ContactIndex, CollisionContact& _Contact);
 
     void DispatchContactAndOverlapEvents();
 
@@ -309,11 +305,11 @@ private:
     TUniqueRef<class btSequentialImpulseConstraintSolver>       ConstraintSolver;
     TUniqueRef<class btGhostPairCallback>                       GhostPairCallback;
     struct btSoftBodyWorldInfo*                                 SoftBodyWorldInfo;
-    TVector<SCollisionContact>                                  CollisionContacts[2];
-    THashSet<SContactKey>                                       ContactHash[2];
-    TPodVector<SContactPoint>                                   ContactPoints;
-    AHitProxy*                                                  PendingAddToWorldHead = nullptr;
-    AHitProxy*                                                  PendingAddToWorldTail = nullptr;
+    TVector<CollisionContact>                                   CollisionContacts[2];
+    THashSet<ContactKey>                                        ContactHash[2];
+    TPodVector<ContactPoint>                                    ContactPoints;
+    HitProxy*                                                   PendingAddToWorldHead = nullptr;
+    HitProxy*                                                   PendingAddToWorldTail = nullptr;
     int                                                         FixedTickNumber       = 0;
     int                                                         CacheContactPoints    = -1;
 };

@@ -246,7 +246,7 @@ class UIImageBrush : public UIBrush
     UI_CLASS(UIImageBrush, UIBrush)
 
 public:
-    TRef<ATextureView> TextureView;
+    TRef<TextureView> TexView;
     Color4         TintColor;
     Float2         Offset;
     Float2         Scale               = Float2(1,1);
@@ -259,25 +259,25 @@ public:
         UIBrush(IMAGE)
     {}
 
-    UIImageBrush(ATexture* texture) :
+    UIImageBrush(Texture* texture) :
         UIBrush(IMAGE),
-        TextureView(texture ? texture->GetView() : nullptr)
+        TexView(texture ? texture->GetView() : nullptr)
     {}
 
-    UIImageBrush(ATextureView* texture) :
+    UIImageBrush(TextureView* texture) :
         UIBrush(IMAGE),
-        TextureView(texture)
+        TexView(texture)
     {}
 
-    UIImageBrush& WithTexture(ATexture* texture)
+    UIImageBrush& WithTexture(Texture* texture)
     {
-        TextureView = texture ? texture->GetView() : nullptr;
+        TexView = texture ? texture->GetView() : nullptr;
         return *this;
     }
 
-    UIImageBrush& WithTexture(ATextureView* textureView)
+    UIImageBrush& WithTexture(TextureView* textureView)
     {
-        TextureView = textureView;
+        TexView = textureView;
         return *this;
     }
 
@@ -333,7 +333,7 @@ public:
         UIBrush(CUSTOM)
     {}
 
-    virtual void Draw(ACanvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices) {}
+    virtual void Draw(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices) {}
 };
 
-void DrawBrush(ACanvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush);
+void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush);

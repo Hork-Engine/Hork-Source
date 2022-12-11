@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Containers/Hash.h>
 
 class AActor;
-class AWorld;
+class World;
 
 class asIScriptEngine;
 class asIScriptContext;
@@ -44,11 +44,11 @@ class asIScriptFunction;
 class asITypeInfo;
 struct asSMessageInfo;
 
-class AScriptContextPool
+class ScriptContextPool
 {
 public:
-    AScriptContextPool(asIScriptEngine* pEngine);
-    virtual ~AScriptContextPool();
+    ScriptContextPool(asIScriptEngine* pEngine);
+    virtual ~ScriptContextPool();
 
     asIScriptContext* PrepareContext(asIScriptFunction* pFunction);
     asIScriptContext* PrepareContext(asIScriptObject* pScriptObject, asIScriptFunction* pFunction);
@@ -59,29 +59,29 @@ private:
     TPodVector<asIScriptContext*> m_Contexts;
 };
 
-class AActorScript
+class ActorScript
 {
 public:
-    AActorScript() {}
+    ActorScript() {}
 
-    static AActorScript* GetScript(asIScriptObject* pObject);
+    static ActorScript* GetScript(asIScriptObject* pObject);
 
-    static void SetProperties(asIScriptObject* pObject, TStringHashMap<AString> const& Properties);
-    static bool SetProperty(asIScriptObject* pObject, AStringView PropertyName, AStringView PropertyValue);    
+    static void SetProperties(asIScriptObject* pObject, TStringHashMap<String> const& Properties);
+    static bool SetProperty(asIScriptObject* pObject, StringView PropertyName, StringView PropertyValue);    
     static void CloneProperties(asIScriptObject* Template, asIScriptObject* Destination);
 
-    AString const& GetModule() const { return Module; }
+    String const& GetModule() const { return Module; }
 
     void BeginPlay(asIScriptObject* pObject);
     void Tick(asIScriptObject* pObject, float TimeStep);
     void TickPrePhysics(asIScriptObject* pObject, float TimeStep);
     void TickPostPhysics(asIScriptObject* pObject, float TimeStep);
     void LateUpdate(asIScriptObject* pObject, float TimeStep);
-    void OnApplyDamage(asIScriptObject* pObject, struct SActorDamage const& Damage);
-    void DrawDebug(asIScriptObject* pObject, class ADebugRenderer* InRenderer);
+    void OnApplyDamage(asIScriptObject* pObject, struct ActorDamage const& Damage);
+    void DrawDebug(asIScriptObject* pObject, class DebugRenderer* InRenderer);
 
 //private:
-    AString              Module;
+    String              Module;
     asITypeInfo*         Type{};
     asIScriptFunction*   M_FactoryFunc{};
     asIScriptFunction*   M_BeginPlay{};
@@ -90,30 +90,30 @@ public:
     asIScriptFunction*   M_TickPostPhysics{};
     asIScriptFunction*   M_LateUpdate{};
     asIScriptFunction*   M_OnApplyDamage{};
-    class AScriptEngine* pEngine{};
+    class ScriptEngine* pEngine{};
 
-    friend class AScriptEngine;
+    friend class ScriptEngine;
 };
 
-class AScriptEngine
+class ScriptEngine
 {
 public:
-    AScriptEngine(AWorld* pWorld);
-    ~AScriptEngine();
+    ScriptEngine(World* pWorld);
+    ~ScriptEngine();
 
-    asIScriptObject* CreateScriptInstance(AString const& ModuleName, AActor* pActor);
+    asIScriptObject* CreateScriptInstance(String const& ModuleName, AActor* pActor);
 
-    AScriptContextPool& GetContextPool() { return m_ContextPool; }
+    ScriptContextPool& GetContextPool() { return m_ContextPool; }
 
     bool bHasCompileErrors;
 
 protected:
     void MessageCallback(asSMessageInfo const& msg);
 
-    AActorScript* GetActorScript(AString const& ModuleName);
+    ActorScript* GetActorScript(String const& ModuleName);
 
     asIScriptEngine* m_pEngine;
 
-    AScriptContextPool                     m_ContextPool;
-    TVector<std::unique_ptr<AActorScript>> m_Scripts;
+    ScriptContextPool                     m_ContextPool;
+    TVector<std::unique_ptr<ActorScript>> m_Scripts;
 };

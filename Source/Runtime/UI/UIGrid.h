@@ -112,11 +112,11 @@ public:
     UIGridSplitter TraceSplitter(float x, float y) const;
 
 protected:
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
 
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
 
-    void Draw(ACanvas& cv) override;
+    void Draw(Canvas& cv) override;
 
 private:
     TRef<UIGridLayout> m_Layout;

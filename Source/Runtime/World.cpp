@@ -40,31 +40,31 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-AWorld*          AWorld::m_PendingKillWorlds = nullptr;
-TVector<AWorld*> AWorld::m_Worlds;
-TVector<AWorld*> AWorld::m_TickingWorlds;
+World*          World::m_PendingKillWorlds = nullptr;
+TVector<World*> World::m_Worlds;
+TVector<World*> World::m_TickingWorlds;
 
-AWorld::AWorld()
+World::World()
 {
-    m_PersistentLevel = NewObj<ALevel>();
+    m_PersistentLevel = NewObj<Level>();
     m_PersistentLevel->AddRef();
     m_PersistentLevel->m_OwnerWorld    = this;
     m_PersistentLevel->m_bIsPersistent = true;
     m_PersistentLevel->OnAddLevelToWorld();
 
-    SVisibilitySystemCreateInfo ci{};
-    m_PersistentLevel->Visibility = MakeRef<AVisibilityLevel>(ci);
+    VisibilitySystemCreateInfo ci{};
+    m_PersistentLevel->Visibility = MakeRef<VisibilityLevel>(ci);
     m_ArrayOfLevels.Add(m_PersistentLevel);
 
     VisibilitySystem.RegisterLevel(m_PersistentLevel->Visibility);
 
-    PhysicsSystem.PrePhysicsCallback.Set(this, &AWorld::HandlePrePhysics);
-    PhysicsSystem.PostPhysicsCallback.Set(this, &AWorld::HandlePostPhysics);
+    PhysicsSystem.PrePhysicsCallback.Set(this, &World::HandlePrePhysics);
+    PhysicsSystem.PostPhysicsCallback.Set(this, &World::HandlePostPhysics);
 }
 
-AWorld::~AWorld()
+World::~World()
 {
-    for (ALevel* level : m_ArrayOfLevels)
+    for (Level* level : m_ArrayOfLevels)
     {
         level->OnRemoveLevelFromWorld();
 
@@ -79,49 +79,49 @@ AWorld::~AWorld()
     //VisibilitySystem.UnregisterLevel(PersistentLevel->Visibility);
 }
 
-void AWorld::SetPaused(bool _Paused)
+void World::SetPaused(bool _Paused)
 {
     m_bPauseRequest   = _Paused;
     m_bUnpauseRequest = !_Paused;
 }
 
-bool AWorld::IsPaused() const
+bool World::IsPaused() const
 {
     return m_bPaused;
 }
 
-void AWorld::ResetGameplayTimer()
+void World::ResetGameplayTimer()
 {
     m_bResetGameplayTimer = true;
 }
 
-void AWorld::SetPhysicsHertz(int _Hertz)
+void World::SetPhysicsHertz(int _Hertz)
 {
     PhysicsSystem.PhysicsHertz = _Hertz;
 }
 
-void AWorld::SetContactSolverSplitImpulse(bool _SplitImpulse)
+void World::SetContactSolverSplitImpulse(bool _SplitImpulse)
 {
     PhysicsSystem.bContactSolverSplitImpulse = _SplitImpulse;
 }
 
-void AWorld::SetContactSolverIterations(int _InterationsCount)
+void World::SetContactSolverIterations(int _InterationsCount)
 {
     PhysicsSystem.NumContactSolverIterations = _InterationsCount;
 }
 
-void AWorld::SetGravityVector(Float3 const& _Gravity)
+void World::SetGravityVector(Float3 const& _Gravity)
 {
     PhysicsSystem.GravityVector = _Gravity;
     PhysicsSystem.bGravityDirty = true;
 }
 
-Float3 const& AWorld::GetGravityVector() const
+Float3 const& World::GetGravityVector() const
 {
     return PhysicsSystem.GravityVector;
 }
 
-void AWorld::Destroy()
+void World::Destroy()
 {
     if (m_bPendingKill)
     {
@@ -136,7 +136,7 @@ void AWorld::Destroy()
     DestroyActors();
 }
 
-void AWorld::DestroyActors()
+void World::DestroyActors()
 {
     for (AActor* actor : m_Actors)
     {
@@ -154,14 +154,14 @@ void AWorld::DestroyActors()
     }
 }
 
-void AWorld::DestroyActor(AActor* Actor)
+void World::DestroyActor(AActor* Actor)
 {
     if (Actor->m_bPendingKill)
     {
         return;
     }
 
-    AWorld* world = Actor->m_World;
+    World* world = Actor->m_World;
 
     HK_ASSERT(world);
 
@@ -170,12 +170,12 @@ void AWorld::DestroyActor(AActor* Actor)
     Actor->m_NextPendingKillActor = world->m_PendingKillActors;
     world->m_PendingKillActors    = Actor;
 
-    for (AActorComponent* component : Actor->m_Components)
+    for (ActorComponent* component : Actor->m_Components)
     {
         DestroyComponent(component);
     }
 
-    ALevel* level = Actor->m_Level;
+    Level* level = Actor->m_Level;
 
     level->m_Actors[Actor->m_IndexInLevelArrayOfActors]                              = level->m_Actors[level->m_Actors.Size() - 1];
     level->m_Actors[Actor->m_IndexInLevelArrayOfActors]->m_IndexInLevelArrayOfActors = Actor->m_IndexInLevelArrayOfActors;
@@ -183,14 +183,14 @@ void AWorld::DestroyActor(AActor* Actor)
     Actor->m_IndexInLevelArrayOfActors = -1;
 }
 
-void AWorld::DestroyComponent(AActorComponent* Component)
+void World::DestroyComponent(ActorComponent* Component)
 {
     if (Component->m_bPendingKill)
     {
         return;
     }
 
-    AWorld* world = Component->GetWorld();
+    World* world = Component->GetWorld();
 
     HK_ASSERT(world);
 
@@ -202,38 +202,38 @@ void AWorld::DestroyComponent(AActorComponent* Component)
     world->m_PendingKillComponents      = Component;
 }
 
-void AWorld::BuildNavigation(SAINavigationConfig const& _NavigationConfig)
+void World::BuildNavigation(AINavigationConfig const& _NavigationConfig)
 {
     NavigationMesh.Initialize(_NavigationConfig);
     NavigationMesh.Build();
 }
 
-SActorSpawnInfo::SActorSpawnInfo(uint64_t _ActorClassId) :
-    SActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassId))
+ActorSpawnInfo::ActorSpawnInfo(uint64_t _ActorClassId) :
+    ActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassId))
 {
 }
 
-SActorSpawnInfo::SActorSpawnInfo(const char* _ActorClassName) :
-    SActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassName))
+ActorSpawnInfo::ActorSpawnInfo(const char* _ActorClassName) :
+    ActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassName))
 {
 }
 
-void SActorSpawnInfo::SetTemplate(AActor const* _Template)
+void ActorSpawnInfo::SetTemplate(AActor const* _Template)
 {
     HK_ASSERT(&_Template->FinalClassMeta() == ActorTypeClassMeta);
     Template = _Template;
 }
 
-asIScriptObject* AWorld::CreateScriptModule(AString const& Module, AActor* Actor)
+asIScriptObject* World::CreateScriptModule(String const& Module, AActor* Actor)
 {
     if (!m_ScriptEngine)
-        m_ScriptEngine = std::make_unique<AScriptEngine>(this);
+        m_ScriptEngine = std::make_unique<ScriptEngine>(this);
 
     asIScriptObject* scriptModule = m_ScriptEngine->CreateScriptInstance(Module, Actor);
 
     if (scriptModule)
     {
-        AActorScript* script = AActorScript::GetScript(scriptModule);
+        ActorScript* script = ActorScript::GetScript(scriptModule);
 
         asUINT numProps = scriptModule->GetPropertyCount();
         for (asUINT i = 0; i < numProps; i++)
@@ -260,18 +260,18 @@ asIScriptObject* AWorld::CreateScriptModule(AString const& Module, AActor* Actor
     return scriptModule;
 }
 
-AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& SpawnTransform)
+AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform)
 {
     if (m_bPendingKill)
     {
-        LOG("AWorld::SpawnActor: Attempting to spawn an actor from a destroyed world\n");
+        LOG("World::SpawnActor: Attempting to spawn an actor from a destroyed world\n");
         return nullptr;
     }
 
-    AClassMeta const* actorClass = SpawnInfo.ActorClass;
+    ClassMeta const* actorClass = SpawnInfo.ActorClass;
     HK_ASSERT(actorClass);
 
-    AActorDefinition* pActorDef = SpawnInfo.ActorDef;
+    ActorDefinition* pActorDef = SpawnInfo.ActorDef;
 
     // Override actor class
     if (pActorDef && pActorDef->GetActorClass())
@@ -280,8 +280,8 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
         if (actorClass->Factory() != &AActor::Factory())
         {
-            LOG("AWorld::SpawnActor: wrong C++ actor class specified\n");
-            actorClass = &AActor::ClassMeta();
+            LOG("World::SpawnActor: wrong C++ actor class specified\n");
+            actorClass = &AActor::GetClassMeta();
         }
     }
 
@@ -293,7 +293,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     // Create components from actor definition
     if (pActorDef)
     {
-        TPodVector<AActorComponent*> components;
+        TPodVector<ActorComponent*> components;
 
         // Create components and set properties
         int componentIndex = 0;
@@ -306,8 +306,8 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
                 if (pActorDef->GetRootIndex() == componentIndex)
                 {
-                    HK_ASSERT(component->FinalClassMeta().IsSubclassOf<ASceneComponent>());
-                    actor->m_RootComponent = static_cast<ASceneComponent*>(component);
+                    HK_ASSERT(component->FinalClassMeta().IsSubclassOf<SceneComponent>());
+                    actor->m_RootComponent = static_cast<SceneComponent*>(component);
                 }
             }
             componentIndex++;
@@ -322,11 +322,11 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
             {
                 if (components[componentIndex] && components[componentDef.ParentIndex])
                 {
-                    HK_ASSERT(components[componentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
-                    HK_ASSERT(components[componentDef.ParentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
+                    HK_ASSERT(components[componentIndex]->FinalClassMeta().IsSubclassOf<SceneComponent>());
+                    HK_ASSERT(components[componentDef.ParentIndex]->FinalClassMeta().IsSubclassOf<SceneComponent>());
 
-                    ASceneComponent* sceneComponent  = static_cast<ASceneComponent*>(components[componentIndex]);
-                    ASceneComponent* parentComponent = static_cast<ASceneComponent*>(components[componentDef.ParentIndex]);
+                    SceneComponent* sceneComponent  = static_cast<SceneComponent*>(components[componentIndex]);
+                    SceneComponent* parentComponent = static_cast<SceneComponent*>(components[componentDef.ParentIndex]);
 
                     // TODO: Socket!!!
                     sceneComponent->AttachTo(parentComponent);
@@ -338,7 +338,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     }
 
     // Initialize actor
-    SActorInitializer initializer;
+    ActorInitializer initializer;
     actor->Initialize(initializer);
     actor->m_bCanEverTick        = initializer.bCanEverTick;
     actor->m_bTickEvenWhenPaused = initializer.bTickEvenWhenPaused;
@@ -351,7 +351,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         actor->SetProperties(pActorDef->GetActorPropertyHash());
 
     // Create script
-    AString const& scriptModule = pActorDef ? pActorDef->GetScriptModule() : SpawnInfo.ScriptModule;
+    String const& scriptModule = pActorDef ? pActorDef->GetScriptModule() : SpawnInfo.ScriptModule;
     if (!scriptModule.IsEmpty())
     {
         actor->m_ScriptModule = CreateScriptModule(scriptModule, actor);
@@ -359,7 +359,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         {
             if (pActorDef)
             {
-                AActorScript::SetProperties(actor->m_ScriptModule, pActorDef->GetScriptPropertyHash());
+                ActorScript::SetProperties(actor->m_ScriptModule, pActorDef->GetScriptPropertyHash());
             }
         }
         else
@@ -372,11 +372,11 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     {
         actor->LifeSpan = SpawnInfo.Template->LifeSpan;
 
-        auto FindTemplateComponent = [](AActor const* Template, AActorComponent* Component) -> AActorComponent*
+        auto FindTemplateComponent = [](AActor const* Template, ActorComponent* Component) -> ActorComponent*
         {
             auto classId = Component->FinalClassId();
             auto localId = Component->m_LocalId;
-            for (AActorComponent* component : Template->GetComponents())
+            for (ActorComponent* component : Template->GetComponents())
             {
                 if (component->FinalClassId() == classId && component->m_LocalId == localId)
                     return component;
@@ -385,20 +385,20 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         };
 
         // Clone component properties
-        for (AActorComponent* component : actor->GetComponents())
+        for (ActorComponent* component : actor->GetComponents())
         {
-            AActorComponent* templateComponent = FindTemplateComponent(SpawnInfo.Template, component);
+            ActorComponent* templateComponent = FindTemplateComponent(SpawnInfo.Template, component);
             if (templateComponent)
-                AClassMeta::CloneProperties(templateComponent, component);
+                ClassMeta::CloneProperties(templateComponent, component);
         }
 
         if (actor->m_ScriptModule && SpawnInfo.Template->m_ScriptModule)
         {
-            AActorScript::CloneProperties(SpawnInfo.Template->m_ScriptModule, actor->m_ScriptModule);
+            ActorScript::CloneProperties(SpawnInfo.Template->m_ScriptModule, actor->m_ScriptModule);
             // TODO: Clone script properties
         }
 
-        AClassMeta::CloneProperties(SpawnInfo.Template, actor);
+        ClassMeta::CloneProperties(SpawnInfo.Template, actor);
     }
 
     if (SpawnInfo.Instigator)
@@ -414,7 +414,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     {
         // FIXME: Specify avatar in ActorDef?
         ActorComponents tempArray = actor->m_Components;
-        for (AActorComponent* component : tempArray)
+        for (ActorComponent* component : tempArray)
         {
             component->OnCreateAvatar();
         }
@@ -438,9 +438,9 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     return actor;
 }
 
-AActor* AWorld::SpawnActor(SActorSpawnInfo const& _SpawnInfo)
+AActor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
 {
-    SActorSpawnPrivate spawnInfo;
+    ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = _SpawnInfo.ActorClassMeta();
     spawnInfo.Template   = _SpawnInfo.GetTemplate();
     spawnInfo.Instigator = _SpawnInfo.Instigator;
@@ -449,60 +449,60 @@ AActor* AWorld::SpawnActor(SActorSpawnInfo const& _SpawnInfo)
 
     if (!spawnInfo.ActorClass)
     {
-        LOG("AWorld::SpawnActor: invalid actor class\n");
+        LOG("World::SpawnActor: invalid actor class\n");
         return nullptr;
     }
 
     if (spawnInfo.ActorClass->Factory() != &AActor::Factory())
     {
-        LOG("AWorld::SpawnActor: not an actor class\n");
+        LOG("World::SpawnActor: not an actor class\n");
         return nullptr;
     }
 
     if (spawnInfo.Template && spawnInfo.ActorClass != &spawnInfo.Template->FinalClassMeta())
     {
-        LOG("AWorld::SpawnActor: SActorSpawnInfo::Template class doesn't match meta data\n");
+        LOG("World::SpawnActor: ActorSpawnInfo::Template class doesn't match meta data\n");
         return nullptr;
     }
 
     return _SpawnActor2(spawnInfo, _SpawnInfo.SpawnTransform);
 }
 
-AActor* AWorld::SpawnActor2(STransform const& SpawnTransform, AActor* Instigator, ALevel* Level, bool bInEditor)
+AActor* World::SpawnActor2(Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
 {
-    SActorSpawnPrivate spawnInfo;
-    spawnInfo.ActorClass = &AActor::ClassMeta();
+    ActorSpawnPrivate spawnInfo;
+    spawnInfo.ActorClass = &AActor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
     spawnInfo.bInEditor  = bInEditor;
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* AWorld::SpawnActor2(AActorDefinition* pActorDef, STransform const& SpawnTransform, AActor* Instigator, ALevel* Level, bool bInEditor)
+AActor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
 {
     if (!pActorDef)
     {
-        LOG("AWorld::SpawnActor: invalid actor definition\n");
+        LOG("World::SpawnActor: invalid actor definition\n");
     }
 
-    SActorSpawnPrivate spawnInfo;
+    ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorDef   = pActorDef;
-    spawnInfo.ActorClass = &AActor::ClassMeta();
+    spawnInfo.ActorClass = &AActor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
     spawnInfo.bInEditor  = bInEditor;
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* AWorld::SpawnActor2(AString const& ScriptModule, STransform const& SpawnTransform, AActor* Instigator, ALevel* Level, bool bInEditor)
+AActor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
 {
     if (ScriptModule.IsEmpty())
     {
-        LOG("AWorld::SpawnActor: invalid script module\n");
+        LOG("World::SpawnActor: invalid script module\n");
     }
 
-    SActorSpawnPrivate spawnInfo;
-    spawnInfo.ActorClass   = &AActor::ClassMeta();
+    ActorSpawnPrivate spawnInfo;
+    spawnInfo.ActorClass   = &AActor::GetClassMeta();
     spawnInfo.ScriptModule = ScriptModule;
     spawnInfo.Instigator   = Instigator;
     spawnInfo.Level        = Level;
@@ -510,15 +510,15 @@ AActor* AWorld::SpawnActor2(AString const& ScriptModule, STransform const& Spawn
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* AWorld::SpawnActor2(AClassMeta const* ActorClass, STransform const& SpawnTransform, AActor* Instigator, ALevel* Level, bool bInEditor)
+AActor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
 {
     if (!ActorClass)
     {
-        LOG("AWorld::SpawnActor: invalid C++ module class\n");
-        ActorClass = &AActor::ClassMeta();
+        LOG("World::SpawnActor: invalid C++ module class\n");
+        ActorClass = &AActor::GetClassMeta();
     }
 
-    SActorSpawnPrivate spawnInfo;
+    ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = ActorClass;
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
@@ -526,9 +526,9 @@ AActor* AWorld::SpawnActor2(AClassMeta const* ActorClass, STransform const& Spaw
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* AWorld::SpawnActor2(AActor const* Template, STransform const& SpawnTransform, AActor* Instigator, ALevel* Level, bool bInEditor)
+AActor* World::SpawnActor2(AActor const* Template, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
 {
-    SActorSpawnPrivate spawnInfo;
+    ActorSpawnPrivate spawnInfo;
 
     if (Template)
     {
@@ -538,16 +538,16 @@ AActor* AWorld::SpawnActor2(AActor const* Template, STransform const& SpawnTrans
         }
         else if (Template->m_ScriptModule)
         {
-            AActorScript* pScript  = AActorScript::GetScript(Template->m_ScriptModule);
+            ActorScript* pScript  = ActorScript::GetScript(Template->m_ScriptModule);
             spawnInfo.ScriptModule = pScript->GetModule();
         }
     }
     else
     {
-        LOG("AWorld::SpawnActor: invalid template\n");
+        LOG("World::SpawnActor: invalid template\n");
     }
 
-    spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &AActor::ClassMeta();
+    spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &AActor::GetClassMeta();
     spawnInfo.Template   = Template;
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
@@ -555,7 +555,7 @@ AActor* AWorld::SpawnActor2(AActor const* Template, STransform const& SpawnTrans
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-void AWorld::InitializeAndPlay(AActor* Actor)
+void World::InitializeAndPlay(AActor* Actor)
 {
     if (Actor->m_bCanEverTick)
     {
@@ -574,14 +574,14 @@ void AWorld::InitializeAndPlay(AActor* Actor)
         m_LateUpdateActors.Add(Actor);
     }
 
-    for (ATimer* timer = Actor->m_TimerList; timer; timer = timer->NextInActor)
+    for (WorldTimer* timer = Actor->m_TimerList; timer; timer = timer->NextInActor)
     {
         RegisterTimer(timer);
     }
 
     Actor->PreInitializeComponents();
 
-    for (AActorComponent* component : Actor->m_Components)
+    for (ActorComponent* component : Actor->m_Components)
     {
         HK_ASSERT(!component->m_bInitialized);
 
@@ -597,7 +597,7 @@ void AWorld::InitializeAndPlay(AActor* Actor)
 
     Actor->PostInitializeComponents();
 
-    for (AActorComponent* component : Actor->m_Components)
+    for (ActorComponent* component : Actor->m_Components)
     {
         HK_ASSERT(!component->IsPendingKill());
         component->BeginPlay();
@@ -606,7 +606,7 @@ void AWorld::InitializeAndPlay(AActor* Actor)
     Actor->CallBeginPlay();
 }
 
-void AWorld::CleanupActor(AActor* Actor)
+void World::CleanupActor(AActor* Actor)
 {
     E_OnActorSpawned.Remove(Actor);
     E_OnPrepareRenderFrontend.Remove(Actor);
@@ -637,12 +637,12 @@ void AWorld::CleanupActor(AActor* Actor)
     }
 }
 
-void AWorld::BroadcastActorSpawned(AActor* _SpawnedActor)
+void World::BroadcastActorSpawned(AActor* _SpawnedActor)
 {
     E_OnActorSpawned.Dispatch(_SpawnedActor);
 }
 
-void AWorld::UpdatePauseStatus()
+void World::UpdatePauseStatus()
 {
     if (m_bPauseRequest)
     {
@@ -658,9 +658,9 @@ void AWorld::UpdatePauseStatus()
     }
 }
 
-void AWorld::UpdateTimers(float TimeStep)
+void World::UpdateTimers(float TimeStep)
 {
-    for (ATimer* timer = m_TimerList; timer;)
+    for (WorldTimer* timer = m_TimerList; timer;)
     {
         // The timer can be unregistered during the Tick function, so we keep a pointer to the next timer.
         m_pNextTickingTimer = timer->NextInWorld;
@@ -671,7 +671,7 @@ void AWorld::UpdateTimers(float TimeStep)
     }
 }
 
-void AWorld::SpawnActors()
+void World::SpawnActors()
 {
     AActor* actor = m_PendingSpawnActors;
 
@@ -700,18 +700,18 @@ void AWorld::SpawnActors()
     }
 }
 
-void AWorld::KillActors(bool bClearSpawnQueue)
+void World::KillActors(bool bClearSpawnQueue)
 {
     do
     {
         // Remove components
-        AActorComponent* component = m_PendingKillComponents;
+        ActorComponent* component = m_PendingKillComponents;
 
         m_PendingKillComponents = nullptr;
 
         while (component)
         {
-            AActorComponent* nextComponent = component->NextPendingKillComponent;
+            ActorComponent* nextComponent = component->NextPendingKillComponent;
 
             if (component->m_bInitialized)
             {
@@ -751,7 +751,7 @@ void AWorld::KillActors(bool bClearSpawnQueue)
             if (!actor->m_bSpawning)
             {
                 // Remove actor from level
-                //ALevel* level                                                              = actor->Level;
+                //Level* level                                                              = actor->Level;
                 //level->Actors[actor->m_IndexInLevelArrayOfActors]                            = level->Actors[level->Actors.Size() - 1];
                 //level->Actors[actor->m_IndexInLevelArrayOfActors]->m_IndexInLevelArrayOfActors = actor->m_IndexInLevelArrayOfActors;
                 //level->Actors.RemoveLast();
@@ -799,9 +799,9 @@ void AWorld::KillActors(bool bClearSpawnQueue)
     }
 }
 
-void AWorld::UpdateActors(float TimeStep)
+void World::UpdateActors(float TimeStep)
 {
-    for (AActorComponent* component : m_TickingComponents)
+    for (ActorComponent* component : m_TickingComponents)
     {
         AActor* actor = component->GetOwnerActor();
 
@@ -834,7 +834,7 @@ void AWorld::UpdateActors(float TimeStep)
     }
 }
 
-void AWorld::UpdateActorsPrePhysics(float TimeStep)
+void World::UpdateActorsPrePhysics(float TimeStep)
 {
     // TickComponentsPrePhysics - TODO?
 
@@ -849,7 +849,7 @@ void AWorld::UpdateActorsPrePhysics(float TimeStep)
     }
 }
 
-void AWorld::UpdateActorsPostPhysics(float TimeStep)
+void World::UpdateActorsPostPhysics(float TimeStep)
 {
     // TickComponentsPostPhysics - TODO?
 
@@ -885,12 +885,12 @@ void AWorld::UpdateActorsPostPhysics(float TimeStep)
     }
 }
 
-void AWorld::UpdateLevels(float TimeStep)
+void World::UpdateLevels(float TimeStep)
 {
     VisibilitySystem.UpdatePrimitiveLinks();
 }
 
-void AWorld::HandlePrePhysics(float TimeStep)
+void World::HandlePrePhysics(float TimeStep)
 {
     m_GameplayTimeMicro = m_GameplayTimeMicroAfterTick;
 
@@ -898,7 +898,7 @@ void AWorld::HandlePrePhysics(float TimeStep)
     UpdateActorsPrePhysics(TimeStep);
 }
 
-void AWorld::HandlePostPhysics(float TimeStep)
+void World::HandlePostPhysics(float TimeStep)
 {
     UpdateActorsPostPhysics(TimeStep);
 
@@ -913,7 +913,7 @@ void AWorld::HandlePostPhysics(float TimeStep)
     }
 }
 
-void AWorld::UpdatePhysics(float TimeStep)
+void World::UpdatePhysics(float TimeStep)
 {
     if (m_bPaused)
     {
@@ -925,7 +925,7 @@ void AWorld::UpdatePhysics(float TimeStep)
     E_OnPostPhysicsUpdate.Dispatch(TimeStep);
 }
 
-void AWorld::LateUpdate(float TimeStep)
+void World::LateUpdate(float TimeStep)
 {
     for (AActor* actor : m_LateUpdateActors)
     {
@@ -943,7 +943,7 @@ void AWorld::LateUpdate(float TimeStep)
     }
 }
 
-void AWorld::Tick(float TimeStep)
+void World::Tick(float TimeStep)
 {
     m_GameRunningTimeMicro = m_GameRunningTimeMicroAfterTick;
     m_GameplayTimeMicro    = m_GameplayTimeMicroAfterTick;
@@ -979,45 +979,45 @@ void AWorld::Tick(float TimeStep)
     m_GameRunningTimeMicroAfterTick += frameDuration;
 }
 
-bool AWorld::Raycast(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
+bool World::Raycast(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastTriangles(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastBounds(TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
+bool World::RaycastBounds(TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastBounds(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastClosest(SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
+bool World::RaycastClosest(WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastClosest(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastClosestBounds(SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
+bool World::RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastClosestBounds(Result, RayStart, RayEnd, Filter);
 }
 
-void AWorld::QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& Query)
+void World::QueryVisiblePrimitives(TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query)
 {
     VisibilitySystem.QueryVisiblePrimitives(VisPrimitives, VisSurfs, VisPass, Query);
 }
 
-void AWorld::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas)
+void World::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
-void AWorld::QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas)
+void World::QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
-void AWorld::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter)
+void World::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter)
 {
     TPodVector<AActor*> damagedActors;
-    SActorDamage        damage;
+    ActorDamage        damage;
 
     QueryActors(damagedActors, _Position, _Radius, _QueryFilter);
 
@@ -1032,11 +1032,11 @@ void AWorld::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, flo
     }
 }
 
-void AWorld::AddLevel(ALevel* _Level)
+void World::AddLevel(Level* _Level)
 {
     if (_Level->IsPersistentLevel())
     {
-        LOG("AWorld::AddLevel: Can't add persistent level\n");
+        LOG("World::AddLevel: Can't add persistent level\n");
         return;
     }
 
@@ -1059,7 +1059,7 @@ void AWorld::AddLevel(ALevel* _Level)
     VisibilitySystem.RegisterLevel(_Level->Visibility);
 }
 
-void AWorld::RemoveLevel(ALevel* _Level)
+void World::RemoveLevel(Level* _Level)
 {
     if (!_Level)
     {
@@ -1068,13 +1068,13 @@ void AWorld::RemoveLevel(ALevel* _Level)
 
     if (_Level->IsPersistentLevel())
     {
-        LOG("AWorld::AddLevel: Can't remove persistent level\n");
+        LOG("World::AddLevel: Can't remove persistent level\n");
         return;
     }
 
     if (_Level->m_OwnerWorld != this)
     {
-        LOG("AWorld::AddLevel: level is not in world\n");
+        LOG("World::AddLevel: level is not in world\n");
         return;
     }
 
@@ -1088,7 +1088,7 @@ void AWorld::RemoveLevel(ALevel* _Level)
     _Level->RemoveRef();
 }
 
-void AWorld::RegisterTimer(ATimer* Timer)
+void World::RegisterTimer(WorldTimer* Timer)
 {
     if (INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail))
     {
@@ -1100,7 +1100,7 @@ void AWorld::RegisterTimer(ATimer* Timer)
     INTRUSIVE_ADD(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail);
 }
 
-void AWorld::UnregisterTimer(ATimer* Timer)
+void World::UnregisterTimer(WorldTimer* Timer)
 {
     if (!INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail))
     {
@@ -1116,11 +1116,11 @@ void AWorld::UnregisterTimer(ATimer* Timer)
     Timer->RemoveRef();
 }
 
-void AWorld::DrawDebug(ADebugRenderer* InRenderer)
+void World::DrawDebug(DebugRenderer* InRenderer)
 {
     VisibilitySystem.DrawDebug(InRenderer);
 
-    for (ALevel* level : m_ArrayOfLevels)
+    for (Level* level : m_ArrayOfLevels)
     {
         level->DrawDebug(InRenderer);
     }
@@ -1135,9 +1135,9 @@ void AWorld::DrawDebug(ADebugRenderer* InRenderer)
     NavigationMesh.DrawDebug(InRenderer);
 }
 
-AWorld* AWorld::CreateWorld()
+World* World::CreateWorld()
 {
-    AWorld* world = new AWorld;
+    World* world = new World;
     world->AddRef();
 
     // Add world to the game
@@ -1146,20 +1146,20 @@ AWorld* AWorld::CreateWorld()
     return world;
 }
 
-void AWorld::DestroyWorlds()
+void World::DestroyWorlds()
 {
-    for (AWorld* world : m_Worlds)
+    for (World* world : m_Worlds)
     {
         world->Destroy();
     }
 }
 
-void AWorld::KillWorlds()
+void World::KillWorlds()
 {
     while (m_PendingKillWorlds)
     {
-        AWorld* world = m_PendingKillWorlds;
-        AWorld* nextWorld;
+        World* world = m_PendingKillWorlds;
+        World* nextWorld;
 
         m_PendingKillWorlds = nullptr;
 
@@ -1171,7 +1171,7 @@ void AWorld::KillWorlds()
             world->KillActors(bClearSpawnQueue);
 
             // Remove all levels from the world including persistent level
-            //for (ALevel* level : world->ArrayOfLevels)
+            //for (Level* level : world->ArrayOfLevels)
             //{
             //    level->OnRemoveLevelFromWorld();
             //    level->OwnerWorld = nullptr;
@@ -1199,9 +1199,9 @@ void AWorld::KillWorlds()
         m_TickingWorlds.Free();
 }
 
-void AWorld::UpdateWorlds(float TimeStep)
+void World::UpdateWorlds(float TimeStep)
 {
-    for (AWorld* world : m_Worlds)
+    for (World* world : m_Worlds)
     {
         if (!world->m_bTicking)
         {
@@ -1210,7 +1210,7 @@ void AWorld::UpdateWorlds(float TimeStep)
         }
     }
 
-    for (AWorld* world : m_TickingWorlds)
+    for (World* world : m_TickingWorlds)
     {
         if (world->IsPendingKill())
         {
@@ -1221,11 +1221,11 @@ void AWorld::UpdateWorlds(float TimeStep)
 
     KillWorlds();
 
-    AVisibilitySystem::PrimitivePool.CleanupEmptyBlocks();
-    AVisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
+    VisibilitySystem::PrimitivePool.CleanupEmptyBlocks();
+    VisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
 }
 
-void AWorld::SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap)
+void World::SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap)
 {
     m_GlobalEnvironmentMap = EnvironmentMap;
 }

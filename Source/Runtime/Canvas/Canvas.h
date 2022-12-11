@@ -37,7 +37,7 @@ SOFTWARE.
 #include "Paint.h"
 #include "Transform2D.h"
 
-class ACameraComponent;
+class CameraComponent;
 
 enum CANVAS_PUSH_FLAG
 {
@@ -71,7 +71,7 @@ struct RoundingDesc
 
 struct DrawTextureDesc
 {
-    ATextureView*    pTextureView{};
+    TextureView*    pTextureView{};
     float            X{};
     float            Y{};
     float            W{};
@@ -187,15 +187,15 @@ struct VGPathCache
     CanvasVertex* AllocVerts(int nverts);
 };
 
-class ACanvas
+class Canvas
 {
-    HK_FORBID_COPY(ACanvas)
+    HK_FORBID_COPY(Canvas)
 
 public:
-    static AFont* GetDefaultFont();
+    static Font* GetDefaultFont();
 
-    ACanvas();
-    virtual ~ACanvas();
+    Canvas();
+    virtual ~Canvas();
 
     uint32_t GetWidth() const { return m_Width; }
     uint32_t GetHeight() const { return m_Height; }
@@ -424,18 +424,18 @@ public:
     //
 
     /** Sets the font face based on specified id of current text style. */
-    void FontFace(AFont* font);
+    void FontFace(Font* font);
 
     /** Sets the font face based on specified name of current text style. */
-    void FontFace(AStringView font);
+    void FontFace(StringView font);
 
     /** Draws text string at specified location. */
-    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AStringView string);
-    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AWideStringView string);
+    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, StringView string);
+    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, WideStringView string);
 
     /** Draws multi-line text string at specified box.*/
-    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AStringView text);
-    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AWideStringView text);
+    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, StringView text);
+    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, WideStringView text);
 
     //
     // Utilites
@@ -456,7 +456,7 @@ public:
     void DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& color);
     void DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& color, float thickness = 1.0f);
 
-    void DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, bool bShadow = false);
+    void DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, StringView Text, bool bShadow = false);
 
     // Texture
     void DrawTexture(DrawTextureDesc const& desc);
@@ -486,7 +486,7 @@ private:
         float            Alpha;
         Transform2D      Xform;
         VGScissor        Scissor;
-        AFont*           Font;
+        Font*           Font;
     };
 
     void FlattenPaths();
@@ -533,7 +533,7 @@ private:
     TVector<VGState>         m_States;
     int                      m_NumStates{};
     CanvasDrawData           m_DrawData;
-    mutable TRef<AFontStash> m_FontStash;
+    mutable TRef<FontStash> m_FontStash;
     TVector<float>           m_Commands;
     Float2                   m_CommandPos;
     VGPathCache              m_PathCache;
@@ -545,7 +545,7 @@ private:
     int                      m_FillTriCount{};
     int                      m_StrokeTriCount{};
     int                      m_TextTriCount{};
-    TRef<ATexture>           m_Cursors;
+    TRef<Texture>           m_Cursors;
     mutable bool             m_bUpdateFontTexture{};
 
     // Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).

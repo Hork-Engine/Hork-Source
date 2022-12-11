@@ -34,72 +34,72 @@ SOFTWARE.
 #include "Skeleton.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-class AAnimationController;
+class AnimationController;
 
 /**
 
-ASkinnedComponent
+SkinnedComponent
 
 Mesh component with skinning
 
 */
-class ASkinnedComponent : public AMeshComponent
+class SkinnedComponent : public MeshComponent
 {
-    HK_COMPONENT(ASkinnedComponent, AMeshComponent)
+    HK_COMPONENT(SkinnedComponent, MeshComponent)
 
-    friend class AAnimationController;
+    friend class AnimationController;
 
 public:
-    TLink<ASkinnedComponent> Link;
+    TLink<SkinnedComponent> Link;
 
     /** Allow raycasting */
-    void SetAllowRaycast(bool _AllowRaycast) override {}
+    void SetAllowRaycast(bool bAllowRaycast) override {}
 
     /** Get skeleton. Never return null */
-    ASkeleton* GetSkeleton() { return Skeleton; }
+    Skeleton* GetSkeleton() { return m_Skeleton; }
 
     /** Add animation controller */
-    void AddAnimationController(AAnimationController* _Controller);
+    void AddAnimationController(AnimationController* controller);
 
     /** Remove animation controller */
-    void RemoveAnimationController(AAnimationController* _Controller);
+    void RemoveAnimationController(AnimationController* controller);
 
     /** Remove all animation controllers */
     void RemoveAnimationControllers();
 
     /** Get animation controllers */
-    TPodVector<AAnimationController*> const& GetAnimationControllers() const { return AnimControllers; }
+    TPodVector<AnimationController*> const& GetAnimationControllers() const { return m_AnimControllers; }
 
     /** Set position on all animation tracks */
-    void SetTimeBroadcast(float _Time);
+    void SetTimeBroadcast(float time);
 
     /** Step time delta on all animation tracks */
-    void AddTimeDeltaBroadcast(float _TimeDelta);
+    void AddTimeDeltaBroadcast(float timeDelta);
 
     /** Recompute bounding box. */
     void UpdateBounds();
 
     /** Get transform of the joint */
-    Float3x4 const& GetJointTransform(int _JointIndex);
+    Float3x4 const& GetJointTransform(int jointIndex);
 
-    void GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _SkeletonOffsetMB, size_t& _SkeletonSize);
+    void GetSkeletonHandle(size_t& skeletonOffset, size_t& skeletonOffsetMB, size_t& skeletonSize);
 
 protected:
-    ASkinnedComponent();
-    ~ASkinnedComponent();
+    SkinnedComponent();
+    ~SkinnedComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
     void OnMeshChanged() override;
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
-    void OnPreRenderUpdate(SRenderFrontendDef const* _Def) override;
+    void OnPreRenderUpdate(RenderFrontendDef const* def) override;
 
-    Float3x4 const& _GetJointTransform(int _JointIndex) override
+    Float3x4 const& _GetJointTransform(int jointIndex) override
     {
-        return GetJointTransform(_JointIndex);
+        return GetJointTransform(jointIndex);
     }
 
 private:
@@ -113,26 +113,26 @@ private:
 
     void MergeJointAnimations();
 
-    TRef<ASkeleton> Skeleton;
+    TRef<Skeleton> m_Skeleton;
 
-    TPodVector<AAnimationController*> AnimControllers;
+    TPodVector<AnimationController*> m_AnimControllers;
 
-    TPodVector<Float3x4> AbsoluteTransforms;
-    TPodVector<Float3x4> RelativeTransforms;
+    TPodVector<Float3x4> m_AbsoluteTransforms;
+    TPodVector<Float3x4> m_RelativeTransforms;
 
-    alignas(16) Float3x4 JointsBufferData[MAX_SKELETON_JOINTS];
+    alignas(16) Float3x4 m_JointsBufferData[MAX_SKELETON_JOINTS];
 
     // Memory offset/size for the skeleton animation snapshot
-    size_t SkeletonOffset   = 0;
-    size_t SkeletonOffsetMB = 0;
-    size_t SkeletonSize     = 0;
+    size_t m_SkeletonOffset = 0;
+    size_t m_SkeletonOffsetMB = 0;
+    size_t m_SkeletonSize = 0;
 
-    bool bUpdateBounds : 1;
-    bool bUpdateControllers : 1;
-    bool bUpdateRelativeTransforms : 1;
-    //bool bWriteTransforms : 1;
+    bool m_bUpdateBounds : 1;
+    bool m_bUpdateControllers : 1;
+    bool m_bUpdateRelativeTransforms : 1;
+    //bool m_bWriteTransforms : 1;
 
 protected:
-    bool bUpdateAbsoluteTransforms : 1;
-    bool bJointsSimulatedByPhysics : 1;
+    bool m_bUpdateAbsoluteTransforms : 1;
+    bool m_bJointsSimulatedByPhysics : 1;
 };

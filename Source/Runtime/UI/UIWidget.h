@@ -302,21 +302,21 @@ public:
         return *this;
     }
 
-    void SetName(AStringView name)
+    void SetName(StringView name)
     {
         m_Name = name;
     }
 
-    AString const& GetName() const
+    String const& GetName() const
     {
         return m_Name;
     }
 
-    void SetLayer(AStringView name);
+    void SetLayer(StringView name);
 
     void SetLayer(int layerNum);
 
-    int GetLayerNum(AStringView name) const;
+    int GetLayerNum(StringView name) const;
 
     UIWidget& SetFocus();
 
@@ -374,7 +374,7 @@ public:
 
     UIDesktop* GetDesktop() const;
 
-    UIWidget* FindChildren(AStringView name);
+    UIWidget* FindChildren(StringView name);
 
     UIWidget* Trace(float x, float y);
 
@@ -386,23 +386,23 @@ public:
 
     bool ShouldSetFocusOnAddToDesktop() const { return m_bSetFocusOnAddToDesktop; }
 
-    void Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha);
+    void Draw(Canvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha);
 
-    void ForwardKeyEvent(struct SKeyEvent const& event, double timeStamp);
+    void ForwardKeyEvent(struct KeyEvent const& event, double timeStamp);
 
-    void ForwardMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp);
+    void ForwardMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp);
 
     void ForwardDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime);
 
-    void ForwardMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp);
+    void ForwardMouseWheelEvent(struct MouseWheelEvent const& event, double timeStamp);
 
-    void ForwardMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp);
+    void ForwardMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp);
 
-    void ForwardJoystickButtonEvent(struct SJoystickButtonEvent const& event, double timeStamp);
+    void ForwardJoystickButtonEvent(struct JoystickButtonEvent const& event, double timeStamp);
 
-    void ForwardJoystickAxisEvent(struct SJoystickAxisEvent const& event, double timeStamp);
+    void ForwardJoystickAxisEvent(struct JoystickAxisEvent const& event, double timeStamp);
 
-    void ForwardCharEvent(struct SCharEvent const& event, double timeStamp);
+    void ForwardCharEvent(struct CharEvent const& event, double timeStamp);
 
     void ForwardDragEvent(Float2& position);
 
@@ -415,23 +415,23 @@ public:
     void ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight);
 
 protected:
-    virtual void OnKeyEvent(struct SKeyEvent const& event, double timeStamp);
+    virtual void OnKeyEvent(struct KeyEvent const& event, double timeStamp);
 
-    virtual void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp);
+    virtual void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp);
 
-    virtual bool OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp);
+    virtual bool OnChildrenMouseButtonEvent(MouseButtonEvent const& event, double timeStamp);
 
     virtual void OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime);
 
-    virtual void OnMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp);
+    virtual void OnMouseWheelEvent(struct MouseWheelEvent const& event, double timeStamp);
 
-    virtual void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp);
+    virtual void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp);
 
-    virtual void OnJoystickButtonEvent(struct SJoystickButtonEvent const& event, double timeStamp);
+    virtual void OnJoystickButtonEvent(struct JoystickButtonEvent const& event, double timeStamp);
 
-    virtual void OnJoystickAxisEvent(struct SJoystickAxisEvent const& event, double timeStamp);
+    virtual void OnJoystickAxisEvent(struct JoystickAxisEvent const& event, double timeStamp);
 
-    virtual void OnCharEvent(struct SCharEvent const& event, double timeStamp);
+    virtual void OnCharEvent(struct CharEvent const& event, double timeStamp);
 
     virtual void OnDragEvent(Float2& position);
 
@@ -441,19 +441,19 @@ protected:
 
     virtual void OnWindowHovered(bool bHovered);
 
-    virtual void Draw(ACanvas& _Canvas);
+    virtual void Draw(Canvas& _Canvas);
 
-    virtual void PostDraw(ACanvas& _Canvas);
+    virtual void PostDraw(Canvas& _Canvas);
 
     virtual void AdjustSize(Float2 const& size);
 
-    void DrawBrush(ACanvas& canvas, UIBrush* brush);
+    void DrawBrush(Canvas& canvas, UIBrush* brush);
 
 private:
-    void DrawBackground(ACanvas& canvas);
-    void DrawForeground(ACanvas& canvas);
+    void DrawBackground(Canvas& canvas);
+    void DrawForeground(Canvas& canvas);
 
-    bool OverrideMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp);
+    bool OverrideMouseButtonEvent(MouseButtonEvent const& event, double timeStamp);
 
     void UpdateVisibility();
 
@@ -469,7 +469,7 @@ public:
     Float2             m_AdjustedSize;
     Float2             m_MeasuredSize;
     UIWidgetGeometry   m_Geometry;
-    AString            m_Name;
+    String            m_Name;
 
 private:
     int  m_VisFrame = -1;

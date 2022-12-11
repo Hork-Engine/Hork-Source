@@ -53,14 +53,14 @@ struct Hasher
 
 struct NameHasher
 {
-    std::size_t operator()(AStringView ResourcePath) const
+    std::size_t operator()(StringView ResourcePath) const
     {
         return ResourcePath.HashCaseInsensitive();
     }
 
     struct Compare
     {
-        bool operator()(AStringView Lhs, AStringView Rhs) const
+        bool operator()(StringView Lhs, StringView Rhs) const
         {
             return !Lhs.Icmp(Rhs);
         }
@@ -325,11 +325,11 @@ HK_INLINE void swap(THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCod
 } // namespace eastl
 
 
-template <typename Val, typename Hash = Hasher<AStringView>, typename Predicate = eastl::equal_to<AStringView>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>>
-class TStringHashMap : public THashMap<AStringView, Val, Hash, Predicate, Allocator>
+template <typename Val, typename Hash = Hasher<StringView>, typename Predicate = eastl::equal_to<StringView>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>>
+class TStringHashMap : public THashMap<StringView, Val, Hash, Predicate, Allocator>
 {
 public:
-    using Super            = THashMap<AStringView, Val, Hash, Predicate, Allocator>;
+    using Super            = THashMap<StringView, Val, Hash, Predicate, Allocator>;
     using ThisType         = TStringHashMap<Val, Hash, Predicate, Allocator>;
     using AllocatorType    = typename Super::Super::allocator_type;
     using InsertReturnType = typename Super::Super::insert_return_type;
@@ -348,15 +348,15 @@ public:
 
     ThisType& operator=(const ThisType& x);
 
-    InsertReturnType            Insert(AStringView key, const Val& value);
-    InsertReturnType            Insert(AStringView key);
-    eastl::pair<Iterator, bool> InsertOrAssign(AStringView key, const Val& value);
+    InsertReturnType            Insert(StringView key, const Val& value);
+    InsertReturnType            Insert(StringView key);
+    eastl::pair<Iterator, bool> InsertOrAssign(StringView key, const Val& value);
     Iterator                    Erase(ConstIterator position);
-    SizeType                    Erase(AStringView key);
-    MappedType&                 operator[](AStringView key);
+    SizeType                    Erase(StringView key);
+    MappedType&                 operator[](StringView key);
 
 private:
-    AStringView strduplicate(AStringView str);
+    StringView strduplicate(StringView str);
 };
 
 
@@ -404,14 +404,14 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::operator=(const ThisType& x)
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(AStringView key)
+TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key)
 {
     return Insert(key, MappedType());
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(AStringView key, const Val& value)
+TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key, const Val& value)
 {
     EASTL_ASSERT(key);
     Iterator i = Super::Super::find(key);
@@ -427,7 +427,7 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(AStringView key, const V
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
 eastl::pair<typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator, bool>
-TStringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(AStringView key, const Val& value)
+TStringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(StringView key, const Val& value)
 {
     Iterator i = Super::Super::find(key);
     if (i != Super::Super::end())
@@ -444,7 +444,7 @@ template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator
 TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
 {
-    AStringView key    = position->first;
+    StringView key    = position->first;
     Iterator    result = Super::Super::erase(position);
     EASTLFree(Super::Super::get_allocator(), (void*)key.ToPtr(), 0);
     return result;
@@ -452,7 +452,7 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::SizeType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(AStringView key)
+TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(StringView key)
 {
     const Iterator it(Super::Super::find(key));
 
@@ -466,7 +466,7 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(AStringView key)
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::MappedType&
-TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](AStringView key)
+TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](StringView key)
 {
     using base_value_type = typename Super::Super::value_type;
 
@@ -478,12 +478,12 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](AStringView key)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-AStringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(AStringView str)
+StringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringView str)
 {
     size_t len    = str.Size();
     char*  result = (char*)EASTLAlloc(Super::Super::get_allocator(), len);
     memcpy(result, str.ToPtr(), len);
-    return AStringView(result, len);
+    return StringView(result, len);
 }
 
 /** Case insensitive string hash map. */

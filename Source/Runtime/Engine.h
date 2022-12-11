@@ -50,35 +50,35 @@ enum
     MAX_RUNTIME_JOB_LISTS
 };
 
-struct SEntryDecl;
+struct EntryDecl;
 
-class AResourceManager;
+class ResourceManager;
 
-class AEngine : public IEventListener
+class Engine : public IEventListener
 {
-    HK_FORBID_COPY(AEngine)
+    HK_FORBID_COPY(Engine)
 
 public:
     /** Global random number generator */
-    AMersenneTwisterRand Rand;
+    MersenneTwisterRand Rand;
 
-    TRef<AAsyncJobManager> AsyncJobManager;
-    AAsyncJobList*         RenderFrontendJobList;
-    AAsyncJobList*         RenderBackendJobList;
+    TRef<AsyncJobManager> pAsyncJobManager;
+    AsyncJobList*         pRenderFrontendJobList;
+    AsyncJobList*         pRenderBackendJobList;
 
-    AEngine();
+    Engine();
 
     /** Run the engine */
-    void Run(SEntryDecl const& entryDecl);
+    void Run(EntryDecl const& entryDecl);
 
     /** Helper. Create a new world */
-    AWorld* CreateWorld() { return AWorld::CreateWorld(); }
+    World* CreateWorld() { return World::CreateWorld(); }
 
     /** Helper. Destroy all existing worlds */
-    void DestroyWorlds() { return AWorld::DestroyWorlds(); }
+    void DestroyWorlds() { return World::DestroyWorlds(); }
 
     /** Helper. Get all existing worlds */
-    TVector<AWorld*> const& GetWorlds() { return AWorld::GetWorlds(); }
+    TVector<World*> const& GetWorlds() { return World::GetWorlds(); }
 
     /** Get scale for Retina displays */
     Float2 const& GetRetinaScale() const { return m_RetinaScale; }
@@ -92,20 +92,20 @@ public:
     /** Map coordinate from monitor space to window space */
     void UnmapWindowCoordinate(float& InOutX, float& InOutY) const;
 
-    ACommandProcessor& GetCommandProcessor() { return m_CommandProcessor; }
+    CommandProcessor& GetCommandProcessor() { return m_CommandProcessor; }
 
-    ARenderBackend* GetRenderBackend() { return m_RenderBackend; }
+    RenderBackend* GetRenderBackend() { return m_RenderBackend; }
 
-    AVertexMemoryGPU* GetVertexMemoryGPU() { return m_VertexMemoryGPU; }
+    VertexMemoryGPU* GetVertexMemoryGPU() { return m_VertexMemoryGPU; }
 
     /** Current video mode */
-    SVideoMode const& GetVideoMode() const
+    DisplayVideoMode const& GetVideoMode() const
     {
         return m_Window->GetVideoMode();
     }
 
     /** Change a video mode */
-    void PostChangeVideoMode(SVideoMode const& _DesiredMode);
+    void PostChangeVideoMode(DisplayVideoMode const& _DesiredMode);
 
     /** Terminate the application */
     void PostTerminateEvent();
@@ -114,53 +114,53 @@ public:
 
     void ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem);
 
-    AFrameLoop* GetFrameLoop()
+    FrameLoop* GetFrameLoop()
     {
         return m_FrameLoop;
     }
 
     /** Return application working directory */
-    AString const& GetWorkingDir();
+    String const& GetWorkingDir();
 
     /** Return game module root directory */
-    AString const& GetRootPath();
+    String const& GetRootPath();
 
     /** Return application exacutable name */
     const char* GetExecutableName();
 
     RenderCore::IDevice* GetRenderDevice();
 
-    AAudioSystem* GetAudioSystem()
+    AudioSystem* GetAudioSystem()
     {
         return &m_AudioSystem;
     }
 
-    AResourceManager* GetResourceManager()
+    ResourceManager* GetResourceManager()
     {
         return m_ResourceManager.GetObject();
     }
 
 private:
     /** IEventListener interface. */
-    void OnKeyEvent(SKeyEvent const& event, double timeStamp) override;
+    void OnKeyEvent(KeyEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp) override;
+    void OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
-    void OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp) override;
+    void OnJoystickAxisEvent(JoystickAxisEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
-    void OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp);
+    void OnJoystickButtonEvent(JoystickButtonEvent const& event, double timeStamp);
 
     /** IEventListener interface. */
-    void OnCharEvent(SCharEvent const& event, double timeStamp) override;
+    void OnCharEvent(CharEvent const& event, double timeStamp) override;
 
     /** IEventListener interface. */
     void OnWindowVisible(bool bVisible) override;
@@ -175,7 +175,7 @@ private:
     void UpdateInput();
 
     /** Used to debug some features. Must be removed from release. */
-    void DeveloperKeys(SKeyEvent const& event);
+    void DeveloperKeys(KeyEvent const& event);
 
     void DrawCanvas();
 
@@ -187,12 +187,12 @@ private:
 
     void SaveMemoryStats();
 
-    AString                   m_WorkingDir;
-    AString                   m_RootPath;
-    SEntryDecl const*         m_pModuleDecl;
+    String                   m_WorkingDir;
+    String                   m_RootPath;
+    EntryDecl const*         m_pModuleDecl;
     TRef<RenderCore::IDevice> m_RenderDevice;
 
-    TUniqueRef<ACanvas> m_Canvas;
+    TUniqueRef<Canvas> m_Canvas;
 
     /** scale coordinates for Retina displays */
     Float2 m_RetinaScale;
@@ -202,29 +202,29 @@ private:
     /** Frame update duration */
     float m_FrameDurationInSeconds = 0;
 
-    AGameModule* m_GameModule;
+    GameModule* m_GameModule;
 
     TUniqueRef<UIManager> m_UIManager;
 
-    ACommandProcessor m_CommandProcessor;
+    CommandProcessor m_CommandProcessor;
 
-    TRef<ARenderFrontend> m_Renderer;
-    TRef<ARenderBackend>  m_RenderBackend;
+    TRef<RenderFrontend> m_Renderer;
+    TRef<RenderBackend>  m_RenderBackend;
 
-    TUniqueRef<AResourceManager> m_ResourceManager;
+    TUniqueRef<ResourceManager> m_ResourceManager;
 
-    TRef<AFrameLoop>                 m_FrameLoop;
+    TRef<FrameLoop>                 m_FrameLoop;
     TRef<RenderCore::IGenericWindow> m_Window;
     TRef<RenderCore::ISwapChain>     m_pSwapChain;
-    TRef<AVertexMemoryGPU>           m_VertexMemoryGPU;
+    TRef<VertexMemoryGPU>           m_VertexMemoryGPU;
 
-    AAudioSystem m_AudioSystem;
+    AudioSystem m_AudioSystem;
 
-    SVideoMode m_DesiredMode;
+    DisplayVideoMode m_DesiredMode;
     bool       m_bPostChangeVideoMode = false;
     bool       m_bPostTerminateEvent  = false;
 
     bool m_bAllowInputEvents = false;
 };
 
-extern AEngine* GEngine;
+extern Engine* GEngine;

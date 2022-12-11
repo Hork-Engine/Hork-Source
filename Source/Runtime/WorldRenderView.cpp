@@ -40,7 +40,7 @@ ColorGradingParameters::ColorGradingParameters()
     SetDefaults();
 }
 
-void ColorGradingParameters::SetLUT(ATexture* Texture)
+void ColorGradingParameters::SetLUT(Texture* Texture)
 {
     m_LUT = Texture;
 }
@@ -134,12 +134,12 @@ WorldRenderView::WorldRenderView()
         dataInit = true;
     }
 
-    m_CurrentColorGradingLUT = ATexture::Create3D(TEXTURE_FORMAT_RGBA16_FLOAT, 1, 16, 16, 16);
+    m_CurrentColorGradingLUT = Texture::Create3D(TEXTURE_FORMAT_RGBA16_FLOAT, 1, 16, 16, 16);
     m_CurrentColorGradingLUT->WriteTextureData3D(0, 0, 0, 16, 16, 16, 0, data);
 
     const float initialExposure[2] = {30.0f / 255.0f, 30.0f / 255.0f};
 
-    m_CurrentExposure = ATexture::Create2D(TEXTURE_FORMAT_RG32_FLOAT, 1, 1, 1);
+    m_CurrentExposure = Texture::Create2D(TEXTURE_FORMAT_RG32_FLOAT, 1, 1, 1);
     m_CurrentExposure->WriteTextureData2D(0, 0, 1, 1, 0, initialExposure);
 }
 
@@ -162,17 +162,17 @@ void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
     }
 }
 
-void WorldRenderView::SetCamera(ACameraComponent* camera)
+void WorldRenderView::SetCamera(CameraComponent* camera)
 {
     m_pCamera = camera;
 }
 
-void WorldRenderView::SetCullingCamera(ACameraComponent* camera)
+void WorldRenderView::SetCullingCamera(CameraComponent* camera)
 {
     m_pCullingCamera = camera;
 }
 
-ATextureView* WorldRenderView::GetTextureView()
+TextureView* WorldRenderView::GetTextureView()
 {
     if (m_WorldViewTex.IsExpired())
     {
@@ -194,8 +194,8 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
 {
     if (!m_RenderTarget || (m_RenderTarget->GetWidth() != m_Width || m_RenderTarget->GetHeight() != m_Height))
     {
-        RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(m_Width, m_Height));
+        RenderCore::TextureDesc textureDesc;
+        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_SRGBA8_UNORM);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
@@ -222,8 +222,8 @@ RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
         while ((size >>= 1) > 0)
             numMips++;
 
-        RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(m_Width, m_Height));
+        RenderCore::TextureDesc textureDesc;
+        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
         textureDesc.SetMipLevels(numMips);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
@@ -231,7 +231,7 @@ RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
         m_LightTexture.Reset();
         GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_LightTexture);
 
-        RenderCore::SClearValue clearVal;
+        RenderCore::ClearValue clearVal;
         memset(&clearVal.Float4, 0, sizeof(clearVal.Float4));
         GEngine->GetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RenderCore::FORMAT_FLOAT4, &clearVal);
     }
@@ -243,8 +243,8 @@ RenderCore::ITexture* WorldRenderView::AcquireDepthTexture()
 {
     if (!m_DepthTexture || (m_DepthTexture->GetWidth() != m_Width || m_DepthTexture->GetHeight() != m_Height))
     {
-        RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(m_Width, m_Height));
+        RenderCore::TextureDesc textureDesc;
+        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R32_FLOAT);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
@@ -268,9 +268,9 @@ RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
         {
             m_HBAOMaps.Reset();
             GEngine->GetRenderDevice()->CreateTexture(
-                RenderCore::STextureDesc()
+                RenderCore::TextureDesc()
                     .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
-                    .SetResolution(RenderCore::STextureResolution2DArray(width, height, hbaoMapsCount))
+                    .SetResolution(RenderCore::TextureResolution2DArray(width, height, hbaoMapsCount))
                     .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET),
                 &m_HBAOMaps);
         }

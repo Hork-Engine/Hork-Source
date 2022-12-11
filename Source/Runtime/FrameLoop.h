@@ -36,9 +36,9 @@ SOFTWARE.
 
 #include "InputDefs.h"
 
-class AFontStash;
+class FontStash;
 
-//struct SJoystick
+//struct Joystick
 //{
 //    int NumAxes;
 //    int NumButtons;
@@ -47,48 +47,48 @@ class AFontStash;
 //    int Id;
 //};
 
-struct SKeyEvent
+struct KeyEvent
 {
     int Key;
     int Scancode; // Not used, reserved for future
     int ModMask;
-    int Action; // EInputAction
+    int Action; // INPUT_ACTION
 };
 
-struct SMouseButtonEvent
+struct MouseButtonEvent
 {
     int Button;
     int ModMask;
-    int Action; // EInputAction
+    int Action; // INPUT_ACTION
 };
 
-struct SMouseWheelEvent
+struct MouseWheelEvent
 {
     double WheelX;
     double WheelY;
 };
 
-struct SMouseMoveEvent
+struct MouseMoveEvent
 {
     float X;
     float Y;
 };
 
-struct SJoystickAxisEvent
+struct JoystickAxisEvent
 {
-    int   Joystick;
-    int   Axis;
+    int Joystick;
+    int Axis;
     float Value;
 };
 
-struct SJoystickButtonEvent
+struct JoystickButtonEvent
 {
     int Joystick;
     int Button;
-    int Action; // EInputAction
+    int Action; // INPUT_ACTION
 };
 
-//struct SJoystickStateEvent
+//struct JoystickStateEvent
 //{
 //    int Joystick;
 //    int NumAxes;
@@ -97,10 +97,10 @@ struct SJoystickButtonEvent
 //    bool bConnected;
 //};
 
-struct SCharEvent
+struct CharEvent
 {
     WideChar UnicodeCharacter;
-    int       ModMask;
+    int ModMask;
 };
 
 class IEventListener
@@ -108,19 +108,19 @@ class IEventListener
 public:
     virtual ~IEventListener() {}
 
-    virtual void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnKeyEvent(struct KeyEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnMouseButtonEvent(struct MouseButtonEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnMouseWheelEvent(struct MouseWheelEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnMouseMoveEvent(struct MouseMoveEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnJoystickAxisEvent(struct JoystickAxisEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnJoystickButtonEvent(struct JoystickButtonEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnCharEvent(struct SCharEvent const& _Event, double _TimeStamp) = 0;
+    virtual void OnCharEvent(struct CharEvent const& _Event, double _TimeStamp) = 0;
 
     virtual void OnWindowVisible(bool _Visible) = 0;
 
@@ -131,11 +131,11 @@ public:
 
 class WorldRenderView;
 
-class AFrameLoop : public ARefCounted
+class FrameLoop : public RefCounted
 {
 public:
-    AFrameLoop(RenderCore::IDevice* RenderDevice);
-    virtual ~AFrameLoop();
+    FrameLoop(RenderCore::IDevice* RenderDevice);
+    virtual ~FrameLoop();
 
     /** Allocate frame memory */
     void* AllocFrameMem(size_t _SizeInBytes);
@@ -143,7 +143,7 @@ public:
     template <typename T>
     T* AllocFrameMem()
     {
-        return FrameMemory.Allocate<T>();
+        return m_FrameMemory.Allocate<T>();
     }
 
     /** Return frame memory size in bytes */
@@ -177,7 +177,7 @@ public:
 
     TVector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
 
-    AStreamedMemoryGPU* GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
+    StreamedMemoryGPU* GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
 
 private:
     void ClearViews();
@@ -185,25 +185,25 @@ private:
     void UnpressKeysAndButtons(IEventListener* Listener);
     void UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum, double _TimeStamp);
 
-    int64_t FrameTimeStamp;
-    int64_t FrameDuration;
-    int     FrameNumber;
+    int64_t m_FrameTimeStamp;
+    int64_t m_FrameDuration;
+    int m_FrameNumber;
 
-    TLinearAllocator<>& FrameMemory;
-    size_t             FrameMemoryUsedPrev = 0;
-    size_t             MaxFrameMemoryUsage = 0;
+    TLinearAllocator<>& m_FrameMemory;
+    size_t m_FrameMemoryUsedPrev = 0;
+    size_t m_MaxFrameMemoryUsage = 0;
 
-    TRef<class AGPUSync> GPUSync;
-    TRef<AStreamedMemoryGPU> StreamedMemoryGPU;
+    TRef<class GPUSync> m_GPUSync;
+    TRef<StreamedMemoryGPU> m_StreamedMemoryGPU;
 
-    TRef<RenderCore::IDevice> RenderDevice;
+    TRef<RenderCore::IDevice> m_RenderDevice;
 
-    TArray<int, KEY_LAST + 1>                                                PressedKeys;
-    TArray<bool, MOUSE_BUTTON_8 + 1>                                         PressedMouseButtons;
-    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonState;
-    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>            JoystickAxisState;
-    TArray<bool, MAX_JOYSTICKS_COUNT>                                        JoystickAdded;
+    TArray<int, KEY_LAST + 1> m_PressedKeys;
+    TArray<bool, MOUSE_BUTTON_8 + 1> m_PressedMouseButtons;
+    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonState;
+    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT> m_JoystickAxisState;
+    TArray<bool, MAX_JOYSTICKS_COUNT> m_JoystickAdded;
 
     TVector<WorldRenderView*> m_Views;
-    TRef<AFontStash>          m_FontStash;
+    TRef<FontStash> m_FontStash;
 };

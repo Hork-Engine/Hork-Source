@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Platform/Utf8.h>
 #include <Platform/Thread.h>
 
-class AConsoleBuffer
+class ConsoleBuffer
 {
 public:
     static constexpr int Padding        = 8;
@@ -60,17 +60,17 @@ public:
     /** Scroll by delta */
     void ScrollDelta(int Delta);
 
-    struct SLock
+    struct LockedData
     {
         WideChar* pImage;
-        int        Scroll;
-        int        MaxLines;
-        int        PrintLine;
-        int        MaxLineChars;
+        int       Scroll;
+        int       MaxLines;
+        int       PrintLine;
+        int       MaxLineChars;
     };
 
     /** Lock console mutex before draw */
-    SLock Lock();
+    LockedData Lock();
 
     /** Unlock console mutex */
     void Unlock();
@@ -82,12 +82,12 @@ private:
 
     WideChar  ImageData[2][CON_IMAGE_SIZE];
     WideChar* pImage = ImageData[0];
-    AMutex     Mutex;
-    int        PrintLine    = 0;
-    int        CurWidth     = 0;
-    int        MaxLines     = 0;
-    int        NumLines     = 0;
-    int        MaxLineChars = 0;
-    int        Scroll       = 0;
-    bool       bInitialized = false;
+    Mutex     Mutex;
+    int       PrintLine    = 0;
+    int       CurWidth     = 0;
+    int       MaxLines     = 0;
+    int       NumLines     = 0;
+    int       MaxLineChars = 0;
+    int       Scroll       = 0;
+    bool      bInitialized = false;
 };

@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
-class ABRDFGenerator
+class BRDFGenerator
 {
 public:
-    ABRDFGenerator();
+    BRDFGenerator();
 
     void Render(TRef<RenderCore::ITexture>* ppTexture);
 

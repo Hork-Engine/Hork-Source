@@ -43,11 +43,11 @@ SOFTWARE.
 
 #define FILTER_SIZE_POW2
 
-AConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
+ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
 
-AAudioHRTF::AAudioHRTF(int SampleRate)
+AudioHRTF::AudioHRTF(int SampleRate)
 {
-    AFile f = AFile::OpenRead("HRTF/IRC_1002_C.bin", Runtime::GetEmbeddedResources());
+    File f = File::OpenRead("HRTF/IRC_1002_C.bin", Runtime::GetEmbeddedResources());
     if (!f)
     {
         // An error occurred...
@@ -64,7 +64,7 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
     | index_count  | 4    | uint32_t |       |
     */
 
-    uint32_t    magic = f.ReadUInt32();
+    uint32_t magic = f.ReadUInt32();
     const char* MAGIC = "HRIR";
     if (std::memcmp(&magic, MAGIC, sizeof(uint32_t)) != 0)
     {
@@ -72,10 +72,10 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
     }
 
     int sampleRateHRIR = (int)f.ReadUInt32();
-    FrameCount         = (int)f.ReadUInt32();
+    FrameCount = (int)f.ReadUInt32();
 
     uint32_t vertexCount = f.ReadUInt32();
-    uint32_t indexCount  = f.ReadUInt32();
+    uint32_t indexCount = f.ReadUInt32();
 
     if (indexCount % 3)
     {
@@ -137,14 +137,14 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
     else
     {
         ma_resampler_config config = ma_resampler_config_init(ma_format_f32, 1, sampleRateHRIR, SampleRate, ma_resample_algorithm_linear);
-        ma_resampler        resampler;
-        ma_result           result = ma_resampler_init(&config, &resampler);
+        ma_resampler resampler;
+        ma_result result = ma_resampler_init(&config, &resampler);
         if (result != MA_SUCCESS)
         {
             CriticalError("Failed to resample HRTF data\n");
         }
 
-        ma_uint64 frameCountIn  = FrameCount;
+        ma_uint64 frameCountIn = FrameCount;
         ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count(&resampler, FrameCount);
 
         TVector<float> framesIn;
@@ -172,9 +172,9 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
 
             // ma_resampler_process_pcm_frames overwrite frameCountIn and frameCountOut, so we restore them before each call
-            frameCountIn  = framesIn.Size();
+            frameCountIn = framesIn.Size();
             frameCountOut = framesOut.Size();
-            result        = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
+            result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
                 CriticalError("Failed to resample HRTF data\n");
@@ -186,9 +186,9 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
 
             // ma_resampler_process_pcm_frames overwrite frameCountIn and frameCountOut, so we restore them before each call
-            frameCountIn  = framesIn.Size();
+            frameCountIn = framesIn.Size();
             frameCountOut = framesOut.Size();
-            result        = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
+            result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
                 CriticalError("Failed to resample HRTF data\n");
@@ -201,20 +201,20 @@ AAudioHRTF::AAudioHRTF(int SampleRate)
         ma_resampler_uninit(&resampler);
     }
 
-    pFramesSourceFFT    = (SComplex*)mufft_calloc(FilterSize * sizeof(SComplex));
-    pFramesFreqFFT      = (SComplex*)mufft_alloc(FilterSize * sizeof(SComplex));
-    pFramesFreqLeftFFT  = (SComplex*)mufft_alloc(FilterSize * sizeof(SComplex));
-    pFramesFreqRightFFT = (SComplex*)mufft_alloc(FilterSize * sizeof(SComplex));
-    pFramesTimeLeftFFT  = (SComplex*)mufft_alloc(FilterSize * sizeof(SComplex));
-    pFramesTimeRightFFT = (SComplex*)mufft_alloc(FilterSize * sizeof(SComplex));
+    pFramesSourceFFT = (Complex*)mufft_calloc(FilterSize * sizeof(Complex));
+    pFramesFreqFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
+    pFramesFreqLeftFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
+    pFramesFreqRightFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
+    pFramesTimeLeftFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
+    pFramesTimeRightFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
 
     for (int i = 0; i < 4; i++)
     {
-        pHRTFs[i] = (SComplex*)mufft_alloc(sizeof(SComplex) * FilterSize);
+        pHRTFs[i] = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
     }
 }
 
-AAudioHRTF::~AAudioHRTF()
+AudioHRTF::~AudioHRTF()
 {
     for (int i = 0; i < 4; i++)
     {
@@ -232,21 +232,21 @@ AAudioHRTF::~AAudioHRTF()
     mufft_free_plan_1d((mufft_plan_1d*)InverseFFT);
 }
 
-void AAudioHRTF::FFT(SComplex const* pIn, SComplex* pOut)
+void AudioHRTF::FFT(Complex const* pIn, Complex* pOut)
 {
     mufft_execute_plan_1d((mufft_plan_1d*)ForwardFFT, pOut, pIn);
 }
 
-void AAudioHRTF::IFFT(SComplex const* pIn, SComplex* pOut)
+void AudioHRTF::IFFT(Complex const* pIn, Complex* pOut)
 {
     mufft_execute_plan_1d((mufft_plan_1d*)InverseFFT, pOut, pIn);
 }
 
-void AAudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, SComplex* pHRTF)
+void AudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pHRTF)
 {
     // MuFFT requires 64-bit aligned data. Therefore, we must use it's own allocators.
-    SComplex* hrirComplex = (SComplex*)mufft_alloc(sizeof(SComplex) * FilterSize);
-    SComplex* temp        = (SComplex*)mufft_alloc(sizeof(SComplex) * FilterSize);
+    Complex* hrirComplex = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
+    Complex* temp = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
 
     for (int i = 0; i < FilterSize; i++)
     {
@@ -263,13 +263,13 @@ void AAudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, SComplex* 
 
     FFT(hrirComplex, temp);
 
-    Platform::Memcpy(pHRTF, temp, sizeof(SComplex) * FilterSize);
+    Platform::Memcpy(pHRTF, temp, sizeof(Complex) * FilterSize);
 
     mufft_free(temp);
     mufft_free(hrirComplex);
 }
 
-void AAudioHRTF::SampleHRTF(Float3 const& Dir, SComplex* pLeftHRTF, SComplex* pRightHRTF) const
+void AudioHRTF::SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRightHRTF) const
 {
     // TODO: optimize: create sphere with regular grid. Find sphere segment by azimuth and pitch. Perform raycast between two triangles of the segment.
 
@@ -291,19 +291,19 @@ void AAudioHRTF::SampleHRTF(Float3 const& Dir, SComplex* pLeftHRTF, SComplex* pR
 
             if (w < 0.0f) w = 0.0f; // fix rounding issues
 
-            SComplex const* a_left  = hrtfL.ToPtr() + index0 * FilterSize;
-            SComplex const* a_right = hrtfR.ToPtr() + index0 * FilterSize;
+            Complex const* a_left = hrtfL.ToPtr() + index0 * FilterSize;
+            Complex const* a_right = hrtfR.ToPtr() + index0 * FilterSize;
 
-            SComplex const* b_left  = hrtfL.ToPtr() + index1 * FilterSize;
-            SComplex const* b_right = hrtfR.ToPtr() + index1 * FilterSize;
+            Complex const* b_left = hrtfL.ToPtr() + index1 * FilterSize;
+            Complex const* b_right = hrtfR.ToPtr() + index1 * FilterSize;
 
-            SComplex const* c_left  = hrtfL.ToPtr() + index2 * FilterSize;
-            SComplex const* c_right = hrtfR.ToPtr() + index2 * FilterSize;
+            Complex const* c_left = hrtfL.ToPtr() + index2 * FilterSize;
+            Complex const* c_right = hrtfR.ToPtr() + index2 * FilterSize;
 
             for (int n = 0; n < FilterSize; n++)
             {
-                pLeftHRTF[n].R  = a_left[n].R * u + b_left[n].R * v + c_left[n].R * w;
-                pLeftHRTF[n].I  = a_left[n].I * u + b_left[n].I * v + c_left[n].I * w;
+                pLeftHRTF[n].R = a_left[n].R * u + b_left[n].R * v + c_left[n].R * w;
+                pLeftHRTF[n].I = a_left[n].I * u + b_left[n].I * v + c_left[n].I * w;
                 pRightHRTF[n].R = a_right[n].R * u + b_right[n].R * v + c_right[n].R * w;
                 pRightHRTF[n].I = a_right[n].I * u + b_right[n].I * v + c_right[n].I * w;
             }
@@ -312,38 +312,38 @@ void AAudioHRTF::SampleHRTF(Float3 const& Dir, SComplex* pLeftHRTF, SComplex* pR
         }
     }
 
-    Platform::ZeroMem(pLeftHRTF, FilterSize * sizeof(SComplex));
-    Platform::ZeroMem(pRightHRTF, FilterSize * sizeof(SComplex));
+    Platform::ZeroMem(pLeftHRTF, FilterSize * sizeof(Complex));
+    Platform::ZeroMem(pRightHRTF, FilterSize * sizeof(Complex));
 }
 
-void AAudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int InFrameCount, float* pStream, Float3& Dir)
+void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int InFrameCount, float* pStream, Float3& Dir)
 {
     HK_ASSERT(InFrameCount > 0);
     HK_ASSERT((InFrameCount % HRTF_BLOCK_LENGTH) == 0);
 
     const int numBlocks = InFrameCount / HRTF_BLOCK_LENGTH;
-    const int hrtfLen   = FrameCount - 1;
+    const int hrtfLen = FrameCount - 1;
 
-    SComplex* filterL[2] = {
+    Complex* filterL[2] = {
         pHRTFs[0],
         pHRTFs[1]};
-    SComplex* filterR[2] = {
+    Complex* filterR[2] = {
         pHRTFs[2],
         pHRTFs[3]};
 
-    SComplex* pFramesLeft  = pFramesTimeLeftFFT + hrtfLen;
-    SComplex* pFramesRight = pFramesTimeRightFFT + hrtfLen;
+    Complex* pFramesLeft = pFramesTimeLeftFFT + hrtfLen;
+    Complex* pFramesRight = pFramesTimeRightFFT + hrtfLen;
 
     int curIndex = 1;
     int newIndex = 0;
 
     bool bNoLerp = CurDir.LengthSqr() < 0.1f || !Snd_LerpHRTF;
-    Dir          = bNoLerp ? NewDir : CurDir;
+    Dir = bNoLerp ? NewDir : CurDir;
 
     SampleHRTF(Dir, filterL[curIndex], filterR[curIndex]);
 
     const float* history = pFrames;
-    const float* frames  = pFrames + hrtfLen;
+    const float* frames = pFrames + hrtfLen;
 
     for (int blockNum = 0; blockNum < numBlocks; blockNum++)
     {
@@ -368,7 +368,7 @@ void AAudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const flo
         // Apply HRTF
         for (n = 0; n < FilterSize; n++)
         {
-            pFramesFreqLeftFFT[n]  = pFramesFreqFFT[n] * filterL[curIndex][n];
+            pFramesFreqLeftFFT[n] = pFramesFreqFFT[n] * filterL[curIndex][n];
             pFramesFreqRightFFT[n] = pFramesFreqFFT[n] * filterR[curIndex][n];
         }
 
@@ -396,7 +396,7 @@ void AAudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const flo
             // Apply HRTF
             for (n = 0; n < FilterSize; n++)
             {
-                pFramesFreqLeftFFT[n]  = pFramesFreqFFT[n] * filterL[newIndex][n];
+                pFramesFreqLeftFFT[n] = pFramesFreqFFT[n] * filterL[newIndex][n];
                 pFramesFreqRightFFT[n] = pFramesFreqFFT[n] * filterR[newIndex][n];
             }
 
@@ -426,7 +426,7 @@ void AAudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const flo
 
 #if 0
 #    include "DebugRenderer.h"
-void DrawHRTF( ADebugRenderer * InRenderer )
+void DrawHRTF( DebugRenderer * InRenderer )
 {
     static bool binit = false;
     static TVector< Float3 > sphereVerts;

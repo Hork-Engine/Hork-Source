@@ -52,21 +52,21 @@ static constexpr SAMPLER_ADDRESS_MODE SamplerAddressLUT[] = {
 extern const Float4 EVSM_ClearValue;
 extern const Float4 VSM_ClearValue;
 
-static SSamplerDesc LightmapSampler;
-static SSamplerDesc ReflectSampler;
-static SSamplerDesc ReflectDepthSampler;
-static SSamplerDesc VirtualTextureSampler;
-static SSamplerDesc VirtualTextureIndirectionSampler;
-static SSamplerDesc ShadowDepthSamplerPCF;
-static SSamplerDesc ShadowDepthSamplerVSM;
-static SSamplerDesc ShadowDepthSamplerEVSM;
-static SSamplerDesc ShadowDepthSamplerPCSS0;
-static SSamplerDesc ShadowDepthSamplerPCSS1;
-static SSamplerDesc OmniShadowMapSampler;
-static SSamplerDesc IESSampler;
-static SSamplerDesc ClusterLookupSampler;
-static SSamplerDesc SSAOSampler;
-static SSamplerDesc LookupBRDFSampler;
+static SamplerDesc LightmapSampler;
+static SamplerDesc ReflectSampler;
+static SamplerDesc ReflectDepthSampler;
+static SamplerDesc VirtualTextureSampler;
+static SamplerDesc VirtualTextureIndirectionSampler;
+static SamplerDesc ShadowDepthSamplerPCF;
+static SamplerDesc ShadowDepthSamplerVSM;
+static SamplerDesc ShadowDepthSamplerEVSM;
+static SamplerDesc ShadowDepthSamplerPCSS0;
+static SamplerDesc ShadowDepthSamplerPCSS1;
+static SamplerDesc OmniShadowMapSampler;
+static SamplerDesc IESSampler;
+static SamplerDesc ClusterLookupSampler;
+static SamplerDesc SSAOSampler;
+static SamplerDesc LookupBRDFSampler;
 
 struct InitMaterialSamplers
 {
@@ -175,9 +175,9 @@ struct InitMaterialSamplers
 
 static InitMaterialSamplers InitSamplers;
 
-static void CopyMaterialSamplers(SSamplerDesc* Dest, STextureSampler const* Samplers, int NumSamplers)
+static void CopyMaterialSamplers(SamplerDesc* Dest, TextureSampler const* Samplers, int NumSamplers)
 {
-    SSamplerDesc samplerCI;
+    SamplerDesc samplerCI;
     samplerCI.Filter               = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
     samplerCI.AddressU             = SAMPLER_ADDRESS_WRAP;
     samplerCI.AddressV             = SAMPLER_ADDRESS_WRAP;
@@ -194,7 +194,7 @@ static void CopyMaterialSamplers(SSamplerDesc* Dest, STextureSampler const* Samp
     samplerCI.MaxLOD               = 1000;
     for (int i = 0; i < NumSamplers; i++)
     {
-        STextureSampler const* desc = &Samplers[i];
+        TextureSampler const* desc = &Samplers[i];
         samplerCI.Filter            = SamplerFilterLUT[desc->Filter];
         samplerCI.AddressU          = SamplerAddressLUT[desc->AddressU];
         samplerCI.AddressV          = SamplerAddressLUT[desc->AddressV];
@@ -208,243 +208,243 @@ static void CopyMaterialSamplers(SSamplerDesc* Dest, STextureSampler const* Samp
     }
 }
 
-static const SVertexAttribInfo VertexAttribsSkinned[] = {
+static const VertexAttribInfo VertexAttribsSkinned[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_FLOAT3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Position)},
+     HK_OFS(MeshVertex, Position)},
     {"InTexCoord",
      1, // location
      0, // buffer input slot
      VAT_HALF2,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, TexCoord)},
+     HK_OFS(MeshVertex, TexCoord)},
     {"InNormal",
      2, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Normal)},
+     HK_OFS(MeshVertex, Normal)},
     {"InTangent",
      3, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Tangent)},
+     HK_OFS(MeshVertex, Tangent)},
     {"InHandedness",
      4, // location
      0, // buffer input slot
      VAT_BYTE1,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Handedness)},
+     HK_OFS(MeshVertex, Handedness)},
     {"InJointIndices",
      5, // location
      1, // buffer input slot
      VAT_UBYTE4,
      VAM_INTEGER,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertexSkin, JointIndices)},
+     HK_OFS(MeshVertexSkin, JointIndices)},
     {"InJointWeights",
      6, // location
      1, // buffer input slot
      VAT_UBYTE4N,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertexSkin, JointWeights)}};
+     HK_OFS(MeshVertexSkin, JointWeights)}};
 
-static const SVertexAttribInfo VertexAttribsStatic[] = {
+static const VertexAttribInfo VertexAttribsStatic[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_FLOAT3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Position)},
+     HK_OFS(MeshVertex, Position)},
     {"InTexCoord",
      1, // location
      0, // buffer input slot
      VAT_HALF2,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, TexCoord)},
+     HK_OFS(MeshVertex, TexCoord)},
     {"InNormal",
      2, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Normal)},
+     HK_OFS(MeshVertex, Normal)},
     {"InTangent",
      3, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Tangent)},
+     HK_OFS(MeshVertex, Tangent)},
     {"InHandedness",
      4, // location
      0, // buffer input slot
      VAT_BYTE1,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Handedness)}};
+     HK_OFS(MeshVertex, Handedness)}};
 
-static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
+static const VertexAttribInfo VertexAttribsStaticLightmap[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_FLOAT3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Position)},
+     HK_OFS(MeshVertex, Position)},
     {"InTexCoord",
      1, // location
      0, // buffer input slot
      VAT_HALF2,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, TexCoord)},
+     HK_OFS(MeshVertex, TexCoord)},
     {"InNormal",
      2, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Normal)},
+     HK_OFS(MeshVertex, Normal)},
     {"InTangent",
      3, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Tangent)},
+     HK_OFS(MeshVertex, Tangent)},
     {"InHandedness",
      4, // location
      0, // buffer input slot
      VAT_BYTE1,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Handedness)},
+     HK_OFS(MeshVertex, Handedness)},
     {"InLightmapTexCoord",
      5, // location
      1, // buffer input slot
      VAT_FLOAT2,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertexUV, TexCoord)}};
+     HK_OFS(MeshVertexUV, TexCoord)}};
 
-static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
+static const VertexAttribInfo VertexAttribsStaticVertexLight[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_FLOAT3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Position)},
+     HK_OFS(MeshVertex, Position)},
     {"InTexCoord",
      1, // location
      0, // buffer input slot
      VAT_HALF2,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, TexCoord)},
+     HK_OFS(MeshVertex, TexCoord)},
     {"InNormal",
      2, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Normal)},
+     HK_OFS(MeshVertex, Normal)},
     {"InTangent",
      3, // location
      0, // buffer input slot
      VAT_HALF3,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Tangent)},
+     HK_OFS(MeshVertex, Tangent)},
     {"InHandedness",
      4, // location
      0, // buffer input slot
      VAT_BYTE1,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertex, Handedness)},
+     HK_OFS(MeshVertex, Handedness)},
     {"InVertexLight",
      5,          // location
      1,          // buffer input slot
      VAT_UBYTE4, //VAT_UBYTE4N,
      VAM_INTEGER,
      0, // InstanceDataStepRate
-     HK_OFS(SMeshVertexLight, VertexLight)}};
+     HK_OFS(MeshVertexLight, VertexLight)}};
 
-static const SVertexAttribInfo VertexAttribsTerrain[] = {
+static const VertexAttribInfo VertexAttribsTerrain[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_SHORT2,
      VAM_INTEGER,
      0, // InstanceDataStepRate
-     HK_OFS(STerrainVertex, X)}};
+     HK_OFS(TerrainVertex, X)}};
 
-static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
+static const VertexAttribInfo VertexAttribsTerrainInstanced[] = {
     {"InPosition",
      0, // location
      0, // buffer input slot
      VAT_SHORT2,
      VAM_INTEGER,
      0, // InstanceDataStepRate
-     HK_OFS(STerrainVertex, X)},
+     HK_OFS(TerrainVertex, X)},
     {"VertexScaleAndTranslate",
      1, // location
      1, // buffer input slot
      VAT_INT4,
      VAM_INTEGER,
      1, // InstanceDataStepRate
-     HK_OFS(STerrainPatchInstance, VertexScale)},
+     HK_OFS(TerrainPatchInstance, VertexScale)},
     {"TexcoordOffset",
      2, // location
      1, // buffer input slot
      VAT_INT2,
      VAM_INTEGER,
      1, // InstanceDataStepRate
-     HK_OFS(STerrainPatchInstance, TexcoordOffset)},
+     HK_OFS(TerrainPatchInstance, TexcoordOffset)},
     {"QuadColor",
      3, // location
      1, // buffer input slot
      VAT_FLOAT4,
      VAM_FLOAT,
      1, // InstanceDataStepRate
-     HK_OFS(STerrainPatchInstance, QuadColor)}};
+     HK_OFS(TerrainPatchInstance, QuadColor)}};
 
-void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_GEQUAL; //CMPFUNC_GREATER;
 
-    SBlendingStateInfo& bs                 = pipelineCI.BS;
+    BlendingStateInfo& bs                 = pipelineCI.BS;
     bs.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -461,7 +461,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_DEPTH\n");
@@ -471,7 +471,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     if (_Tessellation)
     {
@@ -482,7 +482,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_DEPTH\n");
@@ -491,7 +491,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     if (_AlphaMasking)
@@ -503,13 +503,13 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -517,7 +517,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[3];
+    BufferInfo buffers[3];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -528,25 +528,25 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_GEQUAL; //CMPFUNC_GREATER;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -563,7 +563,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_DEPTH\n");
@@ -574,7 +574,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     if (_Tessellation)
     {
@@ -586,7 +586,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_DEPTH\n");
@@ -596,7 +596,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     sources.Clear();
@@ -607,12 +607,12 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -620,7 +620,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[8];
+    BufferInfo buffers[8];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -636,29 +636,29 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_ALPHA);
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -675,7 +675,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
@@ -685,7 +685,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
@@ -694,7 +694,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
+    ShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
@@ -703,7 +703,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
     if (_Tessellation)
     {
@@ -714,7 +714,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
@@ -723,20 +723,20 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
     pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
-    SBufferInfo buffers[3];
+    BufferInfo buffers[3];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -747,26 +747,26 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _Skinned, STextureSampler const* Samplers, int NumSamplers)
+void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_ALPHA);
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -783,7 +783,7 @@ void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_NORMALS\n");
@@ -793,7 +793,7 @@ void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_NORMALS\n");
@@ -802,7 +802,7 @@ void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
+    ShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_NORMALS\n");
@@ -811,19 +811,19 @@ void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_POINTS;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
     pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
-    SBufferInfo buffers[3];
+    BufferInfo buffers[3];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -860,21 +860,21 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset(BLENDING_MODE _Blending)
     return RenderCore::BLENDING_NO_BLEND;
 }
 
-void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     if (_Translucent)
     {
         bsd.RenderTargetSlots[0].SetBlendingPreset(GetBlendingPreset(_Blending));
     }
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
 
     dssd.bDepthWrite = false;
     if (_Translucent)
@@ -888,17 +888,17 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
 
     dssd.bDepthEnable = _DepthTest;
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if (_Skinned)
@@ -906,20 +906,20 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
         pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsSkinned);
         pipelineCI.pVertexAttribs   = VertexAttribsSkinned;
 
-        AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+        String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define SKINNED_MESH\n");
         sources.Add(vertexAttribsShaderString.CStr());
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+        ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define SKINNED_MESH\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
         pipelineCI.NumVertexBindings = 2;
     }
@@ -928,18 +928,18 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
         pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsStatic);
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
 
-        AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+        String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add(vertexAttribsShaderString.CStr());
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+        ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
         pipelineCI.NumVertexBindings = 1;
     }
@@ -953,7 +953,7 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
@@ -962,12 +962,12 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerDesc samplers[20];
+    SamplerDesc samplers[20];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
     // lightmap is in last sample
@@ -997,7 +997,7 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[7];
+    BufferInfo buffers[7];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1012,21 +1012,21 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     if (_Translucent)
     {
         bsd.RenderTargetSlots[0].SetBlendingPreset(GetBlendingPreset(_Blending));
     }
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
 
     // Depth pre-pass
     dssd.bDepthWrite = false;
@@ -1044,20 +1044,20 @@ void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsStaticLightmap);
     pipelineCI.pVertexAttribs   = VertexAttribsStaticLightmap;
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_COLOR\n");
     sources.Add("#define USE_LIGHTMAP\n");
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_COLOR\n");
     sources.Add("#define USE_LIGHTMAP\n");
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
     if (_Tessellation)
     {
@@ -1065,32 +1065,32 @@ void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define USE_LIGHTMAP\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define USE_LIGHTMAP\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexUV);
+    vertexBinding[1].Stride    = sizeof(MeshVertexUV);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
     pipelineCI.pVertexBindings   = vertexBinding;
 
-    SSamplerDesc samplers[20];
+    SamplerDesc samplers[20];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
     // lightmap is in last sample
@@ -1120,7 +1120,7 @@ void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[7];
+    BufferInfo buffers[7];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1135,21 +1135,21 @@ void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     if (_Translucent)
     {
         bsd.RenderTargetSlots[0].SetBlendingPreset(GetBlendingPreset(_Blending));
     }
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
 
     // Depth pre-pass
     dssd.bDepthWrite = false;
@@ -1167,20 +1167,20 @@ void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline,
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsStaticVertexLight);
     pipelineCI.pVertexAttribs   = VertexAttribsStaticVertexLight;
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_COLOR\n");
     sources.Add("#define USE_VERTEX_LIGHT\n");
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_COLOR\n");
     sources.Add("#define USE_VERTEX_LIGHT\n");
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
     if (_Tessellation)
     {
@@ -1188,32 +1188,32 @@ void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline,
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define USE_VERTEX_LIGHT\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_COLOR\n");
         sources.Add("#define USE_VERTEX_LIGHT\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexLight);
+    vertexBinding[1].Stride    = sizeof(MeshVertexLight);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
     pipelineCI.pVertexBindings   = vertexBinding;
 
-    SSamplerDesc samplers[20];
+    SamplerDesc samplers[20];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
     // lightmap is in last sample
@@ -1243,7 +1243,7 @@ void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline,
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[7];
+    BufferInfo buffers[7];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1258,12 +1258,12 @@ void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline,
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
 #if defined SHADOWMAP_VSM
     //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
     Desc.CullMode = POLYGON_CULL_DISABLED;
@@ -1280,17 +1280,17 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_NO_BLEND);
 #endif
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_LESS;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1307,10 +1307,10 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
@@ -1320,7 +1320,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
@@ -1329,7 +1329,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
+    ShaderFactory::CreateShader(GEOMETRY_SHADER, sources, pipelineCI.pGS);
 
     if (_Tessellation)
     {
@@ -1340,7 +1340,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
@@ -1349,7 +1349,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     bool bVSM = false;
@@ -1367,10 +1367,10 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
     }
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -1378,7 +1378,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[4];
+    BufferInfo buffers[4];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1390,29 +1390,29 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _TwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
     //rsd.CullMode = POLYGON_CULL_DISABLED;
 
     //BlendingStateInfo & bsd = pipelineCI.BS;
     //bsd.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;  // FIXME: there is no fragment shader, so we realy need to disable color mask?
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_GREATER;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1429,10 +1429,10 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
@@ -1442,7 +1442,7 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     if (_Tessellation)
     {
@@ -1453,7 +1453,7 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
@@ -1462,7 +1462,7 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     bool bVSM = false;
@@ -1480,10 +1480,10 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
     }
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -1491,7 +1491,7 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[4];
+    BufferInfo buffers[4];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1504,30 +1504,30 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
 }
 
 
-void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const* Samplers, int NumSamplers)
+void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthWrite             = true;
     dssd.DepthFunc               = CMPFUNC_GREATER;
     dssd.bDepthEnable            = true;
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if (_Skinned)
@@ -1535,20 +1535,20 @@ void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const c
         pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsSkinned);
         pipelineCI.pVertexAttribs   = VertexAttribsSkinned;
 
-        AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+        String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_FEEDBACK\n");
         sources.Add("#define SKINNED_MESH\n");
         sources.Add(vertexAttribsShaderString.CStr());
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+        ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_FEEDBACK\n");
         sources.Add("#define SKINNED_MESH\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
         pipelineCI.NumVertexBindings = 2;
     }
@@ -1557,25 +1557,25 @@ void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const c
         pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsStatic);
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
 
-        AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+        String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_FEEDBACK\n");
         sources.Add(vertexAttribsShaderString.CStr());
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+        ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_FEEDBACK\n");
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+        ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
         pipelineCI.NumVertexBindings = 1;
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -1583,7 +1583,7 @@ void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const c
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[7];
+    BufferInfo buffers[7];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1598,15 +1598,15 @@ void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const c
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
-    SPipelineDesc           pipelineCI;
+    PipelineDesc           pipelineCI;
     TPodVector<const char*> sources;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = _CullMode;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
 #if 0
     dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
 #else
@@ -1614,17 +1614,17 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     dssd.bDepthWrite  = false;
 #endif
 
-    //SBlendingStateInfo & bs = pipelineCI.BS;
+    //BlendingStateInfo & bs = pipelineCI.BS;
     //bs.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].Stride    = sizeof(MeshVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].Stride    = sizeof(MeshVertexSkin);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1641,7 +1641,7 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
         pipelineCI.pVertexAttribs   = VertexAttribsStatic;
     }
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+    String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
     sources.Add("#define MATERIAL_PASS_OUTLINE\n");
@@ -1651,7 +1651,7 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     }
     sources.Add(vertexAttribsShaderString.CStr());
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+    ShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     if (_Tessellation)
     {
@@ -1662,7 +1662,7 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+        ShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
         sources.Add("#define MATERIAL_PASS_OUTLINE\n");
@@ -1671,7 +1671,7 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
             sources.Add("#define SKINNED_MESH\n");
         }
         sources.Add(_SourceCode);
-        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+        ShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
     sources.Clear();
@@ -1681,12 +1681,12 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
         sources.Add("#define SKINNED_MESH\n");
     }
     sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    ShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
 
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+    SamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
 
@@ -1694,7 +1694,7 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
     // TODO: Specify only used buffers
-    SBufferInfo buffers[3];
+    BufferInfo buffers[3];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1709,25 +1709,25 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth()
 {
     TRef<RenderCore::IPipeline> pipeline;
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = POLYGON_CULL_FRONT;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.DepthFunc               = CMPFUNC_GEQUAL; //CMPFUNC_GREATER;
 
-    SBlendingStateInfo& bs                 = pipelineCI.BS;
+    BlendingStateInfo& bs                 = pipelineCI.BS;
     bs.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(STerrainVertex);
+    vertexBinding[0].Stride    = sizeof(TerrainVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(STerrainPatchInstance);
+    vertexBinding[1].Stride    = sizeof(TerrainPatchInstance);
     vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
 
     pipelineCI.NumVertexBindings = 2;
@@ -1736,18 +1736,18 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsTerrainInstanced);
     pipelineCI.pVertexAttribs   = VertexAttribsTerrainInstanced;
 
-    AShaderFactory::CreateVertexShader("terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateVertexShader("terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLE_STRIP;
 
-    SSamplerDesc clipmapSampler;
+    SamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;
 
     pipelineCI.ResourceLayout.NumSamplers = 1;
     pipelineCI.ResourceLayout.Samplers    = &clipmapSampler;
 
-    SBufferInfo buffers[2];
+    BufferInfo buffers[2];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
 
@@ -1762,24 +1762,24 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialLight()
 {
     TRef<RenderCore::IPipeline> pipeline;
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = POLYGON_CULL_FRONT;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthWrite             = false;
     dssd.DepthFunc               = CMPFUNC_EQUAL;
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(STerrainVertex);
+    vertexBinding[0].Stride    = sizeof(TerrainVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     // TODO: second buffer for instancing
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(STerrainPatchInstance);
+    vertexBinding[1].Stride    = sizeof(TerrainPatchInstance);
     vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
 
     pipelineCI.NumVertexBindings = 2;
@@ -1788,18 +1788,18 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialLight()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsTerrainInstanced);
     pipelineCI.pVertexAttribs   = VertexAttribsTerrainInstanced;
 
-    AShaderFactory::CreateVertexShader("terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    AShaderFactory::CreateFragmentShader("terrain_color.frag", pipelineCI.pFS);
+    ShaderFactory::CreateVertexShader("terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateFragmentShader("terrain_color.frag", pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLE_STRIP;
 
-    SSamplerDesc samplers[20];
+    SamplerDesc samplers[20];
 
-    SSamplerDesc& clipmapSampler = samplers[0];
+    SamplerDesc& clipmapSampler = samplers[0];
     clipmapSampler.Filter        = FILTER_NEAREST;
 
-    SSamplerDesc& normalmapSampler = samplers[1];
+    SamplerDesc& normalmapSampler = samplers[1];
     normalmapSampler.Filter        = FILTER_LINEAR;
 
     // lightmap is in last sample
@@ -1828,7 +1828,7 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialLight()
     pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE(samplers);
     pipelineCI.ResourceLayout.Samplers    = samplers;
 
-    SBufferInfo buffers[7];
+    BufferInfo buffers[7];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
@@ -1848,26 +1848,26 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
 {
     TRef<RenderCore::IPipeline> pipeline;
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    RasterizerStateInfo& rsd = pipelineCI.RS;
     rsd.CullMode              = POLYGON_CULL_FRONT;
 
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    DepthStencilStateInfo& dssd = pipelineCI.DSS;
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    SBlendingStateInfo& bsd = pipelineCI.BS;
+    BlendingStateInfo& bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_ALPHA);
 
-    SVertexBindingInfo vertexBinding[2] = {};
+    VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(STerrainVertex);
+    vertexBinding[0].Stride    = sizeof(TerrainVertex);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride    = sizeof(STerrainPatchInstance);
+    vertexBinding[1].Stride    = sizeof(TerrainPatchInstance);
     vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
 
     pipelineCI.NumVertexBindings = 2;
@@ -1876,20 +1876,20 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsTerrainInstanced);
     pipelineCI.pVertexAttribs   = VertexAttribsTerrainInstanced;
 
-    AShaderFactory::CreateVertexShader("terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    AShaderFactory::CreateGeometryShader("terrain_wireframe.geom", pipelineCI.pGS);
-    AShaderFactory::CreateFragmentShader("terrain_wireframe.frag", pipelineCI.pFS);
+    ShaderFactory::CreateVertexShader("terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateGeometryShader("terrain_wireframe.geom", pipelineCI.pGS);
+    ShaderFactory::CreateFragmentShader("terrain_wireframe.frag", pipelineCI.pFS);
 
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLE_STRIP;
 
-    SSamplerDesc clipmapSampler;
+    SamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;
 
     pipelineCI.ResourceLayout.NumSamplers = 1;
     pipelineCI.ResourceLayout.Samplers    = &clipmapSampler;
 
-    SBufferInfo buffers[2];
+    BufferInfo buffers[2];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
     buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
 
@@ -1901,7 +1901,7 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
 }
 
 
-AMaterialGPU::AMaterialGPU(ACompiledMaterial const* pCompiledMaterial)
+MaterialGPU::MaterialGPU(CompiledMaterial const* pCompiledMaterial)
 {
     HK_ASSERT(pCompiledMaterial);
 
@@ -1915,10 +1915,10 @@ AMaterialGPU::AMaterialGPU(ACompiledMaterial const* pCompiledMaterial)
 
     POLYGON_CULL cullMode = pCompiledMaterial->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
 
-    AString code = AShaderLoader{}.LoadShader("material.glsl", pCompiledMaterial->Shaders);
+    String code = ShaderLoader{}.LoadShader("material.glsl", pCompiledMaterial->Shaders);
 
     //{
-    //    AFile f = AFile::OpenWrite( "test.txt" );
+    //    File f = File::OpenWrite( "test.txt" );
     //    f.WriteBuffer( code.CStr(), code.Length() );
     //}
 

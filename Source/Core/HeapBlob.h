@@ -104,9 +104,9 @@ struct HeapBlob final
         return HeapBlob(m_HeapSize, m_HeapPtr);
     }
 
-    operator AStringView() const
+    operator StringView() const
     {
-        return AStringView((const char*)m_HeapPtr, m_HeapSize);
+        return StringView((const char*)m_HeapPtr, m_HeapSize);
     }
 
     char* ToRawString() const
@@ -114,7 +114,7 @@ struct HeapBlob final
         return (char*)m_HeapPtr;
     }
 
-    AString ToString() const
+    String ToString() const
     {
         return m_HeapPtr ? (const char*)m_HeapPtr : "";
     }
@@ -196,7 +196,7 @@ struct BlobRef
         return (const char*)m_HeapPtr;
     }
 
-    AString ToString() const
+    String ToString() const
     {
         return m_HeapPtr ? (const char*)m_HeapPtr : "";
     }

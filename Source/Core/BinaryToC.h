@@ -38,12 +38,12 @@ namespace Core
 {
 
 /** Convert binary file to .c */
-bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
+bool BinaryToC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85);
 
 /** Compress and convert binary file to .c */
-bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
+bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85);
 
 /** Write binary date to .c */
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, BlobRef Blob, bool bEncodeBase85);
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, BlobRef Blob, bool bEncodeBase85);
 
 } // namespace Core

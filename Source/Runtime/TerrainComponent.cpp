@@ -37,16 +37,16 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-AConsoleVar com_DrawTerrainBounds("com_DrawTerrainBounds"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawTerrainBounds("com_DrawTerrainBounds"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(ATerrainComponent)
+HK_CLASS_META(TerrainComponent)
 
-static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
+static bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits)
 {
-    ATerrainComponent const* terrain        = static_cast<ATerrainComponent const*>(Self->Owner);
+    TerrainComponent const* terrain        = static_cast<TerrainComponent const*>(Self->Owner);
     bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
-    ATerrain* resource = terrain->GetTerrain();
+    Terrain* resource = terrain->GetTerrain();
     if (!resource)
     {
         return false;
@@ -89,7 +89,7 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
     for (int i = 0; i < numHits; i++)
     {
         int                 hitNum    = firstHit + i;
-        STriangleHitResult& hitResult = Hits[hitNum];
+        TriangleHitResult& hitResult = Hits[hitNum];
 
         hitResult.Location = transform * hitResult.Location;
         hitResult.Normal   = (normalMatrix * hitResult.Normal).Normalized();
@@ -101,16 +101,16 @@ static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart,
     return true;
 }
 
-static bool RaycastClosestCallback(SPrimitiveDef const* Self,
+static bool RaycastClosestCallback(PrimitiveDef const* Self,
                                    Float3 const&        InRayStart,
                                    Float3 const&        InRayEnd,
-                                   STriangleHitResult&  Hit,
-                                   SMeshVertex const**  pVertices)
+                                   TriangleHitResult&  Hit,
+                                   MeshVertex const**  pVertices)
 {
-    ATerrainComponent const* terrain        = static_cast<ATerrainComponent const*>(Self->Owner);
+    TerrainComponent const* terrain        = static_cast<TerrainComponent const*>(Self->Owner);
     bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
-    ATerrain* resource = terrain->GetTerrain();
+    Terrain* resource = terrain->GetTerrain();
     if (!resource)
     {
         return false;
@@ -159,10 +159,10 @@ static bool RaycastClosestCallback(SPrimitiveDef const* Self,
     return true;
 }
 
-static void EvaluateRaycastResult(SPrimitiveDef*       Self,
-                                  ALevel const*        LightingLevel,
-                                  SMeshVertex const*   pVertices,
-                                  SMeshVertexUV const* pLightmapVerts,
+static void EvaluateRaycastResult(PrimitiveDef*       Self,
+                                  Level const*        LightingLevel,
+                                  MeshVertex const*   pVertices,
+                                  MeshVertexUV const* pLightmapVerts,
                                   int                  LightmapBlock,
                                   unsigned int const*  pIndices,
                                   Float3 const&        HitLocation,
@@ -171,9 +171,9 @@ static void EvaluateRaycastResult(SPrimitiveDef*       Self,
                                   Float2&              TexCoord,
                                   Float3&              LightmapSample)
 {
-    ATerrainComponent* terrain = static_cast<ATerrainComponent*>(Self->Owner);
+    TerrainComponent* terrain = static_cast<TerrainComponent*>(Self->Owner);
 
-    STerrainTriangle triangle;
+    TerrainTriangle triangle;
 
     terrain->GetTriangle(HitLocation, triangle);
 
@@ -184,11 +184,11 @@ static void EvaluateRaycastResult(SPrimitiveDef*       Self,
     LightmapSample = Float3(0.0f);
 }
 
-ATerrainComponent::ATerrainComponent()
+TerrainComponent::TerrainComponent()
 {
-    HitProxy = NewObj<AHitProxy>();
+    m_HitProxy = NewObj<HitProxy>();
 
-    Primitive                         = AVisibilitySystem::AllocatePrimitive();
+    Primitive                         = VisibilitySystem::AllocatePrimitive();
     Primitive->Owner                  = this;
     Primitive->Type                   = VSD_PRIMITIVE_BOX;
     Primitive->VisGroup               = VISIBILITY_GROUP_TERRAIN;
@@ -204,17 +204,17 @@ ATerrainComponent::ATerrainComponent()
     TerrainWorldTransformInv.SetIdentity();
 }
 
-ATerrainComponent::~ATerrainComponent()
+TerrainComponent::~TerrainComponent()
 {
-    AVisibilitySystem::DeallocatePrimitive(Primitive);
+    VisibilitySystem::DeallocatePrimitive(Primitive);
 
-    if (Terrain)
+    if (m_Terrain)
     {
-        Terrain->RemoveListener(this);
+        m_Terrain->RemoveListener(this);
     }
 }
 
-void ATerrainComponent::SetVisible(bool _Visible)
+void TerrainComponent::SetVisible(bool _Visible)
 {
     if (_Visible)
     {
@@ -228,12 +228,12 @@ void ATerrainComponent::SetVisible(bool _Visible)
     }
 }
 
-bool ATerrainComponent::IsVisible() const
+bool TerrainComponent::IsVisible() const
 {
     return !!(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE);
 }
 
-void ATerrainComponent::SetHiddenInLightPass(bool _HiddenInLightPass)
+void TerrainComponent::SetHiddenInLightPass(bool _HiddenInLightPass)
 {
     if (_HiddenInLightPass)
     {
@@ -247,17 +247,17 @@ void ATerrainComponent::SetHiddenInLightPass(bool _HiddenInLightPass)
     }
 }
 
-bool ATerrainComponent::IsHiddenInLightPass() const
+bool TerrainComponent::IsHiddenInLightPass() const
 {
     return !(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
 }
 
-void ATerrainComponent::SetQueryGroup(int _UserQueryGroup)
+void TerrainComponent::SetQueryGroup(int _UserQueryGroup)
 {
     Primitive->QueryGroup |= VSD_QUERY_MASK(_UserQueryGroup & 0xffff0000);
 }
 
-void ATerrainComponent::SetTwoSidedSurface(bool bTwoSidedSurface)
+void TerrainComponent::SetTwoSidedSurface(bool bTwoSidedSurface)
 {
     if (bTwoSidedSurface)
     {
@@ -269,12 +269,12 @@ void ATerrainComponent::SetTwoSidedSurface(bool bTwoSidedSurface)
     }
 }
 
-uint8_t ATerrainComponent::GetSurfaceFlags() const
+uint8_t TerrainComponent::GetSurfaceFlags() const
 {
     return Primitive->Flags;
 }
 
-void ATerrainComponent::AddTerrainPhysics()
+void TerrainComponent::AddTerrainPhysics()
 {
     if (IsInEditor())
     {
@@ -282,31 +282,31 @@ void ATerrainComponent::AddTerrainPhysics()
         return;
     }
 
-    if (!Terrain)
+    if (!m_Terrain)
     {
         // No terrain resource assigned to component
         return;
     }
 
-    HK_ASSERT(RigidBody == nullptr);
+    HK_ASSERT(m_RigidBody == nullptr);
 
-    float verticalOffset = (Terrain->GetMinHeight() + Terrain->GetMaxHeight()) * 0.5f;
+    float verticalOffset = (m_Terrain->GetMinHeight() + m_Terrain->GetMaxHeight()) * 0.5f;
 
     Float3   worldPosition = TerrainWorldTransform * Float3(0.0f, verticalOffset, 0.0f);
     Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
-    btRigidBody::btRigidBodyConstructionInfo contructInfo(0.0f, nullptr, Terrain->GetHeightfieldShape());
+    btRigidBody::btRigidBodyConstructionInfo contructInfo(0.0f, nullptr, m_Terrain->GetHeightfieldShape());
     contructInfo.m_startWorldTransform.setOrigin(btVectorToFloat3(worldPosition));
     contructInfo.m_startWorldTransform.setBasis(btMatrixToFloat3x3(worldRotation.Transposed()));
 
-    RigidBody = new btRigidBody(contructInfo);
-    RigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/);
-    RigidBody->setUserPointer(HitProxy.GetObject());
+    m_RigidBody = new btRigidBody(contructInfo);
+    m_RigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/);
+    m_RigidBody->setUserPointer(m_HitProxy.GetObject());
 
-    HitProxy->Initialize(this, RigidBody);
+    m_HitProxy->Initialize(this, m_RigidBody);
 }
 
-void ATerrainComponent::RemoveTerrainPhysics()
+void TerrainComponent::RemoveTerrainPhysics()
 {
     if (IsInEditor())
     {
@@ -314,18 +314,18 @@ void ATerrainComponent::RemoveTerrainPhysics()
         return;
     }
 
-    if (RigidBody == nullptr)
+    if (m_RigidBody == nullptr)
     {
         return;
     }
 
-    HitProxy->Deinitialize();
+    m_HitProxy->Deinitialize();
 
-    delete RigidBody;
-    RigidBody = nullptr;
+    delete m_RigidBody;
+    m_RigidBody = nullptr;
 }
 
-void ATerrainComponent::InitializeComponent()
+void TerrainComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
@@ -335,18 +335,18 @@ void ATerrainComponent::InitializeComponent()
 
     GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
 
-    AAINavigationMesh & NavigationMesh = GetWorld()->NavigationMesh;
+    AINavigationMesh & NavigationMesh = GetWorld()->NavigationMesh;
     NavigationMesh.NavigationPrimitives.Add(this);
 }
 
-void ATerrainComponent::DeinitializeComponent()
+void TerrainComponent::DeinitializeComponent()
 {
-    AAINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
+    AINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
     NavigationMesh.NavigationPrimitives.Remove(this);
 
-    if (Terrain)
+    if (m_Terrain)
     {
-        Terrain->RemoveListener(this);
+        m_Terrain->RemoveListener(this);
     }
 
     RemoveTerrainPhysics();
@@ -356,18 +356,18 @@ void ATerrainComponent::DeinitializeComponent()
     Super::DeinitializeComponent();
 }
 
-void ATerrainComponent::SetTerrain(ATerrain* InTerrain)
+void TerrainComponent::SetTerrain(Terrain* terrain)
 {
-    if (Terrain)
+    if (m_Terrain)
     {
-        Terrain->RemoveListener(this);
+        m_Terrain->RemoveListener(this);
     }
 
-    Terrain = InTerrain;
+    m_Terrain = terrain;
 
-    if (Terrain)
+    if (m_Terrain)
     {
-        Terrain->AddListener(this);
+        m_Terrain->AddListener(this);
     }
 
     if (IsInitialized())
@@ -380,7 +380,7 @@ void ATerrainComponent::SetTerrain(ATerrain* InTerrain)
     }
 }
 
-void ATerrainComponent::OnTerrainModified()
+void TerrainComponent::OnTerrainModified()
 {
     if (IsInitialized())
     {
@@ -392,7 +392,7 @@ void ATerrainComponent::OnTerrainModified()
     }
 }
 
-void ATerrainComponent::SetAllowRaycast(bool _AllowRaycast)
+void TerrainComponent::SetAllowRaycast(bool _AllowRaycast)
 {
     if (_AllowRaycast)
     {
@@ -407,7 +407,7 @@ void ATerrainComponent::SetAllowRaycast(bool _AllowRaycast)
     bAllowRaycast = _AllowRaycast;
 }
 
-bool ATerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const
+bool TerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const
 {
     if (!Primitive->RaycastCallback)
     {
@@ -419,7 +419,7 @@ bool ATerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd
     return Primitive->RaycastCallback(Primitive, InRayStart, InRayEnd, Hits);
 }
 
-bool ATerrainComponent::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const
+bool TerrainComponent::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const
 {
     if (!Primitive->RaycastCallback)
     {
@@ -429,7 +429,7 @@ bool ATerrainComponent::RaycastClosest(Float3 const& InRayStart, Float3 const& I
     return Primitive->RaycastClosestCallback(Primitive, InRayStart, InRayEnd, Hit, nullptr);
 }
 
-void ATerrainComponent::UpdateTransform()
+void TerrainComponent::UpdateTransform()
 {
     Float3   worldPosition = GetWorldPosition();
     Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
@@ -443,19 +443,19 @@ void ATerrainComponent::UpdateTransform()
     UpdateWorldBounds();
 }
 
-void ATerrainComponent::UpdateWorldBounds()
+void TerrainComponent::UpdateWorldBounds()
 {
-    if (!Terrain)
+    if (!m_Terrain)
     {
         return;
     }
 
-    Primitive->Box = Terrain->GetBoundingBox().Transform(TerrainWorldTransform);
+    Primitive->Box = m_Terrain->GetBoundingBox().Transform(TerrainWorldTransform);
 
     // NOTE: Terrain is always in outdoor area. So we don't need to update primitive.
 }
 
-void ATerrainComponent::OnTransformDirty()
+void TerrainComponent::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
@@ -467,19 +467,19 @@ void ATerrainComponent::OnTransformDirty()
     }
 
     // Update rigid body transform
-    if (Terrain && RigidBody)
+    if (m_Terrain && m_RigidBody)
     {
         btTransform worldTransform;
-        Float3      worldPosition = TerrainWorldTransform * Float3(0.0f, (Terrain->GetMinHeight() + Terrain->GetMaxHeight()) * 0.5f, 0.0f);
+        Float3 worldPosition = TerrainWorldTransform * Float3(0.0f, (m_Terrain->GetMinHeight() + m_Terrain->GetMaxHeight()) * 0.5f, 0.0f);
         Float3x3    worldRotation = GetWorldRotation().ToMatrix3x3();
 
         worldTransform.setOrigin(btVectorToFloat3(worldPosition));
         worldTransform.setBasis(btMatrixToFloat3x3(worldRotation.Transposed()));
-        RigidBody->setWorldTransform(worldTransform);
+        m_RigidBody->setWorldTransform(worldTransform);
     }
 }
 
-void ATerrainComponent::GetLocalXZ(Float3 const& InPosition, float& X, float& Z) const
+void TerrainComponent::GetLocalXZ(Float3 const& InPosition, float& X, float& Z) const
 {
     // position in terrain space
     Float3 localPosition = TerrainWorldTransformInv * InPosition;
@@ -488,9 +488,9 @@ void ATerrainComponent::GetLocalXZ(Float3 const& InPosition, float& X, float& Z)
     Z = localPosition.Z;
 }
 
-bool ATerrainComponent::GetTriangle(Float3 const& InPosition, STerrainTriangle& Triangle) const
+bool TerrainComponent::GetTriangle(Float3 const& InPosition, TerrainTriangle& Triangle) const
 {
-    if (!Terrain)
+    if (!m_Terrain)
     {
         return false;
     }
@@ -498,7 +498,7 @@ bool ATerrainComponent::GetTriangle(Float3 const& InPosition, STerrainTriangle& 
     // position in terrain space
     Float3 localPosition = TerrainWorldTransformInv * InPosition;
 
-    if (!Terrain->GetTriangle(localPosition.X, localPosition.Z, Triangle))
+    if (!m_Terrain->GetTriangle(localPosition.X, localPosition.Z, Triangle))
     {
         return false;
     }
@@ -519,48 +519,48 @@ bool ATerrainComponent::GetTriangle(Float3 const& InPosition, STerrainTriangle& 
     return true;
 }
 
-float ATerrainComponent::SampleHeight(Float3 const& InPosition) const
+float TerrainComponent::SampleHeight(Float3 const& InPosition) const
 {
-    if (!Terrain)
+    if (!m_Terrain)
     {
         return 0.0f;
     }
 
     float x, z;
     GetLocalXZ(InPosition, x, z);
-    return Terrain->SampleHeight(x, z);
+    return m_Terrain->SampleHeight(x, z);
 }
 
-void ATerrainComponent::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
+void TerrainComponent::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
-    HitProxy->SetCollisionGroup(_CollisionGroup);
+    m_HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void ATerrainComponent::SetCollisionMask(COLLISION_MASK _CollisionMask)
+void TerrainComponent::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionMask(_CollisionMask);
+    m_HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void ATerrainComponent::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
+void TerrainComponent::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
-    HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
+    m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void ATerrainComponent::AddCollisionIgnoreActor(AActor* _Actor)
+void TerrainComponent::AddCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->AddCollisionIgnoreActor(_Actor);
+    m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void ATerrainComponent::RemoveCollisionIgnoreActor(AActor* _Actor)
+void TerrainComponent::RemoveCollisionIgnoreActor(AActor* _Actor)
 {
-    HitProxy->RemoveCollisionIgnoreActor(_Actor);
+    m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
 
-void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
+void TerrainComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
-    if (com_DrawTerrainBounds && Terrain)
+    if (com_DrawTerrainBounds && m_Terrain)
     {
         if (Primitive->VisPass == InRenderer->GetVisPass())
         {
@@ -571,13 +571,13 @@ void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
     }
 }
 
-void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const
+void TerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const
 {
-    if (!Terrain)
+    if (!m_Terrain)
         return;
 
     int firstVert = CollisionVertices.Size();
-    Terrain->GatherGeometry(LocalBounds, CollisionVertices, CollisionIndices);
+    m_Terrain->GatherGeometry(LocalBounds, CollisionVertices, CollisionIndices);
 
     int numVerts = CollisionVertices.Size() - firstVert;
     if (numVerts)
@@ -590,9 +590,9 @@ void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBou
     }
 }
 
-void ATerrainComponent::GatherNavigationGeometry(SNavigationGeometry& Geometry) const
+void TerrainComponent::GatherNavigationGeometry(NavigationGeometry& Geometry) const
 {
-    if (!Terrain)
+    if (!m_Terrain)
     {
         return;
     }
@@ -609,7 +609,7 @@ void ATerrainComponent::GatherNavigationGeometry(SNavigationGeometry& Geometry) 
     Float3x4 const& worldTransform    = GetWorldTransformMatrix();
     Float3x4        worldTransformInv = worldTransform.Inversed();
 
-    TPodVector<BvAxisAlignedBox> const& areas = Terrain->NavigationAreas;
+    TPodVector<BvAxisAlignedBox> const& areas = m_Terrain->NavigationAreas;
 
     // Gather terrain geometry from navigation areas
     for (BvAxisAlignedBox const& areaBounds : areas)

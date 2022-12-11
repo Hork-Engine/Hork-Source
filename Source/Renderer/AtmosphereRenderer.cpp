@@ -36,11 +36,11 @@ using namespace RenderCore;
 //static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA32_FLOAT;
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_R11G11B10_FLOAT;
 
-AAtmosphereRenderer::AAtmosphereRenderer() {
-    SBufferDesc bufferCI = {};
+AtmosphereRenderer::AtmosphereRenderer() {
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SConstantData );
+    bufferCI.SizeInBytes = sizeof( ConstantData );
     GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
@@ -50,16 +50,16 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
+    VertexBindingInfo vertexBindings[] =
     {
         {
             0,                              // vertex buffer binding
@@ -68,7 +68,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         }
     };
 
-    SVertexAttribInfo vertexAttribs[] =
+    VertexAttribInfo vertexAttribs[] =
     {
         {
             "InPosition",
@@ -81,11 +81,11 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         }
     };
 
-    AShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
-    AShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
+    ShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
@@ -99,27 +99,27 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void AAtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
+void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
 {
-    AFrameGraph frameGraph( GDevice );
-    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Atmosphere pass" );
+    FrameGraph frameGraph( GDevice );
+    RenderPass & pass = frameGraph.AddTask< RenderPass >( "Atmosphere pass" );
 
     pass.SetRenderArea( CubemapWidth, CubemapWidth );
 
     pass.SetColorAttachments(
         {
             {
-                STextureAttachment("Render target texture",
-                                    STextureDesc()
+                TextureAttachment("Render target texture",
+                                    TextureDesc()
                                  .SetFormat(Format)
-                                        .SetResolution(STextureResolutionCubemap(CubemapWidth))
+                                        .SetResolution(TextureResolutionCubemap(CubemapWidth))
                 )
                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)
             }
         } );
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 

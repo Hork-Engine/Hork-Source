@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class AColorGradingRenderer
+class ColorGradingRenderer
 {
 public:
-    AColorGradingRenderer();
+    ColorGradingRenderer();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppColorGrading);
+    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppColorGrading);
 
 private:
     TRef<RenderCore::IPipeline> PipelineLUT;

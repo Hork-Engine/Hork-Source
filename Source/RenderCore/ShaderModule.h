@@ -50,7 +50,7 @@ enum SHADER_BINARY_FORMAT : unsigned int
     SHADER_BINARY_FORMAT_SPIR_V_ARB = 0x9551
 };
 
-struct SShaderBinaryData
+struct ShaderBinaryData
 {
     void*        BinaryCode;
     size_t       BinarySize;

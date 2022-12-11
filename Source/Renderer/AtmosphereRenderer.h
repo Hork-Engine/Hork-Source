@@ -33,20 +33,20 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
-class AAtmosphereRenderer
+class AtmosphereRenderer
 {
 public:
-    AAtmosphereRenderer();
+    AtmosphereRenderer();
 
     void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
 
 private:
-    struct SConstantData
+    struct ConstantData
     {
         Float4x4 Transform[6];
         Float4   LightDir;
     };
     TRef<RenderCore::IBuffer>   ConstantBuffer;
-    SConstantData               ConstantBufferData;
+    ConstantData                ConstantBufferData;
     TRef<RenderCore::IPipeline> Pipeline;
 };

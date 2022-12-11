@@ -37,19 +37,19 @@ class UIImage : public UIWidget
     UI_CLASS(UIImage, UIWidget)
 
 public:
-    TRef<ATextureView> TextureView;
-    Color4             TintColor;
-    RoundingDesc       Rounding;
-    CANVAS_COMPOSITE   Composite = CANVAS_COMPOSITE_SOURCE_OVER;
-    Float2             Offset;
-    Float2             Scale = Float2(1, 1);
-    bool               bPremultipliedAlpha : 1;
-    bool               bNearestFilter : 1;
-    bool               bStretchedX : 1;
-    bool               bStretchedY : 1;
-    bool               bTiledX : 1;
-    bool               bTiledY : 1;
-    bool               bFlipY : 1;
+    TRef<TextureView> TexView;
+    Color4            TintColor;
+    RoundingDesc      Rounding;
+    CANVAS_COMPOSITE  Composite = CANVAS_COMPOSITE_SOURCE_OVER;
+    Float2            Offset;
+    Float2            Scale = Float2(1, 1);
+    bool              bPremultipliedAlpha : 1;
+    bool              bNearestFilter : 1;
+    bool              bStretchedX : 1;
+    bool              bStretchedY : 1;
+    bool              bTiledX : 1;
+    bool              bTiledY : 1;
+    bool              bFlipY : 1;
 
     UIImage() :
         bPremultipliedAlpha{},
@@ -61,15 +61,15 @@ public:
         bFlipY{}
     {}
 
-    UIImage& WithTexture(ATexture* texture)
+    UIImage& WithTexture(Texture* texture)
     {
-        TextureView = texture ? texture->GetView() : nullptr;
+        TexView = texture ? texture->GetView() : nullptr;
         return *this;
     }
 
-    UIImage& WithTexture(ATextureView* textureView)
+    UIImage& WithTexture(TextureView* textureView)
     {
-        TextureView = textureView;
+        TexView = textureView;
         return *this;
     }
 
@@ -148,5 +148,5 @@ public:
 protected:
     void AdjustSize(Float2 const& size) override;
 
-    void Draw(ACanvas& canvas) override;
+    void Draw(Canvas& canvas) override;
 };

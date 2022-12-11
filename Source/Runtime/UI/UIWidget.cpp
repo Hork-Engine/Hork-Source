@@ -36,7 +36,7 @@ SOFTWARE.
 #include "UIScroll.h"
 #include "UIManager.h"
 
-AConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
+ConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
 
 extern int UIVisibilityFrame;
 
@@ -121,11 +121,11 @@ bool UIWidget::HitTest(float x, float y) const
     return true;
 }
 
-void UIWidget::OnKeyEvent(SKeyEvent const& event, double timeStamp)
+void UIWidget::OnKeyEvent(KeyEvent const& event, double timeStamp)
 {
 }
 
-void UIWidget::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIWidget::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
 }
 
@@ -142,7 +142,7 @@ void UIWidget::ScrollSelfDelta(float delta)
     }
 }
 
-void UIWidget::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void UIWidget::OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
     if (event.WheelY < 0)
     {
@@ -154,19 +154,19 @@ void UIWidget::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp
     }
 }
 
-void UIWidget::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIWidget::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
 }
 
-void UIWidget::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
+void UIWidget::OnJoystickButtonEvent(JoystickButtonEvent const& event, double timeStamp)
 {
 }
 
-void UIWidget::OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp)
+void UIWidget::OnJoystickAxisEvent(JoystickAxisEvent const& event, double timeStamp)
 {
 }
 
-void UIWidget::OnCharEvent(SCharEvent const& event, double timeStamp)
+void UIWidget::OnCharEvent(CharEvent const& event, double timeStamp)
 {
 }
 
@@ -187,27 +187,27 @@ void UIWidget::OnWindowHovered(bool bHovered)
     E_OnHovered.Dispatch(bHovered);
 }
 
-void UIWidget::Draw(ACanvas& canvas)
+void UIWidget::Draw(Canvas& canvas)
 {
 }
 
-void UIWidget::PostDraw(ACanvas& canvas)
+void UIWidget::PostDraw(Canvas& canvas)
 {
 }
 
-void UIWidget::DrawBackground(ACanvas& canvas)
+void UIWidget::DrawBackground(Canvas& canvas)
 {
     if (Background)
         DrawBrush(canvas, Background);
 }
 
-void UIWidget::DrawForeground(ACanvas& canvas)
+void UIWidget::DrawForeground(Canvas& canvas)
 {
     if (Foreground)
         DrawBrush(canvas, Foreground);
 }
 
-void UIWidget::Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha)
+void UIWidget::Draw(Canvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha)
 {
     if (m_VisFrame != UIVisibilityFrame)
         return;
@@ -394,7 +394,7 @@ void UIWidget::Detach()
     RemoveRef();
 }
 
-void UIWidget::ForwardKeyEvent(SKeyEvent const& event, double timeStamp)
+void UIWidget::ForwardKeyEvent(KeyEvent const& event, double timeStamp)
 {
     OnKeyEvent(event, timeStamp);
 
@@ -406,12 +406,12 @@ void UIWidget::ForwardKeyEvent(SKeyEvent const& event, double timeStamp)
     }
 }
 
-bool UIWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+bool UIWidget::OnChildrenMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     return false;
 }
 
-bool UIWidget::OverrideMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+bool UIWidget::OverrideMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     UIWidget* parent = m_Parent;
     if (!parent)
@@ -423,7 +423,7 @@ bool UIWidget::OverrideMouseButtonEvent(SMouseButtonEvent const& event, double t
     return parent->OnChildrenMouseButtonEvent(event, timeStamp);
 }
 
-void UIWidget::ForwardMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIWidget::ForwardMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (OverrideMouseButtonEvent(event, timeStamp))
         return;
@@ -450,7 +450,7 @@ void UIWidget::ForwardDblClickEvent(int buttonKey, Float2 const& clickPos, uint6
     }
 }
 
-void UIWidget::ForwardMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void UIWidget::ForwardMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
     OnMouseWheelEvent(event, timeStamp);
 
@@ -462,7 +462,7 @@ void UIWidget::ForwardMouseWheelEvent(SMouseWheelEvent const& event, double time
     }
 }
 
-void UIWidget::ForwardMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIWidget::ForwardMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     OnMouseMoveEvent(event, timeStamp);
 
@@ -474,7 +474,7 @@ void UIWidget::ForwardMouseMoveEvent(SMouseMoveEvent const& event, double timeSt
     }
 }
 
-void UIWidget::ForwardJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
+void UIWidget::ForwardJoystickButtonEvent(JoystickButtonEvent const& event, double timeStamp)
 {
     OnJoystickButtonEvent(event, timeStamp);
 
@@ -486,7 +486,7 @@ void UIWidget::ForwardJoystickButtonEvent(SJoystickButtonEvent const& event, dou
     }
 }
 
-void UIWidget::ForwardJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp)
+void UIWidget::ForwardJoystickAxisEvent(JoystickAxisEvent const& event, double timeStamp)
 {
     OnJoystickAxisEvent(event, timeStamp);
 
@@ -498,7 +498,7 @@ void UIWidget::ForwardJoystickAxisEvent(SJoystickAxisEvent const& event, double 
     }
 }
 
-void UIWidget::ForwardCharEvent(SCharEvent const& event, double timeStamp)
+void UIWidget::ForwardCharEvent(CharEvent const& event, double timeStamp)
 {
     OnCharEvent(event, timeStamp);
 
@@ -591,7 +591,7 @@ void UIWidget::AdjustSize(Float2 const& size)
     m_AdjustedSize.Y = Math::Max(0.0f, size.Y - Padding.Top - Padding.Bottom);
 }
 
-void UIWidget::DrawBrush(ACanvas& canvas, UIBrush* brush)
+void UIWidget::DrawBrush(Canvas& canvas, UIBrush* brush)
 {
     ::DrawBrush(canvas, m_Geometry.Mins, m_Geometry.Maxs, {}, brush);
 }
@@ -668,7 +668,7 @@ bool UIWidget::IsDisabled() const
     return m_Parent ? m_Parent->IsDisabled() : false;
 }
 
-void UIWidget::SetLayer(AStringView name)
+void UIWidget::SetLayer(StringView name)
 {
     SetLayer(GetLayerNum(name));
 }
@@ -678,7 +678,7 @@ void UIWidget::SetLayer(int layerNum)
     Layer = layerNum;
 }
 
-int UIWidget::GetLayerNum(AStringView name) const
+int UIWidget::GetLayerNum(StringView name) const
 {
     int n = 0;
     for (auto w : m_LayoutSlots)
@@ -690,7 +690,7 @@ int UIWidget::GetLayerNum(AStringView name) const
     return -1;
 }
 
-UIWidget* UIWidget::FindChildren(AStringView name)
+UIWidget* UIWidget::FindChildren(StringView name)
 {
     for (auto w : m_Children)
     {

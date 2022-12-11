@@ -36,9 +36,9 @@ SOFTWARE.
 
 #include "VT.h"
 
-class AVirtualTexture;
+class VirtualTexture;
 
-struct SVirtualTextureCacheLayerInfo
+struct VTCacheLayerInfo
 {
     /** Pixel format on GPU */
     TEXTURE_FORMAT TextureFormat;
@@ -48,12 +48,12 @@ struct SVirtualTextureCacheLayerInfo
     size_t PageSizeInBytes;
 };
 
-struct SVirtualTextureCacheCreateInfo
+struct VTCacheCreateInfo
 {
     uint32_t PageCacheCapacityX;
     uint32_t PageCacheCapacityY;
 
-    SVirtualTextureCacheLayerInfo * pLayers;
+    VTCacheLayerInfo* pLayers;
     uint8_t NumLayers;
 
     uint16_t PageResolutionB;
@@ -61,73 +61,73 @@ struct SVirtualTextureCacheCreateInfo
 
 constexpr uint32_t MIN_PAGE_CACHE_CAPACITY = 8;
 
-class AVirtualTextureCache : public ARefCounted
+class VirtualTextureCache : public RefCounted
 {
 public:
-    AVirtualTextureCache( SVirtualTextureCacheCreateInfo const & CreateInfo );
-    virtual ~AVirtualTextureCache();
+    VirtualTextureCache(VTCacheCreateInfo const& CreateInfo);
+    virtual ~VirtualTextureCache();
 
-    bool CreateTexture( const char * FileName, TRef< AVirtualTexture > * ppTexture );
-    //void DestroyTexture( TRef< AVirtualTexture > * ppTexture );
+    bool CreateTexture(const char* FileName, TRef<VirtualTexture>* ppTexture);
+    //void DestroyTexture( TRef< VirtualTexture > * ppTexture );
 
     /** Cache horizontal capacity */
-    uint32_t GetPageCacheCapacityX() const { return PageCacheCapacityX; }
+    uint32_t GetPageCacheCapacityX() const { return m_PageCacheCapacityX; }
 
     /** Cache vertical capacity */
-    uint32_t GetPageCacheCapacityY() const { return PageCacheCapacityY; }
+    uint32_t GetPageCacheCapacityY() const { return m_PageCacheCapacityY; }
 
     /** Cache total capacity */
-    uint32_t GetPageCacheCapacity() const { return PageCacheCapacity; }
+    uint32_t GetPageCacheCapacity() const { return m_PageCacheCapacity; }
 
-    Float4 const & GetPageTranslationOffsetAndScale() const { return PageTranslationOffsetAndScale; }
+    Float4 const& GetPageTranslationOffsetAndScale() const { return m_PageTranslationOffsetAndScale; }
 
     /** Page layers in texture memory */
-    TVector< TRef< RenderCore::ITexture > > & GetLayers() { return PhysCacheLayers; }
+    TVector<TRef<RenderCore::ITexture>>& GetLayers() { return m_PhysCacheLayers; }
 
     /** Called on every frame */
     void Update();
 
     void ResetCache();
 
-    struct SPageTransfer
+    struct PageTransfer
     {
         size_t Offset;
         RenderCore::SyncObject Fence;
-        AVirtualTexture * pTexture;
+        VirtualTexture* pTexture;
         uint32_t PageIndex;
-        byte * Layers[VT_MAX_LAYERS];
+        byte* Layers[VT_MAX_LAYERS];
     };
 
     /** Called by async thread to create new page transfer */
-    SPageTransfer * CreatePageTransfer();
+    PageTransfer* CreatePageTransfer();
 
     /** Called by async thread when page was streamed */
-    void MakePageTransferVisible( SPageTransfer * Transfer );
+    void MakePageTransferVisible(PageTransfer* Transfer);
 
     /** Draw cache for debugging */
-    void Draw(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, int LayerIndex);
+    void Draw(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, int LayerIndex);
 
 private:
     bool LockTransfers();
 
     void UnlockTransfers();
 
-    void TransferPageData( SPageTransfer * Transfer, int PhysPageIndex );
+    void TransferPageData(PageTransfer* Transfer, int PhysPageIndex);
 
-    void DiscardTransfers( SPageTransfer ** Transfers, int Count );
+    void DiscardTransfers(PageTransfer** Transfers, int Count);
 
     void WaitForFences();
 
     /** Physical page cache */
-    TVector< TRef< RenderCore::ITexture > > PhysCacheLayers;
-    TVector<SVirtualTextureCacheLayerInfo> LayerInfo;
+    TVector<TRef<RenderCore::ITexture>> m_PhysCacheLayers;
+    TVector<VTCacheLayerInfo> m_LayerInfo;
 
-    using AVirtualTexturePtr = AVirtualTexture *;
+    using VirtualTexturePtr = VirtualTexture*;
 
-    TPodVector< AVirtualTexturePtr > VirtualTextures;
+    TVector<VirtualTexturePtr> m_VirtualTextures;
 
     /** Physical page info */
-    struct SPhysPageInfo
+    struct PhysPageInfo
     {
         /** Time of last request */
         int64_t Time;
@@ -136,45 +136,48 @@ private:
         uint32_t PageIndex;
 
         /** Virtual texture */
-        AVirtualTexture * pTexture;
+        VirtualTexture* pTexture;
     };
 
     /** Physical pages sorted by time */
-    struct SPhysPageInfoSorted
+    struct PhysPageInfoSorted
     {
-        SPhysPageInfo * pInfo;
+        PhysPageInfo* pInfo;
     };
 
     /** Physical page infos */
-    TPodVector< SPhysPageInfo > PhysPageInfo;
+    TPodVector<PhysPageInfo> m_PhysPageInfo;
 
     /** Physical page infos sorted by time */
-    TPodVector< SPhysPageInfoSorted > PhysPageInfoSorted;
+    TPodVector<PhysPageInfoSorted> m_PhysPageInfoSorted;
 
-    uint32_t PageCacheCapacityX;
-    uint32_t PageCacheCapacityY;
-    uint32_t PageCacheCapacity;
-    uint16_t PageResolutionB;
-    size_t PageSizeInBytes;
-    size_t AlignedSize;
-    int TotalCachedPages;
+    uint32_t m_PageCacheCapacityX;
+    uint32_t m_PageCacheCapacityY;
+    uint32_t m_PageCacheCapacity;
+    uint16_t m_PageResolutionB;
+    size_t m_PageSizeInBytes;
+    size_t m_AlignedSize;
+    int m_TotalCachedPages;
 
-    Float4 PageTranslationOffsetAndScale;
+    Float4 m_PageTranslationOffsetAndScale;
 
-    int64_t LRUTime;
+    int64_t m_LRUTime;
 
-    TPodVector< SPageTransfer * > Transfers;
-    AMutex TransfersMutex;
+    TPodVector<PageTransfer*> m_Transfers;
+    Mutex m_TransfersMutex;
 
-    enum { MAX_UPLOADS_PER_FRAME = 64 };
-    TRef< RenderCore::IBuffer > TransferBuffer;
-    byte * pTransferData;
-    size_t TransferDataOffset;
-    int TransferAllocPoint;
-    AAtomicInt TransferFreePoint;
-    SPageTransfer PageTransfer[MAX_UPLOADS_PER_FRAME];
-    ASyncEvent PageTransferEvent;
+    enum
+    {
+        MAX_UPLOADS_PER_FRAME = 64
+    };
+    TRef<RenderCore::IBuffer> m_TransferBuffer;
+    byte* m_pTransferData;
+    size_t m_TransferDataOffset;
+    int m_TransferAllocPoint;
+    AtomicInt m_TransferFreePoint;
+    PageTransfer m_PageTransfer[MAX_UPLOADS_PER_FRAME];
+    SyncEvent m_PageTransferEvent;
 
     // For debugging
-    TRef< RenderCore::IPipeline > DrawCachePipeline;
+    TRef<RenderCore::IPipeline> m_DrawCachePipeline;
 };

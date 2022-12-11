@@ -32,97 +32,102 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include <Platform/Platform.h>
 
-ACircularBuffer::ACircularBuffer( size_t InBufferSize )
-    : BufferSize( InBufferSize )
+CircularBuffer::CircularBuffer(size_t InBufferSize) :
+    m_BufferSize(InBufferSize)
 {
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
 
-    bufferCI.SizeInBytes = BufferSize * SWAP_CHAIN_SIZE;
+    bufferCI.SizeInBytes = m_BufferSize * SWAP_CHAIN_SIZE;
 
     bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT);
     bufferCI.bImmutableStorage = true;
 
-    GDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
+    GDevice->CreateBuffer(bufferCI, nullptr, &m_Buffer);
 
-    Buffer->SetDebugName( "Circular buffer" );
+    m_Buffer->SetDebugName("Circular buffer");
 
-    pMappedMemory = rcmd->MapBuffer(Buffer,
+    m_pMappedMemory = rcmd->MapBuffer(m_Buffer,
                                     RenderCore::MAP_TRANSFER_WRITE,
                                     RenderCore::MAP_NO_INVALIDATE, //RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
                                     RenderCore::MAP_PERSISTENT_COHERENT,
                                     false,  // flush explicit
                                     false); // unsynchronized
 
-    if ( !pMappedMemory ) {
-        CriticalError( "ACircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes );
+    if (!m_pMappedMemory)
+    {
+        CriticalError("CircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
-    for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {
-        ChainBuffer[i].UsedMemory = 0;
-        ChainBuffer[i].Sync = 0;
+    for (int i = 0; i < SWAP_CHAIN_SIZE; i++)
+    {
+        m_ChainBuffer[i].UsedMemory = 0;
+        m_ChainBuffer[i].Sync = 0;
     }
 
-    BufferIndex = 0;
+    m_BufferIndex = 0;
 
-    ConstantBufferAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT );
+    m_ConstantBufferAlignment = GDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
 }
 
-ACircularBuffer::~ACircularBuffer()
+CircularBuffer::~CircularBuffer()
 {
-    for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {
-        Wait( ChainBuffer[i].Sync );
-        rcmd->RemoveSync( ChainBuffer[i].Sync );
+    for (int i = 0; i < SWAP_CHAIN_SIZE; i++)
+    {
+        Wait(m_ChainBuffer[i].Sync);
+        rcmd->RemoveSync(m_ChainBuffer[i].Sync);
     }
 
-    rcmd->UnmapBuffer(Buffer);
+    rcmd->UnmapBuffer(m_Buffer);
 }
 
-size_t ACircularBuffer::Allocate( size_t InSize )
+size_t CircularBuffer::Allocate(size_t InSize)
 {
-    HK_ASSERT( InSize > 0 && InSize <= BufferSize );
+    HK_ASSERT(InSize > 0 && InSize <= m_BufferSize);
 
-    SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
+    ChainBuffer* pChainBuffer = &m_ChainBuffer[m_BufferIndex];
 
-    size_t alignedOffset = Align( pChainBuffer->UsedMemory, ConstantBufferAlignment );
+    size_t alignedOffset = Align(pChainBuffer->UsedMemory, m_ConstantBufferAlignment);
 
-    if ( alignedOffset + InSize > BufferSize ) {
+    if (alignedOffset + InSize > m_BufferSize)
+    {
         pChainBuffer = Swap();
         alignedOffset = 0;
     }
 
     pChainBuffer->UsedMemory = alignedOffset + InSize;
 
-    alignedOffset += BufferIndex * BufferSize;
+    alignedOffset += m_BufferIndex * m_BufferSize;
 
     return alignedOffset;
 }
 
-ACircularBuffer::SChainBuffer * ACircularBuffer::Swap()
+CircularBuffer::ChainBuffer* CircularBuffer::Swap()
 {
-    SChainBuffer * pCurrent = &ChainBuffer[BufferIndex];
-    rcmd->RemoveSync( pCurrent->Sync );
+    ChainBuffer* pCurrent = &m_ChainBuffer[m_BufferIndex];
+    rcmd->RemoveSync(pCurrent->Sync);
 
     pCurrent->Sync = rcmd->FenceSync();
 
-    BufferIndex = (BufferIndex + 1) % SWAP_CHAIN_SIZE;
+    m_BufferIndex = (m_BufferIndex + 1) % SWAP_CHAIN_SIZE;
 
-    pCurrent = &ChainBuffer[BufferIndex];
+    pCurrent = &m_ChainBuffer[m_BufferIndex];
     pCurrent->UsedMemory = 0;
 
-    Wait( pCurrent->Sync );
+    Wait(pCurrent->Sync);
 
     //LOG( "Swap at {}\n", GFrameData->FrameNumber );
 
     return pCurrent;
 }
 
-void ACircularBuffer::Wait( RenderCore::SyncObject Sync )
+void CircularBuffer::Wait(RenderCore::SyncObject Sync)
 {
     const uint64_t timeOutNanoseconds = 1;
-    if ( Sync ) {
+    if (Sync)
+    {
         RenderCore::CLIENT_WAIT_STATUS status;
         do {
-            status = rcmd->ClientWait( Sync, timeOutNanoseconds );
-        } while ( status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED );
+            status = rcmd->ClientWait(Sync, timeOutNanoseconds);
+        } while (status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED);
     }
 }

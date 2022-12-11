@@ -33,9 +33,9 @@ SOFTWARE.
 
 #include "Engine.h"
 
-HK_CLASS_META(AEnvironmentMap)
+HK_CLASS_META(EnvironmentMap)
 
-void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
+void EnvironmentMap::InitializeFromImage(ImageStorage const& Image)
 {
     int width = Image.GetDesc().Width;
 
@@ -47,8 +47,8 @@ void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
         return;
     }
 
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
+    RenderCore::TextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::TextureResolutionCubemap(width));
     textureDesc.SetFormat(Image.GetDesc().Format);
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
@@ -65,7 +65,7 @@ void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
     TRef<RenderCore::ITexture> cubemap;
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &cubemap);
 
-    RenderCore::STextureRect rect;
+    RenderCore::TextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;
@@ -95,7 +95,7 @@ void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
     UpdateSamplers();
 }
 
-void AEnvironmentMap::Purge()
+void EnvironmentMap::Purge()
 {
     m_IrradianceMap.Reset();
     m_ReflectionMap.Reset();
@@ -103,19 +103,19 @@ void AEnvironmentMap::Purge()
     m_ReflectionMapHandle = 0;
 }
 
-void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth)
+void EnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth)
 {
     using namespace RenderCore;
 
-    GEngine->GetRenderDevice()->CreateTexture(STextureDesc()
+    GEngine->GetRenderDevice()->CreateTexture(TextureDesc()
                                                   .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
-                                                  .SetResolution(STextureResolutionCubemap(IrradianceMapWidth))
+                                                  .SetResolution(TextureResolutionCubemap(IrradianceMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
                                               &m_IrradianceMap);
 
-    GEngine->GetRenderDevice()->CreateTexture(STextureDesc()
+    GEngine->GetRenderDevice()->CreateTexture(TextureDesc()
                                                   .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
-                                                  .SetResolution(STextureResolutionCubemap(ReflectionMapWidth))
+                                                  .SetResolution(TextureResolutionCubemap(ReflectionMapWidth))
                                                   .SetMipLevels(Math::Log2((uint32_t)ReflectionMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
                                               &m_ReflectionMap);
@@ -126,9 +126,9 @@ void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWi
     UpdateSamplers();
 }
 
-void AEnvironmentMap::UpdateSamplers()
+void EnvironmentMap::UpdateSamplers()
 {
-    RenderCore::SSamplerDesc samplerCI;
+    RenderCore::SamplerDesc samplerCI;
     samplerCI.bCubemapSeamless = true;
 
     samplerCI.Filter    = RenderCore::FILTER_LINEAR;
@@ -140,7 +140,7 @@ void AEnvironmentMap::UpdateSamplers()
     m_ReflectionMap->MakeBindlessSamplerResident(m_ReflectionMapHandle, true);
 }
 
-bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
+bool EnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
@@ -194,7 +194,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AEnvironmentMap::LoadInternalResource(AStringView _Path)
+void EnvironmentMap::LoadInternalResource(StringView _Path)
 {
     //uint8_t color[4] = {10, 10, 10, 255};
     uint8_t color[4] = {0, 0, 0, 255};

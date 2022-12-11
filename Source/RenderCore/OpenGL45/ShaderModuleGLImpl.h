@@ -32,33 +32,34 @@ SOFTWARE.
 
 #include <RenderCore/ShaderModule.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
-class ADeviceGLImpl;
+class DeviceGLImpl;
 
-class AShaderModuleGLImpl final : public IShaderModule
+class ShaderModuleGLImpl final : public IShaderModule
 {
 public:
-    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SShaderBinaryData const * _BinaryData );
-    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources );
-    ~AShaderModuleGLImpl();
+    ShaderModuleGLImpl(DeviceGLImpl* _Device, ShaderBinaryData const* _BinaryData);
+    ShaderModuleGLImpl(DeviceGLImpl* _Device, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources);
+    ~ShaderModuleGLImpl();
 
-    static bool CreateShaderBinaryData( ADeviceGLImpl * _Device,
-                                        SHADER_TYPE _ShaderType,
-                                        unsigned int _NumSources,
-                                        const char * const * _Sources,
-                                        SShaderBinaryData * _BinaryData );
+    static bool CreateShaderBinaryData(DeviceGLImpl* _Device,
+                                       SHADER_TYPE _ShaderType,
+                                       unsigned int _NumSources,
+                                       const char* const* _Sources,
+                                       ShaderBinaryData* _BinaryData);
 
-    static void DestroyShaderBinaryData( ADeviceGLImpl * _Device,
-                                         SShaderBinaryData * _BinaryData );
+    static void DestroyShaderBinaryData(DeviceGLImpl* _Device,
+                                        ShaderBinaryData* _BinaryData);
 
 private:
-    static unsigned int CreateShaderProgram( SHADER_TYPE _ShaderType,
-                                             int _NumStrings,
-                                             const char * const * _Strings,
-                                             bool bBinaryRetrievable );
+    static unsigned int CreateShaderProgram(SHADER_TYPE _ShaderType,
+                                            int _NumStrings,
+                                            const char* const* _Strings,
+                                            bool bBinaryRetrievable);
 
-    unsigned int CreateShaderProgramBin( SShaderBinaryData const * _BinaryData );
+    unsigned int CreateShaderProgramBin(ShaderBinaryData const* _BinaryData);
 };
 
-}
+} // namespace RenderCore

@@ -135,7 +135,7 @@ enum COLOR_WRITE_MASK : uint8_t
     COLOR_WRITE_RGB      = COLOR_WRITE_R_BIT | COLOR_WRITE_G_BIT | COLOR_WRITE_B_BIT
 };
 
-struct SRenderTargetBlendingInfo
+struct RenderTargetBlendingInfo
 {
     struct Operation
     {
@@ -163,11 +163,11 @@ struct SRenderTargetBlendingInfo
     //     ResultAlpha    = SourceColor.a;
     // }
 
-    SRenderTargetBlendingInfo() = default;
+    RenderTargetBlendingInfo() = default;
 
     void SetBlendingPreset(BLENDING_PRESET _Preset);
 
-    bool operator==(SRenderTargetBlendingInfo const& Rhs) const
+    bool operator==(RenderTargetBlendingInfo const& Rhs) const
     {
         return (Op.ColorRGB == Rhs.Op.ColorRGB &&
                 Op.Alpha == Rhs.Op.Alpha &&
@@ -179,7 +179,7 @@ struct SRenderTargetBlendingInfo
                 ColorWriteMask == Rhs.ColorWriteMask);
     }
 
-    bool operator!=(SRenderTargetBlendingInfo const& Rhs) const
+    bool operator!=(RenderTargetBlendingInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -198,7 +198,7 @@ struct SRenderTargetBlendingInfo
     }
 };
 
-HK_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
+HK_INLINE void RenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
 {
     switch (_Preset)
     {
@@ -262,16 +262,16 @@ HK_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Pre
     }
 }
 
-struct SBlendingStateInfo
+struct BlendingStateInfo
 {
     bool                      bSampleAlphaToCoverage = false;
     bool                      bIndependentBlendEnable = false;
     LOGIC_OP                  LogicOp                 = LOGIC_OP_COPY;
-    SRenderTargetBlendingInfo RenderTargetSlots[MAX_COLOR_ATTACHMENTS];
+    RenderTargetBlendingInfo RenderTargetSlots[MAX_COLOR_ATTACHMENTS];
 
-    SBlendingStateInfo() = default;
+    BlendingStateInfo() = default;
 
-    bool operator==(SBlendingStateInfo const& Rhs) const
+    bool operator==(BlendingStateInfo const& Rhs) const
     {
         if (bSampleAlphaToCoverage != Rhs.bSampleAlphaToCoverage ||
             bIndependentBlendEnable != Rhs.bIndependentBlendEnable ||
@@ -287,7 +287,7 @@ struct SBlendingStateInfo
         return true;
     }
 
-    bool operator!=(SBlendingStateInfo const& Rhs) const
+    bool operator!=(BlendingStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -320,7 +320,7 @@ enum POLYGON_CULL : uint8_t
     POLYGON_CULL_DISABLED = 2
 };
 
-struct SRasterizerStateInfo
+struct RasterizerStateInfo
 {
     POLYGON_FILL FillMode; // POLYGON_FILL_SOLID;
     POLYGON_CULL CullMode; // POLYGON_CULL_BACK;
@@ -353,13 +353,13 @@ struct SRasterizerStateInfo
     // If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization
     bool bRasterizerDiscard;
 
-    SRasterizerStateInfo()
+    RasterizerStateInfo()
     {
         // NOTE: Call ZeroMem to clear the garbage int the paddings for the correct hashing.
         Platform::ZeroMem(this, sizeof(*this));
     }
 
-    bool operator==(SRasterizerStateInfo const& Rhs) const
+    bool operator==(RasterizerStateInfo const& Rhs) const
     {
         return (FillMode == Rhs.FillMode &&
                 CullMode == Rhs.CullMode &&
@@ -374,7 +374,7 @@ struct SRasterizerStateInfo
                 bRasterizerDiscard == Rhs.bRasterizerDiscard);
     }
 
-    bool operator!=(SRasterizerStateInfo const& Rhs) const
+    bool operator!=(RasterizerStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -402,7 +402,7 @@ enum STENCIL_OP : uint8_t
     STENCIL_OP_DECR     = 7
 };
 
-struct SStencilTestInfo
+struct StencilTestInfo
 {
     STENCIL_OP          StencilFailOp = STENCIL_OP_KEEP;
     STENCIL_OP          DepthFailOp   = STENCIL_OP_KEEP;
@@ -410,9 +410,9 @@ struct SStencilTestInfo
     COMPARISON_FUNCTION StencilFunc   = CMPFUNC_ALWAYS;
     //int              Reference = 0;
 
-    SStencilTestInfo() = default;
+    StencilTestInfo() = default;
 
-    bool operator==(SStencilTestInfo const& Rhs) const
+    bool operator==(StencilTestInfo const& Rhs) const
     {
         return (StencilFailOp == Rhs.StencilFailOp &&
                 DepthFailOp == Rhs.DepthFailOp &&
@@ -421,7 +421,7 @@ struct SStencilTestInfo
     }
 };
 
-struct SDepthStencilStateInfo
+struct DepthStencilStateInfo
 {
     bool                bDepthEnable;//     = true;
     bool                bDepthWrite;  //      = true;
@@ -429,10 +429,10 @@ struct SDepthStencilStateInfo
     bool                bStencilEnable; //   = false;
     uint8_t             StencilReadMask; //  = DEFAULT_STENCIL_READ_MASK;
     uint8_t             StencilWriteMask; // = DEFAULT_STENCIL_WRITE_MASK;
-    SStencilTestInfo    FrontFace;
-    SStencilTestInfo    BackFace;
+    StencilTestInfo    FrontFace;
+    StencilTestInfo    BackFace;
 
-    SDepthStencilStateInfo()
+    DepthStencilStateInfo()
     {
         // NOTE: Call ZeroMem to clear the garbage in the paddings for the correct hashing.
         Platform::ZeroMem(this, sizeof(*this));
@@ -452,7 +452,7 @@ struct SDepthStencilStateInfo
         BackFace.StencilFunc    = CMPFUNC_ALWAYS;
     }
 
-    bool operator==(SDepthStencilStateInfo const& Rhs) const
+    bool operator==(DepthStencilStateInfo const& Rhs) const
     {
         return (bDepthEnable == Rhs.bDepthEnable &&
                 bDepthWrite == Rhs.bDepthWrite &&
@@ -463,7 +463,7 @@ struct SDepthStencilStateInfo
                 BackFace == Rhs.BackFace);
     }
 
-    bool operator!=(SDepthStencilStateInfo const& Rhs) const
+    bool operator!=(DepthStencilStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -486,29 +486,29 @@ enum IMAGE_ACCESS_MODE : uint8_t
     IMAGE_ACCESS_RW
 };
 
-struct SImageInfo
+struct ImageInfo
 {
     IMAGE_ACCESS_MODE AccessMode = IMAGE_ACCESS_READ;
     TEXTURE_FORMAT    TextureFormat = TEXTURE_FORMAT_RGBA8_UNORM; // FIXME: get texture format from texture?
 };
 
-struct SBufferInfo
+struct BufferInfo
 {
     BUFFER_BINDING BufferBinding = BUFFER_BIND_CONSTANT;
 };
 
-struct SPipelineResourceLayout
+struct PipelineResourceLayout
 {
-    int                  NumSamplers = 0;
-    struct SSamplerDesc* Samplers = nullptr;
+    int                 NumSamplers = 0;
+    struct SamplerDesc* Samplers = nullptr;
 
-    int         NumImages = 0;
-    SImageInfo* Images = nullptr;
+    int        NumImages = 0;
+    ImageInfo* Images = nullptr;
 
-    int          NumBuffers = 0;
-    SBufferInfo* Buffers = nullptr;
+    int         NumBuffers = 0;
+    BufferInfo* Buffers = nullptr;
 
-    SPipelineResourceLayout() = default;
+    PipelineResourceLayout() = default;
 };
 
 //
@@ -632,25 +632,25 @@ enum VERTEX_INPUT_RATE : uint8_t
     INPUT_RATE_PER_INSTANCE = 1
 };
 
-struct SVertexBindingInfo
+struct VertexBindingInfo
 {
     VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX; /// per vertex / per instance
     uint8_t           InputSlot = 0;                     /// vertex buffer binding
     uint16_t          Pad       = 0;
     uint32_t          Stride    = 0;                     /// vertex stride
 
-    SVertexBindingInfo() = default;
+    VertexBindingInfo() = default;
 
-    SVertexBindingInfo(uint8_t InputSlot, uint32_t Stride, VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX) :
+    VertexBindingInfo(uint8_t InputSlot, uint32_t Stride, VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX) :
         InputRate(InputRate), InputSlot(InputSlot), Stride(Stride)
     {}
 
-    bool operator==(SVertexBindingInfo const& Rhs) const
+    bool operator==(VertexBindingInfo const& Rhs) const
     {
         return InputRate == Rhs.InputRate && InputSlot == Rhs.InputSlot && Stride == Rhs.Stride;
     }
 
-    bool operator!=(SVertexBindingInfo const& Rhs) const
+    bool operator!=(VertexBindingInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -662,7 +662,7 @@ struct SVertexBindingInfo
     }
 };
 
-struct SVertexAttribInfo
+struct VertexAttribInfo
 {
     const char* SemanticName = "Undefined";
     uint32_t    Location     = 0;
@@ -691,7 +691,7 @@ struct SVertexAttribInfo
     /// Components are normalized
     bool IsNormalized() const { return !!(Type & VertexAttribType_NormalizedBit()); }
 
-    bool operator==(SVertexAttribInfo const& Rhs) const
+    bool operator==(VertexAttribInfo const& Rhs) const
     {
         // NOTE: We intentionally do not compare SemanticName.
         return (Location == Rhs.Location &&
@@ -702,7 +702,7 @@ struct SVertexAttribInfo
                 Offset == Rhs.Offset);
     }
 
-    bool operator!=(SVertexAttribInfo const& Rhs) const
+    bool operator!=(VertexAttribInfo const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -719,7 +719,7 @@ struct SVertexAttribInfo
 //
 
 template <typename TString>
-TString ShaderStringForVertexAttribs(SVertexAttribInfo const* _VertexAttribs, int _NumVertexAttribs)
+TString ShaderStringForVertexAttribs(VertexAttribInfo const* _VertexAttribs, int _NumVertexAttribs)
 {
     // TODO: modify for compile time?
 
@@ -735,7 +735,7 @@ TString ShaderStringForVertexAttribs(SVertexAttribInfo const* _VertexAttribs, in
         {"uint", "uvec2", "uvec3", "uvec4"}    // Unsigned types
     };
 
-    for (SVertexAttribInfo const* attrib = _VertexAttribs; attrib < &_VertexAttribs[_NumVertexAttribs]; attrib++, attribIndex++)
+    for (VertexAttribInfo const* attrib = _VertexAttribs; attrib < &_VertexAttribs[_NumVertexAttribs]; attrib++, attribIndex++)
     {
         VERTEX_ATTRIB_COMPONENT typeOfComponent = attrib->TypeOfComponent();
 
@@ -810,28 +810,28 @@ enum PRIMITIVE_TOPOLOGY : uint8_t
     PRIMITIVE_PATCHES_32         = PRIMITIVE_PATCHES_1 + 31
 };
 
-struct SPipelineInputAssemblyInfo
+struct PipelineInputAssemblyInfo
 {
     PRIMITIVE_TOPOLOGY Topology = PRIMITIVE_TRIANGLES;
 };
 
-struct SPipelineDesc
+struct PipelineDesc
 {
-    SPipelineInputAssemblyInfo IA;
-    SBlendingStateInfo         BS;
-    SRasterizerStateInfo       RS;
-    SDepthStencilStateInfo     DSS;
-    SPipelineResourceLayout    ResourceLayout;
-    TRef<IShaderModule>        pVS;
-    TRef<IShaderModule>        pTCS;
-    TRef<IShaderModule>        pTES;
-    TRef<IShaderModule>        pGS;
-    TRef<IShaderModule>        pFS;
-    TRef<IShaderModule>        pCS;
-    uint32_t                   NumVertexBindings = 0;
-    SVertexBindingInfo const*  pVertexBindings = nullptr;
-    uint32_t                   NumVertexAttribs = 0;
-    SVertexAttribInfo const*   pVertexAttribs = nullptr;
+    PipelineInputAssemblyInfo IA;
+    BlendingStateInfo         BS;
+    RasterizerStateInfo       RS;
+    DepthStencilStateInfo     DSS;
+    PipelineResourceLayout    ResourceLayout;
+    TRef<IShaderModule>       pVS;
+    TRef<IShaderModule>       pTCS;
+    TRef<IShaderModule>       pTES;
+    TRef<IShaderModule>       pGS;
+    TRef<IShaderModule>       pFS;
+    TRef<IShaderModule>       pCS;
+    uint32_t                  NumVertexBindings = 0;
+    VertexBindingInfo const*  pVertexBindings = nullptr;
+    uint32_t                  NumVertexAttribs = 0;
+    VertexAttribInfo const*   pVertexAttribs = nullptr;
 };
 
 class IPipeline : public IDeviceObject

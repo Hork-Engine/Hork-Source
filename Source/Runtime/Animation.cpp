@@ -35,17 +35,17 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
-HK_CLASS_META(ASkeletalAnimation)
+HK_CLASS_META(SkeletalAnimation)
 
-ASkeletalAnimation::ASkeletalAnimation()
+SkeletalAnimation::SkeletalAnimation()
 {
 }
 
-ASkeletalAnimation::~ASkeletalAnimation()
+SkeletalAnimation::~SkeletalAnimation()
 {
 }
 
-void ASkeletalAnimation::Purge()
+void SkeletalAnimation::Purge()
 {
     Channels.Clear();
     Transforms.Clear();
@@ -60,7 +60,7 @@ void ASkeletalAnimation::Purge()
     DurationNormalizer = 1.0f;
 }
 
-void ASkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
+void SkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, Transform const* _Transforms, int _TransformsCount, AnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
 {
     HK_ASSERT(_TransformsCount == _FrameCount * _NumAnimatedJoints);
 
@@ -115,16 +115,16 @@ void ASkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, STransfo
     bIsAnimationValid = _FrameCount > 0 && !Channels.IsEmpty();
 }
 
-void ASkeletalAnimation::LoadInternalResource(AStringView _Path)
+void SkeletalAnimation::LoadInternalResource(StringView _Path)
 {
     Purge();
 }
 
-bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
+bool SkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    TPodVector<SAnimationChannel> channels;
-    TPodVector<STransform>        transforms;
-    TPodVector<BvAxisAlignedBox>  bounds;
+    TPodVector<AnimationChannel> channels;
+    TPodVector<Transform>        transforms;
+    TPodVector<BvAxisAlignedBox> bounds;
 
     uint32_t fileFormat = Stream.ReadUInt32();
 
@@ -142,7 +142,7 @@ bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AString guid = Stream.ReadString();
+    String guid = Stream.ReadString();
 
     float    frameDelta = Stream.ReadFloat();
     uint32_t frameCount = Stream.ReadUInt32();

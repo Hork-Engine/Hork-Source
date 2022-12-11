@@ -37,7 +37,7 @@ AAmbientPlayer::AAmbientPlayer()
 {
 }
 
-void AAmbientPlayer::Initialize(SActorInitializer& Initializer)
+void AAmbientPlayer::Initialize(ActorInitializer& Initializer)
 {
     Initializer.bCanEverTick = true;
 }
@@ -46,15 +46,15 @@ void AAmbientPlayer::PreInitializeComponents()
 {
     Super::PreInitializeComponents();
 
-    ALevel* level = GetLevel();
-    ALevelAudio* audio = level->Audio;
+    Level* level = GetLevel();
+    LevelAudio* audio = level->Audio;
     if (audio)
     {
         int ambientCount = audio->AmbientSounds.Size();
         AmbientSound.Resize(ambientCount);
         for (int i = 0; i < ambientCount; i++)
         {
-            AmbientSound[i] = CreateComponent<ASoundEmitter>("Ambient");
+            AmbientSound[i] = CreateComponent<SoundEmitter>("Ambient");
             AmbientSound[i]->SetEmitterType(SOUND_EMITTER_BACKGROUND);
             AmbientSound[i]->SetVirtualizeWhenSilent(true);
             AmbientSound[i]->SetVolume(0.0f);
@@ -66,9 +66,9 @@ void AAmbientPlayer::BeginPlay()
 {
     Super::BeginPlay();
 
-    ALevel* level = GetLevel();
+    Level* level = GetLevel();
 
-    ALevelAudio* audio = level->Audio;
+    LevelAudio* audio = level->Audio;
     if (audio)
     {
         int ambientCount = audio->AmbientSounds.Size();
@@ -89,13 +89,13 @@ void AAmbientPlayer::Tick(float _TimeStep)
 
 void AAmbientPlayer::UpdateAmbientVolume(float _TimeStep)
 {
-    ALevel* level = GetLevel();
-    ALevelAudio* audio = level->Audio;
+    Level* level = GetLevel();
+    LevelAudio* audio = level->Audio;
 
     if (!audio)
         return;
     
-    AVisibilityLevel* visibility = level->Visibility;
+    VisibilityLevel* visibility = level->Visibility;
 
     int leaf = visibility->FindLeaf(GEngine->GetAudioSystem()->GetListener().Position);
 
@@ -112,7 +112,7 @@ void AAmbientPlayer::UpdateAmbientVolume(float _TimeStep)
 
     int audioAreaNum = visibility->GetLeafs()[leaf].AudioArea;
 
-    SAudioArea const* audioArea = &audio->AudioAreas[audioAreaNum];
+    AudioArea const* audioArea = &audio->AudioAreas[audioAreaNum];
 
     const float scale = 0.1f;
     const float step  = _TimeStep * scale;
@@ -124,7 +124,7 @@ void AAmbientPlayer::UpdateAmbientVolume(float _TimeStep)
         if (soundIndex >= AmbientSound.Size())
             continue;
 
-        ASoundEmitter* emitter = AmbientSound[soundIndex];
+        SoundEmitter* emitter = AmbientSound[soundIndex];
 
         float vol = emitter->GetVolume();
 

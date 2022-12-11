@@ -40,17 +40,17 @@ class UITextEdit : public UIWidget
     UI_CLASS(UITextEdit, UIWidget)
 
 public:
-    TEvent<AWideStringView> E_OnEnterPress;
+    TEvent<WideStringView> E_OnEnterPress;
     TEvent<>                E_OnEscapePress;
-    TEvent<AWideStringView> E_OnTyping;
+    TEvent<WideStringView> E_OnTyping;
 
     UITextEdit();
     ~UITextEdit();
 
-    UITextEdit& WithText(AStringView text);
-    UITextEdit& WithText(AWideStringView text);
+    UITextEdit& WithText(StringView text);
+    UITextEdit& WithText(WideStringView text);
     UITextEdit& WithWordWrap(bool bWordWrap);
-    UITextEdit& WithFont(AFont* font);
+    UITextEdit& WithFont(Font* font);
     UITextEdit& WithFontSize(float size);
     UITextEdit& WithMaxChars(int maxChars);
     UITextEdit& WithFilterDecimal(bool bEnabled);
@@ -125,7 +125,7 @@ public:
 
     void ScrollToCursor();
 
-    AWideString const& GetText() const { return m_Text; }
+    WideString const& GetText() const { return m_Text; }
 
     int GetCursorPosition() const;
 
@@ -133,11 +133,11 @@ public:
 
     int GetSelectionEnd() const;
 
-    AFont* GetFont() const;
+    Font* GetFont() const;
 
     float GetFontSize() const;
 
-    bool InsertChars(int offset, AWideStringView text);
+    bool InsertChars(int offset, WideStringView text);
 
     void DeleteChars(int first, int count);
 
@@ -157,21 +157,21 @@ public:
 protected:
     virtual bool OnFilterCharacter(WideChar& ch) { return true; }
 
-    void OnKeyEvent(struct SKeyEvent const& event, double timeStamp) override;
+    void OnKeyEvent(struct KeyEvent const& event, double timeStamp) override;
 
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
 
     void OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime) override;
 
-    void OnMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp) override;
+    void OnMouseWheelEvent(struct MouseWheelEvent const& event, double timeStamp) override;
 
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
 
-    void OnCharEvent(struct SCharEvent const& event, double timeStamp) override;
+    void OnCharEvent(struct CharEvent const& event, double timeStamp) override;
 
     void OnFocusLost() override;
 
-    void Draw(ACanvas& cv) override;
+    void Draw(Canvas& cv) override;
 
     void AdjustSize(Float2 const& size) override;
 
@@ -182,8 +182,8 @@ private:
     void            UpdateRows();
     Float2          CalcCursorOffset(int cursor);
 
-    TRef<AFont>        m_Font;
-    AWideString        m_Text;
+    TRef<Font>        m_Font;
+    WideString        m_Text;
     TVector<TextRowW>  m_Rows;
     FontStyle          m_FontStyle;
     Color4             m_TextColor;

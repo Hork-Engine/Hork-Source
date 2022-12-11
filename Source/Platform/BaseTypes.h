@@ -298,12 +298,12 @@ Forbid to copy object
     _Class(_Class const&) = delete; \
     _Class& operator=(_Class const&) = delete;
 
-class ANoncopyable
+class Noncopyable
 {
-    HK_FORBID_COPY(ANoncopyable)
+    HK_FORBID_COPY(Noncopyable)
 
 public:
-    ANoncopyable() {}
+    Noncopyable() {}
 };
 
 
@@ -422,13 +422,13 @@ constexpr size_t Align(size_t N, size_t Alignment)
 constexpr void* AlignPtr(void* Ptr, size_t Alignment)
 {
 #if 0
-    struct SAligner {
+    struct Aligner {
         union {
             void * p;
             size_t i;
         };
     };
-    SAligner aligner;
+    Aligner aligner;
     aligner.p = _UnalignedPtr;
     aligner.i = Align( aligner.i, _Alignment );
     return aligner.p;

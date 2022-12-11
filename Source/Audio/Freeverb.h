@@ -35,11 +35,12 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Core/HeapBlob.h>
 
-#define freeverb_Undenormalise( sample ) if(((*(unsigned int*)&sample)&0x7f800000)==0) sample=0.0f
+#define freeverb_Undenormalise(sample) \
+    if (((*(unsigned int*)&sample) & 0x7f800000) == 0) sample = 0.0f
 
-struct SComb
+struct Freeverb_FilterComb
 {
-    float *pBuffer;
+    float* pBuffer;
     int BufSize;
     int BufIdx;
     float Feedback;
@@ -47,10 +48,10 @@ struct SComb
     float Damp1;
     float Damp2;
 
-    void SetDamp( float val )
+    void SetDamp(float val)
     {
         Damp1 = val;
-        Damp2 = 1-val;
+        Damp2 = 1 - val;
     }
 
     float GetDamp() const
@@ -58,7 +59,7 @@ struct SComb
         return Damp1;
     }
 
-    void SetFeedback( float val )
+    void SetFeedback(float val)
     {
         Feedback = val;
     }
@@ -68,31 +69,31 @@ struct SComb
         return Feedback;
     }
 
-    inline float Process( float input )
+    inline float Process(float input)
     {
         float output;
 
         output = pBuffer[BufIdx];
         freeverb_Undenormalise(output);
 
-        FilterStore = (output*Damp2) + (FilterStore*Damp1);
+        FilterStore = (output * Damp2) + (FilterStore * Damp1);
         freeverb_Undenormalise(FilterStore);
 
-        pBuffer[BufIdx] = input + (FilterStore*Feedback);
+        pBuffer[BufIdx] = input + (FilterStore * Feedback);
 
-        if(++BufIdx>=BufSize) BufIdx = 0;
+        if (++BufIdx >= BufSize) BufIdx = 0;
 
         return output;
     }
 };
 
-struct SAllPass
+struct Freeverb_FilterAllPass
 {
-    float *pBuffer;
+    float* pBuffer;
     int BufSize;
     int BufIdx;
 
-    inline float Process( float input )
+    inline float Process(float input)
     {
         float output;
         float bufout;
@@ -103,9 +104,9 @@ struct SAllPass
         freeverb_Undenormalise(bufout);
 
         output = -input + bufout;
-        pBuffer[BufIdx] = input + (bufout*feedback);
+        pBuffer[BufIdx] = input + (bufout * feedback);
 
-        if(++BufIdx>=BufSize) BufIdx = 0;
+        if (++BufIdx >= BufSize) BufIdx = 0;
 
         return output;
     }
@@ -113,49 +114,49 @@ struct SAllPass
 
 #undef freeverb_Undenormalise
 
-class AFreeverb
+class Freeverb
 {
-    HK_FORBID_COPY( AFreeverb )
+    HK_FORBID_COPY(Freeverb)
 
 public:
-    const float MutedGain    = 0;
-    const float FixedGain    = 0.015f;
-    const float ScaleWet     = 3;
-    const float ScaleDry     = 2;
-    const float ScaleDamp    = 0.4f;
-    const float ScaleRoom    = 0.28f;
-    const float OffsetRoom   = 0.7f;
-    const float InitialRoom  = 0.5f;
-    const float InitialDamp  = 0.5f;
-    const float InitialWet   = 1/ScaleWet;
-    const float InitialDry   = 0;
+    const float MutedGain = 0;
+    const float FixedGain = 0.015f;
+    const float ScaleWet = 3;
+    const float ScaleDry = 2;
+    const float ScaleDamp = 0.4f;
+    const float ScaleRoom = 0.28f;
+    const float OffsetRoom = 0.7f;
+    const float InitialRoom = 0.5f;
+    const float InitialDamp = 0.5f;
+    const float InitialWet = 1 / ScaleWet;
+    const float InitialDry = 0;
     const float InitialWidth = 1;
 
-    AFreeverb( int SampleRate );
-    virtual ~AFreeverb() = default;
+    Freeverb(int SampleRate);
+    virtual ~Freeverb() = default;
 
     void Mute();
 
-    void SetRoomSize( float InRoomSize );
+    void SetRoomSize(float InRoomSize);
     float GetRoomSize() const;
 
-    void SetDamp( float InDamp );
+    void SetDamp(float InDamp);
     float GetDamp() const;
 
-    void SetWet( float InWet );
+    void SetWet(float InWet);
     float GetWet() const;
 
-    void SetDry( float InDry );
+    void SetDry(float InDry);
     float GetDry() const;
 
-    void SetWidth( float InWidth );
+    void SetWidth(float InWidth);
     float GetWidth() const;
 
-    void SetFreeze( bool InbFreeze );
+    void SetFreeze(bool InbFreeze);
     bool IsFreeze() const;
 
-    void ProcessMix( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip );
-    void ProcessReplace( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip );
+    void ProcessMix(float* inputL, float* inputR, float* outputL, float* outputR, int frameCount, int skip);
+    void ProcessReplace(float* inputL, float* inputR, float* outputL, float* outputR, int frameCount, int skip);
 
 private:
     void Update();
@@ -170,18 +171,24 @@ private:
     float Wet2;
     float Dry;
     float Width;
-    bool  bFreeze;
+    bool bFreeze;
 
-    enum { NUM_COMBs = 8 };
-    enum { NUM_ALL_PASSES = 4 };
+    enum
+    {
+        NUM_COMBs = 8
+    };
+    enum
+    {
+        NUM_ALL_PASSES = 4
+    };
 
     // Comb filters
-    SComb CombL[NUM_COMBs];
-    SComb CombR[NUM_COMBs];
+    Freeverb_FilterComb CombL[NUM_COMBs];
+    Freeverb_FilterComb CombR[NUM_COMBs];
 
     // Allpass filters
-    SAllPass AllPassL[NUM_ALL_PASSES];
-    SAllPass AllPassR[NUM_ALL_PASSES];
+    Freeverb_FilterAllPass AllPassL[NUM_ALL_PASSES];
+    Freeverb_FilterAllPass AllPassR[NUM_ALL_PASSES];
 
     HeapBlob MemoryBlob;
 };

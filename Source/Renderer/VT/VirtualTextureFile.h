@@ -33,11 +33,11 @@ SOFTWARE.
 #include "VT.h"
 #include <RenderCore/DeviceObject.h>
 
-class AVirtualTextureFile : public ARefCounted
+class VirtualTextureFile : public RefCounted
 {
 public:
-    AVirtualTextureFile( const char * FileName );
-    ~AVirtualTextureFile();
+    VirtualTextureFile(const char* FileName);
+    ~VirtualTextureFile();
 
     /** Resolution of virtual texture in pixels */
     uint32_t GetTextureResolution() const { return TextureResolution; }
@@ -54,29 +54,30 @@ public:
     int GetNumLayers() const { return Layers.Size(); }
 
     /** Read page from file. Can be used from stream thread */
-    SFileOffset ReadPage( uint64_t PhysAddress, byte * PageData, int LayerIndex ) const;
+    SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData, int LayerIndex) const;
 
     /** Read page from file. Can be used from stream thread */
-    SFileOffset ReadPage( uint64_t PhysAddress, byte * PageData[] ) const;
+    SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData[]) const;
 
     /** Read page physical address. Can be used from stream thread */
-    SFileOffset GetPhysAddress( uint32_t PageIndex ) const;
+    SFileOffset GetPhysAddress(uint32_t PageIndex) const;
 
 protected:
-    mutable SVirtualTextureFileHandle FileHandle;
+    mutable VTFileHandle FileHandle;
     SFileOffset FileHeaderSize;
     int PageResolutionB;
-    SVirtualTexturePIT PageInfoTable;
-    SVirtualTextureAddressTable AddressTable;
+    VirtualTexturePIT PageInfoTable;
+    VirtualTextureAddressTable AddressTable;
 
-    struct SLayer {
-        int     SizeInBytes;
-        int     PageDataFormat;
+    struct Layer
+    {
+        int SizeInBytes;
+        int PageDataFormat;
         //int     NumChannels;
-        int     Offset; // Layers[i].Offset = Layers[ i - 1 ].Offset + Layers[ i - 1 ].SizeInBytes
+        int Offset; // Layers[i].Offset = Layers[ i - 1 ].Offset + Layers[ i - 1 ].SizeInBytes
     };
 
-    TPodVector< SLayer > Layers;
+    TPodVector<Layer> Layers;
     size_t PageSizeInBytes; // PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[Layers.size()-1].SizeInBytes
 
     /** Resolution of virtual texture in pixels */

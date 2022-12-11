@@ -807,7 +807,7 @@ void ImageStorage::Read(IBinaryStreamReadInterface& stream)
     stream.Read(m_Data.GetData(), sizeInBytes);
 }
 
-ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, IMAGE_IMPORT_FLAGS ImportFlags)
+ImageStorage CreateImage(RawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, IMAGE_IMPORT_FLAGS ImportFlags)
 {
     if (!rawImage)
         return {};
@@ -817,7 +817,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
     bool           bAddAlphaChannel = false;
     bool           bSwapChannels    = false;
     bool           bSwapChannelsIfCompressed = false;
-    ARawImage      tempImage;
+    RawImage      tempImage;
 
     switch (rawImage.GetFormat())
     {
@@ -1049,7 +1049,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
         }
     }
 
-    ARawImage const& sourceImage = bUseTempImage ? tempImage : rawImage;
+    RawImage const& sourceImage = bUseTempImage ? tempImage : rawImage;
 
     ImageStorageDesc desc;
     desc.Type       = TEXTURE_2D;
@@ -1242,7 +1242,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
     switch (Format)
     {
         case TEXTURE_FORMAT_UNDEFINED: {
-            ARawImage rawImage = CreateRawImage(Stream);
+            RawImage rawImage = CreateRawImage(Stream);
             if (!rawImage)
                 return {};
 
@@ -1256,7 +1256,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
         case TEXTURE_FORMAT_RG8_SINT:
         case TEXTURE_FORMAT_RG8_UNORM:
         case TEXTURE_FORMAT_RG8_SNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, GetTextureFormatInfo(Format).bHasGreen ? RAW_IMAGE_FORMAT_R8_ALPHA : RAW_IMAGE_FORMAT_R8);
+            RawImage rawImage = CreateRawImage(Stream, GetTextureFormatInfo(Format).bHasGreen ? RAW_IMAGE_FORMAT_R8_ALPHA : RAW_IMAGE_FORMAT_R8);
             if (!rawImage)
                 return {};
 
@@ -1285,7 +1285,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             return storage;
         }
         case TEXTURE_FORMAT_BGRA4_UNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGRA8);
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGRA8);
             if (!rawImage)
                 return {};
 
@@ -1314,7 +1314,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             break;
         }
         case TEXTURE_FORMAT_B5G6R5_UNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGR8);
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGR8);
             if (!rawImage)
                 return {};
 
@@ -1343,7 +1343,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             break;
         }
         case TEXTURE_FORMAT_B5G5R5A1_UNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGRA8);
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_BGRA8);
             if (!rawImage)
                 return {};
 
@@ -1378,7 +1378,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
         case TEXTURE_FORMAT_BGRA8_UNORM:
         case TEXTURE_FORMAT_SRGBA8_UNORM:
         case TEXTURE_FORMAT_SBGRA8_UNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, (Format == TEXTURE_FORMAT_BGRA8_UNORM || Format == TEXTURE_FORMAT_SBGRA8_UNORM) ? RAW_IMAGE_FORMAT_BGRA8 : RAW_IMAGE_FORMAT_RGBA8);
+            RawImage rawImage = CreateRawImage(Stream, (Format == TEXTURE_FORMAT_BGRA8_UNORM || Format == TEXTURE_FORMAT_SBGRA8_UNORM) ? RAW_IMAGE_FORMAT_BGRA8 : RAW_IMAGE_FORMAT_RGBA8);
             if (!rawImage)
                 return {};
 
@@ -1407,7 +1407,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             return storage;
         }
         case TEXTURE_FORMAT_R10G10B10A2_UNORM: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGBA32_FLOAT); // FIXME: Maybe BGRA?
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGBA32_FLOAT); // FIXME: Maybe BGRA?
             if (!rawImage)
                 return {};
 
@@ -1436,7 +1436,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             break;
         }
         case TEXTURE_FORMAT_R11G11B10_FLOAT: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT); // FIXME: Maybe BGR?
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT); // FIXME: Maybe BGR?
             if (!rawImage)
                 return {};
 
@@ -1467,7 +1467,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
         case TEXTURE_FORMAT_R16_FLOAT:
         case TEXTURE_FORMAT_RG16_FLOAT:
         case TEXTURE_FORMAT_RGBA16_FLOAT: {
-            ARawImage rawImage;
+            RawImage rawImage;
             if (Format == TEXTURE_FORMAT_R16_FLOAT)
                 rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_R32_FLOAT);
             else if (Format == TEXTURE_FORMAT_RG16_FLOAT)
@@ -1509,7 +1509,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
         case TEXTURE_FORMAT_RG32_FLOAT:
         case TEXTURE_FORMAT_RGB32_FLOAT:
         case TEXTURE_FORMAT_RGBA32_FLOAT: {
-            ARawImage rawImage;
+            RawImage rawImage;
             if (Format == TEXTURE_FORMAT_R32_FLOAT)
                 rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_R32_FLOAT);
             else if (Format == TEXTURE_FORMAT_RG32_FLOAT)
@@ -1609,7 +1609,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
                 bpp            = 4;
             }
 
-            ARawImage rawImage = CreateRawImage(Stream, rawImageFormat);
+            RawImage rawImage = CreateRawImage(Stream, rawImageFormat);
             if (!rawImage)
                 return {};
 
@@ -1750,7 +1750,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
         }
         case TEXTURE_FORMAT_BC6H_UFLOAT:
         case TEXTURE_FORMAT_BC6H_SFLOAT: {
-            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGBA32_FLOAT);
+            RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGBA32_FLOAT);
             if (!rawImage)
                 return {};
 
@@ -1851,14 +1851,14 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
     return {};
 }
 
-ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
+ImageStorage CreateImage(StringView FileName, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
-    return CreateImage(AFile::OpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
+    return CreateImage(File::OpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
 }
 
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
 {
-    ARawImage rawImage[6];
+    RawImage rawImage[6];
 
     bool bHDRI = Settings.Format == SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT || Settings.Format == SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT;
 
@@ -2126,7 +2126,7 @@ bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
     return true;
 }
 
-ARawImage ResampleRawImage(ARawImage const& Source, RawImageResampleParams const& Desc)
+RawImage ResampleRawImage(RawImage const& Source, RawImageResampleParams const& Desc)
 {
     if (!Source)
     {
@@ -2167,7 +2167,7 @@ ARawImage ResampleRawImage(ARawImage const& Source, RawImageResampleParams const
             return {};
     }
 
-    ARawImage dest(Desc.ScaledWidth, Desc.ScaledHeight, Source.GetFormat());
+    RawImage dest(Desc.ScaledWidth, Desc.ScaledHeight, Source.GetFormat());
 
     RawImageFormatInfo const& info = GetRawImageFormatInfo(Source.GetFormat());
 
@@ -2208,7 +2208,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     // clang-format off
     struct CompressInfo
     {
-        ARawImage        (*PackRoutine)(Float3 const* Normals, uint32_t Width, uint32_t Height);
+        RawImage        (*PackRoutine)(Float3 const* Normals, uint32_t Width, uint32_t Height);
         void             (*CompressionRoutine)(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
         TEXTURE_FORMAT   CompressedFormat;
         TEXTURE_FORMAT   UncompressedFormat;
@@ -2238,7 +2238,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     }
 
     // FIXME: Should we call PackRoutine for each mip level?
-    ARawImage source = compress.PackRoutine(pNormals, Width, Height);
+    RawImage source = compress.PackRoutine(pNormals, Width, Height);
 
     HK_ASSERT(compress.ValidateFormat == source.GetFormat());
     if (compress.ValidateFormat != source.GetFormat())
@@ -2299,7 +2299,7 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
 {
     const IMAGE_RESAMPLE_FILTER ResampleFilter = IMAGE_RESAMPLE_FILTER_TRIANGLE; //IMAGE_RESAMPLE_FILTER_MITCHELL; // TODO: Check what filter is better for normal maps
 
-    ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    RawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
     if (!rawImage)
         return {};
 
@@ -2329,9 +2329,9 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
     return CreateNormalMap((Float3 const*)rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight(), Pack, bUseCompression, bMipmapped, ResampleEdgeMode, ResampleFilter);
 }
 
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+ImageStorage CreateNormalMap(StringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    return CreateNormalMap(AFile::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+    return CreateNormalMap(File::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
 }
 
 ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
@@ -2401,7 +2401,7 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
     const IMAGE_RESAMPLE_FILTER NormalMapResampleFilter    = IMAGE_RESAMPLE_FILTER_TRIANGLE; // TODO: Check what filter is better for normal maps
     const IMAGE_RESAMPLE_FILTER RoughnessMapResampleFilter = IMAGE_RESAMPLE_FILTER_TRIANGLE;
 
-    ARawImage roughnessImage = CreateRawImage(Settings.RoughnessMap, RAW_IMAGE_FORMAT_R8);
+    RawImage roughnessImage = CreateRawImage(Settings.RoughnessMap, RAW_IMAGE_FORMAT_R8);
     if (!roughnessImage)
         return {};
 
@@ -2427,14 +2427,14 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
         }
     }
 
-    ARawImage normalMapSource = CreateRawImage(Settings.NormalMap, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    RawImage normalMapSource = CreateRawImage(Settings.NormalMap, RAW_IMAGE_FORMAT_RGB32_FLOAT);
     if (!normalMapSource)
         return {};
 
     if (Settings.bConvertFromDirectXNormalMap)
         normalMapSource.InvertGreen();
 
-    ARawImage normalMapImage;
+    RawImage normalMapImage;
 
     if (normalMapSource.GetWidth() != roughnessImage.GetWidth() || normalMapSource.GetHeight() != roughnessImage.GetHeight())
     {
@@ -2458,7 +2458,7 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
 
     ImageStorage roughnessMapUncompressed = CreateRoughnessMap((uint8_t const*)roughnessImage.GetData(), roughnessImage.GetWidth(), roughnessImage.GetHeight(), false, true, Settings.ResampleEdgeMode, RoughnessMapResampleFilter);
 
-    ARawImage averageNormals;
+    RawImage averageNormals;
 
     // Update roughness
     for (uint32_t level = 1; level < roughnessMapUncompressed.GetDesc().NumMipmaps; ++level)

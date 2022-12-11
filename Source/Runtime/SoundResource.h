@@ -50,31 +50,31 @@ enum SOUND_STREAM_TYPE
     SOUND_STREAM_FILE
 };
 
-struct SSoundCreateInfo
+struct SoundCreateInfo
 {
     SOUND_STREAM_TYPE StreamType = SOUND_STREAM_DISABLED;
     bool             bForce8Bit = false;
     bool             bForceMono = false;
 };
 
-class ASoundResource : public AResource
+class SoundResource : public Resource
 {
-    HK_CLASS(ASoundResource, AResource)
+    HK_CLASS(SoundResource, Resource)
 
 public:
-    ASoundResource();
-    ~ASoundResource();
+    SoundResource();
+    ~SoundResource();
 
     /** Initialize from memory */
-    static ASoundResource* CreateFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& CreateInfo = {})
+    static SoundResource* CreateFromMemory(StringView Path, BlobRef Memory, SoundCreateInfo const& CreateInfo = {})
     {
-        ASoundResource* sound = NewObj<ASoundResource>();
+        SoundResource* sound = NewObj<SoundResource>();
         sound->InitializeFromMemory(Path, Memory, CreateInfo);
         return sound;
     }
 
     /** Create streaming instance */
-    bool CreateStreamInstance(TRef<SAudioStream>* ppInterface);
+    bool CreateStreamInstance(TRef<AudioStream>* ppInterface);
 
     /** Purge audio data */
     void Purge();
@@ -109,34 +109,34 @@ public:
     SOUND_STREAM_TYPE GetStreamType() const;
 
     /** File name */
-    AString const& GetFileName() const { return m_FileName; }
+    String const& GetFileName() const { return m_FileName; }
 
     /** Audio buffer. Null for streamed audio */
-    SAudioBuffer* GetAudioBuffer() { return m_pBuffer.GetObject(); }
+    AudioBuffer* GetAudioBuffer() { return m_pBuffer.GetObject(); }
 
     /** File data for streaming */
-    SFileInMemory* GetFileInMemory() { return m_pFileInMemory.GetObject(); }
+    FileInMemory* GetFileInMemory() { return m_pFileInMemory.GetObject(); }
 
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return m_Revision; }
 
 protected:
-    bool InitializeFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& pCreateInfo = {});
+    bool InitializeFromMemory(StringView Path, BlobRef Memory, SoundCreateInfo const& pCreateInfo = {});
 
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    TRef<SAudioBuffer>  m_pBuffer;
-    TRef<SFileInMemory> m_pFileInMemory;
-    SOUND_STREAM_TYPE   m_CurStreamType = SOUND_STREAM_DISABLED;
-    SAudioFileInfo      m_AudioFileInfo;
-    float               m_DurationInSeconds = 0.0f;
-    int                 m_Revision;
-    AString             m_FileName;
+    TRef<AudioBuffer>  m_pBuffer;
+    TRef<FileInMemory> m_pFileInMemory;
+    SOUND_STREAM_TYPE  m_CurStreamType = SOUND_STREAM_DISABLED;
+    AudioFileInfo      m_AudioFileInfo;
+    float              m_DurationInSeconds = 0.0f;
+    int                m_Revision;
+    String             m_FileName;
 };

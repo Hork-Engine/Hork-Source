@@ -33,25 +33,25 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ADebugDrawRenderer::ADebugDrawRenderer()
+DebugDrawRenderer::DebugDrawRenderer()
 {
     //
     // Create pipeline
     //
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    RasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
     //rsd.FillMode = POLYGON_FILL_WIRE;
 
-    SBlendingStateInfo & bsd = pipelineCI.BS;
+    BlendingStateInfo & bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
 
-    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
+    DepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.DepthFunc = CMPFUNC_GREATER;
 
-    SVertexAttribInfo vertexAttribs[2] = {
+    VertexAttribInfo vertexAttribs[2] = {
         {
             "InPosition",
             0,              // location
@@ -59,7 +59,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            HK_OFS( SDebugVertex, Position )
+            HK_OFS( DebugVertex, Position )
         },
         {
             "InColor",
@@ -68,18 +68,18 @@ ADebugDrawRenderer::ADebugDrawRenderer()
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            HK_OFS( SDebugVertex, Color )
+            HK_OFS( DebugVertex, Color )
         }
     };
 
-    AShaderFactory::CreateVertexShader( "debugdraw.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader( "debugdraw.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
 
-    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
+    PipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
 
-    SVertexBindingInfo vertexBinding = {};
+    VertexBindingInfo vertexBinding = {};
     vertexBinding.InputSlot = 0;
-    vertexBinding.Stride = sizeof( SDebugVertex );
+    vertexBinding.Stride = sizeof( DebugVertex );
     vertexBinding.InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = 1;
@@ -88,7 +88,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    SBufferInfo bufferInfo;
+    BufferInfo bufferInfo;
     bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT; // view constants
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
@@ -137,21 +137,21 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     }
 }
 
-void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget, FGTextureProxy * DepthTexture )
+void DebugDrawRenderer::AddPass( FrameGraph & FrameGraph, FGTextureProxy * RenderTarget, FGTextureProxy * DepthTexture )
 {
     if (GRenderView->DebugDrawCommandCount == 0)
     {
         return;
     }
 
-    ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Debug Draw Pass" );
+    RenderPass & renderPass = FrameGraph.AddTask< RenderPass >( "Debug Draw Pass" );
 
     renderPass.SetRenderArea(GRenderViewArea);
 
     renderPass.SetColorAttachments(
     {
         {
-            STextureAttachment(RenderTarget)
+            TextureAttachment(RenderTarget)
             .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
         }
     }
@@ -159,23 +159,23 @@ void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * Ren
 
     renderPass.SetDepthStencilAttachment(
         {
-            STextureAttachment(DepthTexture)
+            TextureAttachment(DepthTexture)
             .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
         }
     );
 
     renderPass.AddSubpass( { 0 }, // color attachment refs
-                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
     {
         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-        SDrawIndexedCmd drawCmd;
+        DrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
 
         for ( int i = 0 ; i < GRenderView->DebugDrawCommandCount ; i++ ) {
-            SDebugDrawCmd const * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
+            DebugDrawCmd const * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
 
             immediateCtx->BindPipeline(Pipelines[cmd->Type]);
             immediateCtx->BindVertexBuffer(0, GStreamBuffer, GFrameData->DbgVertexStreamOffset);

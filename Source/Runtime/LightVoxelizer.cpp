@@ -37,9 +37,9 @@ SOFTWARE.
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-AConsoleVar com_ClusterSSE("com_ClusterSSE"s, "1"s, CVAR_CHEAT);
-AConsoleVar com_ReverseNegativeZ("com_ReverseNegativeZ"s, "1"s, CVAR_CHEAT);
-AConsoleVar com_FreezeFrustumClusters("com_FreezeFrustumClusters"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_ClusterSSE("com_ClusterSSE"s, "1"s, CVAR_CHEAT);
+ConsoleVar com_ReverseNegativeZ("com_ReverseNegativeZ"s, "1"s, CVAR_CHEAT);
+ConsoleVar com_FreezeFrustumClusters("com_FreezeFrustumClusters"s, "0"s, CVAR_CHEAT);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -98,7 +98,7 @@ HK_FORCEINLINE Float4x4SSE operator*(Float4x4SSE const& m1, Float4x4SSE const& m
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ALightVoxelizer::TransformItemsSSE()
+void LightVoxelizer::TransformItemsSSE()
 {
     Float4x4SSE ViewProjSSE;
     Float4x4SSE ViewProjInvSSE;
@@ -126,7 +126,7 @@ void ALightVoxelizer::TransformItemsSSE()
 
     for (int itemNum = 0; itemNum < ItemsCount; itemNum++)
     {
-        SItemInfo& info = ItemInfos[itemNum];
+        ItemInfo& info = ItemInfos[itemNum];
 
         // OBB to clipspace
 
@@ -270,14 +270,14 @@ void ALightVoxelizer::TransformItemsSSE()
     }
 }
 
-void ALightVoxelizer::TransformItemsGeneric()
+void LightVoxelizer::TransformItemsGeneric()
 {
     BvAxisAlignedBox bb;
     Float4           BoxPoints[8];
 
     for (int itemNum = 0; itemNum < ItemsCount; itemNum++)
     {
-        SItemInfo& info = ItemInfos[itemNum];
+        ItemInfo& info = ItemInfos[itemNum];
 
 #if 0
         constexpr Float3 Mins( -1.0f );
@@ -384,19 +384,19 @@ void ALightVoxelizer::TransformItemsGeneric()
     }
 }
 
-void ALightVoxelizer::Reset()
+void LightVoxelizer::Reset()
 {
     ItemsCount = 0;
     bUseSSE    = com_ClusterSSE;
 }
 
-struct SWork
+struct VoxelizerWork
 {
-    int              SliceIndex;
-    ALightVoxelizer* Self;
+    int             SliceIndex;
+    LightVoxelizer* Self;
 };
 
-void ALightVoxelizer::Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* RV)
+void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData* RV)
 {
     ViewProj    = RV->ClusterViewProjection;
     ViewProjInv = RV->ClusterViewProjectionInversed;
@@ -404,10 +404,10 @@ void ALightVoxelizer::Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
     int maxItems                         = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS * 3;
     int alignment                        = GEngine->GetRenderBackend()->ClusterPackedIndicesAlignment();
-    RV->ClusterPackedIndicesStreamHandle = StreamedMemory->AllocateWithCustomAlignment(maxItems * sizeof(SClusterPackedIndex),
+    RV->ClusterPackedIndicesStreamHandle = StreamedMemory->AllocateWithCustomAlignment(maxItems * sizeof(ClusterPackedIndex),
                                                                                        alignment,
                                                                                        nullptr);
-    RV->ClusterPackedIndices             = (SClusterPackedIndex*)StreamedMemory->Map(RV->ClusterPackedIndicesStreamHandle);
+    RV->ClusterPackedIndices             = (ClusterPackedIndex*)StreamedMemory->Map(RV->ClusterPackedIndicesStreamHandle);
 
     pClusterHeaderData    = RV->ClusterLookup;
     pClusterPackedIndices = RV->ClusterPackedIndices;
@@ -426,16 +426,16 @@ void ALightVoxelizer::Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* 
 
     ItemCounter.StoreRelaxed(0);
 
-    SWork works[MAX_FRUSTUM_CLUSTERS_Z];
+    VoxelizerWork works[MAX_FRUSTUM_CLUSTERS_Z];
 
     for (int i = 0; i < MAX_FRUSTUM_CLUSTERS_Z; i++)
     {
         works[i].SliceIndex = i;
         works[i].Self       = this;
-        GEngine->RenderFrontendJobList->AddJob(VoxelizeWork, &works[i]);
+        GEngine->pRenderFrontendJobList->AddJob(VoxelizeWork, &works[i]);
     }
 
-    GEngine->RenderFrontendJobList->SubmitAndWait();
+    GEngine->pRenderFrontendJobList->SubmitAndWait();
 
     RV->ClusterPackedIndexCount = ItemCounter.Load();
 
@@ -447,17 +447,17 @@ void ALightVoxelizer::Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* 
     }
 
     // Shrink ClusterItems
-    StreamedMemory->ShrinkLastAllocatedMemoryBlock(RV->ClusterPackedIndexCount * sizeof(SClusterPackedIndex));
+    StreamedMemory->ShrinkLastAllocatedMemoryBlock(RV->ClusterPackedIndexCount * sizeof(ClusterPackedIndex));
 }
 
-void ALightVoxelizer::VoxelizeWork(void* _Data)
+void LightVoxelizer::VoxelizeWork(void* _Data)
 {
-    SWork* work = static_cast<SWork*>(_Data);
+    VoxelizerWork* work = static_cast<VoxelizerWork*>(_Data);
 
     work->Self->VoxelizeWork(work->SliceIndex);
 }
 
-void ALightVoxelizer::VoxelizeWork(int SliceIndex)
+void LightVoxelizer::VoxelizeWork(int SliceIndex)
 {
     alignas(16) Float3 ClusterMins;
     alignas(16) Float3 ClusterMaxs;
@@ -465,7 +465,7 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
     ClusterMins.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex + 1];
     ClusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex];
 
-    SFrustumCluster* pCluster;
+    FrustumCluster* pCluster;
     unsigned short*  pClusterItem;
 
     if (bUseSSE)
@@ -489,7 +489,7 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
 
         for (int ItemIndex = 0; ItemIndex < ItemsCount; ItemIndex++)
         {
-            SItemInfo& Info = ItemInfos[ItemIndex];
+            ItemInfo& Info = ItemInfos[ItemIndex];
 
             if (SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice)
             {
@@ -608,7 +608,7 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
 
         for (int ItemIndex = 0; ItemIndex < ItemsCount; ItemIndex++)
         {
-            SItemInfo& Info = ItemInfos[ItemIndex];
+            ItemInfo& Info = ItemInfos[ItemIndex];
 
             if (SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice)
             {
@@ -711,9 +711,9 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
     //    int i = 0;
     int NumClusterItems;
 
-    SClusterHeader*      pClusterHeader = pClusterHeaderData + SliceIndex * (MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y);
-    SClusterPackedIndex* pItem;
-    SItemInfo*           pItemInfo;
+    ClusterHeader*      pClusterHeader = pClusterHeaderData + SliceIndex * (MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y);
+    ClusterPackedIndex* pItem;
+    ItemInfo*           pItemInfo;
 
     pCluster     = &ClusterData[SliceIndex][0][0];
     pClusterItem = &Items[SliceIndex][0][0][0];
@@ -735,7 +735,7 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
 
             pItem = &pClusterPackedIndices[pClusterHeader->FirstPackedIndex];
 
-            Platform::ZeroMem(pItem, NumClusterItems * sizeof(SClusterPackedIndex));
+            Platform::ZeroMem(pItem, NumClusterItems * sizeof(ClusterPackedIndex));
 
             for (int t = 0; t < pClusterHeader->NumLights; t++)
             {
@@ -774,7 +774,7 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
     }
 }
 
-void ALightVoxelizer::GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
+void LightVoxelizer::GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
 {
     Float3  clusterMins;
     Float3  clusterMaxs;
@@ -827,11 +827,11 @@ void ALightVoxelizer::GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 
     }
 }
 
-void ALightVoxelizer::DrawVoxels(ADebugRenderer* InRenderer)
+void LightVoxelizer::DrawVoxels(DebugRenderer* InRenderer)
 {
     if (!com_FreezeFrustumClusters)
     {
-        SRenderView const* view = InRenderer->GetRenderView();
+        RenderViewData const* view = InRenderer->GetRenderView();
 
         const Float4x4 viewProjInv = (view->ClusterProjectionMatrix * view->ViewMatrix).Inversed();
         // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()

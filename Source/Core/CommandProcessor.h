@@ -32,34 +32,34 @@ SOFTWARE.
 
 #include <Core/String.h>
 
-class ACommandProcessor;
+class CommandProcessor;
 
 /** Command execution context */
 class ICommandContext
 {
 public:
-    virtual void ExecuteCommand(ACommandProcessor const& _Proc) = 0;
+    virtual void ExecuteCommand(CommandProcessor const& _Proc) = 0;
 };
 
 /** Command buffer parser */
-class ACommandProcessor final
+class CommandProcessor final
 {
-    HK_FORBID_COPY(ACommandProcessor)
+    HK_FORBID_COPY(CommandProcessor)
 
 public:
     static constexpr int MAX_ARGS    = 256;
     static constexpr int MAX_ARG_LEN = 256;
 
-    ACommandProcessor();
+    CommandProcessor();
 
     /** Clear command buffer */
     void ClearBuffer();
 
     /** Add text to the end of command buffer */
-    void Add(AStringView _Text);
+    void Add(StringView _Text);
 
     /** Insert text to current command buffer offset */
-    void Insert(AStringView _Text);
+    void Insert(StringView _Text);
 
     /** Execute with command context */
     void Execute(ICommandContext& _Ctx);
@@ -74,7 +74,7 @@ public:
     static bool IsValidCommandName(const char* _Name);
 
 private:
-    AString Cmdbuf;
+    String Cmdbuf;
     int     CmdbufPos;
     char    Args[MAX_ARGS][MAX_ARG_LEN];
     int     ArgsCount;

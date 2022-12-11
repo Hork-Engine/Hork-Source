@@ -41,7 +41,7 @@ public:
 protected:
     AAmbientPlayer();
 
-    void Initialize(SActorInitializer& Initializer) override;
+    void Initialize(ActorInitializer& Initializer) override;
     void PreInitializeComponents() override;
     void BeginPlay() override;
     void Tick(float _TimeStep) override;
@@ -49,5 +49,5 @@ protected:
 private:
     void UpdateAmbientVolume(float _TimeStep);
 
-    TPodVector<ASoundEmitter*> AmbientSound;
+    TPodVector<SoundEmitter*> AmbientSound;
 };

@@ -35,9 +35,9 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 
-class ADebugRenderer;
+class DebugRenderer;
 
-struct STerrainLodInfo
+struct TerrainLodInfo
 {
     /** Grid offset in global grid space */
     Int2 Offset;
@@ -68,15 +68,15 @@ enum
     MAX_TERRAIN_LODS = 10
 };
 
-class ATerrainView : public ARefCounted
+class TerrainView : public RefCounted
 {
 public:
-    ATerrainView(int TextureSize);
-    virtual ~ATerrainView();
+    TerrainView(int TextureSize);
+    virtual ~TerrainView();
 
-    void SetTerrain(ATerrain* Mesh);
+    void SetTerrain(Terrain* Mesh);
 
-    void Update(class AStreamedMemoryGPU* StreamedMemory, class ATerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
+    void Update(class StreamedMemoryGPU* StreamedMemory, class TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
 
     int GetTextureSize() const
     {
@@ -113,37 +113,37 @@ public:
         return ViewHeight;
     }
 
-    void DrawDebug(ADebugRenderer* InRenderer, ATerrainMesh* TerrainMesh);
+    void DrawDebug(DebugRenderer* InRenderer, TerrainMesh* TerrainMesh);
 
 private:
-    void MakeView(ATerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
-    void AddPatches(ATerrainMesh* TerrainMesh, BvFrustum const& ViewFrustum);
-    void AddBlock(STerrainLodInfo const& Lod, Int2 const& Offset);
-    void AddGapV(STerrainLodInfo const& Lod, Int2 const& Offset);
-    void AddGapH(STerrainLodInfo const& Lod, Int2 const& Offset);
-    void AddInteriorTopLeft(STerrainLodInfo const& Lod);
-    void AddInteriorTopRight(STerrainLodInfo const& Lod);
-    void AddInteriorBottomLeft(STerrainLodInfo const& Lod);
-    void AddInteriorBottomRight(STerrainLodInfo const& Lod);
-    void AddCrackLines(STerrainLodInfo const& Lod);
-    bool CullBlock(BvFrustum const& ViewFrustum, STerrainLodInfo const& Lod, Int2 const& Offset);
-    bool CullGapV(BvFrustum const& ViewFrustum, STerrainLodInfo const& Lod, Int2 const& Offset);
-    bool CullGapH(BvFrustum const& ViewFrustum, STerrainLodInfo const& Lod, Int2 const& Offset);
-    bool CullInteriorTrim(BvFrustum const& ViewFrustum, STerrainLodInfo const& Lod);
+    void MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
+    void AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrustum);
+    void AddBlock(TerrainLodInfo const& Lod, Int2 const& Offset);
+    void AddGapV(TerrainLodInfo const& Lod, Int2 const& Offset);
+    void AddGapH(TerrainLodInfo const& Lod, Int2 const& Offset);
+    void AddInteriorTopLeft(TerrainLodInfo const& Lod);
+    void AddInteriorTopRight(TerrainLodInfo const& Lod);
+    void AddInteriorBottomLeft(TerrainLodInfo const& Lod);
+    void AddInteriorBottomRight(TerrainLodInfo const& Lod);
+    void AddCrackLines(TerrainLodInfo const& Lod);
+    bool CullBlock(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset);
+    bool CullGapV(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset);
+    bool CullGapH(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset);
+    bool CullInteriorTrim(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod);
 
     void UpdateTextures();
-    void UpdateRect(STerrainLodInfo const& Lod, STerrainLodInfo const& CoarserLod, int MinX, int MaxX, int MinY, int MaxY);
+    void UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& CoarserLod, int MinX, int MaxX, int MinY, int MaxY);
 
-    STerrainPatchInstance& AddInstance()
+    TerrainPatchInstance& AddInstance()
     {
         return InstanceBuffer.Add();
     }
 
-    void AddPatchInstances(STerrainPatch const& Patch, int InstanceCount)
+    void AddPatchInstances(TerrainPatch const& Patch, int InstanceCount)
     {
         if (InstanceCount > 0)
         {
-            RenderCore::SDrawIndexedIndirectCmd& blocks = IndirectBuffer.Add();
+            RenderCore::DrawIndexedIndirectCmd& blocks = IndirectBuffer.Add();
             blocks.IndexCountPerInstance                = Patch.IndexCount;
             blocks.InstanceCount                        = InstanceCount;
             blocks.StartIndexLocation                   = Patch.StartIndex;
@@ -169,10 +169,10 @@ private:
     const int LodGridSize;
     const int HalfGridSize;
 
-    TRef<ATerrain> Terrain;
+    TRef<Terrain> m_Terrain;
 
     /** Current lod state */
-    STerrainLodInfo LodInfo[MAX_TERRAIN_LODS];
+    TerrainLodInfo LodInfo[MAX_TERRAIN_LODS];
 
     /** Min viewable lod */
     int MinViewLod;
@@ -181,8 +181,8 @@ private:
     /** Height above the terrain */
     float ViewHeight;
 
-    TPodVector<STerrainPatchInstance>               InstanceBuffer;
-    TPodVector<RenderCore::SDrawIndexedIndirectCmd> IndirectBuffer;
+    TPodVector<TerrainPatchInstance>               InstanceBuffer;
+    TPodVector<RenderCore::DrawIndexedIndirectCmd> IndirectBuffer;
 
     TRef<RenderCore::ITexture> ClipmapArray;
     TRef<RenderCore::ITexture> NormalMapArray;
@@ -193,10 +193,10 @@ private:
     int StartInstanceLocation;
 
     // Debug draw
-    void                         DrawIndexedTriStrip(STerrainVertex const* Vertices, unsigned short const* Indices, int IndexCount);
-    void                         DrawTerrainTriangle(STerrainVertex const& a, STerrainVertex const& b, STerrainVertex const& c);
-    Float3                       VertexShader(STerrainVertex const& v);
-    ADebugRenderer*              TerrainRenderer;
-    STerrainPatchInstance const* pDrawCallUniformData;
+    void                         DrawIndexedTriStrip(TerrainVertex const* Vertices, unsigned short const* Indices, int IndexCount);
+    void                         DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex const& b, TerrainVertex const& c);
+    Float3                       VertexShader(TerrainVertex const& v);
+    DebugRenderer*              TerrainRenderer;
+    TerrainPatchInstance const* pDrawCallUniformData;
     TPodVector<BvAxisAlignedBox> BoundingBoxes;
 };

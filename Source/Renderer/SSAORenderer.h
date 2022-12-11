@@ -32,23 +32,23 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-class ASSAORenderer
+class SSAORenderer
 {
 public:
-    ASSAORenderer();
+    SSAORenderer();
 
-    void AddPasses(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddPasses(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
 
 private:
-    void AddDeinterleaveDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddDeinterleaveDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddCacheAwareAOPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* DeinterleaveDepthArray, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppDeinterleaveDepthArray);
+    void AddCacheAwareAOPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* DeinterleaveDepthArray, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppDeinterleaveDepthArray);
 
-    void AddReinterleavePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTextureArray, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddReinterleavePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTextureArray, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddSimpleAOPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddSimpleAOPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddAOBlurPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTexture, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppBluredSSAO);
+    void AddAOBlurPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTexture, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppBluredSSAO);
 
     enum
     {

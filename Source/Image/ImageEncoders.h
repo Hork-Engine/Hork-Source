@@ -556,22 +556,22 @@ using Decoder_RGBA16F = Decoder_HalfFloat<4, true>;
 
 
 // Assume normals already normalized
-ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 // Assume normals already normalized
-ARawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 // Assume normals already normalized
-ARawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 // Assume normals already normalized
-ARawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 // Assume normals already normalized
-ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 // Assume normals already normalized
-ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+RawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
 
 Float3 UnpackNormalRGBA_BC1_Compatible(void const* pData, uint32_t Index);
 

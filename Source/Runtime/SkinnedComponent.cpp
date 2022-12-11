@@ -47,78 +47,78 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
-AConsoleVar com_DrawSkeleton("com_DrawSkeleton"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawSkeleton("com_DrawSkeleton"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(ASkinnedComponent)
+HK_CLASS_META(SkinnedComponent)
 
-ASkinnedComponent::ASkinnedComponent()
+SkinnedComponent::SkinnedComponent()
 {
-    DrawableType = DRAWABLE_SKINNED_MESH;
+    m_DrawableType = DRAWABLE_SKINNED_MESH;
 
-    bUpdateBounds             = false;
-    bUpdateControllers        = true;
-    bUpdateRelativeTransforms = false;
-    bUpdateAbsoluteTransforms = false;
-    bJointsSimulatedByPhysics = false;
-    bSkinnedMesh              = true;
+    m_bUpdateBounds = false;
+    m_bUpdateControllers = true;
+    m_bUpdateRelativeTransforms = false;
+    m_bUpdateAbsoluteTransforms = false;
+    m_bJointsSimulatedByPhysics = false;
+    m_bSkinnedMesh = true;
 
     // Raycasting of skinned meshes is not supported yet
-    Primitive->RaycastCallback        = nullptr;
-    Primitive->RaycastClosestCallback = nullptr;
+    m_Primitive->RaycastCallback = nullptr;
+    m_Primitive->RaycastClosestCallback = nullptr;
 
-    static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
-    Skeleton = SkeletonResource.GetObject();
+    static TStaticResourceFinder<Skeleton> SkeletonResource("/Default/Skeleton/Default"s);
+    m_Skeleton = SkeletonResource.GetObject();
 }
 
-ASkinnedComponent::~ASkinnedComponent()
+SkinnedComponent::~SkinnedComponent()
 {
     RemoveAnimationControllers();
 }
 
-void ASkinnedComponent::InitializeComponent()
+void SkinnedComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
     GetWorld()->SkinningSystem.SkinnedMeshes.Add(this);
 }
 
-void ASkinnedComponent::DeinitializeComponent()
+void SkinnedComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
     GetWorld()->SkinningSystem.SkinnedMeshes.Remove(this);
 }
 
-void ASkinnedComponent::OnMeshChanged()
+void SkinnedComponent::OnMeshChanged()
 {
     Super::OnMeshChanged();
 
-    ASkeleton* newSkeleton = GetMesh()->GetSkeleton();
+    Skeleton* newSkeleton = GetMesh()->GetSkeleton();
 
-    if (Skeleton == newSkeleton)
+    if (m_Skeleton == newSkeleton)
     {
         return;
     }
 
-    Skeleton = newSkeleton;
+    m_Skeleton = newSkeleton;
 
-    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
     int numJoints = joints.Size();
 
-    AbsoluteTransforms.ResizeInvalidate(numJoints + 1); // + 1 for root's parent
-    AbsoluteTransforms[0].SetIdentity();
+    m_AbsoluteTransforms.ResizeInvalidate(numJoints + 1); // + 1 for root's parent
+    m_AbsoluteTransforms[0].SetIdentity();
 
-    RelativeTransforms.ResizeInvalidate(numJoints);
+    m_RelativeTransforms.ResizeInvalidate(numJoints);
     for (int i = 0; i < numJoints; i++)
     {
-        RelativeTransforms[i] = joints[i].LocalTransform;
+        m_RelativeTransforms[i] = joints[i].LocalTransform;
     }
 
-    bUpdateControllers = true;
+    m_bUpdateControllers = true;
 }
 
-void ASkinnedComponent::AddAnimationController(AAnimationController* _Controller)
+void SkinnedComponent::AddAnimationController(AnimationController* _Controller)
 {
     if (!_Controller)
     {
@@ -128,17 +128,17 @@ void ASkinnedComponent::AddAnimationController(AAnimationController* _Controller
     {
         if (_Controller->Owner != this)
         {
-            LOG("ASkinnedComponent::AddAnimationController: animation controller already added to other component\n");
+            LOG("SkinnedComponent::AddAnimationController: animation controller already added to other component\n");
         }
         return;
     }
     _Controller->Owner = this;
     _Controller->AddRef();
-    AnimControllers.Add(_Controller);
-    bUpdateControllers = true;
+    m_AnimControllers.Add(_Controller);
+    m_bUpdateControllers = true;
 }
 
-void ASkinnedComponent::RemoveAnimationController(AAnimationController* _Controller)
+void SkinnedComponent::RemoveAnimationController(AnimationController* _Controller)
 {
     if (!_Controller)
     {
@@ -148,44 +148,44 @@ void ASkinnedComponent::RemoveAnimationController(AAnimationController* _Control
     {
         return;
     }
-    for (int i = 0; i < AnimControllers.Size(); i++)
+    for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
-        if (AnimControllers[i]->Id == _Controller->Id)
+        if (m_AnimControllers[i]->Id == _Controller->Id)
         {
             _Controller->Owner = nullptr;
             _Controller->RemoveRef();
-            AnimControllers.Remove(i);
-            bUpdateControllers = true;
+            m_AnimControllers.Remove(i);
+            m_bUpdateControllers = true;
             return;
         }
     }
 }
 
-void ASkinnedComponent::RemoveAnimationControllers()
+void SkinnedComponent::RemoveAnimationControllers()
 {
-    for (AAnimationController* controller : AnimControllers)
+    for (AnimationController* controller : m_AnimControllers)
     {
         controller->Owner = nullptr;
         controller->RemoveRef();
     }
-    AnimControllers.Clear();
-    bUpdateControllers = true;
+    m_AnimControllers.Clear();
+    m_bUpdateControllers = true;
 }
 
-void ASkinnedComponent::SetTimeBroadcast(float _Time)
+void SkinnedComponent::SetTimeBroadcast(float _Time)
 {
-    for (int i = 0; i < AnimControllers.Size(); i++)
+    for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
-        AAnimationController* controller = AnimControllers[i];
+        AnimationController* controller = m_AnimControllers[i];
         controller->SetTime(_Time);
     }
 }
 
-void ASkinnedComponent::AddTimeDeltaBroadcast(float _TimeDelta)
+void SkinnedComponent::AddTimeDeltaBroadcast(float _TimeDelta)
 {
-    for (int i = 0; i < AnimControllers.Size(); i++)
+    for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
-        AAnimationController* controller = AnimControllers[i];
+        AnimationController* controller = m_AnimControllers[i];
         controller->AddTimeDelta(_TimeDelta);
     }
 }
@@ -195,22 +195,22 @@ HK_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
     return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }
 
-void ASkinnedComponent::MergeJointAnimations()
+void SkinnedComponent::MergeJointAnimations()
 {
-    if (bJointsSimulatedByPhysics)
+    if (m_bJointsSimulatedByPhysics)
     {
         // TODO:
-        if (SoftBody && bUpdateAbsoluteTransforms)
+        if (SoftBody && m_bUpdateAbsoluteTransforms)
         {
 
             //LOG("Update abs matrices\n");
-            TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+            TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
             for (int j = 0; j < joints.Size(); j++)
             {
                 // TODO: joint rotation from normal?
-                AbsoluteTransforms[j + 1].Compose(btVectorToFloat3(SoftBody->m_nodes[j].m_x), Float3x3::Identity());
+                m_AbsoluteTransforms[j + 1].Compose(btVectorToFloat3(SoftBody->m_nodes[j].m_x), Float3x3::Identity());
             }
-            bUpdateAbsoluteTransforms = false;
+            m_bUpdateAbsoluteTransforms = false;
             //bWriteTransforms = true;
         }
     }
@@ -222,9 +222,9 @@ void ASkinnedComponent::MergeJointAnimations()
     }
 }
 
-void ASkinnedComponent::UpdateTransformsIfDirty()
+void SkinnedComponent::UpdateTransformsIfDirty()
 {
-    if (!bUpdateRelativeTransforms)
+    if (!m_bUpdateRelativeTransforms)
     {
         return;
     }
@@ -232,30 +232,29 @@ void ASkinnedComponent::UpdateTransformsIfDirty()
     UpdateTransforms();
 }
 
-void ASkinnedComponent::UpdateTransforms()
+void SkinnedComponent::UpdateTransforms()
 {
-    SJoint const* joints      = Skeleton->GetJoints().ToPtr();
-    int           jointsCount = Skeleton->GetJoints().Size();
+    SkeletonJoint const* joints = m_Skeleton->GetJoints().ToPtr();
+    int jointsCount = m_Skeleton->GetJoints().Size();
 
-    TPodVector<STransform> tempTransforms;
+    TPodVector<Transform> tempTransforms;
     TPodVector<float>      weights;
 
-    tempTransforms.Resize(AnimControllers.Size());
-    weights.Resize(AnimControllers.Size());
+    tempTransforms.Resize(m_AnimControllers.Size());
+    weights.Resize(m_AnimControllers.Size());
 
-    Platform::ZeroMem(RelativeTransforms.ToPtr(), sizeof(RelativeTransforms[0]) * jointsCount);
+    Platform::ZeroMem(m_RelativeTransforms.ToPtr(), sizeof(m_RelativeTransforms[0]) * jointsCount);
 
     for (int jointIndex = 0; jointIndex < jointsCount; jointIndex++)
     {
-
         float sumWeight = 0;
 
         int n = 0;
 
-        for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+        for (int controllerId = 0, count = m_AnimControllers.Size(); controllerId < count; controllerId++)
         {
-            AAnimationController* controller = AnimControllers[controllerId];
-            ASkeletalAnimation*   animation  = controller->Animation;
+            AnimationController* controller = m_AnimControllers[controllerId];
+            SkeletalAnimation*   animation  = controller->Animation;
 
             if (!controller->bEnabled || !animation || !animation->IsValid())
             {
@@ -271,13 +270,13 @@ void ASkinnedComponent::UpdateTransforms()
                 continue;
             }
 
-            TPodVector<SAnimationChannel> const& animJoints = animation->GetChannels();
+            TPodVector<AnimationChannel> const& animJoints = animation->GetChannels();
 
-            SAnimationChannel const& jointAnim = animJoints[channelIndex];
+            AnimationChannel const& jointAnim = animJoints[channelIndex];
 
-            TPodVector<STransform> const& transforms = animation->GetTransforms();
+            TPodVector<Transform> const& transforms = animation->GetTransforms();
 
-            STransform& transform = tempTransforms[n];
+            Transform& transform = tempTransforms[n];
             weights[n]            = controller->Weight;
             n++;
 
@@ -287,8 +286,8 @@ void ASkinnedComponent::UpdateTransforms()
             }
             else
             {
-                STransform const& frame1 = transforms[jointAnim.TransformOffset + controller->Frame];
-                STransform const& frame2 = transforms[jointAnim.TransformOffset + controller->NextFrame];
+                Transform const& frame1 = transforms[jointAnim.TransformOffset + controller->Frame];
+                Transform const& frame2 = transforms[jointAnim.TransformOffset + controller->NextFrame];
 
                 transform.Position = Math::Lerp(frame1.Position, frame2.Position, controller->Blend);
                 transform.Rotation = Math::Slerp(frame1.Rotation, frame2.Rotation, controller->Blend);
@@ -298,7 +297,7 @@ void ASkinnedComponent::UpdateTransforms()
             sumWeight += controller->Weight;
         }
 
-        Float3x4& resultTransform = RelativeTransforms[jointIndex];
+        Float3x4& resultTransform = m_RelativeTransforms[jointIndex];
 
         if (n > 0)
         {
@@ -323,37 +322,37 @@ void ASkinnedComponent::UpdateTransforms()
         }
     }
 
-    bUpdateRelativeTransforms = false;
-    bUpdateAbsoluteTransforms = true;
+    m_bUpdateRelativeTransforms = false;
+    m_bUpdateAbsoluteTransforms = true;
 }
 
-void ASkinnedComponent::UpdateAbsoluteTransformsIfDirty()
+void SkinnedComponent::UpdateAbsoluteTransformsIfDirty()
 {
-    if (!bUpdateAbsoluteTransforms)
+    if (!m_bUpdateAbsoluteTransforms)
     {
         return;
     }
 
-    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
     for (int j = 0; j < joints.Size(); j++)
     {
-        SJoint const& joint = joints[j];
+        SkeletonJoint const& joint = joints[j];
 
         // ... Update relative joints physics here ...
 
-        AbsoluteTransforms[j + 1] = AbsoluteTransforms[joint.Parent + 1] * RelativeTransforms[j];
+        m_AbsoluteTransforms[j + 1] = m_AbsoluteTransforms[joint.Parent + 1] * m_RelativeTransforms[j];
 
         // ... Update absolute joints physics here ...
     }
 
-    bUpdateAbsoluteTransforms = false;
-    //bWriteTransforms = true;
+    m_bUpdateAbsoluteTransforms = false;
+    //m_bWriteTransforms = true;
 }
 
-void ASkinnedComponent::UpdateControllersIfDirty()
+void SkinnedComponent::UpdateControllersIfDirty()
 {
-    if (!bUpdateControllers)
+    if (!m_bUpdateControllers)
     {
         return;
     }
@@ -361,17 +360,17 @@ void ASkinnedComponent::UpdateControllersIfDirty()
     UpdateControllers();
 }
 
-void ASkinnedComponent::UpdateControllers()
+void SkinnedComponent::UpdateControllers()
 {
     float controllerTimeLine;
     int   keyFrame;
     float lerp;
     int   take;
 
-    for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+    for (int controllerId = 0, count = m_AnimControllers.Size(); controllerId < count; controllerId++)
     {
-        AAnimationController* controller = AnimControllers[controllerId];
-        ASkeletalAnimation*   anim       = controller->Animation;
+        AnimationController* controller = m_AnimControllers[controllerId];
+        SkeletalAnimation*   anim       = controller->Animation;
 
         if (!anim)
         {
@@ -380,7 +379,6 @@ void ASkinnedComponent::UpdateControllers()
 
         if (anim->GetFrameCount() > 1)
         {
-
             switch (controller->PlayMode)
             {
                 case ANIMATION_PLAY_CLAMP:
@@ -388,14 +386,12 @@ void ASkinnedComponent::UpdateControllers()
                     // clamp and normalize 0..1
                     if (controller->TimeLine <= 0.0f)
                     {
-
                         controller->Blend     = 0;
                         controller->Frame     = 0;
                         controller->NextFrame = 0;
                     }
                     else if (controller->TimeLine >= anim->GetDurationInSeconds())
                     {
-
                         controller->Blend = 0;
                         controller->Frame = controller->NextFrame = anim->GetFrameCount() - 1;
                     }
@@ -492,40 +488,40 @@ void ASkinnedComponent::UpdateControllers()
         }
     }
 
-    bUpdateControllers        = false;
-    bUpdateBounds             = true;
-    bUpdateRelativeTransforms = true;
+    m_bUpdateControllers = false;
+    m_bUpdateBounds = true;
+    m_bUpdateRelativeTransforms = true;
 }
 
-void ASkinnedComponent::UpdateBounds()
+void SkinnedComponent::UpdateBounds()
 {
     UpdateControllersIfDirty();
 
-    if (!bUpdateBounds)
+    if (!m_bUpdateBounds)
     {
         return;
     }
 
-    bUpdateBounds = false;
+    m_bUpdateBounds = false;
 
-    if (AnimControllers.IsEmpty())
+    if (m_AnimControllers.IsEmpty())
     {
-        Bounds = Skeleton->GetBindposeBounds();
+        m_Bounds = m_Skeleton->GetBindposeBounds();
     }
     else
     {
-        Bounds.Clear();
-        for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+        m_Bounds.Clear();
+        for (int controllerId = 0, count = m_AnimControllers.Size(); controllerId < count; controllerId++)
         {
-            AAnimationController const* controller = AnimControllers[controllerId];
-            ASkeletalAnimation*         animation  = controller->Animation;
+            AnimationController const* controller = m_AnimControllers[controllerId];
+            SkeletalAnimation*         animation  = controller->Animation;
 
             if (!controller->bEnabled || !animation || animation->GetFrameCount() == 0)
             {
                 continue;
             }
 
-            Bounds.AddAABB(animation->GetBoundingBoxes()[controller->Frame]);
+            m_Bounds.AddAABB(animation->GetBoundingBoxes()[controller->Frame]);
         }
     }
 
@@ -533,58 +529,58 @@ void ASkinnedComponent::UpdateBounds()
     UpdateWorldBounds();
 }
 
-void ASkinnedComponent::GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _SkeletonOffsetMB, size_t& _SkeletonSize)
+void SkinnedComponent::GetSkeletonHandle(size_t& skeletonOffset, size_t& skeletonOffsetMB, size_t& skeletonSize)
 {
-    _SkeletonOffset   = SkeletonOffset;
-    _SkeletonOffsetMB = SkeletonOffsetMB;
-    _SkeletonSize     = SkeletonSize;
+    skeletonOffset = m_SkeletonOffset;
+    skeletonOffsetMB = m_SkeletonOffsetMB;
+    skeletonSize = m_SkeletonSize;
 }
 
-void ASkinnedComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)
+void SkinnedComponent::OnPreRenderUpdate(RenderFrontendDef const* _Def)
 {
     Super::OnPreRenderUpdate(_Def);
 
     MergeJointAnimations();
 
-    ASkin const&              skin   = GetMesh()->GetSkin();
-    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+    MeshSkin const& skin = GetMesh()->GetSkin();
+    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
-    SkeletonSize = joints.Size() * sizeof(Float3x4);
-    if (SkeletonSize > 0)
+    m_SkeletonSize = joints.Size() * sizeof(Float3x4);
+    if (m_SkeletonSize > 0)
     {
-        AStreamedMemoryGPU* streamedMemory = _Def->StreamedMemory;
+        StreamedMemoryGPU* streamedMemory = _Def->StreamedMemory;
 
         // Write joints from previous frame
-        SkeletonOffsetMB = streamedMemory->AllocateJoint(SkeletonSize, JointsBufferData);
+        m_SkeletonOffsetMB = streamedMemory->AllocateJoint(m_SkeletonSize, m_JointsBufferData);
 
         // Write joints from current frame
-        SkeletonOffset = streamedMemory->AllocateJoint(SkeletonSize, nullptr);
-        Float3x4* data = (Float3x4*)streamedMemory->Map(SkeletonOffset);
+        m_SkeletonOffset = streamedMemory->AllocateJoint(m_SkeletonSize, nullptr);
+        Float3x4* data = (Float3x4*)streamedMemory->Map(m_SkeletonOffset);
         for (int j = 0; j < skin.JointIndices.Size(); j++)
         {
             int jointIndex = skin.JointIndices[j];
-            data[j] = JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
+            data[j] = m_JointsBufferData[j] = m_AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
         }
     }
     else
     {
-        SkeletonOffset = SkeletonOffsetMB = 0;
+        m_SkeletonOffset = m_SkeletonOffsetMB = 0;
     }
 }
 
-Float3x4 const& ASkinnedComponent::GetJointTransform(int _JointIndex)
+Float3x4 const& SkinnedComponent::GetJointTransform(int _JointIndex)
 {
-    if (_JointIndex < 0 || _JointIndex >= Skeleton->GetJoints().Size())
+    if (_JointIndex < 0 || _JointIndex >= m_Skeleton->GetJoints().Size())
     {
         return Float3x4::Identity();
     }
 
     MergeJointAnimations();
 
-    return AbsoluteTransforms[_JointIndex + 1];
+    return m_AbsoluteTransforms[_JointIndex + 1];
 }
 
-void ASkinnedComponent::DrawDebug(ADebugRenderer* InRenderer)
+void SkinnedComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
@@ -593,11 +589,11 @@ void ASkinnedComponent::DrawDebug(ADebugRenderer* InRenderer)
     {
         InRenderer->SetColor(Color4(1, 0, 0, 1));
         InRenderer->SetDepthTest(false);
-        TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+        TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
         for (int i = 0; i < joints.Size(); i++)
         {
-            SJoint const& joint = joints[i];
+            SkeletonJoint const& joint = joints[i];
 
             Float3x4 t  = GetWorldTransformMatrix() * GetJointTransform(i);
             Float3   v1 = t.DecomposeTranslation();

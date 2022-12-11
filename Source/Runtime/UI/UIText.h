@@ -38,23 +38,23 @@ class UIText : public UIObject
 
 public:
     // NOTE If you change the text in place, you must call ApplyTextChanges() after making the change.
-    AString Text;
+    String Text;
 
     UIText() = default;
 
-    UIText(AStringView text, AFont* font = nullptr, float fontSize = 14) :
+    UIText(StringView text, Font* font = nullptr, float fontSize = 14) :
         Text(text),
         m_Font(font),
         m_FontSize(fontSize)
     {}
 
-    UIText& WithText(AStringView text)
+    UIText& WithText(StringView text)
     {
         Text = text;
         return *this;
     }
 
-    UIText& WithFont(AFont* font)
+    UIText& WithFont(Font* font)
     {
         m_Font = font;
         ApplyTextChanges();
@@ -134,10 +134,10 @@ public:
 
     Float2 GetTextBoxSize(float breakRowWidth) const;
 
-    void Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs);
+    void Draw(Canvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs);
 
 private:
-    TRef<AFont>          m_Font;
+    TRef<Font>          m_Font;
     float                m_FontSize     = 14;
     float                m_FontBlur     = 0;
     float                m_LetterSpacing = 0;

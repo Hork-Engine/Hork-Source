@@ -31,45 +31,45 @@ SOFTWARE.
 #include "GameSession.h"
 #include "ResourceManager.h"
 
-AGameSession::AGameSession()
+GameSession::GameSession()
 {
 
 }
 
-AGameSession::~AGameSession()
+GameSession::~GameSession()
 {
 
 }
 
-void AGameSession::Start()
+void GameSession::Start()
 {
     m_PrecacheResources.Clear();
 }
 
-void AGameSession::Stop()
+void GameSession::Stop()
 {
     m_PrecacheResources.Clear();
     m_Resources.Clear();
 }
 
-void AGameSession::PrecacheResource(AClassMeta const& classMeta, AStringView path)
+void GameSession::PrecacheResource(ClassMeta const& classMeta, StringView path)
 {
     m_PrecacheResources[path] = &classMeta;
 }
 
-void AGameSession::LoadResources()
+void GameSession::LoadResources()
 {
-    AResourceManager* resourceManager = GEngine->GetResourceManager();
+    ResourceManager* resourceManager = GEngine->GetResourceManager();
 
     for (auto& it : m_PrecacheResources)
     {
-        TRef<AResource> resource;
+        TRef<Resource> resource;
         resource = resourceManager->GetOrCreateResource(*it.second, it.first);
         m_Resources.Add(resource);
     }
 }
 
-void AGameSession::UnloadResources()
+void GameSession::UnloadResources()
 {
     m_Resources.Clear();
 }

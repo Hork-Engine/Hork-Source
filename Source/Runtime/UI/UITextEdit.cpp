@@ -137,7 +137,7 @@ static void stb_textedit_find_charpos(StbFindState* find, UITextEdit* str, int n
     WideChar const* text = str->GetText().CBegin();
     int length = str->GetText().Size();
 
-    AFont* font = str->GetFont();
+    Font* font = str->GetFont();
 
     FontStyle fontStyle;
     fontStyle.FontSize = str->GetFontSize();
@@ -191,7 +191,7 @@ int UITextEdit::LocateCoord(float x, float y)
     if (m_Text.IsEmpty())
         return 0;
 
-    AFont* font = GetFont();
+    Font* font = GetFont();
 
     TextMetrics metrics;
     font->GetTextMetrics(m_FontStyle, metrics);
@@ -234,7 +234,7 @@ int UITextEdit::LocateCoord(float x, float y)
 
 #define STB_TEXTEDIT_DELETECHARS(obj, first, count) (obj)->DeleteChars(first, count)
 
-#define STB_TEXTEDIT_INSERTCHARS(obj, offset, text, textLength) (obj)->InsertChars(offset, AWideStringView(text, textLength))
+#define STB_TEXTEDIT_INSERTCHARS(obj, offset, text, textLength) (obj)->InsertChars(offset, WideStringView(text, textLength))
 
 HK_FORCEINLINE bool IsSeparator(WideChar c)
 {
@@ -331,7 +331,7 @@ Float2 UITextEdit::CalcCursorOffset(int cursor)
     {
         TextRowW const* row = &m_Rows[rowNum];
 
-        AFont* font = GetFont();
+        Font* font = GetFont();
 
         float lineWidth = 0.0f;
 
@@ -385,7 +385,7 @@ UITextEdit::~UITextEdit()
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_State);
 }
 
-UITextEdit& UITextEdit::WithFont(AFont* font)
+UITextEdit& UITextEdit::WithFont(Font* font)
 {
     m_Font = font;
 
@@ -539,9 +539,9 @@ UITextEdit& UITextEdit::ShouldKeepSelection(bool bShouldKeepSelection)
     return *this;
 }
 
-AFont* UITextEdit::GetFont() const
+Font* UITextEdit::GetFont() const
 {
-    return m_Font ? m_Font : ACanvas::GetDefaultFont();
+    return m_Font ? m_Font : Canvas::GetDefaultFont();
 }
 
 float UITextEdit::GetFontSize() const
@@ -564,7 +564,7 @@ int UITextEdit::GetSelectionEnd() const
     return Math::Max(m_State->select_start, m_State->select_end);
 }
 
-bool UITextEdit::InsertChars(int offset, AWideStringView text)
+bool UITextEdit::InsertChars(int offset, WideStringView text)
 {
     if (offset < 0 || offset > m_Text.Size())
     {
@@ -808,7 +808,7 @@ void UITextEdit::ScrollToCursor()
         return;
     }
 
-    AFont const* font = GetFont();
+    Font const* font = GetFont();
 
     Float2 scrollMins = scroll->m_Geometry.PaddedMins;
     Float2 scrollMaxs = scroll->m_Geometry.PaddedMaxs;
@@ -892,7 +892,7 @@ bool UITextEdit::Copy()
     WideChar* const start    = m_Text.ToPtr() + startOfs;
     WideChar* const end      = m_Text.ToPtr() + endOfs;
 
-    Platform::SetClipboard(Core::GetString(AWideStringView(start, end)).CStr());
+    Platform::SetClipboard(Core::GetString(WideStringView(start, end)).CStr());
 
     return true;
 }
@@ -909,7 +909,7 @@ bool UITextEdit::Paste()
 
     int len = Core::UTF8StrLength(s);
 
-    AWideString wideStr;
+    WideString wideStr;
     wideStr.Resize(len, STRING_RESIZE_NO_FILL_SPACES);
 
     WideChar ch;
@@ -937,13 +937,13 @@ bool UITextEdit::Paste()
     return true;
 }
 
-UITextEdit& UITextEdit::WithText(AStringView text)
+UITextEdit& UITextEdit::WithText(StringView text)
 {
     int len = Core::UTF8StrLength(text.Begin(), text.End());
 
     const char* textcur = text.Begin();
 
-    AWideString wideStr;
+    WideString wideStr;
     wideStr.Resize(len, STRING_RESIZE_NO_FILL_SPACES);
 
     WideChar ch;
@@ -967,7 +967,7 @@ UITextEdit& UITextEdit::WithText(AStringView text)
     return WithText(wideStr);
 }
 
-UITextEdit& UITextEdit::WithText(AWideStringView text)
+UITextEdit& UITextEdit::WithText(WideStringView text)
 {
     SelectAll();
 
@@ -984,7 +984,7 @@ UITextEdit& UITextEdit::WithWordWrap(bool bWordWrap)
     return *this;
 }
 
-void UITextEdit::OnKeyEvent(SKeyEvent const& event, double timeStamp)
+void UITextEdit::OnKeyEvent(KeyEvent const& event, double timeStamp)
 {
     if (event.Action != IA_RELEASE)
     {
@@ -1287,7 +1287,7 @@ void UITextEdit::OnKeyEvent(SKeyEvent const& event, double timeStamp)
     }
 }
 
-void UITextEdit::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (event.Button != MOUSE_BUTTON_1 && event.Button != MOUSE_BUTTON_2)
     {
@@ -1347,7 +1347,7 @@ void UITextEdit::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t
     }
 }
 
-void UITextEdit::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void UITextEdit::OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
     if (m_bSingleLine)
     {
@@ -1365,7 +1365,7 @@ void UITextEdit::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeSta
     }
 }
 
-void UITextEdit::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UITextEdit::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     if (m_bStartDragging)
     {
@@ -1377,7 +1377,7 @@ void UITextEdit::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp
     }
 }
 
-void UITextEdit::OnCharEvent(SCharEvent const& event, double timeStamp)
+void UITextEdit::OnCharEvent(CharEvent const& event, double timeStamp)
 {
     if (m_bReadOnly)
     {
@@ -1424,11 +1424,11 @@ void UITextEdit::AdjustSize(Float2 const& size)
         m_AdjustedSize.Y = Math::Max(Size.Y, m_CurSize.Y);
 }
 
-void UITextEdit::Draw(ACanvas& cv)
+void UITextEdit::Draw(Canvas& cv)
 {
     m_State->insert_mode = GUIManager->IsInsertMode();
 
-    AFont* font = GetFont();
+    Font* font = GetFont();
 
     cv.FontFace(m_Font);
 
@@ -1561,7 +1561,7 @@ void UITextEdit::Draw(ACanvas& cv)
 // OPTIMIZ: Recalc only modified rows
 void UITextEdit::UpdateRows()
 {
-    AFont* font = GetFont();
+    Font* font = GetFont();
 
     const bool bKeepSpaces = true;
 
@@ -1571,7 +1571,7 @@ void UITextEdit::UpdateRows()
 
     const float breakRowWidth = m_bWithWordWrap ? Size.X : Math::MaxValue<float>();
 
-    AWideStringView str = m_Text;
+    WideStringView str = m_Text;
 
     m_Rows.Clear();
 
@@ -1587,7 +1587,7 @@ void UITextEdit::UpdateRows()
 
             m_Rows.Add(*row);
         }
-        str = AWideStringView(rows[nrows - 1].Next, str.End());
+        str = WideStringView(rows[nrows - 1].Next, str.End());
     }
 
     if (m_Text.IsEmpty() || (!m_bSingleLine && m_Text[m_Text.Size() - 1] == '\n'))

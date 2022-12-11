@@ -44,7 +44,7 @@ enum FG_RENDER_TASK_PROXY_TYPE : uint8_t
     FG_RENDER_TASK_PROXY_TYPE_CUSTOM
 };
 
-class AFrameGraph;
+class FrameGraph;
 
 class FGRenderTaskBase : public AFrameResource
 {
@@ -52,7 +52,7 @@ public:
     template <typename T>
     using TFrameVector = TVector<T, Allocators::FrameMemoryAllocator>;
 
-    explicit FGRenderTaskBase(AFrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
+    explicit FGRenderTaskBase(FrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
         pFrameGraph(pFrameGraph), Name(Name), ResourceRefs(0), bCulled(false), ProxyType(ProxyType)
     {
         ProducedResources.Reserve(8);
@@ -103,9 +103,9 @@ public:
     }
 
 protected:
-    friend class AFrameGraph;
+    friend class FrameGraph;
 
-    AFrameGraph*                                  pFrameGraph;
+    FrameGraph*                                   pFrameGraph;
     const char*                                   Name;
     TFrameVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
     TFrameVector<FGResourceProxyBase*>            ReadResources;
@@ -116,13 +116,13 @@ protected:
     FG_RENDER_TASK_PROXY_TYPE                     ProxyType;
 };
 
-std::size_t FG_GenerateResourceId(AFrameGraph* pFrameGraph);
+std::size_t FG_GenerateResourceId(FrameGraph* pFrameGraph);
 
 template <typename TRenderTaskClass>
 class FGRenderTask : public FGRenderTaskBase
 {
 public:
-    explicit FGRenderTask(AFrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
+    explicit FGRenderTask(FrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
         FGRenderTaskBase(pFrameGraph, Name, ProxyType)
     {
     }

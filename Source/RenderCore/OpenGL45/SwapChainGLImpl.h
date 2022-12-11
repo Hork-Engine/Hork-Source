@@ -36,13 +36,13 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
-class AGenericWindowGLImpl;
+class DeviceGLImpl;
+class GenericWindowGLImpl;
 
-class ASwapChainGLImpl final : public ISwapChain
+class SwapChainGLImpl final : public ISwapChain
 {
 public:
-    ASwapChainGLImpl(ADeviceGLImpl* pDevice, AGenericWindowGLImpl* pWindow);
+    SwapChainGLImpl(DeviceGLImpl* pDevice, GenericWindowGLImpl* pWindow);
 
     void Present(int SwapInterval = 1) override;
 
@@ -52,9 +52,9 @@ public:
     ITexture* GetDepthBuffer() override;
 
 private:
-    TRef<AGenericWindowGLImpl> pWindow;
-    TRef<ATextureGLImpl> BackBuffer;
-    TRef<ATextureGLImpl> DepthBuffer;
+    TRef<GenericWindowGLImpl> pWindow;
+    TRef<TextureGLImpl> BackBuffer;
+    TRef<TextureGLImpl> DepthBuffer;
 };
 
 } // namespace RenderCore

@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Core/ConsoleVar.h>
 #include <Runtime/EmbeddedResources.h>
 
-AConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"s, "0"s);
+ConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"s, "0"s);
 
 using namespace RenderCore;
 
@@ -41,19 +41,19 @@ using namespace RenderCore;
 
 // Modified version of stb_include.h v0.02 originally written by Sean Barrett and Michal Klos
 
-struct SIncludeInfo
+struct IncludeInfo
 {
     int           Offset;
     int           End;
     const char*   FileName;
     int           Length;
     int           NextLineAfter;
-    SIncludeInfo* pNext;
+    IncludeInfo* pNext;
 };
 
-static void AddInclude(SIncludeInfo*& list, SIncludeInfo*& prev, int offset, int end, const char* filename, int len, int next_line)
+static void AddInclude(IncludeInfo*& list, IncludeInfo*& prev, int offset, int end, const char* filename, int len, int next_line)
 {
-    SIncludeInfo* z  = (SIncludeInfo*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SIncludeInfo));
+    IncludeInfo* z  = (IncludeInfo*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(IncludeInfo));
     z->Offset        = offset;
     z->End           = end;
     z->FileName      = filename;
@@ -71,10 +71,10 @@ static void AddInclude(SIncludeInfo*& list, SIncludeInfo*& prev, int offset, int
     }
 }
 
-static void FreeIncludes(SIncludeInfo* list)
+static void FreeIncludes(IncludeInfo* list)
 {
-    SIncludeInfo* next;
-    for (SIncludeInfo* includeInfo = list; includeInfo; includeInfo = next)
+    IncludeInfo* next;
+    for (IncludeInfo* includeInfo = list; includeInfo; includeInfo = next)
     {
         next = includeInfo->pNext;
         Platform::GetHeapAllocator<HEAP_MISC>().Free(includeInfo);
@@ -87,12 +87,12 @@ static HK_FORCEINLINE int IsSpace(int ch)
 }
 
 // find location of all #include
-static SIncludeInfo* FindIncludes(AStringView text)
+static IncludeInfo* FindIncludes(StringView text)
 {
     int           line_count = 1;
     const char *  s          = text.Begin(), *start;
     const char*   e          = text.End();
-    SIncludeInfo *list = nullptr, *prev = nullptr;
+    IncludeInfo *list = nullptr, *prev = nullptr;
     while (s < e)
     {
         // parse is always at start of line when we reach here
@@ -184,11 +184,11 @@ start:
     }
 }
 
-AString AShaderLoader::LoadShader(AStringView FileName, TArrayView<SMaterialSource> Predefined)
+String ShaderLoader::LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
-    AString result;
+    String result;
 #ifdef CSTYLE_LINE_DIRECTIVE
     result += "#line 1 \"";
     result += FileName;
@@ -205,11 +205,11 @@ AString AShaderLoader::LoadShader(AStringView FileName, TArrayView<SMaterialSour
     return result;
 }
 
-AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Source, TArrayView<SMaterialSource> Predefined)
+String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
-    AString result;
+    String result;
 #ifdef CSTYLE_LINE_DIRECTIVE
     result += "#line 1 \"";
     result += FileName;
@@ -218,7 +218,7 @@ AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView So
     result += "#line 1\n";
 #endif
 
-    AString source = Source;
+    String source = Source;
 
     CleanComments(source.ToPtr());
 
@@ -230,22 +230,22 @@ AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView So
     return result;
 }
 
-bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
+bool ShaderLoader::LoadFile(StringView FileName, String& Source)
 {
-    AFile f;
+    File f;
     if (r_EmbeddedShaders)
     {
-        f = AFile::OpenRead("Shaders/" + FileName, Runtime::GetEmbeddedResources());
+        f = File::OpenRead("Shaders/" + FileName, Runtime::GetEmbeddedResources());
     }
     else
     {
         // Load shaders from sources
-        AString fn = PathUtils::GetFilePath(__FILE__);
+        String fn = PathUtils::GetFilePath(__FILE__);
         fn += "/../Embedded/Shaders/";
         fn += FileName;
         PathUtils::FixPathInplace(fn);
 
-        f = AFile::OpenRead(fn);
+        f = File::OpenRead(fn);
     }
     if (!f)
         return false;
@@ -253,30 +253,30 @@ bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
     return true;
 }
 
-bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Source, AString& Out)
+bool ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, String& Out)
 {
     char          temp[4096];
-    SIncludeInfo* includeList  = FindIncludes(Source);
+    IncludeInfo* includeList  = FindIncludes(Source);
     size_t        sourceOffset = 0;
 
-    for (SIncludeInfo* includeInfo = includeList; includeInfo; includeInfo = includeInfo->pNext)
+    for (IncludeInfo* includeInfo = includeList; includeInfo; includeInfo = includeInfo->pNext)
     {
-        Out += AStringView(&Source[sourceOffset], includeInfo->Offset - sourceOffset);
+        Out += StringView(&Source[sourceOffset], includeInfo->Offset - sourceOffset);
 
         if (!m_Predefined.IsEmpty() && includeInfo->FileName[0] == '$')
         {
             // predefined source
 #ifdef CSTYLE_LINE_DIRECTIVE
             Out += "#line 1 \"";
-            Out += AStringView(includeInfo->FileName, includeInfo->Length);
+            Out += StringView(includeInfo->FileName, includeInfo->Length);
             Out += "\"\n";
 #else
             Out += "#line 1\n";
 #endif
-            AStringView includeFn = AStringView(includeInfo->FileName, includeInfo->Length);
+            StringView includeFn = StringView(includeInfo->FileName, includeInfo->Length);
 
-            SMaterialSource const* src = nullptr;
-            for (SMaterialSource const& s : m_Predefined)
+            MaterialSource const* src = nullptr;
+            for (MaterialSource const& s : m_Predefined)
             {
                 if (!s.SourceName.Icmp(includeFn))
                 {
@@ -295,7 +295,7 @@ bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Sourc
         {
 #ifdef CSTYLE_LINE_DIRECTIVE
             Out += "#line 1 \"";
-            Out += AStringView(includeInfo->FileName, includeInfo->Length);
+            Out += StringView(includeInfo->FileName, includeInfo->Length);
             Out += "\"\n";
 #else
             Out += "#line 1\n";
@@ -320,15 +320,15 @@ bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Sourc
     }
 
     if (!Source.IsEmpty())
-        Out += AStringView(&Source[sourceOffset], Source.Length() - sourceOffset);
+        Out += StringView(&Source[sourceOffset], Source.Length() - sourceOffset);
     FreeIncludes(includeList);
 
     return true;
 }
 
-bool AShaderLoader::LoadShaderWithInclude(AStringView FileName, AString& Out)
+bool ShaderLoader::LoadShaderWithInclude(StringView FileName, String& Out)
 {
-    AString source;
+    String source;
 
     if (!LoadFile(FileName, source))
     {

@@ -43,22 +43,22 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ConsoleVar.h>
 
-void ALevel::OnAddLevelToWorld()
+void Level::OnAddLevelToWorld()
 {
 }
 
-void ALevel::OnRemoveLevelFromWorld()
+void Level::OnRemoveLevelFromWorld()
 {
     DestroyActors();
 }
 
-void ALevel::DestroyActors()
+void Level::DestroyActors()
 {
     while (!m_Actors.IsEmpty())
         m_Actors.Last()->Destroy();
 }
 
-Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
+Float3 Level::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
 {
     if (!Lighting)
     {
@@ -68,10 +68,10 @@ Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord)
     return Lighting->SampleLight(InLightmapBlock, InLighmapTexcoord);
 }
 
-void ALevel::DrawDebug(ADebugRenderer* InRenderer)
+void Level::DrawDebug(DebugRenderer* InRenderer)
 {
 
-    //AConvexHull * hull = AConvexHull::CreateForPlane( PlaneF(Float3(0,0,1), Float3(0.0f) ), 100.0f );
+    //ConvexHull * hull = ConvexHull::CreateForPlane( PlaneF(Float3(0,0,1), Float3(0.0f) ), 100.0f );
 
     //InRenderer->SetDepthTest( false );
     //InRenderer->SetColor( Color4( 0, 1, 1, 0.5f ) );
@@ -90,7 +90,7 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
     for ( BvAxisAlignedBox & box : clusters ) {
         box.Clear();
     }
-    for ( SBinarySpaceLeaf const & leaf : Leafs ) {
+    for ( BinarySpaceLeaf const & leaf : Leafs ) {
         if ( leaf.PVSCluster >= 0 && leaf.PVSCluster < PVSClustersCount ) {
             clusters[leaf.PVSCluster].AddAABB( leaf.Bounds );
         }
@@ -108,7 +108,7 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
 #endif
 }
 
-uint32_t ALevel::AddVertexLightChannel(AIndexedMesh* InSourceMesh)
+uint32_t Level::AddVertexLightChannel(IndexedMesh* InSourceMesh)
 {
     uint32_t handle;
     if (!m_FreeVertexLightChannels.IsEmpty())
@@ -122,12 +122,12 @@ uint32_t ALevel::AddVertexLightChannel(AIndexedMesh* InSourceMesh)
         m_VertexLightChannels.Add();
     }
 
-    m_VertexLightChannels[handle] = new AVertexLight(InSourceMesh);
+    m_VertexLightChannels[handle] = new VertexLight(InSourceMesh);
 
     return handle;
 }
 
-void ALevel::RemoveVertexLightChannel(uint32_t VertexLightChannel)
+void Level::RemoveVertexLightChannel(uint32_t VertexLightChannel)
 {
     if (VertexLightChannel >= m_VertexLightChannels.Size() || m_VertexLightChannels[VertexLightChannel] == nullptr)
         return;
@@ -138,9 +138,9 @@ void ALevel::RemoveVertexLightChannel(uint32_t VertexLightChannel)
     m_FreeVertexLightChannels.Add(VertexLightChannel);
 }
 
-void ALevel::RemoveVertexLightChannels()
+void Level::RemoveVertexLightChannels()
 {
-    for (AVertexLight* vertexLight : m_VertexLightChannels)
+    for (VertexLight* vertexLight : m_VertexLightChannels)
     {
         vertexLight->RemoveRef();
     }
@@ -148,14 +148,14 @@ void ALevel::RemoveVertexLightChannels()
     m_FreeVertexLightChannels.Free();
 }
 
-AVertexLight* ALevel::GetVertexLight(uint32_t VertexLightChannel)
+VertexLight* Level::GetVertexLight(uint32_t VertexLightChannel)
 {
     if (VertexLightChannel < m_VertexLightChannels.Size())
         return m_VertexLightChannels[VertexLightChannel];
     return nullptr;
 }
 
-ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
+LevelLighting::LevelLighting(LightingSystemCreateInfo const& CreateInfo)
 {
     LightmapFormat      = CreateInfo.LightmapFormat;
     LightmapBlockWidth  = CreateInfo.LightmapBlockWidth;
@@ -166,7 +166,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
         Platform::Memcpy(LightData, CreateInfo.LightData, CreateInfo.LightDataSize);
 
         TEXTURE_FORMAT texFormat;
-        RenderCore::STextureSwizzle swizzle;
+        RenderCore::TextureSwizzle swizzle;
 
         size_t blockSize = sizeof(uint16_t) * LightmapBlockWidth * LightmapBlockHeight;
 
@@ -187,8 +187,8 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
         Lightmaps.Resize(CreateInfo.LightmapBlockCount);
         for (int blockNum = 0; blockNum < CreateInfo.LightmapBlockCount; blockNum++)
         {
-            GEngine->GetRenderDevice()->CreateTexture(RenderCore::STextureDesc{}
-                                                          .SetResolution(RenderCore::STextureResolution2D(LightmapBlockWidth, LightmapBlockHeight))
+            GEngine->GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
+                                                          .SetResolution(RenderCore::TextureResolution2D(LightmapBlockWidth, LightmapBlockHeight))
                                                           .SetFormat(texFormat)
                                                           .SetMipLevels(1)
                                                           .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE)
@@ -199,7 +199,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
         }
     }
 
-    RenderCore::SBufferDesc bufferCI = {};
+    RenderCore::BufferDesc bufferCI = {};
     bufferCI.MutableClientAccess     = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage            = RenderCore::MUTABLE_STORAGE_STATIC;
 
@@ -231,12 +231,12 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
     LightPortalsIB->SetDebugName("LightPortalIndexBuffer");
 }
 
-ALevelLighting::~ALevelLighting()
+LevelLighting::~LevelLighting()
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(LightData);
 }
 
-Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
+Float3 LevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
 {
     if (!LightData)
     {
@@ -289,14 +289,14 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
             break;
         }
         default:
-            LOG("ALevel::SampleLight: Unknown lightmap format\n");
+            LOG("Level::SampleLight: Unknown lightmap format\n");
             break;
     }
 
     return light;
 }
 
-ALevelAudio::ALevelAudio(SLevelAudioCreateInfo const& CreateInfo)
+LevelAudio::LevelAudio(LevelAudioCreateInfo const& CreateInfo)
 {
     AudioAreas.Resize(CreateInfo.NumAudioAreas);
     Platform::Memcpy(AudioAreas.ToPtr(), CreateInfo.AudioAreas, CreateInfo.NumAudioAreas * sizeof(AudioAreas[0]));

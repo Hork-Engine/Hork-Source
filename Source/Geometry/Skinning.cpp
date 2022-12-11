@@ -33,11 +33,11 @@ SOFTWARE.
 namespace Geometry
 {
 
-BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
-                                    SMeshVertexSkin const* Weights,
+BvAxisAlignedBox CalcBindposeBounds(MeshVertex const*     Vertices,
+                                    MeshVertexSkin const* Weights,
                                     int                    VertexCount,
-                                    ASkin const*           Skin,
-                                    SJoint*                Joints,
+                                    MeshSkin const*           Skin,
+                                    SkeletonJoint*                Joints,
                                     int                    JointsCount)
 {
     Float3x4 absoluteTransforms[MAX_SKELETON_JOINTS + 1];
@@ -50,7 +50,7 @@ BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
     absoluteTransforms[0].SetIdentity();
     for (unsigned int j = 0; j < JointsCount; j++)
     {
-        SJoint const& joint = Joints[j];
+        SkeletonJoint const& joint = Joints[j];
 
         absoluteTransforms[j + 1] = absoluteTransforms[joint.Parent + 1] * joint.LocalTransform;
     }
@@ -65,7 +65,7 @@ BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
     for (int v = 0; v < VertexCount; v++)
     {
         Float4 const           position = Float4(Vertices[v].Position, 1.0f);
-        SMeshVertexSkin const& w        = Weights[v];
+        MeshVertexSkin const& w        = Weights[v];
 
         const float weights[4] = {w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f};
 
@@ -82,16 +82,16 @@ BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
     return BindposeBounds;
 }
 
-void CalcBoundingBoxes(SMeshVertex const*         Vertices,
-                       SMeshVertexSkin const*     Weights,
+void CalcBoundingBoxes(MeshVertex const*         Vertices,
+                       MeshVertexSkin const*     Weights,
                        int                        VertexCount,
-                       ASkin const*               Skin,
-                       SJoint const*              Joints,
+                       MeshSkin const*               Skin,
+                       SkeletonJoint const*              Joints,
                        int                        NumJoints,
                        uint32_t                   FrameCount,
-                       SAnimationChannel const*   Channels,
+                       AnimationChannel const*   Channels,
                        int                        ChannelsCount,
-                       STransform const*          Transforms,
+                       Transform const*          Transforms,
                        TVector<BvAxisAlignedBox>& Bounds)
 {
     Float3x4          absoluteTransforms[MAX_SKELETON_JOINTS + 1];
@@ -102,14 +102,14 @@ void CalcBoundingBoxes(SMeshVertex const*         Vertices,
 
     for (int i = 0; i < ChannelsCount; i++)
     {
-        SAnimationChannel const& anim = Channels[i];
+        AnimationChannel const& anim = Channels[i];
 
         relativeTransforms[anim.JointIndex].ResizeInvalidate(FrameCount);
 
         for (int frameNum = 0; frameNum < FrameCount; frameNum++)
         {
 
-            STransform const& transform = Transforms[anim.TransformOffset + frameNum];
+            Transform const& transform = Transforms[anim.TransformOffset + frameNum];
 
             transform.ComputeTransformMatrix(relativeTransforms[anim.JointIndex][frameNum]);
         }
@@ -125,7 +125,7 @@ void CalcBoundingBoxes(SMeshVertex const*         Vertices,
         absoluteTransforms[0].SetIdentity();
         for (unsigned int j = 0; j < NumJoints; j++)
         {
-            SJoint const& joint = Joints[j];
+            SkeletonJoint const& joint = Joints[j];
 
             Float3x4 const& parentTransform = absoluteTransforms[joint.Parent + 1];
 
@@ -149,7 +149,7 @@ void CalcBoundingBoxes(SMeshVertex const*         Vertices,
         for (int v = 0; v < VertexCount; v++)
         {
             Float4 const           position = Float4(Vertices[v].Position, 1.0f);
-            SMeshVertexSkin const& w        = Weights[v];
+            MeshVertexSkin const& w        = Weights[v];
 
             const float weights[4] = {w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f};
 

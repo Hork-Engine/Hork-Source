@@ -39,7 +39,7 @@ class UICursor : public UIObject
     UI_CLASS(UICursor, UIObject)
 
 public:
-    virtual void Draw(ACanvas& canvas, Float2 const& position) = 0;
+    virtual void Draw(Canvas& canvas, Float2 const& position) = 0;
 };
 
 class UIDefaultCursor : public UICursor
@@ -76,5 +76,5 @@ public:
         return *this;
     }
 
-    void Draw(ACanvas& canvas, Float2 const& position) override;
+    void Draw(Canvas& canvas, Float2 const& position) override;
 };

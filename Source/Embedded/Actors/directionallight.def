@@ -1,7 +1,7 @@
 components
 [
 	{
-		classname "ADirectionalLightComponent"
+		classname "DirectionalLightComponent"
 		name "DirectionalLight"
 		id "1"
 	}

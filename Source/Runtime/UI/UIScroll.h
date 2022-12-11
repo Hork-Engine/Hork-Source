@@ -151,10 +151,10 @@ public:
     bool CanScroll() const;
 
 protected:
-    void OnMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp) override;
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
-    void Draw(ACanvas& canvas) override;
+    void OnMouseWheelEvent(struct MouseWheelEvent const& event, double timeStamp) override;
+    void OnMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp) override;
+    void OnMouseMoveEvent(struct MouseMoveEvent const& event, double timeStamp) override;
+    void Draw(Canvas& canvas) override;
 
 private:
     enum DRAW
@@ -170,7 +170,7 @@ private:
     void MoveHSlider(float dir);
     void MoveVSlider(float dir);
 
-    void DrawButton(ACanvas& canvas, int buttonNum);
+    void DrawButton(Canvas& canvas, int buttonNum);
 
     void DoMeasureLayout(Float2 const& size);
     void DoArrangeChildren();

@@ -36,26 +36,26 @@ SOFTWARE.
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
-class AAudioHRTF
+class AudioHRTF
 {
-    HK_FORBID_COPY( AAudioHRTF )
+    HK_FORBID_COPY(AudioHRTF)
 
 public:
-    AAudioHRTF( int SampleRate );
-    virtual ~AAudioHRTF();
+    AudioHRTF(int SampleRate);
+    virtual ~AudioHRTF();
 
     /** Gets a bilinearly interpolated HRTF */
-    void SampleHRTF( Float3 const & Dir, SComplex * pLeftHRTF, SComplex * pRightHRTF ) const;
+    void SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRightHRTF) const;
 
     /** Applies HRTF to input frames. Frames must also contain GetFrameCount()-1 of the previous frames.
     FrameCount must be multiples of HRTF_BLOCK_LENGTH */
-    void ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int FrameCount, float * pStream, Float3 & Dir );
+    void ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int FrameCount, float* pStream, Float3& Dir);
 
     /** Sphere geometry vertics */
-    TVector< Float3 > const & GetVertices() const { return Vertices; }
+    TVector<Float3> const& GetVertices() const { return Vertices; }
 
     /** Sphere geometry indices */
-    TVector< uint32_t > const & GetIndices() const { return Indices; }
+    TVector<uint32_t> const& GetIndices() const { return Indices; }
 
     /** Length of Head-Related Impulse Response (HRIR) */
     int GetFrameCount() const
@@ -71,13 +71,13 @@ public:
     }
 
 private:
-    void GenerateHRTF( const float * pFrames, int InFrameCount, SComplex * pHRTF );
+    void GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pHRTF);
 
     /** Fast fourier transform (forward) */
-    void FFT( SComplex const * pIn, SComplex * pOut );
+    void FFT(Complex const* pIn, Complex* pOut);
 
     /** Fast fourier transform (inverse) */
-    void IFFT( SComplex const * pIn, SComplex * pOut );
+    void IFFT(Complex const* pIn, Complex* pOut);
 
     /** Length of Head-Related Impulse Response (HRIR) */
     int FrameCount = 0;
@@ -85,26 +85,26 @@ private:
     /** HRTF FFT filter size in frames */
     int FilterSize = 0;
 
-    TVector< uint32_t > Indices;
-    TVector< Float3 > Vertices;
-    TVector< SComplex > hrtfL;
-    TVector< SComplex > hrtfR;
+    TVector<uint32_t> Indices;
+    TVector<Float3> Vertices;
+    TVector<Complex> hrtfL;
+    TVector<Complex> hrtfR;
 
-    void * ForwardFFT = nullptr;
-    void * InverseFFT = nullptr;
+    void* ForwardFFT = nullptr;
+    void* InverseFFT = nullptr;
 
     // Storage for processing frames, time domain
-    SComplex * pFramesSourceFFT = nullptr;
+    Complex* pFramesSourceFFT = nullptr;
     // Processing frames, freq domain
-    SComplex * pFramesFreqFFT = nullptr;
+    Complex* pFramesFreqFFT = nullptr;
     // Frames for left ear, freq domain
-    SComplex * pFramesFreqLeftFFT = nullptr;
+    Complex* pFramesFreqLeftFFT = nullptr;
     // Frames for right ear, freq domain
-    SComplex * pFramesFreqRightFFT = nullptr;
+    Complex* pFramesFreqRightFFT = nullptr;
     // Frames for left ear, time domain
-    SComplex * pFramesTimeLeftFFT = nullptr;
+    Complex* pFramesTimeLeftFFT = nullptr;
     // Frames for right ear, time domain
-    SComplex * pFramesTimeRightFFT = nullptr;
+    Complex* pFramesTimeRightFFT = nullptr;
 
-    SComplex * pHRTFs[4] = { nullptr,nullptr,nullptr,nullptr };
+    Complex* pHRTFs[4] = {nullptr, nullptr, nullptr, nullptr};
 };

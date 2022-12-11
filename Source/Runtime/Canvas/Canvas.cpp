@@ -44,8 +44,8 @@ See ThridParty.md for details.
 
 #include <ThirdParty/nanovg/fontstash.h>
 
-static AConsoleVar vg_EdgeAntialias("vg_EdgeAntialias"s, "1"s);
-static AConsoleVar vg_StencilStrokes("vg_StencilStrokes"s, "1"s);
+static ConsoleVar vg_EdgeAntialias("vg_EdgeAntialias"s, "1"s);
+static ConsoleVar vg_StencilStrokes("vg_StencilStrokes"s, "1"s);
 
 constexpr float NVG_KAPPA90 = 0.5522847493f; // Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
@@ -559,18 +559,18 @@ CanvasVertex* VGPathCache::AllocVerts(int nverts)
     return Verts.ToPtr();
 }
 
-ACanvas::ACanvas() :
+Canvas::Canvas() :
     m_bEdgeAntialias(true), // TODO: Set from config?
     m_bStencilStrokes(true) // TODO: Set from config?
 {
-    m_FontStash = GetSharedInstance<AFontStash>();
+    m_FontStash = GetSharedInstance<FontStash>();
 
     m_States.Reserve(NVG_INIT_STATES);
 
     m_Commands.Reserve(NVG_INIT_COMMANDS_SIZE);
 }
 
-ACanvas::~ACanvas()
+Canvas::~Canvas()
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_DrawData.Paths);
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_DrawData.Vertices);
@@ -578,13 +578,13 @@ ACanvas::~ACanvas()
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_DrawData.DrawCommands);
 }
 
-AFont* ACanvas::GetDefaultFont()
+Font* Canvas::GetDefaultFont()
 {
-    static TStaticResourceFinder<AFont> FontResource("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf"s);
+    static TStaticResourceFinder<Font> FontResource("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf"s);
     return FontResource.GetObject();
 }
 
-void ACanvas::NewFrame(uint32_t width, uint32_t height)
+void Canvas::NewFrame(uint32_t width, uint32_t height)
 {
     m_Width  = width;
     m_Height = height;
@@ -614,7 +614,7 @@ void ACanvas::NewFrame(uint32_t width, uint32_t height)
     FontFace(nullptr);
 }
 
-void ACanvas::Push(CANVAS_PUSH_FLAG ResetFlag)
+void Canvas::Push(CANVAS_PUSH_FLAG ResetFlag)
 {
     bool bNeedReset = false;
 
@@ -635,19 +635,19 @@ void ACanvas::Push(CANVAS_PUSH_FLAG ResetFlag)
         Reset();
 }
 
-void ACanvas::Pop()
+void Canvas::Pop()
 {
     if (m_NumStates <= 1)
         return;
     m_NumStates--;
 }
 
-ACanvas::VGState* ACanvas::GetState()
+Canvas::VGState* Canvas::GetState()
 {
     return &m_States[m_NumStates - 1];
 }
 
-void ACanvas::Reset()
+void Canvas::Reset()
 {
     VGState* state = GetState();
 
@@ -670,7 +670,7 @@ void ACanvas::Reset()
     state->Font = nullptr;
 }
 
-void ACanvas::DrawLine(Float2 const& p0, Float2 const& p1, Color4 const& color, float thickness)
+void Canvas::DrawLine(Float2 const& p0, Float2 const& p1, Color4 const& color, float thickness)
 {
     if (thickness <= 0)
         return;
@@ -683,7 +683,7 @@ void ACanvas::DrawLine(Float2 const& p0, Float2 const& p1, Color4 const& color, 
     Stroke();
 }
 
-void ACanvas::DrawRect(Float2 const& mins, Float2 const& maxs, Color4 const& color, float thickness, RoundingDesc const& rounding)
+void Canvas::DrawRect(Float2 const& mins, Float2 const& maxs, Color4 const& color, float thickness, RoundingDesc const& rounding)
 {
     if (thickness <= 0)
         return;
@@ -700,7 +700,7 @@ void ACanvas::DrawRect(Float2 const& mins, Float2 const& maxs, Color4 const& col
     Stroke();
 }
 
-void ACanvas::DrawRectFilled(Float2 const& mins, Float2 const& maxs, Color4 const& color, RoundingDesc const& rounding)
+void Canvas::DrawRectFilled(Float2 const& mins, Float2 const& maxs, Color4 const& color, RoundingDesc const& rounding)
 {
     BeginPath();
     RoundedRectVarying(mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y,
@@ -713,7 +713,7 @@ void ACanvas::DrawRectFilled(Float2 const& mins, Float2 const& maxs, Color4 cons
     Fill();
 }
 
-void ACanvas::DrawTriangle(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color, float thickness)
+void Canvas::DrawTriangle(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color, float thickness)
 {
     if (thickness <= 0)
         return;
@@ -728,7 +728,7 @@ void ACanvas::DrawTriangle(Float2 const& p0, Float2 const& p1, Float2 const& p2,
     Stroke();
 }
 
-void ACanvas::DrawTriangleFilled(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color)
+void Canvas::DrawTriangleFilled(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color)
 {
     BeginPath();
     MoveTo(p0);
@@ -738,7 +738,7 @@ void ACanvas::DrawTriangleFilled(Float2 const& p0, Float2 const& p1, Float2 cons
     Fill();
 }
 
-void ACanvas::DrawCircle(Float2 const& center, float radius, Color4 const& color, float thickness)
+void Canvas::DrawCircle(Float2 const& center, float radius, Color4 const& color, float thickness)
 {
     if (thickness <= 0)
         return;
@@ -750,7 +750,7 @@ void ACanvas::DrawCircle(Float2 const& center, float radius, Color4 const& color
     Stroke();
 }
 
-void ACanvas::DrawCircleFilled(Float2 const& center, float radius, Color4 const& color)
+void Canvas::DrawCircleFilled(Float2 const& center, float radius, Color4 const& color)
 {
     BeginPath();
     Circle(center, radius);
@@ -758,7 +758,7 @@ void ACanvas::DrawCircleFilled(Float2 const& center, float radius, Color4 const&
     Fill();
 }
 
-void ACanvas::DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, bool bShadow)
+void Canvas::DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, StringView text, bool bShadow)
 {
     if (bShadow)
     {
@@ -772,7 +772,7 @@ void ACanvas::DrawText(FontStyle const& style, Float2 const& pos, Color4 const& 
     Text(style, pos.X, pos.Y, TEXT_ALIGNMENT_LEFT, text);
 }
 
-void ACanvas::DrawTexture(DrawTextureDesc const& desc)
+void Canvas::DrawTexture(DrawTextureDesc const& desc)
 {
     if (desc.W < 1.0f || desc.H < 1.0f)
         return;
@@ -820,7 +820,7 @@ void ACanvas::DrawTexture(DrawTextureDesc const& desc)
     CompositeOperation(currentComposite);
 }
 
-void ACanvas::DrawPolyline(Float2 const* points, int numPoints, Color4 const& color, bool bClosed, float thickness)
+void Canvas::DrawPolyline(Float2 const* points, int numPoints, Color4 const& color, bool bClosed, float thickness)
 {
     if (numPoints <= 0)
         return;
@@ -843,7 +843,7 @@ void ACanvas::DrawPolyline(Float2 const* points, int numPoints, Color4 const& co
     Stroke();
 }
 
-void ACanvas::DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& color)
+void Canvas::DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& color)
 {
     if (numPoints <= 0)
         return;
@@ -859,7 +859,7 @@ void ACanvas::DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& 
     Fill();
 }
 
-void ACanvas::DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& color, float thickness)
+void Canvas::DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& color, float thickness)
 {
     if (thickness <= 0)
         return;
@@ -872,7 +872,7 @@ void ACanvas::DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 cons
     Stroke();
 }
 
-void ACanvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr)
+void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr)
 {
     Transform2D invxform;
 
@@ -929,7 +929,7 @@ void ACanvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor c
     frag->PaintMat = invxform.ToMatrix3x4();
 }
 
-void ACanvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds)
+void Canvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds)
 {
     int npaths = m_PathCache.Paths.Size();
 
@@ -1007,7 +1007,7 @@ void ACanvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGSciss
     }
 }
 
-void ACanvas::RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, float strokeWidth)
+void Canvas::RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, float strokeWidth)
 {
     int npaths = m_PathCache.Paths.Size();
 
@@ -1056,7 +1056,7 @@ void ACanvas::RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGSci
     }
 }
 
-void ACanvas::RenderTriangles(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, const CanvasVertex* verts, int nverts, float fringe)
+void Canvas::RenderTriangles(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, const CanvasVertex* verts, int nverts, float fringe)
 {
     CanvasDrawCmd*  drawCommand = AllocDrawCommand();
     CanvasUniforms* frag;
@@ -1080,7 +1080,7 @@ void ACanvas::RenderTriangles(CanvasPaint* paint, CANVAS_COMPOSITE composite, VG
     frag->Type = CANVAS_SHADER_IMAGE;
 }
 
-CanvasDrawCmd* ACanvas::AllocDrawCommand()
+CanvasDrawCmd* Canvas::AllocDrawCommand()
 {
     if (m_DrawData.NumDrawCommands + 1 > m_DrawData.MaxDrawCommands)
     {
@@ -1093,7 +1093,7 @@ CanvasDrawCmd* ACanvas::AllocDrawCommand()
     return cmd;
 }
 
-int ACanvas::AllocPaths(int n)
+int Canvas::AllocPaths(int n)
 {
     if (m_DrawData.NumPaths + n > m_DrawData.MaxPaths)
     {
@@ -1106,7 +1106,7 @@ int ACanvas::AllocPaths(int n)
     return ret;
 }
 
-int ACanvas::AllocVerts(int n)
+int Canvas::AllocVerts(int n)
 {
     if (m_DrawData.VertexCount + n > m_DrawData.MaxVerts)
     {
@@ -1119,7 +1119,7 @@ int ACanvas::AllocVerts(int n)
     return ret;
 }
 
-int ACanvas::AllocUniforms(int n)
+int Canvas::AllocUniforms(int n)
 {
     int ret = 0, structSize = sizeof(CanvasUniforms);
     if (m_DrawData.UniformCount + n > m_DrawData.MaxUniforms)
@@ -1133,12 +1133,12 @@ int ACanvas::AllocUniforms(int n)
     return ret;
 }
 
-CanvasUniforms* ACanvas::GetUniformPtr(int i)
+CanvasUniforms* Canvas::GetUniformPtr(int i)
 {
     return (CanvasUniforms*)&m_DrawData.Uniforms[i];
 }
 
-void ACanvas::ClearDrawData()
+void Canvas::ClearDrawData()
 {
     m_DrawData.VertexCount     = 0;
     m_DrawData.NumPaths        = 0;
@@ -1146,7 +1146,7 @@ void ACanvas::ClearDrawData()
     m_DrawData.UniformCount    = 0;
 }
 
-CANVAS_COMPOSITE ACanvas::CompositeOperation(CANVAS_COMPOSITE op)
+CANVAS_COMPOSITE Canvas::CompositeOperation(CANVAS_COMPOSITE op)
 {
     VGState* state = GetState();
 
@@ -1155,7 +1155,7 @@ CANVAS_COMPOSITE ACanvas::CompositeOperation(CANVAS_COMPOSITE op)
     return (CANVAS_COMPOSITE)old;
 }
 
-bool ACanvas::ShapeAntiAlias(bool bEnabled)
+bool Canvas::ShapeAntiAlias(bool bEnabled)
 {
     VGState* state = GetState();
 
@@ -1165,14 +1165,14 @@ bool ACanvas::ShapeAntiAlias(bool bEnabled)
     return old;
 }
 
-void ACanvas::StrokeColor(Color4 const& color)
+void Canvas::StrokeColor(Color4 const& color)
 {
     VGState* state = GetState();
 
     state->Stroke.Solid(color);
 }
 
-void ACanvas::StrokePaint(CanvasPaint const& paint)
+void Canvas::StrokePaint(CanvasPaint const& paint)
 {
     VGState* state = GetState();
 
@@ -1180,14 +1180,14 @@ void ACanvas::StrokePaint(CanvasPaint const& paint)
     state->Stroke.Xform *= state->Xform;
 }
 
-void ACanvas::FillColor(Color4 const& color)
+void Canvas::FillColor(Color4 const& color)
 {
     VGState* state = GetState();
 
     state->Fill.Solid(color);
 }
 
-void ACanvas::FillPaint(CanvasPaint const& paint)
+void Canvas::FillPaint(CanvasPaint const& paint)
 {
     VGState* state = GetState();
 
@@ -1195,98 +1195,98 @@ void ACanvas::FillPaint(CanvasPaint const& paint)
     state->Fill.Xform *= state->Xform;
 }
 
-void ACanvas::MiterLimit(float limit)
+void Canvas::MiterLimit(float limit)
 {
     VGState* state = GetState();
 
     state->MiterLimit = limit;
 }
 
-void ACanvas::StrokeWidth(float size)
+void Canvas::StrokeWidth(float size)
 {
     VGState* state = GetState();
 
     state->StrokeWidth = size;
 }
 
-void ACanvas::LineCap(CANVAS_LINE_CAP cap)
+void Canvas::LineCap(CANVAS_LINE_CAP cap)
 {
     VGState* state = GetState();
 
     state->LineCap = cap;
 }
 
-void ACanvas::LineJoin(CANVAS_LINE_JOIN join)
+void Canvas::LineJoin(CANVAS_LINE_JOIN join)
 {
     VGState* state = GetState();
 
     state->LineJoin = join;
 }
 
-void ACanvas::GlobalAlpha(float alpha)
+void Canvas::GlobalAlpha(float alpha)
 {
     VGState* state = GetState();
 
     state->Alpha = alpha;
 }
 
-void ACanvas::ResetTransform()
+void Canvas::ResetTransform()
 {
     VGState* state = GetState();
 
     state->Xform.SetIdentity();
 }
 
-void ACanvas::Transform(Transform2D const& transform)
+void Canvas::Transform(Transform2D const& transform)
 {
     VGState* state = GetState();
 
     state->Xform = transform * state->Xform;
 }
 
-void ACanvas::Translate(float x, float y)
+void Canvas::Translate(float x, float y)
 {
     VGState* state = GetState();
 
     state->Xform = Transform2D::Translation({x, y}) * state->Xform;
 }
 
-void ACanvas::Rotate(float angle)
+void Canvas::Rotate(float angle)
 {
     VGState* state = GetState();
 
     state->Xform = Transform2D::Rotation(angle) * state->Xform;
 }
 
-void ACanvas::SkewX(float angle)
+void Canvas::SkewX(float angle)
 {
     VGState* state = GetState();
 
     state->Xform = Transform2D::SkewX(angle) * state->Xform;
 }
 
-void ACanvas::SkewY(float angle)
+void Canvas::SkewY(float angle)
 {
     VGState* state = GetState();
 
     state->Xform = Transform2D::SkewY(angle) * state->Xform;
 }
 
-void ACanvas::Scale(float x, float y)
+void Canvas::Scale(float x, float y)
 {
     VGState* state = GetState();
 
     state->Xform = Transform2D::Scaling({x, y}) * state->Xform;
 }
 
-Transform2D const& ACanvas::CurrentTransform()
+Transform2D const& Canvas::CurrentTransform()
 {
     VGState* state = GetState();
 
     return state->Xform;
 }
 
-void ACanvas::Scissor(Float2 const& mins, Float2 const& maxs)
+void Canvas::Scissor(Float2 const& mins, Float2 const& maxs)
 {
     VGState* state = GetState();
 
@@ -1302,7 +1302,7 @@ void ACanvas::Scissor(Float2 const& mins, Float2 const& maxs)
     state->Scissor.Extent[1] = h * 0.5f;
 }
 
-void ACanvas::IntersectScissor(Float2 const& mins, Float2 const& maxs)
+void Canvas::IntersectScissor(Float2 const& mins, Float2 const& maxs)
 {
     VGState* state = GetState();
     float    rect[4];
@@ -1334,7 +1334,7 @@ void ACanvas::IntersectScissor(Float2 const& mins, Float2 const& maxs)
     Scissor({rect[0], rect[1]}, {rect[0] + rect[2], rect[1] + rect[3]});
 }
 
-void ACanvas::ResetScissor()
+void Canvas::ResetScissor()
 {
     VGState* state = GetState();
 
@@ -1344,13 +1344,13 @@ void ACanvas::ResetScissor()
     state->Scissor.Extent[1] = -1.0f;
 }
 
-void ACanvas::GetIntersectedScissor(Float2 const& mins, Float2 const& maxs, Float2& resultMins, Float2& resultMaxs)
+void Canvas::GetIntersectedScissor(Float2 const& mins, Float2 const& maxs, Float2& resultMins, Float2& resultMaxs)
 {
     GetIntersectedScissor(mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y, &resultMins.X, &resultMins.Y, &resultMaxs.X, &resultMaxs.Y);
     resultMaxs += resultMins;
 }
 
-void ACanvas::GetIntersectedScissor(float x, float y, float w, float h, float* px, float* py, float* pw, float* ph)
+void Canvas::GetIntersectedScissor(float x, float y, float w, float h, float* px, float* py, float* pw, float* ph)
 {
     VGState* state = GetState();
     float    rect[4];
@@ -1386,43 +1386,43 @@ void ACanvas::GetIntersectedScissor(float x, float y, float w, float h, float* p
     *ph = rect[3];
 }
 
-void ACanvas::BeginPath()
+void Canvas::BeginPath()
 {
     m_Commands.Clear();
     m_PathCache.Clear();
 }
 
-void ACanvas::MoveTo(float x, float y)
+void Canvas::MoveTo(float x, float y)
 {
     const float vals[] = {VG_MOVETO, x, y};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::MoveTo(Float2 const& p)
+void Canvas::MoveTo(Float2 const& p)
 {
     const float vals[] = {VG_MOVETO, p.X, p.Y};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::LineTo(float x, float y)
+void Canvas::LineTo(float x, float y)
 {
     const float vals[] = {VG_LINETO, x, y};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::LineTo(Float2 const& p)
+void Canvas::LineTo(Float2 const& p)
 {
     const float vals[] = {VG_LINETO, p.X, p.Y};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::BezierTo(float c1x, float c1y, float c2x, float c2y, float x, float y)
+void Canvas::BezierTo(float c1x, float c1y, float c2x, float c2y, float x, float y)
 {
     const float vals[] = {VG_BEZIERTO, c1x, c1y, c2x, c2y, x, y};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::QuadTo(float cx, float cy, float x, float y)
+void Canvas::QuadTo(float cx, float cy, float x, float y)
 {
     float x0 = m_CommandPos.X;
     float y0 = m_CommandPos.Y;
@@ -1434,7 +1434,7 @@ void ACanvas::QuadTo(float cx, float cy, float x, float y)
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
+void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
 {
     float x0 = m_CommandPos.X;
     float y0 = m_CommandPos.Y;
@@ -1494,19 +1494,19 @@ void ACanvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
     Arc(cx, cy, radius, a0, a1, dir);
 }
 
-void ACanvas::ClosePath()
+void Canvas::ClosePath()
 {
     const float vals[] = {VG_CLOSE};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::PathWinding(CANVAS_PATH_WINDING winding)
+void Canvas::PathWinding(CANVAS_PATH_WINDING winding)
 {
     const float vals[] = {VG_WINDING, (float)winding};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WINDING dir)
+void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WINDING dir)
 {
     float a = 0, da = 0, hda = 0, kappa = 0;
     float dx = 0, dy = 0, x = 0, y = 0, tanx = 0, tany = 0;
@@ -1584,7 +1584,7 @@ void ACanvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_W
     AppendCommands(vals, nvals);
 }
 
-void ACanvas::Rect(float x, float y, float w, float h)
+void Canvas::Rect(float x, float y, float w, float h)
 {
     const float vals[] = {
         VG_MOVETO, x, y,
@@ -1595,12 +1595,12 @@ void ACanvas::Rect(float x, float y, float w, float h)
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::RoundedRect(float x, float y, float w, float h, float r)
+void Canvas::RoundedRect(float x, float y, float w, float h, float r)
 {
     RoundedRectVarying(x, y, w, h, r, r, r, r);
 }
 
-void ACanvas::RoundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft)
+void Canvas::RoundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft)
 {
     if (radTopLeft < 0.1f && radTopRight < 0.1f && radBottomRight < 0.1f && radBottomLeft < 0.1f)
     {
@@ -1630,7 +1630,7 @@ void ACanvas::RoundedRectVarying(float x, float y, float w, float h, float radTo
     }
 }
 
-void ACanvas::Ellipse(Float2 const& center, float rx, float ry)
+void Canvas::Ellipse(Float2 const& center, float rx, float ry)
 {
     float cx = center.X;
     float cy = center.Y;
@@ -1645,12 +1645,12 @@ void ACanvas::Ellipse(Float2 const& center, float rx, float ry)
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void ACanvas::Circle(Float2 const& center, float r)
+void Canvas::Circle(Float2 const& center, float r)
 {
     Ellipse(center, r, r);
 }
 
-void ACanvas::FlattenPaths()
+void Canvas::FlattenPaths()
 {
     if (m_PathCache.Paths.Size() > 0)
         return;
@@ -1749,7 +1749,7 @@ void ACanvas::FlattenPaths()
     }
 }
 
-void ACanvas::Fill()
+void Canvas::Fill()
 {
     VGState*    state     = GetState();
     CanvasPaint fillPaint = state->Fill;
@@ -1775,7 +1775,7 @@ void ACanvas::Fill()
     }
 }
 
-void ACanvas::Stroke()
+void Canvas::Stroke()
 {
     VGState*    state       = GetState();
     float       scale       = nvg__getAverageScale(state->Xform);
@@ -1813,19 +1813,19 @@ void ACanvas::Stroke()
     }
 }
 
-void ACanvas::FontFace(AFont* font)
+void Canvas::FontFace(Font* font)
 {
     VGState* state = GetState();
 
     state->Font = font ? font : GetDefaultFont();
 }
 
-void ACanvas::FontFace(AStringView font)
+void Canvas::FontFace(StringView font)
 {
-    FontFace(FindResource<AFont>(font));
+    FontFace(FindResource<Font>(font));
 }
 
-float ACanvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AStringView string)
+float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, StringView string)
 {
     enum CANVAS_TEXT_ALIGN : uint8_t
     {
@@ -1954,7 +1954,7 @@ float ACanvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLA
     return iter.nextx / scale;
 }
 
-float ACanvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AWideStringView string)
+float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, WideStringView string)
 {
     enum CANVAS_TEXT_ALIGN : uint8_t
     {
@@ -2088,13 +2088,13 @@ float ACanvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLA
     return iter.nextx / scale;
 }
 
-void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AStringView text)
+void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, StringView text)
 {
     if (text.IsEmpty())
         return;
 
     VGState* state = GetState();
-    AFont*   font  = state->Font;
+    Font*   font  = state->Font;
     if (!font || font->GetId() == FONS_INVALID)
         return;
 
@@ -2128,7 +2128,7 @@ void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& 
         y += yOffset;
     }
 
-    AStringView str = text;
+    StringView str = text;
 
     bool bKeepSpaces = (flags & TEXT_ALIGNMENT_KEEP_SPACES);
 
@@ -2163,17 +2163,17 @@ void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& 
             y += lineHeight;
         }
 
-        str = AStringView(rows[nrows - 1].Next, str.End());
+        str = StringView(rows[nrows - 1].Next, str.End());
     }
 }
 
-void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AWideStringView text)
+void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, WideStringView text)
 {
     if (text.IsEmpty())
         return;
 
     VGState* state = GetState();
-    AFont*   font  = state->Font;
+    Font*   font  = state->Font;
     if (!font || font->GetId() == FONS_INVALID)
         return;
 
@@ -2207,7 +2207,7 @@ void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& 
         y += yOffset;
     }
 
-    AWideStringView str = text;
+    WideStringView str = text;
 
     bool bKeepSpaces = (flags & TEXT_ALIGNMENT_KEEP_SPACES);
 
@@ -2242,7 +2242,7 @@ void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& 
             y += lineHeight;
         }
 
-        str = AWideStringView(rows[nrows - 1].Next, str.End());
+        str = WideStringView(rows[nrows - 1].Next, str.End());
     }
 }
 
@@ -2293,12 +2293,12 @@ static const Float2 CursorTexData[][3] =
         {Float2(91, 0), Float2(17, 22), Float2(5, 0)},   // DRAW_CURSOR_RESIZE_HAND
 };
 
-static ATexture* CreateCursorMap()
+static Texture* CreateCursorMap()
 {
     int w = CURSOR_MAP_HALF_WIDTH * 2 + 1;
     int h = CURSOR_MAP_HEIGHT;
 
-    ARawImage image(w, h, RAW_IMAGE_FORMAT_R8, Float4(0.0f));
+    RawImage image(w, h, RAW_IMAGE_FORMAT_R8, Float4(0.0f));
 
     uint8_t* data = (uint8_t*)image.GetData();
 
@@ -2313,7 +2313,7 @@ static ATexture* CreateCursorMap()
         }
     }
 
-    return ATexture::CreateFromImage(CreateImage(image, nullptr));
+    return Texture::CreateFromImage(CreateImage(image, nullptr));
 }
 
 static void GetMouseCursorData(DRAW_CURSOR cursor, Float2& offset, Float2& size, Float2& uvfill, Float2& uvborder)
@@ -2328,7 +2328,7 @@ static void GetMouseCursorData(DRAW_CURSOR cursor, Float2& offset, Float2& size,
     uvborder = pos;
 }
 
-void ACanvas::DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 const& fillColor, Color4 const& borderColor, bool bShadow)
+void Canvas::DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 const& fillColor, Color4 const& borderColor, bool bShadow)
 {
     Float2 offset, size, uvfill, uvborder;
 
@@ -2373,7 +2373,7 @@ void ACanvas::DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 cons
     DrawTexture(desc);
 }
 
-void ACanvas::RenderText(CanvasVertex* verts, int nverts)
+void Canvas::RenderText(CanvasVertex* verts, int nverts)
 {
     VGState* state = GetState();
 
@@ -2391,7 +2391,7 @@ void ACanvas::RenderText(CanvasVertex* verts, int nverts)
     m_TextTriCount += nverts / 3;
 }
 
-void ACanvas::AppendCommands(float const* vals, int nvals)
+void Canvas::AppendCommands(float const* vals, int nvals)
 {
     VGState* state = GetState();
     int      i;
@@ -2442,7 +2442,7 @@ void ACanvas::AppendCommands(float const* vals, int nvals)
     }
 }
 
-void ACanvas::TesselateBezier(float x1,
+void Canvas::TesselateBezier(float x1,
                               float y1,
                               float x2,
                               float y2,
@@ -2493,7 +2493,7 @@ void ACanvas::TesselateBezier(float x1,
     TesselateBezier(x1234, y1234, x234, y234, x34, y34, x4, y4, level + 1, type);
 }
 
-void ACanvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+void Canvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
 {
     int   j;
     float iw = 0.0f;
@@ -2568,7 +2568,7 @@ void ACanvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimi
 }
 
 
-int ACanvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_LINE_JOIN lineJoin, float miterLimit)
 {
     CanvasVertex* verts;
     CanvasVertex* dst;
@@ -2715,7 +2715,7 @@ int ACanvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS
     return 1;
 }
 
-int ACanvas::ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+int Canvas::ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
 {
     CanvasVertex* verts;
     CanvasVertex* dst;
@@ -2862,7 +2862,7 @@ int ACanvas::ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
     return 1;
 }
 
-CanvasDrawData const* ACanvas::GetDrawData() const
+CanvasDrawData const* Canvas::GetDrawData() const
 {
     if (m_bUpdateFontTexture)
     {

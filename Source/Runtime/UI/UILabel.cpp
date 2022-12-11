@@ -57,7 +57,7 @@ void UILabel::AdjustSize(Float2 const& size)
         m_AdjustedSize.Y = boxSize.Y;
 }
 
-void UILabel::Draw(ACanvas& canvas)
+void UILabel::Draw(Canvas& canvas)
 {
     if (Text)
         Text->Draw(canvas, m_Geometry.PaddedMins, m_Geometry.PaddedMaxs);

@@ -35,40 +35,40 @@ SOFTWARE.
 namespace Core
 {
 
-uint64_t ParseHex(AStringView Str, const size_t SizeOf);
+uint64_t ParseHex(StringView Str, const size_t SizeOf);
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
-T ParseHex(AStringView Str)
+T ParseHex(StringView Str)
 {
     return static_cast<T>(ParseHex(Str, sizeof(T)));
 }
 
-HK_FORCEINLINE uint8_t ParseHex8(AStringView Str)
+HK_FORCEINLINE uint8_t ParseHex8(StringView Str)
 {
     return ParseHex<uint8_t>(Str);
 }
 
-HK_FORCEINLINE uint16_t ParseHex16(AStringView Str)
+HK_FORCEINLINE uint16_t ParseHex16(StringView Str)
 {
     return ParseHex<uint16_t>(Str);
 }
 
-HK_FORCEINLINE uint32_t ParseHex32(AStringView Str)
+HK_FORCEINLINE uint32_t ParseHex32(StringView Str)
 {
     return ParseHex<uint32_t>(Str);
 }
 
-HK_FORCEINLINE uint64_t ParseHex64(AStringView Str)
+HK_FORCEINLINE uint64_t ParseHex64(StringView Str)
 {
     return ParseHex<uint64_t>(Str);
 }
 
-float ParseFloat(AStringView Str);
-double ParseDouble(AStringView Str);
-int64_t ParseSigned(AStringView Str);
-uint64_t ParseUnsigned(AStringView Str);
-bool ParseBool(AStringView Str);
-float ParseCvar(AStringView Str);
+float ParseFloat(StringView Str);
+double ParseDouble(StringView Str);
+int64_t ParseSigned(StringView Str);
+uint64_t ParseUnsigned(StringView Str);
+bool ParseBool(StringView Str);
+float ParseCvar(StringView Str);
 
 HK_FORCEINLINE uint64_t UnsignedBoundsCheck(uint64_t Value, uint64_t MaxValue)
 {
@@ -84,111 +84,111 @@ HK_FORCEINLINE int64_t SignedBoundsCheck(int64_t Value, int64_t MinValue, int64_
     return Value;
 }
 
-HK_FORCEINLINE uint8_t ParseUInt8(AStringView Str)
+HK_FORCEINLINE uint8_t ParseUInt8(StringView Str)
 {
     return static_cast<uint8_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint8_t>()));
 }
 
-HK_FORCEINLINE uint16_t ParseUInt16(AStringView Str)
+HK_FORCEINLINE uint16_t ParseUInt16(StringView Str)
 {
     return static_cast<uint16_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint16_t>()));
 }
 
-HK_FORCEINLINE uint32_t ParseUInt32(AStringView Str)
+HK_FORCEINLINE uint32_t ParseUInt32(StringView Str)
 {
     return static_cast<uint32_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint32_t>()));
 }
 
-HK_FORCEINLINE uint64_t ParseUInt64(AStringView Str)
+HK_FORCEINLINE uint64_t ParseUInt64(StringView Str)
 {
     return ParseUnsigned(Str);
 }
 
-HK_FORCEINLINE int8_t ParseInt8(AStringView Str)
+HK_FORCEINLINE int8_t ParseInt8(StringView Str)
 {
     return static_cast<int8_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int8_t>(), Math::MaxValue<int8_t>()));
 }
 
-HK_FORCEINLINE int16_t ParseInt16(AStringView Str)
+HK_FORCEINLINE int16_t ParseInt16(StringView Str)
 {
     return static_cast<int16_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int16_t>(), Math::MaxValue<int16_t>()));
 }
 
-HK_FORCEINLINE int32_t ParseInt32(AStringView Str)
+HK_FORCEINLINE int32_t ParseInt32(StringView Str)
 {
     return static_cast<int32_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int32_t>(), Math::MaxValue<int32_t>()));
 }
 
-HK_FORCEINLINE int64_t ParseInt64(AStringView Str)
+HK_FORCEINLINE int64_t ParseInt64(StringView Str)
 {
     return ParseSigned(Str);
 }
 
 template <typename T>
-T ParseNumber(AStringView);
+T ParseNumber(StringView);
 
 template <>
-HK_FORCEINLINE float ParseNumber<float>(AStringView Str)
+HK_FORCEINLINE float ParseNumber<float>(StringView Str)
 {
     return ParseFloat(Str);
 }
 
 template <>
-HK_FORCEINLINE double ParseNumber<double>(AStringView Str)
+HK_FORCEINLINE double ParseNumber<double>(StringView Str)
 {
     return ParseDouble(Str);
 }
 
 template <>
-HK_FORCEINLINE uint8_t ParseNumber<uint8_t>(AStringView Str)
+HK_FORCEINLINE uint8_t ParseNumber<uint8_t>(StringView Str)
 {
     return ParseUInt8(Str);
 }
 
 template <>
-HK_FORCEINLINE uint16_t ParseNumber<uint16_t>(AStringView Str)
+HK_FORCEINLINE uint16_t ParseNumber<uint16_t>(StringView Str)
 {
     return ParseUInt16(Str);
 }
 
 template <>
-HK_FORCEINLINE uint32_t ParseNumber<uint32_t>(AStringView Str)
+HK_FORCEINLINE uint32_t ParseNumber<uint32_t>(StringView Str)
 {
     return ParseUInt32(Str);
 }
 
 template <>
-HK_FORCEINLINE uint64_t ParseNumber<uint64_t>(AStringView Str)
+HK_FORCEINLINE uint64_t ParseNumber<uint64_t>(StringView Str)
 {
     return ParseUInt64(Str);
 }
 
 template <>
-HK_FORCEINLINE int8_t ParseNumber<int8_t>(AStringView Str)
+HK_FORCEINLINE int8_t ParseNumber<int8_t>(StringView Str)
 {
     return ParseInt8(Str);
 }
 
 template <>
-HK_FORCEINLINE int16_t ParseNumber<int16_t>(AStringView Str)
+HK_FORCEINLINE int16_t ParseNumber<int16_t>(StringView Str)
 {
     return ParseInt16(Str);
 }
 
 template <>
-HK_FORCEINLINE int32_t ParseNumber<int32_t>(AStringView Str)
+HK_FORCEINLINE int32_t ParseNumber<int32_t>(StringView Str)
 {
     return ParseInt32(Str);
 }
 
 template <>
-HK_FORCEINLINE int64_t ParseNumber<int64_t>(AStringView Str)
+HK_FORCEINLINE int64_t ParseNumber<int64_t>(StringView Str)
 {
     return ParseInt64(Str);
 }
 
 template <>
-HK_FORCEINLINE bool ParseNumber<bool>(AStringView Str)
+HK_FORCEINLINE bool ParseNumber<bool>(StringView Str)
 {
     return ParseBool(Str);
 }

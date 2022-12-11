@@ -36,25 +36,25 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(ACameraComponent)
+HK_CLASS_META(CameraComponent)
 
-ACameraComponent::ACameraComponent()
+CameraComponent::CameraComponent()
 {}
 
-void ACameraComponent::OnCreateAvatar()
+void CameraComponent::OnCreateAvatar()
 {
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Box"s);
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
+    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Box"s);
+    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
 
     MeshRenderView* meshRender = NewObj<MeshRenderView>();
     meshRender->SetMaterial(MaterialInstance);
 
-    AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("CameraAvatar");
+    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("CameraAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
@@ -66,7 +66,7 @@ void ACameraComponent::OnCreateAvatar()
     meshComponent->SetHideInEditor(true);
 }
 
-void ACameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
+void CameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
 {
     if (m_Projection != _Projection)
     {
@@ -75,7 +75,7 @@ void ACameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
     }
 }
 
-void ACameraComponent::SetZNear(float _ZNear)
+void CameraComponent::SetZNear(float _ZNear)
 {
     if (m_ZNear != _ZNear)
     {
@@ -84,7 +84,7 @@ void ACameraComponent::SetZNear(float _ZNear)
     }
 }
 
-void ACameraComponent::SetZFar(float _ZFar)
+void CameraComponent::SetZFar(float _ZFar)
 {
     if (m_ZFar != _ZFar)
     {
@@ -93,7 +93,7 @@ void ACameraComponent::SetZFar(float _ZFar)
     }
 }
 
-void ACameraComponent::SetFovX(float _FieldOfView)
+void CameraComponent::SetFovX(float _FieldOfView)
 {
     if (m_FovX != _FieldOfView)
     {
@@ -102,7 +102,7 @@ void ACameraComponent::SetFovX(float _FieldOfView)
     }
 }
 
-void ACameraComponent::SetFovY(float _FieldOfView)
+void CameraComponent::SetFovY(float _FieldOfView)
 {
     if (m_FovY != _FieldOfView)
     {
@@ -111,7 +111,7 @@ void ACameraComponent::SetFovY(float _FieldOfView)
     }
 }
 
-void ACameraComponent::SetAspectRatio(float _AspectRatio)
+void CameraComponent::SetAspectRatio(float _AspectRatio)
 {
     if (m_AspectRatio != _AspectRatio)
     {
@@ -120,7 +120,7 @@ void ACameraComponent::SetAspectRatio(float _AspectRatio)
     }
 }
 
-void ACameraComponent::GetEffectiveFov(float& _FovX, float& _FovY) const
+void CameraComponent::GetEffectiveFov(float& _FovX, float& _FovY) const
 {
     _FovX = 0;
     _FovY = 0;
@@ -144,7 +144,7 @@ void ACameraComponent::GetEffectiveFov(float& _FovX, float& _FovY) const
     }
 }
 
-void ACameraComponent::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
+void CameraComponent::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
 {
     m_OrthoMins = _Mins;
     m_OrthoMaxs = _Maxs;
@@ -155,7 +155,7 @@ void ACameraComponent::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
     }
 }
 
-void ACameraComponent::SetOrthoZoom(float _Zoom)
+void CameraComponent::SetOrthoZoom(float _Zoom)
 {
     m_OrthoZoom = _Zoom;
 
@@ -165,7 +165,7 @@ void ACameraComponent::SetOrthoZoom(float _Zoom)
     }
 }
 
-void ACameraComponent::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Float2& _Mins, Float2& _Maxs)
+void CameraComponent::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Float2& _Mins, Float2& _Maxs)
 {
     if (_CameraAspectRatio > 0.0f)
     {
@@ -183,12 +183,12 @@ void ACameraComponent::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Floa
     }
 }
 
-void ACameraComponent::OnTransformDirty()
+void CameraComponent::OnTransformDirty()
 {
     m_bViewMatrixDirty = true;
 }
 
-void ACameraComponent::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) const
+void CameraComponent::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) const
 {
     // TODO: if ( ClusterProjectionDirty ...
 
@@ -199,7 +199,7 @@ void ACameraComponent::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) 
             break;
         case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
             Float2 orthoMins, orthoMaxs;
-            ACameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+            CameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
             _ProjectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
             break;
         }
@@ -215,7 +215,7 @@ void ACameraComponent::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) 
     }
 }
 
-Float4x4 const& ACameraComponent::GetProjectionMatrix() const
+Float4x4 const& CameraComponent::GetProjectionMatrix() const
 {
     if (m_bProjectionDirty)
     {
@@ -226,7 +226,7 @@ Float4x4 const& ACameraComponent::GetProjectionMatrix() const
                 break;
             case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
                 Float2 orthoMins, orthoMaxs;
-                ACameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+                CameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
                 m_ProjectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, m_ZNear, m_ZFar);
                 break;
             }
@@ -248,7 +248,7 @@ Float4x4 const& ACameraComponent::GetProjectionMatrix() const
     return m_ProjectionMatrix;
 }
 
-void ACameraComponent::MakeRay(float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd) const
+void CameraComponent::MakeRay(float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd) const
 {
     // Update projection matrix
     GetProjectionMatrix();
@@ -263,7 +263,7 @@ void ACameraComponent::MakeRay(float _NormalizedX, float _NormalizedY, Float3& _
     MakeRay(ModelViewProjectionInversed, _NormalizedX, _NormalizedY, _RayStart, _RayEnd);
 }
 
-void ACameraComponent::MakeRay(Float4x4 const& _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd)
+void CameraComponent::MakeRay(Float4x4 const& _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd)
 {
     float x = 2.0f * _NormalizedX - 1.0f;
     float y = 2.0f * _NormalizedY - 1.0f;
@@ -293,7 +293,7 @@ void ACameraComponent::MakeRay(Float4x4 const& _ModelViewProjectionInversed, flo
 #endif
 }
 
-BvFrustum const& ACameraComponent::GetFrustum() const
+BvFrustum const& CameraComponent::GetFrustum() const
 {
     // Update projection matrix
     GetProjectionMatrix();
@@ -311,7 +311,7 @@ BvFrustum const& ACameraComponent::GetFrustum() const
     return m_Frustum;
 }
 
-Float4x4 const& ACameraComponent::GetViewMatrix() const
+Float4x4 const& CameraComponent::GetViewMatrix() const
 {
     if (m_bViewMatrixDirty)
     {
@@ -332,7 +332,7 @@ Float4x4 const& ACameraComponent::GetViewMatrix() const
     return m_ViewMatrix;
 }
 
-Float3x3 const& ACameraComponent::GetBillboardMatrix() const
+Float3x3 const& CameraComponent::GetBillboardMatrix() const
 {
     // Update billboard matrix
     GetViewMatrix();
@@ -340,7 +340,7 @@ Float3x3 const& ACameraComponent::GetBillboardMatrix() const
     return m_BillboardMatrix;
 }
 
-void ACameraComponent::DrawDebug(ADebugRenderer* InRenderer)
+void CameraComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 

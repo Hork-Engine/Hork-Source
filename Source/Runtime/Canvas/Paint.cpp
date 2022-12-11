@@ -106,7 +106,7 @@ CanvasPaint& CanvasPaint::BoxGradient(Float2 const& boxTopLeft, float w, float h
     return *this;
 }
 
-CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, ATextureView* textureView, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
+CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, TextureView* textureView, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
 {
     if (angleInRadians != 0.0f)
     {

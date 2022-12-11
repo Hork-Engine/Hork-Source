@@ -37,18 +37,18 @@ SOFTWARE.
 
 /**
 
-AScopedTimer
+ScopedTimer
 
 */
-struct AScopedTimer
+struct ScopedTimer
 {
     const char* Name;
     int64_t     Milliseconds;
 
-    AScopedTimer(const char* _Name) :
+    ScopedTimer(const char* _Name) :
         Name(_Name)
     {
-        extern AConsoleVar rt_ScopedTimeCheck;
+        extern ConsoleVar rt_ScopedTimeCheck;
 
         if (rt_ScopedTimeCheck)
         {
@@ -56,9 +56,9 @@ struct AScopedTimer
         }
     }
 
-    ~AScopedTimer()
+    ~ScopedTimer()
     {
-        extern AConsoleVar rt_ScopedTimeCheck;
+        extern ConsoleVar rt_ScopedTimeCheck;
 
         if (rt_ScopedTimeCheck)
         {

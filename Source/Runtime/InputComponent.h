@@ -88,7 +88,7 @@ enum CONTROLLER
     CONTROLLER_PLAYER_16 = 15
 };
 
-struct SInputDeviceKey
+struct InputDeviceKey
 {
     uint16_t DeviceId;
     uint16_t KeyId;
@@ -98,20 +98,20 @@ struct SInputDeviceKey
         return HashTraits::Murmur3Hash32(*(const int32_t*)&DeviceId);
     }
 
-    bool operator==(SInputDeviceKey const& Rhs) const
+    bool operator==(InputDeviceKey const& Rhs) const
     {
         return DeviceId == Rhs.DeviceId && KeyId == Rhs.KeyId;
     }
 };
 
-class AInputMappings : public AResource
+class InputMappings : public Resource
 {
-    HK_CLASS(AInputMappings, AResource)
+    HK_CLASS(InputMappings, Resource)
 
 public:
-    struct SMapping
+    struct Mapping
     {
-        AString Name;
+        String  Name;
         int     NameHash;
         float   AxisScale;
         uint8_t ModMask;
@@ -119,7 +119,7 @@ public:
         bool    bAxis;
     };
 
-    struct SAxisMapping
+    struct AxisMapping
     {
         uint16_t DeviceId;
         uint16_t KeyId;
@@ -127,40 +127,39 @@ public:
         uint8_t  ControllerId;
     };
 
-    AInputMappings()
-    {}
+    InputMappings() = default;
 
-    void MapAxis(AStringView AxisName, SInputDeviceKey const& DeviceKey, float AxisScale, int ControllerId);
-    void UnmapAxis(SInputDeviceKey const& DeviceKey);
+    void MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey, float AxisScale, int ControllerId);
+    void UnmapAxis(InputDeviceKey const& DeviceKey);
 
-    void MapAction(AStringView ActionName, SInputDeviceKey const& DeviceKey, int ModMask, int ControllerId);
-    void UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask);
+    void MapAction(StringView ActionName, InputDeviceKey const& DeviceKey, int ModMask, int ControllerId);
+    void UnmapAction(InputDeviceKey const& DeviceKey, int ModMask);
 
     void UnmapAll();
 
-    THashMap<SInputDeviceKey, TVector<SMapping>> const& GetMappings() const { return Mappings; }
+    THashMap<InputDeviceKey, TVector<Mapping>> const& GetMappings() const { return Mappings; }
 
-    TNameHash<TPodVector<SAxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
+    TNameHash<TPodVector<AxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
 
 private:
-    void InitializeFromDocument(ADocument const& Document);
+    void InitializeFromDocument(Document const& Document);
 
-    THashMap<SInputDeviceKey, TVector<SMapping>> Mappings;
-    TNameHash<TPodVector<SAxisMapping>>          AxisMappings;
+    THashMap<InputDeviceKey, TVector<Mapping>> Mappings;
+    TNameHash<TPodVector<AxisMapping>>         AxisMappings;
 };
 
-class AInputComponent : public AActorComponent
+class InputComponent : public ActorComponent
 {
-    HK_COMPONENT(AInputComponent, AActorComponent)
+    HK_COMPONENT(InputComponent, ActorComponent)
 
 public:
     /** Filter keyboard events */
@@ -178,36 +177,36 @@ public:
     int ControllerId = 0;
 
     /** Set input mappings config */
-    void SetInputMappings(AInputMappings* Mappings);
+    void SetInputMappings(InputMappings* Mappings);
 
     /** Get input mappints config */
-    AInputMappings* GetInputMappings() const;
+    InputMappings* GetInputMappings() const;
 
     /** Bind axis to class method */
     template <typename T>
-    void BindAxis(AStringView Axis, T* Object, void (T::*Method)(float), bool bExecuteEvenWhenPaused = false)
+    void BindAxis(StringView Axis, T* Object, void (T::*Method)(float), bool bExecuteEvenWhenPaused = false)
     {
         BindAxis(Axis, {Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Bind axis to function */
-    void BindAxis(AStringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused = false);
+    void BindAxis(StringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     /** Unbind axis */
-    void UnbindAxis(AStringView Axis);
+    void UnbindAxis(StringView Axis);
 
     /** Bind action to class method */
     template <typename T>
-    void BindAction(AStringView Action, int Event, T* Object, void (T::*Method)(), bool bExecuteEvenWhenPaused = false)
+    void BindAction(StringView Action, int Event, T* Object, void (T::*Method)(), bool bExecuteEvenWhenPaused = false)
     {
         BindAction(Action, Event, {Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Bind action to function */
-    void BindAction(AStringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused = false);
+    void BindAction(StringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     /** Unbind action */
-    void UnbindAction(AStringView Action);
+    void UnbindAction(StringView Action);
 
     /** Unbind all */
     void UnbindAll();
@@ -230,10 +229,10 @@ public:
     bool IsMouseDown(uint16_t Button) const { return GetButtonState({ID_MOUSE, Button}); }
     bool IsJoyDown(int JoystickId, uint16_t Button) const;
 
-    void SetButtonState(SInputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp);
+    void SetButtonState(InputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp);
 
     /** Return is button pressed or not */
-    bool GetButtonState(SInputDeviceKey const& DeviceKey) const;
+    bool GetButtonState(InputDeviceKey const& DeviceKey) const;
 
     void UnpressButtons();
 
@@ -250,20 +249,20 @@ public:
 
     void NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp);
 
-    AInputComponent* GetNext() { return Next; }
-    AInputComponent* GetPrev() { return Prev; }
+    InputComponent* GetNext() { return Next; }
+    InputComponent* GetPrev() { return Prev; }
 
     static void SetJoystickAxisState(int Joystick, int Axis, float Value);
 
     static float GetJoystickAxisState(int Joystick, int Axis);
 
-    static AInputComponent* GetInputComponents() { return InputComponents; }
+    static InputComponent* GetInputComponents() { return InputComponents; }
 
 protected:
-    struct SAxisBinding
+    struct AxisBinding
     {
         /** Axis name */
-        //AString Name;
+        //String Name;
         /** Binding callback */
         TCallback<void(float)> Callback;
         /** Final axis value that will be passed to binding callback */
@@ -272,66 +271,66 @@ protected:
         bool bExecuteEvenWhenPaused;
     };
 
-    struct SActionBinding
+    struct ActionBinding
     {
         /** Action name */
-        //AString Name;
+        //String Name;
         /** Binding callback */
         TCallback<void()> Callback[2];
         /** Execute binding even when paused */
         bool bExecuteEvenWhenPaused;
     };
 
-    enum class EBindingType
+    enum class BINDING_TYPE
     {
-        Undefined,
-        Axis,
-        Action
+        UNDEFINED,
+        AXIS,
+        ACTION
     };
 
-    struct SPressedKey
+    struct PressedKey
     {
         uint16_t     Key;
-        AString      Binding;
-        EBindingType BindingType;
+        String       Binding;
+        BINDING_TYPE BindingType;
         float        AxisScale;
         uint8_t      DeviceId;
 
-        void BindAxis(AStringView Axis, float Scale)
+        void BindAxis(StringView Axis, float Scale)
         {
-            BindingType = EBindingType::Axis;
+            BindingType = BINDING_TYPE::AXIS;
             Binding     = Axis;
             AxisScale   = Scale;
         }
 
-        void BindAction(AStringView Action)
+        void BindAction(StringView Action)
         {
-            BindingType = EBindingType::Action;
+            BindingType = BINDING_TYPE::ACTION;
             Binding     = Action;
         }
 
         void Unbind()
         {
-            BindingType = EBindingType::Undefined;
+            BindingType = BINDING_TYPE::UNDEFINED;
         }
     };
 
-    AInputComponent();
-    ~AInputComponent();
+    InputComponent();
+    ~InputComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    TRef<AInputMappings> InputMappings;
+    TRef<InputMappings> m_InputMappings;
 
     int BindingVersion = 0;
 
-    TNameHash<SAxisBinding>   AxisBindingsHash;
-    TNameHash<SActionBinding> ActionBindingsHash;
+    TNameHash<AxisBinding>   AxisBindingsHash;
+    TNameHash<ActionBinding> ActionBindingsHash;
 
     /** Array of pressed keys */
-    TArray<SPressedKey, MAX_PRESSED_KEYS> PressedKeys    = {};
-    int                                   NumPressedKeys = 0;
+    TArray<PressedKey, MAX_PRESSED_KEYS> PressedKeys    = {};
+    int                                  NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
     TArray<int8_t*, MAX_INPUT_DEVICES>                                DeviceButtonDown;
@@ -348,13 +347,13 @@ protected:
     bool                                   bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components
-    AInputComponent*        Next = nullptr;
-    AInputComponent*        Prev = nullptr;
-    static AInputComponent* InputComponents;
-    static AInputComponent* InputComponentsTail;
+    InputComponent*        Next = nullptr;
+    InputComponent*        Prev = nullptr;
+    static InputComponent* InputComponents;
+    static InputComponent* InputComponentsTail;
 };
 
-class AInputHelper final
+class InputHelper final
 {
 public:
     /** Translate device to string */
@@ -364,27 +363,27 @@ public:
     static const char* TranslateModifier(int Modifier);
 
     /** Translate key code to string */
-    static const char* TranslateDeviceKey(SInputDeviceKey const& DeviceKey);
+    static const char* TranslateDeviceKey(InputDeviceKey const& DeviceKey);
 
     /** Translate key owner player to string */
     static const char* TranslateController(int ControllerId);
 
     /** Lookup device from string */
-    static uint16_t LookupDevice(AStringView Device);
+    static uint16_t LookupDevice(StringView Device);
 
     /** Lookup modifier from string */
-    static int LookupModifier(AStringView Modifier);
+    static int LookupModifier(StringView Modifier);
 
     /** Lookup key code from string */
-    static uint16_t LookupDeviceKey(uint16_t DeviceId, AStringView Key);
+    static uint16_t LookupDeviceKey(uint16_t DeviceId, StringView Key);
 
     /** Lookup key owner player from string */
-    static int LookupController(AStringView ControllerId);
+    static int LookupController(StringView ControllerId);
 };
 
-extern AConsoleVar in_MouseSensitivity;
-extern AConsoleVar in_MouseSensX;
-extern AConsoleVar in_MouseSensY;
-extern AConsoleVar in_MouseFilter;
-extern AConsoleVar in_MouseInvertY;
-extern AConsoleVar in_MouseAccel;
+extern ConsoleVar in_MouseSensitivity;
+extern ConsoleVar in_MouseSensX;
+extern ConsoleVar in_MouseSensY;
+extern ConsoleVar in_MouseFilter;
+extern ConsoleVar in_MouseInvertY;
+extern ConsoleVar in_MouseAccel;

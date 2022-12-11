@@ -33,10 +33,10 @@ SOFTWARE.
 #include "Collision.h"
 #include "AINavigationMesh.h"
 
-class APhysicalBodyMotionState;
-class ABoneCollisionInstance;
+class PhysicalBodyMotionState;
+class BoneCollisionInstance;
 
-enum EMotionBehavior
+enum MOTION_BEHAVIOR
 {
     /** Static non-movable object */
     MB_STATIC,
@@ -48,7 +48,7 @@ enum EMotionBehavior
     MB_KINEMATIC
 };
 
-enum EAINavigationBehavior
+enum AI_NAVIGATION_BEHAVIOR
 {
     /** The body will not be used for navmesh generation */
     AI_NAVIGATION_BEHAVIOR_NONE,
@@ -66,58 +66,58 @@ enum EAINavigationBehavior
     AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE // TODO
 };
 
-struct SDebugDrawCache
+struct DebugDrawCache
 {
     TVector<Float3>       Vertices;
     TVector<unsigned int> Indices;
-    bool                         bDirty;
+    bool                  bDirty;
 };
 
-class APhysicalBody : public ASceneComponent, private ANavigationPrimitive
+class PhysicalBody : public SceneComponent, private NavigationPrimitive
 {
-    HK_COMPONENT(APhysicalBody, ASceneComponent)
+    HK_COMPONENT(PhysicalBody, SceneComponent)
 
-    friend struct SCollisionFilterCallback;
-    friend class APhysicalBodyMotionState;
-    friend class APhysicsSystem;
+    friend struct CollisionFilterCallback;
+    friend class PhysicalBodyMotionState;
+    friend class PhysicsSystem;
 
 public:
-    AHitProxy* GetHitProxy() const
+    HitProxy* GetHitProxy() const
     {
-        return HitProxy;
+        return m_HitProxy;
     }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     void SetDispatchContactEvents(bool bDispatch)
     {
-        HitProxy->bDispatchContactEvents = bDispatch;
+        m_HitProxy->bDispatchContactEvents = bDispatch;
     }
 
     bool ShouldDispatchContactEvents() const
     {
-        return HitProxy->bDispatchContactEvents;
+        return m_HitProxy->bDispatchContactEvents;
     }
 
     /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
     void SetDispatchOverlapEvents(bool bDispatch)
     {
-        HitProxy->bDispatchOverlapEvents = bDispatch;
+        m_HitProxy->bDispatchOverlapEvents = bDispatch;
     }
 
     bool ShouldDispatchOverlapEvents() const
     {
-        return HitProxy->bDispatchOverlapEvents;
+        return m_HitProxy->bDispatchOverlapEvents;
     }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     void SetGenerateContactPoints(bool bGenerate)
     {
-        HitProxy->bGenerateContactPoints = bGenerate;
+        m_HitProxy->bGenerateContactPoints = bGenerate;
     }
 
     bool ShouldGenerateContactPoints() const
     {
-        return HitProxy->bGenerateContactPoints;
+        return m_HitProxy->bGenerateContactPoints;
     }
 
     /** Set to false if you want to use own collision model and discard collisions from the mesh. */
@@ -125,77 +125,77 @@ public:
 
     bool ShouldUseMeshCollision() const
     {
-        return bUseMeshCollision;
+        return m_bUseMeshCollision;
     }
 
     /** Collision model. */
-    void SetCollisionModel(ACollisionModel* CollisionModel);
+    void SetCollisionModel(CollisionModel* collisionModel);
 
     /** Get current collision model */
-    ACollisionModel* GetCollisionModel() const;
+    CollisionModel* GetCollisionModel() const;
 
     /** Set object motion behavior: static, simulated, kinematic */
-    void SetMotionBehavior(EMotionBehavior _MotionBehavior);
+    void SetMotionBehavior(MOTION_BEHAVIOR _MotionBehavior);
 
     /** Get object motion behavior: static, dynamic, kinematic */
-    EMotionBehavior GetMotionBehavior() const { return MotionBehavior; }
+    MOTION_BEHAVIOR GetMotionBehavior() const { return m_MotionBehavior; }
 
     /** Specifies how the body will be used by navigation mesh generator */
-    void SetAINavigationBehavior(EAINavigationBehavior _AINavigationBehavior);
+    void SetAINavigationBehavior(AI_NAVIGATION_BEHAVIOR _AINavigationBehavior);
 
     /** How the body will be used to build AI navigation mesh */
-    EAINavigationBehavior GetAINavigationBehavior() const { return AINavigationBehavior; }
+    AI_NAVIGATION_BEHAVIOR GetAINavigationBehavior() const { return m_AINavigationBehavior; }
 
     /** Trigger can produce overlap events. */
     void SetTrigger(bool _Trigger);
 
     /** Trigger can produce overlap events. */
-    bool IsTrigger() const { return HitProxy->IsTrigger(); }
+    bool IsTrigger() const { return m_HitProxy->IsTrigger(); }
 
     /** Set to true to disable world gravity. Only for MB_SIMULATED */
     void SetDisableGravity(bool _DisableGravity);
 
     /** Return true if gravity is disabled for the object. */
-    bool IsGravityDisabled() const { return bDisableGravity; }
+    bool IsGravityDisabled() const { return m_bDisableGravity; }
 
     /** Set to true to override world gravity and use self gravity. Only for MB_SIMULATED */
     void SetOverrideWorldGravity(bool _OverrideWorldGravity);
 
     /** Return true if gravity is overriden for the object. */
-    bool IsWorldGravityOverriden() const { return bOverrideWorldGravity; }
+    bool IsWorldGravityOverriden() const { return m_bOverrideWorldGravity; }
 
     /** Object self gravity, use with bOverrideWorldGravity. Only for MB_SIMULATED */
     void SetSelfGravity(Float3 const& _SelfGravity);
 
     /** Object self gravity, use with bOverrideWorldGravity. Only for MB_SIMULATED */
-    Float3 const& GetSelfGravity() const { return SelfGravity; }
+    Float3 const& GetSelfGravity() const { return m_SelfGravity; }
 
     /** Object mass. Only for MB_SIMULATED */
     void SetMass(float _Mass);
 
     /** Object mass. Only for MB_SIMULATED */
-    float GetMass() const { return Mass; }
+    float GetMass() const { return m_Mass; }
 
     /** Set collision group/layer. See COLLISION_MASK. */
-    void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
+    void SetCollisionGroup(COLLISION_MASK collisionGroup);
 
     /** Get collision group. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+    COLLISION_MASK GetCollisionGroup() const { return m_HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See COLLISION_MASK. */
-    void SetCollisionMask(COLLISION_MASK _CollisionMask);
+    void SetCollisionMask(COLLISION_MASK collisionMask);
 
     /** Get collision mask. See COLLISION_MASK. */
-    COLLISION_MASK GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+    COLLISION_MASK GetCollisionMask() const { return m_HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See COLLISION_MASK. */
-    void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
+    void SetCollisionFilter(COLLISION_MASK collisionGroup, COLLISION_MASK collisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* _Actor);
+    void AddCollisionIgnoreActor(AActor* actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* _Actor);
+    void RemoveCollisionIgnoreActor(AActor* actor);
 
     /** Force physics activation */
     void ActivatePhysics();
@@ -204,87 +204,87 @@ public:
     bool IsPhysicsActive() const;
 
     /** Overwrite linear velocity */
-    void SetLinearVelocity(Float3 const& _Velocity);
+    void SetLinearVelocity(Float3 const& velocity);
 
     /** Increment linear velocity */
-    void AddLinearVelocity(Float3 const& _Velocity);
+    void AddLinearVelocity(Float3 const& velocity);
 
-    /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
+    /** Get object velocity. For soft bodies use GetVertexVelocity in SoftMeshComponent. */
     Float3 GetLinearVelocity() const;
 
     /** Get object velocity at local point. */
-    Float3 GetVelocityAtPoint(Float3 const& _Position) const;
+    Float3 GetVelocityAtPoint(Float3 const& position) const;
 
     /** Object linear velocity factor */
-    void SetLinearFactor(Float3 const& _Factor);
+    void SetLinearFactor(Float3 const& factor);
 
     /** Object linear velocity factor */
     Float3 const& GetLinearFactor() const;
 
-    void SetLinearSleepingThreshold(float _Threshold);
+    void SetLinearSleepingThreshold(float threshold);
 
     float GetLinearSleepingThreshold() const;
 
-    void SetLinearDamping(float _Damping);
+    void SetLinearDamping(float damping);
 
     float GetLinearDamping() const;
 
     /** Overwrite angular velocity */
-    void SetAngularVelocity(Float3 const& _Velocity);
+    void SetAngularVelocity(Float3 const& velocity);
 
     /** Increment angular velocity */
-    void AddAngularVelocity(Float3 const& _Velocity);
+    void AddAngularVelocity(Float3 const& velocity);
 
     /** Object angular velocity */
     Float3 GetAngularVelocity() const;
 
     /** Object angular velocity factor */
-    void SetAngularFactor(Float3 const& _Factor);
+    void SetAngularFactor(Float3 const& factor);
 
     /** Object angular velocity factor */
     Float3 const& GetAngularFactor() const;
 
-    void SetAngularSleepingThreshold(float _Threshold);
+    void SetAngularSleepingThreshold(float threshold);
 
     float GetAngularSleepingThreshold() const;
 
-    void SetAngularDamping(float _Damping);
+    void SetAngularDamping(float damping);
 
     float GetAngularDamping() const;
 
-    void SetFriction(float _Friction);
+    void SetFriction(float friction);
 
     float GetFriction() const;
 
-    void SetAnisotropicFriction(Float3 const& _Friction);
+    void SetAnisotropicFriction(Float3 const& friction);
 
     Float3 const& GetAnisotropicFriction() const;
 
     /** The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever. */
-    void SetRollingFriction(float _Friction);
+    void SetRollingFriction(float friction);
 
     /** The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever. */
     float GetRollingFriction() const;
 
     /** Best simulation results using zero restitution. */
-    void SetRestitution(float _Restitution);
+    void SetRestitution(float restitution);
 
     /** Best simulation results using zero restitution. */
     float GetRestitution() const;
 
     /** Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX */
-    void SetContactProcessingThreshold(float _Threshold);
+    void SetContactProcessingThreshold(float threshold);
 
     float GetContactProcessingThreshold() const;
 
     /** Continuous collision detection swept radius */
-    void SetCcdRadius(float _Radius);
+    void SetCcdRadius(float radius);
 
     /** Continuous collision detection swept radius */
     float GetCcdRadius() const;
 
     /** Don't do continuous collision detection if the motion (in one step) is less then CcdMotionThreshold */
-    void SetCcdMotionThreshold(float _Threshold);
+    void SetCcdMotionThreshold(float threshold);
 
     float GetCcdMotionThreshold() const;
 
@@ -300,44 +300,44 @@ public:
 
         The force is then applied to the linear velocity during the integration step:
         Velocity += TotalForce / Mass * Step; */
-    void ApplyCentralForce(Float3 const& _Force);
+    void ApplyCentralForce(Float3 const& force);
 
     /** Apply force at specified point. */
-    void ApplyForce(Float3 const& _Force, Float3 const& _Position);
+    void ApplyForce(Float3 const& force, Float3 const& position);
 
-    void ApplyTorque(Float3 const& _Torque);
+    void ApplyTorque(Float3 const& torque);
 
     /** Change linear velocity by formula:
         Velocity += Impulse * LinearFactor / Mass */
-    void ApplyCentralImpulse(Float3 const& _Impulse);
+    void ApplyCentralImpulse(Float3 const& impulse);
 
-    void ApplyImpulse(Float3 const& _Impulse, Float3 const& _Position);
+    void ApplyImpulse(Float3 const& impulse, Float3 const& position);
 
-    void ApplyTorqueImpulse(Float3 const& _Torque);
+    void ApplyTorqueImpulse(Float3 const& torque);
 
-    void GetCollisionBodiesWorldBounds(TPodVector<BvAxisAlignedBox>& _BoundingBoxes) const;
+    void GetCollisionBodiesWorldBounds(TPodVector<BvAxisAlignedBox>& boundingBoxes) const;
 
-    void GetCollisionWorldBounds(BvAxisAlignedBox& _BoundingBox) const;
+    void GetCollisionWorldBounds(BvAxisAlignedBox& boundingBox) const;
 
-    void GetCollisionBodyWorldBounds(int _Index, BvAxisAlignedBox& _BoundingBox) const;
+    void GetCollisionBodyWorldBounds(int index, BvAxisAlignedBox& boundingBox) const;
 
-    void GetCollisionBodyLocalBounds(int _Index, BvAxisAlignedBox& _BoundingBox) const;
+    void GetCollisionBodyLocalBounds(int index, BvAxisAlignedBox& boundingBox) const;
 
-    float GetCollisionBodyMargin(int _Index) const;
+    float GetCollisionBodyMargin(int index) const;
 
     int GetCollisionBodiesCount() const;
 
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
     void GatherCollisionGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices) const;
 
-    void CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const;
+    void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
 
     void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
 
-    void GatherNavigationGeometry(SNavigationGeometry& Geometry) const override;
+    void GatherNavigationGeometry(NavigationGeometry& Geometry) const override;
 
 protected:
-    APhysicalBody();
+    PhysicalBody();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -352,18 +352,18 @@ protected:
 
     void UpdatePhysicsAttribs();
 
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
-    virtual ACollisionModel* GetMeshCollisionModel() const { return nullptr; }
+    virtual CollisionModel* GetMeshCollisionModel() const { return nullptr; }
 
-    friend class ABoneCollisionInstance;
+    friend class BoneCollisionInstance;
     virtual Float3x4 const& _GetJointTransform(int _JointIndex)
     {
         return Float3x4::Identity();
     }
 
     bool              bSoftBodySimulation = false;
-    class btSoftBody* SoftBody            = nullptr; // managed by ASoftMeshComponent
+    class btSoftBody* SoftBody            = nullptr; // managed by SoftMeshComponent
 
 private:
     void CreateRigidBody();
@@ -375,37 +375,37 @@ private:
     void SetRigidBodyGravity();
     void UpdateDebugDrawCache();
 
-    TRef<AHitProxy>                     HitProxy;
-    TRef<ACollisionModel>               CollisionModel;
-    TRef<ACollisionInstance>            CollisionInstance;
-    TPodVector<ABoneCollisionInstance*> BoneCollisionInst;
-    class btRigidBody*                  RigidBody   = nullptr;
-    APhysicalBodyMotionState*           MotionState = nullptr;
-    TUniqueRef<SDebugDrawCache>         DebugDrawCache;
+    TRef<HitProxy>              m_HitProxy;
+    TRef<CollisionModel>        m_CollisionModel;
+    TRef<CollisionInstance>     m_CollisionInstance;
+    TPodVector<BoneCollisionInstance*> m_BoneCollisionInst;
+    class btRigidBody*          m_RigidBody = nullptr;
+    PhysicalBodyMotionState*   m_MotionState = nullptr;
+    TUniqueRef<DebugDrawCache> m_DebugDrawCache;
 
-    float                 Mass                       = 1.0f;
-    Float3                SelfGravity                = Float3(0.0f);
-    Float3                LinearFactor               = Float3(1);
-    float                 LinearDamping              = 0.0f;
-    Float3                AngularFactor              = Float3(1);
-    float                 AngularDamping             = 0.0f;
-    float                 Friction                   = 0.5f;
-    Float3                AnisotropicFriction        = Float3(1);
-    float                 RollingFriction            = 0.0f;
-    float                 Restitution                = 0.0f;
-    float                 ContactProcessingThreshold = 1e18f;
-    float                 LinearSleepingThreshold    = 0.8f;
-    float                 AngularSleepingThreshold   = 1.0f;
-    float                 CcdRadius                  = 0.0f;
-    float                 CcdMotionThreshold         = 0.0f;
-    EMotionBehavior       MotionBehavior             = MB_STATIC;
-    EAINavigationBehavior AINavigationBehavior       = AI_NAVIGATION_BEHAVIOR_NONE;
-    bool                  bDisableGravity            = false;
-    bool                  bOverrideWorldGravity      = false;
-    bool                  bUseMeshCollision          = false;
-    Float3                CachedScale                = Float3(1.0f);
-    //float               SpinningFriction           = 0.0f;   // Torsional friction around contact normal
+    float                 m_Mass                       = 1.0f;
+    Float3                m_SelfGravity                = Float3(0.0f);
+    Float3                m_LinearFactor               = Float3(1);
+    float                 m_LinearDamping              = 0.0f;
+    Float3                m_AngularFactor              = Float3(1);
+    float                 m_AngularDamping             = 0.0f;
+    float                 m_Friction                   = 0.5f;
+    Float3                m_AnisotropicFriction        = Float3(1);
+    float                 m_RollingFriction            = 0.0f;
+    float                 m_Restitution                = 0.0f;
+    float                 m_ContactProcessingThreshold = 1e18f;
+    float                 m_LinearSleepingThreshold    = 0.8f;
+    float                 m_AngularSleepingThreshold   = 1.0f;
+    float                 m_CcdRadius                  = 0.0f;
+    float                 m_CcdMotionThreshold         = 0.0f;
+    MOTION_BEHAVIOR       m_MotionBehavior             = MB_STATIC;
+    AI_NAVIGATION_BEHAVIOR m_AINavigationBehavior       = AI_NAVIGATION_BEHAVIOR_NONE;
+    bool                  m_bDisableGravity            = false;
+    bool                  m_bOverrideWorldGravity      = false;
+    bool                  m_bUseMeshCollision          = false;
+    Float3                m_CachedScale                = Float3(1.0f);
+    //float               m_SpinningFriction           = 0.0f;   // Torsional friction around contact normal
 
-    APhysicalBody* pNextNav{};
-    APhysicalBody* pPrevNav{};
+    PhysicalBody* pNextNav{};
+    PhysicalBody* pPrevNav{};
 };

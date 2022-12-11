@@ -99,20 +99,20 @@ enum FRAMEBUFFER_BLIT_MASK : uint8_t
 
 typedef struct _SyncObject* SyncObject;
 
-struct SBufferCopy
+struct BufferCopy
 {
     size_t SrcOffset;
     size_t DstOffset;
     size_t SizeInBytes;
 };
 
-struct SBufferClear
+struct BufferClear
 {
     size_t Offset;
     size_t SizeInBytes;
 };
 
-struct SBlitRectangle
+struct BlitRectangle
 {
     uint16_t SrcX;
     uint16_t SrcY;
@@ -124,7 +124,7 @@ struct SBlitRectangle
     uint16_t DstHeight;
 };
 
-struct SViewport
+struct Viewport
 {
     float X;
     float Y;
@@ -134,7 +134,7 @@ struct SViewport
     float MaxDepth;
 };
 
-struct SDrawCmd
+struct DrawCmd
 {
     unsigned int VertexCountPerInstance;
     unsigned int InstanceCount;
@@ -142,7 +142,7 @@ struct SDrawCmd
     unsigned int StartInstanceLocation;
 };
 
-struct SDrawIndexedCmd
+struct DrawIndexedCmd
 {
     unsigned int IndexCountPerInstance;
     unsigned int InstanceCount;
@@ -151,7 +151,7 @@ struct SDrawIndexedCmd
     unsigned int StartInstanceLocation;
 };
 
-struct SDrawIndirectCmd
+struct DrawIndirectCmd
 {
     unsigned int VertexCountPerInstance;
     unsigned int InstanceCount;
@@ -159,7 +159,7 @@ struct SDrawIndirectCmd
     unsigned int StartInstanceLocation; // Since GL v4.0, ignored on older versions
 };
 
-struct SDrawIndexedIndirectCmd
+struct DrawIndexedIndirectCmd
 {
     unsigned int IndexCountPerInstance;
     unsigned int InstanceCount;
@@ -168,14 +168,14 @@ struct SDrawIndexedIndirectCmd
     unsigned int StartInstanceLocation;
 };
 
-struct SDispatchIndirectCmd
+struct DispatchIndirectCmd
 {
     unsigned int ThreadGroupCountX;
     unsigned int ThreadGroupCountY;
     unsigned int ThreadGroupCountZ;
 };
 
-struct SClearValue
+struct ClearValue
 {
     union
     {
@@ -416,7 +416,7 @@ public:
         IDeviceObject(pDevice, PROXY_TYPE, true)
     {}
 
-    virtual void ExecuteFrameGraph(class AFrameGraph* pFrameGraph) = 0;
+    virtual void ExecuteFrameGraph(class FrameGraph* pFrameGraph) = 0;
 
     //
     // Pipeline
@@ -446,25 +446,25 @@ public:
     // Viewport
     //
 
-    virtual void SetViewport(SViewport const& Viewport) = 0;
+    virtual void SetViewport(Viewport const& Viewport) = 0;
 
-    virtual void SetViewportArray(uint32_t NumViewports, SViewport const* pViewports) = 0;
+    virtual void SetViewportArray(uint32_t NumViewports, Viewport const* pViewports) = 0;
 
-    virtual void SetViewportArray(uint32_t FirstIndex, uint32_t NumViewports, SViewport const* pViewports) = 0;
+    virtual void SetViewportArray(uint32_t FirstIndex, uint32_t NumViewports, Viewport const* pViewports) = 0;
 
-    virtual void SetViewportIndexed(uint32_t Index, SViewport const& Viewport) = 0;
+    virtual void SetViewportIndexed(uint32_t Index, Viewport const& Viewport) = 0;
 
     //
     // Scissor
     //
 
-    virtual void SetScissor(SRect2D const& Scissor) = 0;
+    virtual void SetScissor(Rect2D const& Scissor) = 0;
 
-    virtual void SetScissorArray(uint32_t NumScissors, SRect2D const* pScissors) = 0;
+    virtual void SetScissorArray(uint32_t NumScissors, Rect2D const* pScissors) = 0;
 
-    virtual void SetScissorArray(uint32_t FirstIndex, uint32_t NumScissors, SRect2D const* pScissors) = 0;
+    virtual void SetScissorArray(uint32_t FirstIndex, uint32_t NumScissors, Rect2D const* pScissors) = 0;
 
-    virtual void SetScissorIndexed(uint32_t Index, SRect2D const& Scissor) = 0;
+    virtual void SetScissorIndexed(uint32_t Index, Rect2D const& Scissor) = 0;
 
     //
     // Transform feedback
@@ -485,20 +485,20 @@ public:
     //
 
     /// Draw non-indexed primitives.
-    virtual void Draw(SDrawCmd const* pCmd) = 0;
+    virtual void Draw(DrawCmd const* pCmd) = 0;
 
     /// Draw indexed primitives.
-    virtual void Draw(SDrawIndexedCmd const* pCmd) = 0;
+    virtual void Draw(DrawIndexedCmd const* pCmd) = 0;
 
     /// Draw from transform feedback
     virtual void Draw(ITransformFeedback* pTransformFeedback, unsigned int InstanceCount = 1, unsigned int StreamIndex = 0) = 0;
 
 #if 0
     /// Draw non-indexed GPU-generated primitives. From client memory.
-    virtual void DrawIndirect( SDrawIndirectCmd const * _Cmd ) = 0;
+    virtual void DrawIndirect( DrawIndirectCmd const * _Cmd ) = 0;
 
     /// Draw indexed GPU-generated primitives. From client memory.
-    virtual void DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd ) = 0;
+    virtual void DrawIndirect( DrawIndexedIndirectCmd const * _Cmd ) = 0;
 #endif
 
     /// Draw non-indexed GPU-generated primitives. From indirect buffer.
@@ -515,10 +515,10 @@ public:
 
 #if 0
     /// Draw instanced, GPU-generated primitives. From client memory.
-    virtual void MultiDrawIndirect( unsigned int DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
+    virtual void MultiDrawIndirect( unsigned int DrawCount, DrawIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
 
     /// Draw indexed, instanced, GPU-generated primitives. From client memory.
-    virtual void MultiDrawIndirect( unsigned int DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
+    virtual void MultiDrawIndirect( unsigned int DrawCount, DrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
 #endif
 
     /// Draw non-indexed GPU-generated primitives. From indirect buffer.
@@ -536,7 +536,7 @@ public:
                                  unsigned int ThreadGroupCountY,
                                  unsigned int ThreadGroupCountZ) = 0;
 
-    virtual void DispatchCompute(SDispatchIndirectCmd const* pCmd) = 0;
+    virtual void DispatchCompute(DispatchIndirectCmd const* pCmd) = 0;
 
     /// Launch one or more compute work groups using parameters stored in a dispatch indirect buffer
     virtual void DispatchComputeIndirect(IBuffer* pDispatchIndirectBuffer, unsigned int AlignedByteOffset) = 0;
@@ -613,12 +613,12 @@ public:
 
     virtual void CopyBuffer(IBuffer* pSrcBuffer, IBuffer* pDstBuffer) = 0;
 
-    virtual void CopyBufferRange(IBuffer* pSrcBuffer, IBuffer* pDstBuffer, uint32_t NumRanges, SBufferCopy const* Ranges) = 0;
+    virtual void CopyBufferRange(IBuffer* pSrcBuffer, IBuffer* pDstBuffer, uint32_t NumRanges, BufferCopy const* Ranges) = 0;
 
     /// Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE_MAP
     virtual bool CopyBufferToTexture(IBuffer const*      pSrcBuffer,
                                      ITexture*           pDstTexture,
-                                     STextureRect const& Rectangle,
+                                     TextureRect const& Rectangle,
                                      DATA_FORMAT         Format,
                                      size_t              CompressedDataSizeInBytes, /// only for compressed images
                                      size_t              SourceByteOffset,          /// offset in source buffer
@@ -628,7 +628,7 @@ public:
     /// Texture cannot be multisample
     virtual void CopyTextureToBuffer(ITexture const*     pSrcTexture,
                                      IBuffer*            pDstBuffer,
-                                     STextureRect const& Rectangle,
+                                     TextureRect const& Rectangle,
                                      DATA_FORMAT         Format,         /// how texture will be store in destination buffer
                                      size_t              SizeInBytes,    /// copying data byte length
                                      size_t              DstByteOffset, /// offset in destination buffer
@@ -645,23 +645,23 @@ public:
 
     /// Fill all of buffer object's data store with a fixed value.
     /// If _ClearValue is NULL, then the buffer's data store is filled with zeros.
-    virtual void ClearBuffer(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, DATA_FORMAT Format, const SClearValue* ClearValue) = 0;
+    virtual void ClearBuffer(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, DATA_FORMAT Format, const ClearValue* ClearValue) = 0;
 
     /// Fill all or part of buffer object's data store with a fixed value.
     /// If _ClearValue is NULL, then the subrange of the buffer's data store is filled with zeros.
-    virtual void ClearBufferRange(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, uint32_t NumRanges, SBufferClear const* Ranges, DATA_FORMAT Format, const SClearValue* ClearValue) = 0;
+    virtual void ClearBufferRange(IBuffer* pBuffer, BUFFER_VIEW_PIXEL_FORMAT InternalFormat, uint32_t NumRanges, BufferClear const* Ranges, DATA_FORMAT Format, const ClearValue* ClearValue) = 0;
 
     /// Fill texture image with a fixed value.
     /// If _ClearValue is NULL, then the texture image is filled with zeros.
-    virtual void ClearTexture(ITexture* pTexture, uint16_t MipLevel, DATA_FORMAT Format, const SClearValue* ClearValue) = 0;
+    virtual void ClearTexture(ITexture* pTexture, uint16_t MipLevel, DATA_FORMAT Format, const ClearValue* ClearValue) = 0;
 
     /// Fill all or part of texture image with a fixed value.
     /// If _ClearValue is NULL, then the rect of the texture image is filled with zeros.
     virtual void ClearTextureRect(ITexture*           pTexture,
                                   uint32_t            NumRectangles,
-                                  STextureRect const* Rectangles,
+                                  TextureRect const* Rectangles,
                                   DATA_FORMAT         Format,
-                                  const SClearValue*  ClearValue) = 0;
+                                  const ClearValue*  ClearValue) = 0;
 
     //
     // Read
@@ -676,7 +676,7 @@ public:
 
     /// Client-side call function. Read data to client memory.
     virtual void ReadTextureRect(ITexture*           pTexture,
-                                 STextureRect const& Rectangle,
+                                 TextureRect const& Rectangle,
                                  size_t              SizeInBytes,
                                  unsigned int        Alignment,
                                  void*               pSysMem) = 0;
@@ -691,7 +691,7 @@ public:
     /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D
     /// Client-side call function. Write data from client memory.
     virtual bool WriteTextureRect(ITexture*           pTexture,
-                                  STextureRect const& Rectangle,
+                                  TextureRect const& Rectangle,
                                   size_t              SizeInBytes,
                                   unsigned int        Alignment,
                                   const void*         pSysMem,
@@ -770,7 +770,7 @@ public:
                                          const void*     pSysMem) = 0;
 
     virtual void SparseTextureCommitRect(ISparseTexture*     pTexture,
-                                         STextureRect const& Rectangle,
+                                         TextureRect const& Rectangle,
                                          DATA_FORMAT         Format, // Specifies a pixel format for the input data
                                          size_t              SizeInBytes,
                                          unsigned int        Alignment, // Specifies alignment of source data
@@ -778,7 +778,7 @@ public:
 
     virtual void SparseTextureUncommitPage(ISparseTexture* pTexture, int MipLevel, int PageX, int PageY, int PageZ) = 0;
 
-    virtual void SparseTextureUncommitRect(ISparseTexture* pTexture, STextureRect const& Rectangle) = 0;
+    virtual void SparseTextureUncommitRect(ISparseTexture* pTexture, TextureRect const& Rectangle) = 0;
 
     //
     // Query
@@ -822,17 +822,17 @@ public:
     //
 
     /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D TEXTURE_CUBE_MAP
-    virtual bool CopyFramebufferToTexture(ARenderPassContext&   RenderPassContext,
+    virtual bool CopyFramebufferToTexture(FGRenderPassContext&   RenderPassContext,
                                           ITexture*             pDstTexture,
                                           int                   ColorAttachment,
-                                          STextureOffset const& Offset,
-                                          SRect2D const&        SrcRect,
+                                          TextureOffset const& Offset,
+                                          Rect2D const&        SrcRect,
                                           unsigned int          Alignment) = 0;
 
-    virtual void CopyColorAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+    virtual void CopyColorAttachmentToBuffer(FGRenderPassContext& RenderPassContext,
                                              IBuffer*            pDstBuffer,
                                              int                 SubpassAttachmentRef,
-                                             SRect2D const&      SrcRect,
+                                             Rect2D const&      SrcRect,
                                              FRAMEBUFFER_CHANNEL FramebufferChannel,
                                              FRAMEBUFFER_OUTPUT  FramebufferOutput,
                                              COLOR_CLAMP         ColorClamp,
@@ -840,9 +840,9 @@ public:
                                              size_t              DstByteOffset,
                                              unsigned int        Alignment) = 0;
 
-    virtual void CopyDepthAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+    virtual void CopyDepthAttachmentToBuffer(FGRenderPassContext& RenderPassContext,
                                              IBuffer*            pDstBuffer,
-                                             SRect2D const&      SrcRect,
+                                             Rect2D const&      SrcRect,
                                              size_t              SizeInBytes,
                                              size_t              DstByteOffset,
                                              unsigned int        Alignment) = 0;
@@ -853,24 +853,24 @@ public:
     /// SCISSOR
     /// Pixel Owner Ship (for default framebuffer only)
     /// Conditional Rendering
-    virtual bool BlitFramebuffer(ARenderPassContext&   RenderPassContext,
+    virtual bool BlitFramebuffer(FGRenderPassContext&   RenderPassContext,
                                  int                   ColorAttachment,
                                  uint32_t              NumRectangles,
-                                 SBlitRectangle const* Rectangles,
+                                 BlitRectangle const* Rectangles,
                                  FRAMEBUFFER_BLIT_MASK Mask,
                                  bool                  LinearFilter) = 0;
 
-    virtual void ClearAttachments(ARenderPassContext&                           RenderPassContext,
+    virtual void ClearAttachments(FGRenderPassContext&                           RenderPassContext,
                                   /* optional */ unsigned int*                  ColorAttachments,
                                   /* optional */ unsigned int                   NumColorAttachments,
-                                  /* optional */ SClearColorValue const*        ColorClearValues,
-                                  /* optional */ SClearDepthStencilValue const* DepthStencilClearValue,
-                                  /* optional */ SRect2D const*                 Rect) = 0;
+                                  /* optional */ ClearColorValue const*        ColorClearValues,
+                                  /* optional */ ClearDepthStencilValue const* DepthStencilClearValue,
+                                  /* optional */ Rect2D const*                 Rect) = 0;
 
     /// Client-side call function
-    virtual bool ReadFramebufferAttachment(ARenderPassContext& RenderPassContext,
+    virtual bool ReadFramebufferAttachment(FGRenderPassContext& RenderPassContext,
                                            int                 ColorAttachment,
-                                           SRect2D const&      SrcRect,
+                                           Rect2D const&      SrcRect,
                                            FRAMEBUFFER_CHANNEL FramebufferChannel,
                                            FRAMEBUFFER_OUTPUT  FramebufferOutput,
                                            COLOR_CLAMP         ColorClamp,
@@ -878,8 +878,8 @@ public:
                                            unsigned int        Alignment, // Specifies alignment of destination data
                                            void*               pSysMem) = 0;
 
-    virtual bool ReadFramebufferDepthStencilAttachment(ARenderPassContext& RenderPassContext,
-                                                       SRect2D const&      SrcRect,
+    virtual bool ReadFramebufferDepthStencilAttachment(FGRenderPassContext& RenderPassContext,
+                                                       Rect2D const&      SrcRect,
                                                        size_t              SizeInBytes,
                                                        unsigned int        Alignment,
                                                        void*               pSysMem) = 0;

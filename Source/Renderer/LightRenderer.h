@@ -32,26 +32,26 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
-struct SRenderInstance;
+struct RenderInstance;
 
-class ALightRenderer
+class LightRenderer
 {
 public:
-    ALightRenderer();
+    LightRenderer();
 
-    void AddPass(RenderCore::AFrameGraph&     FrameGraph,
-                 RenderCore::FGTextureProxy*  DepthTarget,
-                 RenderCore::FGTextureProxy*  SSAOTexture,
-                 RenderCore::FGTextureProxy*  ShadowMapDepth0,
-                 RenderCore::FGTextureProxy*  ShadowMapDepth1,
-                 RenderCore::FGTextureProxy*  ShadowMapDepth2,
-                 RenderCore::FGTextureProxy*  ShadowMapDepth3,
-                 RenderCore::FGTextureProxy*  OmnidirectionalShadowMapArray,
-                 RenderCore::FGTextureProxy*  LinearDepth,
+    void AddPass(RenderCore::FrameGraph& FrameGraph,
+                 RenderCore::FGTextureProxy* DepthTarget,
+                 RenderCore::FGTextureProxy* SSAOTexture,
+                 RenderCore::FGTextureProxy* ShadowMapDepth0,
+                 RenderCore::FGTextureProxy* ShadowMapDepth1,
+                 RenderCore::FGTextureProxy* ShadowMapDepth2,
+                 RenderCore::FGTextureProxy* ShadowMapDepth3,
+                 RenderCore::FGTextureProxy* OmnidirectionalShadowMapArray,
+                 RenderCore::FGTextureProxy* LinearDepth,
                  RenderCore::FGTextureProxy** ppLight /*,
                  RenderCore::FGTextureProxy ** ppVelocity*/
     );
 
 private:
-    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, SRenderInstance const* Instance);
+    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, RenderInstance const* Instance);
 };

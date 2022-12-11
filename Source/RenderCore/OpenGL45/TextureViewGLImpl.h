@@ -34,11 +34,11 @@ SOFTWARE.
 
 namespace RenderCore {
 
-class ATextureViewGLImpl : public ITextureView
+class TextureViewGLImpl : public ITextureView
 {
 public:
-    ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, ITexture* pTexture);
-    ~ATextureViewGLImpl();
+    TextureViewGLImpl(TextureViewDesc const& TextureViewDesc, ITexture* pTexture);
+    ~TextureViewGLImpl();
 };
 
 }

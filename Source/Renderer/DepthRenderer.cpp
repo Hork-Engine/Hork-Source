@@ -33,9 +33,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, SRenderInstance const* instance)
+static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, RenderInstance const* instance)
 {
-    AMaterialGPU* pMaterial = instance->Material;
+    MaterialGPU* pMaterial = instance->Material;
 
     HK_ASSERT(pMaterial);
 
@@ -75,15 +75,15 @@ static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, SRenderInstan
     return true;
 }
 
-void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, FGTextureProxy ** ppVelocity )
+void AddDepthPass( FrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, FGTextureProxy ** ppVelocity )
 {
-    ARenderPass & depthPass = FrameGraph.AddTask< ARenderPass >( "Depth Pre-Pass" );
+    RenderPass & depthPass = FrameGraph.AddTask< RenderPass >( "Depth Pre-Pass" );
 
     depthPass.SetRenderArea(GRenderViewArea);
 
     depthPass.SetDepthStencilAttachment(
-        STextureAttachment("Depth texture",
-                           STextureDesc()
+        TextureAttachment("Depth texture",
+                           TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_D24S8)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
@@ -93,8 +93,8 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
         Float2 velocity( 1, 1 );
 
         depthPass.SetColorAttachment(
-            STextureAttachment("Velocity texture",
-                               STextureDesc()
+            TextureAttachment("Velocity texture",
+                               TextureDesc()
                                    .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                                    .SetResolution(GetFrameResoultion()))
                 .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
@@ -103,13 +103,13 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
         *ppVelocity = depthPass.GetColorAttachments()[0].pResource;
 
         depthPass.AddSubpass( { 0 }, // color attachments
-                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                             [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
         {
             IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
             for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
-                STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                TerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-                STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
+                TerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< TerrainInstanceConstantBuffer >();
                 drawCall->LocalViewProjection = instance->LocalViewProjection;
                 StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
                 drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
@@ -124,15 +124,15 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
                 immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
                                                 GStreamBuffer,
                                                 instance->IndirectBufferStreamHandle,
-                                                sizeof( SDrawIndexedIndirectCmd ) );
+                                                sizeof( DrawIndexedIndirectCmd ) );
             }
 
-            SDrawIndexedCmd drawCmd;
+            DrawIndexedCmd drawCmd;
             drawCmd.InstanceCount = 1;
             drawCmd.StartInstanceLocation = 0;
 
             for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-                SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                RenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
                 if (!BindMaterialDepthPass(immediateCtx, instance))
                 {
@@ -157,14 +157,14 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
         *ppVelocity = nullptr;
 
         depthPass.AddSubpass( {}, // no color attachments
-                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                             [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
         {
             IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
             for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
-                STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                TerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-                STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
+                TerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< TerrainInstanceConstantBuffer >();
                 drawCall->LocalViewProjection = instance->LocalViewProjection;
                 StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
                 drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
@@ -179,15 +179,15 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
                 immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
                                                 GStreamBuffer,
                                                 instance->IndirectBufferStreamHandle,
-                                                sizeof( SDrawIndexedIndirectCmd ) );
+                                                sizeof( DrawIndexedIndirectCmd ) );
             }
 
-            SDrawIndexedCmd drawCmd;
+            DrawIndexedCmd drawCmd;
             drawCmd.InstanceCount = 1;
             drawCmd.StartInstanceLocation = 0;
 
             for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-                SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                RenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
                 if (!BindMaterialDepthPass(immediateCtx, instance))
                 {

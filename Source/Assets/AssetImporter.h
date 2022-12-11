@@ -57,12 +57,12 @@ struct AssetImportSettings
     }
 
     /** Source file name */
-    AString ImportFile;
+    String ImportFile;
 
     /** Asset output directory */
-    AString OutputPath;
+    String OutputPath;
 
-    AString RootPath;
+    String RootPath;
 
     bool bImportMeshes;
     bool bImportMaterials;
@@ -106,4 +106,4 @@ bool ImportGLTF(AssetImportSettings const& Settings);
 bool ImportOBJ(AssetImportSettings const& Settings);
 bool ImportSkybox(AssetImportSettings const& Settings);
 
-bool SaveSkyboxTexture(AStringView FileName, ImageStorage const& Image);
+bool SaveSkyboxTexture(StringView FileName, ImageStorage const& Image);

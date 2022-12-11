@@ -37,7 +37,7 @@ SOFTWARE.
 // Vertex formats
 //
 
-struct SMeshVertex
+struct MeshVertex
 {
     Float3  Position;    // 4 * 3 = 12 bytes
     Half    TexCoord[2]; // 4 * 2 = 8 bytes      half: 4 bytes
@@ -125,14 +125,14 @@ struct SMeshVertex
         return Float3(Tangent[0], Tangent[1], Tangent[2]);
     }
 
-    static SMeshVertex Lerp(SMeshVertex const& Vertex1, SMeshVertex const& Vertex2, float Value = 0.5f);
+    static MeshVertex Lerp(MeshVertex const& Vertex1, MeshVertex const& Vertex2, float Value = 0.5f);
 };
 
-static_assert(sizeof(SMeshVertex) == 32, "Keep 32b vertex size");
+static_assert(sizeof(MeshVertex) == 32, "Keep 32b vertex size");
 
-HK_FORCEINLINE const SMeshVertex MakeMeshVertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Tangent, float Handedness, Float3 const& Normal)
+HK_FORCEINLINE const MeshVertex MakeMeshVertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Tangent, float Handedness, Float3 const& Normal)
 {
-    SMeshVertex v;
+    MeshVertex v;
     v.Position = Position;
     v.SetTexCoord(TexCoord);
     v.SetNormal(Normal);
@@ -141,9 +141,9 @@ HK_FORCEINLINE const SMeshVertex MakeMeshVertex(Float3 const& Position, Float2 c
     return v;
 }
 
-HK_FORCEINLINE SMeshVertex SMeshVertex::Lerp(SMeshVertex const& Vertex1, SMeshVertex const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertex MeshVertex::Lerp(MeshVertex const& Vertex1, MeshVertex const& Vertex2, float Value)
 {
-    SMeshVertex Result;
+    MeshVertex Result;
 
     Result.Position = Math::Lerp(Vertex1.Position, Vertex2.Position, Value);
     Result.SetTexCoord(Math::Lerp(Vertex1.GetTexCoord(), Vertex2.GetTexCoord(), Value));
@@ -154,7 +154,7 @@ HK_FORCEINLINE SMeshVertex SMeshVertex::Lerp(SMeshVertex const& Vertex1, SMeshVe
     return Result;
 }
 
-struct SMeshVertexUV
+struct MeshVertexUV
 {
     Float2 TexCoord;
 
@@ -168,19 +168,19 @@ struct SMeshVertexUV
         Stream.ReadObject(TexCoord);
     }
 
-    static SMeshVertexUV Lerp(SMeshVertexUV const& Vertex1, SMeshVertexUV const& Vertex2, float Value = 0.5f);
+    static MeshVertexUV Lerp(MeshVertexUV const& Vertex1, MeshVertexUV const& Vertex2, float Value = 0.5f);
 };
 
-HK_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp(SMeshVertexUV const& Vertex1, SMeshVertexUV const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertexUV MeshVertexUV::Lerp(MeshVertexUV const& Vertex1, MeshVertexUV const& Vertex2, float Value)
 {
-    SMeshVertexUV Result;
+    MeshVertexUV Result;
 
     Result.TexCoord = Math::Lerp(Vertex1.TexCoord, Vertex2.TexCoord, Value);
 
     return Result;
 }
 
-struct SMeshVertexLight
+struct MeshVertexLight
 {
     uint32_t VertexLight;
 
@@ -194,12 +194,12 @@ struct SMeshVertexLight
         VertexLight = Stream.ReadUInt32();
     }
 
-    static SMeshVertexLight Lerp(SMeshVertexLight const& Vertex1, SMeshVertexLight const& Vertex2, float Value = 0.5f);
+    static MeshVertexLight Lerp(MeshVertexLight const& Vertex1, MeshVertexLight const& Vertex2, float Value = 0.5f);
 };
 
-HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp(SMeshVertexLight const& Vertex1, SMeshVertexLight const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertexLight MeshVertexLight::Lerp(MeshVertexLight const& Vertex1, MeshVertexLight const& Vertex2, float Value)
 {
-    SMeshVertexLight Result;
+    MeshVertexLight Result;
 
     const byte* c0 = reinterpret_cast<const byte*>(&Vertex1.VertexLight);
     const byte* c1 = reinterpret_cast<const byte*>(&Vertex2.VertexLight);
@@ -228,7 +228,7 @@ HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp(SMeshVertexLight const& V
     return Result;
 }
 
-struct SMeshVertexSkin
+struct MeshVertexSkin
 {
     uint8_t JointIndices[4];
     uint8_t JointWeights[4];

@@ -43,40 +43,40 @@ static const float DEFAULT_SPOT_EXPONENT    = 1.0f;
 static const float MIN_CONE_ANGLE           = 1.0f;
 static const float MIN_RADIUS               = 0.01f;
 
-AConsoleVar com_DrawSpotLights("com_DrawSpotLights"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawSpotLights("com_DrawSpotLights"s, "0"s, CVAR_CHEAT);
 
-HK_BEGIN_CLASS_META(ASpotLightComponent)
+HK_BEGIN_CLASS_META(SpotLightComponent)
 HK_PROPERTY(Radius, SetRadius, GetRadius, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(InnerConeAngle, SetInnerConeAngle, GetInnerConeAngle, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(OuterConeAngle, SetOuterConeAngle, GetOuterConeAngle, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(SpotExponent, SetSpotExponent, GetSpotExponent, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-ASpotLightComponent::ASpotLightComponent()
+SpotLightComponent::SpotLightComponent()
 {
-    Radius                = DEFAULT_RADIUS;
-    InverseSquareRadius   = 1.0f / (Radius * Radius);
-    InnerConeAngle        = DEFAULT_INNER_CONE_ANGLE;
-    OuterConeAngle        = DEFAULT_OUTER_CONE_ANGLE;
-    CosHalfInnerConeAngle = Math::Cos(Math::Radians(InnerConeAngle * 0.5f));
-    CosHalfOuterConeAngle = Math::Cos(Math::Radians(OuterConeAngle * 0.5f));
-    SpotExponent          = DEFAULT_SPOT_EXPONENT;
+    m_Radius = DEFAULT_RADIUS;
+    m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
+    m_InnerConeAngle = DEFAULT_INNER_CONE_ANGLE;
+    m_OuterConeAngle = DEFAULT_OUTER_CONE_ANGLE;
+    m_CosHalfInnerConeAngle = Math::Cos(Math::Radians(m_InnerConeAngle * 0.5f));
+    m_CosHalfOuterConeAngle = Math::Cos(Math::Radians(m_OuterConeAngle * 0.5f));
+    m_SpotExponent = DEFAULT_SPOT_EXPONENT;
 
     UpdateWorldBounds();
 }
 
-void ASpotLightComponent::OnCreateAvatar()
+void SpotLightComponent::OnCreateAvatar()
 {
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh> Mesh("/Default/Meshes/Cone"s);
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
+    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Cone"s);
+    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
 
     MeshRenderView* meshRender = NewObj<MeshRenderView>();
     meshRender->SetMaterial(MaterialInstance);
 
-    AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("SpotLightAvatar");
+    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("SpotLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);
     meshComponent->SetMesh(Mesh.GetObject());
@@ -89,144 +89,145 @@ void ASpotLightComponent::OnCreateAvatar()
     meshComponent->SetHideInEditor(true);
 }
 
-void ASpotLightComponent::SetRadius(float _Radius)
+void SpotLightComponent::SetRadius(float radius)
 {
-    Radius              = Math::Max(MIN_RADIUS, _Radius);
-    InverseSquareRadius = 1.0f / (Radius * Radius);
+    m_Radius = Math::Max(MIN_RADIUS, radius);
+    m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
 
     UpdateWorldBounds();
 }
 
-float ASpotLightComponent::GetRadius() const
+float SpotLightComponent::GetRadius() const
 {
-    return Radius;
+    return m_Radius;
 }
 
-void ASpotLightComponent::SetInnerConeAngle(float _Angle)
+void SpotLightComponent::SetInnerConeAngle(float angle)
 {
-    InnerConeAngle        = Math::Clamp(_Angle, MIN_CONE_ANGLE, 180.0f);
-    CosHalfInnerConeAngle = Math::Cos(Math::Radians(InnerConeAngle * 0.5f));
+    m_InnerConeAngle = Math::Clamp(angle, MIN_CONE_ANGLE, 180.0f);
+    m_CosHalfInnerConeAngle = Math::Cos(Math::Radians(m_InnerConeAngle * 0.5f));
 }
 
-float ASpotLightComponent::GetInnerConeAngle() const
+float SpotLightComponent::GetInnerConeAngle() const
 {
-    return InnerConeAngle;
+    return m_InnerConeAngle;
 }
 
-void ASpotLightComponent::SetOuterConeAngle(float _Angle)
+void SpotLightComponent::SetOuterConeAngle(float angle)
 {
-    OuterConeAngle        = Math::Clamp(_Angle, MIN_CONE_ANGLE, 180.0f);
-    CosHalfOuterConeAngle = Math::Cos(Math::Radians(OuterConeAngle * 0.5f));
+    m_OuterConeAngle = Math::Clamp(angle, MIN_CONE_ANGLE, 180.0f);
+    m_CosHalfOuterConeAngle = Math::Cos(Math::Radians(m_OuterConeAngle * 0.5f));
 
     UpdateWorldBounds();
 }
 
-float ASpotLightComponent::GetOuterConeAngle() const
+float SpotLightComponent::GetOuterConeAngle() const
 {
-    return OuterConeAngle;
+    return m_OuterConeAngle;
 }
 
-void ASpotLightComponent::SetSpotExponent(float _Exponent)
+void SpotLightComponent::SetSpotExponent(float exponent)
 {
-    SpotExponent = _Exponent;
+    m_SpotExponent = exponent;
 }
 
-float ASpotLightComponent::GetSpotExponent() const
+float SpotLightComponent::GetSpotExponent() const
 {
-    return SpotExponent;
+    return m_SpotExponent;
 }
 
-void ASpotLightComponent::OnTransformDirty()
+void SpotLightComponent::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
     UpdateWorldBounds();
 }
 
-void ASpotLightComponent::UpdateWorldBounds()
+void SpotLightComponent::UpdateWorldBounds()
 {
     const float  ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
-    const float  HalfConeAngle      = OuterConeAngle * ToHalfAngleRadians;
+    const float  HalfConeAngle      = m_OuterConeAngle * ToHalfAngleRadians;
     const Float3 WorldPos           = GetWorldPosition();
     const float  SinHalfConeAngle   = Math::Sin(HalfConeAngle);
 
     // Compute cone OBB for voxelization
-    OBBWorldBounds.Orient = GetWorldRotation().ToMatrix3x3();
+    m_OBBWorldBounds.Orient = GetWorldRotation().ToMatrix3x3();
 
-    const Float3 SpotDir = -OBBWorldBounds.Orient[2];
+    const Float3 SpotDir = -m_OBBWorldBounds.Orient[2];
 
-    //OBBWorldBounds.HalfSize.X = OBBWorldBounds.HalfSize.Y = tan( HalfConeAngle ) * Radius;
-    OBBWorldBounds.HalfSize.X = OBBWorldBounds.HalfSize.Y = SinHalfConeAngle * Radius;
-    OBBWorldBounds.HalfSize.Z                             = Radius * 0.5f;
-    OBBWorldBounds.Center                                 = WorldPos + SpotDir * (OBBWorldBounds.HalfSize.Z);
+    //m_OBBWorldBounds.HalfSize.X = m_OBBWorldBounds.HalfSize.Y = tan( HalfConeAngle ) * m_Radius;
+    m_OBBWorldBounds.HalfSize.X = m_OBBWorldBounds.HalfSize.Y = SinHalfConeAngle * m_Radius;
+    m_OBBWorldBounds.HalfSize.Z = m_Radius * 0.5f;
+    m_OBBWorldBounds.Center = WorldPos + SpotDir * (m_OBBWorldBounds.HalfSize.Z);
 
     // TODO: Optimize?
-    Float4x4 OBBTransform = Float4x4::Translation(OBBWorldBounds.Center) * Float4x4(OBBWorldBounds.Orient) * Float4x4::Scale(OBBWorldBounds.HalfSize);
-    OBBTransformInverse   = OBBTransform.Inversed();
+    Float4x4 OBBTransform = Float4x4::Translation(m_OBBWorldBounds.Center) * Float4x4(m_OBBWorldBounds.Orient) * Float4x4::Scale(m_OBBWorldBounds.HalfSize);
+    m_OBBTransformInverse = OBBTransform.Inversed();
 
     // Compute cone AABB for culling
-    AABBWorldBounds.Clear();
-    AABBWorldBounds.AddPoint(WorldPos);
-    Float3 v  = WorldPos + SpotDir * Radius;
-    Float3 vx = OBBWorldBounds.Orient[0] * OBBWorldBounds.HalfSize.X;
-    Float3 vy = OBBWorldBounds.Orient[1] * OBBWorldBounds.HalfSize.X;
-    AABBWorldBounds.AddPoint(v + vx);
-    AABBWorldBounds.AddPoint(v - vx);
-    AABBWorldBounds.AddPoint(v + vy);
-    AABBWorldBounds.AddPoint(v - vy);
+    m_AABBWorldBounds.Clear();
+    m_AABBWorldBounds.AddPoint(WorldPos);
+    Float3 v = WorldPos + SpotDir * m_Radius;
+    Float3 vx = m_OBBWorldBounds.Orient[0] * m_OBBWorldBounds.HalfSize.X;
+    Float3 vy = m_OBBWorldBounds.Orient[1] * m_OBBWorldBounds.HalfSize.X;
+    m_AABBWorldBounds.AddPoint(v + vx);
+    m_AABBWorldBounds.AddPoint(v - vx);
+    m_AABBWorldBounds.AddPoint(v + vy);
+    m_AABBWorldBounds.AddPoint(v - vy);
 
     // Посмотреть, как более эффективно распределяется площадь - у сферы или AABB
     // Compute cone Sphere bounds
     if (HalfConeAngle > Math::_PI / 4)
     {
-        SphereWorldBounds.Radius = SinHalfConeAngle * Radius;
-        SphereWorldBounds.Center = WorldPos + SpotDir * (CosHalfOuterConeAngle * Radius);
+        m_SphereWorldBounds.Radius = SinHalfConeAngle * m_Radius;
+        m_SphereWorldBounds.Center = WorldPos + SpotDir * (m_CosHalfOuterConeAngle * m_Radius);
     }
     else
     {
-        SphereWorldBounds.Radius = Radius / (2.0 * CosHalfOuterConeAngle);
-        SphereWorldBounds.Center = WorldPos + SpotDir * SphereWorldBounds.Radius;
+        m_SphereWorldBounds.Radius = m_Radius / (2.0 * m_CosHalfOuterConeAngle);
+        m_SphereWorldBounds.Center = WorldPos + SpotDir * m_SphereWorldBounds.Radius;
     }
 
-    Primitive->Sphere = SphereWorldBounds;
+    m_Primitive->Sphere = m_SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(m_Primitive);
     }
 }
 
-void ASpotLightComponent::DrawDebug(ADebugRenderer* InRenderer)
+void SpotLightComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
     if (com_DrawSpotLights)
     {
-        if (Primitive->VisPass == InRenderer->GetVisPass())
+        if (m_Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3   pos    = GetWorldPosition();
             Float3x3 orient = GetWorldRotation().ToMatrix3x3();
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(0.5f, 0.5f, 0.5f, 1));
-            InRenderer->DrawCone(pos, orient, Radius, Math::Radians(InnerConeAngle) * 0.5f);
+            InRenderer->DrawCone(pos, orient, m_Radius, Math::Radians(m_InnerConeAngle) * 0.5f);
             InRenderer->SetColor(Color4(1, 1, 1, 1));
-            InRenderer->DrawCone(pos, orient, Radius, Math::Radians(OuterConeAngle) * 0.5f);
+            InRenderer->DrawCone(pos, orient, m_Radius, Math::Radians(m_OuterConeAngle) * 0.5f);
         }
     }
 }
 
-void ASpotLightComponent::PackLight(Float4x4 const& InViewMatrix, SLightParameters& Light)
+void SpotLightComponent::PackLight(Float4x4 const& InViewMatrix, LightParameters& Light)
 {
-    Light.Position               = Float3(InViewMatrix * GetWorldPosition());
-    Light.Radius                 = GetRadius();
-    Light.CosHalfOuterConeAngle  = CosHalfOuterConeAngle;
-    Light.CosHalfInnerConeAngle  = CosHalfInnerConeAngle;
-    Light.InverseSquareRadius    = InverseSquareRadius;
-    Light.Direction              = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection());
-    Light.SpotExponent           = SpotExponent;
-    Light.Color                  = GetEffectiveColor(Math::Min(CosHalfOuterConeAngle, 0.9999f));
-    Light.LightType              = CLUSTER_LIGHT_SPOT;
-    Light.RenderMask             = ~0u; //RenderMask; // TODO
-    APhotometricProfile* profile = GetPhotometricProfile();
-    Light.PhotometricProfile     = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
+    PhotometricProfile* profile = GetPhotometricProfile();
+
+    Light.Position              = Float3(InViewMatrix * GetWorldPosition());
+    Light.Radius                = GetRadius();
+    Light.CosHalfOuterConeAngle = m_CosHalfOuterConeAngle;
+    Light.CosHalfInnerConeAngle = m_CosHalfInnerConeAngle;
+    Light.InverseSquareRadius   = m_InverseSquareRadius;
+    Light.Direction             = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection());
+    Light.SpotExponent          = m_SpotExponent;
+    Light.Color                 = GetEffectiveColor(Math::Min(m_CosHalfOuterConeAngle, 0.9999f));
+    Light.LightType             = CLUSTER_LIGHT_SPOT;
+    Light.RenderMask            = ~0u; //RenderMask; // TODO
+    Light.PhotometricProfile    = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
 }

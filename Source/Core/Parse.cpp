@@ -34,7 +34,7 @@ SOFTWARE.
 namespace Core
 {
 
-uint64_t ParseHex(AStringView Str, const size_t SizeOf)
+uint64_t ParseHex(StringView Str, const size_t SizeOf)
 {
     HK_ASSERT(SizeOf > 1 && SizeOf <= 8);
     
@@ -73,7 +73,7 @@ uint64_t ParseHex(AStringView Str, const size_t SizeOf)
     return val;
 }
 
-float ParseFloat(AStringView Str)
+float ParseFloat(StringView Str)
 {
     // Cast from boolean
     if (Str.Icompare("false"))
@@ -107,7 +107,7 @@ float ParseFloat(AStringView Str)
     return static_cast<float>(val);
 }
 
-double ParseDouble(AStringView Str)
+double ParseDouble(StringView Str)
 {
     // Cast from boolean
     if (Str.Icompare("false"))
@@ -142,7 +142,7 @@ double ParseDouble(AStringView Str)
     return val;
 }
 
-float ParseCvar(AStringView Str)
+float ParseCvar(StringView Str)
 {
     // Cast from boolean
     if (Str.Icompare("false"))
@@ -154,7 +154,7 @@ float ParseCvar(AStringView Str)
     return (result.ec != std::errc()) ? 0.0f : static_cast<float>(val);
 }
 
-int64_t ParseSigned(AStringView Str)
+int64_t ParseSigned(StringView Str)
 {
     // Cast from boolean
     if (Str.Icompare("false"))
@@ -221,7 +221,7 @@ int64_t ParseSigned(AStringView Str)
     return bNegative ? (~val+1) : val;
 }
 
-uint64_t ParseUnsigned(AStringView Str)
+uint64_t ParseUnsigned(StringView Str)
 {
     // Cast from boolean
     if (Str.Icompare("false"))
@@ -281,7 +281,7 @@ uint64_t ParseUnsigned(AStringView Str)
     return val;
 }
 
-bool ParseBool(AStringView Str)
+bool ParseBool(StringView Str)
 {
     return ParseSigned(Str) != 0;
 }

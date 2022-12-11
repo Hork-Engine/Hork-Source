@@ -47,11 +47,11 @@ APlayerController::~APlayerController()
     }
 }
 
-void APlayerController::Initialize(SActorInitializer& Initializer)
+void APlayerController::Initialize(ActorInitializer& Initializer)
 {
     Super::Initialize(Initializer);
 
-    m_InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
+    m_InputComponent = CreateComponent<InputComponent>("PlayerControllerInput");
 
     if (!m_CurrentAudioListener)
     {
@@ -79,7 +79,7 @@ void APlayerController::OnPawnChanged()
     UpdatePawnCamera();
 }
 
-void APlayerController::SetAudioListener(ASceneComponent* _AudioListener)
+void APlayerController::SetAudioListener(SceneComponent* _AudioListener)
 {
     m_AudioListener = _AudioListener;
 }
@@ -116,17 +116,17 @@ void APlayerController::SetRenderView(WorldRenderView* renderView)
     m_RenderView = renderView;
 }
 
-void APlayerController::SetAudioParameters(AAudioParameters* _AudioParameters)
+void APlayerController::SetAudioParameters(AudioParameters* _AudioParameters)
 {
     m_AudioParameters = _AudioParameters;
 }
 
-void APlayerController::SetInputMappings(AInputMappings* _InputMappings)
+void APlayerController::SetInputMappings(InputMappings* _InputMappings)
 {
     m_InputComponent->SetInputMappings(_InputMappings);
 }
 
-AInputMappings* APlayerController::GetInputMappings()
+InputMappings* APlayerController::GetInputMappings()
 {
     return m_InputComponent->GetInputMappings();
 }
@@ -146,7 +146,7 @@ void APlayerController::TogglePause()
     GetWorld()->SetPaused(!GetWorld()->IsPaused());
 }
 
-ASceneComponent* APlayerController::GetAudioListener()
+SceneComponent* APlayerController::GetAudioListener()
 {
     if (m_AudioListener)
     {
@@ -204,13 +204,13 @@ void APlayerController::UpdatePawnCamera()
         return;
     }
 
-    ACameraComponent* camera = m_Pawn->GetPawnCamera();
+    CameraComponent* camera = m_Pawn->GetPawnCamera();
     if (!camera)
     {
         return;
     }
 
-    SVideoMode const& vidMode = GEngine->GetVideoMode();
+    DisplayVideoMode const& vidMode = GEngine->GetVideoMode();
 
     camera->SetAspectRatio(m_ViewportAspectRatio * vidMode.AspectScale);
 }

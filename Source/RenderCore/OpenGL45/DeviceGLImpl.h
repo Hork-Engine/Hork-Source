@@ -35,38 +35,38 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class AImmediateContextGLImpl;
+class ImmediateContextGLImpl;
 
-class AWindowPoolGL
+class WindowPoolGL
 {
 public:
-    AWindowPoolGL();
-    ~AWindowPoolGL();
+    WindowPoolGL();
+    ~WindowPoolGL();
 
-    struct SWindowGL
+    struct WindowGL
     {
         SDL_Window* Handle;
         void*       GLContext;
-        AImmediateContextGLImpl* ImmediateCtx;
+        ImmediateContextGLImpl* ImmediateCtx;
     };
 
-    SWindowGL Create();
-    void      Destroy(SWindowGL Window);
-    void      Free(SWindowGL Window);
+    WindowGL Create();
+    void     Destroy(WindowGL Window);
+    void     Free(WindowGL Window);
 
-    SWindowGL NewWindow();
+    WindowGL NewWindow();
 
-    TSmallVector<SWindowGL, 8> Pool;
+    TSmallVector<WindowGL, 8> Pool;
 };
 
-struct SVertexLayoutDescGL
+struct VertexLayoutDescGL
 {
     uint32_t           NumVertexBindings{};
-    SVertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS] = {};
+    VertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS] = {};
     uint32_t           NumVertexAttribs{};
-    SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS] = {};
+    VertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS] = {};
 
-    bool operator==(SVertexLayoutDescGL const& Rhs) const
+    bool operator==(VertexLayoutDescGL const& Rhs) const
     {
         if (NumVertexBindings != Rhs.NumVertexBindings)
             return false;
@@ -81,7 +81,7 @@ struct SVertexLayoutDescGL
         return true;
     }
 
-    bool operator!=(SVertexLayoutDescGL const& Rhs) const
+    bool operator!=(VertexLayoutDescGL const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -97,43 +97,43 @@ struct SVertexLayoutDescGL
     }
 };
 
-class ADeviceGLImpl final : public IDevice
+class DeviceGLImpl final : public IDevice
 {
 public:
-    ADeviceGLImpl(SAllocatorCallback const* pAllocator);
-    ~ADeviceGLImpl();
+    DeviceGLImpl(AllocatorCallback const* pAllocator);
+    ~DeviceGLImpl();
 
     IImmediateContext* GetImmediateContext() override;
 
-    void GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+    void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
 
-    void CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+    void CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
 
     void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) override;
 
-    void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) override;
+    void CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) override;
 
-    void CreateShaderFromBinary(SShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule) override;
+    void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule) override;
     void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) override;
 
-    void CreateBuffer(SBufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) override;
+    void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) override;
 
-    void CreateTexture(STextureDesc const& Desc, TRef<ITexture>* ppTexture) override;
+    void CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture) override;
 
-    void CreateSparseTexture(SSparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) override;
+    void CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) override;
 
-    void CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) override;
+    void CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) override;
 
-    void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) override;
+    void CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) override;
 
     void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) override;
 
     bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                 unsigned int       _NumSources,
                                 const char* const* _Sources,
-                                SShaderBinaryData* _BinaryData) override;
+                                ShaderBinaryData* _BinaryData) override;
 
-    void DestroyShaderBinaryData(SShaderBinaryData* _BinaryData) override;
+    void DestroyShaderBinaryData(ShaderBinaryData* _BinaryData) override;
 
     int32_t GetGPUMemoryTotalAvailable() override;
     int32_t GetGPUMemoryCurrentAvailable() override;
@@ -142,42 +142,42 @@ public:
 
     bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) override;
 
-    SAllocatorCallback const& GetAllocator() const override;
+    AllocatorCallback const& GetAllocator() const override;
 
     //
     // Local
     //
 
-    class AVertexLayoutGL* GetVertexLayout(SVertexBindingInfo const* pVertexBindings,
-                                           uint32_t                  NumVertexBindings,
-                                           SVertexAttribInfo const*  pVertexAttribs,
-                                           uint32_t                  NumVertexAttribs);
+    class VertexLayoutGL* GetVertexLayout(VertexBindingInfo const* pVertexBindings,
+                                           uint32_t                NumVertexBindings,
+                                           VertexAttribInfo const* pVertexAttribs,
+                                           uint32_t                NumVertexAttribs);
 
-    THashMap<SVertexLayoutDescGL, AVertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
+    THashMap<VertexLayoutDescGL, VertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
 
-    SBlendingStateInfo const*     CachedBlendingState(SBlendingStateInfo const& _BlendingState);
-    SRasterizerStateInfo const*   CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState);
-    SDepthStencilStateInfo const* CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState);
-    unsigned int                  CachedSampler(SSamplerDesc const& SamplerDesc);
+    BlendingStateInfo const*     CachedBlendingState(BlendingStateInfo const& _BlendingState);
+    RasterizerStateInfo const*   CachedRasterizerState(RasterizerStateInfo const& _RasterizerState);
+    DepthStencilStateInfo const* CachedDepthStencilState(DepthStencilStateInfo const& _DepthStencilState);
+    unsigned int                 CachedSampler(SamplerDesc const& SamplerDesc);
 
     size_t BufferMemoryAllocated;
     size_t TextureMemoryAllocated;
 
 private:
-    SAllocatorCallback Allocator;
+    AllocatorCallback Allocator;
 
     TWeakRef<IGenericWindow> pMainWindow;
 
-    THashMap<SVertexLayoutDescGL, AVertexLayoutGL*> VertexLayouts;
+    THashMap<VertexLayoutDescGL, VertexLayoutGL*> VertexLayouts;
 
-    THashMap<SSamplerDesc, struct SamplerInfo*> Samplers;
+    THashMap<SamplerDesc, struct SamplerInfo*> Samplers;
 
-    THashMap<SBlendingStateInfo, SBlendingStateInfo*>         BlendingStates;
-    THashMap<SRasterizerStateInfo, SRasterizerStateInfo*>     RasterizerStates;
-    THashMap<SDepthStencilStateInfo, SDepthStencilStateInfo*> DepthStencilStates;
+    THashMap<BlendingStateInfo, BlendingStateInfo*>         BlendingStates;
+    THashMap<RasterizerStateInfo, RasterizerStateInfo*>     RasterizerStates;
+    THashMap<DepthStencilStateInfo, DepthStencilStateInfo*> DepthStencilStates;
 
-    AWindowPoolGL WindowPool;
-    AWindowPoolGL::SWindowGL MainWindowHandle;
+    WindowPoolGL WindowPool;
+    WindowPoolGL::WindowGL MainWindowHandle;
 };
 
 } // namespace RenderCore

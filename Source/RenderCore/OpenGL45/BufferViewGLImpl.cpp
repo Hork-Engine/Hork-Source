@@ -36,7 +36,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl* pBuffer) :
+BufferViewGLImpl::BufferViewGLImpl(BufferViewDesc const& Desc, BufferGLImpl* pBuffer) :
     IBufferView(pBuffer->GetDevice(), Desc), pSrcBuffer(pBuffer)
 {
     pSrcBuffer->AddRef();
@@ -44,7 +44,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
     GLuint bufferId = pSrcBuffer->GetHandleNativeGL();
     if (!bufferId)
     {
-        LOG("ABufferViewGLImpl::ctor: invalid buffer handle\n");
+        LOG("BufferViewGLImpl::ctor: invalid buffer handle\n");
         return;
     }
 
@@ -55,19 +55,19 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
 
     if (!IsAligned(offset, GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT)))
     {
-        LOG("ABufferViewGLImpl::ctor: buffer offset is not aligned\n");
+        LOG("BufferViewGLImpl::ctor: buffer offset is not aligned\n");
         return;
     }
 
     if (offset + sizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
-        LOG("ABufferViewGLImpl::ctor: invalid buffer range\n");
+        LOG("BufferViewGLImpl::ctor: invalid buffer range\n");
         return;
     }
 
     if (sizeInBytes > GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE))
     {
-        LOG("ABufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
+        LOG("BufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
         return;
     }
 
@@ -90,7 +90,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
     SetHandleNativeGL(textureId);
 }
 
-ABufferViewGLImpl::~ABufferViewGLImpl()
+BufferViewGLImpl::~BufferViewGLImpl()
 {
     GLuint id = GetHandleNativeGL();
 
@@ -102,23 +102,23 @@ ABufferViewGLImpl::~ABufferViewGLImpl()
     pSrcBuffer->RemoveRef();
 }
 
-void ABufferViewGLImpl::SetRange(size_t Offset, size_t SizeInBytes)
+void BufferViewGLImpl::SetRange(size_t Offset, size_t SizeInBytes)
 {
     if (!IsAligned(Offset, GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT)))
     {
-        LOG("ABufferViewGLImpl::SetRange: buffer offset is not aligned\n");
+        LOG("BufferViewGLImpl::SetRange: buffer offset is not aligned\n");
         return;
     }
 
     if (Offset + SizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
-        LOG("ABufferViewGLImpl::SetRange: invalid buffer range\n");
+        LOG("BufferViewGLImpl::SetRange: invalid buffer range\n");
         return;
     }
 
     if (SizeInBytes > GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE))
     {
-        LOG("ABufferViewGLImpl::SetRange: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
+        LOG("BufferViewGLImpl::SetRange: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
         return;
     }
 
@@ -128,14 +128,14 @@ void ABufferViewGLImpl::SetRange(size_t Offset, size_t SizeInBytes)
     Desc.SizeInBytes = SizeInBytes;
 }
 
-size_t ABufferViewGLImpl::GetBufferOffset(uint16_t MipLevel) const
+size_t BufferViewGLImpl::GetBufferOffset(uint16_t MipLevel) const
 {
     int offset;
     glGetTextureLevelParameteriv(GetHandleNativeGL(), MipLevel, GL_TEXTURE_BUFFER_OFFSET, &offset);
     return offset;
 }
 
-size_t ABufferViewGLImpl::GetBufferSizeInBytes(uint16_t MipLevel) const
+size_t BufferViewGLImpl::GetBufferSizeInBytes(uint16_t MipLevel) const
 {
     int sizeInBytes;
     glGetTextureLevelParameteriv(GetHandleNativeGL(), MipLevel, GL_TEXTURE_BUFFER_SIZE, &sizeInBytes);

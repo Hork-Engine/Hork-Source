@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "UICursor.h"
 
-void UIDefaultCursor::Draw(ACanvas& canvas, Float2 const& position)
+void UIDefaultCursor::Draw(Canvas& canvas, Float2 const& position)
 {
     canvas.DrawCursor(DrawCursor, position, FillColor, BorderColor, bDropShadow);
 }

@@ -39,7 +39,7 @@ SOFTWARE.
 #include "ShaderLoader.h"
 #include "ShaderFactory.h"
 
-struct SViewConstantBuffer
+struct ViewConstantBuffer
 {
     Float4x4 ViewProjection;
     Float4x4 ProjectionMatrix;
@@ -117,9 +117,9 @@ struct SViewConstantBuffer
     uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4]; // RenderMask, FirstCascade, NumCascades, W-channel is not used
 };
 
-static_assert(sizeof(SViewConstantBuffer) <= (16 << 10), "sizeof SViewConstantBuffer > 16 kB");
+static_assert(sizeof(ViewConstantBuffer) <= (16 << 10), "sizeof ViewConstantBuffer > 16 kB");
 
-struct SInstanceConstantBuffer
+struct InstanceConstantBuffer
 {
     Float4x4 TransformMatrix;
     Float4x4 TransformMatrixP;
@@ -137,7 +137,7 @@ struct SInstanceConstantBuffer
     uint32_t Pad2;
 };
 
-struct SFeedbackConstantBuffer
+struct FeedbackConstantBuffer
 {
     Float4x4 TransformMatrix; // Instance MVP
     Float2   VTOffset;
@@ -146,7 +146,7 @@ struct SFeedbackConstantBuffer
     uint32_t Pad[3];
 };
 
-struct SShadowInstanceConstantBuffer
+struct ShadowInstanceConstantBuffer
 {
     Float4x4 TransformMatrix; // TODO: 3x4
     //Float4 ModelNormalToViewSpace0;
@@ -160,7 +160,7 @@ struct SShadowInstanceConstantBuffer
     uint32_t Pad[3];
 };
 
-struct STerrainInstanceConstantBuffer
+struct TerrainInstanceConstantBuffer
 {
     Float4x4 LocalViewProjection;
     Float3x4 ModelNormalToViewSpace;
@@ -174,9 +174,9 @@ struct STerrainInstanceConstantBuffer
 // Common variables
 //
 
-extern AConsoleVar r_RenderSnapshot;
-extern AConsoleVar r_SSLR;
-extern AConsoleVar r_HBAO;
+extern ConsoleVar r_RenderSnapshot;
+extern ConsoleVar r_SSLR;
+extern ConsoleVar r_HBAO;
 
 
 //
@@ -193,24 +193,24 @@ extern RenderCore::IImmediateContext* rcmd;
 extern RenderCore::IResourceTable* rtbl;
 
 /** Render frame data */
-extern SRenderFrame* GFrameData;
+extern RenderFrameData* GFrameData;
 
 /** Render frame view */
-extern SRenderView* GRenderView;
+extern RenderViewData* GRenderView;
 
 /** Render view area */
-extern RenderCore::SRect2D GRenderViewArea;
+extern RenderCore::Rect2D GRenderViewArea;
 
 /** Stream buffer */
 extern RenderCore::IBuffer* GStreamBuffer;
-extern AStreamedMemoryGPU*  GStreamedMemory;
+extern StreamedMemoryGPU*  GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-extern TRef<ACircularBuffer> GCircularBuffer;
+extern TRef<CircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-extern TRef<ASphereMesh> GSphereMesh;
+extern TRef<SphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
 extern TRef<RenderCore::IBuffer> GSaq;
@@ -230,17 +230,17 @@ extern TRef<RenderCore::IBuffer> GClusterItemBuffer;
 /** Cluster item references view */
 extern TRef<RenderCore::IBufferView> GClusterItemTBO;
 
-struct SRenderViewContext
+struct RenderViewContext
 {
     /** View constant binding */
     size_t ViewConstantBufferBindingBindingOffset;
     size_t ViewConstantBufferBindingBindingSize;
 };
-extern TVector<SRenderViewContext> GRenderViewContext;
+extern TVector<RenderViewContext> GRenderViewContext;
 
 
-extern AVirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
-extern AVirtualTextureCache*            GPhysCacheVT;
+extern VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
+extern VirtualTextureCache*            GPhysCacheVT;
 
 extern RenderCore::IPipeline* GTerrainDepthPipeline;
 extern RenderCore::IPipeline* GTerrainLightPipeline;
@@ -250,30 +250,30 @@ extern RenderCore::IPipeline* GTerrainWireframePipeline;
 // Common functions
 //
 
-RenderCore::STextureResolution2D GetFrameResoultion();
+RenderCore::TextureResolution2D GetFrameResoultion();
 
 void DrawSAQ(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
 void DrawSphere(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, RenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SShadowRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SLightPortalRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, LightPortalRenderInstance const* Instance);
 
 void BindSkeleton(size_t _Offset, size_t _Size);
 void BindSkeletonMotionBlur(size_t _Offset, size_t _Size);
 
-void BindTextures(RenderCore::IResourceTable* Rtbl, SMaterialFrameData* Instance, int MaxTextures);
-void BindTextures(SMaterialFrameData* Instance, int MaxTextures);
+void BindTextures(RenderCore::IResourceTable* Rtbl, MaterialFrameData* Instance, int MaxTextures);
+void BindTextures(MaterialFrameData* Instance, int MaxTextures);
 
-void BindInstanceConstants(SRenderInstance const* Instance);
+void BindInstanceConstants(RenderInstance const* Instance);
 
-void BindInstanceConstantsFB(SRenderInstance const* Instance);
+void BindInstanceConstantsFB(RenderInstance const* Instance);
 
-void BindShadowInstanceConstants(SShadowRenderInstance const* Instance);
-void BindShadowInstanceConstants(SShadowRenderInstance const* Instance, int FaceIndex, Float3 const& LightPosition);
+void BindShadowInstanceConstants(ShadowRenderInstance const* Instance);
+void BindShadowInstanceConstants(ShadowRenderInstance const* Instance, int FaceIndex, Float3 const& LightPosition);
 
 void* MapDrawCallConstants(size_t SizeInBytes);
 

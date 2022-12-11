@@ -40,7 +40,7 @@ UIDockContainer::UIDockContainer() :
     UIDockContainer("Default")
 {}
 
-UIDockContainer::UIDockContainer(AStringView containerName) :
+UIDockContainer::UIDockContainer(StringView containerName) :
     m_ContainerName(containerName)
 {
     m_Root = UINew(UIDockNode);
@@ -58,7 +58,7 @@ UIDockNode* UIDockContainer::TraceLeaf(float x, float y)
     return m_Root->TraceLeaf(x, y);
 }
 
-WDockPlacement UIDockContainer::GetPlacement(float x, float y)
+UIDockPlacement UIDockContainer::GetPlacement(float x, float y)
 {
     x -= m_Geometry.PaddedMins.X;
     y -= m_Geometry.PaddedMins.Y;
@@ -69,7 +69,7 @@ WDockPlacement UIDockContainer::GetPlacement(float x, float y)
 
     //if (leaf == m_Root)
     //{
-    //    WDockPlacement placement;
+    //    UIDockPlacement placement;
     //    placement.Leaf = leaf;
     //    placement.Zone = DOCK_ZONE_CENTER;
     //    placement.PolygonVerts[0] = Geometry.PaddedMins + leaf->m_Mins;
@@ -100,7 +100,7 @@ WDockPlacement UIDockContainer::GetPlacement(float x, float y)
     float ymin = areaWidth * aspect;
     float ymax = 1.0f - ymin;
 
-    WDockPlacement placement;
+    UIDockPlacement placement;
     placement.Leaf = leaf;
 
     while (1)
@@ -318,7 +318,7 @@ UIDockNode* UIDockContainer::FindParent(UIDockNode* node)
     return m_Root->FindParent(node);
 }
 
-void UIDockContainer::PostDraw(ACanvas& canvas)
+void UIDockContainer::PostDraw(Canvas& canvas)
 {
     Super::PostDraw(canvas);
 
@@ -326,7 +326,7 @@ void UIDockContainer::PostDraw(ACanvas& canvas)
     {
         //auto geometry = DragWidget->Geometry;
 
-        //WDockPlacement placement = GetPlacement(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+        //UIDockPlacement placement = GetPlacement(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
         //if (placement)
         //{
         //    float splitDistance = 0.5f;
@@ -374,7 +374,7 @@ void UIDockContainer::PostDraw(ACanvas& canvas)
         //}
 
         Float2         cursorPos = GUIManager->CursorPosition;
-        WDockPlacement placement = GetPlacement(cursorPos.X, cursorPos.Y);
+        UIDockPlacement placement = GetPlacement(cursorPos.X, cursorPos.Y);
         if (placement)
         {
             #if 1
@@ -499,7 +499,7 @@ void UIDockContainer::PostDraw(ACanvas& canvas)
     }
 }
 
-bool UIDockContainer::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+bool UIDockContainer::OnChildrenMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     bool handled = false;
 
@@ -528,7 +528,7 @@ bool UIDockContainer::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event,
     return handled;
 }
 
-void UIDockContainer::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIDockContainer::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
 }
 
@@ -758,7 +758,7 @@ bool UIDockContainer::AttachWidgetAt(UIDockWidget* widget, float x, float y)
     if (!widget)
         return false;
 
-    WDockPlacement placement = GetPlacement(x, y);
+    UIDockPlacement placement = GetPlacement(x, y);
     if (placement)
     {
         float splitDistance = 0.5f;

@@ -31,27 +31,27 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-uint64_t ABaseObject::m_TotalObjects = 0;
+uint64_t BaseObject::m_TotalObjects = 0;
 
-ABaseObject* ABaseObject::m_Objects   = nullptr;
-ABaseObject* ABaseObject::m_ObjectsTail = nullptr;
+BaseObject* BaseObject::m_Objects   = nullptr;
+BaseObject* BaseObject::m_ObjectsTail = nullptr;
 
 static uint64_t GUniqueIdGenerator = 0;
 
-ABaseObject::ABaseObject() :
+BaseObject::BaseObject() :
     Id(++GUniqueIdGenerator)
 {
     INTRUSIVE_ADD(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
     m_TotalObjects++;    
 }
 
-ABaseObject::~ABaseObject()
+BaseObject::~BaseObject()
 {
     INTRUSIVE_REMOVE(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
     m_TotalObjects--;    
 }
 
-ABaseObject* ABaseObject::FindObject(uint64_t _Id)
+BaseObject* BaseObject::FindObject(uint64_t _Id)
 {
     if (!_Id)
     {
@@ -59,7 +59,7 @@ ABaseObject* ABaseObject::FindObject(uint64_t _Id)
     }
 
     // FIXME: use hash/map?
-    for (ABaseObject* object = m_Objects; object; object = object->m_NextObject)
+    for (BaseObject* object = m_Objects; object; object = object->m_NextObject)
     {
         if (object->Id == _Id)
         {
@@ -69,25 +69,25 @@ ABaseObject* ABaseObject::FindObject(uint64_t _Id)
     return nullptr;
 }
 
-void ABaseObject::SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties)
+void BaseObject::SetProperties_r(ClassMeta const* Meta, TStringHashMap<String> const& Properties)
 {
     if (Meta)
     {
         SetProperties_r(Meta->SuperClass(), Properties);
 
-        for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
+        for (Property const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
             auto it = Properties.Find(prop->GetName());
             if (it != Properties.End())
             {
                 // Property found
-                prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), it->second));
+                prop->SetValue(this, Variant(prop->GetType(), prop->GetEnum(), it->second));
             }
         }
     }
 }
 
-void ABaseObject::SetProperties(TStringHashMap<AString> const& Properties)
+void BaseObject::SetProperties(TStringHashMap<String> const& Properties)
 {
     if (Properties.IsEmpty())
     {
@@ -96,9 +96,9 @@ void ABaseObject::SetProperties(TStringHashMap<AString> const& Properties)
     SetProperties_r(&FinalClassMeta(), Properties);
 }
 
-bool ABaseObject::SetProperty(AStringView PropertyName, AStringView PropertyValue)
+bool BaseObject::SetProperty(StringView PropertyName, StringView PropertyValue)
 {
-    AProperty const* prop = FinalClassMeta().FindProperty(PropertyName, true);
+    Property const* prop = FinalClassMeta().FindProperty(PropertyName, true);
     if (!prop)
         return false;
 
@@ -107,9 +107,9 @@ bool ABaseObject::SetProperty(AStringView PropertyName, AStringView PropertyValu
 }
 
 #if 0
-bool ABaseObject::SetProperty(AStringView PropertyName, AVariant const& PropertyValue)
+bool BaseObject::SetProperty(StringView PropertyName, Variant const& PropertyValue)
 {
-    AProperty const* prop = FinalClassMeta().FindProperty(PropertyName, true);
+    Property const* prop = FinalClassMeta().FindProperty(PropertyName, true);
     if (!prop)
         return false;
 
@@ -118,12 +118,12 @@ bool ABaseObject::SetProperty(AStringView PropertyName, AVariant const& Property
 }
 #endif
 
-AProperty const* ABaseObject::FindProperty(AStringView PropertyName, bool bRecursive) const
+Property const* BaseObject::FindProperty(StringView PropertyName, bool bRecursive) const
 {
     return FinalClassMeta().FindProperty(PropertyName, bRecursive);
 }
 
-void ABaseObject::GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive) const
+void BaseObject::GetProperties(TPodVector<Property const*>& Properties, bool bRecursive) const
 {
     FinalClassMeta().GetProperties(Properties, bRecursive);
 }

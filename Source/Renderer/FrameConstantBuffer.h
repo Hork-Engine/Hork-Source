@@ -33,10 +33,10 @@ SOFTWARE.
 #if 0
 #include <RenderCore/ImmediateContext.h>
 
-class AFrameConstantBuffer : public RenderCore::IObjectInterface {
+class FrameConstantBuffer : public RenderCore::IObjectInterface {
 public:
-    AFrameConstantBuffer( size_t InBufferSize );
-    virtual ~AFrameConstantBuffer();
+    FrameConstantBuffer( size_t InBufferSize );
+    virtual ~FrameConstantBuffer();
 
     size_t Allocate( size_t InSize );
 
@@ -48,7 +48,7 @@ public:
     void End();
 
 private:
-    struct SChainBuffer {
+    struct ChainBuffer {
         size_t UsedMemory;
         RenderCore::SyncObject Sync;
     };
@@ -61,7 +61,7 @@ private:
 
     enum { SWAP_CHAIN_SIZE = 3 };
 
-    SChainBuffer ChainBuffer[SWAP_CHAIN_SIZE];
+    ChainBuffer ChainBuffer[SWAP_CHAIN_SIZE];
     size_t BufferSize;
 
     unsigned int UniformBufferOffsetAlignment;

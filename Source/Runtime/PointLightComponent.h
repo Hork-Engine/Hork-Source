@@ -32,31 +32,31 @@ SOFTWARE.
 
 #include "AnalyticLightComponent.h"
 
-class APointLightComponent : public AAnalyticLightComponent
+class PointLightComponent : public AnalyticLightComponent
 {
-    HK_COMPONENT(APointLightComponent, AAnalyticLightComponent)
+    HK_COMPONENT(PointLightComponent, AnalyticLightComponent)
 
 public:
     void  SetRadius(float _Radius);
-    float GetRadius() const { return Radius; }
+    float GetRadius() const { return m_Radius; }
 
-    BvSphere const& GetSphereWorldBounds() const { return SphereWorldBounds; }
+    BvSphere const& GetSphereWorldBounds() const { return m_SphereWorldBounds; }
 
-    void PackLight(Float4x4 const& InViewMatrix, SLightParameters& Light) override;
+    void PackLight(Float4x4 const& InViewMatrix, LightParameters& Light) override;
 
 protected:
-    APointLightComponent();
+    PointLightComponent();
 
     void OnCreateAvatar() override;
     void OnTransformDirty() override;
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
     void UpdateWorldBounds();
 
-    BvSphere      SphereWorldBounds;
-    BvOrientedBox OBBWorldBounds;
+    BvSphere m_SphereWorldBounds;
+    BvOrientedBox m_OBBWorldBounds;
 
-    float Radius;
-    float InverseSquareRadius;
+    float m_Radius;
+    float m_InverseSquareRadius;
 };

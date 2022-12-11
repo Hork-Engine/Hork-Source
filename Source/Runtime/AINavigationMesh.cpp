@@ -57,12 +57,12 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
-AConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"s, "0"s, CVAR_CHEAT);
-AConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"s, "0"s, CVAR_CHEAT);
-AConsoleVar com_DrawNavMesh("com_DrawNavMesh"s, "0"s, CVAR_CHEAT);
-AConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMesh("com_DrawNavMesh"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"s, "0"s, CVAR_CHEAT);
 
-HK_VALIDATE_TYPE_SIZE(SNavPolyRef, sizeof(dtPolyRef));
+HK_VALIDATE_TYPE_SIZE(NavPolyRef, sizeof(dtPolyRef));
 
 static const int  MAX_LAYERS            = 255;
 static const bool RECAST_ENABLE_LOGGING = true;
@@ -72,18 +72,18 @@ enum
 {
     MAX_POLYS = 2048
 };
-static SNavPolyRef TmpPolys[MAX_POLYS];
-static SNavPolyRef TmpPathPolys[MAX_POLYS];
+static NavPolyRef TmpPolys[MAX_POLYS];
+static NavPolyRef TmpPathPolys[MAX_POLYS];
 alignas(16) static Float3 TmpPathPoints[MAX_POLYS];
 static unsigned char TmpPathFlags[MAX_POLYS];
 
-struct STileCacheData
+struct TileCacheData
 {
     byte* Data;
     int   Size;
 };
 
-struct STileCompressorCallback : public dtTileCacheCompressor
+struct TileCompressorCallback : public dtTileCacheCompressor
 {
     int maxCompressedSize(const int bufferSize) override
     {
@@ -123,9 +123,9 @@ struct STileCompressorCallback : public dtTileCacheCompressor
     }
 };
 
-static STileCompressorCallback TileCompressorCallback;
+static TileCompressorCallback TileCompressorCallback;
 
-struct ADetourLinearAllocator : public dtTileCacheAlloc
+struct DetourLinearAllocator : public dtTileCacheAlloc
 {
     TLinearAllocator<> Allocator;
 
@@ -154,7 +154,7 @@ struct ADetourLinearAllocator : public dtTileCacheAlloc
     }
 };
 
-struct ADetourMeshProcess : public dtTileCacheMeshProcess
+struct DetourMeshProcess : public dtTileCacheMeshProcess
 {
     // NavMesh connections
     TPodVector<Float3>         OffMeshConVerts;
@@ -164,7 +164,7 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess
     TPodVector<unsigned short> OffMeshConFlags;
     TPodVector<unsigned int>   OffMeshConId;
     int                        OffMeshConCount;
-    AAINavigationMesh*         NavMesh;
+    AINavigationMesh*          NavMesh;
 
     void* operator new(size_t _SizeInBytes)
     {
@@ -219,7 +219,7 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess
         OffMeshConCount         = 0;
         for (int i = 0; i < NavMesh->NavMeshConnections.Size(); i++)
         {
-            SAINavMeshConnection const& con = NavMesh->NavMeshConnections[i];
+            AINavMeshConnection const& con = NavMesh->NavMeshConnections[i];
 
             con.CalcBoundingBox(conBoundingBox);
             conBoundingBox.Mins -= margin;
@@ -253,10 +253,10 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess
     }
 };
 
-class ARecastContext : public rcContext
+class RecastContext : public rcContext
 {
 public:
-    ARecastContext()
+    RecastContext()
     {
         enableLog(RECAST_ENABLE_LOGGING);
         enableTimer(RECAST_ENABLE_TIMINGS);
@@ -289,19 +289,19 @@ protected:
     int  doGetAccumulatedTime(const rcTimerLabel label) const override { return -1; }
 };
 
-static ARecastContext RecastContext;
+static RecastContext RecastContext;
 
-AAINavigationMesh::AAINavigationMesh()
+AINavigationMesh::AINavigationMesh()
 {
     m_BoundingBox.Clear();
 }
 
-AAINavigationMesh::~AAINavigationMesh()
+AINavigationMesh::~AINavigationMesh()
 {
     Purge();
 }
 
-bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
+bool AINavigationMesh::Initialize(AINavigationConfig const& _NavigationConfig)
 {
     dtStatus status;
 
@@ -309,7 +309,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
 
     if (_NavigationConfig.BoundingBox.IsEmpty())
     {
-        LOG("AAINavigationMesh::Initialize: empty bounding box\n");
+        LOG("AINavigationMesh::Initialize: empty bounding box\n");
         return false;
     }
 
@@ -421,9 +421,9 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
             return false;
         }
 
-        m_LinearAllocator = MakeUnique<ADetourLinearAllocator>();
+        m_LinearAllocator = MakeUnique<DetourLinearAllocator>();
 
-        m_MeshProcess          = MakeUnique<ADetourMeshProcess>();
+        m_MeshProcess          = MakeUnique<DetourMeshProcess>();
         m_MeshProcess->NavMesh = this;
 
         status = m_TileCache->init(&tileCacheParams, m_LinearAllocator.GetObject(), &TileCompressorCallback, m_MeshProcess.GetObject());
@@ -442,7 +442,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
     return true;
 }
 
-bool AAINavigationMesh::Build()
+bool AINavigationMesh::Build()
 {
     Int2 regionMins(0, 0);
     Int2 regionMaxs(m_NumTilesX - 1, m_NumTilesZ - 1);
@@ -452,7 +452,7 @@ bool AAINavigationMesh::Build()
     return BuildTiles(regionMins, regionMaxs);
 }
 
-bool AAINavigationMesh::Build(Int2 const& _Mins, Int2 const& _Maxs)
+bool AINavigationMesh::Build(Int2 const& _Mins, Int2 const& _Maxs)
 {
     Int2 regionMins;
     Int2 regionMaxs;
@@ -465,7 +465,7 @@ bool AAINavigationMesh::Build(Int2 const& _Mins, Int2 const& _Maxs)
     return BuildTiles(regionMins, regionMaxs);
 }
 
-bool AAINavigationMesh::Build(BvAxisAlignedBox const& _BoundingBox)
+bool AINavigationMesh::Build(BvAxisAlignedBox const& _BoundingBox)
 {
     Int2 mins((_BoundingBox.Mins.X - m_BoundingBox.Mins.X) / m_TileWidth,
               (_BoundingBox.Mins.Z - m_BoundingBox.Mins.Z) / m_TileWidth);
@@ -475,7 +475,7 @@ bool AAINavigationMesh::Build(BvAxisAlignedBox const& _BoundingBox)
     return Build(mins, maxs);
 }
 
-void AAINavigationMesh::GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _BoundingBox) const
+void AINavigationMesh::GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _BoundingBox) const
 {
     _BoundingBox.Mins[0] = m_BoundingBox.Mins[0] + _X * m_TileWidth;
     _BoundingBox.Mins[1] = m_BoundingBox.Mins[1];
@@ -486,11 +486,11 @@ void AAINavigationMesh::GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _Bo
     _BoundingBox.Maxs[2] = m_BoundingBox.Mins[2] + (_Z + 1) * m_TileWidth;
 }
 
-bool AAINavigationMesh::BuildTiles(Int2 const& _Mins, Int2 const& _Maxs)
+bool AINavigationMesh::BuildTiles(Int2 const& _Mins, Int2 const& _Maxs)
 {
     if (!m_NavMesh)
     {
-        LOG("AAINavigationMesh::BuildTiles: navmesh must be initialized\n");
+        LOG("AINavigationMesh::BuildTiles: navmesh must be initialized\n");
         return false;
     }
 
@@ -533,9 +533,10 @@ static void MarkWalkableTriangles(float WalkableSlopeAngle, Float3 const* Vertic
     }
 }
 
-static int PointInPoly2D(int nvert, const float* verts, const float* p)
+static bool PointInPoly2D(int nvert, const float* verts, const float* p)
 {
-    int i, j, c = 0;
+    int i, j;
+    bool c = false;
     for (i = 0, j = nvert - 1; i < nvert; j = i++)
     {
         const float* vi = &verts[i * 2];
@@ -547,9 +548,9 @@ static int PointInPoly2D(int nvert, const float* verts, const float* p)
     return c;
 }
 
-static AString GetErrorStr(dtStatus status)
+static String GetErrorStr(dtStatus status)
 {
-    AString s;
+    String s;
     if (status & DT_WRONG_MAGIC)
         s += "DT_WRONG_MAGIC ";
     if (status & DT_WRONG_VERSION)
@@ -569,7 +570,7 @@ static AString GetErrorStr(dtStatus status)
     return s;
 }
 
-bool AAINavigationMesh::BuildTile(int _X, int _Z)
+bool AINavigationMesh::BuildTile(int _X, int _Z)
 {
     struct TemportalData
     {
@@ -639,7 +640,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         tileWorldBoundsWithPadding.Maxs[i] = config.bmax[i];
     }
 
-    SNavigationGeometry geometry;
+    NavigationGeometry geometry;
     geometry.pClipBoundingBox = &tileWorldBoundsWithPadding;
     geometry.BoundingBox.Clear();
     GatherNavigationGeometry(geometry);
@@ -735,14 +736,14 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     // Erode the walkable area by agent radius.
     if (!rcErodeWalkableArea(&RecastContext, config.walkableRadius, *temporal.CompactHeightfield))
     {
-        LOG("AAINavigationMesh::Build: Failed on rcErodeWalkableArea\n");
+        LOG("AINavigationMesh::Build: Failed on rcErodeWalkableArea\n");
         return false;
     }
 #if 1
     BvAxisAlignedBox areaBoundingBox;
     for (int areaNum = 0; areaNum < NavigationAreas.Size(); ++areaNum)
     {
-        SAINavigationArea const&    area = NavigationAreas[areaNum];
+        AINavigationArea const&    area = NavigationAreas[areaNum];
         rcCompactHeightfield const& chf  = *temporal.CompactHeightfield;
 
         area.CalcBoundingBox(areaBoundingBox);
@@ -889,7 +890,6 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
 
     if (Initial.bDynamicNavMesh)
     {
-
         temporal.LayerSet = rcAllocHeightfieldLayerSet();
         if (!temporal.LayerSet)
         {
@@ -903,13 +903,13 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
             return false;
         }
 
-        STileCacheData cacheData[MAX_LAYERS];
+        TileCacheData cacheData[MAX_LAYERS];
 
         int numLayers      = Math::Min(temporal.LayerSet->nlayers, MAX_LAYERS);
         int numValidLayers = 0;
         for (int i = 0; i < numLayers; i++)
         {
-            STileCacheData*           tile  = &cacheData[i];
+            TileCacheData*           tile  = &cacheData[i];
             rcHeightfieldLayer const* layer = &temporal.LayerSet->layers[i];
 
             dtTileCacheLayerHeader header;
@@ -1002,7 +1002,6 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     }
     else
     {
-
         temporal.ContourSet = rcAllocContourSet();
         if (!temporal.ContourSet)
         {
@@ -1096,7 +1095,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         int                        offMeshConCount = 0;
         for (int i = 0; i < NavMeshConnections.Size(); i++)
         {
-            SAINavMeshConnection const& con = NavMeshConnections[i];
+            AINavMeshConnection const& con = NavMeshConnections[i];
 
             con.CalcBoundingBox(conBoundingBox);
             conBoundingBox.Mins -= margin;
@@ -1180,7 +1179,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     return true;
 }
 
-void AAINavigationMesh::RemoveTile(int _X, int _Z)
+void AINavigationMesh::RemoveTile(int _X, int _Z)
 {
     if (!m_NavMesh)
     {
@@ -1216,7 +1215,7 @@ void AAINavigationMesh::RemoveTile(int _X, int _Z)
     }
 }
 
-void AAINavigationMesh::RemoveTiles()
+void AINavigationMesh::RemoveTiles()
 {
     if (!m_NavMesh)
     {
@@ -1252,7 +1251,7 @@ void AAINavigationMesh::RemoveTiles()
     }
 }
 
-void AAINavigationMesh::RemoveTiles(Int2 const& _Mins, Int2 const& _Maxs)
+void AINavigationMesh::RemoveTiles(Int2 const& _Mins, Int2 const& _Maxs)
 {
     if (!m_NavMesh)
     {
@@ -1267,12 +1266,12 @@ void AAINavigationMesh::RemoveTiles(Int2 const& _Mins, Int2 const& _Maxs)
     }
 }
 
-bool AAINavigationMesh::IsTileExsist(int _X, int _Z) const
+bool AINavigationMesh::IsTileExsist(int _X, int _Z) const
 {
     return m_NavMesh ? m_NavMesh->getTileAt(_X, _Z, 0) != nullptr : false;
 }
 
-void AAINavigationMesh::AddObstacle(AAINavMeshObstacle* _Obstacle)
+void AINavigationMesh::AddObstacle(AINavMeshObstacle* _Obstacle)
 {
     if (!m_TileCache)
     {
@@ -1289,13 +1288,12 @@ void AAINavigationMesh::AddObstacle(AAINavMeshObstacle* _Obstacle)
 
     if (_Obstacle->Shape == AI_NAV_MESH_OBSTACLE_BOX)
     {
-        Float3 Mins = _Obstacle->Position - _Obstacle->HalfExtents;
-        Float3 Maxs = _Obstacle->Position + _Obstacle->HalfExtents;
-        status      = m_TileCache->addBoxObstacle((const float*)Mins.ToPtr(), (const float*)Maxs.ToPtr(), &ref);
+        Float3 mins = _Obstacle->Position - _Obstacle->HalfExtents;
+        Float3 maxs = _Obstacle->Position + _Obstacle->HalfExtents;
+        status      = m_TileCache->addBoxObstacle((const float*)mins.ToPtr(), (const float*)maxs.ToPtr(), &ref);
     }
     else
     {
-
         while (1)
         {
             status = m_TileCache->addObstacle((const float*)_Obstacle->Position.ToPtr(), _Obstacle->Radius, _Obstacle->Height, &ref);
@@ -1323,7 +1321,7 @@ void AAINavigationMesh::AddObstacle(AAINavMeshObstacle* _Obstacle)
     _Obstacle->ObstacleRef = ref;
 }
 
-void AAINavigationMesh::RemoveObstacle(AAINavMeshObstacle* _Obstacle)
+void AINavigationMesh::RemoveObstacle(AINavMeshObstacle* _Obstacle)
 {
     if (!m_TileCache)
     {
@@ -1364,11 +1362,11 @@ void AAINavigationMesh::RemoveObstacle(AAINavMeshObstacle* _Obstacle)
     _Obstacle->ObstacleRef = 0;
 }
 
-void AAINavigationMesh::UpdateObstacle(AAINavMeshObstacle* _Obstacle)
+void AINavigationMesh::UpdateObstacle(AINavMeshObstacle* _Obstacle)
 {
     if (!_Obstacle->ObstacleRef)
     {
-        LOG("AAINavigationMesh::UpdateObstacle: obstacle is not in navmesh\n");
+        LOG("AINavigationMesh::UpdateObstacle: obstacle is not in navmesh\n");
         return;
     }
 
@@ -1376,7 +1374,7 @@ void AAINavigationMesh::UpdateObstacle(AAINavMeshObstacle* _Obstacle)
     AddObstacle(_Obstacle);
 }
 
-void AAINavigationMesh::Purge()
+void AINavigationMesh::Purge()
 {
     dtFreeNavMeshQuery(m_NavQuery);
     m_NavQuery = nullptr;
@@ -1397,14 +1395,14 @@ void AAINavigationMesh::Purge()
     m_NumTilesZ = 0;
 }
 
-struct SDebugDrawCallback : public duDebugDraw
+struct DebugDrawCallback : public duDebugDraw
 {
-    ADebugRenderer*       DD;
+    DebugRenderer*       DD;
     Float3                AccumVertices[3];
     int                   AccumIndex;
     duDebugDrawPrimitives Primitive;
 
-    SDebugDrawCallback()
+    DebugDrawCallback()
     {
         AccumIndex = 0;
     }
@@ -1490,15 +1488,14 @@ struct SDebugDrawCallback : public duDebugDraw
     }
 };
 
-void AAINavigationMesh::DrawDebug(ADebugRenderer* InRenderer)
+void AINavigationMesh::DrawDebug(DebugRenderer* InRenderer)
 {
-
     if (!m_NavMesh)
     {
         return;
     }
 
-    SDebugDrawCallback callback;
+    DebugDrawCallback callback;
     callback.DD = InRenderer;
 
     if (com_DrawNavMeshBVTree)
@@ -1575,7 +1572,7 @@ void AAINavigationMesh::DrawDebug(ADebugRenderer* InRenderer)
 #endif
 }
 
-class ANavQueryFilterPrivate : public dtQueryFilter
+class NavQueryFilterPrivate : public dtQueryFilter
 {
 public:
     void* operator new(size_t _SizeInBytes)
@@ -1589,48 +1586,48 @@ public:
     }
 };
 
-ANavQueryFilter::ANavQueryFilter()
+NavQueryFilter::NavQueryFilter()
 {
-    Filter = MakeUnique<ANavQueryFilterPrivate>();
+    Filter = MakeUnique<NavQueryFilterPrivate>();
 }
 
-ANavQueryFilter::~ANavQueryFilter()
+NavQueryFilter::~NavQueryFilter()
 {
 }
 
-void ANavQueryFilter::SetAreaCost(int _AreaId, float _Cost)
+void NavQueryFilter::SetAreaCost(int _AreaId, float _Cost)
 {
     Filter->setAreaCost(_AreaId, _Cost);
 }
 
-float ANavQueryFilter::GetAreaCost(int _AreaId) const
+float NavQueryFilter::GetAreaCost(int _AreaId) const
 {
     return Filter->getAreaCost(_AreaId);
 }
 
-void ANavQueryFilter::SetIncludeFlags(unsigned short _Flags)
+void NavQueryFilter::SetIncludeFlags(unsigned short _Flags)
 {
     Filter->setIncludeFlags(_Flags);
 }
 
-unsigned short ANavQueryFilter::GetIncludeFlags() const
+unsigned short NavQueryFilter::GetIncludeFlags() const
 {
     return Filter->getIncludeFlags();
 }
 
-void ANavQueryFilter::SetExcludeFlags(unsigned short _Flags)
+void NavQueryFilter::SetExcludeFlags(unsigned short _Flags)
 {
     Filter->setExcludeFlags(_Flags);
 }
 
-unsigned short ANavQueryFilter::GetExcludeFlags() const
+unsigned short NavQueryFilter::GetExcludeFlags() const
 {
     return Filter->getExcludeFlags();
 }
 
-bool AAINavigationMesh::Trace(SAINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, ANavQueryFilter const& _Filter) const
+bool AINavigationMesh::Trace(AINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, NavQueryFilter const& _Filter) const
 {
-    SNavPolyRef StartRef;
+    NavPolyRef StartRef;
 
     if (!QueryNearestPoly(_RayStart, _Extents, &StartRef))
     {
@@ -1657,12 +1654,12 @@ bool AAINavigationMesh::Trace(SAINavigationTraceResult& _Result, Float3 const& _
     return true;
 }
 
-bool AAINavigationMesh::Trace(SAINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents) const
+bool AINavigationMesh::Trace(AINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents) const
 {
     return Trace(_Result, _RayStart, _RayEnd, _Extents, QueryFilter);
 }
 
-bool AAINavigationMesh::QueryTileLocaction(Float3 const& _Position, int* _TileX, int* _TileY) const
+bool AINavigationMesh::QueryTileLocaction(Float3 const& _Position, int* _TileX, int* _TileY) const
 {
     if (!m_NavMesh)
     {
@@ -1674,7 +1671,7 @@ bool AAINavigationMesh::QueryTileLocaction(Float3 const& _Position, int* _TileX,
     return true;
 }
 
-bool AAINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPolyRef* _NearestPolyRef) const
+bool AINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPolyRef* _NearestPolyRef) const
 {
     *_NearestPolyRef = 0;
 
@@ -1692,12 +1689,12 @@ bool AAINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& 
     return true;
 }
 
-bool AAINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, SNavPolyRef* _NearestPolyRef) const
+bool AINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavPolyRef* _NearestPolyRef) const
 {
     return QueryNearestPoly(_Position, _Extents, QueryFilter, _NearestPolyRef);
 }
 
-bool AAINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPointRef* _NearestPointRef) const
+bool AINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _NearestPointRef) const
 {
     _NearestPointRef->PolyRef = 0;
     _NearestPointRef->Position.Clear();
@@ -1716,7 +1713,7 @@ bool AAINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const&
     return true;
 }
 
-bool AAINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, SNavPointRef* _NearestPointRef) const
+bool AINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavPointRef* _NearestPointRef) const
 {
     return QueryNearestPoint(_Position, _Extents, QueryFilter, _NearestPointRef);
 }
@@ -1728,7 +1725,7 @@ static float NavRandom()
     return GEngine->Rand.GetFloat() * range;
 }
 
-bool AAINavigationMesh::QueryRandomPoint(ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPoint(NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
 {
     _RandomPointRef->PolyRef = 0;
     _RandomPointRef->Position.Clear();
@@ -1747,14 +1744,14 @@ bool AAINavigationMesh::QueryRandomPoint(ANavQueryFilter const& _Filter, SNavPoi
     return true;
 }
 
-bool AAINavigationMesh::QueryRandomPoint(SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPoint(NavPointRef* _RandomPointRef) const
 {
     return QueryRandomPoint(QueryFilter, _RandomPointRef);
 }
 
-bool AAINavigationMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
 {
-    SNavPointRef StartRef;
+    NavPointRef StartRef;
 
     if (!QueryNearestPoly(_Position, _Extents, _Filter, &StartRef.PolyRef))
     {
@@ -1766,12 +1763,12 @@ bool AAINavigationMesh::QueryRandomPointAroundCircle(Float3 const& _Position, fl
     return QueryRandomPointAroundCircle(StartRef, _Radius, _Filter, _RandomPointRef);
 }
 
-bool AAINavigationMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavPointRef* _RandomPointRef) const
 {
     return QueryRandomPointAroundCircle(_Position, _Radius, _Extents, QueryFilter, _RandomPointRef);
 }
 
-bool AAINavigationMesh::QueryRandomPointAroundCircle(SNavPointRef const& _StartRef, float _Radius, ANavQueryFilter const& _Filter, SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
 {
     _RandomPointRef->PolyRef = 0;
     _RandomPointRef->Position.Clear();
@@ -1790,12 +1787,12 @@ bool AAINavigationMesh::QueryRandomPointAroundCircle(SNavPointRef const& _StartR
     return true;
 }
 
-bool AAINavigationMesh::QueryRandomPointAroundCircle(SNavPointRef const& _StartRef, float _Radius, SNavPointRef* _RandomPointRef) const
+bool AINavigationMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavPointRef* _RandomPointRef) const
 {
     return QueryRandomPointAroundCircle(_StartRef, _Radius, QueryFilter, _RandomPointRef);
 }
 
-bool AAINavigationMesh::QueryClosestPointOnPoly(SNavPointRef const& _PointRef, Float3* _Point, bool* _OverPolygon) const
+bool AINavigationMesh::QueryClosestPointOnPoly(NavPointRef const& _PointRef, Float3* _Point, bool* _OverPolygon) const
 {
     if (!m_NavQuery)
     {
@@ -1811,7 +1808,7 @@ bool AAINavigationMesh::QueryClosestPointOnPoly(SNavPointRef const& _PointRef, F
     return true;
 }
 
-bool AAINavigationMesh::QueryClosestPointOnPolyBoundary(SNavPointRef const& _PointRef, Float3* _Point) const
+bool AINavigationMesh::QueryClosestPointOnPolyBoundary(NavPointRef const& _PointRef, Float3* _Point) const
 {
     if (!m_NavQuery)
     {
@@ -1827,7 +1824,7 @@ bool AAINavigationMesh::QueryClosestPointOnPolyBoundary(SNavPointRef const& _Poi
     return true;
 }
 
-bool AAINavigationMesh::MoveAlongSurface(SNavPointRef const& _StartRef, Float3 const& _Destination, ANavQueryFilter const& _Filter, SNavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
+bool AINavigationMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavQueryFilter const& _Filter, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
 {
     if (!m_NavQuery)
     {
@@ -1845,14 +1842,14 @@ bool AAINavigationMesh::MoveAlongSurface(SNavPointRef const& _StartRef, Float3 c
     return true;
 }
 
-bool AAINavigationMesh::MoveAlongSurface(SNavPointRef const& _StartRef, Float3 const& _Destination, SNavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
+bool AINavigationMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
 {
     return MoveAlongSurface(_StartRef, _Destination, QueryFilter, _Visited, _VisitedCount, _MaxVisitedSize, _ResultPos);
 }
 
-bool AAINavigationMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, ANavQueryFilter const& _Filter, int _MaxVisitedSize, Float3& _ResultPos) const
+bool AINavigationMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, NavQueryFilter const& _Filter, int _MaxVisitedSize, Float3& _ResultPos) const
 {
-    SNavPointRef StartRef;
+    NavPointRef StartRef;
 
     m_LastVisitedPolys.Clear();
 
@@ -1878,12 +1875,12 @@ bool AAINavigationMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& 
     return true;
 }
 
-bool AAINavigationMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const
+bool AINavigationMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const
 {
     return MoveAlongSurface(_Position, _Destination, _Extents, QueryFilter, _MaxVisitedSize, _ResultPos);
 }
 
-bool AAINavigationMesh::FindPath(SNavPointRef const& _StartRef, SNavPointRef const& _EndRef, ANavQueryFilter const& _Filter, SNavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
+bool AINavigationMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavQueryFilter const& _Filter, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
 {
     *_PathCount = 0;
 
@@ -1902,15 +1899,15 @@ bool AAINavigationMesh::FindPath(SNavPointRef const& _StartRef, SNavPointRef con
     return true;
 }
 
-bool AAINavigationMesh::FindPath(SNavPointRef const& _StartRef, SNavPointRef const& _EndRef, SNavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
+bool AINavigationMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
 {
     return FindPath(_StartRef, _EndRef, QueryFilter, _Path, _PathCount, _MaxPath);
 }
 
-bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, ANavQueryFilter const& _Filter, TPodVector<SAINavigationPathPoint>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<AINavigationPathPoint>& _PathPoints) const
 {
-    SNavPointRef StartRef;
-    SNavPointRef EndRef;
+    NavPointRef StartRef;
+    NavPointRef EndRef;
 
     if (!QueryNearestPoly(_StartPos, _Extents, _Filter, &StartRef.PolyRef))
     {
@@ -1955,15 +1952,15 @@ bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos,
     return true;
 }
 
-bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<SAINavigationPathPoint>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<AINavigationPathPoint>& _PathPoints) const
 {
     return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
 }
 
-bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, ANavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const
 {
-    SNavPointRef StartRef;
-    SNavPointRef EndRef;
+    NavPointRef StartRef;
+    NavPointRef EndRef;
 
     if (!QueryNearestPoly(_StartPos, _Extents, _Filter, &StartRef.PolyRef))
     {
@@ -2004,12 +2001,12 @@ bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos,
     return true;
 }
 
-bool AAINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<Float3>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<Float3>& _PathPoints) const
 {
     return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
 }
 
-bool AAINavigationMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, SNavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, SNavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, EAINavMeshStraightPathCrossing _StraightPathCrossing) const
+bool AINavigationMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, NavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, NavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, AI_NAV_MESH_STRAIGHTPATH_CROSSING _StraightPathCrossing) const
 {
     if (!m_NavQuery)
     {
@@ -2025,7 +2022,7 @@ bool AAINavigationMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& 
     return true;
 }
 
-bool AAINavigationMesh::CalcDistanceToWall(SNavPointRef const& _StartRef, float _Radius, ANavQueryFilter const& _Filter, SAINavigationHitResult& _HitResult) const
+bool AINavigationMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const
 {
     dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter.GetObject(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
     if (dtStatusFailed(Status))
@@ -2036,14 +2033,14 @@ bool AAINavigationMesh::CalcDistanceToWall(SNavPointRef const& _StartRef, float 
     return true;
 }
 
-bool AAINavigationMesh::CalcDistanceToWall(SNavPointRef const& _StartRef, float _Radius, SAINavigationHitResult& _HitResult) const
+bool AINavigationMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, AINavigationHitResult& _HitResult) const
 {
     return CalcDistanceToWall(_StartRef, _Radius, QueryFilter, _HitResult);
 }
 
-bool AAINavigationMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, ANavQueryFilter const& _Filter, SAINavigationHitResult& _HitResult) const
+bool AINavigationMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const
 {
-    SNavPointRef StartRef;
+    NavPointRef StartRef;
 
     if (!QueryNearestPoly(_Position, _Extents, _Filter, &StartRef.PolyRef))
     {
@@ -2055,12 +2052,12 @@ bool AAINavigationMesh::CalcDistanceToWall(Float3 const& _Position, float _Radiu
     return CalcDistanceToWall(StartRef, _Radius, _Filter, _HitResult);
 }
 
-bool AAINavigationMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, SAINavigationHitResult& _HitResult) const
+bool AINavigationMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, AINavigationHitResult& _HitResult) const
 {
     return CalcDistanceToWall(_Position, _Radius, _Extents, QueryFilter, _HitResult);
 }
 
-bool AAINavigationMesh::GetHeight(SNavPointRef const& _PointRef, float* _Height) const
+bool AINavigationMesh::GetHeight(NavPointRef const& _PointRef, float* _Height) const
 {
     if (!m_NavQuery)
     {
@@ -2078,7 +2075,7 @@ bool AAINavigationMesh::GetHeight(SNavPointRef const& _PointRef, float* _Height)
     return true;
 }
 
-bool AAINavigationMesh::GetOffMeshConnectionPolyEndPoints(SNavPolyRef _PrevRef, SNavPolyRef _PolyRef, Float3* _StartPos, Float3* _EndPos) const
+bool AINavigationMesh::GetOffMeshConnectionPolyEndPoints(NavPolyRef _PrevRef, NavPolyRef _PolyRef, Float3* _StartPos, Float3* _EndPos) const
 {
     if (!m_NavMesh)
     {
@@ -2094,7 +2091,7 @@ bool AAINavigationMesh::GetOffMeshConnectionPolyEndPoints(SNavPolyRef _PrevRef, 
     return true;
 }
 
-void AAINavigationMesh::Update(float _TimeStep)
+void AINavigationMesh::Update(float _TimeStep)
 {
     if (m_TileCache)
     {
@@ -2114,14 +2111,14 @@ void AAINavigationMesh::Update(float _TimeStep)
 //  +-S-+-T-+
 //  |:::|   | <-- the step can end up in here, resulting U-turn path.
 //  +---+---+
-int ANavigationMeshComponent::FixupShortcuts( SNavPolyRef * _Path, int _NPath ) const {
+int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int _NPath ) const {
     if ( _NPath < 3 ) {
         return _NPath;
     }
 
     // Get connected polygons
     static const int maxNeis = 16;
-    SNavPolyRef neis[maxNeis];
+    NavPolyRef neis[maxNeis];
     int nneis = 0;
 
     const dtMeshTile * tile = 0;
@@ -2164,7 +2161,7 @@ int ANavigationMeshComponent::FixupShortcuts( SNavPolyRef * _Path, int _NPath ) 
     return _NPath;
 }
 
-int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPath, const int _MaxPath, const SNavPolyRef * _Visited, const int _NVisited ) const {
+int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int _NPath, const int _MaxPath, const NavPolyRef * _Visited, const int _NVisited ) const {
     int furthestPath = -1;
     int furthestVisited = -1;
 
@@ -2198,7 +2195,7 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
     if (req+size > _MaxPath)
         size = _MaxPath-req;
     if (size)
-        Platform::Memmove(_Path+req, _Path+orig, size*sizeof(SNavPolyRef));
+        Platform::Memmove(_Path+req, _Path+orig, size*sizeof(NavPolyRef));
 
     // Store visited
     for (int i = 0; i < req; ++i)
@@ -2216,9 +2213,9 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
 //    }
 
 
-void AAINavigationMesh::GatherNavigationGeometry(SNavigationGeometry& Geometry)
+void AINavigationMesh::GatherNavigationGeometry(NavigationGeometry& Geometry)
 {
-    for (TListIterator<ANavigationPrimitive> it(NavigationPrimitives) ; it ; ++it)
+    for (TListIterator<NavigationPrimitive> it(NavigationPrimitives) ; it ; ++it)
     {
         it->GatherNavigationGeometry(Geometry);
     }

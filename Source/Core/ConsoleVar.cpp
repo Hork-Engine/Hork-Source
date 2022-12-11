@@ -35,19 +35,19 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-static AConsoleVar* GlobalVars         = nullptr;
+static ConsoleVar* GlobalVars         = nullptr;
 static bool         GVariableAllocated = false;
 
-int AConsoleVar::EnvironmentFlags = CVAR_CHEATS_ALLOWED;
+int ConsoleVar::EnvironmentFlags = CVAR_CHEATS_ALLOWED;
 
-AConsoleVar* AConsoleVar::GlobalVariableList()
+ConsoleVar* ConsoleVar::GlobalVariableList()
 {
     return GlobalVars;
 }
 
-AConsoleVar* AConsoleVar::FindVariable(AStringView _Name)
+ConsoleVar* ConsoleVar::FindVariable(StringView _Name)
 {
-    for (AConsoleVar* var = GlobalVars; var; var = var->GetNext())
+    for (ConsoleVar* var = GlobalVars; var; var = var->GetNext())
     {
         if (!_Name.Icmp(var->GetName()))
         {
@@ -57,9 +57,9 @@ AConsoleVar* AConsoleVar::FindVariable(AStringView _Name)
     return nullptr;
 }
 
-void AConsoleVar::AllocateVariables()
+void ConsoleVar::AllocateVariables()
 {
-    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
+    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value = var->DefaultValue;
         var->F32   = Core::ParseCvar(var->Value);
@@ -68,9 +68,9 @@ void AConsoleVar::AllocateVariables()
     GVariableAllocated = true;
 }
 
-void AConsoleVar::FreeVariables()
+void ConsoleVar::FreeVariables()
 {
-    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
+    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value.Free();
         var->LatchedValue.Free();
@@ -78,21 +78,21 @@ void AConsoleVar::FreeVariables()
     GlobalVars = nullptr;
 }
 
-AConsoleVar::AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags, AGlobalStringView _Comment) :
+ConsoleVar::ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment) :
     Name(_Name.CStr()), DefaultValue(_Value.CStr()), Comment(_Comment.CStr()), Flags(_Flags)
 {
     HK_ASSERT(!GVariableAllocated);
-    HK_ASSERT(ACommandProcessor::IsValidCommandName(Name));
+    HK_ASSERT(CommandProcessor::IsValidCommandName(Name));
 
-    AConsoleVar* head = GlobalVars;
+    ConsoleVar* head = GlobalVars;
     Next              = head;
     GlobalVars        = this;
 }
 
-AConsoleVar::~AConsoleVar()
+ConsoleVar::~ConsoleVar()
 {
-    AConsoleVar* prev = nullptr;
-    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
+    ConsoleVar* prev = nullptr;
+    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         if (var == this)
         {
@@ -110,7 +110,7 @@ AConsoleVar::~AConsoleVar()
     }
 }
 
-bool AConsoleVar::CanChangeValue() const
+bool ConsoleVar::CanChangeValue() const
 {
     if (Flags & CVAR_READONLY)
     {
@@ -139,7 +139,7 @@ bool AConsoleVar::CanChangeValue() const
     return true;
 }
 
-void AConsoleVar::SetString(AStringView _String)
+void ConsoleVar::SetString(StringView _String)
 {
     if (!CanChangeValue())
     {
@@ -165,22 +165,22 @@ void AConsoleVar::SetString(AStringView _String)
     }
 }
 
-void AConsoleVar::SetBool(bool _Bool)
+void ConsoleVar::SetBool(bool _Bool)
 {
     SetString(_Bool ? "1" : "0");
 }
 
-void AConsoleVar::SetInteger(int32_t _Integer)
+void ConsoleVar::SetInteger(int32_t _Integer)
 {
     SetString(Core::ToString(_Integer));
 }
 
-void AConsoleVar::SetFloat(float _Float)
+void ConsoleVar::SetFloat(float _Float)
 {
     SetString(Core::ToString(_Float));
 }
 
-void AConsoleVar::ForceString(AStringView _String)
+void ConsoleVar::ForceString(StringView _String)
 {
     Value = _String;
     F32   = Core::ParseCvar(Value);
@@ -189,22 +189,22 @@ void AConsoleVar::ForceString(AStringView _String)
     MarkModified();
 }
 
-void AConsoleVar::ForceBool(bool _Bool)
+void ConsoleVar::ForceBool(bool _Bool)
 {
     ForceString(_Bool ? "1" : "0");
 }
 
-void AConsoleVar::ForceInteger(int32_t _Integer)
+void ConsoleVar::ForceInteger(int32_t _Integer)
 {
     ForceString(Core::ToString(_Integer));
 }
 
-void AConsoleVar::ForceFloat(float _Float)
+void ConsoleVar::ForceFloat(float _Float)
 {
     ForceString(Core::ToString(_Float));
 }
 
-void AConsoleVar::SetLatched()
+void ConsoleVar::SetLatched()
 {
     if (!(Flags & CVAR_LATCHED))
     {
@@ -224,7 +224,7 @@ void AConsoleVar::SetLatched()
     ForceString(LatchedValue);
 }
 
-void AConsoleVar::Print()
+void ConsoleVar::Print()
 {
     LOG("    {}", Name);
 

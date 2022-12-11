@@ -31,14 +31,14 @@ SOFTWARE.
 #include "AsyncJobManager.h"
 #include <Platform/Logger.h>
 
-constexpr int AAsyncJobManager::MAX_WORKER_THREADS;
-constexpr int AAsyncJobManager::MAX_JOB_LISTS;
+constexpr int AsyncJobManager::MAX_WORKER_THREADS;
+constexpr int AsyncJobManager::MAX_JOB_LISTS;
 
-AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
+AsyncJobManager::AsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
 {
     if (_NumWorkerThreads > MAX_WORKER_THREADS)
     {
-        LOG("AAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n");
+        LOG("AsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n");
         _NumWorkerThreads = MAX_WORKER_THREADS;
     }
     else if (_NumWorkerThreads <= 0)
@@ -63,7 +63,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
     NumWorkerThreads = _NumWorkerThreads;
     for (int i = 0; i < NumWorkerThreads; i++)
     {
-        WorkerThread[i] = AThread(
+        WorkerThread[i] = Thread(
             [this](int ThreadId)
             {
                 WorkerThreadRoutine(ThreadId);
@@ -72,7 +72,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
     }
 }
 
-AAsyncJobManager::~AAsyncJobManager()
+AsyncJobManager::~AsyncJobManager()
 {
     LOG("Deinitializing async job manager\n");
 
@@ -93,7 +93,7 @@ AAsyncJobManager::~AAsyncJobManager()
     }
 }
 
-void AAsyncJobManager::NotifyThreads()
+void AsyncJobManager::NotifyThreads()
 {
     for (int i = 0; i < NumWorkerThreads; i++)
     {
@@ -101,9 +101,9 @@ void AAsyncJobManager::NotifyThreads()
     }
 }
 
-void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
+void AsyncJobManager::WorkerThreadRoutine(int _ThreadId)
 {
-    SAsyncJob job = {};
+    AsyncJob job = {};
     bool      haveJob;
 
 #ifdef HK_ACTIVE_THREADS_COUNTERS
@@ -112,7 +112,6 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
 
     while (!bTerminated)
     {
-
 #ifdef HK_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Decrement();
 #endif
@@ -127,20 +126,18 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
 
         for (int currentList = 0; TotalJobs.Load() > 0; currentList++)
         {
-
             int fetchIndex = (_ThreadId + currentList) % NumJobLists;
 
-            AAsyncJobList* jobList = &JobList[fetchIndex];
+            AsyncJobList* jobList = &JobList[fetchIndex];
 
             // Check if list have a jobs
             if (jobList->FetchCount.Load() > 0)
             {
-
                 haveJob = false;
 
                 // fetch job
                 {
-                    AMutexGurad syncGuard(jobList->SubmitSync);
+                    MutexGurad syncGuard(jobList->SubmitSync);
 
                     //if ( jobList->FetchLock.Increment() == 1 )
                     //{
@@ -166,7 +163,7 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
                     // Check if this was last processed job in the list
                     if (jobList->SubmittedJobsCount.Decrement() == 0)
                     {
-                        AMutexGurad syncGuard(jobList->SubmitSync);
+                        MutexGurad syncGuard(jobList->SubmitSync);
 
                         // Check for new submits
                         if (!jobList->SubmittedJobs && jobList->SubmittedJobsCount.Load() == 0)
@@ -192,16 +189,16 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
     LOG("Terminating worker thread ({})\n", _ThreadId);
 }
 
-AAsyncJobList::AAsyncJobList()
+AsyncJobList::AsyncJobList()
 {
 }
 
-AAsyncJobList::~AAsyncJobList()
+AsyncJobList::~AsyncJobList()
 {
     Wait();
 }
 
-void AAsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
+void AsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
 {
     HK_ASSERT(JobPool.IsEmpty());
 
@@ -209,17 +206,17 @@ void AAsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
     JobPool.Reserve(_MaxParallelJobs);    
 }
 
-void AAsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
+void AsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
 {
     if (JobPool.Size() == JobPool.Capacity())
     {
-        LOG("Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size {})\n", JobPool.Capacity());
+        LOG("Warning: AsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size {})\n", JobPool.Capacity());
 
         SubmitAndWait();
         SetMaxParallelJobs(JobPool.Capacity() * 2);
     }
 
-    SAsyncJob& job = JobPool.Add();
+    AsyncJob& job = JobPool.Add();
     job.Callback   = _Callback;
     job.Data       = _Data;
     job.Next       = JobList;
@@ -227,24 +224,24 @@ void AAsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
     NumPendingJobs++;
 }
 
-void AAsyncJobList::Submit()
+void AsyncJobList::Submit()
 {
     JobManager->SubmitJobList(this);
 }
 
-void AAsyncJobManager::SubmitJobList(AAsyncJobList* InJobList)
+void AsyncJobManager::SubmitJobList(AsyncJobList* InJobList)
 {
     if (!InJobList->NumPendingJobs)
     {
         return;
     }
 
-    SAsyncJob* headJob = &InJobList->JobPool[InJobList->JobPool.Size() - InJobList->NumPendingJobs];
+    AsyncJob* headJob = &InJobList->JobPool[InJobList->JobPool.Size() - InJobList->NumPendingJobs];
     HK_ASSERT(headJob->Next == nullptr);
 
     // lock section
     {
-        AMutexGurad syncGuard(InJobList->SubmitSync);
+        MutexGurad syncGuard(InJobList->SubmitSync);
 
         headJob->Next            = InJobList->SubmittedJobs;
         InJobList->SubmittedJobs = InJobList->JobList;
@@ -262,7 +259,7 @@ void AAsyncJobManager::SubmitJobList(AAsyncJobList* InJobList)
     InJobList->NumPendingJobs = 0;
 }
 
-void AAsyncJobList::Wait()
+void AsyncJobList::Wait()
 {
     int jobsCount = JobPool.Size() - NumPendingJobs;
 
@@ -279,7 +276,7 @@ void AAsyncJobList::Wait()
 
         if (NumPendingJobs > 0)
         {
-            LOG("Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n");
+            LOG("Warning: AsyncJobList::Wait: NumPendingJobs > 0\n");
 
             JobPool.RemoveRange(0, jobsCount);
 
@@ -296,7 +293,7 @@ void AAsyncJobList::Wait()
     }
 }
 
-void AAsyncJobList::SubmitAndWait()
+void AsyncJobList::SubmitAndWait()
 {
     Submit();
     Wait();
@@ -305,25 +302,25 @@ void AAsyncJobList::SubmitAndWait()
 //void FirstJob( void * _Data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
 //        GLogger.Printf( "FirstJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
-//        AThread::WaitMilliseconds(1);
+//        Thread::WaitMilliseconds(1);
 //    }
 //}
 
 //void SecondJob( void * _Data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
 //        GLogger.Printf( "SecondJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
-//        AThread::WaitMilliseconds(1);
+//        Thread::WaitMilliseconds(1);
 //    }
 //}
 
 //void AsyncJobManagerTest() {
 
-//    AAsyncJobManager jobManager;
+//    AsyncJobManager jobManager;
 
 //    jobManager.Initialize( 4, 2 );
 
-//    AAsyncJobList * first = jobManager.GetAsyncJobList( 0 );
-//    AAsyncJobList * second = jobManager.GetAsyncJobList( 1 );
+//    AsyncJobList * first = jobManager.GetAsyncJobList( 0 );
+//    AsyncJobList * second = jobManager.GetAsyncJobList( 1 );
 
 //    first->AddJob( FirstJob, ( void * )0 );
 //    first->AddJob( FirstJob, ( void * )1 );

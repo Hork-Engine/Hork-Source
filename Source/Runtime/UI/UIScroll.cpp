@@ -359,7 +359,7 @@ bool UIScroll::CanScroll() const
     return m_ContentSize.Y > m_ViewSize.Y;
 }
 
-void UIScroll::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIScroll::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (IsDisabled() || event.Button != 0)
         return;
@@ -421,7 +421,7 @@ void UIScroll::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeSta
     }
 }
 
-void UIScroll::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void UIScroll::OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
     if (event.WheelY < 0)
     {
@@ -433,7 +433,7 @@ void UIScroll::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp
     }
 }
 
-void UIScroll::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIScroll::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     switch (m_State)
     {
@@ -456,7 +456,7 @@ UIScroll::DRAW UIScroll::GetDrawType(int buttonNum) const
     return m_PressButton == buttonNum ? DRAW_ACTIVE : (hovered ? DRAW_HOVERED : DRAW_INACTIVE);
 }
 
-void UIScroll::DrawButton(ACanvas& canvas, int buttonNum)
+void UIScroll::DrawButton(Canvas& canvas, int buttonNum)
 {
     UIWidgetGeometry buttonGeometry;
 
@@ -485,7 +485,7 @@ void UIScroll::DrawButton(ACanvas& canvas, int buttonNum)
     }
 }
 
-void UIScroll::Draw(ACanvas& canvas)
+void UIScroll::Draw(Canvas& canvas)
 {
     double delta = static_cast<double>(GEngine->GetFrameLoop()->SysFrameDuration()) * 0.000001;
 

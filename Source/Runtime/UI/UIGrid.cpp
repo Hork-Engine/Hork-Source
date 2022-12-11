@@ -123,7 +123,7 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
     return result;
 }
 
-void UIGrid::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void UIGrid::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (event.Button == 0)
     {
@@ -141,12 +141,12 @@ void UIGrid::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp
     }
 }
 
-void UIGrid::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void UIGrid::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     
 }
 
-void UIGrid::Draw(ACanvas& cv)
+void UIGrid::Draw(Canvas& cv)
 {
     if (!bResizableCells)
         return;

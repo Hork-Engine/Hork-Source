@@ -33,9 +33,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, SRenderInstance const* instance)
+static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, RenderInstance const* instance)
 {
-    AMaterialGPU* pMaterial = instance->Material;
+    MaterialGPU* pMaterial = instance->Material;
 
     HK_ASSERT(pMaterial);
 
@@ -63,34 +63,34 @@ static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, SRenderIn
     return true;
 }
 
-void AddWireframePass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
+void AddWireframePass(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 {
     if (!GRenderView->bWireframe)
     {
         return;
     }
 
-    ARenderPass& wireframePass = FrameGraph.AddTask<ARenderPass>("Wireframe Pass");
+    RenderPass& wireframePass = FrameGraph.AddTask<RenderPass>("Wireframe Pass");
 
     wireframePass.SetRenderArea(GRenderViewArea);
 
     wireframePass.SetColorAttachment(
-        STextureAttachment(RenderTarget)
+        TextureAttachment(RenderTarget)
             .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
     //wireframePass.SetCondition( []() { return GRenderView->bWireframe; } );
 
     wireframePass.AddSubpass({0}, // color attachment refs
-                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                             [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
 
                              {
                                  IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
                                  for (int i = 0; i < GRenderView->TerrainInstanceCount; i++)
                                  {
-                                     STerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                                     TerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-                                     STerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<STerrainInstanceConstantBuffer>();
+                                     TerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<TerrainInstanceConstantBuffer>();
                                      drawCall->LocalViewProjection            = instance->LocalViewProjection;
                                      StoreFloat3x3AsFloat3x4Transposed(instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace);
                                      drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
@@ -105,16 +105,16 @@ void AddWireframePass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
                                      immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
                                                                             GStreamBuffer,
                                                                             instance->IndirectBufferStreamHandle,
-                                                                            sizeof(SDrawIndexedIndirectCmd));
+                                                                            sizeof(DrawIndexedIndirectCmd));
                                  }
 
-                                 SDrawIndexedCmd drawCmd;
+                                 DrawIndexedCmd drawCmd;
                                  drawCmd.InstanceCount         = 1;
                                  drawCmd.StartInstanceLocation = 0;
 
                                  for (int i = 0; i < GRenderView->InstanceCount; i++)
                                  {
-                                     SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                                     RenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
                                      if (!BindMaterialWireframePass(immediateCtx, instance))
                                      {
@@ -134,7 +134,7 @@ void AddWireframePass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 
                                  for (int i = 0; i < GRenderView->TranslucentInstanceCount; i++)
                                  {
-                                     SRenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+                                     RenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
                                      if (!BindMaterialWireframePass(immediateCtx, instance))
                                      {

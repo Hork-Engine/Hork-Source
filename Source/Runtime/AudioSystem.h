@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include "SoundEmitter.h"
 
-class AAudioDevice;
-class AAudioMixer;
+class AudioDevice;
+class AudioMixer;
 class APlayerController;
 
-struct SAudioListener
+struct AudioListener
 {
     /** Actor ID */
     uint64_t Id = 0;
@@ -57,28 +57,28 @@ struct SAudioListener
     uint32_t Mask = ~0u;
 };
 
-class AAudioSystem
+class AudioSystem
 {
 public:
-    AAudioSystem();
-    virtual ~AAudioSystem();
+    AudioSystem();
+    virtual ~AudioSystem();
 
-    AAudioDevice* GetPlaybackDevice() const
+    AudioDevice* GetPlaybackDevice() const
     {
         return m_pPlaybackDevice;
     }
 
-    AAudioMixer* GetMixer() const
+    AudioMixer* GetMixer() const
     {
         return m_pMixer.GetObject();
     }
 
-    TPoolAllocator<ASoundOneShot, 128>& GetOneShotPool()
+    TPoolAllocator<SoundOneShot, 128>& GetOneShotPool()
     {
         return m_OneShotPool;
     }
 
-    SAudioListener const& GetListener() const
+    AudioListener const& GetListener() const
     {
         return m_Listener;
     }
@@ -86,8 +86,8 @@ public:
     void Update(APlayerController* _Controller, float _TimeStep);
 
 private:
-    TRef<AAudioDevice>                 m_pPlaybackDevice;
-    TUniqueRef<AAudioMixer>            m_pMixer;
-    TPoolAllocator<ASoundOneShot, 128> m_OneShotPool;
-    SAudioListener                     m_Listener;
+    TRef<AudioDevice>                 m_pPlaybackDevice;
+    TUniqueRef<AudioMixer>            m_pMixer;
+    TPoolAllocator<SoundOneShot, 128> m_OneShotPool;
+    AudioListener                     m_Listener;
 };

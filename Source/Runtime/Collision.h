@@ -35,20 +35,20 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "CollisionModel.h"
 
-class AHitProxy : public GCObject
+class HitProxy : public GCObject
 {
-    friend class APhysicsSystem;
+    friend class PhysicsSystem;
 
 public:
     const uint64_t Id;
 
     // Component events
-    AContactDelegate E_OnBeginContact;
-    AContactDelegate E_OnEndContact;
-    AContactDelegate E_OnUpdateContact;
-    AOverlapDelegate E_OnBeginOverlap;
-    AOverlapDelegate E_OnEndOverlap;
-    AOverlapDelegate E_OnUpdateOverlap;
+    ContactDelegate E_OnBeginContact;
+    ContactDelegate E_OnEndContact;
+    ContactDelegate E_OnUpdateContact;
+    OverlapDelegate E_OnBeginOverlap;
+    OverlapDelegate E_OnEndOverlap;
+    OverlapDelegate E_OnUpdateOverlap;
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     bool bDispatchContactEvents = false;
@@ -59,14 +59,14 @@ public:
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     bool bGenerateContactPoints = false;
 
-    void Initialize(ASceneComponent* _OwnerComponent, class btCollisionObject* _CollisionObject);
+    void Initialize(SceneComponent* _OwnerComponent, class btCollisionObject* _CollisionObject);
     void Deinitialize();
 
-    ASceneComponent* GetOwnerComponent() const { return OwnerComponent; }
+    SceneComponent* GetOwnerComponent() const { return OwnerComponent; }
 
     AActor* GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
 
-    AWorld* GetWorld() const { return OwnerComponent->GetWorld(); }
+    World* GetWorld() const { return OwnerComponent->GetWorld(); }
 
     /** Set collision group/layer. See COLLISION_MASK. */
     void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
@@ -99,21 +99,21 @@ public:
 
     TPodVector<AActor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
-    void CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const;
+    void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
 
     void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
 
     class btCollisionObject* GetCollisionObject() const { return CollisionObject; }
 
-    void DrawCollisionShape(ADebugRenderer* InRenderer);
+    void DrawCollisionShape(DebugRenderer* InRenderer);
 
     void UpdateBroadphase();
 
-    AHitProxy();
-    ~AHitProxy();
+    HitProxy();
+    ~HitProxy();
 
 private:
-    ASceneComponent*   OwnerComponent  = nullptr;
+    SceneComponent* OwnerComponent  = nullptr;
     btCollisionObject* CollisionObject = nullptr;
 
     COLLISION_MASK CollisionGroup = CM_WORLD_STATIC;
@@ -127,6 +127,6 @@ private:
 
     TPodVector<AActor*> CollisionIgnoreActors;
 
-    AHitProxy* NextMarked = nullptr;
-    AHitProxy* PrevMarked = nullptr;
+    HitProxy* NextMarked = nullptr;
+    HitProxy* PrevMarked = nullptr;
 };

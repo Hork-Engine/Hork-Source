@@ -36,7 +36,7 @@ HK_CLASS_META(AController)
 AController::AController()
 {}
 
-void AController::Initialize(SActorInitializer& Initializer)
+void AController::Initialize(ActorInitializer& Initializer)
 {
     Super::Initialize(Initializer);
 }

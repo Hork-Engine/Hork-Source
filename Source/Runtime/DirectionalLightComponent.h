@@ -33,27 +33,27 @@ SOFTWARE.
 #include "LightComponent.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-class ADirectionalLightComponent : public ALightComponent
+class DirectionalLightComponent : public LightComponent
 {
-    HK_COMPONENT(ADirectionalLightComponent, ALightComponent)
+    HK_COMPONENT(DirectionalLightComponent, LightComponent)
 
 public:
-    TLink<ADirectionalLightComponent> Link;
+    TLink<DirectionalLightComponent> Link;
 
-    void  SetIlluminance(float IlluminanceInLux);
+    void  SetIlluminance(float illuminanceInLux);
     float GetIlluminance() const;
 
     /** Set temperature of the light in Kelvin */
-    void SetTemperature(float _Temperature);
+    void SetTemperature(float temperature);
 
     /** Get temperature of the light in Kelvin */
     float GetTemperature() const;
 
-    void          SetColor(Float3 const& _Color);
+    void          SetColor(Float3 const& color);
     Float3 const& GetColor() const;
 
     /** Set light direction in local space */
-    void SetDirection(Float3 const& _Direction);
+    void SetDirection(Float3 const& direction);
 
     /** Get light direction in local space */
     Float3 GetDirection() const;
@@ -65,48 +65,48 @@ public:
     Float3 GetWorldDirection() const;
 
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow(bool _CastShadow) { bCastShadow = _CastShadow; }
+    void SetCastShadow(bool bCastShadow) { m_bCastShadow = bCastShadow; }
 
     /** Is cast shadows enabled */
-    bool IsCastShadow() const { return bCastShadow; }
+    bool IsCastShadow() const { return m_bCastShadow; }
 
-    void SetShadowMaxDistance(float MaxDistance) { ShadowMaxDistance = MaxDistance; }
-    float GetShadowMaxDistance() const { return ShadowMaxDistance; }
+    void SetShadowMaxDistance(float maxDistance) { m_ShadowMaxDistance = maxDistance; }
+    float GetShadowMaxDistance() const { return m_ShadowMaxDistance; }
 
-    void SetShadowCascadeResolution(int Resolution) { ShadowCascadeResolution = Math::ToClosestPowerOfTwo(Resolution); }
-    int  GetShadowCascadeResolution() const { return ShadowCascadeResolution; }
+    void SetShadowCascadeResolution(int resolution) { m_ShadowCascadeResolution = Math::ToClosestPowerOfTwo(resolution); }
+    int GetShadowCascadeResolution() const { return m_ShadowCascadeResolution; }
 
-    void SetShadowCascadeOffset(float Offset) { ShadowCascadeOffset = Offset; }
-    float GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
+    void SetShadowCascadeOffset(float offset) { m_ShadowCascadeOffset = offset; }
+    float GetShadowCascadeOffset() const { return m_ShadowCascadeOffset; }
 
-    void  SetShadowCascadeSplitLambda(float SplitLambda) { ShadowCascadeSplitLambda = SplitLambda; }
-    float GetShadowCascadeSplitLambda() const { return ShadowCascadeSplitLambda; }
+    void SetShadowCascadeSplitLambda(float splitLambda) { m_ShadowCascadeSplitLambda = splitLambda; }
+    float GetShadowCascadeSplitLambda() const { return m_ShadowCascadeSplitLambda; }
 
-    void SetMaxShadowCascades(int _MaxShadowCascades);
+    void SetMaxShadowCascades(int maxShadowCascades);
     int  GetMaxShadowCascades() const;
 
     Float4 const& GetEffectiveColor() const;
 
-    void AddShadowmapCascades(class AStreamedMemoryGPU* StreamedMemory, struct SRenderView* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
+    void AddShadowmapCascades(class StreamedMemoryGPU* StreamedMemory, struct RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
 
 protected:
-    ADirectionalLightComponent();
+    DirectionalLightComponent();
 
     void OnCreateAvatar() override;
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
-    float                       IlluminanceInLux;
-    float                       Temperature;
-    Float3                      Color;
-    mutable Float4              EffectiveColor;
-    bool                        bCastShadow;
-    float                       ShadowMaxDistance;
-    float                       ShadowCascadeOffset;
-    int                         MaxShadowCascades;
-    int                         ShadowCascadeResolution;
-    float                       ShadowCascadeSplitLambda;
+    float          m_IlluminanceInLux;
+    float          m_Temperature;
+    Float3         m_Color;
+    mutable Float4 m_EffectiveColor;
+    bool           m_bCastShadow;
+    float          m_ShadowMaxDistance;
+    float          m_ShadowCascadeOffset;
+    int            m_MaxShadowCascades;
+    int            m_ShadowCascadeResolution;
+    float          m_ShadowCascadeSplitLambda;
 };

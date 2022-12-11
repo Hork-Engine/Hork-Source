@@ -36,20 +36,20 @@ SOFTWARE.
 namespace RenderCore
 {
 
-std::unique_ptr<AVertexArrayObjectGL> AVertexLayoutGL::CreateVAO()
+std::unique_ptr<VertexArrayObjectGL> VertexLayoutGL::CreateVAO()
 {
     GLuint vaoHandle = 0;
 
     glCreateVertexArrays(1, &vaoHandle);
     if (!vaoHandle)
     {
-        LOG("AVertexLayoutGL::CreateVAO: couldn't create vertex array object\n");
+        LOG("VertexLayoutGL::CreateVAO: couldn't create vertex array object\n");
 
         // Create a dummy vao
-        return std::make_unique<AVertexArrayObjectGL>(0);
+        return std::make_unique<VertexArrayObjectGL>(0);
     }
 
-    for (SVertexAttribInfo const* attrib = Desc.VertexAttribs; attrib < &Desc.VertexAttribs[Desc.NumVertexAttribs]; attrib++)
+    for (VertexAttribInfo const* attrib = Desc.VertexAttribs; attrib < &Desc.VertexAttribs[Desc.NumVertexAttribs]; attrib++)
     {
         // glVertexAttribFormat, glVertexAttribBinding, glVertexBindingDivisor - v4.3 or GL_ARB_vertex_attrib_binding
 
@@ -81,7 +81,7 @@ std::unique_ptr<AVertexArrayObjectGL> AVertexLayoutGL::CreateVAO()
 
         glVertexArrayAttribBinding(vaoHandle, attrib->Location, attrib->InputSlot);
 
-        for (SVertexBindingInfo const* binding = Desc.VertexBindings; binding < &Desc.VertexBindings[Desc.NumVertexBindings]; binding++)
+        for (VertexBindingInfo const* binding = Desc.VertexBindings; binding < &Desc.VertexBindings[Desc.NumVertexBindings]; binding++)
         {
             if (binding->InputSlot == attrib->InputSlot)
             {
@@ -101,10 +101,10 @@ std::unique_ptr<AVertexArrayObjectGL> AVertexLayoutGL::CreateVAO()
         glEnableVertexArrayAttrib(vaoHandle, attrib->Location);
     }
 
-    return std::make_unique<AVertexArrayObjectGL>(vaoHandle);
+    return std::make_unique<VertexArrayObjectGL>(vaoHandle);
 }
 
-void AVertexLayoutGL::DestroyVAO(AImmediateContextGLImpl* pContext)
+void VertexLayoutGL::DestroyVAO(ImmediateContextGLImpl* pContext)
 {
     if (pContext->IsMainContext())
     {

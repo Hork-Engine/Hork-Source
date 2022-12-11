@@ -38,7 +38,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
+FramebufferGL::FramebufferGL(FramebufferDescGL const& Desc) :
     Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
 {
     HK_ASSERT(Desc.Width != 0);
@@ -138,7 +138,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
         ITextureView*           textureView    = Desc.pColorAttachments[i];
         ITexture*               texture        = textureView->GetTexture();
         GLuint                  textureId      = textureView->GetHandleNativeGL();
-        STextureViewDesc const& viewDesc       = textureView->GetDesc();
+        TextureViewDesc const& viewDesc       = textureView->GetDesc();
         GLenum                  attachmentName = GL_COLOR_ATTACHMENT0 + i;
 
         HK_ASSERT(Width == textureView->GetWidth());
@@ -165,7 +165,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
         ITextureView*           textureView = Desc.pDepthStencilAttachment;
         ITexture*               texture     = textureView->GetTexture();
         GLuint                  textureId   = textureView->GetHandleNativeGL();
-        STextureViewDesc const& viewDesc    = textureView->GetDesc();
+        TextureViewDesc const& viewDesc    = textureView->GetDesc();
         GLenum                  attachmentName;
 
         HK_ASSERT(Width == textureView->GetWidth());
@@ -210,7 +210,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
     // glGetBufferParameteriv          glGetNamedBufferParameteriv
 }
 
-AFramebufferGL::~AFramebufferGL()
+FramebufferGL::~FramebufferGL()
 {
     if (FramebufferId)
     {
@@ -218,7 +218,7 @@ AFramebufferGL::~AFramebufferGL()
     }
 }
 
-//bool AFramebufferGL::IsAttachmentsOutdated() const
+//bool FramebufferGL::IsAttachmentsOutdated() const
 //{
 //    for (int i = 0; i < NumColorAttachments; i++)
 //    {

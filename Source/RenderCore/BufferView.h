@@ -73,7 +73,7 @@ enum BUFFER_VIEW_PIXEL_FORMAT : uint8_t
     BUFFER_VIEW_PIXEL_FORMAT_RGBA32UI = TEXTURE_FORMAT_RGBA32_UINT
 };
 
-struct SBufferViewDesc
+struct BufferViewDesc
 {
     BUFFER_VIEW_PIXEL_FORMAT Format      = BUFFER_VIEW_PIXEL_FORMAT_R8;
     size_t                   Offset      = 0;
@@ -85,11 +85,11 @@ class IBufferView : public IDeviceObject
 public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_BUFFER_VIEW;
 
-    IBufferView(IDevice* pDevice, SBufferViewDesc const& Desc) :
+    IBufferView(IDevice* pDevice, BufferViewDesc const& Desc) :
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
-    SBufferViewDesc const& GetDesc() const { return Desc; }
+    BufferViewDesc const& GetDesc() const { return Desc; }
 
     virtual void SetRange(size_t Offset, size_t SizeInBytes) = 0;
 
@@ -97,7 +97,7 @@ public:
     virtual size_t GetBufferSizeInBytes(uint16_t MipLevel) const = 0;
 
 protected:
-    SBufferViewDesc Desc;
+    BufferViewDesc Desc;
 };
 
 } // namespace RenderCore

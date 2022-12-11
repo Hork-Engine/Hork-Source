@@ -38,9 +38,9 @@ SOFTWARE.
 #include <thread>
 #include <chrono>
 
-const int AThread::NumHardwareThreads = std::thread::hardware_concurrency();
+const int Thread::NumHardwareThreads = std::thread::hardware_concurrency();
 
-void AThread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData)
+void Thread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData)
 {
 #ifdef HK_OS_WIN32
     unsigned threadId;
@@ -57,14 +57,14 @@ void AThread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThread
 #endif
 }
 
-void AThread::EndThread()
+void Thread::EndThread()
 {
 #ifdef HK_OS_WIN32
     _endthreadex(0);
 #endif
 }
 
-void AThread::Join()
+void Thread::Join()
 {
     if (!m_Internal)
     {
@@ -81,7 +81,7 @@ void AThread::Join()
 #endif
 }
 
-size_t AThread::ThisThreadId()
+size_t Thread::ThisThreadId()
 {
 #ifdef HK_OS_WIN32
     return GetCurrentThreadId();
@@ -92,10 +92,10 @@ size_t AThread::ThisThreadId()
 
 #ifdef HK_OS_WIN32
 
-struct SWaitableTimer
+struct WaitableTimer
 {
     HANDLE Handle = nullptr;
-    ~SWaitableTimer()
+    ~WaitableTimer()
     {
         if (Handle)
         {
@@ -104,7 +104,7 @@ struct SWaitableTimer
     }
 };
 
-static thread_local SWaitableTimer WaitableTimer;
+static thread_local WaitableTimer WaitableTimer;
 
 static void WaitMicrosecondsWIN32(int _Microseconds)
 {
@@ -127,7 +127,7 @@ static void WaitMicrosecondsWIN32(int _Microseconds)
 
 #endif
 
-void AThread::WaitSeconds(int _Seconds)
+void Thread::WaitSeconds(int _Seconds)
 {
 #ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::seconds( _Seconds ) );
@@ -138,7 +138,7 @@ void AThread::WaitSeconds(int _Seconds)
 #endif
 }
 
-void AThread::WaitMilliseconds(int _Milliseconds)
+void Thread::WaitMilliseconds(int _Milliseconds)
 {
 #ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::milliseconds( _Milliseconds ) );
@@ -153,7 +153,7 @@ void AThread::WaitMilliseconds(int _Milliseconds)
 #endif
 }
 
-void AThread::WaitMicroseconds(int _Microseconds)
+void Thread::WaitMicroseconds(int _Microseconds)
 {
 #ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::microseconds( _Microseconds ) );
@@ -172,7 +172,7 @@ void AThread::WaitMicroseconds(int _Microseconds)
 constexpr int INTERNAL_SIZEOF = sizeof(CRITICAL_SECTION);
 #endif
 
-AMutex::AMutex()
+Mutex::Mutex()
 {
 #ifdef HK_OS_WIN32
     HK_VALIDATE_TYPE_SIZE(Internal, INTERNAL_SIZEOF);
@@ -180,14 +180,14 @@ AMutex::AMutex()
 #endif
 }
 
-AMutex::~AMutex()
+Mutex::~Mutex()
 {
 #ifdef HK_OS_WIN32
     DeleteCriticalSection((CRITICAL_SECTION*)&Internal[0]);
 #endif
 }
 
-void AMutex::Lock()
+void Mutex::Lock()
 {
 #ifdef HK_OS_WIN32
     EnterCriticalSection((CRITICAL_SECTION*)&Internal[0]);
@@ -196,7 +196,7 @@ void AMutex::Lock()
 #endif
 }
 
-bool AMutex::TryLock()
+bool Mutex::TryLock()
 {
 #ifdef HK_OS_WIN32
     return TryEnterCriticalSection((CRITICAL_SECTION*)&Internal[0]) != FALSE;
@@ -205,7 +205,7 @@ bool AMutex::TryLock()
 #endif
 }
 
-void AMutex::Unlock()
+void Mutex::Unlock()
 {
 #ifdef HK_OS_WIN32
     LeaveCriticalSection((CRITICAL_SECTION*)&Internal[0]);
@@ -215,28 +215,28 @@ void AMutex::Unlock()
 }
 
 #ifdef HK_OS_WIN32
-void ASyncEvent::CreateEventWIN32()
+void SyncEvent::CreateEventWIN32()
 {
     Internal = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
-void ASyncEvent::DestroyEventWIN32()
+void SyncEvent::DestroyEventWIN32()
 {
     CloseHandle(Internal);
 }
 
-void ASyncEvent::WaitWIN32()
+void SyncEvent::WaitWIN32()
 {
     WaitForSingleObject(Internal, INFINITE);
 }
 
-void ASyncEvent::SingalWIN32()
+void SyncEvent::SingalWIN32()
 {
     SetEvent(Internal);
 }
 #endif
 
-void ASyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
+void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
 {
     _TimedOut = false;
 
@@ -255,7 +255,7 @@ void ASyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
         seconds,
         nanoseconds};
 
-    AMutexGurad syncGuard(Sync);
+    MutexGurad syncGuard(Sync);
     while (!bSignaled)
     {
         if (pthread_cond_timedwait(&Internal, &Sync.Internal, &ts) == ETIMEDOUT)

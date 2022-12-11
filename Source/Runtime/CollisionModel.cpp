@@ -66,15 +66,15 @@ SOFTWARE.
 #    include <bullet3/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h>
 #endif
 
-HK_CLASS_META(ACollisionModel)
+HK_CLASS_META(CollisionModel)
 
 ATTRIBUTE_ALIGNED16(class)
-AStridingMeshInterface : public btStridingMeshInterface
+StridingMeshInterface : public btStridingMeshInterface
 {
 public:
     Float3*                Vertices;
     unsigned int*          Indices;
-    SCollisionMeshSubpart* Subparts;
+    CollisionMeshSubpart* Subparts;
     int                    SubpartCount;
     mutable btVector3      AABBMin;
     mutable btVector3      AABBMax;
@@ -163,7 +163,7 @@ public:
     }
 };
 
-struct ACollisionSphere : ACollisionBody
+struct CollisionSphere : CollisionBody
 {
     float Radius = 0.5f;
 
@@ -236,7 +236,7 @@ struct ACollisionSphere : ACollisionBody
     }
 };
 
-struct ACollisionSphereRadii : ACollisionBody
+struct CollisionSphereRadii : CollisionBody
 {
     Float3 Radius = Float3(0.5f);
 
@@ -303,7 +303,7 @@ struct ACollisionSphereRadii : ACollisionBody
     }
 };
 
-struct ACollisionBox : ACollisionBody
+struct CollisionBox : CollisionBody
 {
     Float3 HalfExtents = Float3(0.5f);
 
@@ -341,7 +341,7 @@ struct ACollisionBox : ACollisionBody
     }
 };
 
-struct ACollisionCylinder : ACollisionBody
+struct CollisionCylinder : CollisionBody
 {
     float Radius = 0.5f;
     float Height = 1;
@@ -482,7 +482,7 @@ struct ACollisionCylinder : ACollisionBody
     }
 };
 
-struct ACollisionCone : ACollisionBody
+struct CollisionCone : CollisionBody
 {
     float Radius = 0.5f;
     float Height = 1;
@@ -614,7 +614,7 @@ struct ACollisionCone : ACollisionBody
     }
 };
 
-struct ACollisionCapsule : ACollisionBody
+struct CollisionCapsule : CollisionBody
 {
     /** Radius of the capsule. The total height is Height + 2 * Radius */
     float Radius = 0.5f;
@@ -849,7 +849,7 @@ struct ACollisionCapsule : ACollisionBody
     }
 };
 
-struct ACollisionConvexHull : ACollisionBody
+struct CollisionConvexHull : CollisionBody
 {
     TVector<Float3>       Vertices;
     TVector<unsigned int> Indices;
@@ -897,14 +897,14 @@ struct ACollisionConvexHull : ACollisionBody
 };
 
 
-// ACollisionTriangleSoupBVH can be used only for static or kinematic objects
-struct ACollisionTriangleSoupBVH : ACollisionBody
+// CollisionTriangleSoupBVH can be used only for static or kinematic objects
+struct CollisionTriangleSoupBVH : CollisionBody
 {
     TVector<Float3>                Vertices;
     TVector<unsigned int>          Indices;
-    TVector<SCollisionMeshSubpart> Subparts;
+    TVector<CollisionMeshSubpart> Subparts;
     BvAxisAlignedBox                      BoundingBox;
-    TUniqueRef<AStridingMeshInterface>    pInterface;
+    TUniqueRef<StridingMeshInterface>    pInterface;
 
     btCollisionShape* Create(Float3 const& Scale) override
     {
@@ -1034,13 +1034,13 @@ private:
     bool bUsedQuantizedAabbCompression = false;
 };
 
-struct ACollisionTriangleSoupGimpact : ACollisionBody
+struct CollisionTriangleSoupGimpact : CollisionBody
 {
-    TVector<Float3>                Vertices;
-    TVector<unsigned int>          Indices;
-    TVector<SCollisionMeshSubpart> Subparts;
-    BvAxisAlignedBox                      BoundingBox;
-    TUniqueRef<AStridingMeshInterface>    pInterface;
+    TVector<Float3>               Vertices;
+    TVector<unsigned int>         Indices;
+    TVector<CollisionMeshSubpart> Subparts;
+    BvAxisAlignedBox                  BoundingBox;
+    TUniqueRef<StridingMeshInterface> pInterface;
 
     btCollisionShape* Create(Float3 const& Scale) override
     {
@@ -1093,10 +1093,10 @@ struct ACollisionTriangleSoupGimpact : ACollisionBody
     }
 };
 
-ACollisionModel::ACollisionModel()
+CollisionModel::CollisionModel()
 {}
 
-ACollisionModel::ACollisionModel(void const* pShapes)
+CollisionModel::CollisionModel(void const* pShapes)
 {
     int numShapes = 0;
 
@@ -1106,44 +1106,44 @@ ACollisionModel::ACollisionModel(void const* pShapes)
         switch (type)
         {
             case COLLISION_SHAPE_SPHERE:
-                AddSphere((SCollisionSphereDef const*)pShapes, numShapes);
+                AddSphere((CollisionSphereDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_SPHERE_RADII:
-                AddSphereRadii((SCollisionSphereRadiiDef const*)pShapes, numShapes);
+                AddSphereRadii((CollisionSphereRadiiDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_BOX:
-                AddBox((SCollisionBoxDef const*)pShapes, numShapes);
+                AddBox((CollisionBoxDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CYLINDER:
-                AddCylinder((SCollisionCylinderDef const*)pShapes, numShapes);
+                AddCylinder((CollisionCylinderDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CONE:
-                AddCone((SCollisionConeDef const*)pShapes, numShapes);
+                AddCone((CollisionConeDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CAPSULE:
-                AddCapsule((SCollisionCapsuleDef const*)pShapes, numShapes);
+                AddCapsule((CollisionCapsuleDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CONVEX_HULL:
-                AddConvexHull((SCollisionConvexHullDef const*)pShapes, numShapes);
+                AddConvexHull((CollisionConvexHullDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_TRIANGLE_SOUP_BVH:
-                AddTriangleSoupBVH((SCollisionTriangleSoupBVHDef const*)pShapes, numShapes);
+                AddTriangleSoupBVH((CollisionTriangleSoupBVHDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_TRIANGLE_SOUP_GIMPACT:
-                AddTriangleSoupGimpact((SCollisionTriangleSoupGimpactDef const*)pShapes, numShapes);
+                AddTriangleSoupGimpact((CollisionTriangleSoupGimpactDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CONVEX_DECOMPOSITION:
-                AddConvexDecomposition((SCollisionConvexDecompositionDef const*)pShapes, numShapes);
+                AddConvexDecomposition((CollisionConvexDecompositionDef const*)pShapes, numShapes);
                 break;
             case COLLISION_SHAPE_CONVEX_DECOMPOSITION_VHACD:
-                AddConvexDecompositionVHACD((SCollisionConvexDecompositionVHACDDef const*)pShapes, numShapes);
+                AddConvexDecompositionVHACD((CollisionConvexDecompositionVHACDDef const*)pShapes, numShapes);
                 break;
             default:
-                LOG("ACollisionModel::Initialize: unknown shape type\n");
+                LOG("CollisionModel::Initialize: unknown shape type\n");
                 pShapes = nullptr;
                 continue;
         }
-        pShapes = ((SCollisionSphereDef const*)pShapes)->pNext;
+        pShapes = ((CollisionSphereDef const*)pShapes)->pNext;
     }
 
     if (numShapes)
@@ -1152,8 +1152,8 @@ ACollisionModel::ACollisionModel(void const* pShapes)
     }
 }
 
-ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
-    ACollisionModel(CreateInfo.pShapes)
+CollisionModel::CollisionModel(CollisionModelCreateInfo const& CreateInfo) :
+    CollisionModel(CreateInfo.pShapes)
 {
     if (CreateInfo.bOverrideCenterOfMass)
     {
@@ -1161,23 +1161,23 @@ ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
     }
 }
 
-ACollisionModel::~ACollisionModel()
+CollisionModel::~CollisionModel()
 {}
 
-bool ACollisionModel::LoadResource(IBinaryStreamReadInterface& Stream)
+bool CollisionModel::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     // TODO
     return false;
 }
 
-void ACollisionModel::LoadInternalResource(AStringView Path)
+void CollisionModel::LoadInternalResource(StringView Path)
 {
     // TODO
 }
 
-void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShapes)
+void CollisionModel::AddSphere(CollisionSphereDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionSphere>();
+    auto body = MakeUnique<CollisionSphere>();
 
     body->Position = pShape->Position;
     body->Margin   = pShape->Margin;
@@ -1185,7 +1185,7 @@ void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShape
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1200,9 +1200,9 @@ void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShape
     }
 }
 
-void ACollisionModel::AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int& NumShapes)
+void CollisionModel::AddSphereRadii(CollisionSphereRadiiDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionSphereRadii>();
+    auto body = MakeUnique<CollisionSphereRadii>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1211,7 +1211,7 @@ void ACollisionModel::AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1226,9 +1226,9 @@ void ACollisionModel::AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int
     }
 }
 
-void ACollisionModel::AddBox(SCollisionBoxDef const* pShape, int& NumShapes)
+void CollisionModel::AddBox(CollisionBoxDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionBox>();
+    auto body = MakeUnique<CollisionBox>();
 
     body->Position    = pShape->Position;
     body->Rotation    = pShape->Rotation;
@@ -1237,7 +1237,7 @@ void ACollisionModel::AddBox(SCollisionBoxDef const* pShape, int& NumShapes)
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1252,9 +1252,9 @@ void ACollisionModel::AddBox(SCollisionBoxDef const* pShape, int& NumShapes)
     }
 }
 
-void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumShapes)
+void CollisionModel::AddCylinder(CollisionCylinderDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionCylinder>();
+    auto body = MakeUnique<CollisionCylinder>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1265,7 +1265,7 @@ void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumS
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1280,9 +1280,9 @@ void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumS
     }
 }
 
-void ACollisionModel::AddCone(SCollisionConeDef const* pShape, int& NumShapes)
+void CollisionModel::AddCone(CollisionConeDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionCone>();
+    auto body = MakeUnique<CollisionCone>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1293,7 +1293,7 @@ void ACollisionModel::AddCone(SCollisionConeDef const* pShape, int& NumShapes)
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1308,9 +1308,9 @@ void ACollisionModel::AddCone(SCollisionConeDef const* pShape, int& NumShapes)
     }
 }
 
-void ACollisionModel::AddCapsule(SCollisionCapsuleDef const* pShape, int& NumShapes)
+void CollisionModel::AddCapsule(CollisionCapsuleDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionCapsule>();
+    auto body = MakeUnique<CollisionCapsule>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1321,7 +1321,7 @@ void ACollisionModel::AddCapsule(SCollisionCapsuleDef const* pShape, int& NumSha
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1336,9 +1336,9 @@ void ACollisionModel::AddCapsule(SCollisionCapsuleDef const* pShape, int& NumSha
     }
 }
 
-void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& NumShapes)
+void CollisionModel::AddConvexHull(CollisionConvexHullDef const* pShape, int& NumShapes)
 {
-    auto body = MakeUnique<ACollisionConvexHull>();
+    auto body = MakeUnique<CollisionConvexHull>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1354,10 +1354,10 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
     }
     else if (pShape->pPlanes && pShape->PlaneCount)
     {
-        AConvexHull hull;
-        AConvexHull frontHull;
-        AConvexHull* phull = &hull;
-        AConvexHull* pfrontHull = &frontHull;
+        ConvexHull hull;
+        ConvexHull frontHull;
+        ConvexHull* phull = &hull;
+        ConvexHull* pfrontHull = &frontHull;
         for (int i = 0; i < pShape->PlaneCount; i++)
         {
             phull->FromPlane(pShape->pPlanes[i]);
@@ -1373,7 +1373,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
 
             if (phull->NumPoints() < 3)
             {
-                LOG("ACollisionModel::AddConvexHull: hull is clipped off\n");
+                LOG("CollisionModel::AddConvexHull: hull is clipped off\n");
                 continue;
             }
 
@@ -1406,13 +1406,13 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
     }
     else
     {
-        LOG("ACollisionModel::AddConvexHull: undefined geometry\n");
+        LOG("CollisionModel::AddConvexHull: undefined geometry\n");
         return;
     }
 
     if (pShape->Bone.JointIndex >= 0)
     {
-        SBoneCollision boneCol;
+        BoneCollision boneCol;
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
@@ -1427,17 +1427,17 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
     }
 }
 
-void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pShape, int& NumShapes)
+void CollisionModel::AddTriangleSoupBVH(CollisionTriangleSoupBVHDef const* pShape, int& NumShapes)
 {
     if (pShape->VertexStride <= 0)
     {
-        LOG("ACollisionModel::AddTriangleSoupBVH: invalid VertexStride\n");
+        LOG("CollisionModel::AddTriangleSoupBVH: invalid VertexStride\n");
         return;
     }
 
-    auto body = MakeUnique<ACollisionTriangleSoupBVH>();
+    auto body = MakeUnique<CollisionTriangleSoupBVH>();
 
-    body->pInterface = MakeUnique<AStridingMeshInterface>();
+    body->pInterface = MakeUnique<StridingMeshInterface>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1469,7 +1469,7 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
         body->Subparts.Resize(pShape->SubpartCount);
         for (int i = 0; i < pShape->SubpartCount; i++)
         {
-            SCollisionMeshSubpart const& subpart = pShape->pSubparts[i];
+            CollisionMeshSubpart const& subpart = pShape->pSubparts[i];
 
             body->Subparts[i].BaseVertex  = subpart.BaseVertex;
             body->Subparts[i].VertexCount = subpart.VertexCount;
@@ -1535,17 +1535,17 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
     m_CollisionBodies.Add(std::move(body));
 }
 
-void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef const* pShape, int& NumShapes)
+void CollisionModel::AddTriangleSoupGimpact(CollisionTriangleSoupGimpactDef const* pShape, int& NumShapes)
 {
     if (pShape->VertexStride <= 0)
     {
-        LOG("ACollisionModel::AddTriangleSoupGimpact: invalid VertexStride\n");
+        LOG("CollisionModel::AddTriangleSoupGimpact: invalid VertexStride\n");
         return;
     }
 
-    auto body = MakeUnique<ACollisionTriangleSoupGimpact>();
+    auto body = MakeUnique<CollisionTriangleSoupGimpact>();
 
-    body->pInterface = MakeUnique<AStridingMeshInterface>();
+    body->pInterface = MakeUnique<StridingMeshInterface>();
 
     body->Position = pShape->Position;
     body->Rotation = pShape->Rotation;
@@ -1577,7 +1577,7 @@ void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef co
         body->Subparts.Resize(pShape->SubpartCount);
         for (int i = 0; i < pShape->SubpartCount; i++)
         {
-            SCollisionMeshSubpart const& subpart = pShape->pSubparts[i];
+            CollisionMeshSubpart const& subpart = pShape->pSubparts[i];
 
             body->Subparts[i].BaseVertex  = subpart.BaseVertex;
             body->Subparts[i].VertexCount = subpart.VertexCount;
@@ -1641,15 +1641,15 @@ void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef co
     m_CollisionBodies.Add(std::move(body));
 }
 
-void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes)
+void CollisionModel::AddConvexDecomposition(CollisionConvexDecompositionDef const* pShape, int& NumShapes)
 {
     TPodVector<Float3>          hullVertices;
     TPodVector<unsigned int>    hullIndices;
-    TPodVector<SConvexHullDesc> hulls;
+    TPodVector<ConvexHullDesc> hulls;
 
     if (pShape->VertexStride <= 0)
     {
-        LOG("ACollisionModel::AddConvexDecomposition: invalid VertexStride\n");
+        LOG("CollisionModel::AddConvexDecomposition: invalid VertexStride\n");
         return;
     }
 
@@ -1664,7 +1664,7 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
 
     if (hulls.IsEmpty())
     {
-        LOG("ACollisionModel::AddConvexDecomposition: failed on convex decomposition\n");
+        LOG("CollisionModel::AddConvexDecomposition: failed on convex decomposition\n");
         return;
     }
 
@@ -1673,9 +1673,9 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
     m_CenterOfMass.Clear();
 
     int n{};
-    for (SConvexHullDesc const& hull : hulls)
+    for (ConvexHullDesc const& hull : hulls)
     {
-        SCollisionConvexHullDef hulldef;
+        CollisionConvexHullDef hulldef;
 
         hulldef.Position    = hull.Centroid;
         hulldef.Margin      = 0.01f;
@@ -1692,16 +1692,16 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
     NumShapes++;
 }
 
-void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes)
+void CollisionModel::AddConvexDecompositionVHACD(CollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes)
 {
     TPodVector<Float3>          hullVertices;
     TPodVector<unsigned int>    hullIndices;
-    TPodVector<SConvexHullDesc> hulls;
+    TPodVector<ConvexHullDesc> hulls;
     Float3                      decompositionCenterOfMass;
 
     if (pShape->VertexStride <= 0)
     {
-        LOG("ACollisionModel::AddConvexDecompositionVHACD: invalid VertexStride\n");
+        LOG("CollisionModel::AddConvexDecompositionVHACD: invalid VertexStride\n");
         return;
     }
 
@@ -1727,9 +1727,9 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
     Float3 saveCenterOfMass = m_CenterOfMass;
 
     int n{};
-    for (SConvexHullDesc const& hull : hulls)
+    for (ConvexHullDesc const& hull : hulls)
     {
-        SCollisionConvexHullDef hulldef;
+        CollisionConvexHullDef hulldef;
 
         hulldef.Position    = hull.Centroid;
         hulldef.Margin      = 0.01f;
@@ -1745,20 +1745,20 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
     m_CenterOfMass = saveCenterOfMass;
 }
 
-void ACollisionModel::GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const
+void CollisionModel::GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const
 {
-    for (TUniqueRef<ACollisionBody> const& collisionBody : m_CollisionBodies)
+    for (TUniqueRef<CollisionBody> const& collisionBody : m_CollisionBodies)
     {
         collisionBody->GatherGeometry(Vertices, Indices, Transform);
     }
 }
 
-TRef<ACollisionInstance> ACollisionModel::Instantiate(Float3 const& Scale)
+TRef<CollisionInstance> CollisionModel::Instantiate(Float3 const& Scale)
 {
-    return MakeRef<ACollisionInstance>(this, Scale);
+    return MakeRef<CollisionInstance>(this, Scale);
 }
 
-ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 const& Scale)
+CollisionInstance::CollisionInstance(CollisionModel* CollisionModel, Float3 const& Scale)
 {
     constexpr float POSITION_COMPARE_EPSILON{0.0001f};
 
@@ -1770,7 +1770,7 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
     {
         btTransform     shapeTransform;
 
-        for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->m_CollisionBodies)
+        for (TUniqueRef<CollisionBody> const& collisionBody : CollisionModel->m_CollisionBodies)
         {
             btCollisionShape* shape = collisionBody->Create(Scale);
 
@@ -1798,7 +1798,7 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
     m_CollisionShape = bUseCompound ? m_CompoundShape.GetObject() : m_CompoundShape->getChildShape(0);
 }
 
-ACollisionInstance::~ACollisionInstance()
+CollisionInstance::~CollisionInstance()
 {
     int numShapes = m_CompoundShape->getNumChildShapes();
     for (int i = numShapes - 1; i >= 0; i--)
@@ -1808,14 +1808,14 @@ ACollisionInstance::~ACollisionInstance()
     }
 }
 
-Float3 ACollisionInstance::CalculateLocalInertia(float Mass) const
+Float3 CollisionInstance::CalculateLocalInertia(float Mass) const
 {
     btVector3 localInertia;
     m_CollisionShape->calculateLocalInertia(Mass, localInertia);
     return btVectorToFloat3(localInertia);
 }
 
-void ACollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TPodVector<BvAxisAlignedBox>& BoundingBoxes) const
+void CollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TPodVector<BvAxisAlignedBox>& BoundingBoxes) const
 {
     btVector3 mins, maxs;
 
@@ -1837,7 +1837,7 @@ void ACollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPositi
     }
 }
 
-void ACollisionInstance::GetCollisionWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const
+void CollisionInstance::GetCollisionWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const
 {
     btVector3 mins, maxs;
 
@@ -1859,11 +1859,11 @@ void ACollisionInstance::GetCollisionWorldBounds(Float3 const& WorldPosition, Qu
     }
 }
 
-void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const
+void CollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const
 {
     if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
-        LOG("ACollisionInstance::GetCollisionBodyWorldBounds: invalid index\n");
+        LOG("CollisionInstance::GetCollisionBodyWorldBounds: invalid index\n");
 
         BoundingBox.Clear();
         return;
@@ -1883,11 +1883,11 @@ void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& Wo
     BoundingBox.Maxs = btVectorToFloat3(maxs);
 }
 
-void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox& BoundingBox) const
+void CollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox& BoundingBox) const
 {
     if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
-        LOG("ACollisionInstance::GetCollisionBodyLocalBounds: invalid index\n");
+        LOG("CollisionInstance::GetCollisionBodyLocalBounds: invalid index\n");
 
         BoundingBox.Clear();
         return;
@@ -1903,11 +1903,11 @@ void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox
     BoundingBox.Maxs = btVectorToFloat3(maxs);
 }
 
-float ACollisionInstance::GetCollisionBodyMargin(int Index) const
+float CollisionInstance::GetCollisionBodyMargin(int Index) const
 {
     if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
-        LOG("ACollisionInstance::GetCollisionBodyMargin: invalid index\n");
+        LOG("CollisionInstance::GetCollisionBodyMargin: invalid index\n");
 
         return 0;
     }
@@ -1917,7 +1917,7 @@ float ACollisionInstance::GetCollisionBodyMargin(int Index) const
     return shape.m_childShape->getMargin();
 }
 
-int ACollisionInstance::GetCollisionBodiesCount() const
+int CollisionInstance::GetCollisionBodiesCount() const
 {
     return m_CompoundShape->getNumChildShapes();
 }

@@ -35,15 +35,15 @@ SOFTWARE.
 #define PRIMITIVE_RESTART_INDEX 0xffff
 #define MAX_PRIMITIVE_VERTS     0xfffe
 
-ADebugRenderer::ADebugRenderer()
+DebugRenderer::DebugRenderer()
 {
 }
 
-ADebugRenderer::~ADebugRenderer()
+DebugRenderer::~DebugRenderer()
 {
 }
 
-void ADebugRenderer::Free()
+void DebugRenderer::Free()
 {
     Reset();
 
@@ -52,7 +52,7 @@ void ADebugRenderer::Free()
     Cmds.Free();
 }
 
-void ADebugRenderer::Reset()
+void DebugRenderer::Reset()
 {
     CurrentColor = 0xffffffff;
     bDepthTest   = false;
@@ -68,7 +68,7 @@ void ADebugRenderer::Reset()
     pView = nullptr;
 }
 
-void ADebugRenderer::BeginRenderView(SRenderView* InView, int InVisPass)
+void DebugRenderer::BeginRenderView(RenderViewData* InView, int InVisPass)
 {
     HK_ASSERT(!pView);
 
@@ -79,7 +79,7 @@ void ADebugRenderer::BeginRenderView(SRenderView* InView, int InVisPass)
     SplitCommands();
 }
 
-void ADebugRenderer::EndRenderView()
+void DebugRenderer::EndRenderView()
 {
     HK_ASSERT(pView);
 
@@ -87,33 +87,33 @@ void ADebugRenderer::EndRenderView()
     pView                        = nullptr;
 }
 
-void ADebugRenderer::SetDepthTest(bool _DepthTest)
+void DebugRenderer::SetDepthTest(bool _DepthTest)
 {
     bDepthTest = _DepthTest;
 }
 
-void ADebugRenderer::SetColor(uint32_t _Color)
+void DebugRenderer::SetColor(uint32_t _Color)
 {
     CurrentColor = _Color;
 }
 
-void ADebugRenderer::SetColor(Color4 const& _Color)
+void DebugRenderer::SetColor(Color4 const& _Color)
 {
     CurrentColor = _Color.GetDWord();
 }
 
-void ADebugRenderer::SetAlpha(float _Alpha)
+void DebugRenderer::SetAlpha(float _Alpha)
 {
     CurrentColor &= 0x00ffffff;
     CurrentColor |= Math::Clamp(Math::ToIntFast(_Alpha * 255), 0, 255) << 24;
 }
 
-void ADebugRenderer::SplitCommands()
+void DebugRenderer::SplitCommands()
 {
     bSplit = true;
 }
 
-bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, int _NumIndices, SDebugDrawCmd** _Cmd, SDebugVertex** _Verts, unsigned short** _Indices)
+bool DebugRenderer::PrimitiveReserve(DBG_DRAW_CMD _CmdName, int _NumVertices, int _NumIndices, DebugDrawCmd** _Cmd, DebugVertex** _Verts, unsigned short** _Indices)
 {
     if (_NumVertices <= 0 || _NumIndices <= 0)
     {
@@ -124,13 +124,13 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     if (_NumVertices > MAX_PRIMITIVE_VERTS)
     {
         // TODO: split to several primitives
-        LOG("ADebugRenderer::PrimitiveReserve: primitive has too many vertices\n");
+        LOG("DebugRenderer::PrimitiveReserve: primitive has too many vertices\n");
         return false;
     }
 
     if (!Cmds.IsEmpty())
     {
-        SDebugDrawCmd& cmd = Cmds.Last();
+        DebugDrawCmd& cmd = Cmds.Last();
 
         if (cmd.NumVertices + _NumVertices > MAX_PRIMITIVE_VERTS)
         {
@@ -147,7 +147,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     if (Cmds.IsEmpty() || bSplit)
     {
         // Create first cmd or split
-        SDebugDrawCmd& cmd = Cmds.Add();
+        DebugDrawCmd& cmd = Cmds.Add();
         cmd.Type           = _CmdName;
         cmd.FirstVertex    = FirstVertex;
         cmd.FirstIndex     = FirstIndex;
@@ -158,7 +158,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     else if (Cmds.Last().NumIndices == 0)
     {
         // If last cmd has no indices, use it
-        SDebugDrawCmd& cmd = Cmds.Last();
+        DebugDrawCmd& cmd = Cmds.Last();
         cmd.Type           = _CmdName;
         cmd.FirstVertex    = FirstVertex;
         cmd.FirstIndex     = FirstIndex;
@@ -167,7 +167,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     else if (Cmds.Last().Type != _CmdName)
     {
         // If last cmd has other type, create a new cmd
-        SDebugDrawCmd& cmd = Cmds.Add();
+        DebugDrawCmd& cmd = Cmds.Add();
         cmd.Type           = _CmdName;
         cmd.FirstVertex    = FirstVertex;
         cmd.FirstIndex     = FirstIndex;
@@ -183,11 +183,11 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     return true;
 }
 
-void ADebugRenderer::DrawPoint(Float3 const& _Position)
+void DebugRenderer::DrawPoint(Float3 const& _Position)
 {
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, 1, 1, &cmd, &verts, &indices))
@@ -202,11 +202,11 @@ void ADebugRenderer::DrawPoint(Float3 const& _Position)
     }
 }
 
-void ADebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Stride)
+void DebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Stride)
 {
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, _NumPoints, &cmd, &verts, &indices))
@@ -227,16 +227,16 @@ void ADebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Stri
     }
 }
 
-void ADebugRenderer::DrawPoints(TArrayView<Float3> _Points)
+void DebugRenderer::DrawPoints(TArrayView<Float3> _Points)
 {
     DrawPoints(_Points.ToPtr(), _Points.Size(), sizeof(Float3));
 }
 
-void ADebugRenderer::DrawLine(Float3 const& _P0, Float3 const& _P1)
+void DebugRenderer::DrawLine(Float3 const& _P0, Float3 const& _P1)
 {
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, 2, 3, &cmd, &verts, &indices))
@@ -255,7 +255,7 @@ void ADebugRenderer::DrawLine(Float3 const& _P0, Float3 const& _P1)
     }
 }
 
-void ADebugRenderer::DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float _Step)
+void DebugRenderer::DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float _Step)
 {
     Float3 vector   = _P1 - _P0;
     float  len      = vector.Length();
@@ -274,7 +274,7 @@ void ADebugRenderer::DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float 
     }
 }
 
-void ADebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
+void DebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
 {
     if (_Points.Size() < 2)
     {
@@ -283,9 +283,9 @@ void ADebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
 
     int numIndices = _Closed ? _Points.Size() + 2 : _Points.Size() + 1;
 
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
@@ -309,7 +309,7 @@ void ADebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
     }
 }
 
-void ADebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
+void DebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
 {
     if (_Points.Size() < 3)
     {
@@ -324,9 +324,9 @@ void ADebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
         numIndices <<= 1;
     }
 
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
@@ -359,7 +359,7 @@ void ADebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
     }
 }
 
-void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned int const* _Indices, int _NumIndices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned int const* _Indices, int _NumIndices, bool _TwoSided)
 {
     int numIndices = _NumIndices;
 
@@ -368,9 +368,9 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
         numIndices <<= 1;
     }
 
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
@@ -409,12 +409,12 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
     }
 }
 
-void ADebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
 
-void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned short const* _Indices, int _NumIndices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned short const* _Indices, int _NumIndices, bool _TwoSided)
 {
     int numIndices = _NumIndices;
 
@@ -423,9 +423,9 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
         numIndices <<= 1;
     }
 
-    EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
@@ -464,12 +464,12 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
     }
 }
 
-void ADebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
 
-void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned int const* _Indices, int _NumIndices)
+void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned int const* _Indices, int _NumIndices)
 {
     Float3 points[3];
     byte*  pPoints = (byte*)_Points;
@@ -482,12 +482,12 @@ void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Strid
     }
 }
 
-void ADebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
 
-void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned short const* _Indices, int _NumIndices)
+void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned short const* _Indices, int _NumIndices)
 {
     Float3 points[3];
     byte*  pPoints = (byte*)_Points;
@@ -500,25 +500,25 @@ void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Strid
     }
 }
 
-void ADebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
 
-void ADebugRenderer::DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided)
+void DebugRenderer::DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided)
 {
     Float3 points[] = {_P0, _P1, _P2};
     DrawConvexPoly(points, _TwoSided);
 }
 
-void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, int _Stride, bool _TwoSided)
+void DebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, int _Stride, bool _TwoSided)
 {
     int             numPoints    = _NumTriangles * 3;
     int             numIndices   = _NumTriangles * 3;
     int             totalIndices = _TwoSided ? numIndices << 1 : numIndices;
-    EDebugDrawCmd   cmdName      = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
-    SDebugDrawCmd*  cmd;
-    SDebugVertex*   verts;
+    DBG_DRAW_CMD   cmdName      = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    DebugDrawCmd*  cmd;
+    DebugVertex*   verts;
     unsigned short* indices;
 
     if (PrimitiveReserve(cmdName, numPoints, totalIndices, &cmd, &verts, &indices))
@@ -551,13 +551,13 @@ void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, 
     }
 }
 
-void ADebugRenderer::DrawQuad(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, Float3 const& _P3, bool _TwoSided)
+void DebugRenderer::DrawQuad(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, Float3 const& _P3, bool _TwoSided)
 {
     Float3 points[] = {_P0, _P1, _P2, _P3};
     DrawConvexPoly(points, _TwoSided);
 }
 
-void ADebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents)
+void DebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents)
 {
     Float3 points[4] = {
         Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
@@ -583,7 +583,7 @@ void ADebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents
     DrawLine(points[3], points2[3]);
 }
 
-void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfExtents, bool _TwoSided)
+void DebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfExtents, bool _TwoSided)
 {
     Float3 points[8] = {
         Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
@@ -600,7 +600,7 @@ void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfE
     DrawTriangleSoup(points, indices, _TwoSided);
 }
 
-void ADebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents)
+void DebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents)
 {
     Float3 points[4] = {
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
@@ -626,7 +626,7 @@ void ADebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _O
     DrawLine(points[3], points2[3]);
 }
 
-void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents, bool _TwoSided)
+void DebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents, bool _TwoSided)
 {
     Float3 points[8] = {
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
@@ -643,19 +643,19 @@ void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 con
     DrawTriangleSoup(points, indices, _TwoSided);
 }
 
-void ADebugRenderer::DrawSphere(Float3 const& _Position, float _Radius)
+void DebugRenderer::DrawSphere(Float3 const& _Position, float _Radius)
 {
     DrawOrientedSphere(_Position, Float3x3::Identity(), _Radius);
 }
 
-void ADebugRenderer::DrawOrientedSphere(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius)
+void DebugRenderer::DrawOrientedSphere(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius)
 {
     const float stepDegrees = 30.0f;
     DrawSpherePatch(_Position, _Orientation[1], _Orientation[0], _Radius, -Math::_HALF_PI, Math::_HALF_PI, -Math::_HALF_PI, Math::_HALF_PI, stepDegrees, false);
     DrawSpherePatch(_Position, _Orientation[1], -_Orientation[0], _Radius, -Math::_HALF_PI, Math::_HALF_PI, -Math::_HALF_PI, Math::_HALF_PI, stepDegrees, false);
 }
 
-void ADebugRenderer::DrawSpherePatch(Float3 const& _Position, Float3 const& _Up, Float3 const& _Right, float _Radius, float _MinTh, float _MaxTh, float _MinPs, float _MaxPs, float _StepDegrees, bool _DrawCenter)
+void DebugRenderer::DrawSpherePatch(Float3 const& _Position, Float3 const& _Up, Float3 const& _Right, float _Radius, float _MinTh, float _MaxTh, float _MinPs, float _MaxPs, float _StepDegrees, bool _DrawCenter)
 {
     // This function is based on code from btDebugDraw
     Float3  vA[74];
@@ -765,7 +765,7 @@ void ADebugRenderer::DrawSpherePatch(Float3 const& _Position, Float3 const& _Up,
     }
 }
 
-void ADebugRenderer::DrawCircle(Float3 const& _Position, Float3 const& _UpVector, const float& _Radius)
+void DebugRenderer::DrawCircle(Float3 const& _Position, Float3 const& _UpVector, const float& _Radius)
 {
     const int NumCirclePoints = 32;
 
@@ -783,7 +783,7 @@ void ADebugRenderer::DrawCircle(Float3 const& _Position, Float3 const& _UpVector
     DrawLine(points, true);
 }
 
-void ADebugRenderer::DrawCircleFilled(Float3 const& _Position, Float3 const& _UpVector, const float& _Radius, bool _TwoSided)
+void DebugRenderer::DrawCircleFilled(Float3 const& _Position, Float3 const& _UpVector, const float& _Radius, bool _TwoSided)
 {
     const int NumCirclePoints = 32;
 
@@ -801,7 +801,7 @@ void ADebugRenderer::DrawCircleFilled(Float3 const& _Position, Float3 const& _Up
     DrawConvexPoly(points, _TwoSided);
 }
 
-void ADebugRenderer::DrawCone(Float3 const& _Position, Float3x3 const& _Orientation, const float& _Radius, const float& _HalfAngle)
+void DebugRenderer::DrawCone(Float3 const& _Position, Float3x3 const& _Orientation, const float& _Radius, const float& _HalfAngle)
 {
     const Float3 coneDirection = -_Orientation[2];
     const float  halfAngle     = Math::Clamp(_HalfAngle, 0.0f, Math::_HALF_PI);
@@ -828,7 +828,7 @@ void ADebugRenderer::DrawCone(Float3 const& _Position, Float3x3 const& _Orientat
     }
 }
 
-void ADebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orientation, const float& _Radius, const float& _Height)
+void DebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orientation, const float& _Radius, const float& _Height)
 {
     const Float3 upVector = _Orientation[1] * _Height;
     const Float3 v        = _Orientation[0] * _Radius;
@@ -859,7 +859,7 @@ void ADebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orie
     DrawLine(points, true);
 }
 
-void ADebugRenderer::DrawCapsule(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height, int _UpAxis)
+void DebugRenderer::DrawCapsule(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height, int _UpAxis)
 {
     HK_ASSERT(_UpAxis >= 0 && _UpAxis < 3);
 
@@ -887,17 +887,17 @@ void ADebugRenderer::DrawCapsule(Float3 const& _Position, Float3x3 const& _Orien
     }
 }
 
-void ADebugRenderer::DrawAABB(BvAxisAlignedBox const& _AABB)
+void DebugRenderer::DrawAABB(BvAxisAlignedBox const& _AABB)
 {
     DrawBox(_AABB.Center(), _AABB.HalfSize());
 }
 
-void ADebugRenderer::DrawOBB(BvOrientedBox const& _OBB)
+void DebugRenderer::DrawOBB(BvOrientedBox const& _OBB)
 {
     DrawOrientedBox(_OBB.Center, _OBB.Orient, _OBB.HalfSize);
 }
 
-void ADebugRenderer::DrawAxis(Float3x4 const& _TransformMatrix, bool _Normalized)
+void DebugRenderer::DrawAxis(Float3x4 const& _TransformMatrix, bool _Normalized)
 {
     Float3 Origin(_TransformMatrix[0][3], _TransformMatrix[1][3], _TransformMatrix[2][3]);
     Float3 XVec(_TransformMatrix[0][0], _TransformMatrix[1][0], _TransformMatrix[2][0]);
@@ -919,7 +919,7 @@ void ADebugRenderer::DrawAxis(Float3x4 const& _TransformMatrix, bool _Normalized
     DrawLine(Origin, Origin + ZVec);
 }
 
-void ADebugRenderer::DrawAxis(Float3 const& _Origin, Float3 const& _XVec, Float3 const& _YVec, Float3 const& _ZVec, Float3 const& _Scale)
+void DebugRenderer::DrawAxis(Float3 const& _Origin, Float3 const& _XVec, Float3 const& _YVec, Float3 const& _ZVec, Float3 const& _Scale)
 {
     SetColor(Color4(1, 0, 0, 1));
     DrawLine(_Origin, _Origin + _XVec * _Scale.X);
@@ -929,12 +929,12 @@ void ADebugRenderer::DrawAxis(Float3 const& _Origin, Float3 const& _XVec, Float3
     DrawLine(_Origin, _Origin + _ZVec * _Scale.Z);
 }
 
-void ADebugRenderer::DrawPlane(PlaneF const& _Plane, float _Length)
+void DebugRenderer::DrawPlane(PlaneF const& _Plane, float _Length)
 {
     DrawPlane(_Plane.Normal, _Plane.D, _Length);
 }
 
-void ADebugRenderer::DrawPlane(Float3 const& _Normal, float _D, float _Length)
+void DebugRenderer::DrawPlane(Float3 const& _Normal, float _D, float _Length)
 {
     Float3 xvec, yvec, center;
 
@@ -953,12 +953,12 @@ void ADebugRenderer::DrawPlane(Float3 const& _Normal, float _D, float _Length)
     DrawLine(points, true);
 }
 
-void ADebugRenderer::DrawPlaneFilled(PlaneF const& _Plane, float _Length, bool _TwoSided)
+void DebugRenderer::DrawPlaneFilled(PlaneF const& _Plane, float _Length, bool _TwoSided)
 {
     DrawPlaneFilled(_Plane.Normal, _Plane.D, _Length);
 }
 
-void ADebugRenderer::DrawPlaneFilled(Float3 const& _Normal, float _D, float _Length, bool _TwoSided)
+void DebugRenderer::DrawPlaneFilled(Float3 const& _Normal, float _D, float _Length, bool _TwoSided)
 {
     Float3 xvec, yvec, center;
 

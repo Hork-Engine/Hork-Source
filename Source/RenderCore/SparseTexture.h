@@ -45,17 +45,17 @@ enum SPARSE_TEXTURE_TYPE : uint8_t
     SPARSE_TEXTURE_CUBE_MAP_ARRAY
 };
 
-struct SSparseTextureDesc
+struct SparseTextureDesc
 {
     SPARSE_TEXTURE_TYPE Type       = SPARSE_TEXTURE_2D;
     TEXTURE_FORMAT      Format     = TEXTURE_FORMAT_RGBA8_UNORM;
-    STextureResolution  Resolution = {};
-    STextureSwizzle     Swizzle;
+    TextureResolution   Resolution = {};
+    TextureSwizzle      Swizzle;
     uint16_t            NumMipLevels = 1;
 
-    SSparseTextureDesc() = default;
+    SparseTextureDesc() = default;
 
-    bool operator==(SSparseTextureDesc const& Rhs) const
+    bool operator==(SparseTextureDesc const& Rhs) const
     {
         // clang-format off
         return Type        == Rhs.Type &&
@@ -66,58 +66,58 @@ struct SSparseTextureDesc
         // clang-format on
     }
 
-    bool operator!=(SSparseTextureDesc const& Rhs) const
+    bool operator!=(SparseTextureDesc const& Rhs) const
     {
         return !(operator==(Rhs));
     }
 
-    SSparseTextureDesc& SetFormat(TEXTURE_FORMAT InFormat)
+    SparseTextureDesc& SetFormat(TEXTURE_FORMAT InFormat)
     {
         Format = InFormat;
         return *this;
     }
 
-    SSparseTextureDesc& SetSwizzle(STextureSwizzle const& InSwizzle)
+    SparseTextureDesc& SetSwizzle(TextureSwizzle const& InSwizzle)
     {
         Swizzle = InSwizzle;
         return *this;
     }
 
-    SSparseTextureDesc& SetMipLevels(int InNumMipLevels)
+    SparseTextureDesc& SetMipLevels(int InNumMipLevels)
     {
         NumMipLevels = InNumMipLevels;
         return *this;
     }
 
-    SSparseTextureDesc& SetResolution(STextureResolution2D const& InResolution)
+    SparseTextureDesc& SetResolution(TextureResolution2D const& InResolution)
     {
         Type       = SPARSE_TEXTURE_2D;
         Resolution = InResolution;
         return *this;
     }
 
-    SSparseTextureDesc& SetResolution(STextureResolution2DArray const& InResolution)
+    SparseTextureDesc& SetResolution(TextureResolution2DArray const& InResolution)
     {
         Type       = SPARSE_TEXTURE_2D_ARRAY;
         Resolution = InResolution;
         return *this;
     }
 
-    SSparseTextureDesc& SetResolution(STextureResolution3D const& InResolution)
+    SparseTextureDesc& SetResolution(TextureResolution3D const& InResolution)
     {
         Type       = SPARSE_TEXTURE_3D;
         Resolution = InResolution;
         return *this;
     }
 
-    SSparseTextureDesc& SetResolution(STextureResolutionCubemap const& InResolution)
+    SparseTextureDesc& SetResolution(TextureResolutionCubemap const& InResolution)
     {
         Type       = SPARSE_TEXTURE_CUBE_MAP;
         Resolution = InResolution;
         return *this;
     }
 
-    SSparseTextureDesc& SetResolution(STextureResolutionCubemapArray const& InResolution)
+    SparseTextureDesc& SetResolution(TextureResolutionCubemapArray const& InResolution)
     {
         Type       = SPARSE_TEXTURE_CUBE_MAP_ARRAY;
         Resolution = InResolution;
@@ -130,11 +130,11 @@ class ISparseTexture : public IDeviceObject
 public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_SPARSE_TEXTURE;
 
-    ISparseTexture(IDevice* pDevice, SSparseTextureDesc const& Desc) :
+    ISparseTexture(IDevice* pDevice, SparseTextureDesc const& Desc) :
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
-    SSparseTextureDesc const& GetDesc() const { return Desc; }
+    SparseTextureDesc const& GetDesc() const { return Desc; }
 
     uint32_t GetWidth() const { return Desc.Resolution.Width; }
 
@@ -147,7 +147,7 @@ public:
     int GetPageSizeZ() const { return PageSizeZ; }
 
 protected:
-    SSparseTextureDesc Desc;
+    SparseTextureDesc Desc;
     int                PageSizeX;
     int                PageSizeY;
     int                PageSizeZ;

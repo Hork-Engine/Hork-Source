@@ -1,7 +1,7 @@
 components
 [
 	{
-		classname "ASpotLightComponent"
+		classname "SpotLightComponent"
 		name "SpotLight"
 		id "1"
 	}

@@ -35,9 +35,9 @@ SOFTWARE.
 #define FONTSTASH_IMPLEMENTATION
 #include <ThirdParty/nanovg/fontstash.h>
 
-HK_CLASS_META(AFont)
+HK_CLASS_META(Font)
 
-AFontStash::AFontStash()
+FontStash::FontStash()
 {
     using namespace RenderCore;
 
@@ -56,10 +56,10 @@ AFontStash::AFontStash()
     auto* pDevice = GEngine->GetRenderDevice();
 
     // Create font texture
-    pDevice->CreateTexture(STextureDesc{}
+    pDevice->CreateTexture(TextureDesc{}
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2D(fontParams.width, fontParams.height))
-                               .SetSwizzle(STextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
+                               .SetResolution(TextureResolution2D(fontParams.width, fontParams.height))
+                               .SetSwizzle(TextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &m_FontImages[0]);
     if (!m_FontImages[0])
@@ -68,13 +68,13 @@ AFontStash::AFontStash()
     }
 }
 
-AFontStash::~AFontStash()
+FontStash::~FontStash()
 {
     if (m_pImpl)
         fonsDeleteInternal(m_pImpl);
 }
 
-bool AFontStash::ReallocTexture()
+bool FontStash::ReallocTexture()
 {
     int iw, ih;
 
@@ -108,10 +108,10 @@ bool AFontStash::ReallocTexture()
         using namespace RenderCore;
 
         // Create font texture
-        pDevice->CreateTexture(STextureDesc{}
+        pDevice->CreateTexture(TextureDesc{}
                                    .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                                   .SetResolution(STextureResolution2D(iw, ih))
-                                   .SetSwizzle(STextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
+                                   .SetResolution(TextureResolution2D(iw, ih))
+                                   .SetSwizzle(TextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
                                    .SetBindFlags(BIND_SHADER_RESOURCE),
                                &m_FontImages[m_FontImageIdx + 1]);
 
@@ -125,7 +125,7 @@ bool AFontStash::ReallocTexture()
     return true;
 }
 
-void AFontStash::UpdateTexture()
+void FontStash::UpdateTexture()
 {
     using namespace RenderCore;
 
@@ -144,13 +144,13 @@ void AFontStash::UpdateTexture()
             int            w    = dirty[2] - dirty[0];
             int            h    = dirty[3] - dirty[1];
 
-            STextureDesc const& desc = fontImage->GetDesc();
+            TextureDesc const& desc = fontImage->GetDesc();
 
             auto pixelWidthBytes = GetTextureFormatInfo(desc.Format).BytesPerBlock;
 
             const uint8_t* pData = data + (y * (desc.Resolution.Width * pixelWidthBytes)) + (x * pixelWidthBytes);
 
-            RenderCore::STextureRect rect;
+            RenderCore::TextureRect rect;
             rect.Offset.X    = x;
             rect.Offset.Y    = y;
             rect.Dimension.X = w;
@@ -162,7 +162,7 @@ void AFontStash::UpdateTexture()
     }
 }
 
-void AFontStash::Cleanup()
+void FontStash::Cleanup()
 {
     using namespace RenderCore;
 
@@ -197,7 +197,7 @@ void AFontStash::Cleanup()
     }
 }
 
-ATextureView* AFontStash::GetTextureView()
+TextureView* FontStash::GetTextureView()
 {
     if (m_TextureViews[m_FontImageIdx].IsExpired())
     {
@@ -210,17 +210,17 @@ ATextureView* AFontStash::GetTextureView()
     return m_TextureViews[m_FontImageIdx];
 }
 
-AFont::AFont()
+Font::Font()
 {
-    m_FontStash = GetSharedInstance<AFontStash>();
+    m_FontStash = GetSharedInstance<FontStash>();
 }
 
-AFont::~AFont()
+Font::~Font()
 {
     fonsRemoveFont(m_FontStash->GetImpl(), m_FontId);
 }
 
-Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text, bool bKeepSpaces) const
+Float2 Font::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, StringView text, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return {};
@@ -252,13 +252,13 @@ Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AS
 
         totalrows += nrows;
 
-        text = AStringView(rows[nrows - 1].Next, text.End());
+        text = StringView(rows[nrows - 1].Next, text.End());
     }
 
     return Float2(maxx - minx, totalrows * lineh);
 }
 
-Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AWideStringView text, bool bKeepSpaces) const
+Float2 Font::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, WideStringView text, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return {};
@@ -290,7 +290,7 @@ Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AW
 
         totalrows += nrows;
 
-        text = AWideStringView(rows[nrows - 1].Next, text.End());
+        text = WideStringView(rows[nrows - 1].Next, text.End());
     }
 
     return Float2(maxx - minx, totalrows * lineh);
@@ -304,13 +304,13 @@ enum NVGcodepointType
     NVG_CJK_CHAR,
 };
 
-int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces) const
+int Font::TextBreakLines(FontStyle const& fontStyle, StringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return 0;
 
     FONScontext* fs    = m_FontStash->GetImpl();
-    AFontStash*  stash = m_FontStash;
+    FontStash*  stash = m_FontStash;
 
     float scale    = GEngine->GetRetinaScale().X;
     float invscale = 1.0f / scale;
@@ -535,7 +535,7 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
     return nrows;
 }
 
-int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth, bool bKeepSpaces) const
+int Font::TextLineCount(FontStyle const& fontStyle, StringView text, float breakRowWidth, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return 0;
@@ -544,7 +544,7 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float bre
         return 0;
 
     FONScontext* fs    = m_FontStash->GetImpl();
-    AFontStash*  stash = m_FontStash;
+    FontStash*  stash = m_FontStash;
 
     float scale = GEngine->GetRetinaScale().X;
 
@@ -778,13 +778,13 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float bre
     return nrows;
 }
 
-int AFont::TextBreakLines(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces) const
+int Font::TextBreakLines(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return 0;
 
     FONScontext* fs    = m_FontStash->GetImpl();
-    AFontStash*  stash = m_FontStash;
+    FontStash*  stash = m_FontStash;
 
     float scale    = GEngine->GetRetinaScale().X;
     float invscale = 1.0f / scale;
@@ -1009,7 +1009,7 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AWideStringView text, floa
     return nrows;
 }
 
-int AFont::TextLineCount(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, bool bKeepSpaces) const
+int Font::TextLineCount(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, bool bKeepSpaces) const
 {
     if (m_FontId == FONS_INVALID)
         return 0;
@@ -1018,7 +1018,7 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AWideStringView text, float
         return 0;
 
     FONScontext* fs    = m_FontStash->GetImpl();
-    AFontStash*  stash = m_FontStash;
+    FontStash*  stash = m_FontStash;
 
     float scale = GEngine->GetRetinaScale().X;
 
@@ -1252,7 +1252,7 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AWideStringView text, float
     return nrows;
 }
 
-void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const
+void Font::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const
 {
     if (m_FontId == FONS_INVALID)
     {
@@ -1277,7 +1277,7 @@ void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) con
     metrics.LineHeight *= fontStyle.LineHeight;
 }
 
-float AFont::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const
+float Font::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const
 {
     if (m_FontId == FONS_INVALID)
         return 0.0f;
@@ -1293,7 +1293,7 @@ float AFont::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const
     return fonsCharAdvanceCP(fs, ch) / scale;
 }
 
-void AFont::LoadInternalResource(AStringView Path)
+void Font::LoadInternalResource(StringView Path)
 {
     if (!Path.Icmp("/Default/Fonts/Default"))
     {
@@ -1305,7 +1305,7 @@ void AFont::LoadInternalResource(AStringView Path)
         // MIT license (see License.txt in http://www.upperbounds.net/download/ProggyClean.ttf.zip)
         // Download and more information at http://upperbounds.net
 
-        AFile f = AFile::OpenRead("Fonts/ProggyClean.ttf", Runtime::GetEmbeddedResources());
+        File f = File::OpenRead("Fonts/ProggyClean.ttf", Runtime::GetEmbeddedResources());
         if (!f)
         {
             CriticalError("Failed to create default font\n");
@@ -1329,7 +1329,7 @@ void AFont::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/Fonts/Default");
 }
 
-bool AFont::LoadResource(IBinaryStreamReadInterface& stream)
+bool Font::LoadResource(IBinaryStreamReadInterface& stream)
 {
     FONScontext* fs = m_FontStash->GetImpl();
 
@@ -1340,14 +1340,14 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& stream)
     m_FontId = fonsAddFontMem(fs, (uint8_t*)m_Blob.GetData(), m_Blob.Size(), 0, fontIndex);
     if (m_FontId == FONS_INVALID)
     {
-        LOG("AFont::LoadResource: failed to load font {}\n", stream.GetName());
+        LOG("Font::LoadResource: failed to load font {}\n", stream.GetName());
         return false;
     }
 
     return true;
 }
 
-bool AFont::AddFallbackFont(AFont* fallbackFont)
+bool Font::AddFallbackFont(Font* fallbackFont)
 {
     if (!fallbackFont)
         return false;
@@ -1364,13 +1364,13 @@ bool AFont::AddFallbackFont(AFont* fallbackFont)
     if (fonsAddFallbackFont(m_FontStash->GetImpl(), m_FontId, fallbackFont->m_FontId))
     {
         // Keep reference to fallback
-        m_Fallbacks.Add(TRef<AFont>(fallbackFont));
+        m_Fallbacks.Add(TRef<Font>(fallbackFont));
         return true;
     }
     return false;
 }
 
-void AFont::ResetFallbackFonts()
+void Font::ResetFallbackFonts()
 {
     if (m_FontId == FONS_INVALID)
         return;

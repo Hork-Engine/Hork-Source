@@ -36,28 +36,28 @@ using namespace RenderCore;
 const int BRDF_TEXTURE_WIDTH  = 512;
 const int BRDF_TEXTURE_HEIGHT = 256;
 
-ABRDFGenerator::ABRDFGenerator()
+BRDFGenerator::BRDFGenerator()
 {
-    AShaderFactory::CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
+    ShaderFactory::CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
-void ABRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
+void BRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
 {
-    AFrameGraph  frameGraph(GDevice);
-    ARenderPass& pass = frameGraph.AddTask<ARenderPass>("BRDF generation pass");
+    FrameGraph  frameGraph(GDevice);
+    RenderPass& pass = frameGraph.AddTask<RenderPass>("BRDF generation pass");
 
     pass.SetRenderArea(BRDF_TEXTURE_WIDTH, BRDF_TEXTURE_HEIGHT);
 
     pass.SetColorAttachments(
-        {{STextureAttachment("Render target texture",
-                             STextureDesc{}
+        {{TextureAttachment("Render target texture",
+                             TextureDesc{}
                                  .SetFormat(TEXTURE_FORMAT_RG16_FLOAT)
-                                 .SetResolution(STextureResolution2D(BRDF_TEXTURE_WIDTH, BRDF_TEXTURE_HEIGHT))
+                                 .SetResolution(TextureResolution2D(BRDF_TEXTURE_WIDTH, BRDF_TEXTURE_HEIGHT))
                                  .SetBindFlags(BIND_SHADER_RESOURCE))
               .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)}});
 
     pass.AddSubpass({0}, // color attachments
-                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [&](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 

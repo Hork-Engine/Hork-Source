@@ -34,28 +34,28 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
-HK_CLASS_META(APhotometricProfile)
+HK_CLASS_META(PhotometricProfile)
 
-int APhotometricProfile::m_PhotometricProfileCounter = 0;
+int PhotometricProfile::m_PhotometricProfileCounter = 0;
 
-APhotometricProfile::APhotometricProfile()
+PhotometricProfile::PhotometricProfile()
 {
     Platform::ZeroMem(m_Data, sizeof(m_Data));
 }
 
-APhotometricProfile::~APhotometricProfile()
+PhotometricProfile::~PhotometricProfile()
 {
 }
 
-APhotometricProfile* APhotometricProfile::Create(void const* pData, float Intensity)
+PhotometricProfile* PhotometricProfile::Create(void const* pData, float Intensity)
 {
-    APhotometricProfile* profile = NewObj<APhotometricProfile>();
+    PhotometricProfile* profile = NewObj<PhotometricProfile>();
     profile->m_Intensity         = Intensity;
     Platform::Memcpy(profile->m_Data, pData, sizeof(profile->m_Data));
     return profile;
 }
 
-void APhotometricProfile::LoadInternalResource(AStringView Path)
+void PhotometricProfile::LoadInternalResource(StringView Path)
 {
     if (!Path.Icmp("/Default/PhotometricProfile/Default"))
     {
@@ -69,10 +69,10 @@ void APhotometricProfile::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/PhotometricProfile/Default");
 }
 
-bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
+bool PhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString const& fn = Stream.GetName();
-    AStringView extension = PathUtils::GetExt(fn);
+    String const& fn = Stream.GetName();
+    StringView extension = PathUtils::GetExt(fn);
 
     if (!extension.Icmp(".ies"))
     {
@@ -110,7 +110,7 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void APhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex)
+void PhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex)
 {
     if (m_FrameNum == FrameIndex)
     {
@@ -120,7 +120,7 @@ void APhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileText
     m_FrameNum = FrameIndex;
     if (ProfileTexture)
     {
-        RenderCore::STextureRect rect;
+        RenderCore::TextureRect rect;
         rect.Offset.Z    = m_PhotometricProfileCounter;
         rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
         rect.Dimension.Y = 1;

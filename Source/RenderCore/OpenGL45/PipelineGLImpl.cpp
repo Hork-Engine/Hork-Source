@@ -38,18 +38,18 @@ SOFTWARE.
 namespace RenderCore
 {
 
-APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& Desc) :
+PipelineGLImpl::PipelineGLImpl(DeviceGLImpl* pDevice, PipelineDesc const& Desc) :
     IPipeline(pDevice)
 {
     if (!pDevice->IsFeatureSupported(FEATURE_HALF_FLOAT_VERTEX))
     {
         // Check half float vertex type
 
-        for (SVertexAttribInfo const* desc = Desc.pVertexAttribs; desc < &Desc.pVertexAttribs[Desc.NumVertexAttribs]; desc++)
+        for (VertexAttribInfo const* desc = Desc.pVertexAttribs; desc < &Desc.pVertexAttribs[Desc.NumVertexAttribs]; desc++)
         {
             if (desc->TypeOfComponent() == COMPONENT_HALF)
             {
-                LOG("APipelineGLImpl::ctor: Half floats not supported by current hardware\n");
+                LOG("PipelineGLImpl::ctor: Half floats not supported by current hardware\n");
             }
         }
     }
@@ -75,7 +75,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
 
         if (NumPatchVertices > pDevice->GetDeviceCaps(DEVICE_CAPS_MAX_PATCH_VERTICES))
         {
-            LOG("APipelineGLImpl::ctor: num patch vertices > DEVICE_CAPS_MAX_PATCH_VERTICES\n");
+            LOG("PipelineGLImpl::ctor: num patch vertices > DEVICE_CAPS_MAX_PATCH_VERTICES\n");
         }
     }
 
@@ -85,7 +85,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
     RasterizerState   = pDevice->CachedRasterizerState(Desc.RS);
     DepthStencilState = pDevice->CachedDepthStencilState(Desc.DSS);
 
-    SAllocatorCallback const& allocator = pDevice->GetAllocator();
+    AllocatorCallback const& allocator = pDevice->GetAllocator();
 
     NumSamplerObjects = Desc.ResourceLayout.NumSamplers;
     if (NumSamplerObjects > 0)
@@ -104,7 +104,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
     NumImages = Desc.ResourceLayout.NumImages;
     if (NumImages > 0)
     {
-        Images = (SImageInfoGL*)allocator.Allocate(sizeof(SImageInfoGL) * NumImages);
+        Images = (ImageInfoGL*)allocator.Allocate(sizeof(ImageInfoGL) * NumImages);
         for (int i = 0; i < NumImages; i++)
         {
             Images[i].AccessMode     = ImageAccessModeLUT[Desc.ResourceLayout.Images[i].AccessMode];
@@ -119,7 +119,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
     NumBuffers = Desc.ResourceLayout.NumBuffers;
     if (NumBuffers > 0)
     {
-        Buffers = (SBufferInfoGL*)allocator.Allocate(sizeof(SBufferInfoGL) * NumBuffers);
+        Buffers = (BufferInfoGL*)allocator.Allocate(sizeof(BufferInfoGL) * NumBuffers);
         for (int i = 0; i < NumBuffers; i++)
         {
             Buffers[i].BufferType = BufferTargetLUT[Desc.ResourceLayout.Buffers[i].BufferBinding].Target;
@@ -131,9 +131,9 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
     }
 }
 
-APipelineGLImpl::~APipelineGLImpl()
+PipelineGLImpl::~PipelineGLImpl()
 {
-    SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
+    AllocatorCallback const& allocator = GetDevice()->GetAllocator();
 
     if (SamplerObjects)
     {

@@ -120,30 +120,30 @@ constexpr int MAX_PROBES = 256;
 constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 
-struct STerrainVertex
+struct TerrainVertex
 {
     /*unsigned*/ short X;
     /*unsigned*/ short Y;
 };
 
-struct SDebugVertex
+struct DebugVertex
 {
     Float3   Position;
     uint32_t Color;
 };
 
-enum ETextureColorSpace
+enum TEXTURE_COLOR_SPACE
 {
-    TEXTURE_COLORSPACE_RGBA,
-    TEXTURE_COLORSPACE_SRGB_ALPHA,
-    TEXTURE_COLORSPACE_YCOCG,
-    TEXTURE_COLORSPACE_GRAYSCALED
+    TEXTURE_COLOR_SPACE_RGBA,
+    TEXTURE_COLOR_SPACE_SRGB_ALPHA,
+    TEXTURE_COLOR_SPACE_YCOCG,
+    TEXTURE_COLOR_SPACE_GRAYSCALED
 
     //TEXTURE_COLORSPACE_RGBA_INT
     //TEXTURE_COLORSPACE_RGBA_UINT
 };
 
-enum ETextureFilter
+enum TEXTURE_FILTER
 {
     TEXTURE_FILTER_LINEAR,
     TEXTURE_FILTER_NEAREST,
@@ -153,7 +153,7 @@ enum ETextureFilter
     TEXTURE_FILTER_MIPMAP_TRILINEAR
 };
 
-enum ETextureAddress
+enum TEXTURE_ADDRESS
 {
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_MIRROR,
@@ -162,13 +162,13 @@ enum ETextureAddress
     TEXTURE_ADDRESS_MIRROR_ONCE
 };
 
-struct STextureSampler
+struct TextureSampler
 {
     TEXTURE_TYPE    TextureType;
-    ETextureFilter  Filter;
-    ETextureAddress AddressU;
-    ETextureAddress AddressV;
-    ETextureAddress AddressW;
+    TEXTURE_FILTER  Filter;
+    TEXTURE_ADDRESS AddressU;
+    TEXTURE_ADDRESS AddressV;
+    TEXTURE_ADDRESS AddressW;
     float           MipLODBias;
     float           Anisotropy;
     float           MinLod;
@@ -270,16 +270,16 @@ enum RENDERING_GEOMETRY_PRIORITY : uint8_t
     RENDERING_GEOMETRY_PRIORITY_RESERVED15 = 15
 };
 
-struct SMaterialSource
+struct MaterialSource
 {
     /** The source name */
-    AString SourceName;
+    String SourceName;
 
     /** Source code */
-    AString Code;
+    String Code;
 };
 
-class ACompiledMaterial : public ARefCounted
+class CompiledMaterial : public RefCounted
 {
 public:
     /** Material type (Unlit,baselight,pbr,etc) */
@@ -306,10 +306,10 @@ public:
     int NumUniformVectors{};
 
     /** Material samplers */
-    TStaticVector<STextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
+    TStaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
 
     /** Material shaders */
-    TVector<SMaterialSource> Shaders;
+    TVector<MaterialSource> Shaders;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
@@ -339,7 +339,7 @@ public:
     /** Disable backface culling */
     bool bTwoSided : 1;
 
-    ACompiledMaterial()
+    CompiledMaterial()
     {
         bHasVertexDeform          = false;
         bDepthTest_EXPERIMENTAL   = false;
@@ -351,18 +351,18 @@ public:
         bTwoSided                 = false;
     }
 
-    ACompiledMaterial(IBinaryStreamReadInterface& Stream)
+    CompiledMaterial(IBinaryStreamReadInterface& Stream)
     {
         Read(Stream);
     }
 
-    ~ACompiledMaterial() = default;
+    ~CompiledMaterial() = default;
 
-    ACompiledMaterial(ACompiledMaterial&& Rhs) noexcept = default;
+    CompiledMaterial(CompiledMaterial&& Rhs) noexcept = default;
 
-    ACompiledMaterial& operator=(ACompiledMaterial&& Rhs) noexcept = default;
+    CompiledMaterial& operator=(CompiledMaterial&& Rhs) noexcept = default;
 
-    void AddShader(AStringView SourceName, AStringView SourceCode)
+    void AddShader(StringView SourceName, StringView SourceCode)
     {
         Shaders.Add({SourceName, SourceCode});
     }
@@ -395,10 +395,10 @@ public:
         for (auto& sampler : Samplers)
         {
             sampler.TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
-            sampler.Filter      = (ETextureFilter)Stream.ReadUInt8();
-            sampler.AddressU    = (ETextureAddress)Stream.ReadUInt8();
-            sampler.AddressV    = (ETextureAddress)Stream.ReadUInt8();
-            sampler.AddressW    = (ETextureAddress)Stream.ReadUInt8();
+            sampler.Filter      = (TEXTURE_FILTER)Stream.ReadUInt8();
+            sampler.AddressU    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
+            sampler.AddressV    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
+            sampler.AddressW    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
             sampler.MipLODBias  = Stream.ReadFloat();
             sampler.Anisotropy  = Stream.ReadFloat();
             sampler.MinLod      = Stream.ReadFloat();
@@ -410,7 +410,7 @@ public:
         Shaders.Clear();
         Shaders.Reserve(numShaders);
 
-        AString sourceName, sourceCode;
+        String sourceName, sourceCode;
         for (int i = 0; i < numShaders; i++)
         {
             sourceName = Stream.ReadString();
@@ -457,7 +457,7 @@ public:
 
         Stream.WriteUInt16(Samplers.Size());
 
-        for (SMaterialSource const& s : Shaders)
+        for (MaterialSource const& s : Shaders)
         {
             Stream.WriteString(s.SourceName);
             Stream.WriteString(s.Code);
@@ -465,16 +465,16 @@ public:
     }    
 };
 
-class AMaterialGPU;
+class MaterialGPU;
 
-struct SMaterialFrameData
+struct MaterialFrameData
 {
-    AMaterialGPU*                  Material;
+    MaterialGPU*                   Material;
     RenderCore::ITexture*          Textures[MAX_MATERIAL_TEXTURES];
     int                            NumTextures;
     Float4                         UniformVectors[4];
     int                            NumUniformVectors;
-    class AVirtualTextureResource* VirtualTexture;
+    class VirtualTextureResource* VirtualTexture;
 };
 
 
@@ -482,7 +482,7 @@ struct SMaterialFrameData
 // Debug draw
 //
 
-enum EDebugDrawCmd
+enum DBG_DRAW_CMD
 {
     DBG_DRAW_CMD_POINTS,
     DBG_DRAW_CMD_POINTS_DEPTH_TEST,
@@ -496,13 +496,13 @@ enum EDebugDrawCmd
     DBG_DRAW_CMD_NOP
 };
 
-struct SDebugDrawCmd
+struct DebugDrawCmd
 {
-    EDebugDrawCmd Type;
-    int           FirstVertex;
-    int           NumVertices;
-    int           FirstIndex;
-    int           NumIndices;
+    DBG_DRAW_CMD Type;
+    int          FirstVertex;
+    int          NumVertices;
+    int          FirstIndex;
+    int          NumIndices;
 };
 
 //
@@ -643,11 +643,11 @@ enum CANVAS_COMPOSITE : uint8_t
     CANVAS_COMPOSITE_LAST = CANVAS_COMPOSITE_XOR
 };
 
-class ATextureView;
+class TextureView;
 
 struct CanvasDrawCmd
 {
-    ATextureView* pTextureView;
+    TextureView* pTextureView;
     CANVAS_DRAW_COMMAND   Type;
     CANVAS_COMPOSITE      Composite;
     CANVAS_IMAGE_FLAGS    TextureFlags;
@@ -694,7 +694,7 @@ public:
 Directional light render instance
 
 */
-struct SDirectionalLightInstance
+struct DirectionalLightInstance
 {
     Float4   ColorAndAmbientIntensity;
     Float3x3 Matrix; // Light rotation matrix
@@ -713,10 +713,10 @@ struct SDirectionalLightInstance
 Render instance (opaque & translucent meshes)
 
 */
-struct SRenderInstance
+struct RenderInstance
 {
-    AMaterialGPU*       Material;
-    SMaterialFrameData* MaterialInstance;
+    MaterialGPU*       Material;
+    MaterialFrameData* MaterialInstance;
 
     RenderCore::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
@@ -774,10 +774,10 @@ struct SRenderInstance
 Shadowmap render instance
 
 */
-struct SShadowRenderInstance
+struct ShadowRenderInstance
 {
-    AMaterialGPU*        Material;
-    SMaterialFrameData*  MaterialInstance;
+    MaterialGPU*        Material;
+    MaterialFrameData*  MaterialInstance;
     RenderCore::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
     RenderCore::IBuffer* IndexBuffer;
@@ -806,7 +806,7 @@ struct SShadowRenderInstance
 Light portal render instance
 
 */
-struct SLightPortalRenderInstance
+struct LightPortalRenderInstance
 {
     RenderCore::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
@@ -823,7 +823,7 @@ struct SLightPortalRenderInstance
 Shadowmap definition
 
 */
-struct SLightShadowmap
+struct LightShadowmap
 {
     int FirstShadowInstance;
     int ShadowInstanceCount;
@@ -849,7 +849,7 @@ int Pad0 = ( header.y >> 24 ) & 0xff // can be used in future
 texture3d RG32UI
 
 */
-struct SClusterHeader
+struct ClusterHeader
 {
     uint32_t FirstPackedIndex;
     uint8_t  NumProbes;
@@ -874,7 +874,7 @@ Unpack indices:
 texture1d R32UI
 
 */
-struct SClusterPackedIndex
+struct ClusterPackedIndex
 {
     uint32_t Indices;
 };
@@ -885,7 +885,7 @@ struct SClusterPackedIndex
 Light type (point/spot)
 
 */
-enum EClusterLightType
+enum CLUSTER_LIGHT_TYPE
 {
     CLUSTER_LIGHT_POINT,
     CLUSTER_LIGHT_SPOT,
@@ -897,7 +897,7 @@ enum EClusterLightType
 Point & spot light shader parameters
 
 */
-struct SLightParameters
+struct LightParameters
 {
     Float3 Position;
     float  Radius;
@@ -925,7 +925,7 @@ struct SLightParameters
 Reflection probe shader parameters
 
 */
-struct SProbeParameters
+struct ProbeParameters
 {
     Float3 Position;
     float  Radius;
@@ -940,7 +940,7 @@ struct SProbeParameters
 Terrain patch parameters
 
 */
-struct STerrainPatchInstance
+struct TerrainPatchInstance
 {
     Int2   VertexScale;
     Int2   VertexTranslate;
@@ -954,7 +954,7 @@ struct STerrainPatchInstance
 Terrain render instance
 
 */
-struct STerrainRenderInstance
+struct TerrainRenderInstance
 {
     RenderCore::IBuffer*  VertexBuffer;
     RenderCore::IBuffer*  IndexBuffer;
@@ -985,7 +985,7 @@ Rendering data for one view
 Keep it POD
 
 */
-struct SRenderView
+struct RenderViewData
 {
     /** Current view index */
     int ViewIndex;
@@ -1090,7 +1090,7 @@ struct SRenderView
     RenderCore::ITexture* HBAOMaps;
 
     /** Virtual texture feedback data (experimental) */
-    class AVirtualTextureFeedback* VTFeedback;
+    class VirtualTextureFeedback* VTFeedback;
 
     /** Total cascades for all shadow maps in view */
     int NumShadowMapCascades;
@@ -1122,28 +1122,28 @@ struct SRenderView
     size_t    ShadowMapMatricesStreamHandle;
 
     /** Point and spot lights for render view */
-    SLightParameters* PointLights;
-    int               NumPointLights;
-    size_t            PointLightsStreamHandle;
-    size_t            PointLightsStreamSize;
+    LightParameters* PointLights;
+    int              NumPointLights;
+    size_t           PointLightsStreamHandle;
+    size_t           PointLightsStreamSize;
 
     int FirstOmnidirectionalShadowMap;
     int NumOmnidirectionalShadowMaps;
 
     /** Reflection probes for render view */
-    SProbeParameters* Probes;
-    int               NumProbes;
-    size_t            ProbeStreamHandle;
-    size_t            ProbeStreamSize;
+    ProbeParameters* Probes;
+    int              NumProbes;
+    size_t           ProbeStreamHandle;
+    size_t           ProbeStreamSize;
 
     /** Cluster headers */
-    SClusterHeader* ClusterLookup;
-    size_t          ClusterLookupStreamHandle;
+    ClusterHeader* ClusterLookup;
+    size_t         ClusterLookupStreamHandle;
 
     /** Cluster packed indices */
-    SClusterPackedIndex* ClusterPackedIndices;
-    size_t               ClusterPackedIndicesStreamHandle;
-    int                  ClusterPackedIndexCount;
+    ClusterPackedIndex* ClusterPackedIndices;
+    size_t              ClusterPackedIndicesStreamHandle;
+    int                 ClusterPackedIndexCount;
 
     /** Terrain instances */
     int FirstTerrainInstance;
@@ -1160,7 +1160,7 @@ struct SRenderView
 Rendering data for one frame
 
 */
-struct SRenderFrame
+struct RenderFrameData
 {
     /** Game tick */
     int FrameNumber;
@@ -1173,33 +1173,33 @@ struct SRenderFrame
     Float4x4 CanvasOrthoProjection;
 
     /** Render views */
-    SRenderView* RenderViews;
+    RenderViewData* RenderViews;
     /** Render view count */
     int NumViews;
 
     /** Opaque instances */
-    TVector<SRenderInstance*> Instances;
+    TVector<RenderInstance*> Instances;
     /** Translucent instances */
-    TVector<SRenderInstance*> TranslucentInstances;
+    TVector<RenderInstance*> TranslucentInstances;
     /** Outline instances */
-    TVector<SRenderInstance*> OutlineInstances;
+    TVector<RenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TVector<SShadowRenderInstance*> ShadowInstances;
+    TVector<ShadowRenderInstance*> ShadowInstances;
     /** Light portal instances */
-    TVector<SLightPortalRenderInstance*> LightPortals;
+    TVector<LightPortalRenderInstance*> LightPortals;
     /** Directional light instances */
-    TVector<SDirectionalLightInstance*> DirectionalLights;
+    TVector<DirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */
-    TVector<SLightShadowmap> LightShadowmaps;
+    TVector<LightShadowmap> LightShadowmaps;
     /** Terrain instances */
-    TVector<STerrainRenderInstance*> TerrainInstances;
+    TVector<TerrainRenderInstance*> TerrainInstances;
 
     /** Canvas draw commands */
     CanvasDrawData const* CanvasDrawData;
     size_t CanvasVertexData;
 
     /** Debug draw commands */
-    SDebugDrawCmd const* DbgCmds;
+    DebugDrawCmd const* DbgCmds;
     size_t               DbgVertexStreamOffset;
     size_t               DbgIndexStreamOffset;
 };

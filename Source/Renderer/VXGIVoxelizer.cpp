@@ -49,10 +49,10 @@ VXGIVoxelizer::VXGIVoxelizer() {
     framebufferCI.Height = VoxGridSize;
     GDevice->CreateFramebuffer( framebufferCI, &voxelFBO );
 
-    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, STextureResolution2DArray( VoxGridSize, VoxGridSize, 3 ) ), &voxel2DTex );
+    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, TextureResolution2DArray( VoxGridSize, VoxGridSize, 3 ) ), &voxel2DTex );
     // TODO: Sampler GL_TEXTURE_MIN_FILTER=GL_NEAREST, GL_TEXTURE_MAG_FILTER=GL_NEAREST, GL_TEXTURE_WRAP_S=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_T=GL_CLAMP_TO_EDGE
 
-    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, STextureResolution3D( VoxGridSize, VoxGridSize, VoxGridSize ), STextureSwizzle(), numMipLevels + 1 ), &voxelTex );
+    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, TextureResolution3D( VoxGridSize, VoxGridSize, VoxGridSize ), TextureSwizzle(), numMipLevels + 1 ), &voxelTex );
     // TODO: Sampler GL_TEXTURE_MIN_FILTER=GL_NEAREST_MIPMAP_NEAREST, GL_TEXTURE_MAG_FILTER=GL_NEAREST, GL_TEXTURE_WRAP_S=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_T=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_R=GL_CLAMP_TO_EDGE
     
     
@@ -75,7 +75,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
 
     // Draw Indirect Command buffer for drawing voxels
     {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferCI.SizeInBytes = sizeof( drawIndCmd );
@@ -95,7 +95,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     }
 
     {
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferCI.SizeInBytes = sizeof( compIndCmd );
@@ -109,7 +109,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     //SAttachmentInfo colorAttachment = {};
     //colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_DONT_CARE;
 
-    //SAttachmentRef attachmentRef = {};
+    //AttachmentRef attachmentRef = {};
     //attachmentRef.Attachment = 0;
 
     //SSubpassInfo subpassInfo = {};
@@ -128,10 +128,10 @@ VXGIVoxelizer::VXGIVoxelizer() {
     CreatePipeline();
 
 #if 0
-    SBufferDesc bufferCI = {};
+    BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SConstantData );
+    bufferCI.SizeInBytes = sizeof( ConstantData );
     GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
@@ -144,7 +144,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     SAttachmentInfo colorAttachment = {};
     colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_DONT_CARE;
 
-    SAttachmentRef attachmentRef = {};
+    AttachmentRef attachmentRef = {};
     attachmentRef.Attachment = 0;
 
     SSubpassInfo subpassInfo = {};
@@ -158,16 +158,16 @@ VXGIVoxelizer::VXGIVoxelizer() {
     renderPassCI.pSubpasses = &subpassInfo;
     GDevice->CreateRenderPass( renderPassCI, &RP );
 
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
+    VertexBindingInfo vertexBindings[] =
     {
         {
             0,                              // vertex buffer binding
@@ -176,7 +176,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
         }
     };
 
-    SVertexAttribInfo vertexAttribs[] =
+    VertexAttribInfo vertexAttribs[] =
     {
         {
             "InPosition",
@@ -193,7 +193,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
@@ -211,16 +211,16 @@ VXGIVoxelizer::VXGIVoxelizer() {
 
 void VXGIVoxelizer::CreatePipeline()
 {
-    SPipelineDesc pipelineCI;
+    PipelineDesc pipelineCI;
 
-    SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
+    PipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
 
-    SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
+    DepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
     depthStencil.bDepthWrite = false;
 
-    SVertexBindingInfo vertexBindings[] =
+    VertexBindingInfo vertexBindings[] =
     {
         {
             0,                              // vertex buffer binding
@@ -229,7 +229,7 @@ void VXGIVoxelizer::CreatePipeline()
         }
     };
 
-    SVertexAttribInfo vertexAttribs[] =
+    VertexAttribInfo vertexAttribs[] =
     {
         {
             "InPosition",
@@ -242,11 +242,11 @@ void VXGIVoxelizer::CreatePipeline()
         }
     };
 
-    AShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    AShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
-    AShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
+    ShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
+    ShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
-    SBufferInfo buffers[1];
+    BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
@@ -273,7 +273,7 @@ void VXGIVoxelizer::Render()
 
     // Reset the sparse voxel count
     //TODO glBindBuffer( GL_SHADER_STORAGE_BUFFER, drawIndBuffer );
-    SBufferClear ranges[MAX_MIP_MAP_LEVELS+1];
+    BufferClear ranges[MAX_MIP_MAP_LEVELS+1];
     for ( size_t i = 0; i <= MAX_MIP_MAP_LEVELS; i++ ) {
         ranges[i].Offset = i * sizeof( DrawElementsIndirectCommand ) + sizeof( uint32_t );
         ranges[i].SizeInBytes = sizeof( uint32_t );
@@ -305,7 +305,7 @@ void VXGIVoxelizer::Render()
 
     rcmd->BeginRenderPass( renderPassBegin );
 
-    SViewport viewport;
+    Viewport viewport;
     viewport.X = 0;
     viewport.Y = 0;
     viewport.Width = VoxGridSize;
@@ -333,7 +333,7 @@ void VXGIVoxelizer::Render()
 
 #if 0
 
-    GDevice->CreateTexture( MakeTexture( TEX_FORMAT_SKY, STextureResolutionCubemap( CubemapWidth ) ), ppTexture );
+    GDevice->CreateTexture( MakeTexture( TEX_FORMAT_SKY, TextureResolutionCubemap( CubemapWidth ) ), ppTexture );
 
     ConstantBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
 
@@ -344,7 +344,7 @@ void VXGIVoxelizer::Render()
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    SViewport viewport = {};
+    Viewport viewport = {};
     viewport.Width = CubemapWidth;
     viewport.Height = CubemapWidth;
     viewport.MaxDepth = 1;

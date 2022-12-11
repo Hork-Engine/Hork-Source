@@ -37,30 +37,30 @@ SOFTWARE.
 
 /**
 
-ASkeletalAnimation
+SkeletalAnimation
 
 Animation class
 
 */
-class ASkeletalAnimation : public AResource
+class SkeletalAnimation : public Resource
 {
-    HK_CLASS(ASkeletalAnimation, AResource)
+    HK_CLASS(SkeletalAnimation, Resource)
 
 public:
-    ASkeletalAnimation();
-    ~ASkeletalAnimation();
+    SkeletalAnimation();
+    ~SkeletalAnimation();
 
-    static ASkeletalAnimation* Create(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
+    static SkeletalAnimation* Create(int _FrameCount, float _FrameDelta, Transform const* _Transforms, int _TransformsCount, AnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
     {
-        ASkeletalAnimation* anim = NewObj<ASkeletalAnimation>();
+        SkeletalAnimation* anim = NewObj<SkeletalAnimation>();
         anim->Initialize(_FrameCount, _FrameDelta, _Transforms, _TransformsCount, _AnimatedJoints, _NumAnimatedJoints, _Bounds);
         return anim;
     }
 
     void Purge();
 
-    TPodVector<SAnimationChannel> const& GetChannels() const { return Channels; }
-    TPodVector<STransform> const&        GetTransforms() const { return Transforms; }
+    TPodVector<AnimationChannel> const& GetChannels() const { return Channels; }
+    TPodVector<Transform> const&        GetTransforms() const { return Transforms; }
 
     unsigned short GetChannelIndex(int _JointIndex) const;
 
@@ -73,32 +73,32 @@ public:
     bool                                IsValid() const { return bIsAnimationValid; }
 
 protected:
-    void Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
+    void Initialize(int _FrameCount, float _FrameDelta, Transform const* _Transforms, int _TransformsCount, AnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
 
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(StringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
 
 private:
-    TPodVector<SAnimationChannel> Channels;
-    TPodVector<STransform>        Transforms;
-    TPodVector<unsigned short>    ChannelsMap;
-    TPodVector<BvAxisAlignedBox>  Bounds;
-    int                           MinNodeIndex       = 0;
-    int                           MaxNodeIndex       = 0;
-    int                           FrameCount         = 0;  // frames count
-    float                         FrameDelta         = 0;  // fixed time delta between frames
-    float                         FrameRate          = 60; // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
-    float                         DurationInSeconds  = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
-    float                         DurationNormalizer = 1;  // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
-    bool                          bIsAnimationValid  = false;
+    TPodVector<AnimationChannel> Channels;
+    TPodVector<Transform>        Transforms;
+    TPodVector<unsigned short>   ChannelsMap;
+    TPodVector<BvAxisAlignedBox> Bounds;
+    int                          MinNodeIndex       = 0;
+    int                          MaxNodeIndex       = 0;
+    int                          FrameCount         = 0;  // frames count
+    float                        FrameDelta         = 0;  // fixed time delta between frames
+    float                        FrameRate          = 60; // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
+    float                        DurationInSeconds  = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
+    float                        DurationNormalizer = 1;  // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
+    bool                         bIsAnimationValid  = false;
 };
 
-HK_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex(int _JointIndex) const
+HK_FORCEINLINE unsigned short SkeletalAnimation::GetChannelIndex(int _JointIndex) const
 {
     return (_JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex) ? (unsigned short)-1 : ChannelsMap[_JointIndex - MinNodeIndex];
 }

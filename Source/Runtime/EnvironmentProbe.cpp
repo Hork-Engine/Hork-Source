@@ -37,134 +37,134 @@ SOFTWARE.
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-AConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(AEnvironmentProbe)
+HK_CLASS_META(EnvironmentProbe)
 
-AEnvironmentProbe::AEnvironmentProbe()
+EnvironmentProbe::EnvironmentProbe()
 {
-    AABBWorldBounds.Clear();
-    OBBTransformInverse.Clear();
+    m_AABBWorldBounds.Clear();
+    m_OBBTransformInverse.Clear();
 
-    Primitive             = AVisibilitySystem::AllocatePrimitive();
-    Primitive->Owner      = this;
-    Primitive->Type       = VSD_PRIMITIVE_SPHERE;
-    Primitive->VisGroup   = VISIBILITY_GROUP_DEFAULT;
-    Primitive->QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    m_Primitive = VisibilitySystem::AllocatePrimitive();
+    m_Primitive->Owner = this;
+    m_Primitive->Type = VSD_PRIMITIVE_SPHERE;
+    m_Primitive->VisGroup = VISIBILITY_GROUP_DEFAULT;
+    m_Primitive->QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
 
-    Radius = DEFAULT_RADIUS;
+    m_Radius = DEFAULT_RADIUS;
 
     UpdateWorldBounds();
 }
 
-AEnvironmentProbe::~AEnvironmentProbe()
+EnvironmentProbe::~EnvironmentProbe()
 {
-    AVisibilitySystem::DeallocatePrimitive(Primitive);
+    VisibilitySystem::DeallocatePrimitive(m_Primitive);
 }
 
-void AEnvironmentProbe::InitializeComponent()
+void EnvironmentProbe::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(m_Primitive);
 }
 
-void AEnvironmentProbe::DeinitializeComponent()
+void EnvironmentProbe::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(m_Primitive);
 }
 
-void AEnvironmentProbe::SetEnabled(bool _Enabled)
+void EnvironmentProbe::SetEnabled(bool _Enabled)
 {
-    bEnabled = _Enabled;
+    m_bEnabled = _Enabled;
 
     if (_Enabled)
     {
-        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+        m_Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        m_Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
     else
     {
-        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+        m_Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        m_Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }
 
-void AEnvironmentProbe::SetRadius(float _Radius)
+void EnvironmentProbe::SetRadius(float _Radius)
 {
-    Radius = Math::Max(0.001f, _Radius);
+    m_Radius = Math::Max(0.001f, _Radius);
 
     UpdateWorldBounds();
 }
 
-void AEnvironmentProbe::SetEnvironmentMap(AEnvironmentMap* _EnvironmentMap)
+void EnvironmentProbe::SetEnvironmentMap(EnvironmentMap* _EnvironmentMap)
 {
-    EnvironmentMap = _EnvironmentMap;
+    m_EnvironmentMap = _EnvironmentMap;
 
-    if (EnvironmentMap)
+    if (m_EnvironmentMap)
     {
-        IrradianceMapHandle = EnvironmentMap->GetIrradianceHandle();
-        ReflectionMapHandle = EnvironmentMap->GetReflectionHandle();
+        m_IrradianceMapHandle = m_EnvironmentMap->GetIrradianceHandle();
+        m_ReflectionMapHandle = m_EnvironmentMap->GetReflectionHandle();
     }
     else
     {
-        IrradianceMapHandle = 0;
-        ReflectionMapHandle = 0;
+        m_IrradianceMapHandle = 0;
+        m_ReflectionMapHandle = 0;
     }
 }
 
-void AEnvironmentProbe::OnTransformDirty()
+void EnvironmentProbe::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
     UpdateWorldBounds();
 }
 
-void AEnvironmentProbe::UpdateWorldBounds()
+void EnvironmentProbe::UpdateWorldBounds()
 {
-    SphereWorldBounds.Radius = Radius;
-    SphereWorldBounds.Center = GetWorldPosition();
-    AABBWorldBounds.Mins     = SphereWorldBounds.Center - Radius;
-    AABBWorldBounds.Maxs     = SphereWorldBounds.Center + Radius;
-    OBBWorldBounds.Center    = SphereWorldBounds.Center;
-    OBBWorldBounds.HalfSize  = Float3(SphereWorldBounds.Radius);
-    OBBWorldBounds.Orient.SetIdentity();
+    m_SphereWorldBounds.Radius = m_Radius;
+    m_SphereWorldBounds.Center = GetWorldPosition();
+    m_AABBWorldBounds.Mins = m_SphereWorldBounds.Center - m_Radius;
+    m_AABBWorldBounds.Maxs = m_SphereWorldBounds.Center + m_Radius;
+    m_OBBWorldBounds.Center = m_SphereWorldBounds.Center;
+    m_OBBWorldBounds.HalfSize = Float3(m_SphereWorldBounds.Radius);
+    m_OBBWorldBounds.Orient.SetIdentity();
 
     // TODO: Optimize?
-    Float4x4 OBBTransform = Float4x4::Translation(OBBWorldBounds.Center) * Float4x4::Scale(OBBWorldBounds.HalfSize);
-    OBBTransformInverse   = OBBTransform.Inversed();
+    Float4x4 OBBTransform = Float4x4::Translation(m_OBBWorldBounds.Center) * Float4x4::Scale(m_OBBWorldBounds.HalfSize);
+    m_OBBTransformInverse = OBBTransform.Inversed();
 
-    Primitive->Sphere = SphereWorldBounds;
+    m_Primitive->Sphere = m_SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(m_Primitive);
     }
 }
 
-void AEnvironmentProbe::DrawDebug(ADebugRenderer* InRenderer)
+void EnvironmentProbe::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
     if (com_DrawEnvironmentProbes)
     {
-        if (Primitive->VisPass == InRenderer->GetVisPass())
+        if (m_Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3 pos = GetWorldPosition();
 
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(1, 0, 1, 1));
-            InRenderer->DrawSphere(pos, Radius);
+            InRenderer->DrawSphere(pos, m_Radius);
         }
     }
 }
 
-void AEnvironmentProbe::PackProbe(Float4x4 const& InViewMatrix, SProbeParameters& Probe)
+void EnvironmentProbe::PackProbe(Float4x4 const& InViewMatrix, ProbeParameters& Probe)
 {
-    Probe.Position      = Float3(InViewMatrix * GetWorldPosition());
-    Probe.Radius        = Radius;
-    Probe.IrradianceMap = IrradianceMapHandle;
-    Probe.ReflectionMap = ReflectionMapHandle;
+    Probe.Position = Float3(InViewMatrix * GetWorldPosition());
+    Probe.Radius = m_Radius;
+    Probe.IrradianceMap = m_IrradianceMapHandle;
+    Probe.ReflectionMap = m_ReflectionMapHandle;
 }

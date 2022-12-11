@@ -33,21 +33,21 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
-class AIrradianceGenerator
+class IrradianceGenerator
 {
 public:
-    AIrradianceGenerator();
+    IrradianceGenerator();
 
-    void GenerateArray( int _CubemapsCount, RenderCore::ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray );
-    void Generate( RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
+    void GenerateArray(int _CubemapsCount, RenderCore::ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray);
+    void Generate(RenderCore::ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture);
 
 private:
-    struct SConstantData
+    struct ConstantData
     {
         Float4x4 Transform[6];
         Float4 Index;
     };
-    TRef< RenderCore::IBuffer > ConstantBuffer;
-    SConstantData ConstantBufferData;
-    TRef< RenderCore::IPipeline > Pipeline;
+    TRef<RenderCore::IBuffer> ConstantBuffer;
+    ConstantData ConstantBufferData;
+    TRef<RenderCore::IPipeline> Pipeline;
 };

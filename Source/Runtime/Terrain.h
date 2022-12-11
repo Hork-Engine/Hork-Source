@@ -34,24 +34,24 @@ SOFTWARE.
 #include "HitTest.h"
 #include <Geometry/BV/BvAxisAlignedBox.h>
 
-struct STerrainTriangle
+struct TerrainTriangle
 {
     Float3 Vertices[3];
     Float3 Normal;
     Float2 Texcoord;
 };
 
-class ATerrainComponent;
+class TerrainComponent;
 
-class ATerrain : public AResource
+class Terrain : public Resource
 {
-    HK_CLASS(ATerrain, AResource)
+    HK_CLASS(Terrain, Resource)
 
 public:
-    ATerrain();
-    ATerrain(int Resolution, const float* pData);
+    Terrain();
+    Terrain(int Resolution, const float* pData);
 
-    ~ATerrain();
+    ~Terrain();
 
     /** Navigation areas are used to gather navigation geometry.
     
@@ -74,9 +74,9 @@ public:
     BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
 
     /** Find ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
     /** Find ray intersection */
-    bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, STriangleHitResult& HitResult) const;
+    bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TriangleHitResult& HitResult) const;
 
     bool GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Float3& V2) const;
 
@@ -84,21 +84,21 @@ public:
 
     bool GetTexcoord(float X, float Z, Float2& Texcoord) const;
 
-    bool GetTriangle(float X, float Z, STerrainTriangle& Triangle) const;
+    bool GetTriangle(float X, float Z, TerrainTriangle& Triangle) const;
 
     void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const;
 
     class btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape.GetObject(); }
 
-    void AddListener(ATerrainComponent* Listener);
-    void RemoveListener(ATerrainComponent* Listener);
+    void AddListener(TerrainComponent* Listener);
+    void RemoveListener(TerrainComponent* Listener);
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(StringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Terrain/Default"; }
 
@@ -120,6 +120,6 @@ private:
     BvAxisAlignedBox                      m_BoundingBox;
 
     // Terrain components that uses this resource
-    ATerrainComponent* m_Listeners{};
-    ATerrainComponent* m_ListenersTail{};
+    TerrainComponent* m_Listeners{};
+    TerrainComponent* m_ListenersTail{};
 };

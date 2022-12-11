@@ -55,24 +55,24 @@ SOFTWARE.
 #    include <unistd.h> // chdir
 #endif
 
-static AConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
-static AConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
+static ConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
+static ConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
 
-AConsoleVar rt_VidWidth("rt_VidWidth"s, "0"s);
-AConsoleVar rt_VidHeight("rt_VidHeight"s, "0"s);
+ConsoleVar rt_VidWidth("rt_VidWidth"s, "0"s);
+ConsoleVar rt_VidHeight("rt_VidHeight"s, "0"s);
 #ifdef HK_DEBUG
-AConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "0"s);
+ConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "0"s);
 #else
-AConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "1"s);
+ConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "1"s);
 #endif
 
-AConsoleVar rt_SwapInterval("rt_SwapInterval"s, "0"s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"s);
+ConsoleVar rt_SwapInterval("rt_SwapInterval"s, "0"s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"s);
 
 static int TotalAllocatedRenderCore = 0;
 
-AEngine* GEngine;
+Engine* GEngine;
 
-AEngine::AEngine() :
+Engine::Engine() :
     Rand(Core::RandomSeed())
 {
     GEngine     = this;
@@ -119,20 +119,20 @@ static void NavModuleFree(void* _Bytes)
     Platform::GetHeapAllocator<HEAP_NAVIGATION>().Free(_Bytes);
 }
 
-static AGameModule* CreateGameModule(AClassMeta const* pClassMeta)
+static GameModule* CreateGameModule(ClassMeta const* pClassMeta)
 {
-    if (!pClassMeta->IsSubclassOf<AGameModule>())
+    if (!pClassMeta->IsSubclassOf<GameModule>())
     {
-        CriticalError("CreateGameModule: game module is not subclass of AGameModule\n");
+        CriticalError("CreateGameModule: game module is not subclass of GameModule\n");
     }
-    return static_cast<AGameModule*>(pClassMeta->CreateInstance());
+    return static_cast<GameModule*>(pClassMeta->CreateInstance());
 }
 
-void AEngine::LoadConfigFile()
+void Engine::LoadConfigFile()
 {
-    AString configFile = GetRootPath() + "config.cfg";
+    String configFile = GetRootPath() + "config.cfg";
 
-    AFile f = AFile::OpenRead(configFile);
+    File f = File::OpenRead(configFile);
     if (f)
     {
         m_CommandProcessor.Add(f.AsString());
@@ -140,13 +140,13 @@ void AEngine::LoadConfigFile()
         class CommandContext : public ICommandContext
         {
         public:
-            void ExecuteCommand(ACommandProcessor const& _Proc) override
+            void ExecuteCommand(CommandProcessor const& _Proc) override
             {
                 HK_ASSERT(_Proc.GetArgsCount() > 0);
 
                 const char*  name = _Proc.GetArg(0);
-                AConsoleVar* var;
-                if (nullptr != (var = AConsoleVar::FindVariable(name)))
+                ConsoleVar* var;
+                if (nullptr != (var = ConsoleVar::FindVariable(name)))
                 {
                     if (_Proc.GetArgsCount() < 2)
                     {
@@ -166,9 +166,9 @@ void AEngine::LoadConfigFile()
     }
 }
 
-void AEngine::InitializeDirectories()
+void Engine::InitializeDirectories()
 {
-    SProcessInfo const& processInfo = Platform::GetProcessInfo();
+    ProcessInfo const& processInfo = Platform::GetProcessInfo();
 
     m_WorkingDir = PathUtils::GetFilePath(processInfo.Executable);
 
@@ -203,27 +203,27 @@ void AEngine::InitializeDirectories()
     LOG("Executable: {}\n", GetExecutableName());
 }
 
-void AEngine::Run(SEntryDecl const& entryDecl)
+void Engine::Run(EntryDecl const& entryDecl)
 {
     m_pModuleDecl = &entryDecl;
 
     InitializeDirectories();
 
-    if (AThread::NumHardwareThreads)
+    if (Thread::NumHardwareThreads)
     {
-        LOG("Num hardware threads: {}\n", AThread::NumHardwareThreads);
+        LOG("Num hardware threads: {}\n", Thread::NumHardwareThreads);
     }
 
-    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min(AThread::NumHardwareThreads, AAsyncJobManager::MAX_WORKER_THREADS) : AAsyncJobManager::MAX_WORKER_THREADS;
+    int jobManagerThreadCount = Thread::NumHardwareThreads ? Math::Min(Thread::NumHardwareThreads, AsyncJobManager::MAX_WORKER_THREADS) : AsyncJobManager::MAX_WORKER_THREADS;
 
-    AsyncJobManager = MakeRef<AAsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
+    pAsyncJobManager = MakeRef<AsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
 
-    RenderFrontendJobList = AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
-    RenderBackendJobList  = AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
+    pRenderFrontendJobList = pAsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
+    pRenderBackendJobList  = pAsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
     LoadConfigFile();
 
-    RenderCore::SAllocatorCallback allocator;
+    RenderCore::AllocatorCallback allocator;
 
     allocator.Allocate =
         [](size_t _BytesCount)
@@ -243,9 +243,9 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     if (rt_VidWidth.GetInteger() <= 0 || rt_VidHeight.GetInteger() <= 0)
     {
-        SDisplayMode mode;
+        DisplayMode mode;
 
-        TPodVector<SDisplayInfo> displays;
+        TPodVector<DisplayInfo> displays;
         Runtime::GetDisplays(displays);
         if (!displays.IsEmpty())
         {
@@ -261,7 +261,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
         }
     }
 
-    SVideoMode desiredMode  = {};
+    DisplayVideoMode desiredMode  = {};
     desiredMode.Width       = rt_VidWidth.GetInteger();
     desiredMode.Height      = rt_VidHeight.GetInteger();
     desiredMode.Opacity     = 1;
@@ -276,7 +276,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
     // Swap buffers to prevent flickering
     m_pSwapChain->Present(rt_SwapInterval.GetInteger());
 
-    m_VertexMemoryGPU = MakeRef<AVertexMemoryGPU>(m_RenderDevice);
+    m_VertexMemoryGPU = MakeRef<VertexMemoryGPU>(m_RenderDevice);
 
     // Init physics module
     //b3SetCustomPrintfFunc(PhysModulePrintFunction);
@@ -290,18 +290,18 @@ void AEngine::Run(SEntryDecl const& entryDecl)
     // Init recast navigation module
     dtAllocSetCustom(NavModuleAlloc, NavModuleFree);
 
-    m_ResourceManager = MakeUnique<AResourceManager>();
+    m_ResourceManager = MakeUnique<ResourceManager>();
 
-    m_Renderer = MakeRef<ARenderFrontend>();
+    m_Renderer = MakeRef<RenderFrontend>();
 
-    m_RenderBackend = MakeRef<ARenderBackend>(m_RenderDevice);
+    m_RenderBackend = MakeRef<RenderBackend>(m_RenderDevice);
 
-    m_FrameLoop = MakeRef<AFrameLoop>(m_RenderDevice);
+    m_FrameLoop = MakeRef<FrameLoop>(m_RenderDevice);
 
     // Process initial events
     m_FrameLoop->PollEvents(this);
 
-    m_Canvas = MakeUnique<ACanvas>();
+    m_Canvas = MakeUnique<Canvas>();
 
     m_UIManager = MakeUnique<UIManager>(m_Window);
 
@@ -343,7 +343,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
         m_CommandProcessor.Execute(m_GameModule->CommandContext);
 
         // Tick worlds
-        AWorld::UpdateWorlds(m_FrameDurationInSeconds);
+        World::UpdateWorlds(m_FrameDurationInSeconds);
 
         // Update audio system
         m_AudioSystem.Update(APlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
@@ -376,10 +376,10 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     m_UIManager.Reset();
 
-    AWorld::DestroyWorlds();
-    AWorld::KillWorlds();
+    World::DestroyWorlds();
+    World::KillWorlds();
 
-    ASoundEmitter::ClearOneShotSounds();
+    SoundEmitter::ClearOneShotSounds();
 
     m_Canvas.Reset();
 
@@ -393,13 +393,13 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     GarbageCollector::Shutdown();
 
-    AVisibilitySystem::PrimitivePool.Free();
-    AVisibilitySystem::PrimitiveLinkPool.Free();
+    VisibilitySystem::PrimitivePool.Free();
+    VisibilitySystem::PrimitiveLinkPool.Free();
 }
 
-void AEngine::DrawCanvas()
+void Engine::DrawCanvas()
 {
-    SVideoMode const& videoMode = m_Window->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
 
     m_Canvas->NewFrame(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
 
@@ -411,8 +411,8 @@ void AEngine::DrawCanvas()
     }
 }
 
-SMemoryStat GMemoryStat[HEAP_MAX];
-SMemoryStat GMemoryStatGlobal;
+MemoryStat GMemoryStat[HEAP_MAX];
+MemoryStat GMemoryStatGlobal;
 
 const char* HeapName[HEAP_MAX] =
 {
@@ -432,7 +432,7 @@ const char* HeapName[HEAP_MAX] =
         "HEAP_WORLD_OBJECTS",
 };
 
-void AEngine::SaveMemoryStats()
+void Engine::SaveMemoryStats()
 {
 #define SHOW_HEAP_STAT(heap)                                              \
     {                                                                     \
@@ -467,21 +467,21 @@ void AEngine::SaveMemoryStats()
 }
 #include <SDL.h>
 
-void AEngine::ShowStats()
+void Engine::ShowStats()
 {
-    static TStaticResourceFinder<AFont> font("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf"s);
+    static TStaticResourceFinder<Font> font("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf"s);
 
-    AFormatter fmt;
+    Formatter fmt;
 
     m_Canvas->ResetScissor();
 
     if (com_ShowStat)
     {
-        SRenderFrame* frameData = m_Renderer->GetFrameData();
+        RenderFrameData* frameData = m_Renderer->GetFrameData();
 
-        SRenderFrontendStat const& stat = m_Renderer->GetStat();
+        RenderFrontendStat const& stat = m_Renderer->GetStat();
 
-        AStreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
+        StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
         const float y_step = 40;
         const int   numLines = 13;
@@ -496,7 +496,7 @@ void AEngine::ShowStats()
         pos.Y = 100;
         for (int n = 0; n < HEAP_MAX; n++)
         {
-            SMemoryStat& memstat = GMemoryStat[n];
+            MemoryStat& memstat = GMemoryStat[n];
 
             m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
@@ -555,11 +555,11 @@ void AEngine::ShowStats()
     }
 }
 
-void AEngine::DeveloperKeys(SKeyEvent const& event)
+void Engine::DeveloperKeys(KeyEvent const& event)
 {
 }
 
-void AEngine::OnKeyEvent(SKeyEvent const& event, double timeStamp)
+void Engine::OnKeyEvent(KeyEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -576,7 +576,7 @@ void AEngine::OnKeyEvent(SKeyEvent const& event, double timeStamp)
     {
         if (event.Action == IA_PRESS && event.Key == KEY_ENTER && (HAS_MODIFIER(event.ModMask, KEY_MOD_ALT)))
         {
-            SVideoMode videoMode  = m_Window->GetVideoMode();
+            DisplayVideoMode videoMode  = m_Window->GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
             PostChangeVideoMode(videoMode);
         }
@@ -587,7 +587,7 @@ void AEngine::OnKeyEvent(SKeyEvent const& event, double timeStamp)
     m_UIManager->GenerateKeyEvents(event, timeStamp, m_GameModule->CommandContext, m_CommandProcessor);
 }
 
-void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
+void Engine::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -597,7 +597,7 @@ void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStam
     m_UIManager->GenerateMouseButtonEvents(event, timeStamp);
 }
 
-void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
+void Engine::OnMouseWheelEvent(MouseWheelEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -607,7 +607,7 @@ void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
     m_UIManager->GenerateMouseWheelEvents(event, timeStamp);
 }
 
-void AEngine::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
+void Engine::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -617,7 +617,7 @@ void AEngine::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
     m_UIManager->GenerateMouseMoveEvents(event, timeStamp);
 }
 
-void AEngine::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
+void Engine::OnJoystickButtonEvent(JoystickButtonEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -627,7 +627,7 @@ void AEngine::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double ti
     m_UIManager->GenerateJoystickButtonEvents(event, timeStamp);
 }
 
-void AEngine::OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp)
+void Engine::OnJoystickAxisEvent(JoystickAxisEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -637,7 +637,7 @@ void AEngine::OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeSt
     m_UIManager->GenerateJoystickAxisEvents(event, timeStamp);
 }
 
-void AEngine::OnCharEvent(SCharEvent const& event, double timeStamp)
+void Engine::OnCharEvent(CharEvent const& event, double timeStamp)
 {
     if (!m_bAllowInputEvents)
     {
@@ -647,67 +647,67 @@ void AEngine::OnCharEvent(SCharEvent const& event, double timeStamp)
     m_UIManager->GenerateCharEvents(event, timeStamp);
 }
 
-void AEngine::OnWindowVisible(bool bVisible)
+void Engine::OnWindowVisible(bool bVisible)
 {
     m_bIsWindowVisible = bVisible;
 }
 
-void AEngine::OnCloseEvent()
+void Engine::OnCloseEvent()
 {
     m_GameModule->OnGameClose();
 }
 
-void AEngine::OnResize()
+void Engine::OnResize()
 {
-    SVideoMode const& videoMode = m_Window->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
 
     m_RetinaScale = Float2((float)videoMode.FramebufferWidth / videoMode.Width,
                            (float)videoMode.FramebufferHeight / videoMode.Height);
 }
 
-void AEngine::UpdateInput()
+void Engine::UpdateInput()
 {
-    for (AInputComponent* component = AInputComponent::GetInputComponents(); component; component = component->GetNext())
+    for (InputComponent* component = InputComponent::GetInputComponents(); component; component = component->GetNext())
     {
         component->UpdateAxes(m_FrameDurationInSeconds);
     }
 }
 
-void AEngine::MapWindowCoordinate(float& InOutX, float& InOutY) const
+void Engine::MapWindowCoordinate(float& InOutX, float& InOutY) const
 {
-    SVideoMode const& videoMode = m_Window->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
     InOutX += videoMode.X;
     InOutY += videoMode.Y;
 }
 
-void AEngine::UnmapWindowCoordinate(float& InOutX, float& InOutY) const
+void Engine::UnmapWindowCoordinate(float& InOutX, float& InOutY) const
 {
-    SVideoMode const& videoMode = m_Window->GetVideoMode();
+    DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
     InOutX -= videoMode.X;
     InOutY -= videoMode.Y;
 }
 
-void AEngine::PostChangeVideoMode(SVideoMode const& _DesiredMode)
+void Engine::PostChangeVideoMode(DisplayVideoMode const& _DesiredMode)
 {
     m_DesiredMode          = _DesiredMode;
     m_bPostChangeVideoMode = true;
 }
 
-void AEngine::PostTerminateEvent()
+void Engine::PostTerminateEvent()
 {
     m_bPostTerminateEvent = true;
 }
 
-bool AEngine::IsPendingTerminate()
+bool Engine::IsPendingTerminate()
 {
     return m_bPostTerminateEvent;
 }
 
-void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem)
+void Engine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem)
 {
     RenderCore::ITexture* pBackBuffer = m_pSwapChain->GetBackBuffer();
 
-    RenderCore::STextureRect rect;
+    RenderCore::TextureRect rect;
     rect.Offset.X    = _X;
     rect.Offset.Y    = _Y;
     rect.Dimension.X = _Width;
@@ -717,23 +717,23 @@ void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16
     pBackBuffer->ReadRect(rect, _SizeInBytes, 4, _SysMem);
 }
 
-AString const& AEngine::GetWorkingDir()
+String const& Engine::GetWorkingDir()
 {
     return m_WorkingDir;
 }
 
-AString const& AEngine::GetRootPath()
+String const& Engine::GetRootPath()
 {
     return m_RootPath;
 }
 
-const char* AEngine::GetExecutableName()
+const char* Engine::GetExecutableName()
 {
-    SProcessInfo const& processInfo = Platform::GetProcessInfo();
+    ProcessInfo const& processInfo = Platform::GetProcessInfo();
     return processInfo.Executable ? processInfo.Executable : "";
 }
 
-RenderCore::IDevice* AEngine::GetRenderDevice()
+RenderCore::IDevice* Engine::GetRenderDevice()
 {
     return m_RenderDevice;
 }
@@ -742,15 +742,15 @@ RenderCore::IDevice* AEngine::GetRenderDevice()
 extern "C" const size_t   EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
 
-static AArchive EmbeddedResourcesArch;
+static Archive EmbeddedResourcesArch;
 
 namespace Runtime
 {
-AArchive const& GetEmbeddedResources()
+Archive const& GetEmbeddedResources()
 {
     if (!EmbeddedResourcesArch)
     {
-        EmbeddedResourcesArch = AArchive::OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
+        EmbeddedResourcesArch = Archive::OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
         if (!EmbeddedResourcesArch)
         {
             LOG("Failed to open embedded resources\n");
@@ -761,9 +761,9 @@ AArchive const& GetEmbeddedResources()
 } // namespace Runtime
 
 #ifdef HK_OS_WIN32
-void RunEngine(SEntryDecl const& EntryDecl)
+void RunEngine(EntryDecl const& EntryDecl)
 #else
-void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
+void RunEngine(int _Argc, char** _Argv, EntryDecl const& EntryDecl)
 #endif
 {
     static bool bApplicationRun = false;
@@ -776,7 +776,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 
     bApplicationRun = true;
 
-    SPlatformInitialize init;
+    PlatformInitialize init;
 #ifdef HK_OS_WIN32
     init.pCommandLine = ::GetCommandLineA();
 #else
@@ -785,13 +785,13 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 #endif
     Platform::Initialize(init);
 
-    AConsoleVar::AllocateVariables();
+    ConsoleVar::AllocateVariables();
 
-    MakeUnique<AEngine>()->Run(EntryDecl);
+    MakeUnique<Engine>()->Run(EntryDecl);
 
     EmbeddedResourcesArch.Close();
 
-    AConsoleVar::FreeVariables();
+    ConsoleVar::FreeVariables();
 
     Platform::Deinitialize();
 }
