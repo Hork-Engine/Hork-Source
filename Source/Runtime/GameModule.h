@@ -37,9 +37,6 @@ class GameModule : public BaseObject
     HK_CLASS(GameModule, BaseObject)
 
 public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
-
     /** Toggle fullscreen on ALT+ENTER */
     bool bToggleFullscreenAltEnter = true;
 

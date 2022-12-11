@@ -566,11 +566,6 @@ void Engine::OnKeyEvent(KeyEvent const& event, double timeStamp)
         return;
     }
 
-    if (m_GameModule->bQuitOnEscape && event.Action == IA_PRESS && event.Key == KEY_ESCAPE)
-    {
-        m_GameModule->OnGameClose();
-    }
-
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if (m_GameModule->bToggleFullscreenAltEnter)
     {
