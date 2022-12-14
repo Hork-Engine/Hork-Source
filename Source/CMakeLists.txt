@@ -182,6 +182,11 @@ add_subdirectory(ThirdParty/angelscript_addon angelscript_addon)
 set_target_properties(angelscript PROPERTIES FOLDER ThirdParty/angelscript)
 set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript)
 
+message(STATUS "======================================================================")
+message(STATUS "USING OPTICK")
+include_directories(ThirdParty/optick/src)
+add_subdirectory_with_folder( "ThirdParty/optick" ThirdParty/optick )
+
 
 
 #---------------------------------------------------------------------
@@ -346,6 +351,7 @@ lunasvg
 webp
 ${ANGELSCRIPT_LIBRARY_NAME}
 angelscript_addon
+OptickCore
 )
 
 if(UNIX)

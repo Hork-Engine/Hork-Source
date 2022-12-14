@@ -171,6 +171,7 @@ PBR (physically based).
 * Miniz
 * muFFT
 * nanovg
+* Optick
 * Recast & Detour
 * SDL2
 * stb

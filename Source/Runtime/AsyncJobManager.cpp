@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "AsyncJobManager.h"
 #include <Platform/Logger.h>
+#include <Platform/Profiler.h>
 
 constexpr int AsyncJobManager::MAX_WORKER_THREADS;
 constexpr int AsyncJobManager::MAX_JOB_LISTS;
@@ -66,6 +67,7 @@ AsyncJobManager::AsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
         WorkerThread[i] = Thread(
             [this](int ThreadId)
             {
+                _HK_PROFILER_THREAD("Worker");
                 WorkerThreadRoutine(ThreadId);
             },
             i);
@@ -112,6 +114,8 @@ void AsyncJobManager::WorkerThreadRoutine(int _ThreadId)
 
     while (!bTerminated)
     {
+        HK_PROFILER_EVENT("Worker loop");
+
 #ifdef HK_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Decrement();
 #endif

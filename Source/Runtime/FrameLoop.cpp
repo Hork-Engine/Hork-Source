@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <Platform/Platform.h>
 #include <Platform/ConsoleBuffer.h>
+#include <Platform/Profiler.h>
 #include <RenderCore/GPUSync.h>
 #include <Core/ConsoleVar.h>
 
@@ -106,6 +107,8 @@ int FrameLoop::SysFrameNumber() const
 
 void FrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
 {
+    HK_PROFILER_EVENT("Setup new frame");
+
     MemoryHeap::MemoryNewFrame();
 
     m_GPUSync->SetEvent();
@@ -434,6 +437,8 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 {
     // NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
     static bool bIgnoreFalseMouseMotionHack = false;
+
+    HK_PROFILER_EVENT("Frame Poll Events");
 
     // Sync with GPU to prevent "input lag"
     if (rt_SyncGPU)

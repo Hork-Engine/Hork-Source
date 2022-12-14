@@ -42,7 +42,7 @@ SOFTWARE.
 #include "EnvironmentMap.h"
 
 #include <Core/IntrusiveLinkedListMacro.h>
-#include <Core/ScopedTimer.h>
+#include <Platform/Profiler.h>
 
 ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
@@ -97,6 +97,8 @@ struct ShadowInstanceSortFunction
 
 void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
 {
+    HK_PROFILER_EVENT("Render frontend");
+
     m_FrameLoop = InFrameLoop;
 
     m_FrameData.FrameNumber = FrameNumber = m_FrameLoop->SysFrameNumber();
@@ -510,7 +512,7 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
 
 void RenderFrontend::AddRenderInstances(World* InWorld)
 {
-    ScopedTimer TimeCheck("AddRenderInstances");
+    HK_PROFILER_EVENT("Add Render Instances");
 
     RenderViewData* view = RenderDef.View;
     Drawable*               drawable;

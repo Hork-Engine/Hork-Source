@@ -43,6 +43,7 @@ SOFTWARE.
 
 #include <Platform/WindowsDefs.h>
 #include <Platform/Logger.h>
+#include <Platform/Profiler.h>
 
 #include <Assets/Asset.h>
 #include <Image/ImageEncoders.h>
@@ -388,6 +389,8 @@ int RenderBackend::MaxOmnidirectionalShadowMapsPerView() const
 
 void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, RenderFrameData* pFrameData)
 {
+    HK_PROFILER_EVENT("Render Backend");
+
     static int timeQueryFrame = 0;
 
     GStreamedMemory = StreamedMemory;

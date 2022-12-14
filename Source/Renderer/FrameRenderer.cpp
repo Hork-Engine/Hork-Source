@@ -32,7 +32,7 @@ SOFTWARE.
 #include "FrameRenderer.h"
 #include "VT/VirtualTextureFeedback.h"
 
-#include <Core/ScopedTimer.h>
+#include <Platform/Profiler.h>
 
 ConsoleVar r_ShowNormals("r_ShowNormals"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"s, "0"s);
@@ -378,7 +378,7 @@ void FrameRenderer::AddCopyPass(FrameGraph& FrameGraph, FGTextureProxy* Source, 
 
 void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, VirtualTextureCache* PhysCacheVT)
 {
-    ScopedTimer TimeCheck("Framegraph build&fill");
+    HK_PROFILER_EVENT("Framegraph build&fill");
 
     if (bVirtualTexturing)
     {

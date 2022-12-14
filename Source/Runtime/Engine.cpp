@@ -42,6 +42,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>
+#include <Platform/Profiler.h>
 
 #include <Audio/AudioMixer.h>
 
@@ -209,6 +210,8 @@ void Engine::Run(EntryDecl const& entryDecl)
 
     InitializeDirectories();
 
+    Platform::InitializeProfiler();
+
     if (Thread::NumHardwareThreads)
     {
         LOG("Num hardware threads: {}\n", Thread::NumHardwareThreads);
@@ -314,6 +317,8 @@ void Engine::Run(EntryDecl const& entryDecl)
 
     do
     {
+        _HK_PROFILER_FRAME("EngineFrame");
+
         // Garbage collect from previuous frames
         GarbageCollector::DeallocateObjects();
 
@@ -395,10 +400,14 @@ void Engine::Run(EntryDecl const& entryDecl)
 
     VisibilitySystem::PrimitivePool.Free();
     VisibilitySystem::PrimitiveLinkPool.Free();
+
+    Platform::ShutdownProfiler();
 }
 
 void Engine::DrawCanvas()
 {
+    HK_PROFILER_EVENT("Draw Canvas");
+
     DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
 
     m_Canvas->NewFrame(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
@@ -662,6 +671,8 @@ void Engine::OnResize()
 
 void Engine::UpdateInput()
 {
+    HK_PROFILER_EVENT("Update Input");
+
     for (InputComponent* component = InputComponent::GetInputComponents(); component; component = component->GetNext())
     {
         component->UpdateAxes(m_FrameDurationInSeconds);

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "UIManager.h"
 #include <Runtime/FrameLoop.h>
+#include <Platform/Profiler.h>
 
 static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"s, "1"s);
 
@@ -109,6 +110,8 @@ bool UIManager::IsInsertMode() const
 
 void UIManager::Update(float timeStep)
 {
+    HK_PROFILER_EVENT("Update UI");
+
     DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
 
     m_Console.SetFullscreen(m_ActiveDesktop ? false : true);

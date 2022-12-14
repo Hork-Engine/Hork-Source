@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "GarbageCollector.h"
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Platform/Profiler.h>
 
 GCObject*          GarbageCollector::m_GarbageObjects     = nullptr;
 GCObject*          GarbageCollector::m_GarbageObjectsTail = nullptr;
@@ -88,6 +89,8 @@ void GarbageCollector::Shutdown()
 
 void GarbageCollector::DeallocateObjects()
 {
+    HK_PROFILER_EVENT("Garbage collector");
+
     while (m_GarbageObjects)
     {
         GCObject* object = m_GarbageObjects;

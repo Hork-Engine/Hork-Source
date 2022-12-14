@@ -36,6 +36,7 @@ SOFTWARE.
 #include "EnvironmentMap.h"
 
 #include <Platform/Logger.h>
+#include <Platform/Profiler.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
 #include <angelscript.h>
@@ -1201,6 +1202,8 @@ void World::KillWorlds()
 
 void World::UpdateWorlds(float TimeStep)
 {
+    HK_PROFILER_EVENT("Update worlds");
+
     for (World* world : m_Worlds)
     {
         if (!world->m_bTicking)
