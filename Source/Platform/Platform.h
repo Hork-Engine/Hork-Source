@@ -41,10 +41,10 @@ struct CommandLine
     ~CommandLine();
 
     /** Application command line args count */
-    int GetArgc() const { return NumArguments; }
+    int GetArgc() const { return m_NumArguments; }
 
     /** Application command line args */
-    const char* const* GetArgv() const { return Arguments; }
+    const char* const* GetArgv() const { return m_Arguments; }
 
     /** Check is argument exists in application command line. Return argument index or -1 if argument was not found. */
     int CheckArg(const char* _Arg) const;
@@ -55,10 +55,10 @@ struct CommandLine
 private:
     void Validate();
 
-    int    NumArguments = 0;
-    char** Arguments    = nullptr;
+    int m_NumArguments = 0;
+    char** m_Arguments = nullptr;
 
-    bool bNeedFree = false;
+    bool m_bNeedFree = false;
 };
 
 /** CPU features */

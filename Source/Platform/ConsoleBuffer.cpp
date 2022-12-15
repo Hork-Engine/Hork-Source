@@ -33,49 +33,49 @@ SOFTWARE.
 
 void ConsoleBuffer::Resize(int _VidWidth)
 {
-    MutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(m_Mutex);
 
     _Resize(_VidWidth);
 }
 
 void ConsoleBuffer::_Resize(int _VidWidth)
 {
-    int prevMaxLines     = MaxLines;
-    int prevMaxLineChars = MaxLineChars;
+    int prevMaxLines = m_MaxLines;
+    int prevMaxLineChars = m_MaxLineChars;
 
-    MaxLineChars = (_VidWidth - Padding * 2) / CharacterWidth;
+    m_MaxLineChars = (_VidWidth - Padding * 2) / CharacterWidth;
 
-    if (MaxLineChars == prevMaxLineChars)
+    if (m_MaxLineChars == prevMaxLineChars)
     {
         return;
     }
 
-    MaxLines = CON_IMAGE_SIZE / MaxLineChars;
+    m_MaxLines = CON_IMAGE_SIZE / m_MaxLineChars;
 
-    if (NumLines > MaxLines)
+    if (m_NumLines > m_MaxLines)
     {
-        NumLines = MaxLines;
+        m_NumLines = m_MaxLines;
     }
 
-    WideChar* pNewImage = (pImage == ImageData[0]) ? ImageData[1] : ImageData[0];
+    WideChar* pNewImage = (m_pImage == m_ImageData[0]) ? m_ImageData[1] : m_ImageData[0];
 
     Platform::ZeroMem(pNewImage, sizeof(*pNewImage) * CON_IMAGE_SIZE);
 
-    const int width  = std::min(prevMaxLineChars, MaxLineChars);
-    const int height = std::min(prevMaxLines, MaxLines);
+    const int width = std::min(prevMaxLineChars, m_MaxLineChars);
+    const int height = std::min(prevMaxLines, m_MaxLines);
 
     for (int i = 0; i < height; i++)
     {
-        const int newOffset = (MaxLines - i - 1) * MaxLineChars;
-        const int oldOffset = ((prevMaxLines + PrintLine - i) % prevMaxLines) * prevMaxLineChars;
+        const int newOffset = (m_MaxLines - i - 1) * m_MaxLineChars;
+        const int oldOffset = ((prevMaxLines + m_PrintLine - i) % prevMaxLines) * prevMaxLineChars;
 
-        Platform::Memcpy(&pNewImage[newOffset], &pImage[oldOffset], width * sizeof(*pNewImage));
+        Platform::Memcpy(&pNewImage[newOffset], &m_pImage[oldOffset], width * sizeof(*pNewImage));
     }
 
-    pImage = pNewImage;
+    m_pImage = pNewImage;
 
-    PrintLine = MaxLines - 1;
-    Scroll    = 0;
+    m_PrintLine = m_MaxLines - 1;
+    m_Scroll = 0;
 }
 
 void ConsoleBuffer::Print(const char* _Text)
@@ -85,12 +85,12 @@ void ConsoleBuffer::Print(const char* _Text)
     WideChar   ch;
     int         byteLen;
 
-    MutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(m_Mutex);
 
-    if (!bInitialized)
+    if (!m_bInitialized)
     {
         _Resize(1024);
-        bInitialized = true;
+        m_bInitialized = true;
     }
 
     const char* s = _Text;
@@ -106,37 +106,37 @@ void ConsoleBuffer::Print(const char* _Text)
         switch (ch)
         {
             case ' ':
-                pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                if (CurWidth == MaxLineChars)
+                m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                if (m_CurWidth == m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
                 s += byteLen;
                 break;
             case '\t':
-                if (CurWidth + 4 >= MaxLineChars)
+                if (m_CurWidth + 4 >= m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
                 else
                 {
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
                 }
                 s += byteLen;
                 break;
             case '\n':
             case '\r':
-                pImage[PrintLine * MaxLineChars + CurWidth++] = '\0';
-                CurWidth                                      = 0;
-                PrintLine                                     = (PrintLine + 1) % MaxLines;
-                NumLines++;
+                m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = '\0';
+                m_CurWidth = 0;
+                m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                m_NumLines++;
                 s += byteLen;
                 break;
             default:
@@ -156,11 +156,11 @@ void ConsoleBuffer::Print(const char* _Text)
                     s += byteLen;
                 }
 
-                if (CurWidth + wordLength > MaxLineChars)
+                if (m_CurWidth + wordLength > m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
 
                 while (wordLength-- > 0)
@@ -168,21 +168,21 @@ void ConsoleBuffer::Print(const char* _Text)
                     byteLen = Core::WideCharDecodeUTF8(wordStr, ch);
                     wordStr += byteLen;
 
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ch;
-                    if (CurWidth == MaxLineChars)
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ch;
+                    if (m_CurWidth == m_MaxLineChars)
                     {
-                        CurWidth  = 0;
-                        PrintLine = (PrintLine + 1) % MaxLines;
-                        NumLines++;
+                        m_CurWidth = 0;
+                        m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                        m_NumLines++;
                     }
                 }
                 break;
         }
     }
 
-    if (NumLines > MaxLines)
+    if (m_NumLines > m_MaxLines)
     {
-        NumLines = MaxLines;
+        m_NumLines = m_MaxLines;
     }
 }
 
@@ -191,12 +191,12 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
     WideChar const* wordStr;
     int             wordLength;
 
-    MutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(m_Mutex);
 
-    if (!bInitialized)
+    if (!m_bInitialized)
     {
-        _Resize(640);
-        bInitialized = true;
+        _Resize(1024);
+        m_bInitialized = true;
     }
 
     while (*_Text)
@@ -204,37 +204,37 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
         switch (*_Text)
         {
             case ' ':
-                pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                if (CurWidth == MaxLineChars)
+                m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                if (m_CurWidth == m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
                 _Text++;
                 break;
             case '\t':
-                if (CurWidth + 4 >= MaxLineChars)
+                if (m_CurWidth + 4 >= m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
                 else
                 {
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
                 }
                 _Text++;
                 break;
             case '\n':
             case '\r':
-                pImage[PrintLine * MaxLineChars + CurWidth++] = '\0';
-                CurWidth                                      = 0;
-                PrintLine                                     = (PrintLine + 1) % MaxLines;
-                NumLines++;
+                m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = '\0';
+                m_CurWidth = 0;
+                m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                m_NumLines++;
                 _Text++;
                 break;
             default:
@@ -253,79 +253,79 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
                     _Text++;
                 }
 
-                if (CurWidth + wordLength > MaxLineChars)
+                if (m_CurWidth + wordLength > m_MaxLineChars)
                 {
-                    CurWidth  = 0;
-                    PrintLine = (PrintLine + 1) % MaxLines;
-                    NumLines++;
+                    m_CurWidth = 0;
+                    m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                    m_NumLines++;
                 }
 
                 while (wordLength-- > 0)
                 {
-                    pImage[PrintLine * MaxLineChars + CurWidth++] = *wordStr++;
-                    if (CurWidth == MaxLineChars)
+                    m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = *wordStr++;
+                    if (m_CurWidth == m_MaxLineChars)
                     {
-                        CurWidth  = 0;
-                        PrintLine = (PrintLine + 1) % MaxLines;
-                        NumLines++;
+                        m_CurWidth = 0;
+                        m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
+                        m_NumLines++;
                     }
                 }
                 break;
         }
     }
 
-    if (NumLines > MaxLines)
+    if (m_NumLines > m_MaxLines)
     {
-        NumLines = MaxLines;
+        m_NumLines = m_MaxLines;
     }
 }
 
 void ConsoleBuffer::Clear()
 {
-    MutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(m_Mutex);
 
-    Platform::ZeroMem(pImage, sizeof(*pImage) * CON_IMAGE_SIZE);
-    Scroll = 0;
+    Platform::ZeroMem(m_pImage, sizeof(*m_pImage) * CON_IMAGE_SIZE);
+    m_Scroll = 0;
 }
 
 void ConsoleBuffer::ScrollStart()
 {
-    MutexGurad syncGuard(Mutex);
-    Scroll = NumLines - 1;
+    MutexGurad syncGuard(m_Mutex);
+    m_Scroll = m_NumLines - 1;
 }
 
 void ConsoleBuffer::ScrollEnd()
 {
-    MutexGurad syncGuard(Mutex);
-    Scroll = 0;
+    MutexGurad syncGuard(m_Mutex);
+    m_Scroll = 0;
 }
 
 void ConsoleBuffer::ScrollDelta(int Delta)
 {
-    MutexGurad syncGuard(Mutex);
+    MutexGurad syncGuard(m_Mutex);
 
-    Scroll += Delta;
-    if (Scroll < 0)
+    m_Scroll += Delta;
+    if (m_Scroll < 0)
     {
-        Scroll = 0;
+        m_Scroll = 0;
     }
 }
 
 ConsoleBuffer::LockedData ConsoleBuffer::Lock()
 {
-    Mutex.Lock();
+    m_Mutex.Lock();
 
     LockedData lock;
-    lock.pImage       = pImage;
-    lock.Scroll       = Scroll;
-    lock.MaxLines     = MaxLines;
-    lock.PrintLine    = PrintLine;
-    lock.MaxLineChars = MaxLineChars;
+    lock.pImage       = m_pImage;
+    lock.Scroll       = m_Scroll;
+    lock.MaxLines     = m_MaxLines;
+    lock.PrintLine    = m_PrintLine;
+    lock.MaxLineChars = m_MaxLineChars;
 
     return lock;
 }
 
 void ConsoleBuffer::Unlock()
 {
-    Mutex.Unlock();
+    m_Mutex.Unlock();
 }

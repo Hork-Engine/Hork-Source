@@ -36,8 +36,8 @@ void MersenneTwisterRand::Initialize(uint32_t InSeed)
     // See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
     // In previous versions, most significant bits (MSBs) of the seed affect
     // only MSBs of the state array.  Modified 9 Jan 2002 by Makoto Matsumoto.
-    uint32_t* s = State;
-    uint32_t* r = State;
+    uint32_t* s = m_State;
+    uint32_t* r = m_State;
     int       i = 1;
     *s++        = InSeed & 0xffffffffUL;
     for (; i < N; ++i)
@@ -51,13 +51,13 @@ void MersenneTwisterRand::Reload()
 {
     // Generate N new values in state
     // Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
-    uint32_t* p = State;
+    uint32_t* p = m_State;
     int       i;
     for (i = N - M; i--; ++p)
         *p = twist(p[M], p[0], p[1]);
     for (i = M; --i; ++p)
         *p = twist(p[M - N], p[0], p[1]);
-    *p = twist(p[M - N], p[0], State[0]);
+    *p = twist(p[M - N], p[0], m_State[0]);
 
-    Left = N, Next = State;
+    m_Left = N, m_Next = m_State;
 }

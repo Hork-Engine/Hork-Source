@@ -37,9 +37,9 @@ SOFTWARE.
 
 #include <SDL.h>
 
-AudioDevice::AudioDevice(int InSampleRate)
+AudioDevice::AudioDevice(int sampleRate)
 {
-    pTransferBuffer = nullptr;
+    m_pTransferBuffer = nullptr;
 
     const char* driver = NULL;
 
@@ -78,7 +78,7 @@ AudioDevice::AudioDevice(int InSampleRate)
     SDL_AudioSpec desired = {};
     SDL_AudioSpec obtained = {};
 
-    desired.freq = InSampleRate;
+    desired.freq = sampleRate;
     desired.channels = 2;
 
     // Choose audio buffer size in sample FRAMES (total samples divided by channel count)
@@ -114,8 +114,8 @@ AudioDevice::AudioDevice(int InSampleRate)
     {
         desired.format = formats[i];
 
-        AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
-        if (AudioDeviceId == 0)
+        m_AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
+        if (m_AudioDeviceId == 0)
         {
             if (!driver)
             {
@@ -140,154 +140,154 @@ AudioDevice::AudioDevice(int InSampleRate)
         }
 
         // Try another format
-        SDL_CloseAudioDevice(AudioDeviceId);
-        AudioDeviceId = 0;
+        SDL_CloseAudioDevice(m_AudioDeviceId);
+        m_AudioDeviceId = 0;
         i++;
     }
 
     // If appropriate format was not found force default AUDIO_S16SYS
-    if (!AudioDeviceId)
+    if (!m_AudioDeviceId)
     {
         allowedChanges &= ~SDL_AUDIO_ALLOW_FORMAT_CHANGE;
         desired.format = AUDIO_S16SYS;
-        AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
-        if (AudioDeviceId == 0)
+        m_AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
+        if (m_AudioDeviceId == 0)
         {
             // Should not happen
             CriticalError("Failed to open audio device: {}\n", SDL_GetError());
         }
     }
 
-    SampleBits = obtained.format & 0xFF; // extract first byte which is sample bits
-    bSigned8 = (obtained.format == AUDIO_S8);
-    SampleRate = obtained.freq;
-    Channels = obtained.channels;
-    Samples = Math::ToGreaterPowerOfTwo(obtained.samples * obtained.channels * 10);
-    NumFrames = Samples >> (Channels - 1);
-    TransferBufferSizeInBytes = Samples * (SampleBits / 8);
-    pTransferBuffer = (uint8_t*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(TransferBufferSizeInBytes);
-    Platform::Memset(pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes);
-    TransferOffset = 0;
-    PrevTransferOffset = 0;
-    BufferWraps = 0;
+    m_SampleBits = obtained.format & 0xFF; // extract first byte which is sample bits
+    m_bSigned8 = (obtained.format == AUDIO_S8);
+    m_SampleRate = obtained.freq;
+    m_Channels = obtained.channels;
+    m_Samples = Math::ToGreaterPowerOfTwo(obtained.samples * obtained.channels * 10);
+    m_NumFrames = m_Samples >> (m_Channels - 1);
+    m_TransferBufferSizeInBytes = m_Samples * (m_SampleBits / 8);
+    m_pTransferBuffer = (uint8_t*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(m_TransferBufferSizeInBytes);
+    Platform::Memset(m_pTransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
+    m_TransferOffset = 0;
+    m_PrevTransferOffset = 0;
+    m_BufferWraps = 0;
 
-    SDL_PauseAudioDevice(AudioDeviceId, 0);
+    SDL_PauseAudioDevice(m_AudioDeviceId, 0);
 
-    LOG("Initialized audio : {} Hz, {} samples, {} channels\n", SampleRate, obtained.samples, Channels);
+    LOG("Initialized audio : {} Hz, {} samples, {} channels\n", m_SampleRate, obtained.samples, m_Channels);
 
     const char* audioDriver = SDL_GetCurrentAudioDriver();
     const char* audioDevice = SDL_GetAudioDeviceName(0, SDL_FALSE);
 
     LOG("Using audio driver: {}\n", audioDriver ? audioDriver : "Unknown");
     LOG("Using playback device: {}\n", audioDevice ? audioDevice : "Unknown");
-    LOG("Audio buffer size: {} bytes\n", TransferBufferSizeInBytes);
+    LOG("Audio buffer size: {} bytes\n", m_TransferBufferSizeInBytes);
 }
 
 AudioDevice::~AudioDevice()
 {
-    SDL_CloseAudioDevice(AudioDeviceId);
+    SDL_CloseAudioDevice(m_AudioDeviceId);
 
-    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pTransferBuffer);
+    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(m_pTransferBuffer);
 }
 
-void AudioDevice::SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> _MixerCallback)
+void AudioDevice::SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback)
 {
-    SDL_LockAudioDevice(AudioDeviceId);
+    SDL_LockAudioDevice(m_AudioDeviceId);
 
-    MixerCallback = _MixerCallback;
+    m_MixerCallback = MixerCallback;
 
-    SDL_UnlockAudioDevice(AudioDeviceId);
+    SDL_UnlockAudioDevice(m_AudioDeviceId);
 }
 
 void AudioDevice::RenderAudio(uint8_t* pStream, int StreamLength)
 {
-    int sampleWidth = SampleBits / 8;
+    int sampleWidth = m_SampleBits / 8;
 
-    if (!pTransferBuffer)
+    if (!m_pTransferBuffer)
     {
         // Should never happen
         Platform::ZeroMem(pStream, StreamLength);
         return;
     }
 
-    if (MixerCallback)
+    if (m_MixerCallback)
     {
-        if (TransferOffset < PrevTransferOffset)
+        if (m_TransferOffset < m_PrevTransferOffset)
         {
-            BufferWraps++;
+            m_BufferWraps++;
         }
-        PrevTransferOffset = TransferOffset;
+        m_PrevTransferOffset = m_TransferOffset;
 
-        int frameNum = BufferWraps * NumFrames + (TransferOffset >> (Channels - 1));
+        int frameNum = m_BufferWraps * m_NumFrames + (m_TransferOffset >> (m_Channels - 1));
 
-        MixerCallback(pTransferBuffer, NumFrames, frameNum, StreamLength / sampleWidth);
+        m_MixerCallback(m_pTransferBuffer, m_NumFrames, frameNum, StreamLength / sampleWidth);
     }
 
-    int offset = TransferOffset * sampleWidth;
-    if (offset >= TransferBufferSizeInBytes)
+    int offset = m_TransferOffset * sampleWidth;
+    if (offset >= m_TransferBufferSizeInBytes)
     {
-        TransferOffset = offset = 0;
+        m_TransferOffset = offset = 0;
     }
 
     int len1 = StreamLength;
     int len2 = 0;
 
-    if (offset + len1 > TransferBufferSizeInBytes)
+    if (offset + len1 > m_TransferBufferSizeInBytes)
     {
-        len1 = TransferBufferSizeInBytes - offset;
+        len1 = m_TransferBufferSizeInBytes - offset;
         len2 = StreamLength - len1;
     }
 
-    Platform::Memcpy(pStream, pTransferBuffer + offset, len1);
+    Platform::Memcpy(pStream, m_pTransferBuffer + offset, len1);
     //Platform::ZeroMem( pTransferBuffer + offset, len1 );
 
     if (len2 > 0)
     {
-        Platform::Memcpy(pStream + len1, pTransferBuffer, len2);
-        TransferOffset = len2 / sampleWidth;
+        Platform::Memcpy(pStream + len1, m_pTransferBuffer, len2);
+        m_TransferOffset = len2 / sampleWidth;
     }
     else
     {
-        TransferOffset += len1 / sampleWidth;
+        m_TransferOffset += len1 / sampleWidth;
     }
 }
 
 uint8_t* AudioDevice::MapTransferBuffer(int64_t* pFrameNum)
 {
-    SDL_LockAudioDevice(AudioDeviceId);
+    SDL_LockAudioDevice(m_AudioDeviceId);
 
     if (pFrameNum)
     {
-        if (TransferOffset < PrevTransferOffset)
+        if (m_TransferOffset < m_PrevTransferOffset)
         {
-            BufferWraps++;
+            m_BufferWraps++;
         }
-        PrevTransferOffset = TransferOffset;
+        m_PrevTransferOffset = m_TransferOffset;
 
-        *pFrameNum = BufferWraps * NumFrames + (TransferOffset >> (Channels - 1));
+        *pFrameNum = m_BufferWraps * m_NumFrames + (m_TransferOffset >> (m_Channels - 1));
     }
 
-    return pTransferBuffer;
+    return m_pTransferBuffer;
 }
 
 void AudioDevice::UnmapTransferBuffer()
 {
-    SDL_UnlockAudioDevice(AudioDeviceId);
+    SDL_UnlockAudioDevice(m_AudioDeviceId);
 }
 
 void AudioDevice::BlockSound()
 {
-    SDL_PauseAudioDevice(AudioDeviceId, 1);
+    SDL_PauseAudioDevice(m_AudioDeviceId, 1);
 }
 
 void AudioDevice::UnblockSound()
 {
-    SDL_PauseAudioDevice(AudioDeviceId, 0);
+    SDL_PauseAudioDevice(m_AudioDeviceId, 0);
 }
 
 void AudioDevice::ClearBuffer()
 {
     MapTransferBuffer();
-    Platform::Memset(pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes);
+    Platform::Memset(m_pTransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
     UnmapTransferBuffer();
 }

@@ -72,7 +72,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
     }
 
     int sampleRateHRIR = (int)f.ReadUInt32();
-    FrameCount = (int)f.ReadUInt32();
+    m_FrameCount = (int)f.ReadUInt32();
 
     uint32_t vertexCount = f.ReadUInt32();
     uint32_t indexCount = f.ReadUInt32();
@@ -88,8 +88,8 @@ AudioHRTF::AudioHRTF(int SampleRate)
     | Indices | 4 * index_count | uint32_t |
     */
 
-    Indices.Resize(indexCount);
-    f.ReadWords<uint32_t>(Indices.ToPtr(), Indices.Size());
+    m_Indices.Resize(indexCount);
+    f.ReadWords<uint32_t>(m_Indices.ToPtr(), m_Indices.Size());
 
     /*
     Vertex format
@@ -103,35 +103,35 @@ AudioHRTF::AudioHRTF(int SampleRate)
     | Right HRIR | 4 * length | float |
     */
 
-    Vertices.Resize(vertexCount);
+    m_Vertices.Resize(vertexCount);
 
     if (sampleRateHRIR == SampleRate)
     {
         // There is no need for resampling, so we just read it as is
 
         TVector<float> framesIn;
-        framesIn.Resize(FrameCount);
+        framesIn.Resize(m_FrameCount);
 
-        FilterSize = FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
+        m_FilterSize = m_FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
 #ifdef FILTER_SIZE_POW2
-        FilterSize = Math::ToGreaterPowerOfTwo(FilterSize);
+        m_FilterSize = Math::ToGreaterPowerOfTwo(m_FilterSize);
 #endif
-        ForwardFFT = mufft_create_plan_1d_c2c(FilterSize, MUFFT_FORWARD, 0);
-        InverseFFT = mufft_create_plan_1d_c2c(FilterSize, MUFFT_INVERSE, 0);
+        m_ForwardFFT = mufft_create_plan_1d_c2c(m_FilterSize, MUFFT_FORWARD, 0);
+        m_InverseFFT = mufft_create_plan_1d_c2c(m_FilterSize, MUFFT_INVERSE, 0);
 
-        hrtfL.Resize(vertexCount * FilterSize);
-        hrtfR.Resize(vertexCount * FilterSize);
+        m_hrtfL.Resize(vertexCount * m_FilterSize);
+        m_hrtfR.Resize(vertexCount * m_FilterSize);
 
         for (auto i = 0; i < vertexCount; i++)
         {
-            f.ReadObject(Vertices[i]);
-            Vertices[i].X = -Vertices[i].X;
+            f.ReadObject(m_Vertices[i]);
+            m_Vertices[i].X = -m_Vertices[i].X;
 
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
-            GenerateHRTF(framesIn.ToPtr(), framesIn.Size(), hrtfL.ToPtr() + i * FilterSize);
+            GenerateHRTF(framesIn.ToPtr(), framesIn.Size(), m_hrtfL.ToPtr() + i * m_FilterSize);
 
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
-            GenerateHRTF(framesIn.ToPtr(), framesIn.Size(), hrtfR.ToPtr() + i * FilterSize);
+            GenerateHRTF(framesIn.ToPtr(), framesIn.Size(), m_hrtfR.ToPtr() + i * m_FilterSize);
         }
     }
     else
@@ -144,8 +144,8 @@ AudioHRTF::AudioHRTF(int SampleRate)
             CriticalError("Failed to resample HRTF data\n");
         }
 
-        ma_uint64 frameCountIn = FrameCount;
-        ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count(&resampler, FrameCount);
+        ma_uint64 frameCountIn = m_FrameCount;
+        ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count(&resampler, m_FrameCount);
 
         TVector<float> framesIn;
         framesIn.Resize(frameCountIn);
@@ -153,21 +153,21 @@ AudioHRTF::AudioHRTF(int SampleRate)
         TVector<float> framesOut;
         framesOut.Resize(frameCountOut);
 
-        FrameCount = frameCountOut;
-        FilterSize = FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
+        m_FrameCount = frameCountOut;
+        m_FilterSize = m_FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
 #ifdef FILTER_SIZE_POW2
-        FilterSize = Math::ToGreaterPowerOfTwo(FilterSize);
+        m_FilterSize = Math::ToGreaterPowerOfTwo(m_FilterSize);
 #endif
-        ForwardFFT = mufft_create_plan_1d_c2c(FilterSize, MUFFT_FORWARD, 0);
-        InverseFFT = mufft_create_plan_1d_c2c(FilterSize, MUFFT_INVERSE, 0);
+        m_ForwardFFT = mufft_create_plan_1d_c2c(m_FilterSize, MUFFT_FORWARD, 0);
+        m_InverseFFT = mufft_create_plan_1d_c2c(m_FilterSize, MUFFT_INVERSE, 0);
 
-        hrtfL.Resize(vertexCount * FilterSize);
-        hrtfR.Resize(vertexCount * FilterSize);
+        m_hrtfL.Resize(vertexCount * m_FilterSize);
+        m_hrtfR.Resize(vertexCount * m_FilterSize);
 
         for (auto i = 0; i < vertexCount; i++)
         {
-            f.ReadObject(Vertices[i]);
-            Vertices[i].X = -Vertices[i].X;
+            f.ReadObject(m_Vertices[i]);
+            m_Vertices[i].X = -m_Vertices[i].X;
 
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
 
@@ -181,7 +181,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 
-            GenerateHRTF(framesOut.ToPtr(), frameCountOut, hrtfL.ToPtr() + i * FilterSize);
+            GenerateHRTF(framesOut.ToPtr(), frameCountOut, m_hrtfL.ToPtr() + i * m_FilterSize);
 
             f.ReadFloats(framesIn.ToPtr(), framesIn.Size());
 
@@ -195,22 +195,22 @@ AudioHRTF::AudioHRTF(int SampleRate)
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 
-            GenerateHRTF(framesOut.ToPtr(), frameCountOut, hrtfR.ToPtr() + i * FilterSize);
+            GenerateHRTF(framesOut.ToPtr(), frameCountOut, m_hrtfR.ToPtr() + i * m_FilterSize);
         }
 
         ma_resampler_uninit(&resampler);
     }
 
-    pFramesSourceFFT = (Complex*)mufft_calloc(FilterSize * sizeof(Complex));
-    pFramesFreqFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
-    pFramesFreqLeftFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
-    pFramesFreqRightFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
-    pFramesTimeLeftFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
-    pFramesTimeRightFFT = (Complex*)mufft_alloc(FilterSize * sizeof(Complex));
+    m_pFramesSourceFFT = (Complex*)mufft_calloc(m_FilterSize * sizeof(Complex));
+    m_pFramesFreqFFT = (Complex*)mufft_alloc(m_FilterSize * sizeof(Complex));
+    m_pFramesFreqLeftFFT = (Complex*)mufft_alloc(m_FilterSize * sizeof(Complex));
+    m_pFramesFreqRightFFT = (Complex*)mufft_alloc(m_FilterSize * sizeof(Complex));
+    m_pFramesTimeLeftFFT = (Complex*)mufft_alloc(m_FilterSize * sizeof(Complex));
+    m_pFramesTimeRightFFT = (Complex*)mufft_alloc(m_FilterSize * sizeof(Complex));
 
     for (int i = 0; i < 4; i++)
     {
-        pHRTFs[i] = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
+        m_pHRTFs[i] = (Complex*)mufft_alloc(sizeof(Complex) * m_FilterSize);
     }
 }
 
@@ -218,37 +218,37 @@ AudioHRTF::~AudioHRTF()
 {
     for (int i = 0; i < 4; i++)
     {
-        mufft_free(pHRTFs[i]);
+        mufft_free(m_pHRTFs[i]);
     }
 
-    mufft_free(pFramesSourceFFT);
-    mufft_free(pFramesFreqFFT);
-    mufft_free(pFramesFreqLeftFFT);
-    mufft_free(pFramesFreqRightFFT);
-    mufft_free(pFramesTimeLeftFFT);
-    mufft_free(pFramesTimeRightFFT);
+    mufft_free(m_pFramesSourceFFT);
+    mufft_free(m_pFramesFreqFFT);
+    mufft_free(m_pFramesFreqLeftFFT);
+    mufft_free(m_pFramesFreqRightFFT);
+    mufft_free(m_pFramesTimeLeftFFT);
+    mufft_free(m_pFramesTimeRightFFT);
 
-    mufft_free_plan_1d((mufft_plan_1d*)ForwardFFT);
-    mufft_free_plan_1d((mufft_plan_1d*)InverseFFT);
+    mufft_free_plan_1d((mufft_plan_1d*)m_ForwardFFT);
+    mufft_free_plan_1d((mufft_plan_1d*)m_InverseFFT);
 }
 
 void AudioHRTF::FFT(Complex const* pIn, Complex* pOut)
 {
-    mufft_execute_plan_1d((mufft_plan_1d*)ForwardFFT, pOut, pIn);
+    mufft_execute_plan_1d((mufft_plan_1d*)m_ForwardFFT, pOut, pIn);
 }
 
 void AudioHRTF::IFFT(Complex const* pIn, Complex* pOut)
 {
-    mufft_execute_plan_1d((mufft_plan_1d*)InverseFFT, pOut, pIn);
+    mufft_execute_plan_1d((mufft_plan_1d*)m_InverseFFT, pOut, pIn);
 }
 
 void AudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pHRTF)
 {
     // MuFFT requires 64-bit aligned data. Therefore, we must use it's own allocators.
-    Complex* hrirComplex = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
-    Complex* temp = (Complex*)mufft_alloc(sizeof(Complex) * FilterSize);
+    Complex* hrirComplex = (Complex*)mufft_alloc(sizeof(Complex) * m_FilterSize);
+    Complex* temp = (Complex*)mufft_alloc(sizeof(Complex) * m_FilterSize);
 
-    for (int i = 0; i < FilterSize; i++)
+    for (int i = 0; i < m_FilterSize; i++)
     {
         if (i < InFrameCount)
         {
@@ -263,7 +263,7 @@ void AudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pH
 
     FFT(hrirComplex, temp);
 
-    Platform::Memcpy(pHRTF, temp, sizeof(Complex) * FilterSize);
+    Platform::Memcpy(pHRTF, temp, sizeof(Complex) * m_FilterSize);
 
     mufft_free(temp);
     mufft_free(hrirComplex);
@@ -275,15 +275,15 @@ void AudioHRTF::SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRigh
 
     float d, u, v;
 
-    for (int i = 0; i < Indices.Size(); i += 3)
+    for (int i = 0; i < m_Indices.Size(); i += 3)
     {
-        uint32_t index0 = Indices[i + 0];
-        uint32_t index1 = Indices[i + 1];
-        uint32_t index2 = Indices[i + 2];
+        uint32_t index0 = m_Indices[i + 0];
+        uint32_t index1 = m_Indices[i + 1];
+        uint32_t index2 = m_Indices[i + 2];
 
-        Float3 const& a = Vertices[index0];
-        Float3 const& b = Vertices[index1];
-        Float3 const& c = Vertices[index2];
+        Float3 const& a = m_Vertices[index0];
+        Float3 const& b = m_Vertices[index1];
+        Float3 const& c = m_Vertices[index2];
 
         if (BvRayIntersectTriangle(Float3(0.0f), Dir, a, b, c, d, u, v))
         {
@@ -291,16 +291,16 @@ void AudioHRTF::SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRigh
 
             if (w < 0.0f) w = 0.0f; // fix rounding issues
 
-            Complex const* a_left = hrtfL.ToPtr() + index0 * FilterSize;
-            Complex const* a_right = hrtfR.ToPtr() + index0 * FilterSize;
+            Complex const* a_left = m_hrtfL.ToPtr() + index0 * m_FilterSize;
+            Complex const* a_right = m_hrtfR.ToPtr() + index0 * m_FilterSize;
 
-            Complex const* b_left = hrtfL.ToPtr() + index1 * FilterSize;
-            Complex const* b_right = hrtfR.ToPtr() + index1 * FilterSize;
+            Complex const* b_left = m_hrtfL.ToPtr() + index1 * m_FilterSize;
+            Complex const* b_right = m_hrtfR.ToPtr() + index1 * m_FilterSize;
 
-            Complex const* c_left = hrtfL.ToPtr() + index2 * FilterSize;
-            Complex const* c_right = hrtfR.ToPtr() + index2 * FilterSize;
+            Complex const* c_left = m_hrtfL.ToPtr() + index2 * m_FilterSize;
+            Complex const* c_right = m_hrtfR.ToPtr() + index2 * m_FilterSize;
 
-            for (int n = 0; n < FilterSize; n++)
+            for (int n = 0; n < m_FilterSize; n++)
             {
                 pLeftHRTF[n].R = a_left[n].R * u + b_left[n].R * v + c_left[n].R * w;
                 pLeftHRTF[n].I = a_left[n].I * u + b_left[n].I * v + c_left[n].I * w;
@@ -312,8 +312,8 @@ void AudioHRTF::SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRigh
         }
     }
 
-    Platform::ZeroMem(pLeftHRTF, FilterSize * sizeof(Complex));
-    Platform::ZeroMem(pRightHRTF, FilterSize * sizeof(Complex));
+    Platform::ZeroMem(pLeftHRTF, m_FilterSize * sizeof(Complex));
+    Platform::ZeroMem(pRightHRTF, m_FilterSize * sizeof(Complex));
 }
 
 void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int InFrameCount, float* pStream, Float3& Dir)
@@ -322,17 +322,17 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
     HK_ASSERT((InFrameCount % HRTF_BLOCK_LENGTH) == 0);
 
     const int numBlocks = InFrameCount / HRTF_BLOCK_LENGTH;
-    const int hrtfLen = FrameCount - 1;
+    const int hrtfLen = m_FrameCount - 1;
 
     Complex* filterL[2] = {
-        pHRTFs[0],
-        pHRTFs[1]};
+        m_pHRTFs[0],
+        m_pHRTFs[1]};
     Complex* filterR[2] = {
-        pHRTFs[2],
-        pHRTFs[3]};
+        m_pHRTFs[2],
+        m_pHRTFs[3]};
 
-    Complex* pFramesLeft = pFramesTimeLeftFFT + hrtfLen;
-    Complex* pFramesRight = pFramesTimeRightFFT + hrtfLen;
+    Complex* pFramesLeft = m_pFramesTimeLeftFFT + hrtfLen;
+    Complex* pFramesRight = m_pFramesTimeRightFFT + hrtfLen;
 
     int curIndex = 1;
     int newIndex = 0;
@@ -347,34 +347,34 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
 
     for (int blockNum = 0; blockNum < numBlocks; blockNum++)
     {
-        // Copy frames to pFramesSourceFFT
+        // Copy frames to m_pFramesSourceFFT
         int n = 0, frameNum = 0;
         while (n < hrtfLen)
         {
             // Restore previous frames from channel
-            pFramesSourceFFT[n].R = history[n];
+            m_pFramesSourceFFT[n].R = history[n];
             n++;
         }
         while (frameNum < HRTF_BLOCK_LENGTH)
         {
-            pFramesSourceFFT[n].R = frames[frameNum];
+            m_pFramesSourceFFT[n].R = frames[frameNum];
             frameNum++;
             n++;
         }
 
         // Perform FFT on source frames
-        FFT(pFramesSourceFFT, pFramesFreqFFT);
+        FFT(m_pFramesSourceFFT, m_pFramesFreqFFT);
 
         // Apply HRTF
-        for (n = 0; n < FilterSize; n++)
+        for (n = 0; n < m_FilterSize; n++)
         {
-            pFramesFreqLeftFFT[n] = pFramesFreqFFT[n] * filterL[curIndex][n];
-            pFramesFreqRightFFT[n] = pFramesFreqFFT[n] * filterR[curIndex][n];
+            m_pFramesFreqLeftFFT[n] = m_pFramesFreqFFT[n] * filterL[curIndex][n];
+            m_pFramesFreqRightFFT[n] = m_pFramesFreqFFT[n] * filterR[curIndex][n];
         }
 
         // Perform inverse FFT to convert result in time domain
-        IFFT(pFramesFreqLeftFFT, pFramesTimeLeftFFT);
-        IFFT(pFramesFreqRightFFT, pFramesTimeRightFFT);
+        IFFT(m_pFramesFreqLeftFFT, m_pFramesTimeLeftFFT);
+        IFFT(m_pFramesFreqRightFFT, m_pFramesTimeRightFFT);
 
         float* blockStart = pStream;
 
@@ -394,15 +394,15 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
             SampleHRTF(Dir, filterL[newIndex], filterR[newIndex]);
 
             // Apply HRTF
-            for (n = 0; n < FilterSize; n++)
+            for (n = 0; n < m_FilterSize; n++)
             {
-                pFramesFreqLeftFFT[n] = pFramesFreqFFT[n] * filterL[newIndex][n];
-                pFramesFreqRightFFT[n] = pFramesFreqFFT[n] * filterR[newIndex][n];
+                m_pFramesFreqLeftFFT[n] = m_pFramesFreqFFT[n] * filterL[newIndex][n];
+                m_pFramesFreqRightFFT[n] = m_pFramesFreqFFT[n] * filterR[newIndex][n];
             }
 
             // Perform inverse FFT to convert result in time domain
-            IFFT(pFramesFreqLeftFFT, pFramesTimeLeftFFT);
-            IFFT(pFramesFreqRightFFT, pFramesTimeRightFFT);
+            IFFT(m_pFramesFreqLeftFFT, m_pFramesTimeLeftFFT);
+            IFFT(m_pFramesFreqRightFFT, m_pFramesTimeRightFFT);
 
             pStream = blockStart;
 

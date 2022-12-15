@@ -308,9 +308,9 @@ void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flag
     if (Flags & MALLOC_ZERO)
         Platform::ZeroMem(aligned, SizeInBytes);
 
-    PeakAllocated.Store(std::max(PeakAllocated.Load(), MemoryAllocated.Add(SizeInBytes)));
-    MemoryAllocs.Increment();
-    PerFrameAllocs.Increment();
+    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
+    m_MemoryAllocs.Increment();
+    m_PerFrameAllocs.Increment();
 
     return aligned;
 }
@@ -320,9 +320,9 @@ void MemoryHeap::Free(void* Ptr)
     if (!Ptr)
         return;
 
-    MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
-    MemoryAllocs.Decrement();
-    PerFrameFrees.Increment();
+    m_MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
+    m_MemoryAllocs.Decrement();
+    m_PerFrameFrees.Increment();
 
     free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
 }
@@ -348,11 +348,11 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
             Platform::Memcpy(NewPtr, Ptr, OldSize);
     }
 
-    MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
+    m_MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
 
     free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
-    PerFrameFrees.Increment();
-    MemoryAllocs.Decrement();
+    m_PerFrameFrees.Increment();
+    m_MemoryAllocs.Decrement();
 
     return NewPtr;
 }
@@ -379,9 +379,9 @@ void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flag
         return nullptr;
     HK_ASSERT(SizeInBytes <= mi_malloc_size(Ptr));
     SizeInBytes = mi_malloc_size(Ptr);
-    PeakAllocated.Store(std::max(PeakAllocated.Load(), MemoryAllocated.Add(SizeInBytes)));
-    MemoryAllocs.Increment();
-    PerFrameAllocs.Increment();
+    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
+    m_MemoryAllocs.Increment();
+    m_PerFrameAllocs.Increment();
 
     return Ptr;
 }
@@ -391,9 +391,9 @@ void MemoryHeap::Free(void* Ptr)
     if (!Ptr)
         return;
 
-    MemoryAllocated.Sub(mi_malloc_size(Ptr));
-    MemoryAllocs.Decrement();
-    PerFrameFrees.Increment();
+    m_MemoryAllocated.Sub(mi_malloc_size(Ptr));
+    m_MemoryAllocs.Decrement();
+    m_PerFrameFrees.Increment();
     mi_free(Ptr);
 }
 
@@ -413,21 +413,21 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
         return _Alloc(SizeInBytes, Alignment, Flags);
     }
 
-    MemoryAllocated.Sub(mi_malloc_size(Ptr));
+    m_MemoryAllocated.Sub(mi_malloc_size(Ptr));
 
     Ptr = Alignment == 0 ? mi_realloc(Ptr, SizeInBytes) : mi_realloc_aligned(Ptr, SizeInBytes, Alignment);
     if (HK_LIKELY(Ptr))
     {
         HK_ASSERT(SizeInBytes <= mi_malloc_size(Ptr));
         SizeInBytes = mi_malloc_size(Ptr);
-        PeakAllocated.Store(std::max(PeakAllocated.Load(), MemoryAllocated.Add(SizeInBytes)));
+        m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
 
-        PerFrameAllocs.Increment();
-        MemoryAllocs.Increment();
+        m_PerFrameAllocs.Increment();
+        m_MemoryAllocs.Increment();
     }
 
-    PerFrameFrees.Increment();
-    MemoryAllocs.Decrement();
+    m_PerFrameFrees.Increment();
+    m_MemoryAllocs.Decrement();
 
     return Ptr;
 }
@@ -473,11 +473,11 @@ MemoryStat MemoryHeap::GetStat()
 {
     MemoryStat stat;
 
-    stat.FrameAllocs     = PerFrameAllocs.Load();
-    stat.FrameFrees      = PerFrameFrees.Load();
-    stat.MemoryAllocated = MemoryAllocated.Load();
-    stat.MemoryAllocs    = MemoryAllocs.Load();
-    stat.MemoryPeakAlloc = PeakAllocated.Load();
+    stat.FrameAllocs     = m_PerFrameAllocs.Load();
+    stat.FrameFrees      = m_PerFrameFrees.Load();
+    stat.MemoryAllocated = m_MemoryAllocated.Load();
+    stat.MemoryAllocs    = m_MemoryAllocs.Load();
+    stat.MemoryPeakAlloc = m_PeakAllocated.Load();
     return stat;
 }
 
@@ -486,8 +486,8 @@ void MemoryHeap::MemoryNewFrame()
     using namespace Platform;
     for (int n = 0; n < HEAP_MAX; n++)
     {
-        MemoryHeaps[n].PerFrameAllocs.Store(0);
-        MemoryHeaps[n].PerFrameFrees.Store(0);
+        MemoryHeaps[n].m_PerFrameAllocs.Store(0);
+        MemoryHeaps[n].m_PerFrameFrees.Store(0);
     }
 }
 

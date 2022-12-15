@@ -50,19 +50,19 @@ public:
     /** Get current active channels */
     int GetNumActiveChannels() const
     {
-        return NumActiveChannels.Load();
+        return m_NumActiveChannels.Load();
     }
 
     /** Get number of not active (virtual) channels */
     int GetNumVirtualChannels() const
     {
-        return TotalChannels.Load() - NumActiveChannels.Load();
+        return m_TotalChannels.Load() - m_NumActiveChannels.Load();
     }
 
     /** Get total count of channels */
     int GetTotalChannels() const
     {
-        return TotalChannels.Load();
+        return m_TotalChannels.Load();
     }
 
     /** Start async mixing */
@@ -76,7 +76,7 @@ public:
 
     bool IsAsync() const
     {
-        return bAsync;
+        return m_bAsync;
     }
 
 private:
@@ -103,40 +103,40 @@ private:
     void MakeVolumeRamp(const int CurVol[2], const int NewVol[2], int FrameCount, int Scale);
     void ReadFramesF32(AudioChannel* Chan, int FramesToRead, int HistoryExtraFrames, float* pFrames);
 
-    TUniqueRef<class AudioHRTF> Hrtf;
-    TUniqueRef<class Freeverb> ReverbFilter;
+    TUniqueRef<class AudioHRTF> m_Hrtf;
+    TUniqueRef<class Freeverb> m_ReverbFilter;
 
-    alignas(16) SamplePair RenderBuffer[2048];
-    const int RenderBufferSize = HK_ARRAY_SIZE(RenderBuffer);
+    alignas(16) SamplePair m_RenderBuffer[2048];
+    const int m_RenderBufferSize = HK_ARRAY_SIZE(m_RenderBuffer);
 
-    TRef<AudioDevice> pDevice;
-    AudioDevice* DeviceRawPtr;
-    uint8_t* pTransferBuffer;
-    bool bAsync;
-    int64_t RenderFrame;
-    AtomicInt NumActiveChannels;
-    AtomicInt TotalChannels;
+    TRef<AudioDevice> m_pDevice;
+    AudioDevice* m_DeviceRawPtr;
+    uint8_t* m_pTransferBuffer;
+    bool m_bAsync;
+    int64_t m_RenderFrame;
+    AtomicInt m_NumActiveChannels;
+    AtomicInt m_TotalChannels;
 
-    AudioChannel* Channels;
-    AudioChannel* ChannelsTail;
-    AudioChannel* PendingList;
-    AudioChannel* PendingListTail;
+    AudioChannel* m_Channels;
+    AudioChannel* m_ChannelsTail;
+    AudioChannel* m_PendingList;
+    AudioChannel* m_PendingListTail;
 
-    SpinLock SubmitLock;
+    SpinLock m_SubmitLock;
 
     // For current mixing channel
-    int NewVol[2];
-    Float3 NewDir;
-    bool bSpatializedChannel;
-    bool bChannelPaused;
-    int PlaybackPos;
-    int VolumeRampL[1024];
-    int VolumeRampR[1024];
-    int VolumeRampSize;
+    int m_NewVol[2];
+    Float3 m_NewDir;
+    bool m_bSpatializedChannel;
+    bool m_bChannelPaused;
+    int m_PlaybackPos;
+    int m_VolumeRampL[1024];
+    int m_VolumeRampR[1024];
+    int m_VolumeRampSize;
 
-    TVector<uint8_t> TempFrames;
-    TVector<float> FramesF32;
-    TVector<SamplePair> StreamF32;
+    TVector<uint8_t> m_TempFrames;
+    TVector<float> m_FramesF32;
+    TVector<SamplePair> m_StreamF32;
 };
 
 extern ConsoleVar Snd_HRTF;

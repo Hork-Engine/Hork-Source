@@ -52,22 +52,22 @@ public:
     void ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int FrameCount, float* pStream, Float3& Dir);
 
     /** Sphere geometry vertics */
-    TVector<Float3> const& GetVertices() const { return Vertices; }
+    TVector<Float3> const& GetVertices() const { return m_Vertices; }
 
     /** Sphere geometry indices */
-    TVector<uint32_t> const& GetIndices() const { return Indices; }
+    TVector<uint32_t> const& GetIndices() const { return m_Indices; }
 
     /** Length of Head-Related Impulse Response (HRIR) */
     int GetFrameCount() const
     {
-        return FrameCount;
+        return m_FrameCount;
     }
 
     /** HRTF FFT filter size in frames */
     int GetFilterSize() const
     {
         // Computed as power of two of FrameCount - 1 + HRTF_BLOCK_LENGTH
-        return FilterSize;
+        return m_FilterSize;
     }
 
 private:
@@ -80,31 +80,31 @@ private:
     void IFFT(Complex const* pIn, Complex* pOut);
 
     /** Length of Head-Related Impulse Response (HRIR) */
-    int FrameCount = 0;
+    int m_FrameCount = 0;
 
     /** HRTF FFT filter size in frames */
-    int FilterSize = 0;
+    int m_FilterSize = 0;
 
-    TVector<uint32_t> Indices;
-    TVector<Float3> Vertices;
-    TVector<Complex> hrtfL;
-    TVector<Complex> hrtfR;
+    TVector<uint32_t> m_Indices;
+    TVector<Float3> m_Vertices;
+    TVector<Complex> m_hrtfL;
+    TVector<Complex> m_hrtfR;
 
-    void* ForwardFFT = nullptr;
-    void* InverseFFT = nullptr;
+    void* m_ForwardFFT = nullptr;
+    void* m_InverseFFT = nullptr;
 
     // Storage for processing frames, time domain
-    Complex* pFramesSourceFFT = nullptr;
+    Complex* m_pFramesSourceFFT = nullptr;
     // Processing frames, freq domain
-    Complex* pFramesFreqFFT = nullptr;
+    Complex* m_pFramesFreqFFT = nullptr;
     // Frames for left ear, freq domain
-    Complex* pFramesFreqLeftFFT = nullptr;
+    Complex* m_pFramesFreqLeftFFT = nullptr;
     // Frames for right ear, freq domain
-    Complex* pFramesFreqRightFFT = nullptr;
+    Complex* m_pFramesFreqRightFFT = nullptr;
     // Frames for left ear, time domain
-    Complex* pFramesTimeLeftFFT = nullptr;
+    Complex* m_pFramesTimeLeftFFT = nullptr;
     // Frames for right ear, time domain
-    Complex* pFramesTimeRightFFT = nullptr;
+    Complex* m_pFramesTimeRightFFT = nullptr;
 
-    Complex* pHRTFs[4] = {nullptr, nullptr, nullptr, nullptr};
+    Complex* m_pHRTFs[4] = {nullptr, nullptr, nullptr, nullptr};
 };

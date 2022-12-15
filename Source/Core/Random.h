@@ -93,17 +93,17 @@ public:
 
     void Seed(uint32_t InSeed)
     {
-        Current = InSeed;
+        m_Current = InSeed;
     }
 
     /** Get a random number */
     uint32_t Get()
     {
-        return Current = Current * 1103515245 + 12345;
+        return m_Current = m_Current * 1103515245 + 12345;
     }
 
 private:
-    uint32_t Current;
+    uint32_t m_Current;
 };
 
 
@@ -130,14 +130,14 @@ public:
     {
         // Pull a 32-bit integer from the generator state
         // Every other access function simply transforms the numbers extracted here
-        if (Left == 0)
+        if (m_Left == 0)
         {
             Reload();
         }
-        Left--;
+        m_Left--;
 
         uint32_t s1;
-        s1 = *Next++;
+        s1 = *m_Next++;
         s1 ^= (s1 >> 11);
         s1 ^= (s1 << 7) & 0x9d2c5680U;
         s1 ^= (s1 << 15) & 0xefc60000U;
@@ -164,9 +164,9 @@ private:
         M = 397
     };
 
-    uint32_t  State[N]; // internal state
-    uint32_t* Next;     // next value to get from state
-    int       Left;     // number of values left before reload needed
+    uint32_t m_State[N]; // internal state
+    uint32_t* m_Next;    // next value to get from state
+    int m_Left;          // number of values left before reload needed
 };
 
 namespace Core

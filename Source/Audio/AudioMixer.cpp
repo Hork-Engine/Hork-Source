@@ -76,18 +76,18 @@ struct SampleLookup8Bit
 static const SampleLookup8Bit SampleLookup8Bit;
 
 AudioMixer::AudioMixer(AudioDevice* _Device) :
-    pDevice(_Device), DeviceRawPtr(_Device), bAsync(false), RenderFrame(0)
+    m_pDevice(_Device), m_DeviceRawPtr(_Device), m_bAsync(false), m_RenderFrame(0)
 {
-    Hrtf         = MakeUnique<AudioHRTF>(DeviceRawPtr->GetSampleRate());
-    ReverbFilter = MakeUnique<Freeverb>(DeviceRawPtr->GetSampleRate());
+    m_Hrtf = MakeUnique<AudioHRTF>(m_DeviceRawPtr->GetSampleRate());
+    m_ReverbFilter = MakeUnique<Freeverb>(m_DeviceRawPtr->GetSampleRate());
 
-    Channels        = nullptr;
-    ChannelsTail    = nullptr;
-    PendingList     = nullptr;
-    PendingListTail = nullptr;
+    m_Channels = nullptr;
+    m_ChannelsTail = nullptr;
+    m_PendingList = nullptr;
+    m_PendingListTail = nullptr;
 
-    TotalChannels.StoreRelaxed(0);
-    NumActiveChannels.StoreRelaxed(0);
+    m_TotalChannels.StoreRelaxed(0);
+    m_NumActiveChannels.StoreRelaxed(0);
 }
 
 AudioMixer::~AudioMixer()
@@ -99,7 +99,7 @@ AudioMixer::~AudioMixer()
 
     // Free channels
     AudioChannel* next;
-    for (AudioChannel* chan = Channels; chan; chan = next)
+    for (AudioChannel* chan = m_Channels; chan; chan = next)
     {
         next = chan->Next;
         chan->RemoveRef();
@@ -110,25 +110,25 @@ AudioMixer::~AudioMixer()
 
 void AudioMixer::StartAsync()
 {
-    bAsync = true;
-    DeviceRawPtr->SetMixerCallback([this](uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
-                                   { UpdateAsync(pTransferBuffer, TransferBufferSizeInFrames, FrameNum, MinFramesToRender); });
+    m_bAsync = true;
+    m_DeviceRawPtr->SetMixerCallback([this](uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
+                                     { UpdateAsync(pTransferBuffer, TransferBufferSizeInFrames, FrameNum, MinFramesToRender); });
 }
 
 void AudioMixer::StopAsync()
 {
-    bAsync = false;
-    DeviceRawPtr->SetMixerCallback(nullptr);
+    m_bAsync = false;
+    m_DeviceRawPtr->SetMixerCallback(nullptr);
 }
 
 void AudioMixer::SubmitChannel(AudioChannel* Channel)
 {
     Channel->AddRef();
 
-    SpinLockGuard lockGuard(SubmitLock);
+    SpinLockGuard lockGuard(m_SubmitLock);
 
-    HK_ASSERT(!INTRUSIVE_EXISTS(Channel, Next, Prev, PendingList, PendingListTail));
-    INTRUSIVE_ADD(Channel, Next, Prev, PendingList, PendingListTail);
+    HK_ASSERT(!INTRUSIVE_EXISTS(Channel, Next, Prev, m_PendingList, m_PendingListTail));
+    INTRUSIVE_ADD(Channel, Next, Prev, m_PendingList, m_PendingListTail);
 }
 
 void AudioMixer::AddPendingChannels()
@@ -136,13 +136,13 @@ void AudioMixer::AddPendingChannels()
     AudioChannel* submittedChannels = nullptr;
 
     {
-        SpinLockGuard lockGuard(SubmitLock);
+        SpinLockGuard lockGuard(m_SubmitLock);
 
-        submittedChannels = PendingList;
+        submittedChannels = m_PendingList;
 
         INTRUSIVE_MERGE(Next, Prev,
-                        Channels, ChannelsTail,
-                        PendingList, PendingListTail);
+                        m_Channels, m_ChannelsTail,
+                        m_PendingList, m_PendingListTail);
     }
 
     int count = 0;
@@ -155,19 +155,19 @@ void AudioMixer::AddPendingChannels()
         count++;
     }
 
-    TotalChannels.Add(count);
+    m_TotalChannels.Add(count);
 }
 
 void AudioMixer::RejectChannel(AudioChannel* Channel)
 {
-    INTRUSIVE_REMOVE(Channel, Next, Prev, Channels, ChannelsTail);
+    INTRUSIVE_REMOVE(Channel, Next, Prev, m_Channels, m_ChannelsTail);
     Channel->RemoveRef();
-    TotalChannels.Decrement();
+    m_TotalChannels.Decrement();
 }
 
 void AudioMixer::Update()
 {
-    if (bAsync)
+    if (m_bAsync)
     {
         LOG("AudioMixer::Update: mixer is running in async thread\n");
         return;
@@ -175,23 +175,23 @@ void AudioMixer::Update()
 
     int64_t frameNum;
 
-    pTransferBuffer = DeviceRawPtr->MapTransferBuffer(&frameNum);
+    m_pTransferBuffer = m_DeviceRawPtr->MapTransferBuffer(&frameNum);
 
-    if (RenderFrame < frameNum)
+    if (m_RenderFrame < frameNum)
     {
-        LOG("AudioMixer::Update: Missing frames {}\n", frameNum - RenderFrame);
+        LOG("AudioMixer::Update: Missing frames {}\n", frameNum - m_RenderFrame);
 
-        RenderFrame = frameNum;
+        m_RenderFrame = frameNum;
     }
 
-    int framesToRender = Snd_MixAhead.GetFloat() * DeviceRawPtr->GetSampleRate();
-    framesToRender     = Math::Clamp(framesToRender, 0, DeviceRawPtr->GetTransferBufferSizeInFrames());
+    int framesToRender = Snd_MixAhead.GetFloat() * m_DeviceRawPtr->GetSampleRate();
+    framesToRender = Math::Clamp(framesToRender, 0, m_DeviceRawPtr->GetTransferBufferSizeInFrames());
 
     int64_t endFrame = frameNum + framesToRender;
 
     RenderChannels(endFrame);
 
-    DeviceRawPtr->UnmapTransferBuffer();
+    m_DeviceRawPtr->UnmapTransferBuffer();
 
 #if 0
     // Update reverb
@@ -220,15 +220,15 @@ void AudioMixer::Update()
 
 void AudioMixer::UpdateAsync(uint8_t* _pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)
 {
-    pTransferBuffer = _pTransferBuffer;
+    m_pTransferBuffer = _pTransferBuffer;
 
-    if (RenderFrame < FrameNum)
+    if (m_RenderFrame < FrameNum)
     {
-        RenderFrame = FrameNum;
+        m_RenderFrame = FrameNum;
     }
 
 #if 0
-    int framesToRender = Snd_MixAhead.GetFloat() * DeviceRawPtr->GetSampleRate();
+    int framesToRender = Snd_MixAhead.GetFloat() * m_DeviceRawPtr->GetSampleRate();
     framesToRender = Math::Clamp( framesToRender, MinFramesToRender, TransferBufferSizeInFrames );
 #else
     int framesToRender = MinFramesToRender;
@@ -241,29 +241,29 @@ void AudioMixer::UpdateAsync(uint8_t* _pTransferBuffer, int TransferBufferSizeIn
 
 void AudioMixer::RenderChannels(int64_t EndFrame)
 {
-    int numActiveChan = NumActiveChannels.Load();
+    int numActiveChan = m_NumActiveChannels.Load();
 
-    if (RenderFrame < EndFrame)
+    if (m_RenderFrame < EndFrame)
     {
         numActiveChan = 0;
     }
 
     AddPendingChannels();
 
-    while (RenderFrame < EndFrame)
+    while (m_RenderFrame < EndFrame)
     {
         int64_t end = EndFrame;
-        if (EndFrame - RenderFrame > RenderBufferSize)
+        if (EndFrame - m_RenderFrame > m_RenderBufferSize)
         {
-            end = RenderFrame + RenderBufferSize;
+            end = m_RenderFrame + m_RenderBufferSize;
         }
 
-        int frameCount = end - RenderFrame;
+        int frameCount = end - m_RenderFrame;
 
-        Platform::ZeroMem(RenderBuffer, frameCount * sizeof(SamplePair));
+        Platform::ZeroMem(m_RenderBuffer, frameCount * sizeof(SamplePair));
 
         AudioChannel* next;
-        for (AudioChannel* chan = Channels; chan; chan = next)
+        for (AudioChannel* chan = m_Channels; chan; chan = next)
         {
             next = chan->Next;
 
@@ -278,31 +278,31 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
 
             {
                 SpinLockGuard guard(chan->SpinLock);
-                NewVol[0]           = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[0];
-                NewVol[1]           = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[1];
-                NewDir              = chan->LocalDir_COMMIT;
-                bSpatializedChannel = chan->bSpatializedStereo_COMMIT;
-                bChannelPaused      = chan->bPaused_COMMIT;
-                PlaybackPos         = chan->PlaybackPos.Load();
+                m_NewVol[0] = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[0];
+                m_NewVol[1] = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[1];
+                m_NewDir = chan->LocalDir_COMMIT;
+                m_bSpatializedChannel = chan->bSpatializedStereo_COMMIT;
+                m_bChannelPaused = chan->bPaused_COMMIT;
+                m_PlaybackPos = chan->PlaybackPos.Load();
                 if (chan->PlaybackPos_COMMIT >= 0)
                 {
-                    bSeek                    = chan->PlaybackPos_COMMIT != PlaybackPos;
-                    PlaybackPos              = chan->PlaybackPos_COMMIT;
+                    bSeek = chan->PlaybackPos_COMMIT != m_PlaybackPos;
+                    m_PlaybackPos = chan->PlaybackPos_COMMIT;
                     chan->PlaybackPos_COMMIT = -1;
                 }
             }
 
             if (bSeek && !chan->bVirtual && chan->pStream)
             {
-                chan->pStream->SeekToFrame(PlaybackPos);
+                chan->pStream->SeekToFrame(m_PlaybackPos);
             }
 
-            if (NewVol[0] == 0 && NewVol[1] == 0 && chan->Volume[0] == 0 && chan->Volume[1] == 0)
+            if (m_NewVol[0] == 0 && m_NewVol[1] == 0 && chan->Volume[0] == 0 && chan->Volume[1] == 0)
             {
                 if (!chan->bVirtual)
                 {
                     bool bLooped = chan->GetLoopStart() >= 0;
-                    if (chan->bVirtualizeWhenSilent || bLooped || bChannelPaused)
+                    if (chan->bVirtualizeWhenSilent || bLooped || m_bChannelPaused)
                     {
                         chan->bVirtual = true;
                     }
@@ -321,7 +321,7 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
                 {
                     if (chan->pStream)
                     {
-                        chan->pStream->SeekToFrame(PlaybackPos);
+                        chan->pStream->SeekToFrame(m_PlaybackPos);
                     }
                     chan->bVirtual = false;
                 }
@@ -332,7 +332,7 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
                 numActiveChan++;
             }
 
-            if (bChannelPaused && chan->bVirtual)
+            if (m_bChannelPaused && chan->bVirtual)
             {
                 // Only virtual channels is really paused
                 chan->PlaybackEnd = 0;
@@ -342,7 +342,7 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
             // Playing is just started or unpaused
             if (chan->PlaybackEnd == 0)
             {
-                chan->PlaybackEnd = RenderFrame + (chan->FrameCount - PlaybackPos);
+                chan->PlaybackEnd = m_RenderFrame + (chan->FrameCount - m_PlaybackPos);
             }
 
             if (chan->pStream)
@@ -354,14 +354,14 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
                 RenderChannel(chan, end);
             }
 
-            chan->PlaybackPos.Store(PlaybackPos);
+            chan->PlaybackPos.Store(m_PlaybackPos);
         }
 
-        WriteToTransferBuffer((int const*)RenderBuffer, end);
-        RenderFrame = end;
+        WriteToTransferBuffer((int const*)m_RenderBuffer, end);
+        m_RenderFrame = end;
     }
 
-    NumActiveChannels.Store(numActiveChan);
+    m_NumActiveChannels.Store(numActiveChan);
 }
 
 static void ConvertFramesToMonoF32(const void* pFramesIn, int FrameCount, int SampleBits, int Channels, float* pFramesOut)
@@ -454,7 +454,7 @@ void AudioMixer::ReadFramesF32(AudioChannel* Chan, int FramesToRead, int History
     int         start       = inloop ? Chan->GetLoopStart() : 0;
     float*      frames      = pFrames + HistoryExtraFrames;
 
-    for (int from = PlaybackPos; HistoryExtraFrames > 0;)
+    for (int from = m_PlaybackPos; HistoryExtraFrames > 0;)
     {
         int framesToCopy;
         if (from - HistoryExtraFrames < start)
@@ -480,7 +480,7 @@ void AudioMixer::ReadFramesF32(AudioChannel* Chan, int FramesToRead, int History
         inloop--;
     }
 
-    int p = PlaybackPos;
+    int p = m_PlaybackPos;
     while (FramesToRead > 0)
     {
         const byte* samples = pRawSamples + p * stride;
@@ -515,7 +515,7 @@ void AudioMixer::ReadFramesF32(AudioChannel* Chan, int FramesToRead, int History
 
 void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
 {
-    int64_t     frameNum       = RenderFrame;
+    int64_t frameNum = m_RenderFrame;
     int         clipFrameCount = Chan->FrameCount;
     byte const* pRawSamples    = (byte const*)Chan->GetFrames();
     int         stride         = Chan->SampleStride;
@@ -535,23 +535,23 @@ void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
         if (frameCount > 0)
         {
             int framesToRender;
-            if (PlaybackPos + frameCount <= clipFrameCount)
+            if (m_PlaybackPos + frameCount <= clipFrameCount)
             {
                 framesToRender = frameCount;
             }
             else
             {
                 // Should never happen
-                framesToRender = clipFrameCount - PlaybackPos;
+                framesToRender = clipFrameCount - m_PlaybackPos;
             }
 
             if (framesToRender > 0)
             {
                 if (!Chan->bVirtual)
                 {
-                    void const* pFrames = pRawSamples + PlaybackPos * stride;
+                    void const* pFrames = pRawSamples + m_PlaybackPos * stride;
 
-                    SamplePair* pBuffer = &RenderBuffer[frameNum - RenderFrame];
+                    SamplePair* pBuffer = &m_RenderBuffer[frameNum - m_RenderFrame];
 
                     if (Snd_HRTF && Chan->bSpatializedStereo_COMMIT)
                     {
@@ -562,11 +562,11 @@ void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
                         RenderFrames(Chan, pFrames, framesToRender, pBuffer);
                     }
 
-                    Chan->Volume[0] = NewVol[0];
-                    Chan->Volume[1] = NewVol[1];
+                    Chan->Volume[0] = m_NewVol[0];
+                    Chan->Volume[1] = m_NewVol[1];
                 }
 
-                PlaybackPos += framesToRender;
+                m_PlaybackPos += framesToRender;
             }
 
             frameNum += frameCount;
@@ -576,13 +576,13 @@ void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
         {
             if (Chan->GetLoopStart() >= 0)
             {
-                PlaybackPos       = Chan->GetLoopStart();
-                Chan->PlaybackEnd = frameNum + (clipFrameCount - PlaybackPos);
+                m_PlaybackPos = Chan->GetLoopStart();
+                Chan->PlaybackEnd = frameNum + (clipFrameCount - m_PlaybackPos);
                 Chan->LoopsCount++;
             }
             else
             {
-                PlaybackPos = clipFrameCount;
+                m_PlaybackPos = clipFrameCount;
                 break;
             }
         }
@@ -591,7 +591,7 @@ void AudioMixer::RenderChannel(AudioChannel* Chan, int64_t EndFrame)
 
 void AudioMixer::RenderStream(AudioChannel* Chan, int64_t EndFrame)
 {
-    int64_t frameNum       = RenderFrame;
+    int64_t frameNum = m_RenderFrame;
     int     clipFrameCount = Chan->FrameCount;
     int     stride         = Chan->SampleStride;
 
@@ -610,32 +610,32 @@ void AudioMixer::RenderStream(AudioChannel* Chan, int64_t EndFrame)
         if (frameCount > 0)
         {
             int framesToRender;
-            if (PlaybackPos + frameCount <= clipFrameCount)
+            if (m_PlaybackPos + frameCount <= clipFrameCount)
             {
                 framesToRender = frameCount;
             }
             else
             {
                 // Should never happen
-                framesToRender = clipFrameCount - PlaybackPos;
+                framesToRender = clipFrameCount - m_PlaybackPos;
             }
 
             if (!Chan->bVirtual)
             {
-                TempFrames.ResizeInvalidate(framesToRender * stride);
+                m_TempFrames.ResizeInvalidate(framesToRender * stride);
 
-                framesToRender = Chan->pStream->ReadFrames(TempFrames.ToPtr(), framesToRender, framesToRender * stride);
+                framesToRender = Chan->pStream->ReadFrames(m_TempFrames.ToPtr(), framesToRender, framesToRender * stride);
 
                 if (framesToRender > 0)
                 {
-                    RenderFrames(Chan, TempFrames.ToPtr(), framesToRender, &RenderBuffer[frameNum - RenderFrame]);
+                    RenderFrames(Chan, m_TempFrames.ToPtr(), framesToRender, &m_RenderBuffer[frameNum - m_RenderFrame]);
 
-                    Chan->Volume[0] = NewVol[0];
-                    Chan->Volume[1] = NewVol[1];
+                    Chan->Volume[0] = m_NewVol[0];
+                    Chan->Volume[1] = m_NewVol[1];
                 }
             }
 
-            PlaybackPos += framesToRender;
+            m_PlaybackPos += framesToRender;
 
             frameNum += frameCount;
         }
@@ -648,13 +648,13 @@ void AudioMixer::RenderStream(AudioChannel* Chan, int64_t EndFrame)
                 {
                     Chan->pStream->SeekToFrame(Chan->GetLoopStart());
                 }
-                PlaybackPos       = Chan->GetLoopStart();
-                Chan->PlaybackEnd = frameNum + (clipFrameCount - PlaybackPos);
+                m_PlaybackPos = Chan->GetLoopStart();
+                Chan->PlaybackEnd = frameNum + (clipFrameCount - m_PlaybackPos);
                 Chan->LoopsCount++;
             }
             else
             {
-                PlaybackPos = clipFrameCount;
+                m_PlaybackPos = clipFrameCount;
                 break;
             }
         }
@@ -665,30 +665,30 @@ void AudioMixer::MakeVolumeRamp(const int CurVol[2], const int _NewVol[2], int F
 {
     if (CurVol[0] == _NewVol[0] && CurVol[1] == _NewVol[1])
     {
-        VolumeRampSize = 0;
+        m_VolumeRampSize = 0;
         return;
     }
 
-    VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
-    if (VolumeRampSize < 0)
+    m_VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(m_VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
+    if (m_VolumeRampSize < 0)
     {
-        VolumeRampSize = 0;
+        m_VolumeRampSize = 0;
         return;
     }
 
-    float increment0 = (float)(_NewVol[0] - CurVol[0]) / (VolumeRampSize * Scale);
-    float increment1 = (float)(_NewVol[1] - CurVol[1]) / (VolumeRampSize * Scale);
+    float increment0 = (float)(_NewVol[0] - CurVol[0]) / (m_VolumeRampSize * Scale);
+    float increment1 = (float)(_NewVol[1] - CurVol[1]) / (m_VolumeRampSize * Scale);
 
     float lvolf = (float)CurVol[0] / Scale;
     float rvolf = (float)CurVol[1] / Scale;
 
-    for (int i = 0; i < VolumeRampSize; i++)
+    for (int i = 0; i < m_VolumeRampSize; i++)
     {
         lvolf += increment0;
         rvolf += increment1;
 
-        VolumeRampL[i] = lvolf;
-        VolumeRampR[i] = rvolf;
+        m_VolumeRampL[i] = lvolf;
+        m_VolumeRampR[i] = rvolf;
     }
 }
 
@@ -704,48 +704,48 @@ void AudioMixer::RenderFramesHRTF(AudioChannel* Chan, int FrameCount, SamplePair
         total         = numblocks * blocksize;
     }
 
-    int historyExtraFrames = Hrtf->GetFrameCount() - 1;
+    int historyExtraFrames = m_Hrtf->GetFrameCount() - 1;
 
     // Read frames from current playback position and convert to f32 format
-    FramesF32.ResizeInvalidate((total + historyExtraFrames) * sizeof(float));
-    ReadFramesF32(Chan, total, historyExtraFrames, FramesF32.ToPtr());
+    m_FramesF32.ResizeInvalidate((total + historyExtraFrames) * sizeof(float));
+    ReadFramesF32(Chan, total, historyExtraFrames, m_FramesF32.ToPtr());
 
     // Reallocate (if need) container for filtered samples
-    StreamF32.ResizeInvalidate(sizeof(SamplePair) * total);
+    m_StreamF32.ResizeInvalidate(sizeof(SamplePair) * total);
 
     // Apply HRTF filter
     Float3 dir;
-    Hrtf->ApplyHRTF(Chan->LocalDir, NewDir, FramesF32.ToPtr(), total, (float*)StreamF32.ToPtr(), dir);
+    m_Hrtf->ApplyHRTF(Chan->LocalDir, m_NewDir, m_FramesF32.ToPtr(), total, (float*)m_StreamF32.ToPtr(), dir);
     Chan->LocalDir = dir;
 
     // Make volume ramp
-    VolumeRampSize = 0;
-    if (Chan->Volume[0] != NewVol[0] || Chan->Volume[1] != NewVol[1])
+    m_VolumeRampSize = 0;
+    if (Chan->Volume[0] != m_NewVol[0] || Chan->Volume[1] != m_NewVol[1])
     {
-        VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
-        if (VolumeRampSize > 0)
+        m_VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(m_VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
+        if (m_VolumeRampSize > 0)
         {
-            float scale      = 256.0f / Hrtf->GetFilterSize();
-            float increment0 = (float)(NewVol[0] - Chan->Volume[0]) / VolumeRampSize * scale;
+            float scale = 256.0f / m_Hrtf->GetFilterSize();
+            float increment0 = (float)(m_NewVol[0] - Chan->Volume[0]) / m_VolumeRampSize * scale;
             float lvolf      = (float)Chan->Volume[0] * scale;
-            for (int i = 0; i < VolumeRampSize; i++)
+            for (int i = 0; i < m_VolumeRampSize; i++)
             {
                 lvolf += increment0;
-                VolumeRampL[i] = lvolf;
+                m_VolumeRampL[i] = lvolf;
             }
         }
     }
 
-    SamplePair* pStreamF32 = StreamF32.ToPtr();
+    SamplePair* pStreamF32 = m_StreamF32.ToPtr();
 
 #if 0
     // Adjust volume
-    float vol = float( 65536 / 256 ) * NewVol[0] / Hrtf->GetFilterSize();
-    for ( int i = 0; i < VolumeRampSize; i++ ) {
-        pStreamF32[i].Chanf[0] = pStreamF32[i].Chanf[0] * VolumeRampL[i];
-        pStreamF32[i].Chanf[1] = pStreamF32[i].Chanf[1] * VolumeRampL[i];
+    float vol = float( 65536 / 256 ) * m_NewVol[0] / m_Hrtf->GetFilterSize();
+    for ( int i = 0; i < m_VolumeRampSize; i++ ) {
+        pStreamF32[i].Chanf[0] = pStreamF32[i].Chanf[0] * m_VolumeRampL[i];
+        pStreamF32[i].Chanf[1] = pStreamF32[i].Chanf[1] * m_VolumeRampL[i];
     }
-    for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+    for ( int i = m_VolumeRampSize ; i < FrameCount; i++ ) {
         pStreamF32[i].Chanf[0] = pStreamF32[i].Chanf[0] * vol;
         pStreamF32[i].Chanf[1] = pStreamF32[i].Chanf[1] * vol;
     }
@@ -763,13 +763,13 @@ void AudioMixer::RenderFramesHRTF(AudioChannel* Chan, int FrameCount, SamplePair
     free( out );
 #else
     // Mix with output stream
-    float vol = float(65536 / 256) * NewVol[0] / Hrtf->GetFilterSize();
-    for (int i = 0; i < VolumeRampSize; i++)
+    float vol = float(65536 / 256) * m_NewVol[0] / m_Hrtf->GetFilterSize();
+    for (int i = 0; i < m_VolumeRampSize; i++)
     {
-        pBuffer[i].Chan[0] += pStreamF32[i].Chanf[0] * VolumeRampL[i];
-        pBuffer[i].Chan[1] += pStreamF32[i].Chanf[1] * VolumeRampL[i];
+        pBuffer[i].Chan[0] += pStreamF32[i].Chanf[0] * m_VolumeRampL[i];
+        pBuffer[i].Chan[1] += pStreamF32[i].Chanf[1] * m_VolumeRampL[i];
     }
-    for (int i = VolumeRampSize; i < FrameCount; i++)
+    for (int i = m_VolumeRampSize; i < FrameCount; i++)
     {
         pBuffer[i].Chan[0] += pStreamF32[i].Chanf[0] * vol;
         pBuffer[i].Chan[1] += pStreamF32[i].Chanf[1] * vol;
@@ -788,30 +788,30 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
         uint8_t const* frames = (uint8_t const*)pFrames;
 
 #if 0
-        int lvol = Math::Min( NewVol[0] / 256, 255 );
-        int rvol = Math::Min( NewVol[1] / 256, 255 );
+        int lvol = Math::Min( m_NewVol[0] / 256, 255 );
+        int rvol = Math::Min( m_NewVol[1] / 256, 255 );
 
         int const * ls = SampleLookup8Bit.Data[lvol >> 3];
         int const * rs = SampleLookup8Bit.Data[rvol >> 3];
 
         // Mono
         if ( channels == 1 ) {
-            MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
+            MakeVolumeRamp( Chan->Volume, m_NewVol, FrameCount, 256 );
 
-            for ( int i = 0; i < VolumeRampSize; i++ ) {
-                pBuffer[i].Chan[0] += ls[frames[i]]*VolumeRampL[i];
-                pBuffer[i].Chan[1] += rs[frames[i]]*VolumeRampR[i];
+            for ( int i = 0; i < m_VolumeRampSize; i++ ) {
+                pBuffer[i].Chan[0] += ls[frames[i]]*m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += rs[frames[i]]*m_VolumeRampR[i];
             }
 
-            for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+            for ( int i = m_VolumeRampSize ; i < FrameCount; i++ ) {
                 pBuffer[i].Chan[0] += ls[frames[i]];
                 pBuffer[i].Chan[1] += rs[frames[i]];
             }
             return;
         }
 #else
-        int lvol = NewVol[0];
-        int rvol = NewVol[1];
+        int lvol = m_NewVol[0];
+        int rvol = m_NewVol[1];
 
         // Mono
         if (channels == 1)
@@ -819,15 +819,15 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
             lvol /= 256;
             rvol /= 256;
 
-            MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 256);
+            MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 256);
 
-            for (int i = 0; i < VolumeRampSize; i++)
+            for (int i = 0; i < m_VolumeRampSize; i++)
             {
-                pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[i]] * VolumeRampL[i];
-                pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[i]] * VolumeRampR[i];
+                pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[i]] * m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[i]] * m_VolumeRampR[i];
             }
 
-            for (int i = VolumeRampSize; i < FrameCount; i++)
+            for (int i = m_VolumeRampSize; i < FrameCount; i++)
             {
                 pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[i]] * lvol;
                 pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[i]] * rvol;
@@ -837,22 +837,22 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
 #endif
 
         // Spatialized stereo
-        if (bSpatializedChannel)
+        if (m_bSpatializedChannel)
         {
             // Combine stereo channels
 
 #if 0
 
-            MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 512 );
+            MakeVolumeRamp( Chan->Volume, m_NewVol, FrameCount, 512 );
 
-            for ( int i = 0; i < VolumeRampSize; i++ ) {
-                pBuffer[i].Chan[0] += ( ls[frames[0]] + ls[frames[1]] ) * VolumeRampL[i];
-                pBuffer[i].Chan[1] += ( rs[frames[0]] + rs[frames[1]] ) * VolumeRampR[i];
+            for ( int i = 0; i < m_VolumeRampSize; i++ ) {
+                pBuffer[i].Chan[0] += ( ls[frames[0]] + ls[frames[1]] ) * m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += ( rs[frames[0]] + rs[frames[1]] ) * m_VolumeRampR[i];
 
                 frames += 2;
             }
 
-            for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+            for ( int i = m_VolumeRampSize ; i < FrameCount; i++ ) {
                 pBuffer[i].Chan[0] += ( ls[frames[0]] + ls[frames[1]] ) / 2;
                 pBuffer[i].Chan[1] += ( rs[frames[0]] + rs[frames[1]] ) / 2;
 
@@ -864,17 +864,17 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
             lvol /= 512;
             rvol /= 512;
 
-            MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 512);
+            MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 512);
 
-            for (int i = 0; i < VolumeRampSize; i++)
+            for (int i = 0; i < m_VolumeRampSize; i++)
             {
-                pBuffer[i].Chan[0] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * VolumeRampL[i];
-                pBuffer[i].Chan[1] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * VolumeRampR[i];
+                pBuffer[i].Chan[0] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * m_VolumeRampR[i];
 
                 frames += 2;
             }
 
-            for (int i = VolumeRampSize; i < FrameCount; i++)
+            for (int i = m_VolumeRampSize; i < FrameCount; i++)
             {
                 pBuffer[i].Chan[0] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * lvol;
                 pBuffer[i].Chan[1] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * rvol;
@@ -888,14 +888,14 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
 
         // Background music/etc
 #if 0
-        MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
-        for ( int i = 0; i < VolumeRampSize; i++ ) {
-            pBuffer[i].Chan[0] += ls[frames[0]] * VolumeRampL[i];
-            pBuffer[i].Chan[1] += rs[frames[1]] * VolumeRampR[i];
+        MakeVolumeRamp( Chan->Volume, m_NewVol, FrameCount, 256 );
+        for ( int i = 0; i < m_VolumeRampSize; i++ ) {
+            pBuffer[i].Chan[0] += ls[frames[0]] * m_VolumeRampL[i];
+            pBuffer[i].Chan[1] += rs[frames[1]] * m_VolumeRampR[i];
 
             frames += 2;
         }
-        for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+        for ( int i = m_VolumeRampSize ; i < FrameCount; i++ ) {
             pBuffer[i].Chan[0] += ls[frames[0]];
             pBuffer[i].Chan[1] += rs[frames[1]];
 
@@ -905,15 +905,15 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
         lvol /= 256;
         rvol /= 256;
 
-        MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 256);
-        for (int i = 0; i < VolumeRampSize; i++)
+        MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 256);
+        for (int i = 0; i < m_VolumeRampSize; i++)
         {
-            pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[0]] * VolumeRampL[i];
-            pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[1]] * VolumeRampR[i];
+            pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[0]] * m_VolumeRampL[i];
+            pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[1]] * m_VolumeRampR[i];
 
             frames += 2;
         }
-        for (int i = VolumeRampSize; i < FrameCount; i++)
+        for (int i = m_VolumeRampSize; i < FrameCount; i++)
         {
             pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[0]] * lvol;
             pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[1]] * rvol;
@@ -927,8 +927,8 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
     // Render 16bit audio
     if (sampleBits == 16)
     {
-        int lvol = NewVol[0];
-        int rvol = NewVol[1];
+        int lvol = m_NewVol[0];
+        int rvol = m_NewVol[1];
 
         int16_t const* frames = (int16_t const*)pFrames;
 
@@ -938,15 +938,15 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
             lvol /= 256;
             rvol /= 256;
 
-            MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 256);
+            MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 256);
 
-            for (int i = 0; i < VolumeRampSize; i++)
+            for (int i = 0; i < m_VolumeRampSize; i++)
             {
-                pBuffer[i].Chan[0] += frames[i] * VolumeRampL[i];
-                pBuffer[i].Chan[1] += frames[i] * VolumeRampR[i];
+                pBuffer[i].Chan[0] += frames[i] * m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += frames[i] * m_VolumeRampR[i];
             }
 
-            for (int i = VolumeRampSize; i < FrameCount; i++)
+            for (int i = m_VolumeRampSize; i < FrameCount; i++)
             {
                 pBuffer[i].Chan[0] += frames[i] * lvol;
                 pBuffer[i].Chan[1] += frames[i] * rvol;
@@ -955,7 +955,7 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
         }
 
         // Spatialized stereo
-        if (bSpatializedChannel)
+        if (m_bSpatializedChannel)
         {
             // Combine stereo channels
 
@@ -963,17 +963,17 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
             lvol /= 512;
             rvol /= 512;
 
-            MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 512);
+            MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 512);
 
-            for (int i = 0; i < VolumeRampSize; i++)
+            for (int i = 0; i < m_VolumeRampSize; i++)
             {
-                pBuffer[i].Chan[0] += ((int)frames[0] + (int)frames[1]) * VolumeRampL[i];
-                pBuffer[i].Chan[1] += ((int)frames[0] + (int)frames[1]) * VolumeRampR[i];
+                pBuffer[i].Chan[0] += ((int)frames[0] + (int)frames[1]) * m_VolumeRampL[i];
+                pBuffer[i].Chan[1] += ((int)frames[0] + (int)frames[1]) * m_VolumeRampR[i];
 
                 frames += 2;
             }
 
-            for (int i = VolumeRampSize; i < FrameCount; i++)
+            for (int i = m_VolumeRampSize; i < FrameCount; i++)
             {
                 pBuffer[i].Chan[0] += ((int)frames[0] + (int)frames[1]) * lvol;
                 pBuffer[i].Chan[1] += ((int)frames[0] + (int)frames[1]) * rvol;
@@ -987,15 +987,15 @@ void AudioMixer::RenderFrames(AudioChannel* Chan, const void* pFrames, int Frame
         // Background music/etc
         lvol /= 256;
         rvol /= 256;
-        MakeVolumeRamp(Chan->Volume, NewVol, FrameCount, 256);
-        for (int i = 0; i < VolumeRampSize; i++)
+        MakeVolumeRamp(Chan->Volume, m_NewVol, FrameCount, 256);
+        for (int i = 0; i < m_VolumeRampSize; i++)
         {
-            pBuffer[i].Chan[0] += frames[0] * VolumeRampL[i];
-            pBuffer[i].Chan[1] += frames[1] * VolumeRampR[i];
+            pBuffer[i].Chan[0] += frames[0] * m_VolumeRampL[i];
+            pBuffer[i].Chan[1] += frames[1] * m_VolumeRampR[i];
 
             frames += 2;
         }
-        for (int i = VolumeRampSize; i < FrameCount; i++)
+        for (int i = m_VolumeRampSize; i < FrameCount; i++)
         {
             pBuffer[i].Chan[0] += frames[0] * lvol;
             pBuffer[i].Chan[1] += frames[1] * rvol;
@@ -1165,13 +1165,13 @@ static void WriteSamples32_Mono(int const* pIn, float* pOut, int Count)
 
 void AudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
 {
-    int64_t wrapMask = DeviceRawPtr->GetTransferBufferSizeInFrames() - 1;
+    int64_t wrapMask = m_DeviceRawPtr->GetTransferBufferSizeInFrames() - 1;
 
-    for (int64_t frameNum = RenderFrame; frameNum < EndFrame;)
+    for (int64_t frameNum = m_RenderFrame; frameNum < EndFrame;)
     {
         int frameOffset = frameNum & wrapMask;
 
-        int frameCount = DeviceRawPtr->GetTransferBufferSizeInFrames() - frameOffset;
+        int frameCount = m_DeviceRawPtr->GetTransferBufferSizeInFrames() - frameOffset;
         if (frameNum + frameCount > EndFrame)
         {
             frameCount = EndFrame - frameNum;
@@ -1179,25 +1179,25 @@ void AudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
 
         frameNum += frameCount;
 
-        if (DeviceRawPtr->GetChannels() == 1)
+        if (m_DeviceRawPtr->GetChannels() == 1)
         {
-            switch (DeviceRawPtr->GetSampleBits())
+            switch (m_DeviceRawPtr->GetSampleBits())
             {
                 case 8:
-                    if (DeviceRawPtr->IsSigned8Bit())
+                    if (m_DeviceRawPtr->IsSigned8Bit())
                     {
-                        WriteSamplesS8_Mono(pSamples, (int8_t*)pTransferBuffer + frameOffset, frameCount);
+                        WriteSamplesS8_Mono(pSamples, (int8_t*)m_pTransferBuffer + frameOffset, frameCount);
                     }
                     else
                     {
-                        WriteSamplesU8_Mono(pSamples, (uint8_t*)pTransferBuffer + frameOffset, frameCount);
+                        WriteSamplesU8_Mono(pSamples, (uint8_t*)m_pTransferBuffer + frameOffset, frameCount);
                     }
                     break;
                 case 16:
-                    WriteSamples16_Mono(pSamples, (short*)pTransferBuffer + frameOffset, frameCount);
+                    WriteSamples16_Mono(pSamples, (short*)m_pTransferBuffer + frameOffset, frameCount);
                     break;
                 case 32:
-                    WriteSamples32_Mono(pSamples, (float*)pTransferBuffer + frameOffset, frameCount);
+                    WriteSamples32_Mono(pSamples, (float*)m_pTransferBuffer + frameOffset, frameCount);
                     break;
             }
 
@@ -1208,23 +1208,23 @@ void AudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
             frameOffset <<= 1;
             frameCount <<= 1;
 
-            switch (DeviceRawPtr->GetSampleBits())
+            switch (m_DeviceRawPtr->GetSampleBits())
             {
                 case 8:
-                    if (DeviceRawPtr->IsSigned8Bit())
+                    if (m_DeviceRawPtr->IsSigned8Bit())
                     {
-                        WriteSamplesS8(pSamples, (int8_t*)pTransferBuffer + frameOffset, frameCount);
+                        WriteSamplesS8(pSamples, (int8_t*)m_pTransferBuffer + frameOffset, frameCount);
                     }
                     else
                     {
-                        WriteSamplesU8(pSamples, (uint8_t*)pTransferBuffer + frameOffset, frameCount);
+                        WriteSamplesU8(pSamples, (uint8_t*)m_pTransferBuffer + frameOffset, frameCount);
                     }
                     break;
                 case 16:
-                    WriteSamples16(pSamples, (short*)pTransferBuffer + frameOffset, frameCount);
+                    WriteSamples16(pSamples, (short*)m_pTransferBuffer + frameOffset, frameCount);
                     break;
                 case 32:
-                    WriteSamples32(pSamples, (float*)pTransferBuffer + frameOffset, frameCount);
+                    WriteSamples32(pSamples, (float*)m_pTransferBuffer + frameOffset, frameCount);
                     break;
             }
 

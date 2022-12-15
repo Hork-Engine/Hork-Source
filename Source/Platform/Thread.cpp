@@ -175,64 +175,64 @@ constexpr int INTERNAL_SIZEOF = sizeof(CRITICAL_SECTION);
 Mutex::Mutex()
 {
 #ifdef HK_OS_WIN32
-    HK_VALIDATE_TYPE_SIZE(Internal, INTERNAL_SIZEOF);
-    InitializeCriticalSection((CRITICAL_SECTION*)&Internal[0]);
+    HK_VALIDATE_TYPE_SIZE(m_Internal, INTERNAL_SIZEOF);
+    InitializeCriticalSection((CRITICAL_SECTION*)&m_Internal[0]);
 #endif
 }
 
 Mutex::~Mutex()
 {
 #ifdef HK_OS_WIN32
-    DeleteCriticalSection((CRITICAL_SECTION*)&Internal[0]);
+    DeleteCriticalSection((CRITICAL_SECTION*)&m_Internal[0]);
 #endif
 }
 
 void Mutex::Lock()
 {
 #ifdef HK_OS_WIN32
-    EnterCriticalSection((CRITICAL_SECTION*)&Internal[0]);
+    EnterCriticalSection((CRITICAL_SECTION*)&m_Internal[0]);
 #else
-    pthread_mutex_lock(&Internal);
+    pthread_mutex_lock(&m_Internal);
 #endif
 }
 
 bool Mutex::TryLock()
 {
 #ifdef HK_OS_WIN32
-    return TryEnterCriticalSection((CRITICAL_SECTION*)&Internal[0]) != FALSE;
+    return TryEnterCriticalSection((CRITICAL_SECTION*)&m_Internal[0]) != FALSE;
 #else
-    return pthread_mutex_trylock(&Internal) == 0;
+    return pthread_mutex_trylock(&m_Internal) == 0;
 #endif
 }
 
 void Mutex::Unlock()
 {
 #ifdef HK_OS_WIN32
-    LeaveCriticalSection((CRITICAL_SECTION*)&Internal[0]);
+    LeaveCriticalSection((CRITICAL_SECTION*)&m_Internal[0]);
 #else
-    pthread_mutex_unlock(&Internal);
+    pthread_mutex_unlock(&m_Internal);
 #endif
 }
 
 #ifdef HK_OS_WIN32
 void SyncEvent::CreateEventWIN32()
 {
-    Internal = CreateEvent(NULL, FALSE, FALSE, NULL);
+    m_Internal = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 void SyncEvent::DestroyEventWIN32()
 {
-    CloseHandle(Internal);
+    CloseHandle(m_Internal);
 }
 
 void SyncEvent::WaitWIN32()
 {
-    WaitForSingleObject(Internal, INFINITE);
+    WaitForSingleObject(m_Internal, INFINITE);
 }
 
 void SyncEvent::SingalWIN32()
 {
-    SetEvent(Internal);
+    SetEvent(m_Internal);
 }
 #endif
 
@@ -241,7 +241,7 @@ void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
     _TimedOut = false;
 
 #ifdef HK_OS_WIN32
-    if (WaitForSingleObject(Internal, _Milliseconds) == WAIT_TIMEOUT)
+    if (WaitForSingleObject(m_Internal, _Milliseconds) == WAIT_TIMEOUT)
     {
         _TimedOut = true;
     }
@@ -255,15 +255,15 @@ void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
         seconds,
         nanoseconds};
 
-    MutexGurad syncGuard(Sync);
-    while (!bSignaled)
+    MutexGurad syncGuard(m_Sync);
+    while (!m_bSignaled)
     {
-        if (pthread_cond_timedwait(&Internal, &Sync.Internal, &ts) == ETIMEDOUT)
+        if (pthread_cond_timedwait(&m_Internal, &m_Sync.m_Internal, &ts) == ETIMEDOUT)
         {
             _TimedOut = true;
             return;
         }
     }
-    bSignaled = false;
+    m_bSignaled = false;
 #endif
 }

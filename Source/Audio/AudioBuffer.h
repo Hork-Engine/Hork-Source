@@ -34,66 +34,66 @@ SOFTWARE.
 
 /** AudioBuffer
 Designed as immutable structure, so we can use it from several threads. Owns the heap pointer. */
-struct AudioBuffer : InterlockedRef
+class AudioBuffer : public InterlockedRef
 {
-private:
-    /** Audio data */
-    void* pFramesHeapPtr;
-
-    /** Frame count */
-    int FrameCount;
-
-    /** Channels count */
-    int Channels;
-
-    /** Bits per sample */
-    int SampleBits;
-
-    /** Stride between frames in bytes */
-    int SampleStride;
-
 public:
-    AudioBuffer(int _FrameCount, int _Channels, int _SampleBits, void* _pFramesHeapPtr)
+    AudioBuffer(int frameCount, int channels, int sampleBits, void* frames)
     {
-        pFramesHeapPtr = _pFramesHeapPtr;
-        FrameCount = _FrameCount;
-        Channels = _Channels;
-        SampleBits = _SampleBits;
-        SampleStride = (SampleBits >> 3) << (Channels - 1);
+        m_Frames = frames;
+        m_FrameCount = frameCount;
+        m_Channels = channels;
+        m_SampleBits = sampleBits;
+        m_SampleStride = (m_SampleBits >> 3) << (m_Channels - 1);
     }
 
     ~AudioBuffer()
     {
-        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pFramesHeapPtr);
+        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(m_Frames);
     }
 
     /** Audio data */
     HK_FORCEINLINE const void* GetFrames() const
     {
-        return pFramesHeapPtr;
+        return m_Frames;
     }
 
     /** Frame count */
     HK_FORCEINLINE int GetFrameCount() const
     {
-        return FrameCount;
+        return m_FrameCount;
     }
 
     /** Channels count */
     HK_FORCEINLINE int GetChannels() const
     {
-        return Channels;
+        return m_Channels;
     }
 
     /** Bits per sample */
     HK_FORCEINLINE int GetSampleBits() const
     {
-        return SampleBits;
+        return m_SampleBits;
     }
 
     /** Stride between frames in bytes */
     HK_FORCEINLINE int GetSampleStride() const
     {
-        return SampleStride;
+        return m_SampleStride;
     }
+
+private:
+    /** Audio data */
+    void* m_Frames;
+
+    /** Frame count */
+    int m_FrameCount;
+
+    /** Channels count */
+    int m_Channels;
+
+    /** Bits per sample */
+    int m_SampleBits;
+
+    /** Stride between frames in bytes */
+    int m_SampleStride;
 };

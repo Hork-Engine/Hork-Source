@@ -65,17 +65,17 @@ public:
     void Execute(ICommandContext& _Ctx);
 
     /** Get argument by index */
-    const char* GetArg(int i) const { return Args[i]; }
+    const char* GetArg(int i) const { return m_Args[i]; }
 
     /** Get arguments count */
-    int GetArgsCount() const { return ArgsCount; }
+    int GetArgsCount() const { return m_ArgsCount; }
 
     /** Helper. Check is command name valid. */
     static bool IsValidCommandName(const char* _Name);
 
 private:
-    String Cmdbuf;
-    int     CmdbufPos;
-    char    Args[MAX_ARGS][MAX_ARG_LEN];
-    int     ArgsCount;
+    String m_Cmdbuf;
+    int m_CmdbufPos;
+    char m_Args[MAX_ARGS][MAX_ARG_LEN];
+    int m_ArgsCount;
 };

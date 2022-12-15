@@ -298,46 +298,46 @@ static char** CommandLineToArgvA(const char* lpCmdline, int* numargs)
 
 CommandLine::CommandLine(const char* _CommandLine)
 {
-    Arguments = CommandLineToArgvA(_CommandLine, &NumArguments);
-    bNeedFree = true;
+    m_Arguments = CommandLineToArgvA(_CommandLine, &m_NumArguments);
+    m_bNeedFree = true;
 
     Validate();
 }
 
 CommandLine::CommandLine(int _Argc, char** _Argv) :
-    NumArguments(_Argc), Arguments(_Argv)
+    m_NumArguments(_Argc), m_Arguments(_Argv)
 {
     Validate();
 }
 
 CommandLine::~CommandLine()
 {
-    if (bNeedFree)
+    if (m_bNeedFree)
     {
-        free(Arguments);
+        free(m_Arguments);
     }
 }
 
 void CommandLine::Validate()
 {
-    if (NumArguments < 1)
+    if (m_NumArguments < 1)
     {
         HK_ASSERT(0);
         return;
     }
     // Fix executable path separator
-    Platform::FixSeparator(Arguments[0]);
+    Platform::FixSeparator(m_Arguments[0]);
 }
 
 int CommandLine::CheckArg(const char* _Arg) const
 {
-    for (int i = 0; i < NumArguments; i++)
+    for (int i = 0; i < m_NumArguments; i++)
     {
 #ifdef WIN32
-        if (!stricmp(_Arg, Arguments[i]))
+        if (!stricmp(_Arg, m_Arguments[i]))
             return i;
 #else
-        if (!strcasecmp(_Arg, Arguments[i]))
+        if (!strcasecmp(_Arg, m_Arguments[i]))
             return i;
 #endif
     }

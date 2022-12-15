@@ -549,7 +549,7 @@ public:
     TUniqueRef() = default;
 
     explicit TUniqueRef(T* InPtr) :
-        Object(InPtr)
+        m_Object(InPtr)
     {}
 
     TUniqueRef(TUniqueRef<T> const&) = delete;
@@ -557,7 +557,7 @@ public:
 
     template <typename T2>
     TUniqueRef(TUniqueRef<T2>&& rhs) :
-        Object(rhs.Detach())
+        m_Object(rhs.Detach())
     {}
 
     ~TUniqueRef()
@@ -574,53 +574,53 @@ public:
 
     T* operator->() const
     {
-        HK_ASSERT(Object);
-        return Object;
+        HK_ASSERT(m_Object);
+        return m_Object;
     }
 
     T& operator*() const
     {
-        HK_ASSERT(Object);
-        return *Object;
+        HK_ASSERT(m_Object);
+        return *m_Object;
     }
 
     template <typename U>
     bool operator==(TUniqueRef<U> const& rhs)
     {
-        return Object == rhs.Object;
+        return m_Object == rhs.m_Object;
     }
 
     template <typename U>
     bool operator!=(TUniqueRef<U> const& rhs)
     {
-        return Object != rhs.Object;
+        return m_Object != rhs.m_Object;
     }
 
     operator bool() const
     {
-        return Object != nullptr;
+        return m_Object != nullptr;
     }
 
     T* Detach()
     {
-        T* ptr = Object;
-        Object = nullptr;
+        T* ptr = m_Object;
+        m_Object = nullptr;
         return ptr;
     }
 
     T* GetObject() const
     {
-        return Object;
+        return m_Object;
     }
 
     void Reset(T* InPtr = nullptr)
     {
-        CheckedDelete(Object);
-        Object = InPtr;
+        CheckedDelete(m_Object);
+        m_Object = InPtr;
     }
 
 private:
-    T* Object{};
+    T* m_Object{};
 };
 
 template <typename T, typename... Args>

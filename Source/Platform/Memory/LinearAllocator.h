@@ -48,18 +48,18 @@ public:
 
     TLinearAllocator(TLinearAllocator&& Rhs) noexcept
     {
-        Core::Swap(Blocks, Rhs.Blocks);
-        Core::Swap(TotalAllocs, Rhs.TotalAllocs);
-        Core::Swap(TotalMemoryUsage, Rhs.TotalMemoryUsage);
+        Core::Swap(m_Blocks, Rhs.m_Blocks);
+        Core::Swap(m_TotalAllocs, Rhs.m_TotalAllocs);
+        Core::Swap(m_TotalMemoryUsage, Rhs.m_TotalMemoryUsage);
     }
 
     TLinearAllocator& operator=(TLinearAllocator&& Rhs) noexcept
     {
         Free();
 
-        Core::Swap(Blocks, Rhs.Blocks);
-        Core::Swap(TotalAllocs, Rhs.TotalAllocs);
-        Core::Swap(TotalMemoryUsage, Rhs.TotalMemoryUsage);
+        Core::Swap(m_Blocks, Rhs.m_Blocks);
+        Core::Swap(m_TotalAllocs, Rhs.m_TotalAllocs);
+        Core::Swap(m_TotalMemoryUsage, Rhs.m_TotalMemoryUsage);
 
         return *this;
     }
@@ -108,9 +108,9 @@ public:
             block->Address    = (size_t)AlignPtr(block + 1, Alignment);
             block->MaxAddress = (size_t)((byte*)block + size);
             block->CurAddress = block->Address;
-            block->Next       = Blocks;
-            Blocks            = block;
-            TotalAllocs++;
+            block->Next       = m_Blocks;
+            m_Blocks = block;
+            m_TotalAllocs++;
 
             address = block->Address;
         }
@@ -121,7 +121,7 @@ public:
         void* ptr = reinterpret_cast<byte*>(0) + address;
         address += SizeInBytes;
 
-        TotalMemoryUsage += address - block->CurAddress;
+        m_TotalMemoryUsage += address - block->CurAddress;
         block->CurAddress = address;
 
         HK_ASSERT(IsAlignedPtr(ptr, Alignment));
@@ -148,7 +148,7 @@ public:
         block->CurAddress            = block->LastAllocationAddress2;
         block->LastAllocationAddress = block->LastAllocationAddress2;
 
-        TotalMemoryUsage -= size;
+        m_TotalMemoryUsage -= size;
 
         return size;
     }
@@ -234,8 +234,8 @@ public:
             {
                 block->CurAddress = block->LastAllocationAddress + SizeInBytes;
 
-                TotalMemoryUsage -= size;
-                TotalMemoryUsage += SizeInBytes;
+                m_TotalMemoryUsage -= size;
+                m_TotalMemoryUsage += SizeInBytes;
 
                 return Ptr;
             }
@@ -272,8 +272,8 @@ public:
             {
                 block->CurAddress = block->LastAllocationAddress + SizeInBytes;
 
-                TotalMemoryUsage -= size;
-                TotalMemoryUsage += SizeInBytes;
+                m_TotalMemoryUsage -= size;
+                m_TotalMemoryUsage += SizeInBytes;
 
                 return Ptr;
             }
@@ -285,22 +285,22 @@ public:
     // Free allocated memory.
     void Free()
     {
-        for (Block* block = Blocks; block;)
+        for (Block* block = m_Blocks; block;)
         {
             Block* next = block->Next;
             Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
             block = next;
         }
-        Blocks           = nullptr;
-        TotalAllocs      = 0;
-        TotalMemoryUsage = 0;
+        m_Blocks = nullptr;
+        m_TotalAllocs = 0;
+        m_TotalMemoryUsage = 0;
     }
 
     // Clears and merges memory blocks into one.
     void ResetAndMerge()
     {
         // If we have more than one block
-        if (Blocks && Blocks->Next)
+        if (m_Blocks && m_Blocks->Next)
         {
             size_t blockMemoryUsage = GetBlockMemoryUsage();
 
@@ -317,9 +317,9 @@ public:
             block->CurAddress             = block->Address;
             block->LastAllocationAddress  = 0;
             block->LastAllocationAddress2 = 0;
-            block->Next                   = Blocks;
-            Blocks                        = block;
-            TotalAllocs++;
+            block->Next                   = m_Blocks;
+            m_Blocks                      = block;
+            m_TotalAllocs++;
         }
         else
             Reset();
@@ -328,27 +328,27 @@ public:
     // Clears memory blocks. Doesn't free memory blocks.
     void Reset()
     {
-        for (Block* block = Blocks; block; block = block->Next)
+        for (Block* block = m_Blocks; block; block = block->Next)
         {
             block->CurAddress = block->Address;
         }
-        TotalMemoryUsage = 0;
+        m_TotalMemoryUsage = 0;
     }
 
     size_t GetBlockCount() const
     {
-        return TotalAllocs;
+        return m_TotalAllocs;
     }
 
     size_t GetTotalMemoryUsage() const
     {
-        return TotalMemoryUsage;
+        return m_TotalMemoryUsage;
     }
 
     size_t GetBlockMemoryUsage() const
     {
         size_t blockMemoryUsage = 0;
-        for (Block* block = Blocks; block; block = block->Next)
+        for (Block* block = m_Blocks; block; block = block->Next)
         {
             blockMemoryUsage += block->MaxAddress - block->Address;
         }
@@ -365,14 +365,14 @@ private:
         size_t  LastAllocationAddress2;
         Block* Next;
     };
-    Block* Blocks           = nullptr;
-    size_t  TotalAllocs      = 0;
-    size_t  TotalMemoryUsage = 0;
+    Block* m_Blocks = nullptr;
+    size_t m_TotalAllocs = 0;
+    size_t m_TotalMemoryUsage = 0;
 
     // Returns true if the block was found, otherwise the block and address are undefined.
     bool FindBlock(size_t SizeInBytes, size_t Alignment, Block*& Block, size_t& Address) const
     {
-        for (Block = Blocks; Block; Block = Block->Next)
+        for (Block = m_Blocks; Block; Block = Block->Next)
         {
             Address = Align(Block->CurAddress, Alignment);
             if (Address + SizeInBytes <= Block->MaxAddress)
@@ -385,7 +385,7 @@ private:
 
     Block* GetBlockByAddress(size_t Address) const
     {
-        for (Block* block = Blocks; block; block = block->Next)
+        for (Block* block = m_Blocks; block; block = block->Next)
         {
             if (Address >= block->Address && Address < block->MaxAddress)
                 return block;

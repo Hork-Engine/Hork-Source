@@ -66,27 +66,8 @@ public:
 /** AudioStream
 Designed as immutable structure, so we can use it from several threads.
 NOTE: SeekToFrame and ReadFrames are not thread safe without your own synchronization. */
-struct AudioStream : InterlockedRef
+class AudioStream : public InterlockedRef
 {
-private:
-    /** Audio decoder */
-    struct ma_decoder* Decoder;
-
-    /** Audio source */
-    TRef<FileInMemory> pFileInMemory;
-
-    /** Frame count */
-    int FrameCount;
-
-    /** Channels count */
-    int Channels;
-
-    /** Bits per sample */
-    int SampleBits;
-
-    /** Stride between frames in bytes */
-    int SampleStride;
-
 public:
     AudioStream(FileInMemory* pFileInMemory, int FrameCount, int SampleRate, int SampleBits, int Channels);
 
@@ -95,25 +76,25 @@ public:
     /** Frame count */
     HK_FORCEINLINE int GetFrameCount() const
     {
-        return FrameCount;
+        return m_FrameCount;
     }
 
     /** Channels count */
     HK_FORCEINLINE int GetChannels() const
     {
-        return Channels;
+        return m_Channels;
     }
 
     /** Bits per sample */
     HK_FORCEINLINE int GetSampleBits() const
     {
-        return SampleBits;
+        return m_SampleBits;
     }
 
     /** Stride between frames in bytes */
     HK_FORCEINLINE int GetSampleStride() const
     {
-        return SampleStride;
+        return m_SampleStride;
     }
 
     /** Seeks to a PCM frame based on it's absolute index. */
@@ -121,4 +102,23 @@ public:
 
     /** Reads PCM frames from the stream. */
     int ReadFrames(void* pFrames, int FrameCount, size_t SizeInBytes);
+
+private:
+    /** Audio decoder */
+    struct ma_decoder* m_Decoder;
+
+    /** Audio source */
+    TRef<FileInMemory> m_pFileInMemory;
+
+    /** Frame count */
+    int m_FrameCount;
+
+    /** Channels count */
+    int m_Channels;
+
+    /** Bits per sample */
+    int m_SampleBits;
+
+    /** Stride between frames in bytes */
+    int m_SampleStride;
 };

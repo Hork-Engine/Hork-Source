@@ -77,39 +77,39 @@ public:
 
     ~ConsoleVar();
 
-    char const* GetName() const { return Name; }
+    char const* GetName() const { return m_Name; }
 
-    char const* GetComment() const { return Comment; }
+    char const* GetComment() const { return m_Comment; }
 
     bool CanChangeValue() const;
 
-    const char* GetDefaultValue() const { return DefaultValue; }
+    const char* GetDefaultValue() const { return m_DefaultValue; }
 
-    String const& GetValue() const { return Value; }
+    String const& GetValue() const { return m_Value; }
 
-    String const& GetLatchedValue() const { return LatchedValue; }
+    String const& GetLatchedValue() const { return m_LatchedValue; }
 
-    bool GetBool() const { return !!I32; }
+    bool GetBool() const { return !!m_I32; }
 
-    int32_t GetInteger() const { return I32; }
+    int32_t GetInteger() const { return m_I32; }
 
-    float GetFloat() const { return F32; }
+    float GetFloat() const { return m_F32; }
 
-    bool IsModified() const { return !!(Flags & _CVAR_MODIFIED); }
+    bool IsModified() const { return !!(m_Flags & _CVAR_MODIFIED); }
 
-    void MarkModified() { Flags |= _CVAR_MODIFIED; }
+    void MarkModified() { m_Flags |= _CVAR_MODIFIED; }
 
-    void UnmarkModified() { Flags &= ~_CVAR_MODIFIED; }
+    void UnmarkModified() { m_Flags &= ~_CVAR_MODIFIED; }
 
-    bool IsReadOnly() const { return !!(Flags & CVAR_READONLY); }
+    bool IsReadOnly() const { return !!(m_Flags & CVAR_READONLY); }
 
-    bool IsNoSave() const { return !!(Flags & CVAR_NOSAVE); }
+    bool IsNoSave() const { return !!(m_Flags & CVAR_NOSAVE); }
 
-    bool IsCheat() const { return !!(Flags & CVAR_CHEAT); }
+    bool IsCheat() const { return !!(m_Flags & CVAR_CHEAT); }
 
-    bool IsServerOnly() const { return !!(Flags & CVAR_SERVERONLY); }
+    bool IsServerOnly() const { return !!(m_Flags & CVAR_SERVERONLY); }
 
-    bool IsNoInGame() const { return !!(Flags & CVAR_NOINGAME); }
+    bool IsNoInGame() const { return !!(m_Flags & CVAR_NOINGAME); }
 
     void SetString(StringView _String);
 
@@ -153,7 +153,7 @@ public:
     }
     operator bool() const { return GetBool(); }
 
-    ConsoleVar* GetNext() { return Next; }
+    ConsoleVar* GetNext() { return m_Next; }
 
     static ConsoleVar* GlobalVariableList();
 
@@ -164,13 +164,13 @@ public:
     static void FreeVariables();
 
 private:
-    char const* const Name;
-    char const* const DefaultValue;
-    char const* const Comment;
-    String           Value;
-    String           LatchedValue;
-    int32_t           I32{};
-    float             F32{};
-    uint16_t          Flags{};
-    ConsoleVar*       Next;
+    char const* const m_Name;
+    char const* const m_DefaultValue;
+    char const* const m_Comment;
+    String m_Value;
+    String m_LatchedValue;
+    int32_t m_I32{};
+    float m_F32{};
+    uint16_t m_Flags{};
+    ConsoleVar* m_Next;
 };

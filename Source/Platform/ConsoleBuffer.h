@@ -80,14 +80,14 @@ private:
 
     static constexpr int CON_IMAGE_SIZE = 1024 * 1024;
 
-    WideChar  ImageData[2][CON_IMAGE_SIZE];
-    WideChar* pImage = ImageData[0];
-    Mutex     Mutex;
-    int       PrintLine    = 0;
-    int       CurWidth     = 0;
-    int       MaxLines     = 0;
-    int       NumLines     = 0;
-    int       MaxLineChars = 0;
-    int       Scroll       = 0;
-    bool      bInitialized = false;
+    WideChar  m_ImageData[2][CON_IMAGE_SIZE];
+    WideChar* m_pImage = m_ImageData[0];
+    Mutex     m_Mutex;
+    int       m_PrintLine    = 0;
+    int       m_CurWidth     = 0;
+    int       m_MaxLines     = 0;
+    int       m_NumLines     = 0;
+    int       m_MaxLineChars = 0;
+    int       m_Scroll       = 0;
+    bool      m_bInitialized = false;
 };

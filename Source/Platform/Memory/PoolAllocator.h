@@ -49,22 +49,22 @@ public:
 
     TPoolAllocator(TPoolAllocator&& Rhs) noexcept
     {
-        Core::Swap(Blocks, Rhs.Blocks);
-        Core::Swap(CurBlock, Rhs.CurBlock);
-        //Core::Swap(FreeList, Rhs.FreeList);
-        Core::Swap(TotalChunks, Rhs.TotalChunks);
-        Core::Swap(TotalBlocks, Rhs.TotalBlocks);
+        Core::Swap(m_Blocks, Rhs.m_Blocks);
+        Core::Swap(m_CurBlock, Rhs.m_CurBlock);
+        //Core::Swap(m_FreeList, Rhs.m_FreeList);
+        Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
+        Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
     }
 
     TPoolAllocator& operator=(TPoolAllocator&& Rhs) noexcept
     {
         Free();
 
-        Core::Swap(Blocks, Rhs.Blocks);
-        Core::Swap(CurBlock, Rhs.CurBlock);
-        //Core::Swap(FreeList, Rhs.FreeList);
-        Core::Swap(TotalChunks, Rhs.TotalChunks);
-        Core::Swap(TotalBlocks, Rhs.TotalBlocks);
+        Core::Swap(m_Blocks, Rhs.m_Blocks);
+        Core::Swap(m_CurBlock, Rhs.m_CurBlock);
+        //Core::Swap(m_FreeList, Rhs.m_FreeList);
+        Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
+        Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
 
         return *this;
     }
@@ -82,29 +82,29 @@ public:
     void CleanupEmptyBlocks();
 
     /** Returns the total number of allocated blocks. */
-    int GetTotalBlocks() const { return TotalBlocks; }
+    int GetTotalBlocks() const { return m_TotalBlocks; }
 
     /**Returns the total number of allocated chunks. */
-    int GetTotalChunks() const { return TotalChunks; }
+    int GetTotalChunks() const { return m_TotalChunks; }
 
 private:
-    union SChunk
+    union Chunk
     {
-        byte    Data[ChunkSize];
-        SChunk* Next;
+        byte   Data[ChunkSize];
+        Chunk* Next;
     };
     struct Block
     {
-        SChunk  Chunks[BlockCapacity];
-        SChunk* FreeList;
+        Chunk  Chunks[BlockCapacity];
+        Chunk* FreeList;
         Block* Next;
-        int     Allocated;
+        int    Allocated;
     };
-    Block* Blocks;
-    Block* CurBlock;
-    //SChunk * FreeList;
-    int TotalChunks;
-    int TotalBlocks;
+    Block* m_Blocks;
+    Block* m_CurBlock;
+    //Chunk * m_FreeList;
+    int m_TotalChunks;
+    int m_TotalBlocks;
 
     /** Create a new block */
     Block* AllocateBlock();
@@ -113,11 +113,11 @@ private:
 template <typename T, size_t BlockCapacity>
 HK_INLINE TPoolAllocator<T, BlockCapacity>::TPoolAllocator()
 {
-    Blocks   = nullptr;
-    CurBlock = nullptr;
-    //FreeList = nullptr;
-    TotalChunks = 0;
-    TotalBlocks = 0;
+    m_Blocks = nullptr;
+    m_CurBlock = nullptr;
+    //m_FreeList = nullptr;
+    m_TotalChunks = 0;
+    m_TotalBlocks = 0;
 }
 
 template <typename T, size_t BlockCapacity>
@@ -129,16 +129,16 @@ HK_INLINE TPoolAllocator<T, BlockCapacity>::~TPoolAllocator()
 template <typename T, size_t BlockCapacity>
 HK_INLINE void TPoolAllocator<T, BlockCapacity>::Free()
 {
-    while (Blocks)
+    while (m_Blocks)
     {
-        Block* block = Blocks;
-        Blocks        = block->Next;
+        Block* block = m_Blocks;
+        m_Blocks = block->Next;
         Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
     }
-    CurBlock = nullptr;
-    //FreeList = nullptr;
-    TotalChunks = 0;
-    TotalBlocks = 0;
+    m_CurBlock = nullptr;
+    //m_FreeList = nullptr;
+    m_TotalChunks = 0;
+    m_TotalBlocks = 0;
 }
 
 template <typename T, size_t BlockCapacity>
@@ -147,10 +147,10 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
     Block* prev = nullptr;
     Block* next;
 
-    //DEBUG( "TPoolAllocator: total blocks {}\n", TotalBlocks );
+    //DEBUG( "TPoolAllocator: total blocks {}\n", m_TotalBlocks );
 
     // Keep at least one block allocated
-    for (Block* block = Blocks; block && TotalBlocks > 1; block = next)
+    for (Block* block = m_Blocks; block && m_TotalBlocks > 1; block = next)
     {
         next = block->Next;
 
@@ -162,14 +162,14 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
             }
             else
             {
-                Blocks = next;
+                m_Blocks = next;
             }
-            if (CurBlock == block)
+            if (m_CurBlock == block)
             {
-                CurBlock = nullptr;
+                m_CurBlock = nullptr;
             }
             Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
-            TotalBlocks--;
+            m_TotalBlocks--;
         }
         else
         {
@@ -177,13 +177,13 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
         }
     }
 
-    if (!CurBlock)
+    if (!m_CurBlock)
     {
-        for (Block* block = Blocks; block; block = block->Next)
+        for (Block* block = m_Blocks; block; block = block->Next)
         {
             if (block->FreeList)
             {
-                CurBlock = block;
+                m_CurBlock = block;
                 break;
             }
         }
@@ -197,8 +197,8 @@ HK_INLINE typename TPoolAllocator<T, BlockCapacity>::Block* TPoolAllocator<T, Bl
     block->FreeList = block->Chunks;
 #if 0
     for ( int i = 0 ; i < BlockCapacity ; ++i ) {
-        block->Chunks[ i ].Next = FreeList;
-        FreeList = &block->Chunks[ i ];
+        block->Chunks[ i ].Next = m_FreeList;
+        m_FreeList = &block->Chunks[ i ];
     }
 #else
     int i;
@@ -209,10 +209,10 @@ HK_INLINE typename TPoolAllocator<T, BlockCapacity>::Block* TPoolAllocator<T, Bl
     block->Chunks[i].Next = nullptr;
 #endif
     block->Allocated = 0;
-    block->Next      = Blocks;
-    Blocks           = block;
-    CurBlock         = block;
-    ++TotalBlocks;
+    block->Next      = m_Blocks;
+    m_Blocks         = block;
+    m_CurBlock       = block;
+    ++m_TotalBlocks;
     DEBUG("TPoolAllocator::AllocateBlock: allocated a new block\n");
     return block;
 }
@@ -220,28 +220,28 @@ HK_INLINE typename TPoolAllocator<T, BlockCapacity>::Block* TPoolAllocator<T, Bl
 template <typename T, size_t BlockCapacity>
 HK_INLINE T* TPoolAllocator<T, BlockCapacity>::Allocate()
 {
-    if (CurBlock && !CurBlock->FreeList)
+    if (m_CurBlock && !m_CurBlock->FreeList)
     {
         // Try to find a block with free chunks
-        for (Block* block = Blocks; block; block = block->Next)
+        for (Block* block = m_Blocks; block; block = block->Next)
         {
             if (block->FreeList)
             {
-                CurBlock = block;
+                m_CurBlock = block;
                 break;
             }
         }
     }
 
-    if (!CurBlock || !CurBlock->FreeList)
+    if (!m_CurBlock || !m_CurBlock->FreeList)
     {
         AllocateBlock();
     }
 
-    SChunk* chunk      = CurBlock->FreeList;
-    CurBlock->FreeList = chunk->Next;
-    ++CurBlock->Allocated;
-    ++TotalChunks;
+    Chunk* chunk = m_CurBlock->FreeList;
+    m_CurBlock->FreeList = chunk->Next;
+    ++m_CurBlock->Allocated;
+    ++m_TotalChunks;
     HK_ASSERT(IsAlignedPtr(&chunk->Data[0], Alignment));
     return (T*)&chunk->Data[0];
 }
@@ -249,19 +249,19 @@ HK_INLINE T* TPoolAllocator<T, BlockCapacity>::Allocate()
 template <typename T, size_t BlockCapacity>
 HK_INLINE void TPoolAllocator<T, BlockCapacity>::Deallocate(void* _Bytes)
 {
-    SChunk* chunk = (SChunk*)_Bytes;
-    CurBlock      = nullptr;
-    for (Block* block = Blocks; block; block = block->Next)
+    Chunk* chunk = (Chunk*)_Bytes;
+    m_CurBlock = nullptr;
+    for (Block* block = m_Blocks; block; block = block->Next)
     {
         if (chunk >= &block->Chunks[0] && chunk < &block->Chunks[BlockCapacity])
         {
-            CurBlock        = block;
+            m_CurBlock = block;
             chunk->Next     = block->FreeList;
             block->FreeList = chunk;
             --block->Allocated;
-            --TotalChunks;
+            --m_TotalChunks;
             break;
         }
     }
-    HK_ASSERT(CurBlock != nullptr);
+    HK_ASSERT(m_CurBlock != nullptr);
 }

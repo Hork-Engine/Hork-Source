@@ -36,55 +36,55 @@ SOFTWARE.
 class AudioDevice : public RefCounted
 {
 public:
-    AudioDevice(int InSampleRate);
+    AudioDevice(int sampleRate);
     virtual ~AudioDevice();
 
     /** Playback frequency */
     int GetSampleRate() const
     {
-        return SampleRate;
+        return m_SampleRate;
     }
 
     /** Bits per sample (8, 16 or 32) */
     int GetSampleBits() const
     {
-        return SampleBits;
+        return m_SampleBits;
     }
 
     /** Sample size in bytes */
     int GetSampleWidth() const
     {
-        return SampleBits >> 3;
+        return m_SampleBits >> 3;
     }
 
     bool IsSigned8Bit() const
     {
-        return bSigned8;
+        return m_bSigned8;
     }
 
     int GetChannels() const
     {
-        return Channels;
+        return m_Channels;
     }
 
     bool IsMono() const
     {
-        return Channels == 1;
+        return m_Channels == 1;
     }
 
     bool IsStereo() const
     {
-        return Channels == 2;
+        return m_Channels == 2;
     }
 
     int GetTransferBufferSizeInFrames() const
     {
-        return NumFrames;
+        return m_NumFrames;
     }
 
     int GetTransferBufferSizeInBytes() const
     {
-        return TransferBufferSizeInBytes;
+        return m_TransferBufferSizeInBytes;
     }
 
     void BlockSound();
@@ -107,29 +107,29 @@ private:
     void RenderAudio(uint8_t* pStream, int StreamLength);
 
     // Internal device id
-    uint32_t AudioDeviceId;
+    uint32_t m_AudioDeviceId;
     // Transfer buffer memory
-    uint8_t* pTransferBuffer;
+    uint8_t* m_pTransferBuffer;
     // Transfer buffer size in bytes
-    int TransferBufferSizeInBytes;
+    int m_TransferBufferSizeInBytes;
     // Transfer buffer size in frames * channels
-    int Samples;
+    int m_Samples;
     // Transfer buffer size in frames
-    int NumFrames;
+    int m_NumFrames;
     // Transfer buffer offset in samples
-    int TransferOffset;
+    int m_TransferOffset;
     // Transfer buffer previous offset in samples
-    int PrevTransferOffset;
+    int m_PrevTransferOffset;
     // Wraps count
-    int64_t BufferWraps;
+    int64_t m_BufferWraps;
     // Playback frequency
-    int SampleRate;
+    int m_SampleRate;
     // Bits per sample (8 or 16)
-    int SampleBits;
+    int m_SampleBits;
     // Channels (1 or 2)
-    int Channels;
+    int m_Channels;
     // Is signed 8bit audio (desired is unsigned)
-    bool bSigned8;
+    bool m_bSigned8;
     // Callback for async mixing
-    std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback;
+    std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> m_MixerCallback;
 };

@@ -38,104 +38,104 @@ CommandProcessor::CommandProcessor()
 
 void CommandProcessor::ClearBuffer()
 {
-    Cmdbuf.Clear();
-    CmdbufPos = 0;
-    ArgsCount = 0;
+    m_Cmdbuf.Clear();
+    m_CmdbufPos = 0;
+    m_ArgsCount = 0;
 }
 
 void CommandProcessor::Add(StringView _Text)
 {
-    Cmdbuf += _Text;
+    m_Cmdbuf += _Text;
 }
 
 void CommandProcessor::Insert(StringView _Text)
 {
-    Cmdbuf.InsertAt(CmdbufPos, _Text);
+    m_Cmdbuf.InsertAt(m_CmdbufPos, _Text);
 }
 
 void CommandProcessor::Execute(ICommandContext& _Ctx)
 {
-    if (Cmdbuf.IsEmpty())
+    if (m_Cmdbuf.IsEmpty())
     {
         return;
     }
 
-    ArgsCount = 0;
+    m_ArgsCount = 0;
 
-    HK_ASSERT(CmdbufPos == 0);
+    HK_ASSERT(m_CmdbufPos == 0);
 
-    while (CmdbufPos < Cmdbuf.Length())
+    while (m_CmdbufPos < m_Cmdbuf.Length())
     {
         // "//" comments
-        if (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '/')
+        if (m_Cmdbuf[m_CmdbufPos] == '/' && m_Cmdbuf[m_CmdbufPos + 1] == '/')
         {
-            CmdbufPos += 2; // skip "//"
-            while (Cmdbuf[CmdbufPos] != '\n' && CmdbufPos < Cmdbuf.Length())
+            m_CmdbufPos += 2; // skip "//"
+            while (m_Cmdbuf[m_CmdbufPos] != '\n' && m_CmdbufPos < m_Cmdbuf.Length())
             {
-                CmdbufPos++;
+                m_CmdbufPos++;
             }
             continue;
         }
 
         // "/* */" comments
-        if (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '*')
+        if (m_Cmdbuf[m_CmdbufPos] == '/' && m_Cmdbuf[m_CmdbufPos + 1] == '*')
         {
-            CmdbufPos += 2; // skip "/*"
+            m_CmdbufPos += 2; // skip "/*"
             for (;;)
             {
-                if (CmdbufPos >= Cmdbuf.Length())
+                if (m_CmdbufPos >= m_Cmdbuf.Length())
                 {
                     LOG("CommandProcessor::Execute: expected '*/'\n");
                     break;
                 }
 
-                if (Cmdbuf[CmdbufPos] == '*' && Cmdbuf[CmdbufPos + 1] == '/')
+                if (m_Cmdbuf[m_CmdbufPos] == '*' && m_Cmdbuf[m_CmdbufPos + 1] == '/')
                 {
-                    CmdbufPos += 2; // skip "*/"
+                    m_CmdbufPos += 2; // skip "*/"
                     break;
                 }
 
-                CmdbufPos++;
+                m_CmdbufPos++;
             }
             continue;
         }
 
-        if (Cmdbuf[CmdbufPos] == '\n' || Cmdbuf[CmdbufPos] == ';')
+        if (m_Cmdbuf[m_CmdbufPos] == '\n' || m_Cmdbuf[m_CmdbufPos] == ';')
         {
-            CmdbufPos++;
-            if (ArgsCount > 0)
+            m_CmdbufPos++;
+            if (m_ArgsCount > 0)
             {
                 _Ctx.ExecuteCommand(*this);
-                ArgsCount = 0;
+                m_ArgsCount = 0;
             }
             continue;
         }
 
         // skip whitespaces
-        if ((Cmdbuf[CmdbufPos] < 32 && Cmdbuf[CmdbufPos] > 0) || Cmdbuf[CmdbufPos] == ' ' || Cmdbuf[CmdbufPos] == '\t')
+        if ((m_Cmdbuf[m_CmdbufPos] < 32 && m_Cmdbuf[m_CmdbufPos] > 0) || m_Cmdbuf[m_CmdbufPos] == ' ' || m_Cmdbuf[m_CmdbufPos] == '\t')
         {
-            CmdbufPos++;
+            m_CmdbufPos++;
             continue;
         }
 
-        if (ArgsCount < MAX_ARGS)
+        if (m_ArgsCount < MAX_ARGS)
         {
             bool bQuoted = false;
 
-            if (Cmdbuf[CmdbufPos] == '\"')
+            if (m_Cmdbuf[m_CmdbufPos] == '\"')
             { /* quoted token */
                 bQuoted = true;
-                CmdbufPos++;
-                if (Cmdbuf[CmdbufPos] == '\"')
+                m_CmdbufPos++;
+                if (m_Cmdbuf[m_CmdbufPos] == '\"')
                 {
                     // empty token
                     bQuoted = false;
-                    CmdbufPos++;
+                    m_CmdbufPos++;
                     continue;
                 }
             }
 
-            if (CmdbufPos >= Cmdbuf.Length())
+            if (m_CmdbufPos >= m_Cmdbuf.Length())
             {
                 if (bQuoted)
                 {
@@ -147,7 +147,7 @@ void CommandProcessor::Execute(ICommandContext& _Ctx)
             int c = 0;
             for (;;)
             {
-                if ((Cmdbuf[CmdbufPos] < 32 && Cmdbuf[CmdbufPos] > 0) || Cmdbuf[CmdbufPos] == '\"' || CmdbufPos >= Cmdbuf.Length() || c >= (MAX_ARG_LEN - 1))
+                if ((m_Cmdbuf[m_CmdbufPos] < 32 && m_Cmdbuf[m_CmdbufPos] > 0) || m_Cmdbuf[m_CmdbufPos] == '\"' || m_CmdbufPos >= m_Cmdbuf.Length() || c >= (MAX_ARG_LEN - 1))
                 {
                     if (bQuoted)
                     {
@@ -158,40 +158,40 @@ void CommandProcessor::Execute(ICommandContext& _Ctx)
 
                 if (!bQuoted)
                 {
-                    if ((Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '/') || (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '*') || Cmdbuf[CmdbufPos] == ' ' || Cmdbuf[CmdbufPos] == '\t' || Cmdbuf[CmdbufPos] == ';')
+                    if ((m_Cmdbuf[m_CmdbufPos] == '/' && m_Cmdbuf[m_CmdbufPos + 1] == '/') || (m_Cmdbuf[m_CmdbufPos] == '/' && m_Cmdbuf[m_CmdbufPos + 1] == '*') || m_Cmdbuf[m_CmdbufPos] == ' ' || m_Cmdbuf[m_CmdbufPos] == '\t' || m_Cmdbuf[m_CmdbufPos] == ';')
                     {
                         break;
                     }
                 }
 
-                Args[ArgsCount][c++] = Cmdbuf[CmdbufPos++];
+                m_Args[m_ArgsCount][c++] = m_Cmdbuf[m_CmdbufPos++];
 
-                if (bQuoted && Cmdbuf[CmdbufPos] == '\"')
+                if (bQuoted && m_Cmdbuf[m_CmdbufPos] == '\"')
                 {
                     bQuoted = false;
-                    CmdbufPos++;
+                    m_CmdbufPos++;
                     break;
                 }
             }
-            Args[ArgsCount][c] = 0;
-            ArgsCount++;
+            m_Args[m_ArgsCount][c] = 0;
+            m_ArgsCount++;
         }
         else
         {
             LOG("CommandProcessor::Execute: MAX_ARGS hit\n");
-            CmdbufPos++;
+            m_CmdbufPos++;
         }
     }
 
-    if (ArgsCount > 0)
+    if (m_ArgsCount > 0)
     {
         _Ctx.ExecuteCommand(*this);
-        ArgsCount = 0;
+        m_ArgsCount = 0;
     }
 
     // clear command buffer
-    CmdbufPos = 0;
-    Cmdbuf.Clear();
+    m_CmdbufPos = 0;
+    m_Cmdbuf.Clear();
 }
 
 bool CommandProcessor::IsValidCommandName(const char* _Name)

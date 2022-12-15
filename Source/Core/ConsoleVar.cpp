@@ -59,50 +59,50 @@ ConsoleVar* ConsoleVar::FindVariable(StringView _Name)
 
 void ConsoleVar::AllocateVariables()
 {
-    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
+    for (ConsoleVar* var = GlobalVars; var; var = var->m_Next)
     {
-        var->Value = var->DefaultValue;
-        var->F32   = Core::ParseCvar(var->Value);
-        var->I32   = static_cast<int32_t>(var->F32);
+        var->m_Value = var->m_DefaultValue;
+        var->m_F32   = Core::ParseCvar(var->m_Value);
+        var->m_I32 = static_cast<int32_t>(var->m_F32);
     }
     GVariableAllocated = true;
 }
 
 void ConsoleVar::FreeVariables()
 {
-    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
+    for (ConsoleVar* var = GlobalVars; var; var = var->m_Next)
     {
-        var->Value.Free();
-        var->LatchedValue.Free();
+        var->m_Value.Free();
+        var->m_LatchedValue.Free();
     }
     GlobalVars = nullptr;
 }
 
 ConsoleVar::ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment) :
-    Name(_Name.CStr()), DefaultValue(_Value.CStr()), Comment(_Comment.CStr()), Flags(_Flags)
+    m_Name(_Name.CStr()), m_DefaultValue(_Value.CStr()), m_Comment(_Comment.CStr()), m_Flags(_Flags)
 {
     HK_ASSERT(!GVariableAllocated);
-    HK_ASSERT(CommandProcessor::IsValidCommandName(Name));
+    HK_ASSERT(CommandProcessor::IsValidCommandName(m_Name));
 
     ConsoleVar* head = GlobalVars;
-    Next              = head;
+    m_Next = head;
     GlobalVars        = this;
 }
 
 ConsoleVar::~ConsoleVar()
 {
     ConsoleVar* prev = nullptr;
-    for (ConsoleVar* var = GlobalVars; var; var = var->Next)
+    for (ConsoleVar* var = GlobalVars; var; var = var->m_Next)
     {
         if (var == this)
         {
             if (prev)
             {
-                prev->Next = var->Next;
+                prev->m_Next = var->m_Next;
             }
             else
             {
-                GlobalVars = var->Next;
+                GlobalVars = var->m_Next;
             }
             break;
         }
@@ -112,27 +112,27 @@ ConsoleVar::~ConsoleVar()
 
 bool ConsoleVar::CanChangeValue() const
 {
-    if (Flags & CVAR_READONLY)
+    if (m_Flags & CVAR_READONLY)
     {
-        LOG("{} is readonly\n", Name);
+        LOG("{} is readonly\n", m_Name);
         return false;
     }
 
-    if ((Flags & CVAR_CHEAT) && !(EnvironmentFlags & CVAR_CHEATS_ALLOWED))
+    if ((m_Flags & CVAR_CHEAT) && !(EnvironmentFlags & CVAR_CHEATS_ALLOWED))
     {
-        LOG("{} is cheat protected\n", Name);
+        LOG("{} is cheat protected\n", m_Name);
         return false;
     }
 
-    if ((Flags & CVAR_SERVERONLY) && !(EnvironmentFlags & CVAR_SERVER_ACTIVE))
+    if ((m_Flags & CVAR_SERVERONLY) && !(EnvironmentFlags & CVAR_SERVER_ACTIVE))
     {
-        LOG("{} can be changed by server only\n", Name);
+        LOG("{} can be changed by server only\n", m_Name);
         return false;
     }
 
-    if ((Flags & CVAR_NOINGAME) && (EnvironmentFlags & CVAR_INGAME_STATUS))
+    if ((m_Flags & CVAR_NOINGAME) && (EnvironmentFlags & CVAR_INGAME_STATUS))
     {
-        LOG("{} can't be changed in game\n", Name);
+        LOG("{} can't be changed in game\n", m_Name);
         return false;
     }
 
@@ -146,18 +146,18 @@ void ConsoleVar::SetString(StringView _String)
         return;
     }
 
-    bool bApply = Value.Cmp(_String) != 0;
+    bool bApply = m_Value.Cmp(_String) != 0;
     if (!bApply)
     {
         // Value is not changed
         return;
     }
 
-    if (Flags & CVAR_LATCHED)
+    if (m_Flags & CVAR_LATCHED)
     {
-        LOG("{} restart required to change value\n", Name);
+        LOG("{} restart required to change value\n", m_Name);
 
-        LatchedValue = _String;
+        m_LatchedValue = _String;
     }
     else
     {
@@ -182,10 +182,10 @@ void ConsoleVar::SetFloat(float _Float)
 
 void ConsoleVar::ForceString(StringView _String)
 {
-    Value = _String;
-    F32   = Core::ParseCvar(Value);
-    I32   = static_cast<int32_t>(F32);
-    LatchedValue.Clear();
+    m_Value = _String;
+    m_F32 = Core::ParseCvar(m_Value);
+    m_I32 = static_cast<int32_t>(m_F32);
+    m_LatchedValue.Clear();
     MarkModified();
 }
 
@@ -206,12 +206,12 @@ void ConsoleVar::ForceFloat(float _Float)
 
 void ConsoleVar::SetLatched()
 {
-    if (!(Flags & CVAR_LATCHED))
+    if (!(m_Flags & CVAR_LATCHED))
     {
         return;
     }
 
-    if (LatchedValue.IsEmpty())
+    if (m_LatchedValue.IsEmpty())
     {
         return;
     }
@@ -221,38 +221,38 @@ void ConsoleVar::SetLatched()
         return;
     }
 
-    ForceString(LatchedValue);
+    ForceString(m_LatchedValue);
 }
 
 void ConsoleVar::Print()
 {
-    LOG("    {}", Name);
+    LOG("    {}", m_Name);
 
-    if (*Comment)
+    if (*m_Comment)
     {
-        LOG(" ({})", Comment);
+        LOG(" ({})", m_Comment);
     }
 
-    LOG("\n        [CURRENT \"{}\"]  [DEFAULT \"{}\"]", Value, DefaultValue);
+    LOG("\n        [CURRENT \"{}\"]  [DEFAULT \"{}\"]", m_Value, m_DefaultValue);
 
-    if ((Flags & CVAR_LATCHED) && !LatchedValue.IsEmpty())
+    if ((m_Flags & CVAR_LATCHED) && !m_LatchedValue.IsEmpty())
     {
-        LOG("  [LATCHED \"{}\"]\n", LatchedValue);
+        LOG("  [LATCHED \"{}\"]\n", m_LatchedValue);
     }
     else
     {
         LOG("\n");
     }
 
-    if (Flags & (CVAR_LATCHED | CVAR_READONLY | CVAR_NOSAVE | CVAR_CHEAT | CVAR_SERVERONLY | CVAR_NOINGAME))
+    if (m_Flags & (CVAR_LATCHED | CVAR_READONLY | CVAR_NOSAVE | CVAR_CHEAT | CVAR_SERVERONLY | CVAR_NOINGAME))
     {
         LOG("        [FLAGS");
-        if (Flags & CVAR_LATCHED) { LOG(" LATCHED"); }
-        if (Flags & CVAR_READONLY) { LOG(" READONLY"); }
-        if (Flags & CVAR_NOSAVE) { LOG(" NOSAVE"); }
-        if (Flags & CVAR_CHEAT) { LOG(" CHEAT"); }
-        if (Flags & CVAR_SERVERONLY) { LOG(" SERVERONLY"); }
-        if (Flags & CVAR_NOINGAME) { LOG(" NOINGAME"); }
+        if (m_Flags & CVAR_LATCHED) { LOG(" LATCHED"); }
+        if (m_Flags & CVAR_READONLY) { LOG(" READONLY"); }
+        if (m_Flags & CVAR_NOSAVE) { LOG(" NOSAVE"); }
+        if (m_Flags & CVAR_CHEAT) { LOG(" CHEAT"); }
+        if (m_Flags & CVAR_SERVERONLY) { LOG(" SERVERONLY"); }
+        if (m_Flags & CVAR_NOINGAME) { LOG(" NOINGAME"); }
         LOG("]\n");
     }
 }

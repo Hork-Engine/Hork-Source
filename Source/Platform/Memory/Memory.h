@@ -87,11 +87,11 @@ private:
     void* _Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
     void* _Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
 
-    AtomicLong MemoryAllocated{};
-    AtomicLong MemoryAllocs{};
-    AtomicLong PeakAllocated{};
-    AtomicLong PerFrameAllocs{};
-    AtomicLong PerFrameFrees{};
+    AtomicLong m_MemoryAllocated{};
+    AtomicLong m_MemoryAllocs{};
+    AtomicLong m_PeakAllocated{};
+    AtomicLong m_PerFrameAllocs{};
+    AtomicLong m_PerFrameFrees{};
 };
 
 namespace Platform

@@ -175,9 +175,9 @@ public:
 
 private:
 #ifdef HK_OS_WIN32
-    byte Internal[40];
+    byte m_Internal[40];
 #else
-    pthread_mutex_t Internal = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t m_Internal = PTHREAD_MUTEX_INITIALIZER;
 #endif
 };
 
@@ -227,7 +227,7 @@ class SpinLock final
 
 public:
     SpinLock() :
-        LockVar(false) {}
+        m_LockVar(false) {}
 
     HK_FORCEINLINE void Lock() noexcept
     {
@@ -236,12 +236,12 @@ public:
         for (;;)
         {
             // Optimistically assume the lock is free on the first try
-            if (!LockVar.Exchange(true))
+            if (!m_LockVar.Exchange(true))
             {
                 return;
             }
             // Wait for lock to be released without generating cache misses
-            while (LockVar.LoadRelaxed())
+            while (m_LockVar.LoadRelaxed())
             {
                 // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between hyper-threads
                 YieldCPU();
@@ -253,16 +253,16 @@ public:
     {
         // First do a relaxed load to check if lock is free in order to prevent
         // unnecessary cache misses if someone does while(!TryLock())
-        return !LockVar.LoadRelaxed() && !LockVar.Exchange(true);
+        return !m_LockVar.LoadRelaxed() && !m_LockVar.Exchange(true);
     }
 
     HK_FORCEINLINE void Unlock() noexcept
     {
-        LockVar.Store(false);
+        m_LockVar.Store(false);
     }
 
 private:
-    AtomicBool LockVar;
+    AtomicBool m_LockVar;
 };
 
 
@@ -280,18 +280,18 @@ class TLockGuard
     HK_FORBID_COPY(TLockGuard)
 public:
     HK_FORCEINLINE explicit TLockGuard(T& _Primitive) :
-        Primitive(_Primitive)
+        m_Primitive(_Primitive)
     {
-        Primitive.Lock();
+        m_Primitive.Lock();
     }
 
     HK_FORCEINLINE ~TLockGuard()
     {
-        Primitive.Unlock();
+        m_Primitive.Unlock();
     }
 
 private:
-    T& Primitive;
+    T& m_Primitive;
 };
 
 
@@ -309,25 +309,25 @@ class TLockGuardCond
     HK_FORBID_COPY(TLockGuardCond)
 public:
     HK_FORCEINLINE explicit TLockGuardCond(T& _Primitive, const bool _Cond = true) :
-        Primitive(_Primitive), Cond(_Cond)
+        m_Primitive(_Primitive), m_Cond(_Cond)
     {
-        if (Cond)
+        if (m_Cond)
         {
-            Primitive.Lock();
+            m_Primitive.Lock();
         }
     }
 
     HK_FORCEINLINE ~TLockGuardCond()
     {
-        if (Cond)
+        if (m_Cond)
         {
-            Primitive.Unlock();
+            m_Primitive.Unlock();
         }
     }
 
 private:
-    T&         Primitive;
-    const bool Cond;
+    T&         m_Primitive;
+    const bool m_Cond;
 };
 
 
@@ -365,11 +365,11 @@ private:
     void  DestroyEventWIN32();
     void  WaitWIN32();
     void  SingalWIN32();
-    void* Internal;
+    void* m_Internal;
 #else
-    Mutex         Sync;
-    pthread_cond_t Internal = PTHREAD_COND_INITIALIZER;
-    bool           bSignaled;
+    Mutex m_Sync;
+    pthread_cond_t m_Internal = PTHREAD_COND_INITIALIZER;
+    bool m_bSignaled;
 #endif
 };
 
@@ -378,7 +378,7 @@ HK_FORCEINLINE SyncEvent::SyncEvent()
 #ifdef HK_OS_WIN32
     CreateEventWIN32();
 #else
-    bSignaled = false;
+    m_bSignaled = false;
 #endif
 }
 
@@ -394,12 +394,12 @@ HK_FORCEINLINE void SyncEvent::Wait()
 #ifdef HK_OS_WIN32
     WaitWIN32();
 #else
-    MutexGurad syncGuard(Sync);
-    while (!bSignaled)
+    MutexGurad syncGuard(m_Sync);
+    while (!m_bSignaled)
     {
-        pthread_cond_wait(&Internal, &Sync.Internal);
+        pthread_cond_wait(&m_Internal, &m_Sync.m_Internal);
     }
-    bSignaled = false;
+    m_bSignaled = false;
 #endif
 }
 
@@ -409,9 +409,9 @@ HK_FORCEINLINE void SyncEvent::Signal()
     SingalWIN32();
 #else
     {
-        MutexGurad syncGuard(Sync);
-        bSignaled = true;
+        MutexGurad syncGuard(m_Sync);
+        m_bSignaled = true;
     }
-    pthread_cond_signal(&Internal);
+    pthread_cond_signal(&m_Internal);
 #endif
 }
