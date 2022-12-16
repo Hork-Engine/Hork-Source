@@ -33,52 +33,28 @@ SOFTWARE.
 #include "Actor.h"
 #include "PhysicalBody.h"
 
-class ATriggerBox : public AActor
+/** Helper class to create triggers */
+class ATrigger : public AActor
 {
-    HK_ACTOR(ATriggerBox, AActor)
+    HK_ACTOR(ATrigger, AActor)
+
+public:
+    void SetBoxCollider();
+
+    void SetSphereCollider();
+
+    void SetCylinderCollider();
+
+    void SetConeCollider();
+
+    void SetCapsuleCollider();
+
+    void SetCollisionModel(CollisionModel* model);
 
 protected:
-    ATriggerBox();
+    ATrigger();
 
-    PhysicalBody* TriggerBody;
-};
+    void SetLevelGeometry(LevelGeometry const& geometry) override;
 
-class ATriggerSphere : public AActor
-{
-    HK_ACTOR(ATriggerSphere, AActor)
-
-protected:
-    ATriggerSphere();
-
-    PhysicalBody* TriggerBody;
-};
-
-class ATriggerCylinder : public AActor
-{
-    HK_ACTOR(ATriggerCylinder, AActor)
-
-protected:
-    ATriggerCylinder();
-
-    PhysicalBody* TriggerBody;
-};
-
-class ATriggerCone : public AActor
-{
-    HK_ACTOR(ATriggerCone, AActor)
-
-protected:
-    ATriggerCone();
-
-    PhysicalBody* TriggerBody;
-};
-
-class ATriggerCapsule : public AActor
-{
-    HK_ACTOR(ATriggerCapsule, AActor)
-
-protected:
-    ATriggerCapsule();
-
-    PhysicalBody* TriggerBody;
+    PhysicalBody* m_TriggerBody;
 };

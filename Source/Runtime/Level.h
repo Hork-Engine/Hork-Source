@@ -152,6 +152,12 @@ public:
     TVector<TRef<SoundResource>> AmbientSounds;
 };
 
+class LevelGeometry
+{
+public:
+    /* TODO */
+};
+
 
 /**
 

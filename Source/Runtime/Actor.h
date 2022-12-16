@@ -240,6 +240,9 @@ protected:
     /** Called after components initialized */
     virtual void PostInitializeComponents() {}
 
+    /** Called during level loading */
+    virtual void SetLevelGeometry(LevelGeometry const& geometry) {}
+
     class WorldTimer* AddTimer(TCallback<void()> const& Callback);
     void          RemoveTimer(WorldTimer* Timer);
     void          RemoveAllTimers();
