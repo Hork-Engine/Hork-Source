@@ -154,15 +154,26 @@ public:
     void SetTexture(uint32_t Slot, Texture* pView);
     void SetTexture(uint32_t Slot, TextureView* pTexture);
 
+    TextureView* GetTexture(StringView Name);
+    TextureView* GetTexture(uint32_t Slot);
+
     void UnsetTextures();
 
     void SetConstant(StringView Name, float Value);
 
     void SetConstant(uint32_t Offset, float Value);
 
+    float GetConstant(StringView Name) const;
+
+    float GetConstant(uint32_t Offset) const;
+
     void SetVector(StringView Name, Float4 const& Value);
 
     void SetVector(uint32_t Offset, Float4 const& Value);
+
+    Float4 const& GetVector(StringView Name) const;
+
+    Float4 const& GetVector(uint32_t Offset) const;
 
     uint32_t GetTextureSlotByName(StringView Name) const;
 
@@ -172,10 +183,6 @@ public:
 
     /** Get material. Never return null. */
     Material* GetMaterial() const;
-
-    TextureView*  GetTexture(uint32_t Slot);
-    float         GetConstant(uint32_t Offset);
-    Float4 const& GetVector(uint32_t Offset);
 
     // Experimental:
     void SetVirtualTexture(VirtualTextureResource* VirtualTex);

@@ -965,6 +965,23 @@ void MaterialInstance::SetTexture(uint32_t Slot, Texture* pTexture)
     SetTexture(Slot, pTexture->GetView());
 }
 
+TextureView* MaterialInstance::GetTexture(StringView Name)
+{
+    uint32_t slot = GetTextureSlotByName(Name);
+    if (slot < NumTextureSlots())
+        return m_Textures[slot];
+    LOG("MaterialInstance::GetTexture: Unknown texture slot {}\n", Name);
+    return nullptr;
+}
+
+TextureView* MaterialInstance::GetTexture(uint32_t Slot)
+{
+    if (Slot < NumTextureSlots())
+        return m_Textures[Slot];
+    LOG("MaterialInstance::GetTexture: Invalid texture slot {}\n", Slot);
+    return nullptr;
+}
+
 void MaterialInstance::UnsetTextures()
 {
     for (uint32_t slot = 0; slot < MAX_MATERIAL_TEXTURES; slot++)
@@ -988,6 +1005,23 @@ void MaterialInstance::SetConstant(uint32_t Offset, float Value)
         LOG("MaterialInstance::SetConstant: Invalid offset {}\n", Offset);
 }
 
+float MaterialInstance::GetConstant(StringView Name) const
+{
+    uint32_t offset = GetConstantOffsetByName(Name);
+    if (offset < MAX_MATERIAL_UNIFORMS)
+        return m_Uniforms[offset];
+    LOG("MaterialInstance::GetConstant: Unknown constant {}\n", Name);
+    return 0.0f;
+}
+
+float MaterialInstance::GetConstant(uint32_t Offset) const
+{
+    if (Offset < MAX_MATERIAL_UNIFORMS)
+        return m_Uniforms[Offset];
+    LOG("MaterialInstance::GetConstant: Invalid offset {}\n", Offset);
+    return 0.0f;
+}
+
 void MaterialInstance::SetVector(StringView Name, Float4 const& Value)
 {
     uint32_t offset = GetConstantOffsetByName(Name);
@@ -1003,6 +1037,23 @@ void MaterialInstance::SetVector(uint32_t Offset, Float4 const& Value)
         m_UniformVectors[Offset] = Value;
     else
         LOG("MaterialInstance::SetVector: Invalid offset {}\n", Offset);
+}
+
+Float4 const& MaterialInstance::GetVector(StringView Name) const
+{
+    uint32_t offset = GetConstantOffsetByName(Name);
+    if (offset < MAX_MATERIAL_UNIFORM_VECTORS)
+        return m_UniformVectors[offset];
+    LOG("MaterialInstance::GetVector: Unknown vector {}\n", Name);
+    return Float4::Zero();
+}
+
+Float4 const& MaterialInstance::GetVector(uint32_t Offset) const
+{
+    if (Offset < MAX_MATERIAL_UNIFORM_VECTORS)
+        return m_UniformVectors[Offset];
+    LOG("MaterialInstance::GetVector: Invalid offset {}\n", Offset);
+    return Float4::Zero();
 }
 
 uint32_t MaterialInstance::GetTextureSlotByName(StringView Name) const
@@ -1024,33 +1075,6 @@ uint32_t MaterialInstance::NumTextureSlots() const
 Material* MaterialInstance::GetMaterial() const
 {
     return m_pMaterial;
-}
-
-TextureView* MaterialInstance::GetTexture(uint32_t Slot)
-{
-    if (Slot < NumTextureSlots())
-        return m_Textures[Slot];
-
-    LOG("MaterialInstance::GetTexture: Invalid texture slot {}\n", Slot);
-    return nullptr;
-}
-
-float MaterialInstance::GetConstant(uint32_t Offset)
-{
-    if (Offset < MAX_MATERIAL_UNIFORMS)
-        return m_Uniforms[Offset];
-
-    LOG("MaterialInstance::GetConstant: Invalid offset {}\n", Offset);
-    return 0.0f;
-}
-
-Float4 const& MaterialInstance::GetVector(uint32_t Offset)
-{
-    if (Offset < MAX_MATERIAL_UNIFORM_VECTORS)
-        return m_UniformVectors[Offset];
-
-    LOG("MaterialInstance::GetVector: Invalid offset {}\n", Offset);
-    return Float4::Zero();
 }
 
 void MaterialInstance::SetVirtualTexture(VirtualTextureResource* VirtualTex)
