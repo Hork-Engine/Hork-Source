@@ -60,9 +60,10 @@ void SceneComponent::DeinitializeComponent()
         return;
     }
 
+    Detach();
+
     if (!owner->IsPendingKill())
     {
-        Detach();
         DetachChilds();
     }
     else
