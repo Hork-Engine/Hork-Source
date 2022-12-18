@@ -674,7 +674,7 @@ MGNode::MGNode(StringView Name) :
 
 void MGNode::ParseProperties(DocumentValue const* document)
 {
-    APropertyList properties;
+    PropertyList properties;
 
     GetProperties(properties);
 

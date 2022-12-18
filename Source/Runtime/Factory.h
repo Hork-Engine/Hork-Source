@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <Containers/Hash.h>
 #include "Variant.h"
-#include "GarbageCollector.h"
 
 class ClassMeta;
 class Property;
@@ -48,7 +47,7 @@ public:
     ObjectFactory(const char* Tag);
     ~ObjectFactory() = default;
 
-    const char* GetTag() const { return Tag; }
+    const char* GetTag() const { return m_Tag; }
 
     BaseObject* CreateInstance(StringView ClassName) const;
     BaseObject* CreateInstance(uint64_t ClassId) const;
@@ -60,22 +59,22 @@ public:
     ClassMeta const* LookupClass(StringView ClassName) const;
     ClassMeta const* LookupClass(uint64_t ClassId) const;
 
-    uint64_t FactoryClassCount() const { return NumClasses; }
+    uint64_t FactoryClassCount() const { return m_NumClasses; }
 
-    static ObjectFactory const* Factories() { return FactoryList; }
-    ObjectFactory const*        Next() const { return NextFactory; }
+    static ObjectFactory const* Factories() { return m_FactoryList; }
+    ObjectFactory const* Next() const { return m_NextFactory; }
 
 private:
-    const char*           Tag;
-    ClassMeta*            Classes;
-    mutable TVector<ClassMeta*> IdTable;
-    mutable THashMap<StringView, ClassMeta const*> LookupTable;
-    uint64_t              NumClasses;
-    ObjectFactory*        NextFactory;
-    static ObjectFactory* FactoryList;
+    const char*           m_Tag;
+    ClassMeta*            m_Classes;
+    mutable TVector<ClassMeta*> m_IdTable;
+    mutable THashMap<StringView, ClassMeta const*> m_LookupTable;
+    uint64_t              m_NumClasses;
+    ObjectFactory*        m_NextFactory;
+    static ObjectFactory* m_FactoryList;
 };
 
-using APropertyList = TSmallVector<Property const*, 32>;
+using PropertyList = TSmallVector<Property const*, 32>;
 
 class ClassMeta
 {
@@ -87,13 +86,13 @@ class ClassMeta
 public:
     const uint64_t ClassId;
 
-    const char*             GetName() const { return ClassName.CStr(); }
-    GlobalStringView const& GetName2() const { return ClassName; }
+    const char*             GetName() const { return m_ClassName.CStr(); }
+    GlobalStringView const& GetName2() const { return m_ClassName; }
     uint64_t                GetId() const { return ClassId; }
-    ClassMeta const*        SuperClass() const { return pSuperClass; }
-    ClassMeta const*        Next() const { return pNext; }
-    ObjectFactory const*    Factory() const { return pFactory; }
-    Property const*         GetPropertyList() const { return PropertyList; }
+    ClassMeta const*        SuperClass() const { return m_pSuperClass; }
+    ClassMeta const*        Next() const { return m_pNext; }
+    ObjectFactory const*    Factory() const { return m_pFactory; }
+    Property const*         GetPropertyList() const { return m_PropertyList; }
 
     bool IsSubclassOf(ClassMeta const& Superclass) const
     {
@@ -125,31 +124,31 @@ public:
 
     // Utilites
     Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
-    void             GetProperties(APropertyList& Properties, bool bRecursive = true) const;
+    void             GetProperties(PropertyList& Properties, bool bRecursive = true) const;
 
 protected:
     ClassMeta(ObjectFactory& Factory, GlobalStringView ClassName, ClassMeta const* SuperClassMeta) :
-        ClassId(Factory.NumClasses + 1), ClassName(ClassName)
+        ClassId(Factory.m_NumClasses + 1), m_ClassName(ClassName)
     {
-        HK_ASSERT_(Factory.FindClass(ClassName) == NULL, "Class already defined");
-        pNext            = Factory.Classes;
-        pSuperClass      = SuperClassMeta;
-        PropertyList     = nullptr;
-        PropertyListTail = nullptr;
-        Factory.Classes  = this;
-        Factory.NumClasses++;
-        pFactory = &Factory;
+        HK_ASSERT_(Factory.FindClass(m_ClassName) == NULL, "Class already defined");
+        m_pNext            = Factory.m_Classes;
+        m_pSuperClass      = SuperClassMeta;
+        m_PropertyList     = nullptr;
+        m_PropertyListTail = nullptr;
+        Factory.m_Classes = this;
+        Factory.m_NumClasses++;
+        m_pFactory = &Factory;
     }
 
 private:
     static void CloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination);
 
-    GlobalStringView     ClassName;
-    ClassMeta*           pNext;
-    ClassMeta const*     pSuperClass;
-    ObjectFactory const* pFactory;
-    Property const*      PropertyList;
-    Property const*      PropertyListTail;
+    GlobalStringView     m_ClassName;
+    ClassMeta*           m_pNext;
+    ClassMeta const*     m_pSuperClass;
+    ObjectFactory const* m_pFactory;
+    Property const*      m_PropertyList;
+    Property const*      m_PropertyListTail;
 };
 
 HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(StringView ClassName) const
@@ -166,7 +165,7 @@ HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(uint64_t ClassId) const
 
 HK_FORCEINLINE ClassMeta const* ObjectFactory::GetClassList() const
 {
-    return Classes;
+    return m_Classes;
 }
 
 struct PropertyRange
@@ -222,32 +221,32 @@ public:
     using CopyFun   = void (*)(BaseObject*, BaseObject const*);
 
     Property(ClassMeta const& _ClassMeta, VARIANT_TYPE Type, EnumDef const* EnumDef, GlobalStringView Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, PropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
-        Type(Type),
-        Name(Name),
-        pEnum(EnumDef),
-        Range(Range),
-        Flags(Flags),
-        Setter(Setter),
-        Getter(Getter),
-        Copy(Copy)
+        m_Type(Type),
+        m_Name(Name),
+        m_pEnum(EnumDef),
+        m_Range(Range),
+        m_Flags(Flags),
+        m_Setter(Setter),
+        m_Getter(Getter),
+        m_Copy(Copy)
     {
         ClassMeta& classMeta = const_cast<ClassMeta&>(_ClassMeta);
-        pNext                 = nullptr;
-        pPrev                 = classMeta.PropertyListTail;
-        if (pPrev)
+        m_pNext = nullptr;
+        m_pPrev = classMeta.m_PropertyListTail;
+        if (m_pPrev)
         {
-            const_cast<Property*>(pPrev)->pNext = this;
+            const_cast<Property*>(m_pPrev)->m_pNext = this;
         }
         else
         {
-            classMeta.PropertyList = this;
+            classMeta.m_PropertyList = this;
         }
-        classMeta.PropertyListTail = this;
+        classMeta.m_PropertyListTail = this;
     }
 
     void SetValue(BaseObject* pObject, Variant const& Value) const
     {
-        Setter(pObject, Value);
+        m_Setter(pObject, Value);
     }
 
     void SetValue(BaseObject* pObject, StringView Value) const
@@ -257,34 +256,34 @@ public:
 
     Variant GetValue(BaseObject const* pObject) const
     {
-        return Getter(pObject);
+        return m_Getter(pObject);
     }
 
     void CopyValue(BaseObject* Dst, BaseObject const* Src) const
     {
-        return Copy(Dst, Src);
+        return m_Copy(Dst, Src);
     }
 
-    VARIANT_TYPE          GetType() const { return Type; }
-    const char*           GetName() const { return Name.CStr(); }
-    GlobalStringView const& GetName2() const { return Name; }    
-    EnumDef const*       GetEnum() const { return pEnum; }
-    PropertyRange const& GetRange() const { return Range; }
-    HK_PROPERTY_FLAGS    GetFlags() const { return Flags; }
-    Property const*      Next() const { return pNext; }
-    Property const*      Prev() const { return pPrev; }
+    VARIANT_TYPE GetType() const { return m_Type; }
+    const char* GetName() const { return m_Name.CStr(); }
+    GlobalStringView const& GetName2() const { return m_Name; }    
+    EnumDef const* GetEnum() const { return m_pEnum; }
+    PropertyRange const& GetRange() const { return m_Range; }
+    HK_PROPERTY_FLAGS GetFlags() const { return m_Flags; }
+    Property const*      Next() const { return m_pNext; }
+    Property const* Prev() const { return m_pPrev; }
 
 private:
-    VARIANT_TYPE      Type;
-    GlobalStringView  Name;
-    EnumDef const*    pEnum;
-    PropertyRange     Range;
-    HK_PROPERTY_FLAGS Flags;
-    SetterFun         Setter;
-    GetterFun         Getter;
-    CopyFun           Copy;
-    Property const*   pNext;
-    Property const*   pPrev;
+    VARIANT_TYPE      m_Type;
+    GlobalStringView  m_Name;
+    EnumDef const*    m_pEnum;
+    PropertyRange     m_Range;
+    HK_PROPERTY_FLAGS m_Flags;
+    SetterFun         m_Setter;
+    GetterFun         m_Getter;
+    CopyFun           m_Copy;
+    Property const*   m_pNext;
+    Property const*   m_pPrev;
 };
 
 template <std::size_t N, typename T0, typename... Ts>

@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Containers/Array.h>
 #include <Containers/Hash.h>
 #include <Core/ConsoleVar.h>
+#include <Core/Document.h>
 
 constexpr int MAX_PRESSED_KEYS      = 128;
 constexpr int MAX_INPUT_CONTROLLERS = 16;

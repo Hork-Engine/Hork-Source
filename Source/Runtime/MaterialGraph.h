@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "BaseObject.h"
 #include <Core/Guid.h>
+#include <Core/Document.h>
 #include <Image/Image.h>
 #include <Renderer/RenderDefs.h>
 

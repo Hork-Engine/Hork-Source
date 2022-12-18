@@ -31,8 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Factory.h"
-
-#include <Core/Document.h>
+#include "GarbageCollector.h"
 
 
 /**

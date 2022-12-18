@@ -31,18 +31,18 @@ SOFTWARE.
 #include "Factory.h"
 #include "BaseObject.h"
 
-ObjectFactory* ObjectFactory::FactoryList = nullptr;
+ObjectFactory* ObjectFactory::m_FactoryList = nullptr;
 
 ObjectFactory::ObjectFactory(const char* Tag) :
-    Tag(Tag), Classes(nullptr), NumClasses(0)
+    m_Tag(Tag), m_Classes(nullptr), m_NumClasses(0)
 {
-    NextFactory = FactoryList;
-    FactoryList = this;
+    m_NextFactory = m_FactoryList;
+    m_FactoryList = this;
 }
 
 const ClassMeta* ObjectFactory::FindClass(StringView ClassName) const
 {
-    for (ClassMeta const* n = Classes; n; n = n->pNext)
+    for (ClassMeta const* n = m_Classes; n; n = n->m_pNext)
     {
         if (!ClassName.Cmp(n->GetName()))
         {
@@ -54,64 +54,64 @@ const ClassMeta* ObjectFactory::FindClass(StringView ClassName) const
 
 const ClassMeta* ObjectFactory::LookupClass(StringView ClassName) const
 {
-    if (LookupTable.IsEmpty())
+    if (m_LookupTable.IsEmpty())
     {
         // init name table
-        for (ClassMeta* n = Classes; n; n = n->pNext)
+        for (ClassMeta* n = m_Classes; n; n = n->m_pNext)
         {
-            LookupTable[n->GetName()] = n;
+            m_LookupTable[n->GetName()] = n;
         }
     }
 
-    auto it = LookupTable.Find(ClassName);
-    return it != LookupTable.End() ? it->second : nullptr;
+    auto it = m_LookupTable.Find(ClassName);
+    return it != m_LookupTable.End() ? it->second : nullptr;
 }
 
 const ClassMeta* ObjectFactory::LookupClass(uint64_t ClassId) const
 {
-    if (ClassId > NumClasses)
+    if (ClassId > m_NumClasses)
     {
         // invalid class id
         return nullptr;
     }
 
-    if (IdTable.IsEmpty())
+    if (m_IdTable.IsEmpty())
     {
         // init lookup table
-        IdTable.Resize(NumClasses + 1);
-        IdTable[0] = nullptr;
-        for (ClassMeta* n = Classes; n; n = n->pNext)
+        m_IdTable.Resize(m_NumClasses + 1);
+        m_IdTable[0] = nullptr;
+        for (ClassMeta* n = m_Classes; n; n = n->m_pNext)
         {
-            IdTable[n->GetId()] = n;
+            m_IdTable[n->GetId()] = n;
         }
     }
 
-    return IdTable[ClassId];
+    return m_IdTable[ClassId];
 }
 
 Property const* ClassMeta::FindProperty(StringView PropertyName, bool bRecursive) const
 {
-    for (Property const* prop = PropertyList; prop; prop = prop->Next())
+    for (Property const* prop = m_PropertyList; prop; prop = prop->Next())
     {
         if (PropertyName == prop->GetName())
         {
             return prop;
         }
     }
-    if (bRecursive && pSuperClass)
+    if (bRecursive && m_pSuperClass)
     {
-        return pSuperClass->FindProperty(PropertyName, true);
+        return m_pSuperClass->FindProperty(PropertyName, true);
     }
     return nullptr;
 }
 
-void ClassMeta::GetProperties(APropertyList& Properties, bool bRecursive) const
+void ClassMeta::GetProperties(PropertyList& Properties, bool bRecursive) const
 {
-    if (bRecursive && pSuperClass)
+    if (bRecursive && m_pSuperClass)
     {
-        pSuperClass->GetProperties(Properties, true);
+        m_pSuperClass->GetProperties(Properties, true);
     }
-    for (Property const* prop = PropertyList; prop; prop = prop->Next())
+    for (Property const* prop = m_PropertyList; prop; prop = prop->Next())
     {
         Properties.Add(prop);
     }
