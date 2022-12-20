@@ -84,30 +84,6 @@ void SoundEmitter::OnTransformDirty()
     Super::OnTransformDirty();
 }
 
-void SoundEmitter::OnCreateAvatar()
-{
-    Super::OnCreateAvatar();
-
-    // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Sphere"s);
-    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
-
-    MeshRenderView* meshRender = NewObj<MeshRenderView>();
-    meshRender->SetMaterial(MaterialInstance);
-
-    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("SoundEmitterAvatar");
-    meshComponent->SetMotionBehavior(MB_KINEMATIC);
-    meshComponent->SetCollisionGroup(CM_NOCOLLISION);
-    meshComponent->SetMesh(Mesh.GetObject());
-    meshComponent->SetRenderView(meshRender);
-    meshComponent->SetCastShadow(false);
-    meshComponent->SetAbsoluteScale(true);
-    meshComponent->SetAbsoluteRotation(true);
-    meshComponent->SetScale(0.1f);
-    meshComponent->AttachTo(this);
-    meshComponent->SetHideInEditor(true);
-}
-
 void SoundEmitter::BeginPlay()
 {
     INTRUSIVE_ADD(this, Next, Prev, SoundEmitters, SoundEmittersTail);

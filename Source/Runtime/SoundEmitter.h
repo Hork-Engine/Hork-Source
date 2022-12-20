@@ -419,7 +419,6 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void OnCreateAvatar() override;
     void OnTransformDirty() override;
 
     void BeginPlay() override;

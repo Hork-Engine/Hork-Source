@@ -117,9 +117,7 @@ public:
     void MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix /*, const float _ClusterZNear, const float _ClusterZFar*/) const;
 
 protected:
-    CameraComponent();
-
-    void OnCreateAvatar() override;
+    CameraComponent() = default;
 
     void OnTransformDirty() override;
 

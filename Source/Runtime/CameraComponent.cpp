@@ -40,32 +40,6 @@ ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(CameraComponent)
 
-CameraComponent::CameraComponent()
-{}
-
-void CameraComponent::OnCreateAvatar()
-{
-    Super::OnCreateAvatar();
-
-    // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Box"s);
-    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
-
-    MeshRenderView* meshRender = NewObj<MeshRenderView>();
-    meshRender->SetMaterial(MaterialInstance);
-
-    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("CameraAvatar");
-    meshComponent->SetMotionBehavior(MB_KINEMATIC);
-    meshComponent->SetCollisionGroup(CM_NOCOLLISION);
-    meshComponent->SetMesh(Mesh.GetObject());
-    meshComponent->SetRenderView(meshRender);
-    meshComponent->SetCastShadow(false);
-    meshComponent->SetAbsoluteScale(true);
-    meshComponent->SetScale(0.5f);
-    meshComponent->AttachTo(this);
-    meshComponent->SetHideInEditor(true);
-}
-
 void CameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
 {
     if (m_Projection != _Projection)
