@@ -43,33 +43,6 @@ public:
     void  SetIlluminance(float illuminanceInLux);
     float GetIlluminance() const;
 
-    /** Set temperature of the light in Kelvin */
-    void SetTemperature(float temperature);
-
-    /** Get temperature of the light in Kelvin */
-    float GetTemperature() const;
-
-    void          SetColor(Float3 const& color);
-    Float3 const& GetColor() const;
-
-    /** Set light direction in local space */
-    void SetDirection(Float3 const& direction);
-
-    /** Get light direction in local space */
-    Float3 GetDirection() const;
-
-    /** Set light direction in world space */
-    void SetWorldDirection(Float3 const& _Direction);
-
-    /** Get light direction in world space */
-    Float3 GetWorldDirection() const;
-
-    /** Allow mesh to cast shadows on the world */
-    void SetCastShadow(bool bCastShadow) { m_bCastShadow = bCastShadow; }
-
-    /** Is cast shadows enabled */
-    bool IsCastShadow() const { return m_bCastShadow; }
-
     void SetShadowMaxDistance(float maxDistance) { m_ShadowMaxDistance = maxDistance; }
     float GetShadowMaxDistance() const { return m_ShadowMaxDistance; }
 
@@ -90,23 +63,19 @@ public:
     void AddShadowmapCascades(class StreamedMemoryGPU* StreamedMemory, struct RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
 
 protected:
-    DirectionalLightComponent();
+    DirectionalLightComponent() = default;
 
-    void OnCreateAvatar() override;
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
     void DrawDebug(DebugRenderer* InRenderer) override;
 
 private:
-    float          m_IlluminanceInLux;
-    float          m_Temperature;
-    Float3         m_Color;
+    float          m_IlluminanceInLux = 110000.0f;
     mutable Float4 m_EffectiveColor;
-    bool           m_bCastShadow;
-    float          m_ShadowMaxDistance;
-    float          m_ShadowCascadeOffset;
-    int            m_MaxShadowCascades;
-    int            m_ShadowCascadeResolution;
-    float          m_ShadowCascadeSplitLambda;
+    float          m_ShadowMaxDistance = 128;
+    float          m_ShadowCascadeOffset = 3;
+    int            m_MaxShadowCascades = 4;
+    int            m_ShadowCascadeResolution = 1024;
+    float          m_ShadowCascadeSplitLambda = 0.5f;
 };

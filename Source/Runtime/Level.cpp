@@ -33,7 +33,6 @@ SOFTWARE.
 #include "World.h"
 #include "SkinnedComponent.h"
 #include "CameraComponent.h"
-#include "PointLightComponent.h"
 #include "PlayerController.h"
 #include "Texture.h"
 #include "Engine.h"

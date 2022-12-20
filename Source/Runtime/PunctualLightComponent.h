@@ -32,36 +32,90 @@ SOFTWARE.
 
 #include "LightComponent.h"
 #include "Level.h"
+#include "PhotometricProfile.h"
 
 class PunctualLightComponent : public LightComponent
 {
     HK_COMPONENT(PunctualLightComponent, LightComponent)
 
 public:
-    void SetEnabled(bool _Enabled) override;
+    static constexpr float MinRadius = 0.01f;
+    static constexpr float MinConeAngle = 1.0f;
+    static constexpr float MaxConeAngle = 180.0f;
+
+    void SetEnabled(bool bEnabled) override;
+
+    void SetRadius(float radius);
+    float GetRadius() const { return m_Radius; }
+
+    void SetInnerConeAngle(float angle);
+    float GetInnerConeAngle() const;
+
+    void SetOuterConeAngle(float angle);
+    float GetOuterConeAngle() const;
+
+    void SetSpotExponent(float exponent);
+    float GetSpotExponent() const;
+
+    void SetLumens(float lumens);
+    float GetLumens() const;
+
+    /** Set photometric profile for the light source */
+    void SetPhotometricProfile(PhotometricProfile* profile);
+    PhotometricProfile* GetPhotometricProfile() const { return m_PhotometricProfile; }
+
+    /** If true, photometric profile will be used as mask to modify luminous intensity of the light source.
+    If false, luminous intensity will be taken from photometric profile */
+    void SetPhotometricAsMask(bool bPhotometricAsMask);
+    bool IsPhotometricAsMask() const { return m_bPhotometricAsMask; }
+
+    /** Luminous intensity scale for photometric profile */
+    void SetLuminousIntensityScale(float intensityScale);
+    float GetLuminousIntensityScale() const { return m_LuminousIntensityScale; }
+
+    void SetVisibilityGroup(VISIBILITY_GROUP visibilityGroup);
+    VISIBILITY_GROUP GetVisibilityGroup() const;
+    
+    Float3 const& GetEffectiveColor(float cosHalfConeAngle) const;
 
     BvAxisAlignedBox const& GetWorldBounds() const { return m_AABBWorldBounds; }
 
+    BvSphere const& GetSphereWorldBounds() const { return m_SphereWorldBounds; }
+
     Float4x4 const& GetOBBTransformInverse() const { return m_OBBTransformInverse; }
 
-    void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
-    {
-        m_Primitive->SetVisibilityGroup(VisibilityGroup);
-    }
+    void PackLight(Float4x4 const& viewMatrix, struct LightParameters& light);
 
-    VISIBILITY_GROUP GetVisibilityGroup() const
-    {
-        return m_Primitive->GetVisibilityGroup();
-    }
-
-protected:
+private:
     PunctualLightComponent();
     ~PunctualLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
+    void OnTransformDirty() override;
+
+    void DrawDebug(DebugRenderer* InRenderer) override;
+
+    void UpdateWorldBounds();
+
+    BvSphere         m_SphereWorldBounds;
+    BvOrientedBox    m_OBBWorldBounds;
+
     BvAxisAlignedBox m_AABBWorldBounds;
     Float4x4         m_OBBTransformInverse;
     PrimitiveDef*    m_Primitive;
+
+    float                    m_Radius = 15;
+    float                    m_InverseSquareRadius;
+    float                    m_InnerConeAngle = 180;
+    float                    m_OuterConeAngle = 180;
+    float                    m_CosHalfInnerConeAngle;
+    float                    m_CosHalfOuterConeAngle;
+    float                    m_SpotExponent = 1.0f;
+    TRef<PhotometricProfile> m_PhotometricProfile;
+    float                    m_Lumens = 3000.0f;
+    float                    m_LuminousIntensityScale = 1.0f;
+    mutable Float3           m_EffectiveColor; // Composed from Temperature, Lumens, Color
+    bool                     m_bPhotometricAsMask = false;
 };

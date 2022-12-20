@@ -443,6 +443,28 @@ void SceneComponent::SetTransform(SceneComponent const* _Transform)
     MarkTransformDirty();
 }
 
+void SceneComponent::SetDirection(Float3 const& _Direction)
+{
+    Float3x3 orientation;
+    Float3 dir = -_Direction.Normalized();
+
+    if (dir.X * dir.X + dir.Z * dir.Z == 0.0f)
+    {
+        orientation[0] = Float3(1, 0, 0);
+        orientation[1] = Float3(0, 0, -dir.Y);
+    }
+    else
+    {
+        orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), dir).Normalized();
+        orientation[1] = Math::Cross(dir, orientation[0]);
+    }
+    orientation[2] = dir;
+
+    Quat rotation;
+    rotation.FromMatrix(orientation);
+    SetRotation(rotation);
+}
+
 void SceneComponent::SetWorldPosition(Float3 const& _Position)
 {
     if (m_AttachParent && !m_bAbsolutePosition)
@@ -516,6 +538,19 @@ void SceneComponent::SetWorldTransform(Transform const& _Transform)
     SetWorldTransform(_Transform.Position, _Transform.Rotation, _Transform.Scale);
 }
 
+void SceneComponent::SetWorldDirection(Float3 const& _Direction)
+{
+    Float3x3 orientation;
+
+    orientation[2] = -_Direction.Normalized();
+    orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), orientation[2]).Normalized();
+    orientation[1] = Math::Cross(orientation[2], orientation[0]);
+
+    Quat rotation;
+    rotation.FromMatrix(orientation);
+    SetWorldRotation(rotation);
+}
+
 Float3 const& SceneComponent::GetPosition() const
 {
     return m_Position;
@@ -581,6 +616,11 @@ Float3 SceneComponent::GetForwardVector() const
     return -m_Rotation.ZAxis();
 }
 
+Float3 SceneComponent::GetDirection() const
+{
+    return GetForwardVector();
+}
+
 void SceneComponent::GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
 {
     float qxx(m_Rotation.X * m_Rotation.X);
@@ -643,6 +683,11 @@ Float3 SceneComponent::GetWorldBackVector() const
 Float3 SceneComponent::GetWorldForwardVector() const
 {
     return -GetWorldRotation().ZAxis();
+}
+
+Float3 SceneComponent::GetWorldDirection() const
+{
+    return GetWorldForwardVector();
 }
 
 void SceneComponent::GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back) const

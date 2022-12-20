@@ -32,6 +32,9 @@ SOFTWARE.
 
 HK_BEGIN_CLASS_META(LightComponent)
 HK_PROPERTY(bEnabled, SetEnabled, IsEnabled, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bCastShadow, SetCastShadow, IsCastShadow, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Temperature, SetTemperature, GetTemperature, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Color, SetColor, GetColor, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(AnimTime, SetAnimationTime, GetAnimationTime, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
@@ -43,6 +46,28 @@ LightComponent::LightComponent()
 void LightComponent::SetEnabled(bool _Enabled)
 {
     m_bEnabled = _Enabled;
+}
+
+void LightComponent::SetTemperature(float _Temperature)
+{
+    m_Temperature = _Temperature;
+    m_bEffectiveColorDirty = true;
+}
+
+float LightComponent::GetTemperature() const
+{
+    return m_Temperature;
+}
+
+void LightComponent::SetColor(Float3 const& color)
+{
+    m_Color = color;
+    m_bEffectiveColorDirty = true;
+}
+
+Float3 const& LightComponent::GetColor() const
+{
+    return m_Color;
 }
 
 void LightComponent::SetAnimation(const char* _Pattern, float _Speed, float _Quantizer)

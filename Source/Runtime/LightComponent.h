@@ -42,6 +42,21 @@ public:
 
     bool IsEnabled() const { return m_bEnabled; }
 
+    /** Allow light to cast the shadows. */
+    void SetCastShadow(bool bCastShadow) { m_bCastShadow = bCastShadow; }
+
+    /** Is the shadow casting allowed for this light source. */
+    bool IsCastShadow() const { return m_bCastShadow; }
+
+    /** Set temperature of the light in Kelvin */
+    void SetTemperature(float temperature);
+
+    /** Get temperature of the light in Kelvin */
+    float GetTemperature() const;
+
+    void SetColor(Float3 const& color);
+    Float3 const& GetColor() const;
+
     void SetAnimation(const char* _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f);
 
     void SetAnimation(AnimationPattern* _Animation);
@@ -59,11 +74,12 @@ protected:
 
     float GetAnimationBrightness() const { return m_AnimationBrightness; }
 
-    mutable bool m_bEffectiveColorDirty = true;
-
-private:
+    mutable bool           m_bEffectiveColorDirty = true;
     bool                   m_bEnabled = true;
+    bool                   m_bCastShadow = false;
+    float                  m_Temperature = 6590.0f;
+    Float3                 m_Color = Float3(1.0f);
     TRef<AnimationPattern> m_Animation;
-    float                  m_AnimTime            = 0.0f;
+    float                  m_AnimTime = 0.0f;
     float                  m_AnimationBrightness = 1.0f;
 };

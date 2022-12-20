@@ -41,7 +41,7 @@ SOFTWARE.
 #include "EnvironmentMap.h"
 #include "WorldRenderView.h"
 
-class AnalyticLightComponent;
+class PunctualLightComponent;
 class EnvironmentProbe;
 class MeshComponent;
 class SkinnedComponent;
@@ -103,7 +103,7 @@ private:
     void AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef* const* Surfaces, int SurfaceCount);
     void AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
 
-    bool AddLightShadowmap(AnalyticLightComponent* Light, float Radius);
+    bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
     DebugRenderer DebugDraw;
@@ -113,7 +113,7 @@ private:
 
     TPodVector<PrimitiveDef*>           VisPrimitives;
     TPodVector<SurfaceDef*>             VisSurfaces;
-    TPodVector<AnalyticLightComponent*> VisLights;
+    TPodVector<PunctualLightComponent*> VisLights;
     TPodVector<EnvironmentProbe*>       VisEnvProbes;
 
     int VisPass = 0;
