@@ -150,6 +150,9 @@ public:
     /** Set local transform */
     void SetTransform(SceneComponent const* _Transform);
 
+    /** Set direction in local space */
+    void SetDirection(Float3 const& _Direction);
+
     /** Set world position */
     void SetWorldPosition(Float3 const& _Position);
 
@@ -174,6 +177,9 @@ public:
     /** Set world transform */
     void SetWorldTransform(Transform const& _Transform);
 
+    /** Set direction in world space */
+    void SetWorldDirection(Float3 const& _Direction);
+
     /** Get local position */
     Float3 const& GetPosition() const;
 
@@ -191,6 +197,7 @@ public:
     Float3 GetDownVector() const;
     Float3 GetBackVector() const;
     Float3 GetForwardVector() const;
+    Float3 GetDirection() const;
     void   GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const;
 
     Float3 GetWorldRightVector() const;
@@ -199,6 +206,7 @@ public:
     Float3 GetWorldDownVector() const;
     Float3 GetWorldBackVector() const;
     Float3 GetWorldForwardVector() const;
+    Float3 GetWorldDirection() const;
     void   GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back) const;
 
     /** Get scale */

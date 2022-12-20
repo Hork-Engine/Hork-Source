@@ -29,11 +29,8 @@ SOFTWARE.
 */
 
 #include "DirectionalLightComponent.h"
-#include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "ResourceManager.h"
-#include <Platform/Logger.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
 #include <Core/ConsoleVar.h>
@@ -43,77 +40,19 @@ ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CH
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
 static constexpr Float4x4 ShadowMapBias = Float4x4(
-    0.5f,
-    0.0f,
-    0.0f,
-    0.0f,
-    0.0f,
-    -0.5f,
-    0.0f,
-    0.0f,
-    0.0f,
-    0.0f,
-    1.0f,
-    0.0f,
-    0.5f,
-    0.5f,
-    0.0f,
-    1.0f);
-
-static const float  DEFAULT_MAX_SHADOW_CASCADES = 4;
-static const float  DEFAULT_ILLUMINANCE_IN_LUX  = 110000.0f;
-static const float  DEFAULT_TEMPERATURE         = 6590.0f;
-static const Float3 DEFAULT_COLOR(1.0f);
+    {0.5f, 0.0f, 0.0f, 0.0f},
+    {0.0f, -0.5f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f, 0.0f},
+    {0.5f, 0.5f, 0.0f, 1.0f});
 
 HK_BEGIN_CLASS_META(DirectionalLightComponent)
 HK_PROPERTY(IlluminanceInLux, SetIlluminance, GetIlluminance, HK_PROPERTY_DEFAULT)
-HK_PROPERTY(Color, SetColor, GetColor, HK_PROPERTY_DEFAULT)
-HK_PROPERTY(bCastShadow, SetCastShadow, IsCastShadow, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(ShadowMaxDistance, SetShadowMaxDistance, GetShadowMaxDistance, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(ShadowCascadeResolution, SetShadowCascadeResolution, GetShadowCascadeResolution, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(ShadowCascadeOffset, SetShadowCascadeOffset, GetShadowCascadeOffset, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(ShadowCascadeSplitLambda, SetShadowCascadeSplitLambda, GetShadowCascadeSplitLambda, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(MaxShadowCascades, SetMaxShadowCascades, GetMaxShadowCascades, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
-
-DirectionalLightComponent::DirectionalLightComponent()
-{
-    m_IlluminanceInLux = DEFAULT_ILLUMINANCE_IN_LUX;
-    m_Temperature = DEFAULT_TEMPERATURE;
-    m_Color = DEFAULT_COLOR;
-    m_EffectiveColor = Float4(0.0f);
-    m_bCastShadow = true;
-    m_ShadowMaxDistance = 128;
-    m_ShadowCascadeOffset = 3;
-    m_MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
-    m_ShadowCascadeResolution = 1024;
-    m_ShadowCascadeSplitLambda = 0.5f;
-}
-
-void DirectionalLightComponent::OnCreateAvatar()
-{
-    Super::OnCreateAvatar();
-
-    // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<IndexedMesh> Mesh("/Default/Meshes/Cylinder"s);
-    static TStaticResourceFinder<MaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
-
-    MeshRenderView* meshRender = NewObj<MeshRenderView>();
-    meshRender->SetMaterial(MaterialInstance);
-
-    MeshComponent* meshComponent = GetOwnerActor()->CreateComponent<MeshComponent>("DirectionalLightAvatar");
-    meshComponent->SetMotionBehavior(MB_KINEMATIC);
-    meshComponent->SetCollisionGroup(CM_NOCOLLISION);
-    meshComponent->SetMesh(Mesh.GetObject());
-    meshComponent->SetRenderView(meshRender);
-    meshComponent->SetCastShadow(false);
-    meshComponent->SetAbsoluteScale(true);
-    meshComponent->SetAngles(90, 0, 0);
-    meshComponent->SetPosition(0, 0, -0.5f);
-    meshComponent->SetScale(0.5f, 1.0f, 0.5f);
-    meshComponent->AttachTo(this);
-    meshComponent->SetHideInEditor(true);
-}
 
 void DirectionalLightComponent::SetIlluminance(float illuminanceInLux)
 {
@@ -140,51 +79,6 @@ void DirectionalLightComponent::DeinitializeComponent()
     GetWorld()->LightingSystem.DirectionalLights.Remove(this);
 }
 
-void DirectionalLightComponent::SetDirection(Float3 const& _Direction)
-{
-    Float3x3 orientation;
-    Float3   dir = -_Direction.Normalized();
-
-    if (dir.X * dir.X + dir.Z * dir.Z == 0.0f)
-    {
-        orientation[0] = Float3(1, 0, 0);
-        orientation[1] = Float3(0, 0, -dir.Y);
-    }
-    else
-    {
-        orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), dir).Normalized();
-        orientation[1] = Math::Cross(dir, orientation[0]);
-    }
-    orientation[2] = dir;
-
-    Quat rotation;
-    rotation.FromMatrix(orientation);
-    SetRotation(rotation);
-}
-
-Float3 DirectionalLightComponent::GetDirection() const
-{
-    return GetForwardVector();
-}
-
-void DirectionalLightComponent::SetWorldDirection(Float3 const& _Direction)
-{
-    Float3x3 orientation;
-
-    orientation[2] = -_Direction.Normalized();
-    orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), orientation[2]).Normalized();
-    orientation[1] = Math::Cross(orientation[2], orientation[0]);
-
-    Quat rotation;
-    rotation.FromMatrix(orientation);
-    SetWorldRotation(rotation);
-}
-
-Float3 DirectionalLightComponent::GetWorldDirection() const
-{
-    return GetWorldForwardVector();
-}
-
 void DirectionalLightComponent::SetMaxShadowCascades(int maxShadowCascades)
 {
     m_MaxShadowCascades = Math::Clamp(maxShadowCascades, 1, MAX_SHADOW_CASCADES);
@@ -198,28 +92,6 @@ int DirectionalLightComponent::GetMaxShadowCascades() const
 void DirectionalLightComponent::OnTransformDirty()
 {
     Super::OnTransformDirty();
-}
-
-void DirectionalLightComponent::SetColor(Float3 const& color)
-{
-    m_Color = color;
-    m_bEffectiveColorDirty = true;
-}
-
-Float3 const& DirectionalLightComponent::GetColor() const
-{
-    return m_Color;
-}
-
-void DirectionalLightComponent::SetTemperature(float temperature)
-{
-    m_Temperature = temperature;
-    m_bEffectiveColorDirty = true;
-}
-
-float DirectionalLightComponent::GetTemperature() const
-{
-    return m_Temperature;
 }
 
 Float4 const& DirectionalLightComponent::GetEffectiveColor() const
@@ -266,7 +138,7 @@ void DirectionalLightComponent::AddShadowmapCascades(StreamedMemoryGPU* Streamed
 
     HK_ASSERT(m_MaxShadowCascades > 0 && m_MaxShadowCascades <= MAX_SHADOW_CASCADES);
 
-    if (!m_bCastShadow)
+    if (!IsCastShadow())
     {
         *pFirstCascade = 0;
         *pNumCascades  = 0;

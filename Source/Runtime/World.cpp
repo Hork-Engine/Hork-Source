@@ -31,7 +31,6 @@ SOFTWARE.
 #include "World.h"
 #include "Timer.h"
 #include "SkinnedComponent.h"
-#include "PointLightComponent.h"
 #include "Engine.h"
 #include "EnvironmentMap.h"
 

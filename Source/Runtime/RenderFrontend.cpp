@@ -34,7 +34,7 @@ SOFTWARE.
 #include "CameraComponent.h"
 #include "SkinnedComponent.h"
 #include "DirectionalLightComponent.h"
-#include "AnalyticLightComponent.h"
+#include "PunctualLightComponent.h"
 #include "EnvironmentProbe.h"
 #include "TerrainComponent.h"
 #include "PlayerController.h"
@@ -517,7 +517,7 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
     RenderViewData* view = RenderDef.View;
     Drawable*               drawable;
     TerrainComponent*       terrain;
-    AnalyticLightComponent* light;
+    PunctualLightComponent* light;
     EnvironmentProbe*       envProbe;
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
     LightingSystem&         lightingSystem = InWorld->LightingSystem;
@@ -541,7 +541,7 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
             continue;
         }
 
-        if (nullptr != (light = Upcast<AnalyticLightComponent>(primitive->Owner)))
+        if (nullptr != (light = Upcast<PunctualLightComponent>(primitive->Owner)))
         {
             if (!light->IsEnabled())
             {
@@ -1928,7 +1928,7 @@ void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInst
     RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
-bool RenderFrontend::AddLightShadowmap(AnalyticLightComponent* Light, float Radius)
+bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radius)
 {
     if (!Light->IsCastShadow())
     {
