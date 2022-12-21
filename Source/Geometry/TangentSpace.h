@@ -35,7 +35,19 @@ SOFTWARE.
 namespace Geometry
 {
 
-void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices);
+void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices);
+
+bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* IndexArray, unsigned int NumIndices);
+
+HK_FORCEINLINE void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
+{
+    #if 1
+    HK_UNUSED(NumVerts);
+    CalcTangentSpaceMikkTSpace(VertexArray, IndexArray, NumIndices);
+    #else
+    CalcTangentSpaceLegacy(VertexArray, NumVerts, IndexArray, NumIndices);
+    #endif
+}
 
 /** binormal = cross( normal, tangent ) * handedness */
 HK_FORCEINLINE float CalcHandedness(Float3 const& Tangent, Float3 const& Binormal, Float3 const& Normal)

@@ -31,10 +31,12 @@ SOFTWARE.
 #include "TangentSpace.h"
 #include <Containers/Vector.h>
 
+#include <MikkTSpace/mikktspace.h>
+
 namespace Geometry
 {
 
-void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
+void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
 {
     Float3 binormal, tangent;
 
@@ -73,6 +75,65 @@ void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned i
         VertexArray[i].SetTangent((t - n * Math::Dot(n, t)).Normalized());
         VertexArray[i].Handedness = (int8_t)CalcHandedness(t, binormals[i].Normalized(), n);
     }
+}
+
+bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* IndexArray, unsigned int NumIndices)
+{
+    struct GeometryData
+    {
+        MeshVertex* VertexArray;
+        unsigned int const* IndexArray;
+        unsigned int NumFaces;
+    };
+
+    GeometryData data;
+    data.VertexArray = VertexArray;
+    data.IndexArray = IndexArray;
+    data.NumFaces = NumIndices / 3;
+
+    SMikkTSpaceInterface iface = {};
+    iface.m_getNumFaces = [](SMikkTSpaceContext const* context) -> int
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        return data->NumFaces;
+    };
+    iface.m_getNumVerticesOfFace = [](SMikkTSpaceContext const* context, const int faceNum) -> int
+    {
+        return 3;
+    };
+    iface.m_getPosition = [](SMikkTSpaceContext const* context, float posOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        MeshVertex const& vertex = data->VertexArray[data->IndexArray[faceNum * 3 + vertNum]];
+        *((Float3*)&posOut[0]) = vertex.Position;
+    };
+    iface.m_getNormal = [](SMikkTSpaceContext const* context, float normOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        MeshVertex const& vertex = data->VertexArray[data->IndexArray[faceNum * 3 + vertNum]];
+        *((Float3*)&normOut[0]) = vertex.GetNormal();
+    };
+    iface.m_getTexCoord = [](SMikkTSpaceContext const* context, float texCoordOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        MeshVertex const& vertex = data->VertexArray[data->IndexArray[faceNum * 3 + vertNum]];
+        *((Float2*)&texCoordOut[0]) = vertex.GetTexCoord();
+    };
+    iface.m_setTSpaceBasic = [](SMikkTSpaceContext const* context, const float tangent[], const float fSign, const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        MeshVertex& vertex = data->VertexArray[data->IndexArray[faceNum * 3 + vertNum]];
+        vertex.SetTangent(tangent[0], tangent[1], tangent[2]);
+        vertex.Handedness = (int8_t)fSign;
+    };
+
+    SMikkTSpaceContext ctx{&iface, &data};
+    if (!genTangSpaceDefault(&ctx))
+    {
+        LOG("Failed on tangent space calculation\n");
+        return false;
+    }
+    return true;
 }
 
 } // namespace Geometry
