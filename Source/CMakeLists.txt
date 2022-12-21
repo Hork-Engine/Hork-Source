@@ -157,6 +157,10 @@ message(STATUS "USING FAST_OBJ")
 add_subdirectory_with_folder( "ThirdParty/fast_obj" ThirdParty/fast_obj )
 
 message(STATUS "======================================================================")
+message(STATUS "USING MIKKTSPACE")
+add_subdirectory_with_folder( "ThirdParty/MikkTSpace" ThirdParty/MikkTSpace )
+
+message(STATUS "======================================================================")
 message(STATUS "USING BC7ENC")
 add_subdirectory_with_folder( "ThirdParty/bc7enc_rdo" ThirdParty/bc7enc_rdo )
 
@@ -335,6 +339,7 @@ HACD
 vhacd
 Recast
 SDL2-static
+MikkTSpace
 muFFT
 mimalloc-static
 miniaudio

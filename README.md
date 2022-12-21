@@ -166,6 +166,7 @@ PBR (physically based).
 * HACD
 * libwebp
 * lunasvg (freetype, plutovg as part of lunasvg)
+* MikkTSpace
 * mimalloc
 * miniaudio
 * Miniz
