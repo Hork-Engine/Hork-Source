@@ -58,6 +58,11 @@ void AActor::Destroy()
     World::DestroyActor(this);
 }
 
+void AActor::SetRootComponent(SceneComponent* rootComponent)
+{
+    m_RootComponent = rootComponent;
+}
+
 ActorComponent* AActor::CreateComponent(uint64_t _ClassId, StringView InName)
 {
     ActorComponent* component = static_cast<ActorComponent*>(ActorComponent::Factory().CreateInstance(_ClassId));

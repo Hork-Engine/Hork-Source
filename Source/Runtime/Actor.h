@@ -110,6 +110,10 @@ public:
 
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
+    void SetRootComponent(SceneComponent* rootComponent);
+
+    /** The root component is used to place an actor in the world.
+    It is also used to set the actor's location during spawning. */
     SceneComponent* GetRootComponent() const { return m_RootComponent; }
 
     void ResetRootComponent() { m_RootComponent = nullptr; }
