@@ -177,12 +177,19 @@ void World::DestroyActor(AActor* Actor)
         DestroyComponent(component);
     }
 
-    Level* level = Actor->m_Level;
+    if (!Actor->m_bSpawning)
+    {
+        Level* level = Actor->m_Level;
 
-    level->m_Actors[Actor->m_IndexInLevelArrayOfActors]                              = level->m_Actors[level->m_Actors.Size() - 1];
-    level->m_Actors[Actor->m_IndexInLevelArrayOfActors]->m_IndexInLevelArrayOfActors = Actor->m_IndexInLevelArrayOfActors;
-    level->m_Actors.RemoveLast();
-    Actor->m_IndexInLevelArrayOfActors = -1;
+        level->m_Actors[Actor->m_IndexInLevelArrayOfActors] = level->m_Actors[level->m_Actors.Size() - 1];
+        level->m_Actors[Actor->m_IndexInLevelArrayOfActors]->m_IndexInLevelArrayOfActors = Actor->m_IndexInLevelArrayOfActors;
+        level->m_Actors.RemoveLast();
+        Actor->m_IndexInLevelArrayOfActors = -1;
+    }
+    else
+    {
+        LOG("Destroyed before spawn\n");
+    }
 }
 
 void World::DestroyComponent(ActorComponent* Component)
@@ -200,7 +207,7 @@ void World::DestroyComponent(ActorComponent* Component)
     Component->m_bPendingKill = true;
 
     // Add component to pending kill list
-    Component->NextPendingKillComponent = world->m_PendingKillComponents;
+    Component->m_NextPendingKillComponent = world->m_PendingKillComponents;
     world->m_PendingKillComponents      = Component;
 }
 
@@ -387,11 +394,18 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
         };
 
         // Clone component properties
-        for (ActorComponent* component : actor->GetComponents())
+        //for (ActorComponent* component : actor->GetComponents())
+        //{
+        //    ActorComponent* templateComponent = FindTemplateComponent(SpawnInfo.Template, component);
+        //    if (templateComponent)
+        //        ClassMeta::CloneProperties(templateComponent, component);
+        //}
+        for (ActorComponent* component : SpawnInfo.Template->GetComponents())
         {
-            ActorComponent* templateComponent = FindTemplateComponent(SpawnInfo.Template, component);
-            if (templateComponent)
-                ClassMeta::CloneProperties(templateComponent, component);
+            ActorComponent* dst = FindTemplateComponent(actor, component);
+            if (!dst)
+                dst = actor->CreateComponent(&component->FinalClassMeta(), component->GetObjectName());
+            ClassMeta::CloneProperties(component, dst);
         }
 
         if (actor->m_ScriptModule && SpawnInfo.Template->m_ScriptModule)
@@ -403,6 +417,10 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
         ClassMeta::CloneProperties(SpawnInfo.Template, actor);
     }
 
+    // All components created at spawn time are default.
+    for (ActorComponent* component : actor->GetComponents())
+        component->m_bIsDefault = true;
+
     if (SpawnInfo.Instigator)
     {
         actor->m_Instigator = SpawnInfo.Instigator;
@@ -411,23 +429,6 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
 
     actor->m_World = this;
     actor->m_Level = SpawnInfo.Level ? SpawnInfo.Level : m_PersistentLevel;
-
-    if (actor->m_bInEditor)
-    {
-        // FIXME: Specify avatar in ActorDef?
-        ActorComponents tempArray = actor->m_Components;
-        for (ActorComponent* component : tempArray)
-        {
-            component->OnCreateAvatar();
-        }
-
-        // FIXME: Or better create in actor module? Like this:
-        // Actor->CreateAvatar();
-        // void AActor::CreateAvatar()
-        // {
-        //      CALL_SCRIPT(CreateAvatar);
-        // }
-    }
 
     if (actor->m_RootComponent)
     {
@@ -713,7 +714,7 @@ void World::KillActors(bool bClearSpawnQueue)
 
         while (component)
         {
-            ActorComponent* nextComponent = component->NextPendingKillComponent;
+            ActorComponent* nextComponent = component->m_NextPendingKillComponent;
 
             if (component->m_bInitialized)
             {

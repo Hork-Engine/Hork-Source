@@ -40,8 +40,8 @@ ActorComponent::ActorComponent()
 {
     m_bInitialized = false;
     m_bPendingKill = false;
-    m_bHideInEditor = false;
-    m_bTicking      = false;
+    m_bTicking = false;
+    m_bIsDefault = false;
 }
 
 World* ActorComponent::GetWorld() const

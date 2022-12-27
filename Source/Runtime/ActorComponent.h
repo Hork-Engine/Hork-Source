@@ -85,11 +85,6 @@ public:
     /** Spawned for editing */
     bool IsInEditor() const;
 
-    /** Attributes of this component will not be visible in editor */
-    void SetHideInEditor(bool _HideInEditor) { m_bHideInEditor = _HideInEditor; }
-
-    bool HiddenInEditor() const { return m_bHideInEditor; }
-
     /** Register component to initialize it at runtime */
     void RegisterComponent();
 
@@ -99,12 +94,12 @@ public:
     /** Get object debug/editor or ingame name */
     String const& GetObjectName() const { return m_Name; }
 
+    int GetLocalId() const { return m_LocalId; }
+
 protected:
     bool bCanEverTick = false;
 
     ActorComponent();
-
-    virtual void OnCreateAvatar() {}
 
     /** Called from Actor's InitializeComponents() */
     virtual void InitializeComponent() {}
@@ -121,7 +116,7 @@ protected:
 private:
     AActor* m_OwnerActor = nullptr;
 
-    ActorComponent* NextPendingKillComponent = nullptr;
+    ActorComponent* m_NextPendingKillComponent = nullptr;
 
     String m_Name;
 
@@ -130,8 +125,8 @@ private:
 
     bool m_bInitialized : 1;
     bool m_bPendingKill : 1;
-    bool m_bHideInEditor : 1;
     bool m_bTicking : 1;
+    bool m_bIsDefault : 1;
 };
 
 HK_NAMESPACE_END
