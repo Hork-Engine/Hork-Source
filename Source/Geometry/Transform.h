@@ -74,11 +74,23 @@ struct Transform
     void   StepBack(float units);
     void   StepForward(float units);
     void   Step(Float3 const& vector);
+    Float3x4 ToMatrix() const;
+    Float3x3 GetNormalMatrix() const;
+
+    bool operator==(Transform const& rhs) const
+    {
+        return Position == rhs.Position && Rotation == rhs.Rotation && Scale == rhs.Scale;
+    }
+
+    bool operator!=(Transform const& rhs) const
+    {
+        return !operator==(rhs);
+    }
 
     Transform operator*(Transform const& rhs) const;
 
     Transform Inversed() const;
-    void       InverseSelf();
+    void      InverseSelf();
 
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const;
@@ -360,11 +372,30 @@ HK_FORCEINLINE void Transform::Step(Float3 const& vector)
     Position += vector;
 }
 
+HK_FORCEINLINE Float3x4 Transform::ToMatrix() const
+{
+    Float3x4 matrix;
+    matrix.Compose(Position, Rotation.ToMatrix3x3(), Scale);
+    return matrix;
+}
+
+HK_FORCEINLINE Float3x3 Transform::GetNormalMatrix() const
+{
+    Float3x3 normalMatrix;
+    ToMatrix().DecomposeNormalMatrix(normalMatrix);
+    return normalMatrix;
+}
+
 HK_FORCEINLINE Transform Transform::operator*(Transform const& rhs) const
 {
     Float3x4 m;
     ComputeTransformMatrix(m);
     return Transform(m * rhs.Position, Rotation * rhs.Rotation, Scale * rhs.Scale);
+}
+
+HK_FORCEINLINE Float3 operator*(Transform const& lhs, Float3 const& rhs)
+{
+    return lhs.Position + lhs.Rotation * (lhs.Scale * rhs);
 }
 
 HK_FORCEINLINE Transform Transform::Inversed() const
