@@ -109,11 +109,16 @@ void UIButton::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStam
 
     if (event.Action == IA_PRESS)
     {
-        m_bTryPress = true;
+        if (m_bTriggerOnPress)
+        {
+            m_Action->Triggered();
+        }
+        else
+            m_bTryPress = true;
     }
     else if (event.Action == IA_RELEASE)
     {
-        if (GUIManager->HoveredWidget.GetObject() == this && m_bTryPress)
+        if (GUIManager->HoveredWidget.GetObject() == this && m_bTryPress && !m_bTriggerOnPress)
         {
             m_Action->Triggered();
         }

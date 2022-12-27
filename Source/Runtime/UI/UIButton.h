@@ -43,6 +43,7 @@ class UIButton : public UIWidget
     TRef<UIDecorator> m_Decorator;
     TRef<UIText>      m_Text;
     bool              m_bTryPress{};
+    bool              m_bTriggerOnPress{};
 
 public:
     UIButton& WithAction(UIAction* action)
@@ -60,6 +61,12 @@ public:
     UIButton& WithText(UIText* text)
     {
         m_Text = text;
+        return *this;
+    }
+
+    UIButton& WithTriggerOnPress(bool bTriggerOnPress)
+    {
+        m_bTriggerOnPress = bTriggerOnPress;
         return *this;
     }
 
