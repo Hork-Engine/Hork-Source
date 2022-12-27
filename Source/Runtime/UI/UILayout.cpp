@@ -526,7 +526,7 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
         float w = child->Size.X * scale.X;
         float h = child->Size.Y * scale.Y;
 
-        child->MeasureLayout(false, false, {w, h});
+        child->MeasureLayout(true, true, {w, h});
     }
 
     return paddedSize;
@@ -555,7 +555,7 @@ void UIImageLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoH
         child->m_Geometry.Mins = geometry.PaddedMins + child->Position * scale;
         child->m_Geometry.Maxs = child->m_Geometry.Mins + child->Size * scale;
 
-        child->ArrangeChildren(false, false);
+        child->ArrangeChildren(true, true);
     }
 }
 
