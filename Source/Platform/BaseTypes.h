@@ -303,7 +303,7 @@ class Noncopyable
     HK_FORBID_COPY(Noncopyable)
 
 public:
-    Noncopyable() {}
+    Noncopyable() = default;
 };
 
 
