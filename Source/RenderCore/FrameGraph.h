@@ -43,6 +43,8 @@ SOFTWARE.
 // 1. Optimize. Very slow framegraph rebuilding in debug mode.
 // 2. Destroy unused framebuffers and textures (after some time?)
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -174,3 +176,5 @@ HK_FORCEINLINE std::size_t FG_GenerateResourceId(FrameGraph* pFrameGraph)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

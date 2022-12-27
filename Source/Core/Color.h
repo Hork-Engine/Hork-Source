@@ -33,6 +33,10 @@ SOFTWARE.
 #include "BaseMath.h"
 #include <Platform/Format.h>
 
+extern float stbir__srgb_uchar_to_linear_float[256];
+
+HK_NAMESPACE_BEGIN
+
 HK_INLINE void EncodeRGBE(uint8_t RGBE[4], const float* LinearRGB)
 {
     float maxcomp = Math::Max3(LinearRGB[0], LinearRGB[1], LinearRGB[2]);
@@ -266,7 +270,6 @@ HK_FORCEINLINE float LinearToSRGB(float LinearColor)
 HK_FORCEINLINE float LinearFromSRGB_UChar(uint8_t in)
 {
     // Uses true SRGB conversion
-    extern float stbir__srgb_uchar_to_linear_float[256];
     return stbir__srgb_uchar_to_linear_float[in];
 }
 
@@ -694,4 +697,6 @@ HK_INLINE Color4 MakeColorU8(uint8_t _Red, uint8_t _Green, uint8_t _Blue, uint8_
     return Color4(_Red * scale, _Green * scale, _Blue * scale, _Alpha * scale);
 }
 
-HK_FORMAT_DEF_(Color4, "( {} {} {} {} )", v.R, v.G, v.B, v.A);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::Color4, "( {} {} {} {} )", v.R, v.G, v.B, v.A);

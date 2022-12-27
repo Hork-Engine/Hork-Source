@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 struct UIGridSplitter
 {
     enum TYPE
@@ -124,3 +126,5 @@ private:
     Float2             m_DragStart;
     float              m_StartWidth;
 };
+
+HK_NAMESPACE_END

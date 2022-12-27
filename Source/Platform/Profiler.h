@@ -40,6 +40,8 @@ SOFTWARE.
 #define _HK_PROFILER_THREAD   OPTICK_THREAD
 #define _HK_PROFILER_FRAME    OPTICK_FRAME
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -47,3 +49,5 @@ void InitializeProfiler();
 void ShutdownProfiler();
 
 } // namespace Platform
+
+HK_NAMESPACE_END

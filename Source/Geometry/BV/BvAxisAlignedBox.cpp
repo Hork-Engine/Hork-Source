@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <Geometry/BV/BvAxisAlignedBox.h>
 
+HK_NAMESPACE_BEGIN
+
 void BvAxisAlignedBox::GetVertices(Float3 vertices[8]) const
 {
     vertices[0]  = Float3(Mins.X, Maxs.Y, Mins.Z);
@@ -90,3 +92,5 @@ void BvAxisAlignedBox::GetFaceVertices(int faceNum, Float3 vertices[4]) const
             break;
     }
 }
+
+HK_NAMESPACE_END

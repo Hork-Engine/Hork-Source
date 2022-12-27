@@ -34,15 +34,17 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Containers/Hash.h>
 
-class AActor;
-class World;
-
 class asIScriptEngine;
 class asIScriptContext;
 class asIScriptObject;
 class asIScriptFunction;
 class asITypeInfo;
 struct asSMessageInfo;
+
+HK_NAMESPACE_BEGIN
+
+class AActor;
+class World;
 
 class ScriptContextPool
 {
@@ -117,3 +119,5 @@ protected:
     ScriptContextPool                     m_ContextPool;
     TVector<std::unique_ptr<ActorScript>> m_Scripts;
 };
+
+HK_NAMESPACE_END

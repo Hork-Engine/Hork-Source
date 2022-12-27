@@ -31,6 +31,8 @@ SOFTWARE.
 #include "UIDecorator.h"
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 void UIBrushDecorator::DrawInactive(Canvas& canvas, UIWidgetGeometry const& geometry)
 {
     if (InactiveBrush)
@@ -60,3 +62,5 @@ void UIBrushDecorator::DrawDisabled(Canvas& canvas, UIWidgetGeometry const& geom
     if (DisabledBrush)
         DrawBrush(canvas, geometry.Mins, geometry.Maxs, {}, DisabledBrush);
 }
+
+HK_NAMESPACE_END

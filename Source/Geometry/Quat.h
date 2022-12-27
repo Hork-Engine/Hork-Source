@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "VectorMath.h"
 
+HK_NAMESPACE_BEGIN
+
 struct Quat
 {
     using ElementType = float;
@@ -550,4 +552,6 @@ HK_FORCEINLINE Quat Slerp(Quat const& qs, Quat const& qe, float f)
 
 } // namespace Math
 
-HK_FORMAT_DEF_(Quat, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::Quat, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);

@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Core/HeapBlob.h>
 
+HK_NAMESPACE_BEGIN
+
 #define freeverb_Undenormalise(sample) \
     if (((*(unsigned int*)&sample) & 0x7f800000) == 0) sample = 0.0f
 
@@ -192,3 +194,5 @@ private:
 
     HeapBlob MemoryBlob;
 };
+
+HK_NAMESPACE_END

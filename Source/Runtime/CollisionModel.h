@@ -34,6 +34,11 @@ SOFTWARE.
 #include <Geometry/BV/BvAxisAlignedBox.h>
 #include <Geometry/Plane.h>
 
+class btCollisionShape;
+class btCompoundShape;
+
+HK_NAMESPACE_BEGIN
+
 class IndexedMeshSubpart;
 
 enum COLLISION_MASK : uint32_t
@@ -268,8 +273,8 @@ struct CollisionBody
 
     virtual ~CollisionBody() {}
 
-    virtual class btCollisionShape* Create(Float3 const& Scale) { return nullptr; }
-    virtual void                    GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const {}
+    virtual btCollisionShape* Create(Float3 const& Scale) { return nullptr; }
+    virtual void              GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const {}
 };
 
 struct BoneCollision
@@ -369,8 +374,10 @@ public:
     btCollisionShape* GetCollisionShape() const { return m_CollisionShape; }
 
 private:
-    TRef<CollisionModel>              m_Model;
-    TUniqueRef<class btCompoundShape> m_CompoundShape;
-    btCollisionShape*                 m_CollisionShape;
-    Float3                            m_CenterOfMass;
+    TRef<CollisionModel>        m_Model;
+    TUniqueRef<btCompoundShape> m_CompoundShape;
+    btCollisionShape*           m_CollisionShape;
+    Float3                      m_CenterOfMass;
 };
+
+HK_NAMESPACE_END

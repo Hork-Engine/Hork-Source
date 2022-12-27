@@ -31,6 +31,8 @@ SOFTWARE.
 #include "UILayout.h"
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 Float2 UIBoxLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size)
 {
     Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
@@ -594,3 +596,5 @@ void UIStackLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoH
 
     widget->ArrangeChildren(false, false);
 }
+
+HK_NAMESPACE_END

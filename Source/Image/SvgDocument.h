@@ -37,6 +37,8 @@ namespace lunasvg
 class LayoutSymbol;
 }
 
+HK_NAMESPACE_BEGIN
+
 class SvgDocument
 {
 public:
@@ -76,3 +78,5 @@ private:
 
     friend SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream);
 };
+
+HK_NAMESPACE_END

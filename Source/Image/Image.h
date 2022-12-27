@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Containers/Array.h>
 
+HK_NAMESPACE_BEGIN
+
 enum TEXTURE_TYPE
 {
     TEXTURE_1D,
@@ -617,3 +619,5 @@ struct SkyboxImportSettings
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings);
 
 uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth = 1);
+
+HK_NAMESPACE_END

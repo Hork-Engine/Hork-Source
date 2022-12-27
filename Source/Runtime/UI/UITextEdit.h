@@ -35,6 +35,8 @@ SOFTWARE.
 struct STB_TexteditState_s;
 typedef STB_TexteditState_s STB_TexteditState;
 
+HK_NAMESPACE_BEGIN
+
 class UITextEdit : public UIWidget
 {
     UI_CLASS(UITextEdit, UIWidget)
@@ -206,3 +208,5 @@ private:
     bool               m_bShouldKeepSelection : 1;
     bool               m_bWithWordWrap : 1;
 };
+
+HK_NAMESPACE_END

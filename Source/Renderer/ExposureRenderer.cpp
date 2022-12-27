@@ -31,6 +31,8 @@ SOFTWARE.
 #include "ExposureRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_ShowDefaultExposure("r_ShowDefaultExposure"s, "0"s);
 
 using namespace RenderCore;
@@ -211,3 +213,5 @@ void ExposureRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTex
 
     *ppExposure = Exposure_R;
 }
+
+HK_NAMESPACE_END

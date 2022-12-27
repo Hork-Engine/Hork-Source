@@ -35,6 +35,8 @@ SOFTWARE.
 #include "Terrain.h"
 #include "Level.h"
 
+HK_NAMESPACE_BEGIN
+
 class TerrainComponent : public SceneComponent, private NavigationPrimitive
 {
     HK_COMPONENT(TerrainComponent, SceneComponent)
@@ -183,3 +185,5 @@ protected:
     TerrainComponent* pNext{};
     TerrainComponent* pPrev{};
 };
+
+HK_NAMESPACE_END

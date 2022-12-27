@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
+HK_NAMESPACE_BEGIN
+
 // TODO: this can be computed at compile-time
 float FRUSTUM_SLICE_SCALE = -(MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2((double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR);
 float FRUSTUM_SLICE_BIAS  = std::log2((double)FRUSTUM_CLUSTER_ZFAR) * (MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2((double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR) - FRUSTUM_SLICE_OFFSET;
@@ -53,3 +55,4 @@ struct FrustumSliceZClipInitializer
 
 static FrustumSliceZClipInitializer FrustumSliceZClipInitializer;
 
+HK_NAMESPACE_END

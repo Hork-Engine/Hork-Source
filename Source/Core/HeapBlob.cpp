@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "HeapBlob.h"
 
+HK_NAMESPACE_BEGIN
+
 HeapBlob::~HeapBlob()
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
@@ -72,3 +74,5 @@ void HeapBlob::Reset()
     m_HeapPtr  = nullptr;
     m_HeapSize = 0;
 }
+
+HK_NAMESPACE_END

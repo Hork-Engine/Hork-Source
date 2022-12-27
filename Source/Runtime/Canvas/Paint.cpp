@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "Paint.h"
 
+HK_NAMESPACE_BEGIN
+
 CanvasPaint& CanvasPaint::LinearGradient(Float2 const& startPoint, Float2 const& endPoint, Color4 const& innerColor, Color4 const& outerColor)
 {
     const float large = 1e5;
@@ -145,3 +147,5 @@ CanvasPaint& CanvasPaint::Solid(Color4 const& color)
 
     return *this;
 }
+
+HK_NAMESPACE_END

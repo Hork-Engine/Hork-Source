@@ -41,6 +41,8 @@ SOFTWARE.
 
 #include <RenderCore/VertexMemoryGPU.h>
 
+HK_NAMESPACE_BEGIN
+
 class RenderBackend : public RefCounted
 {
 public:
@@ -86,3 +88,5 @@ private:
     // Just for test
     TRef<VirtualTexture> m_TestVT;
 };
+
+HK_NAMESPACE_END

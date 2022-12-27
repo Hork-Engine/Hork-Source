@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+HK_NAMESPACE_BEGIN
+
 constexpr int SHUFFLE(const int& x, const int& y, const int& z, const int& w)
 {
     return (((x & 3) << 6) | ((y & 3) << 4) | ((z & 3) << 2) | (w & 3));
@@ -357,3 +359,5 @@ constexpr int sWWWX = SHUFFLE(3, 3, 3, 0);
 constexpr int sWWWY = SHUFFLE(3, 3, 3, 1);
 constexpr int sWWWZ = SHUFFLE(3, 3, 3, 2);
 constexpr int sWWWW = SHUFFLE(3, 3, 3, 3);
+
+HK_NAMESPACE_END

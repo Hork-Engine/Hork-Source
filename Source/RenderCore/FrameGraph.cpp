@@ -31,6 +31,8 @@ SOFTWARE.
 #include "FrameGraph.h"
 #include <Core/IO.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -310,3 +312,5 @@ void FrameGraph::ReleaseCapturedResources()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

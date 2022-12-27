@@ -34,6 +34,8 @@ SOFTWARE.
 #include "EmbeddedResources.h"
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Resource)
 
 void Resource::InitializeDefaultObject()
@@ -101,3 +103,5 @@ void BinaryResource::LoadInternalResource(StringView path)
 {
     Purge();
 }
+
+HK_NAMESPACE_END

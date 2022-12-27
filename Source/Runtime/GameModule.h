@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "CommandContext.h"
 
+HK_NAMESPACE_BEGIN
+
 class GameModule : public BaseObject
 {
     HK_CLASS(GameModule, BaseObject)
@@ -56,3 +58,5 @@ private:
     void Quit(CommandProcessor const& _Proc);
     void RebuildMaterials(CommandProcessor const& _Proc);
 };
+
+HK_NAMESPACE_END

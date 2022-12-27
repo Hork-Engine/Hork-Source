@@ -32,6 +32,8 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include "ExposureRenderer.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 PostprocessRenderer::PostprocessRenderer()
@@ -194,3 +196,5 @@ void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,
                               DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
                           });
 }
+
+HK_NAMESPACE_END

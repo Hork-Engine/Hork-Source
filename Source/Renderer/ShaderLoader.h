@@ -33,6 +33,8 @@ SOFTWARE.
 #include "RenderDefs.h"
 #include <Containers/ArrayView.h>
 
+HK_NAMESPACE_BEGIN
+
 class ShaderLoader
 {
 public:
@@ -47,3 +49,5 @@ protected:
     /** Predefined shaders */
     TArrayView<MaterialSource> m_Predefined;
 };
+
+HK_NAMESPACE_END

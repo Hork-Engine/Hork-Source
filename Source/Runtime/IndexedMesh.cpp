@@ -41,6 +41,8 @@ SOFTWARE.
 #include <Geometry/BV/BvIntersect.h>
 #include <Geometry/TangentSpace.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(IndexedMesh)
 HK_CLASS_META(ProceduralMesh)
 
@@ -708,7 +710,7 @@ IndexedMesh* IndexedMesh::CreateBox(Float3 const& Extents, float TexCoordScale)
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateBoxMesh(vertices, indices, bounds, Extents, TexCoordScale);
+    CreateBoxMesh(vertices, indices, bounds, Extents, TexCoordScale);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -724,7 +726,7 @@ IndexedMesh* IndexedMesh::CreateSphere(float Radius, float TexCoordScale, int Nu
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateSphereMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
+    CreateSphereMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -740,7 +742,7 @@ IndexedMesh* IndexedMesh::CreatePlaneXZ(float Width, float Height, Float2 const&
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreatePlaneMeshXZ(vertices, indices, bounds, Width, Height, TexCoordScale);
+    CreatePlaneMeshXZ(vertices, indices, bounds, Width, Height, TexCoordScale);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -756,7 +758,7 @@ IndexedMesh* IndexedMesh::CreatePlaneXY(float Width, float Height, Float2 const&
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreatePlaneMeshXY(vertices, indices, bounds, Width, Height, TexCoordScale);
+    CreatePlaneMeshXY(vertices, indices, bounds, Width, Height, TexCoordScale);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -772,8 +774,8 @@ IndexedMesh* IndexedMesh::CreatePatch(Float3 const& Corner00, Float3 const& Corn
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreatePatchMesh(vertices, indices, bounds,
-                      Corner00, Corner10, Corner01, Corner11, TexCoordScale, bTwoSided, NumVerticalSubdivs, NumHorizontalSubdivs);
+    CreatePatchMesh(vertices, indices, bounds,
+                    Corner00, Corner10, Corner01, Corner11, TexCoordScale, bTwoSided, NumVerticalSubdivs, NumHorizontalSubdivs);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -789,7 +791,7 @@ IndexedMesh* IndexedMesh::CreateCylinder(float Radius, float Height, float TexCo
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateCylinderMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
+    CreateCylinderMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -805,7 +807,7 @@ IndexedMesh* IndexedMesh::CreateCone(float Radius, float Height, float TexCoordS
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateConeMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
+    CreateConeMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumSubdivs);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -821,7 +823,7 @@ IndexedMesh* IndexedMesh::CreateCapsule(float Radius, float Height, float TexCoo
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateCapsuleMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
+    CreateCapsuleMesh(vertices, indices, bounds, Radius, Height, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -837,7 +839,7 @@ IndexedMesh* IndexedMesh::CreateSkybox(Float3 const& Extents, float TexCoordScal
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateSkyboxMesh(vertices, indices, bounds, Extents, TexCoordScale);
+    CreateSkyboxMesh(vertices, indices, bounds, Extents, TexCoordScale);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -853,7 +855,7 @@ IndexedMesh* IndexedMesh::CreateSkydome(float Radius, float TexCoordScale, int N
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    ::CreateSkydomeMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs, bHemisphere);
+    CreateSkydomeMesh(vertices, indices, bounds, Radius, TexCoordScale, NumVerticalSubdivs, NumHorizontalSubdivs, bHemisphere);
 
     IndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
     mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
@@ -872,7 +874,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
 
     if (!_Path.Icmp("/Default/Meshes/Box"))
     {
-        ::CreateBoxMesh(vertices, indices, bounds, Float3(1), 1);
+        CreateBoxMesh(vertices, indices, bounds, Float3(1), 1);
 
         CollisionBoxDef box;
 
@@ -880,7 +882,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/Sphere"))
     {
-        ::CreateSphereMesh(vertices, indices, bounds, 0.5f, 1);
+        CreateSphereMesh(vertices, indices, bounds, 0.5f, 1);
 
         CollisionSphereDef sphere;
 
@@ -888,7 +890,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/Cylinder"))
     {
-        ::CreateCylinderMesh(vertices, indices, bounds, 0.5f, 1, 1);
+        CreateCylinderMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
         CollisionCylinderDef cylinder;
         cylinder.Radius = 0.5f;
@@ -898,7 +900,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/Cone"))
     {
-        ::CreateConeMesh(vertices, indices, bounds, 0.5f, 1, 1);
+        CreateConeMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
         CollisionConeDef cone;
         cone.Radius = 0.5f;
@@ -907,7 +909,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/Capsule"))
     {
-        ::CreateCapsuleMesh(vertices, indices, bounds, 0.5f, 1.0f, 1);
+        CreateCapsuleMesh(vertices, indices, bounds, 0.5f, 1.0f, 1);
 
         CollisionCapsuleDef capsule;
         capsule.Radius = 0.5f;
@@ -916,7 +918,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
-        ::CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, Float2(256));
+        CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, Float2(256));
 
         CollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -928,7 +930,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
-        ::CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, Float2(256));
+        CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, Float2(256));
 
         CollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -940,7 +942,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXZ"))
     {
-        ::CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, Float2(1));
+        CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, Float2(1));
 
         CollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
@@ -952,7 +954,7 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXY"))
     {
-        ::CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, Float2(1));
+        CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, Float2(1));
 
         CollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
@@ -964,15 +966,15 @@ void IndexedMesh::LoadInternalResource(StringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
-        ::CreateSkyboxMesh(vertices, indices, bounds, Float3(1), 1);
+        CreateSkyboxMesh(vertices, indices, bounds, Float3(1), 1);
     }
     else if (!_Path.Icmp("/Default/Meshes/Skydome"))
     {
-        ::CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 32, 32, false);
+        CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 32, 32, false);
     }
     else if (!_Path.Icmp("/Default/Meshes/SkydomeHemisphere"))
     {
-        ::CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 16, 32, true);
+        CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 16, 32, true);
     }
     else
     {
@@ -2719,3 +2721,5 @@ MaterialInstance* MeshRenderView::GetMaterial(int subpartIndex) const
     }
     return pInstance;
 }
+
+HK_NAMESPACE_END

@@ -33,6 +33,8 @@ SOFTWARE.
 #include <RenderCore/GenericWindow.h>
 #include "ImmediateContextGLImpl.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -60,3 +62,5 @@ private:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

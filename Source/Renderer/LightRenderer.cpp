@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"s);
 
 using namespace RenderCore;
@@ -568,3 +570,5 @@ void LightRenderer::AddPass(FrameGraph&     FrameGraph,
 
     *ppLight = LightTexture;
 }
+
+HK_NAMESPACE_END

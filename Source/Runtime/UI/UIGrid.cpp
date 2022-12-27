@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Runtime/InputDefs.h>
 #include <Geometry/BV/BvIntersect.h>
 
+HK_NAMESPACE_BEGIN
+
 UIGrid::UIGrid(uint32_t NumColumns, uint32_t NumRows)
 {
     auto gridLayout = UINew(UIGridLayout);
@@ -180,3 +182,5 @@ void UIGrid::Draw(Canvas& cv)
         cv.DrawRectFilled(splitter.Mins, splitter.Maxs, Color4::Orange());
     }
 }
+
+HK_NAMESPACE_END

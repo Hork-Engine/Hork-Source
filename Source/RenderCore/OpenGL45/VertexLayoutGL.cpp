@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -133,3 +135,5 @@ void VertexLayoutGL::DestroyVAO(ImmediateContextGLImpl* pContext)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

@@ -35,9 +35,9 @@ SOFTWARE.
 #include <Core/HeapBlob.h>
 #include <Platform/Logger.h>
 
-#define STBI_MALLOC(sz)                     Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sz, 16)
-#define STBI_FREE(p)                        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(p)
-#define STBI_REALLOC(p, newsz)              Platform::GetHeapAllocator<HEAP_IMAGE>().Realloc(p, newsz, 16)
+#define STBI_MALLOC(sz)                     Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
+#define STBI_FREE(p)                        Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
+#define STBI_REALLOC(p, newsz)              Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) STBI_REALLOC(p, newsz)
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -45,15 +45,18 @@ SOFTWARE.
 #define STBI_NO_GIF // Maybe in future gif will be used, but not now
 #include "stb/stb_image.h"
 
-#define STBIW_MALLOC(sz)        Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sz, 16)
-#define STBIW_FREE(p)           Platform::GetHeapAllocator<HEAP_IMAGE>().Free(p)
-#define STBIW_REALLOC(p, newsz) Platform::GetHeapAllocator<HEAP_IMAGE>().Realloc(p, newsz, 16)
+#define STBIW_MALLOC(sz)        Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
+#define STBIW_FREE(p)           Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
+#define STBIW_REALLOC(p, newsz) Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 //#define STBI_WRITE_NO_STDIO
 #define STBIW_ZLIB_COMPRESS      stbi_zlib_compress_override                   // Override compression method
-#define STBIW_CRC32(buffer, len) Core::Crc32(Core::CRC32_INITIAL, buffer, len) // Override crc32 method
+#define STBIW_CRC32(buffer, len) Hk::Core::Crc32(Hk::Core::CRC32_INITIAL, buffer, len) // Override crc32 method
 #define PNG_COMPRESSION_LEVEL    8
+
+namespace
+{
 
 struct StbImageInit
 {
@@ -65,87 +68,92 @@ struct StbImageInit
     }
 };
 
-static StbImageInit __StbImageInit;
+StbImageInit __StbImageInit;
 
 // Miniz mz_compress2 provides better compression than default stb compression method
 HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, int data_len, int* out_len, int quality)
 {
-    size_t buflen = Core::ZMaxCompressedSize(data_len);
+    size_t buflen = Hk::Core::ZMaxCompressedSize(data_len);
 
     unsigned char* buf = (unsigned char*)STBIW_MALLOC(buflen);
     if (buf == NULL)
     {
-        LOG("stbi_zlib_compress_override Malloc failed\n");
+        Hk::LOG("stbi_zlib_compress_override Malloc failed\n");
         return NULL;
     }
-    if (!Core::ZCompress(buf, &buflen, data, data_len, PNG_COMPRESSION_LEVEL))
+    if (!Hk::Core::ZCompress(buf, &buflen, data, data_len, PNG_COMPRESSION_LEVEL))
     {
-        LOG("stbi_zlib_compress_override ZCompress failed\n");
+        Hk::LOG("stbi_zlib_compress_override ZCompress failed\n");
         STBIW_FREE(buf);
         return NULL;
     }
     *out_len = buflen;
     if (buflen == 0)
     { // compiler bug workaround (MSVC, Release)
-        LOG("WritePNG: invalid compression\n");
+        Hk::LOG("WritePNG: invalid compression\n");
     }
     return buf;
 }
+
+} // namespace
 
 #include "stb/stb_image_write.h"
 
 #define SUPPORT_EXR
 #define SUPPORT_WEBP
 
+namespace
+{
+
 static int Stbi_Read(void* user, char* data, int size)
 {
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
+    Hk::IBinaryStreamReadInterface* stream = (Hk::IBinaryStreamReadInterface*)user;
     return stream->Read(data, size);
 }
 
 static void Stbi_Skip(void* user, int n)
 {
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
+    Hk::IBinaryStreamReadInterface* stream = (Hk::IBinaryStreamReadInterface*)user;
     stream->SeekCur(n);
 }
 
 static int Stbi_Eof(void* user)
 {
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
+    Hk::IBinaryStreamReadInterface* stream = (Hk::IBinaryStreamReadInterface*)user;
     return stream->Eof();
 }
 
 static void Stbi_Write(void* context, void* data, int size)
 {
-    IBinaryStreamWriteInterface* stream = (IBinaryStreamWriteInterface*)context;
+    Hk::IBinaryStreamWriteInterface* stream = (Hk::IBinaryStreamWriteInterface*)context;
     stream->Write(data, size);
 }
 
 HK_FORCEINLINE static uint8_t FloatToU8(float f)
 {
-    return Math::Round(Math::Saturate(f) * 255.0f);
+    return Hk::Math::Round(Hk::Math::Saturate(f) * 255.0f);
 }
 
-static bool LoadImageStb(IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+static bool LoadImageStb(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
 {
     HK_ASSERT(NumRequiredChannels <= 4);
-    
+
     int w, h, numChannels;
-        
+
     const stbi_io_callbacks callbacks = {Stbi_Read, Stbi_Skip, Stbi_Eof};
-    
+
     size_t streamOffset = Stream.GetOffset();
 
     void* source = bAsHDRI ? (void*)stbi_loadf_from_callbacks(&callbacks, &Stream, &w, &h, &numChannels, NumRequiredChannels) :
                              (void*)stbi_load_from_callbacks(&callbacks, &Stream, &w, &h, &numChannels, NumRequiredChannels);
-                                 
+
     if (!source)
     {
         Stream.SeekSet(streamOffset);
-        LOG("LoadImage: failed to load {}\n", Stream.GetName());
+        Hk::LOG("LoadImage: failed to load {}\n", Stream.GetName());
         return false;
     }
-        
+
     *pWidth = w;
     *pHeight = h;
     *pNumChannels = numChannels;
@@ -153,12 +161,17 @@ static bool LoadImageStb(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
     return true;
 }
 
+} // namespace
+
 #ifdef SUPPORT_EXR
 
 #include <tinyexr/tinyexr.h>
 
-static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
-{   
+namespace
+{
+
+static bool LoadImageEXR(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+{
     HK_ASSERT(NumRequiredChannels <= 4);
 
     size_t streamOffset = Stream.GetOffset();
@@ -166,22 +179,22 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
     int w, h;
     float* source;
     {
-        HeapBlob memory = Stream.ReadBlob(Stream.SizeInBytes() - streamOffset);
-        
+        Hk::HeapBlob memory = Stream.ReadBlob(Stream.SizeInBytes() - streamOffset);
+
         int r = LoadEXRFromMemory(&source, &w, &h, (unsigned char*)memory.GetData(), memory.Size(), nullptr);
         if (r != TINYEXR_SUCCESS)
         {
             Stream.SeekSet(streamOffset);
-            LOG("LoadImageEXR: failed to load {}\n", Stream.GetName());
+            Hk::LOG("LoadImageEXR: failed to load {}\n", Stream.GetName());
             return false;
         }
     }
 
     const int numChannels = 4;
-    
+
     if (!NumRequiredChannels)
         NumRequiredChannels = numChannels;
-    
+
     size_t pixcount = (size_t)w * h * numChannels;
 
     void* data = nullptr;
@@ -190,7 +203,7 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
     {
         if (NumRequiredChannels != numChannels)
         {
-            data         = STBI_MALLOC((size_t)w * h * NumRequiredChannels * sizeof(float));
+            data = STBI_MALLOC((size_t)w * h * NumRequiredChannels * sizeof(float));
             float* pDest = (float*)data;
             if (NumRequiredChannels == 1)
             {
@@ -224,14 +237,14 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
         else
         {
             data = STBI_MALLOC((size_t)w * h * numChannels * sizeof(float));
-            Platform::Memcpy(data, source, (size_t)w * h * numChannels * sizeof(float));
+            Hk::Platform::Memcpy(data, source, (size_t)w * h * numChannels * sizeof(float));
         }
     }
     else
     {
         if (NumRequiredChannels != numChannels)
         {
-            data           = STBI_MALLOC((size_t)w * h * NumRequiredChannels);
+            data = STBI_MALLOC((size_t)w * h * NumRequiredChannels);
             uint8_t* pDest = (uint8_t*)data;
             if (NumRequiredChannels == 1)
             {
@@ -278,7 +291,7 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
     }
 
     free(source); // tinyexr uses standard malloc/free
-    
+
     *pWidth = w;
     *pHeight = h;
     *pNumChannels = numChannels;
@@ -287,12 +300,19 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
     return true;
 }
 
+} // namespace
+
 #else
 
-static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+namespace
 {
-    LOG("LoadImageEXR: exr images are not allowed\n);
+
+static bool LoadImageEXR(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+{
+    Hk::LOG("LoadImageEXR: exr images are not allowed\n);
     return false;
+}
+
 }
 
 #endif
@@ -303,38 +323,40 @@ static bool LoadImageEXR(IBinaryStreamReadInterface& Stream, uint32_t NumRequire
 #include <webp/encode.h>
 #include <webp/mux.h>
 
-static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
-{   
+namespace
+{
+
+static bool LoadImageWebp(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+{
     HK_ASSERT(NumRequiredChannels <= 4);
 
     size_t streamOffset = Stream.GetOffset();
-    
-    HeapBlob memory = Stream.ReadBlob(Stream.SizeInBytes() - streamOffset);
-        
+
+    Hk::HeapBlob memory = Stream.ReadBlob(Stream.SizeInBytes() - streamOffset);
+
     WebPBitstreamFeatures features;
 
-	if (WebPGetFeatures((const uint8_t*)memory.GetData(), memory.Size(), &features) != VP8_STATUS_OK)
-	{
+    if (WebPGetFeatures((const uint8_t*)memory.GetData(), memory.Size(), &features) != VP8_STATUS_OK)
+    {
         Stream.SeekSet(streamOffset);
         LOG("LoadImageWebp: failed to load {}\n", Stream.GetName());
         return false;
     }
-    
+
     uint32_t numChannels = features.has_alpha ? 4 : 3;
     if (!NumRequiredChannels)
         NumRequiredChannels = numChannels;
-    
+
     uint8_t* pixels = nullptr;
     bool decoded = false;
-    
+
     if (NumRequiredChannels == 3 || NumRequiredChannels == 4)
     {
         size_t sizeInBytes = (size_t)features.width * features.height * NumRequiredChannels;
         pixels = (uint8_t*)STBI_MALLOC(sizeInBytes);
         decoded = NumRequiredChannels == 4 ?
-                       WebPDecodeRGBAInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, NumRequiredChannels * features.width) != nullptr
-                    :
-                       WebPDecodeRGBInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, NumRequiredChannels * features.width) != nullptr;
+            WebPDecodeRGBAInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, NumRequiredChannels * features.width) != nullptr :
+            WebPDecodeRGBInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, NumRequiredChannels * features.width) != nullptr;
         if (!decoded)
             STBI_FREE(pixels);
     }
@@ -345,9 +367,9 @@ static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequir
         decoded = WebPDecodeRGBInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, 3 * features.width) != nullptr;
         if (decoded)
         {
-            uint8_t* temp  = (uint8_t*)STBI_MALLOC((size_t)features.width * features.height * NumRequiredChannels);
+            uint8_t* temp = (uint8_t*)STBI_MALLOC((size_t)features.width * features.height * NumRequiredChannels);
             uint8_t* pDest = (uint8_t*)temp;
-                
+
             for (size_t i = 0; i < sizeInBytes; i += 3)
             {
                 *pDest++ = pixels[i];
@@ -365,9 +387,9 @@ static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequir
         decoded = WebPDecodeRGBAInto((const uint8_t*)memory.GetData(), memory.Size(), pixels, sizeInBytes, 4 * features.width) != nullptr;
         if (decoded)
         {
-            uint8_t* temp  = (uint8_t*)STBI_MALLOC((size_t)features.width * features.height * NumRequiredChannels);
+            uint8_t* temp = (uint8_t*)STBI_MALLOC((size_t)features.width * features.height * NumRequiredChannels);
             uint8_t* pDest = (uint8_t*)temp;
-                
+
             // Convert to Red_Alpha
             for (size_t i = 0; i < sizeInBytes; i += 4)
             {
@@ -382,29 +404,29 @@ static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequir
     }
 
     if (!decoded)
-	{
+    {
         Stream.SeekSet(streamOffset);
-        LOG("LoadImageWebp: failed to decode {}\n", Stream.GetName());
-	    return false;
+        Hk::LOG("LoadImageWebp: failed to decode {}\n", Stream.GetName());
+        return false;
     }
-    
+
     if (bAsHDRI)
     {
         // Convert to HDRI
-        
+
         size_t pixcount = (size_t)features.width * features.height * NumRequiredChannels;
-        
+
         float* temp = (float*)STBI_MALLOC(pixcount * sizeof(float));
 
         for (size_t i = 0; i < pixcount; i++)
         {
             temp[i] = pixels[i] / 255.0f;
         }
-        
+
         STBI_FREE(pixels);
         pixels = (uint8_t*)temp;
     }
-    
+
     *pWidth = features.width;
     *pHeight = features.height;
     *pNumChannels = numChannels;
@@ -413,18 +435,28 @@ static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequir
     return true;
 }
 
+} // namespace
+
 #else
 
-static bool LoadImageWebp(IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+namespace
 {
-    LOG("LoadImageWebp: webp images are not allowed\n");
+
+static bool LoadImageWebp(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
+{
+    Hk::LOG("LoadImageWebp: webp images are not allowed\n");
     return false;
+}
+
 }
 
 #endif
 
+namespace
+{
+
 // clang-format off
-static const RawImageFormatInfo RawImageFormatLUT[] =
+static const Hk::RawImageFormatInfo RawImageFormatLUT[] =
 {
         0, 0,  // RAW_IMAGE_FORMAT_UNDEFINED,
 
@@ -444,12 +476,11 @@ static const RawImageFormatInfo RawImageFormatLUT[] =
 };
 // clang-format on
 
-RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format)
-{
-    return RawImageFormatLUT[Format];
-}
+} // namespace
 
-static size_t CalcRawImageSize(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format)
+HK_NAMESPACE_BEGIN
+
+static size_t CalcRawImageSize(uint32_t Width, uint32_t Height, Hk::RAW_IMAGE_FORMAT Format)
 {
     HK_VERIFY(Width, "CalcRawImageSize: Invalid image width");
     HK_VERIFY(Height, "CalcRawImageSize: Invalid image height");
@@ -488,6 +519,11 @@ static size_t CalcRawImageSize(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT
         size *= sizeof(float);
 
     return size;
+}
+
+RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format)
+{
+    return RawImageFormatLUT[Format];
 }
 
 void RawImage::Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void const* pData)
@@ -689,7 +725,7 @@ void RawImage::SwapRGB()
         case RAW_IMAGE_FORMAT_BGR8:
         case RAW_IMAGE_FORMAT_RGBA8:
         case RAW_IMAGE_FORMAT_BGRA8: {
-            ::SwapRGB((uint8_t*)m_pData, m_Width, m_Height, NumChannels());
+            Hk::SwapRGB((uint8_t*)m_pData, m_Width, m_Height, NumChannels());
             break;
         }
 
@@ -697,7 +733,7 @@ void RawImage::SwapRGB()
         case RAW_IMAGE_FORMAT_BGR32_FLOAT:
         case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
         case RAW_IMAGE_FORMAT_BGRA32_FLOAT: {
-            ::SwapRGB((float*)m_pData, m_Width, m_Height, NumChannels());
+            Hk::SwapRGB((float*)m_pData, m_Width, m_Height, NumChannels());
             break;
         }
         default:
@@ -733,7 +769,7 @@ void RawImage::InvertChannel(uint32_t ChannelIndex)
         case RAW_IMAGE_FORMAT_BGR8:
         case RAW_IMAGE_FORMAT_RGBA8:
         case RAW_IMAGE_FORMAT_BGRA8: {
-            ::InvertChannel((uint8_t*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, uint8_t(255));
+            Hk::InvertChannel((uint8_t*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, uint8_t(255));
             break;
         }
 
@@ -743,7 +779,7 @@ void RawImage::InvertChannel(uint32_t ChannelIndex)
         case RAW_IMAGE_FORMAT_BGR32_FLOAT:
         case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
         case RAW_IMAGE_FORMAT_BGRA32_FLOAT: {
-            ::InvertChannel((float*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, 1.0f);
+            Hk::InvertChannel((float*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, 1.0f);
             break;
         }
         default:
@@ -1228,7 +1264,7 @@ void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPix
 {
     size_t lineWidth = Width * BytesPerPixel;
     size_t halfWidth = Width >> 1;
-    uint8_t* temp      = (uint8_t*)StackAlloc(BytesPerPixel);
+    uint8_t* temp      = (uint8_t*)HkStackAlloc(BytesPerPixel);
     uint8_t* image     = (uint8_t*)pData;
     for (size_t y = 0; y < Height; y++)
     {
@@ -1758,3 +1794,5 @@ bool WriteImage(StringView FileName, RawImage const& Image)
         return WriteImageHDRI(FileName, config);
     }
 }
+
+HK_NAMESPACE_END

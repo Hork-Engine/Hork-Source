@@ -43,6 +43,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawLevelAreaBounds("com_DrawLevelAreaBounds"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawLevelIndoorBounds("com_DrawLevelIndoorBounds"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawLevelPortals("com_DrawLevelPortals"s, "0"s, CVAR_CHEAT);
@@ -3626,3 +3628,5 @@ bool VisibilitySystem::RaycastClosestBounds(BoxHitResult& Result, Float3 const& 
 {
     return VisibilityLevel::RaycastClosestBounds(Levels, Result, RayStart, RayEnd, Filter);
 }
+
+HK_NAMESPACE_END

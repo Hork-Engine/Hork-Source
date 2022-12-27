@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
+HK_NAMESPACE_BEGIN
+
 class MaterialGPU : public RefCounted
 {
 public:
@@ -71,3 +73,5 @@ public:
     PipelineRef HUDPipeline;
     #endif
 };
+
+HK_NAMESPACE_END

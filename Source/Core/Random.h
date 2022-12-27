@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseMath.h"
 
+HK_NAMESPACE_BEGIN
+
 /**
 Interface of the random number generators.
 */
@@ -179,3 +181,5 @@ HK_FORCEINLINE uint32_t RandomSeed()
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

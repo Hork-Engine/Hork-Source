@@ -31,6 +31,8 @@ SOFTWARE.
 #include "BRDFGenerator.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 const int BRDF_TEXTURE_WIDTH  = 512;
@@ -72,3 +74,5 @@ void BRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
 
     *ppTexture = pTexture->Actual();
 }
+
+HK_NAMESPACE_END

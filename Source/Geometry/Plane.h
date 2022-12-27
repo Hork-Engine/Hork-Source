@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "VectorMath.h"
 
+HK_NAMESPACE_BEGIN
+
 /*
 
 Plane equalation: Normal.X * X + Normal.Y * Y + Normal.Z * Z + D = 0
@@ -221,5 +223,7 @@ struct TPlane
 using PlaneF = TPlane<float>;
 using PlaneD = TPlane<double>;
 
-HK_FORMAT_DEF_(PlaneF, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);
-HK_FORMAT_DEF_(PlaneD, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::PlaneF, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);
+HK_FORMAT_DEF_(Hk::PlaneD, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);

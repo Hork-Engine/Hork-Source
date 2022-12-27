@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Actor.h"
 #include "SoundEmitter.h"
 
+HK_NAMESPACE_BEGIN
+
 class AAmbientPlayer : public AActor
 {
     HK_ACTOR(AAmbientPlayer, AActor)
@@ -51,3 +53,5 @@ private:
 
     TPodVector<SoundEmitter*> AmbientSound;
 };
+
+HK_NAMESPACE_END

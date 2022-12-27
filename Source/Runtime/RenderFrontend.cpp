@@ -44,6 +44,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Platform/Profiler.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_RenderSurfaces("r_RenderSurfaces"s, "1"s, CVAR_CHEAT);
@@ -2041,3 +2043,5 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
 
     return true;
 }
+
+HK_NAMESPACE_END

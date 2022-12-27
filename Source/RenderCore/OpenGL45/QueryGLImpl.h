@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Query.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -50,3 +52,5 @@ private:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

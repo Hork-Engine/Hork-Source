@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/IO.h>
 #include <Containers/BitMask.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr short VT_FILE_VERSION = 5;
 constexpr uint32_t VT_FILE_ID = 'V' | ('T' << 8) | (VT_FILE_VERSION << 16);
 constexpr int VT_PAGE_BORDER_WIDTH = 4;
@@ -131,3 +133,5 @@ struct VirtualTextureAddressTable
     unsigned int TotalPages;
     int NumLods;
 };
+
+HK_NAMESPACE_END

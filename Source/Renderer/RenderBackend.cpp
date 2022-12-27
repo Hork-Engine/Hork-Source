@@ -50,6 +50,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"s, "0"s);
@@ -938,3 +940,5 @@ ImageStorage RenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMA
     }
     return storage;
 }
+
+HK_NAMESPACE_END

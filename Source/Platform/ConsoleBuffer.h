@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/Utf8.h>
 #include <Platform/Thread.h>
 
+HK_NAMESPACE_BEGIN
+
 class ConsoleBuffer
 {
 public:
@@ -91,3 +93,5 @@ private:
     int       m_Scroll       = 0;
     bool      m_bInitialized = false;
 };
+
+HK_NAMESPACE_END

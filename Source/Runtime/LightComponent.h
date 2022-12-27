@@ -33,6 +33,8 @@ SOFTWARE.
 #include "SceneComponent.h"
 #include "AnimationPattern.h"
 
+HK_NAMESPACE_BEGIN
+
 class LightComponent : public SceneComponent
 {
     HK_COMPONENT(LightComponent, SceneComponent)
@@ -83,3 +85,5 @@ protected:
     float                  m_AnimTime = 0.0f;
     float                  m_AnimationBrightness = 1.0f;
 };
+
+HK_NAMESPACE_END

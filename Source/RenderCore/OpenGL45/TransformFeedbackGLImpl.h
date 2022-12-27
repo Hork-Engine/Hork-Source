@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/TransformFeedback.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -74,3 +76,5 @@ void SetTransformFeedbackBuffer( ShaderTransformFeedbackSlot const & _Slot ) {
 
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

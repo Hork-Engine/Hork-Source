@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Runtime/FrameLoop.h>
 
+HK_NAMESPACE_BEGIN
+
 static ConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"s, "5"s);
 static ConsoleVar ui_consoleHeight("ui_consoleHeight"s, "0.8"s);
 
@@ -580,3 +582,5 @@ void UIConsole::ReadStoryLines()
         }
     }
 }
+
+HK_NAMESPACE_END

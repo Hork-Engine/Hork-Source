@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 class APlayerController;
 
 class UIViewport : public UIWidget
@@ -80,3 +82,5 @@ private:
 };
 
 extern bool GUILockViewportScaling;
+
+HK_NAMESPACE_END

@@ -31,6 +31,8 @@ SOFTWARE.
 #include "DebugRenderer.h"
 #include <Core/Color.h>
 
+HK_NAMESPACE_BEGIN
+
 //#define PRIMITIVE_RESTART_INDEX    0xffffffff
 #define PRIMITIVE_RESTART_INDEX 0xffff
 #define MAX_PRIMITIVE_VERTS     0xfffe
@@ -974,3 +976,5 @@ void DebugRenderer::DrawPlaneFilled(Float3 const& _Normal, float _D, float _Leng
 
     DrawConvexPoly(points, _TwoSided);
 }
+
+HK_NAMESPACE_END

@@ -31,6 +31,8 @@ SOFTWARE.
 #include "ColorGradingRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ColorGradingRenderer::ColorGradingRenderer()
@@ -160,3 +162,5 @@ void ColorGradingRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy** ppCo
 
     *ppColorGrading = ColorGrading_R;
 }
+
+HK_NAMESPACE_END

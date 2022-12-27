@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Geometry/VertexFormat.h>
 #include <Geometry/Transform.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr int MAX_SKELETON_JOINTS = 256;
 
 /**
@@ -146,3 +148,5 @@ void CalcBoundingBoxes(MeshVertex const*         Vertices,
                        TVector<BvAxisAlignedBox>& Bounds);
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

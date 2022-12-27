@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Resource.h"
 
+HK_NAMESPACE_BEGIN
+
 class GameSession : public RefCounted
 {
 public:
@@ -56,3 +58,5 @@ private:
     TStringHashMap<ClassMeta const*> m_PrecacheResources;
     TVector<TRef<Resource>> m_Resources;
 };
+
+HK_NAMESPACE_END

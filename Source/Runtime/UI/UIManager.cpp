@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Runtime/FrameLoop.h>
 #include <Platform/Profiler.h>
 
+HK_NAMESPACE_BEGIN
+
 static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"s, "1"s);
 
 UIManager* GUIManager = nullptr;
@@ -489,3 +491,5 @@ void UIManager::ClosePopupWidget()
 
     m_ActiveDesktop->ClosePopupWidget();
 }
+
+HK_NAMESPACE_END

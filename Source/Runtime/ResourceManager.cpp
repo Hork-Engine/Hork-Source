@@ -33,6 +33,8 @@ SOFTWARE.
 #include "EmbeddedResources.h"
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 ResourceManager::ResourceManager()
 {
     Core::TraverseDirectory(GEngine->GetRootPath(), false,
@@ -449,3 +451,5 @@ File ResourceManager::OpenResource(StringView path)
     LOG("Invalid path \"{}\"\n", path);
     return {};
 }
+
+HK_NAMESPACE_END

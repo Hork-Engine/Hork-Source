@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Core/ScopedTimer.h>
 
+HK_NAMESPACE_BEGIN
+
 VirtualTextureFeedbackAnalyzer::VirtualTextureFeedbackAnalyzer() :
     SwapIndex(0), Bindings(nullptr), NumBindings(0), QueueLoadPos(0), bStopStreamThread(false)
 
@@ -503,3 +505,5 @@ VirtualTexture* VirtualTextureFeedbackAnalyzer::GetTexture(int Unit)
     HK_ASSERT(Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS);
     return Textures[SwapIndex][Unit];
 }
+
+HK_NAMESPACE_END

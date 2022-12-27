@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Bool.h"
 
+HK_NAMESPACE_BEGIN
+
 template <typename T>
 struct TVector2;
 
@@ -4161,13 +4163,15 @@ HK_INLINE bool UnprojectPoint(Float4x4 const& _ModelViewProjectionInversed,
 
 } // namespace Math
 
-HK_FORMAT_DEF_(Float2, "( {} {} )", v.X, v.Y);
-HK_FORMAT_DEF_(Double2, "( {} {} )", v.X, v.Y);
-HK_FORMAT_DEF_(Float3, "( {} {} {} )", v.X, v.Y, v.Z);
-HK_FORMAT_DEF_(Double3, "( {} {} {} )", v.X, v.Y, v.Z);
-HK_FORMAT_DEF_(Float4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
-HK_FORMAT_DEF_(Double4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
-HK_FORMAT_DEF_(Float2x2, "( {} {} )", v.Col0, v.Col1);
-HK_FORMAT_DEF_(Float3x3, "( {} {} {} )", v.Col0, v.Col1, v.Col2);
-HK_FORMAT_DEF_(Float4x4, "( {} {} {} {} )", v.Col0, v.Col1, v.Col2, v.Col3);
-HK_FORMAT_DEF_(Float3x4, "( {} {} {} )", v.Col0, v.Col1, v.Col2);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::Float2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Hk::Double2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Hk::Float3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Hk::Double3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Hk::Float4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_FORMAT_DEF_(Hk::Double4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_FORMAT_DEF_(Hk::Float2x2, "( {} {} )", v.Col0, v.Col1);
+HK_FORMAT_DEF_(Hk::Float3x3, "( {} {} {} )", v.Col0, v.Col1, v.Col2);
+HK_FORMAT_DEF_(Hk::Float4x4, "( {} {} {} {} )", v.Col0, v.Col1, v.Col2, v.Col3);
+HK_FORMAT_DEF_(Hk::Float3x4, "( {} {} {} )", v.Col0, v.Col1, v.Col2);

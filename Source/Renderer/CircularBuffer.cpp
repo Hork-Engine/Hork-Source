@@ -32,6 +32,8 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include <Platform/Platform.h>
 
+HK_NAMESPACE_BEGIN
+
 CircularBuffer::CircularBuffer(size_t InBufferSize) :
     m_BufferSize(InBufferSize)
 {
@@ -131,3 +133,5 @@ void CircularBuffer::Wait(RenderCore::SyncObject Sync)
         } while (status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED);
     }
 }
+
+HK_NAMESPACE_END

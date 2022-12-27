@@ -31,6 +31,8 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include "DebugDrawRenderer.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 DebugDrawRenderer::DebugDrawRenderer()
@@ -190,3 +192,5 @@ void DebugDrawRenderer::AddPass( FrameGraph & FrameGraph, FGTextureProxy * Rende
 
     } );
 }
+
+HK_NAMESPACE_END

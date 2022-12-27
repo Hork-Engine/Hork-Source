@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
+HK_NAMESPACE_BEGIN
+
 template <>
 EnumDef const* EnumDefinition<TEXTURE_TYPE>()
 {
@@ -4225,3 +4227,5 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
     return graph;
 }
+
+HK_NAMESPACE_END

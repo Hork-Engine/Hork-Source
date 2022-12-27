@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Core/String.h>
 
+HK_NAMESPACE_BEGIN
+
 class CommandProcessor;
 
 /** Command execution context */
@@ -79,3 +81,5 @@ private:
     char m_Args[MAX_ARGS][MAX_ARG_LEN];
     int m_ArgsCount;
 };
+
+HK_NAMESPACE_END

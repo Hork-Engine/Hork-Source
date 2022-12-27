@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Geometry/VectorMath.h>
 #include <Geometry/Quat.h>
 
+HK_NAMESPACE_BEGIN
+
 enum VARIANT_TYPE : uint32_t
 {
     VARIANT_UNDEFINED,
@@ -71,7 +73,11 @@ struct ResourceRef
     uint64_t ResourceId;
 };
 
-HK_FORMAT_DEF_(ResourceRef, "( {} {} )", v.ResourceType, v.ResourceId)
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::ResourceRef, "( {} {} )", v.ResourceType, v.ResourceId)
+
+HK_NAMESPACE_BEGIN
 
 struct EnumDef
 {
@@ -552,12 +558,16 @@ private:
     }
 };
 
-HK_FORMAT_DEF_TO_STRING(Variant)
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_TO_STRING(Hk::Variant)
 
 
 // TODO: Move to Parse.h?
 
 #include <Containers/Vector.h>
+
+HK_NAMESPACE_BEGIN
 
 HK_INLINE StringView GetToken(StringView& Token, StringView String, bool bCrossLine = true)
 {
@@ -728,3 +738,5 @@ HK_INLINE MatrixType ParseMatrix(StringView String)
 
     return matrix;
 }
+
+HK_NAMESPACE_END

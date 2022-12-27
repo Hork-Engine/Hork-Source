@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Audio/AudioChannel.h>
 #include <Containers/PodQueue.h>
 
+HK_NAMESPACE_BEGIN
+
 class SoundGroup : public BaseObject
 {
     HK_CLASS(SoundGroup, BaseObject)
@@ -471,3 +473,5 @@ private:
     static SoundOneShot* OneShots;
     static SoundOneShot* OneShotsTail;
 };
+
+HK_NAMESPACE_END

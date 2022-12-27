@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 template <typename T, uint32_t MaxCapacity = 128>
 class TCircularVector
 {
@@ -290,3 +292,5 @@ private:
         InternalGet(offset)->~T();
     }
 };
+
+HK_NAMESPACE_END

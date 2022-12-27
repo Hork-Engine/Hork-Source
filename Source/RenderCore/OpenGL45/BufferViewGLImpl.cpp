@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -143,3 +145,5 @@ size_t BufferViewGLImpl::GetBufferSizeInBytes(uint16_t MipLevel) const
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

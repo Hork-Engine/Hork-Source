@@ -40,6 +40,8 @@ SOFTWARE.
 #include <Core/ConsoleVar.h>
 #include <Core/Document.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr int MAX_PRESSED_KEYS      = 128;
 constexpr int MAX_INPUT_CONTROLLERS = 16;
 
@@ -388,3 +390,5 @@ extern ConsoleVar in_MouseSensY;
 extern ConsoleVar in_MouseFilter;
 extern ConsoleVar in_MouseInvertY;
 extern ConsoleVar in_MouseAccel;
+
+HK_NAMESPACE_END

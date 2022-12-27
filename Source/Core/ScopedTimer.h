@@ -35,6 +35,10 @@ SOFTWARE.
 
 #include "ConsoleVar.h"
 
+HK_NAMESPACE_BEGIN
+
+extern ConsoleVar rt_ScopedTimeCheck;
+
 /**
 
 ScopedTimer
@@ -48,8 +52,6 @@ struct ScopedTimer
     ScopedTimer(const char* _Name) :
         Name(_Name)
     {
-        extern ConsoleVar rt_ScopedTimeCheck;
-
         if (rt_ScopedTimeCheck)
         {
             Milliseconds = Platform::SysMilliseconds();
@@ -58,11 +60,11 @@ struct ScopedTimer
 
     ~ScopedTimer()
     {
-        extern ConsoleVar rt_ScopedTimeCheck;
-
         if (rt_ScopedTimeCheck)
         {
             LOG("SCOPED_TIME_CHECK: {} : {} ms\n", Name, Platform::SysMilliseconds() - Milliseconds);
         }
     }
 };
+
+HK_NAMESPACE_END

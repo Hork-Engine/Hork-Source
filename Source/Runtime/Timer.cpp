@@ -31,6 +31,8 @@ SOFTWARE.
 #include "Timer.h"
 #include "World.h"
 
+HK_NAMESPACE_BEGIN
+
 enum TIMER_STATE
 {
     TIMER_STATE_FINISHED                 = 1,
@@ -177,3 +179,5 @@ void WorldTimer::Tick(World* World, float TimeStep)
     }
     ElapsedTime += TimeStep;
 }
+
+HK_NAMESPACE_END

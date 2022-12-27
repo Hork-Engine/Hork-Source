@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
 #ifdef HK_DEBUG
                                 "1"s,
@@ -255,3 +257,5 @@ void ShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline, 
 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
+
+HK_NAMESPACE_END

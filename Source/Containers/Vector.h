@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 static constexpr size_t NPOS = (size_t)-1;
@@ -587,17 +589,20 @@ private:
     }
 };
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 
 template <typename T, typename Allocator>
-HK_INLINE void swap(TVector<T, Allocator>& lhs, TVector<T, Allocator>& rhs)
+HK_INLINE void swap(Hk::TVector<T, Allocator>& lhs, Hk::TVector<T, Allocator>& rhs)
 {
     lhs.Swap(rhs);
 }
 
 } // namespace eastl
 
+HK_NAMESPACE_BEGIN
 
 template <typename T, size_t BaseCapacity, bool bEnableOverflow = true, typename OverflowAllocator = typename eastl::type_select<bEnableOverflow, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, Allocators::EASTLDummyAllocator>::type>
 class TFixedVector : private eastl::fixed_vector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>
@@ -1095,16 +1100,20 @@ private:
     }
 };
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <typename T, size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
-HK_INLINE void swap(TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& lhs,
-                    TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& rhs)
+HK_INLINE void swap(Hk::TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& lhs,
+                    Hk::TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& rhs)
 {
     // Fixed containers use lhs special swap that can deal with excessively large buffers.
     eastl::fixed_swap(lhs, rhs);
 }
 } // namespace eastl
+
+HK_NAMESPACE_BEGIN
 
 template <typename T, size_t MaxCapacity>
 using TStaticVector = TFixedVector<T, MaxCapacity, false, Allocators::EASTLDummyAllocator>;
@@ -1114,3 +1123,5 @@ using TSmallVector = TFixedVector<T, BaseCapacity, true, OverflowAllocator>;
 
 template <typename T, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
 using TPodVector = TFixedVector<T, 32, true, Allocator>; // TODO: Deprecated. Remove this
+
+HK_NAMESPACE_END

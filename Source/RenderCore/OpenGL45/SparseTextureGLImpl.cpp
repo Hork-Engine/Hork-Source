@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -119,3 +121,5 @@ SparseTextureGLImpl::~SparseTextureGLImpl()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

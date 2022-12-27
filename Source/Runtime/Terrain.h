@@ -34,6 +34,10 @@ SOFTWARE.
 #include "HitTest.h"
 #include <Geometry/BV/BvAxisAlignedBox.h>
 
+class btHeightfieldTerrainShape;
+
+HK_NAMESPACE_BEGIN
+
 struct TerrainTriangle
 {
     Float3 Vertices[3];
@@ -88,7 +92,7 @@ public:
 
     void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const;
 
-    class btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape.GetObject(); }
+    btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape.GetObject(); }
 
     void AddListener(TerrainComponent* Listener);
     void RemoveListener(TerrainComponent* Listener);
@@ -123,3 +127,5 @@ private:
     TerrainComponent* m_Listeners{};
     TerrainComponent* m_ListenersTail{};
 };
+
+HK_NAMESPACE_END

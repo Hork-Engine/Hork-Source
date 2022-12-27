@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -50,3 +52,5 @@ public:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

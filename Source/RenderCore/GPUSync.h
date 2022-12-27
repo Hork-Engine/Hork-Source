@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
+HK_NAMESPACE_BEGIN
+
 /*
 
 GPUSync
@@ -53,3 +55,5 @@ private:
     TRef<RenderCore::ITexture>     Texture;
     TRef<RenderCore::ITexture>     Staging;
 };
+
+HK_NAMESPACE_END

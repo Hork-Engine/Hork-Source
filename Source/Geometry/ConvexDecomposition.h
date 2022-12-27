@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Geometry/Plane.h>
 
+HK_NAMESPACE_BEGIN
+
 struct ConvexHullDesc
 {
     int    FirstVertex;
@@ -71,3 +73,5 @@ void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPo
 void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVector<Float3>& _Vertices);
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

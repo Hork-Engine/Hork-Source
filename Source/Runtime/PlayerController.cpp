@@ -35,6 +35,8 @@ SOFTWARE.
 #include "WorldRenderView.h"
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(APlayerController)
 
 APlayerController* APlayerController::m_CurrentAudioListener = nullptr;
@@ -214,3 +216,5 @@ void APlayerController::UpdatePawnCamera()
 
     camera->SetAspectRatio(m_ViewportAspectRatio * vidMode.AspectScale);
 }
+
+HK_NAMESPACE_END

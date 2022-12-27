@@ -39,6 +39,8 @@ SOFTWARE.
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioDecoder.h>
 
+HK_NAMESPACE_BEGIN
+
 static int RevisionGen = 0;
 
 HK_CLASS_META(SoundResource)
@@ -321,3 +323,5 @@ void SoundResource::Purge()
     // Mark resource was changed
     m_Revision = ++RevisionGen;
 }
+
+HK_NAMESPACE_END

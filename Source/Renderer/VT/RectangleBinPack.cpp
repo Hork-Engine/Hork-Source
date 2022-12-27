@@ -4,6 +4,8 @@
 
 #include <limits>
 
+HK_NAMESPACE_BEGIN
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The following functions compute (penalty) score values if a rect of the given size was placed into the
 // given free rectangle. In these score values, smaller is better.
@@ -650,3 +652,5 @@ void ARectangleBinPack::MergeFreeList()
     }
     //#endif
 }
+
+HK_NAMESPACE_END

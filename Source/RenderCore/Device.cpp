@@ -31,6 +31,8 @@ SOFTWARE.
 #include "Device.h"
 #include "OpenGL45/DeviceGLImpl.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -89,3 +91,5 @@ void CreateLogicalDevice(const char*              Backend,
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

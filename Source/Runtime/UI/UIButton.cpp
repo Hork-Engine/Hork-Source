@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Runtime/FrameLoop.h>
 
+HK_NAMESPACE_BEGIN
+
 UIButton* UICreateCheckBox(UIAction* action)
 {
     auto decorator = UINew(UIBrushDecorator);
@@ -139,3 +141,5 @@ UIButton::DRAW UIButton::GetDrawType() const
     else
         return m_bTryPress ? DRAW_ACTIVE : (GUIManager->HoveredWidget.GetObject() == this ? DRAW_HOVERED : DRAW_INACTIVE);
 }
+
+HK_NAMESPACE_END

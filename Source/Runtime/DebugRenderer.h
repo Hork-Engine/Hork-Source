@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Geometry/BV/BvOrientedBox.h>
 #include <Containers/ArrayView.h>
 
+HK_NAMESPACE_BEGIN
+
 using ArrayOfDebugVertices = TVector<DebugVertex>;
 using ArrayOfDebugIndices  = TVector<unsigned short>;
 using ArrayOfDebugDrawCmds = TVector<DebugDrawCmd>;
@@ -175,3 +177,5 @@ private:
     bool                 bDepthTest;
     bool                 bSplit;
 };
+
+HK_NAMESPACE_END

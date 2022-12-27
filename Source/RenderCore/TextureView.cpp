@@ -31,6 +31,8 @@ SOFTWARE.
 #include "TextureView.h"
 #include "Texture.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -93,3 +95,5 @@ uint32_t ITextureView::GetHeight() const
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

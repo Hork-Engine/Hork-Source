@@ -31,6 +31,8 @@ SOFTWARE.
 #include "EnvProbeGenerator.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
@@ -226,3 +228,5 @@ void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, TRef<Ren
     //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
+
+HK_NAMESPACE_END

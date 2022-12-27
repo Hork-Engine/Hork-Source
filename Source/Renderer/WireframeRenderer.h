@@ -32,4 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 void AddWireframePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+
+HK_NAMESPACE_END

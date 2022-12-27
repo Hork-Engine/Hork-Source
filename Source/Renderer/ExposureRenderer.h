@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class ExposureRenderer
 {
 public:
@@ -53,3 +55,5 @@ private:
     TRef<RenderCore::ITexture> Luminance2;
     TRef<RenderCore::ITexture> DefaultLuminance;
 };
+
+HK_NAMESPACE_END

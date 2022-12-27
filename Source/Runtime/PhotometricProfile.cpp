@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(PhotometricProfile)
 
 int PhotometricProfile::m_PhotometricProfileCounter = 0;
@@ -130,3 +132,5 @@ void PhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileTextu
         m_PhotometricProfileCounter = (m_PhotometricProfileCounter + 1) & 0xff;
     }
 }
+
+HK_NAMESPACE_END

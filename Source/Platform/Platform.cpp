@@ -296,6 +296,8 @@ static char** CommandLineToArgvA(const char* lpCmdline, int* numargs)
 
 } // namespace
 
+HK_NAMESPACE_BEGIN
+
 CommandLine::CommandLine(const char* _CommandLine)
 {
     m_Arguments = CommandLineToArgvA(_CommandLine, &m_NumArguments);
@@ -349,6 +351,8 @@ bool CommandLine::HasArg(const char* _Arg) const
     return CheckArg(_Arg) != -1;
 }
 
+HK_NAMESPACE_END
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Main process
@@ -362,8 +366,8 @@ namespace
 static HANDLE ProcessMutex = nullptr;
 #endif
 static FILE*       ProcessLogFile = nullptr;
-static Mutex       ProcessLogWriterSync;
-static ProcessInfo Process;
+static Hk::Mutex       ProcessLogWriterSync;
+static Hk::ProcessInfo Process;
 
 static void InitializeProcess()
 {
@@ -402,30 +406,30 @@ static void InitializeProcess()
         }
         else
         {
-            CriticalError("InitializeProcess: Failed on GetModuleFileName\n");
+            Hk::CriticalError("InitializeProcess: Failed on GetModuleFileName\n");
             break;
         }
     }
     Process.Executable[len] = 0;
 
-    Platform::FixSeparator(Process.Executable);
+    Hk::Platform::FixSeparator(Process.Executable);
 
     uint32_t appHash = SDBMHash(Process.Executable, len);
 
     char pid[32];
-    Platform::Sprintf(pid, sizeof(pid), "hork_%x", appHash);
+    Hk::Platform::Sprintf(pid, sizeof(pid), "hork_%x", appHash);
     ProcessMutex = CreateMutexA(NULL, FALSE, pid);
     if (!ProcessMutex)
     {
-        Process.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
+        Process.ProcessAttribute = Hk::PROCESS_COULDNT_CHECK_UNIQUE;
     }
     else if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
-        Process.ProcessAttribute = PROCESS_ALREADY_EXISTS;
+        Process.ProcessAttribute = Hk::PROCESS_ALREADY_EXISTS;
     }
     else
     {
-        Process.ProcessAttribute = PROCESS_UNIQUE;
+        Process.ProcessAttribute = Hk::PROCESS_UNIQUE;
     }
 #elif defined HK_OS_LINUX
     int curLen = 256;
@@ -475,7 +479,7 @@ static void InitializeProcess()
 #endif
 
     ProcessLogFile = nullptr;
-    if (Platform::HasArg("-bEnableLog"))
+    if (Hk::Platform::HasArg("-bEnableLog"))
     {
         // TODO: Set correct path for log file
         ProcessLogFile = fopen("log.txt", "ab");
@@ -581,18 +585,18 @@ static BOOL IsWow64()
 #endif
 
 
-static CommandLine const* pCommandLine;
+static Hk::CommandLine const* pCommandLine;
 
 static int64_t StartSeconds;
 static int64_t StartMilliseconds;
 static int64_t StartMicroseconds;
 
 static char* Clipboard = nullptr;
-static ConsoleBuffer ConBuffer;
+static Hk::ConsoleBuffer ConBuffer;
 
 void* operator new(std::size_t sz)
 {
-    if (void* ptr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(std::max<size_t>(1, sz)))
+    if (void* ptr = Hk::Platform::GetHeapAllocator<Hk::HEAP_MISC>().Alloc(std::max<size_t>(1, sz)))
         return ptr;
 
     // By default, exceptions are disabled in Hork.
@@ -606,8 +610,10 @@ void* operator new(std::size_t sz)
 
 void operator delete(void* ptr) noexcept
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(ptr);
+    Hk::Platform::GetHeapAllocator<Hk::HEAP_MISC>().Free(ptr);
 }
+
+HK_NAMESPACE_BEGIN
 
 namespace Platform
 {
@@ -1004,7 +1010,7 @@ void WriteDebugString(const char* _Message)
             // Try to alloc on stack
             if (n < 4096)
             {
-                wchar_t* chars = (wchar_t*)StackAlloc(n * sizeof(wchar_t));
+                wchar_t* chars = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
                 MultiByteToWideChar(CP_UTF8, 0, _Message, -1, chars, n);
 
@@ -1121,6 +1127,8 @@ void GetCursorPosition(int& _X, int& _Y)
 
 } // namespace Platform
 
+HK_NAMESPACE_END
+
 namespace
 {
 
@@ -1160,6 +1168,8 @@ static void DisplayCriticalMessage(const char* _Message)
 }
 
 } // namespace
+
+HK_NAMESPACE_BEGIN
 
 void _CriticalError(const char* Text)
 {
@@ -1211,3 +1221,5 @@ void AssertFunction(const char* _File, int _Line, const char* _Function, const c
 }
 
 #endif
+
+HK_NAMESPACE_END

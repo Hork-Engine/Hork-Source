@@ -35,6 +35,8 @@ SOFTWARE.
 #define STB_SPRINTF_STATIC
 #include "stb_sprintf.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -420,3 +422,5 @@ uint64_t HexToUInt64(const char* _Str, int _Len)
 }
 
 } // namespace Platform
+
+HK_NAMESPACE_END

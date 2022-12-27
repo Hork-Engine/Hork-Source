@@ -32,6 +32,8 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include <Runtime/Texture.h>
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static void SetBlendingFromCompositeState(BlendingStateInfo& blend, CANVAS_COMPOSITE composite)
@@ -785,3 +787,5 @@ void CanvasRenderer::BindPipeline(int Topology)
 {
     m_ImmediateCtx->BindPipeline(m_PipelinePermut[Topology][m_RasterState][m_BlendState][m_DepthStencil][m_SamplerState]);
 }
+
+HK_NAMESPACE_END

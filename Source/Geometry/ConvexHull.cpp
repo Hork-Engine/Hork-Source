@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>
 
+HK_NAMESPACE_BEGIN
+
 //#define CONVEX_HULL_CW
 
 ConvexHull::ConvexHull(PlaneF const& plane, float maxExtents)
@@ -472,3 +474,5 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
 
     return PLANE_SIDE_CROSS;
 }
+
+HK_NAMESPACE_END

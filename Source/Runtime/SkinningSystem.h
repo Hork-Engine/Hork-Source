@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include "SkinnedComponent.h"
 
+HK_NAMESPACE_BEGIN
+
 class SkinningSystem
 {
 public:
@@ -41,3 +43,5 @@ public:
 
     void Update();
 };
+
+HK_NAMESPACE_END

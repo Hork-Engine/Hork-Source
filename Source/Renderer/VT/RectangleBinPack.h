@@ -1,6 +1,10 @@
 #pragma once
 
+#include <Platform/BaseTypes.h>
+
 #include <vector>
+
+HK_NAMESPACE_BEGIN
 
 struct RectangleBinBack_RectNode
 {
@@ -171,3 +175,5 @@ private:
     /// Splits the given L-shaped free rectangle into two new free rectangles aint the given fixed split axis.
     void SplitFreeRectAintAxis(const RectangleBinBack_RectNode& _FreeRect, const RectangleBinBack_RectNode& _PlacedRect, bool _SplitHorizontal);
 };
+
+HK_NAMESPACE_END

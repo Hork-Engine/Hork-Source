@@ -33,6 +33,8 @@ SOFTWARE.
 #include "../Thread.h"
 #include <cstring> // std::memcpy
 
+HK_NAMESPACE_BEGIN
+
 enum MEMORY_HEAP
 {
     HEAP_STRING,
@@ -167,7 +169,7 @@ Dynamic Stack Memory
 
 */
 
-#define StackAlloc(_NumBytes) alloca(_NumBytes)
+#define HkStackAlloc(_NumBytes) alloca(_NumBytes)
 
 
 namespace Allocators
@@ -262,3 +264,5 @@ template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(TStdHeapAllo
 template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return false; }
 
 }
+
+HK_NAMESPACE_END

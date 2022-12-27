@@ -83,6 +83,14 @@ HK_OS_STRING       - Operating system name (string)
 
 */
 
+
+#define HK_NAMESPACE_BEGIN \
+    namespace Hk           \
+    {
+
+#define HK_NAMESPACE_END }
+
+
 #if defined(HK_BIG_ENDIAN)
 #    define HK_ENDIAN_STRING "Big"
 #endif
@@ -231,8 +239,12 @@ Misc
 #endif
 
 #ifdef HK_ALLOW_ASSERTS
-#    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
+#    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : ::Hk::AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
+
+HK_NAMESPACE_BEGIN
 extern void AssertFunction(const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment);
+HK_NAMESPACE_END
+
 #else
 #    define HK_ASSERT_(assertion, comment)
 #endif
@@ -242,7 +254,7 @@ extern void AssertFunction(const char* _File, int _Line, const char* _Function, 
     do                                                               \
     {                                                                \
         if (HK_UNLIKELY(!(Expression)))                              \
-            CriticalError("{} Expected {}\n", Message, #Expression); \
+            Hk::CriticalError("{} Expected {}\n", Message, #Expression); \
     } while (false)
 
 #define HK_VERIFY_R(Expression, Message)                   \
@@ -250,7 +262,7 @@ extern void AssertFunction(const char* _File, int _Line, const char* _Function, 
     {                                                      \
         if (HK_UNLIKELY(!(Expression)))                    \
         {                                                  \
-            LOG("{} Expected {}\n", Message, #Expression); \
+            Hk::LOG("{} Expected {}\n", Message, #Expression); \
             return {};                                     \
         }                                                  \
     } while (false)
@@ -298,6 +310,7 @@ Forbid to copy object
     _Class(_Class const&) = delete; \
     _Class& operator=(_Class const&) = delete;
 
+HK_NAMESPACE_BEGIN
 class Noncopyable
 {
     HK_FORBID_COPY(Noncopyable)
@@ -305,7 +318,7 @@ class Noncopyable
 public:
     Noncopyable() = default;
 };
-
+HK_NAMESPACE_END
 
 /*
 
@@ -321,7 +334,9 @@ Base types
 
 */
 
+HK_NAMESPACE_BEGIN
 using byte   = uint8_t;
+HK_NAMESPACE_END
 
 #define HK_VALIDATE_TYPE_SIZE(a, n) static_assert(sizeof(a) == (n), "HK_VALIDATE_TYPE_SIZE");
 
@@ -339,7 +354,7 @@ HK_VALIDATE_TYPE_SIZE(uint8_t, 1)
 HK_VALIDATE_TYPE_SIZE(uint16_t, 2)
 HK_VALIDATE_TYPE_SIZE(uint32_t, 4)
 HK_VALIDATE_TYPE_SIZE(uint64_t, 8)
-HK_VALIDATE_TYPE_SIZE(byte, 1)
+HK_VALIDATE_TYPE_SIZE(Hk::byte, 1)
 HK_VALIDATE_TYPE_SIZE(eastl_size_t, sizeof(size_t))
 
 // characters must be signed
@@ -367,30 +382,18 @@ using _UNDERLYING_ENUM_T = typename std::underlying_type<EnumType>::type;
     inline constexpr ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a) ^ static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); }                \
     inline constexpr ENUMTYPE operator~(ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a)); }
 
-/*
+HK_NAMESPACE_BEGIN
 
-enable_if_t for C++11 workaround
-
-*/
+/** enable_if_t for C++11 workaround */
 template <bool C, class T = void>
 using TStdEnableIf = typename std::enable_if<C, T>::type;
 
-/*
-
-Power of two compile-time check
-
-*/
+/** Power of two compile-time check */
 template <typename T, typename = TStdEnableIf<std::is_integral<T>::value>>
 constexpr bool IsPowerOfTwo(const T _Value)
 {
     return (_Value & (_Value - 1)) == 0 && _Value > 0;
 }
-
-/*
-
-Alignment stuff
-
-*/
 
 template <size_t Alignment>
 constexpr bool IsAligned(size_t N)
@@ -447,3 +450,5 @@ HK_FORCEINLINE void Swap(T& a, T& b)
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

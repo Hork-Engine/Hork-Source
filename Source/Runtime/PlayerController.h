@@ -35,6 +35,8 @@ SOFTWARE.
 #include "AudioSystem.h"
 #include "WorldRenderView.h"
 
+HK_NAMESPACE_BEGIN
+
 class InputMappings;
 
 class AudioParameters : public BaseObject
@@ -145,3 +147,5 @@ private:
 
     static APlayerController* m_CurrentAudioListener;
 };
+
+HK_NAMESPACE_END

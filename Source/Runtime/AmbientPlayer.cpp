@@ -31,6 +31,8 @@ SOFTWARE.
 #include "AmbientPlayer.h"
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(AAmbientPlayer)
 
 AAmbientPlayer::AAmbientPlayer()
@@ -150,3 +152,5 @@ void AAmbientPlayer::UpdateAmbientVolume(float _TimeStep)
         emitter->SetVolume(vol);
     }
 }
+
+HK_NAMESPACE_END

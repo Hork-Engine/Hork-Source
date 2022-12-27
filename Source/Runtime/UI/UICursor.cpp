@@ -30,7 +30,11 @@ SOFTWARE.
 
 #include "UICursor.h"
 
+HK_NAMESPACE_BEGIN
+
 void UIDefaultCursor::Draw(Canvas& canvas, Float2 const& position)
 {
     canvas.DrawCursor(DrawCursor, position, FillColor, BorderColor, bDropShadow);
 }
+
+HK_NAMESPACE_END

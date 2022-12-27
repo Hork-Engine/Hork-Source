@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Geometry/VertexFormat.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Geometry
 {
 
@@ -61,3 +63,5 @@ HK_FORCEINLINE Float3 CalcBinormal(Float3 const& Tangent, Float3 const& Normal, 
 }
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

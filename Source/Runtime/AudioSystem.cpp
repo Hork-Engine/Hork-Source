@@ -37,6 +37,8 @@ SOFTWARE.
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioMixer.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar Snd_MasterVolume("Snd_MasterVolume"s, "1"s);
 ConsoleVar Snd_RefreshRate("Snd_RefreshRate"s, "16"s);
 
@@ -108,3 +110,5 @@ void AudioSystem::Update(APlayerController* _Controller, float _TimeStep)
         m_pMixer->Update();
     }
 }
+
+HK_NAMESPACE_END

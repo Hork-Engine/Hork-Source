@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
@@ -855,3 +857,5 @@ void LightVoxelizer::DrawVoxels(DebugRenderer* InRenderer)
         InRenderer->DrawLine(lineP[3], lineP[6]);
     }
 }
+
+HK_NAMESPACE_END

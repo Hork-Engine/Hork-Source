@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include "VectorMath.h"
 
+HK_NAMESPACE_BEGIN
+
 class TriangulatorBase
 {
 public:
@@ -360,3 +362,5 @@ void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(Polygon const* po
 #ifdef HK_COMPILER_MSVC
 #    pragma warning(pop)
 #endif
+
+HK_NAMESPACE_END

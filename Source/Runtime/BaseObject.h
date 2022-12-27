@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Factory.h"
 #include "GarbageCollector.h"
 
+HK_NAMESPACE_BEGIN
 
 /**
 
@@ -309,3 +310,5 @@ struct TEvent : public Noncopyable
 private:
     TVector<Callback> m_Callbacks;
 };
+
+HK_NAMESPACE_END

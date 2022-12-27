@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Geometry/BV/BvIntersect.h>
 
+HK_NAMESPACE_BEGIN
+
 bool UIHitPolygon::IsOverlap(UIWidgetGeometry const& geometry, float x, float y) const
 {
     x -= geometry.Mins.X;
@@ -85,3 +87,5 @@ bool UIHitImage::IsOverlap(UIWidgetGeometry const& geometry, float x, float y) c
         return false;
     return m_BitMask.IsMarked(py * m_Width + px);
 }
+
+HK_NAMESPACE_END

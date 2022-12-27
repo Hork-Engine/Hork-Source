@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Skeleton)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,3 +129,5 @@ int Skeleton::FindJoint(const char* _Name) const
     }
     return -1;
 }
+
+HK_NAMESPACE_END

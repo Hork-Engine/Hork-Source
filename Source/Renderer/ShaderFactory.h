@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
+HK_NAMESPACE_BEGIN
+
 #define SHADOWMAP_PCF
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
@@ -63,3 +65,5 @@ public:
                                                RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
                                                RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 };
+
+HK_NAMESPACE_END

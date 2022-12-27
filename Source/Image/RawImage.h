@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/IO.h>
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 enum RAW_IMAGE_FORMAT
 {
     RAW_IMAGE_FORMAT_UNDEFINED,
@@ -355,3 +357,5 @@ bool WriteImage(StringView FileName, ImageWriteConfig const& Config);
 bool WriteImageHDRI(StringView FileName, ImageWriteConfig const& Config);
 
 bool WriteImage(StringView FileName, RawImage const& Image);
+
+HK_NAMESPACE_END

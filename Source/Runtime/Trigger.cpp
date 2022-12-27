@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "Trigger.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(ATrigger)
 
 ATrigger::ATrigger()
@@ -84,3 +86,5 @@ void ATrigger::SetLevelGeometry(LevelGeometry const& geometry)
     // TODO:
     //m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(geometry));
 }
+
+HK_NAMESPACE_END

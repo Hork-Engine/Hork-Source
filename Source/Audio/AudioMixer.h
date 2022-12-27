@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 class AudioMixer
 {
     HK_FORBID_COPY(AudioMixer)
@@ -140,3 +142,5 @@ private:
 };
 
 extern ConsoleVar Snd_HRTF;
+
+HK_NAMESPACE_END

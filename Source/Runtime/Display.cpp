@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Runtime
 {
 
@@ -136,3 +138,5 @@ bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, in
 }
 
 } // namespace Runtime
+
+HK_NAMESPACE_END

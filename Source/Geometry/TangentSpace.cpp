@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <MikkTSpace/mikktspace.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Geometry
 {
 
@@ -137,3 +139,5 @@ bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* Ind
 }
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

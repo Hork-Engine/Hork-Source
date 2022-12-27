@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIBrush.h"
 
+HK_NAMESPACE_BEGIN
+
 struct UIWidgetGeometry;
 
 class UIDecorator : public UIObject
@@ -93,3 +95,5 @@ public:
     void DrawSelected(Canvas& canvas, UIWidgetGeometry const& geometry) override;
     void DrawDisabled(Canvas& canvas, UIWidgetGeometry const& geometry) override;
 };
+
+HK_NAMESPACE_END

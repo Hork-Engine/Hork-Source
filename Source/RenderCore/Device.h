@@ -45,6 +45,8 @@ SOFTWARE.
 #include <Containers/Hash.h>
 #include <Containers/Array.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -213,3 +215,5 @@ void CreateLogicalDevice(const char*              Backend,
                          TRef<IDevice>*           ppDevice);
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 struct BvAxisAlignedBox
 {
     Float3 Mins;
@@ -354,3 +356,5 @@ struct alignas(16) BvAxisAlignedBoxSSE
         *(Float3*)&Maxs.X = boundingBox.Maxs;
     }
 };
+
+HK_NAMESPACE_END

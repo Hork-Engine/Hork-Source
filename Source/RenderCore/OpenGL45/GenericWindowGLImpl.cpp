@@ -45,6 +45,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -150,3 +152,5 @@ void GenericWindowGLImpl::SetVideoMode(DisplayVideoMode const& DesiredMode)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

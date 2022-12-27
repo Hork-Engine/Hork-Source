@@ -1,6 +1,8 @@
 #include "OmnidirectionalShadowMapPool.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ConsoleVar r_OminShadowmapBits("r_OminShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
@@ -39,3 +41,5 @@ int OmnidirectionalShadowMapPool::GetSize() const
 {
     return PoolSize;
 }
+
+HK_NAMESPACE_END

@@ -33,6 +33,8 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "AnchorComponent.h"
 
+HK_NAMESPACE_BEGIN
+
 /*
 
 SoftMeshComponent
@@ -142,3 +144,5 @@ private:
     TPodVector<AnchorBinding> m_Anchors;
     bool m_bUpdateAnchors = false;
 };
+
+HK_NAMESPACE_END

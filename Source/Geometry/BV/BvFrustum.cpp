@@ -31,6 +31,8 @@ SOFTWARE.
 #include <Geometry/BV/BvFrustum.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 BvFrustum::BvFrustum()
 {
 #ifdef HK_FRUSTUM_USE_SSE
@@ -453,3 +455,5 @@ void BvFrustum::CullBox_IgnoreZ_SSE(BvAxisAlignedBoxSSE const* bounds, int count
     return CullBox_IgnoreZ_Generic(bounds, count, result);
 #endif
 }
+
+HK_NAMESPACE_END

@@ -31,6 +31,8 @@ SOFTWARE.
 #include "AtmosphereRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 //static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA32_FLOAT;
@@ -146,3 +148,5 @@ void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 
 
     *ppTexture = pTexture->Actual();
 }
+
+HK_NAMESPACE_END

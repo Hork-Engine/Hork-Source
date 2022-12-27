@@ -39,6 +39,8 @@ SOFTWARE.
 
 #include <angelscript.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawRootComponentAxis("com_DrawRootComponentAxis"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AActor)
@@ -326,3 +328,5 @@ void AActor::RemoveAllTimers()
     m_TimerList     = {};
     m_TimerListTail = {};
 }
+
+HK_NAMESPACE_END

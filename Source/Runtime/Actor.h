@@ -35,6 +35,11 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "CameraComponent.h"
 
+class asILockableSharedBool;
+class asIScriptObject;
+
+HK_NAMESPACE_BEGIN
+
 class World;
 class ActorComponent;
 class SceneComponent;
@@ -174,7 +179,7 @@ public:
     /** Set property value by it's public name. See actor definition. */
     bool SetPublicProperty(StringView PublicName, StringView Value);
 
-    class asILockableSharedBool* ScriptGetWeakRefFlag();
+    asILockableSharedBool* ScriptGetWeakRefFlag();
 
     /** Set object debug/editor or ingame name */
     void SetObjectName(StringView Name) { m_Name = Name; }
@@ -257,15 +262,15 @@ private:
     void CallDrawDebug(DebugRenderer* InRenderer);
 
 private:
-    World*                      m_World{};
-    TWeakRef<Level>             m_Level;
-    ActorComponents              m_Components;
-    TRef<ActorDefinition>       m_pActorDef;
-    AActor*                      m_Instigator{};
-    AController*                 m_Controller{};
-    class asIScriptObject*       m_ScriptModule{};
-    class asILockableSharedBool* m_pWeakRefFlag{};
-    String                      m_Name;
+    World*                 m_World{};
+    TWeakRef<Level>        m_Level;
+    ActorComponents        m_Components;
+    TRef<ActorDefinition>  m_pActorDef;
+    AActor*                m_Instigator{};
+    AController*           m_Controller{};
+    asIScriptObject*       m_ScriptModule{};
+    asILockableSharedBool* m_pWeakRefFlag{};
+    String                 m_Name;
 
     int m_ComponentLocalIdGen{};
 
@@ -292,3 +297,5 @@ private:
     bool m_bPendingKill{};
     bool m_bInEditor{};
 };
+
+HK_NAMESPACE_END

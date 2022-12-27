@@ -31,6 +31,8 @@ SOFTWARE.
 #include "CubemapGenerator.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 CubemapGenerator::CubemapGenerator()
@@ -198,3 +200,5 @@ void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITextur
     frameGraph.Build();
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
+
+HK_NAMESPACE_END

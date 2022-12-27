@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
+HK_NAMESPACE_BEGIN
+
 class CircularBuffer : public RefCounted
 {
 public:
@@ -69,3 +71,5 @@ private:
 
     unsigned int m_ConstantBufferAlignment;
 };
+
+HK_NAMESPACE_END

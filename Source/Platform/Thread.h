@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Atomic.h"
 
+HK_NAMESPACE_BEGIN
+
 template <typename Callable, typename... Types>
 class TArgumentsWrapper
 {
@@ -415,3 +417,5 @@ HK_FORCEINLINE void SyncEvent::Signal()
     pthread_cond_signal(&m_Internal);
 #endif
 }
+
+HK_NAMESPACE_END

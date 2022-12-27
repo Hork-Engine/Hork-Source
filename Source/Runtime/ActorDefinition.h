@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Core/Document.h>
 
+HK_NAMESPACE_BEGIN
+
 class ActorDefinition : public Resource
 {
     HK_CLASS(ActorDefinition, Resource)
@@ -109,3 +111,4 @@ private:
     TVector<ScriptPublicProperty> m_ScriptPublicProperties;
 };
 
+HK_NAMESPACE_END

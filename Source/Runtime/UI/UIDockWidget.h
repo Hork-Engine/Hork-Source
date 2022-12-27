@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIDockNode;
 class UIDockContainer;
 
@@ -77,3 +79,5 @@ private:
     friend class UIDockContainer;
     friend class UIDockNode;
 };
+
+HK_NAMESPACE_END

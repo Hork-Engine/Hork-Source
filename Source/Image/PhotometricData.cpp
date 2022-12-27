@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Parse.h>
 #include <Core/Color.h>
 
+HK_NAMESPACE_BEGIN
+
 void PhotometricData::ReadSamples(uint8_t* Data, float& Intensity) const
 {
     float unnormalizedData[PHOTOMETRIC_DATA_SIZE];
@@ -495,3 +497,5 @@ PhotometricData ParsePhotometricData(StringView Text)
 {
     return IesParser(Text).Parse();
 }
+
+HK_NAMESPACE_END

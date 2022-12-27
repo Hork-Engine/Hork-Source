@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class CanvasRenderer : public RefCounted
 {
 public:
@@ -98,3 +100,5 @@ private:
     int m_DepthStencil = DEPTH_STENCIL_DRAW_AA;
     int m_SamplerState = SAMPLER_STATE_CLAMP_CLAMP_LINEAR;    
 };
+
+HK_NAMESPACE_END

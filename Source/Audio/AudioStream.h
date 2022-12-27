@@ -32,6 +32,10 @@ SOFTWARE.
 
 #include <Core/Ref.h>
 
+struct ma_decoder;
+
+HK_NAMESPACE_BEGIN
+
 /** Immutable structure that holds heap pointer and size in bytes. Owns the heap pointer. */
 struct FileInMemory : InterlockedRef
 {
@@ -105,7 +109,7 @@ public:
 
 private:
     /** Audio decoder */
-    struct ma_decoder* m_Decoder;
+    ma_decoder* m_Decoder;
 
     /** Audio source */
     TRef<FileInMemory> m_pFileInMemory;
@@ -122,3 +126,5 @@ private:
     /** Stride between frames in bytes */
     int m_SampleStride;
 };
+
+HK_NAMESPACE_END

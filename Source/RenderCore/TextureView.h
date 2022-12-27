@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Core/HashFunc.h>
 #include <Image/Image.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -120,3 +122,5 @@ private:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

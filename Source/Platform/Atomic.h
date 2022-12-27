@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <atomic>
 
+HK_NAMESPACE_BEGIN
+
 template <typename T>
 class TAtomic
 {
@@ -159,3 +161,5 @@ using AtomicShort = TAtomic<int16_t>;
 using AtomicInt   = TAtomic<int32_t>;
 using AtomicLong  = TAtomic<int64_t>;
 using AtomicBool  = TAtomic<bool>;
+
+HK_NAMESPACE_END

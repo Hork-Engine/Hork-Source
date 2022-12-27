@@ -33,6 +33,8 @@ SOFTWARE.
 #include "UIDesktop.h"
 #include "UIConsole.h"
 
+HK_NAMESPACE_BEGIN
+
 enum UI_CURSOR_MODE
 {
     UI_CURSOR_MODE_AUTO,
@@ -121,3 +123,5 @@ private:
 };
 
 extern UIManager* GUIManager;
+
+HK_NAMESPACE_END

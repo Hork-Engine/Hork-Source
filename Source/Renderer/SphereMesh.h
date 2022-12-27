@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Buffer.h>
 
+HK_NAMESPACE_BEGIN
+
 class SphereMesh : public RefCounted
 {
 public:
@@ -44,3 +46,5 @@ public:
 
     unsigned int IndexCount;
 };
+
+HK_NAMESPACE_END

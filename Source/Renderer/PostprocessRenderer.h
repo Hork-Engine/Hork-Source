@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BloomRenderer.h"
 
+HK_NAMESPACE_BEGIN
+
 class PostprocessRenderer
 {
 public:
@@ -55,3 +57,5 @@ public:
 private:
     TRef<RenderCore::IPipeline> PostprocessPipeline;
 };
+
+HK_NAMESPACE_END

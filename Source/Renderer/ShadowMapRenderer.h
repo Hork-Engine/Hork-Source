@@ -5,6 +5,8 @@
 #include "RenderDefs.h"
 #include "OmnidirectionalShadowMapPool.h"
 
+HK_NAMESPACE_BEGIN
+
 struct DirectionalLightInstance;
 struct LightParameters;
 struct ShadowRenderInstance;
@@ -32,3 +34,5 @@ private:
 
 extern const Float4 EVSM_ClearValue;
 extern const Float4 VSM_ClearValue;
+
+HK_NAMESPACE_END

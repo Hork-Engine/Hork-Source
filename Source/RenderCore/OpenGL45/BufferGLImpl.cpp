@@ -35,6 +35,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -179,3 +181,5 @@ void BufferGLImpl::WriteRange(size_t _ByteOffset, size_t _SizeInBytes, const voi
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

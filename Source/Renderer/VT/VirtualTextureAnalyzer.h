@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Containers/Vector.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 
 struct VTFeedbackChain
@@ -120,3 +122,5 @@ private:
     SyncEvent StreamThreadStopped;
     AtomicBool bStopStreamThread;
 };
+
+HK_NAMESPACE_END

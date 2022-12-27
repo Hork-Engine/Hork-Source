@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -351,3 +353,5 @@ void ShaderModuleGLImpl::DestroyShaderBinaryData(DeviceGLImpl* _Device, ShaderBi
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

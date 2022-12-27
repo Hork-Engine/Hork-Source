@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
 
+HK_NAMESPACE_BEGIN
+
 static const char* TextureTypeName[] =
     {
         "TEXTURE_1D",
@@ -774,3 +776,5 @@ void Texture::SetDebugName(StringView DebugName)
 
     m_TextureGPU->SetDebugName(DebugName);
 }
+
+HK_NAMESPACE_END

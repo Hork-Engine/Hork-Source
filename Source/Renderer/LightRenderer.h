@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 struct RenderInstance;
 
 class LightRenderer
@@ -55,3 +57,5 @@ public:
 private:
     bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, RenderInstance const* Instance);
 };
+
+HK_NAMESPACE_END

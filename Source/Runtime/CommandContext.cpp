@@ -32,6 +32,8 @@ SOFTWARE.
 #include "CommandContext.h"
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 CommandContext::CommandContext()
 {
 }
@@ -261,3 +263,5 @@ void CommandContext::Print(StringView Str)
         }
     }
 }
+
+HK_NAMESPACE_END

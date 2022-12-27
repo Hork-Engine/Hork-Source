@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 struct RenderFrontendDef;
 
 enum DRAWABLE_TYPE
@@ -172,3 +174,5 @@ protected:
     bool                     m_bCastShadow : 1;
     bool                     m_bAllowRaycast : 1;
 };
+
+HK_NAMESPACE_END

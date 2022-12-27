@@ -33,6 +33,8 @@ SOFTWARE.
 #include "BvAxisAlignedBox.h"
 #include <Containers/ArrayView.h>
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 BvhNode
@@ -111,3 +113,5 @@ private:
     TVector<unsigned int> m_Indirection;
     BvAxisAlignedBox      m_BoundingBox;
 };
+
+HK_NAMESPACE_END

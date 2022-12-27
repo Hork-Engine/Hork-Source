@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Angl.h"
 
+HK_NAMESPACE_BEGIN
+
 struct Transform
 {
     Float3 Position;
@@ -427,3 +429,5 @@ HK_FORCEINLINE void Transform::Read(IBinaryStreamReadInterface& stream)
     Rotation.Read(stream);
     Scale.Read(stream);
 }
+
+HK_NAMESPACE_END

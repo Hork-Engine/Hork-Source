@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Core/CommandProcessor.h>
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 class CommandContext : public ICommandContext
 {
     HK_FORBID_COPY(CommandContext)
@@ -88,3 +90,5 @@ private:
 
     TVector<RuntimeCommand> Commands;
 };
+
+HK_NAMESPACE_END

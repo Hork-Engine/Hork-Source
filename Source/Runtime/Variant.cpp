@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
+HK_NAMESPACE_BEGIN
+
 ResourceRef StringToResourceRef(StringView String)
 {
     ResourceRef ref;
@@ -222,3 +224,5 @@ String Variant::ToString() const
     }
     return "";
 }
+
+HK_NAMESPACE_END

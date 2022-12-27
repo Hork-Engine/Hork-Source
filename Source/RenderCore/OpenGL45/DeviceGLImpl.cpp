@@ -58,6 +58,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -805,8 +807,8 @@ bool DeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Ty
         case SPARSE_TEXTURE_2D_ARRAY:
         case SPARSE_TEXTURE_CUBE_MAP:
         case SPARSE_TEXTURE_CUBE_MAP_ARRAY: {
-            int* pageSizeX = (int*)StackAlloc(pageSizes * sizeof(int));
-            int* pageSizeY = (int*)StackAlloc(pageSizes * sizeof(int));
+            int* pageSizeX = (int*)HkStackAlloc(pageSizes * sizeof(int));
+            int* pageSizeY = (int*)HkStackAlloc(pageSizes * sizeof(int));
             EnumerateSparseTexturePageSize(Type, Format, &pageSizes, pageSizeX, pageSizeY, nullptr);
 
             for (int i = 0; i < pageSizes; i++)
@@ -832,9 +834,9 @@ bool DeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Ty
             break;
         }
         case SPARSE_TEXTURE_3D: {
-            int* pageSizeX = (int*)StackAlloc(pageSizes * sizeof(int));
-            int* pageSizeY = (int*)StackAlloc(pageSizes * sizeof(int));
-            int* pageSizeZ = (int*)StackAlloc(pageSizes * sizeof(int));
+            int* pageSizeX = (int*)HkStackAlloc(pageSizes * sizeof(int));
+            int* pageSizeY = (int*)HkStackAlloc(pageSizes * sizeof(int));
+            int* pageSizeZ = (int*)HkStackAlloc(pageSizes * sizeof(int));
             EnumerateSparseTexturePageSize(Type, Format, &pageSizes, pageSizeX, pageSizeY, pageSizeZ);
 
             for (int i = 0; i < pageSizes; i++)
@@ -1114,3 +1116,5 @@ void WindowPoolGL::Free(WindowPoolGL::WindowGL Window)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

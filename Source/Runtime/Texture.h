@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Resource.h"
 #include <Renderer/RenderDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 class ImageStorage;
 
 struct ColorGradingPreset
@@ -273,3 +275,5 @@ protected:
     };
     TWeakRef<TextureViewImpl> m_View;
 };
+
+HK_NAMESPACE_END

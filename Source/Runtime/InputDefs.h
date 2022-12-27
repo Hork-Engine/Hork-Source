@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+HK_NAMESPACE_BEGIN
+
 /* Input limits */
 constexpr int MAX_KEYBOARD_BUTTONS = 349;
 constexpr int MAX_MODIFIERS        = 6;
@@ -288,3 +290,5 @@ enum INPUT_ACTION
     IA_PRESS,
     IA_REPEAT
 };
+
+HK_NAMESPACE_END

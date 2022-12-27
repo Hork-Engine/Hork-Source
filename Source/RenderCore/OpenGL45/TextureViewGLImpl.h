@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Texture.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore {
 
 class TextureViewGLImpl : public ITextureView
@@ -42,3 +44,5 @@ public:
 };
 
 }
+
+HK_NAMESPACE_END

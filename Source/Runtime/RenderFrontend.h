@@ -41,6 +41,8 @@ SOFTWARE.
 #include "EnvironmentMap.h"
 #include "WorldRenderView.h"
 
+HK_NAMESPACE_BEGIN
+
 class PunctualLightComponent;
 class EnvironmentProbe;
 class MeshComponent;
@@ -150,3 +152,5 @@ private:
 
     FrameLoop* m_FrameLoop;
 };
+
+HK_NAMESPACE_END

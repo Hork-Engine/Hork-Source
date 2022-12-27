@@ -39,6 +39,8 @@ SOFTWARE.
 
 #include <RenderCore/Device.h>
 
+HK_NAMESPACE_BEGIN
+
 //
 // Common constants
 //
@@ -1203,3 +1205,5 @@ struct RenderFrameData
     size_t               DbgVertexStreamOffset;
     size_t               DbgIndexStreamOffset;
 };
+
+HK_NAMESPACE_END

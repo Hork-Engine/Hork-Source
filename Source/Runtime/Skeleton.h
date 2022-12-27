@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Geometry/BV/BvAxisAlignedBox.h>
 #include <Geometry/Skinning.h>
 
+HK_NAMESPACE_BEGIN
 
 /**
 
@@ -81,3 +82,5 @@ private:
     TPodVector<SkeletonJoint> m_Joints;
     BvAxisAlignedBox   m_BindposeBounds;
 };
+
+HK_NAMESPACE_END

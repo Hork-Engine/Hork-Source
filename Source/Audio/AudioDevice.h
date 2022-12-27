@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Core/Ref.h>
 
+HK_NAMESPACE_BEGIN
+
 class AudioDevice : public RefCounted
 {
 public:
@@ -133,3 +135,5 @@ private:
     // Callback for async mixing
     std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> m_MixerCallback;
 };
+
+HK_NAMESPACE_END

@@ -34,6 +34,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -447,3 +449,5 @@ bool TextureGLImpl::WriteRect(TextureRect const& Rectangle,
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

@@ -34,8 +34,10 @@ SOFTWARE.
 #include "BV/BvAxisAlignedBox.h"
 #include <Containers/Vector.h>
 
-#define CONVEX_HULL_MAX_BOUNDS (5 * 1024)  //99999999999.0f
-#define CONVEX_HULL_MIN_BOUNDS (-5 * 1024) //99999999999.0f
+HK_NAMESPACE_BEGIN
+
+constexpr float CONVEX_HULL_MAX_BOUNDS = 5 * 1024;
+constexpr float CONVEX_HULL_MIN_BOUNDS = -5 * 1024;
 
 enum PLANE_SIDE
 {
@@ -120,3 +122,5 @@ public:
 private:
     TVector<Float3> m_Points;
 };
+
+HK_NAMESPACE_END

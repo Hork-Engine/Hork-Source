@@ -35,6 +35,8 @@ SOFTWARE.
 #include "IndexedMesh.h"
 #include "Drawable.h"
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 MeshComponent
@@ -168,3 +170,5 @@ protected:
     Float3x4 m_RenderTransformMatrix[2];
     int      m_RenderTransformMatrixFrame{0};
 };
+
+HK_NAMESPACE_END

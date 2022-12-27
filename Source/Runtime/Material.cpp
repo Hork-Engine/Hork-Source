@@ -37,6 +37,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Material)
 HK_CLASS_META(MaterialInstance)
 
@@ -1121,3 +1123,5 @@ MaterialFrameData* MaterialInstance::PreRenderUpdate(FrameLoop* FrameLoop, int _
 
     return m_FrameData;
 }
+
+HK_NAMESPACE_END

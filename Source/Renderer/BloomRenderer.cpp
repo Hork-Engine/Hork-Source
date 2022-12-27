@@ -31,6 +31,8 @@ SOFTWARE.
 #include "BloomRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"s);
 ConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
 ConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
@@ -457,3 +459,5 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
     pResult->BloomTexture2 = BrightBlurTexture4;
     pResult->BloomTexture3 = BrightBlurTexture6;
 }
+
+HK_NAMESPACE_END

@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include <VHACD/VHACD.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace
 {
 
@@ -552,3 +554,5 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
 }
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

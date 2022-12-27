@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Geometry/BV/BvFrustum.h>
 
+HK_NAMESPACE_BEGIN
+
 enum CAMERA_PROJECTION_TYPE : uint8_t
 {
     CAMERA_PROJ_ORTHO_RECT,
@@ -141,3 +143,5 @@ private:
     mutable bool      m_bProjectionDirty{true};
     mutable bool      m_bFrustumDirty{true};
 };
+
+HK_NAMESPACE_END

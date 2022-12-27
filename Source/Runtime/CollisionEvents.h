@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class AActor;
 class HitProxy;
 
@@ -63,3 +65,5 @@ struct ContactEvent
 
 using OverlapDelegate = TEvent<OverlapEvent const&>;
 using ContactDelegate = TEvent<ContactEvent const&>;
+
+HK_NAMESPACE_END

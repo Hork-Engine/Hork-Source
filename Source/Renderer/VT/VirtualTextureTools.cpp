@@ -35,12 +35,16 @@ SOFTWARE.
 #include <Platform/WindowsDefs.h>
 #include <Geometry/VectorMath.h>
 
+#include <Image/Image.h>
+
 #define PAGE_EXTENSION ".page"
 
 #ifdef HK_OS_LINUX
 #    include <sys/stat.h>
 #    include <dirent.h>
 #endif
+
+HK_NAMESPACE_BEGIN
 
 VirtualTextureImage::VirtualTextureImage()
 {
@@ -1815,8 +1819,6 @@ struct TextureLayers
     Float2 UVOffset;
 };
 
-#include <Image/Image.h>
-
 void* LoadDiffuseImage(void* _RectUserData, int Width, int Height)
 {
     TextureLayers* layers = (TextureLayers*)_RectUserData;
@@ -1946,3 +1948,5 @@ void TestVT()
         layers->UVScale.Y = (double)outputRects[i].height / BinHeight;
     }
 }
+
+HK_NAMESPACE_END

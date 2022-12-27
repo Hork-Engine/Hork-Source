@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Actor.h"
 #include "Font.h"
 
+HK_NAMESPACE_BEGIN
+
 class APlayerController;
 class Canvas;
 
@@ -66,3 +68,5 @@ private:
     APlayerController* m_OwnerPlayer = nullptr;
     AActor*            m_OwnerPawn   = nullptr;
 };
+
+HK_NAMESPACE_END

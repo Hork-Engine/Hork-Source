@@ -35,6 +35,8 @@ SOFTWARE.
 #include "UIScroll.h"
 #include "UIManager.h"
 
+HK_NAMESPACE_BEGIN
+
 UIScroll::UIScroll(UIWidget* contentWidget) :
     m_ContentWidget(contentWidget ? contentWidget : UINew(UIWidget))
 {
@@ -523,7 +525,7 @@ void UIScroll::Draw(Canvas& canvas)
 
         if (m_bDrawHScroll)
         {
-            ::DrawBrush(canvas, m_HorizontalScrollbarMins, m_HorizontalScrollbarMaxs, {}, m_ScrollbarBrush);
+            Hk::DrawBrush(canvas, m_HorizontalScrollbarMins, m_HorizontalScrollbarMaxs, {}, m_ScrollbarBrush);
 
             Float2 sliderMins = m_HorizontalSliderMins;
             Float2 sliderMaxs = m_HorizontalSliderMaxs;
@@ -531,7 +533,7 @@ void UIScroll::Draw(Canvas& canvas)
             sliderMins.Y += m_SliderPadding;
             sliderMaxs.Y -= m_SliderPadding;
 
-            ::DrawBrush(canvas, sliderMins, sliderMaxs, {}, m_SliderBrush);
+            Hk::DrawBrush(canvas, sliderMins, sliderMaxs, {}, m_SliderBrush);
 
             if (m_bWithButtons)
             {
@@ -542,7 +544,7 @@ void UIScroll::Draw(Canvas& canvas)
 
         if (m_bDrawVScroll)
         {
-            ::DrawBrush(canvas, m_VerticalScrollbarMins, m_VerticalScrollbarMaxs, {}, m_ScrollbarBrush);
+            Hk::DrawBrush(canvas, m_VerticalScrollbarMins, m_VerticalScrollbarMaxs, {}, m_ScrollbarBrush);
 
             Float2 sliderMins = m_VerticalSliderMins;
             Float2 sliderMaxs = m_VerticalSliderMaxs;
@@ -550,7 +552,7 @@ void UIScroll::Draw(Canvas& canvas)
             sliderMins.X += m_SliderPadding;
             sliderMaxs.X -= m_SliderPadding;
 
-            ::DrawBrush(canvas, sliderMins, sliderMaxs, {}, m_SliderBrush);
+            Hk::DrawBrush(canvas, sliderMins, sliderMaxs, {}, m_SliderBrush);
 
             if (m_bWithButtons)
             {
@@ -560,3 +562,5 @@ void UIScroll::Draw(Canvas& canvas)
         }
     }
 }
+
+HK_NAMESPACE_END

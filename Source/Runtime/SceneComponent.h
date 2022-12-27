@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Geometry/Transform.h>
 
+HK_NAMESPACE_BEGIN
+
 class SceneComponent;
 
 using ChildComponents = TSmallVector<SceneComponent*, 8>;
@@ -282,3 +284,5 @@ private:
     bool             m_bAbsoluteRotation : 1;
     bool             m_bAbsoluteScale : 1;
 };
+
+HK_NAMESPACE_END

@@ -31,6 +31,8 @@ SOFTWARE.
 #include "UIBrush.h"
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 static void DrawBoxGradient(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs, UIBoxGradient* brush)
 {
     Float2 boxMins = mins + brush->BoxOffsetTopLeft;
@@ -147,3 +149,5 @@ void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayVie
 
     canvas.CompositeOperation(prevComposite);
 }
+
+HK_NAMESPACE_END

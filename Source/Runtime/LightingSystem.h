@@ -34,9 +34,13 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include "DirectionalLightComponent.h"
 
+HK_NAMESPACE_BEGIN
+
 class LightingSystem
 {
 public:    
     TList<Drawable>                  ShadowCasters;
     TList<DirectionalLightComponent> DirectionalLights;
 };
+
+HK_NAMESPACE_END

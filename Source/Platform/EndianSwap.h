@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -191,3 +193,5 @@ HK_FORCEINLINE double LittleDouble(double _Val)
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

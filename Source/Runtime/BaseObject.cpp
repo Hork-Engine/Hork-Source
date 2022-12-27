@@ -31,6 +31,8 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 uint64_t BaseObject::m_TotalObjects = 0;
 
 BaseObject* BaseObject::m_Objects   = nullptr;
@@ -127,3 +129,5 @@ void BaseObject::GetProperties(TPodVector<Property const*>& Properties, bool bRe
 {
     FinalClassMeta().GetProperties(Properties, bRecursive);
 }
+
+HK_NAMESPACE_END

@@ -37,6 +37,8 @@ SOFTWARE.
 
 #include <Platform/Platform.h>
 
+using namespace Hk;
+
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
 #define STB_TEXTEDIT_STRING           UITextEdit

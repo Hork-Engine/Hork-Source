@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include "../FrameLoop.h"
 
+HK_NAMESPACE_BEGIN
+
 UIDockContainer::UIDockContainer() :
     UIDockContainer("Default")
 {}
@@ -796,3 +798,5 @@ bool UIDockContainer::AttachWidgetAt(UIDockWidget* widget, float x, float y)
 
     return false;
 }
+
+HK_NAMESPACE_END

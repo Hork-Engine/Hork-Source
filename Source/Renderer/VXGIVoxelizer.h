@@ -33,6 +33,8 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 class VXGIVoxelizer {
 public:
     VXGIVoxelizer();
@@ -69,3 +71,5 @@ private:
     TRef< RenderCore::IBuffer > drawIndBuffer;
     TRef< RenderCore::IBuffer > compIndBuffer;
 };
+
+HK_NAMESPACE_END

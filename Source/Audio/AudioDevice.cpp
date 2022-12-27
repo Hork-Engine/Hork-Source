@@ -37,6 +37,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 AudioDevice::AudioDevice(int sampleRate)
 {
     m_pTransferBuffer = nullptr;
@@ -291,3 +293,5 @@ void AudioDevice::ClearBuffer()
     Platform::Memset(m_pTransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
     UnmapTransferBuffer();
 }
+
+HK_NAMESPACE_END

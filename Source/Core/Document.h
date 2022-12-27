@@ -33,6 +33,8 @@ SOFTWARE.
 #include "String.h"
 #include "Ref.h"
 
+HK_NAMESPACE_BEGIN
+
 enum DOCUMENT_TOKEN_TYPE : uint8_t
 {
     DOCUMENT_TOKEN_UNKNOWN,
@@ -344,3 +346,5 @@ private:
 
     DocumentTokenizer m_Tokenizer;
 };
+
+HK_NAMESPACE_END

@@ -57,6 +57,8 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawNavMesh("com_DrawNavMesh"s, "0"s, CVAR_CHEAT);
@@ -2220,3 +2222,5 @@ void AINavigationMesh::GatherNavigationGeometry(NavigationGeometry& Geometry)
         it->GatherNavigationGeometry(Geometry);
     }
 }
+
+HK_NAMESPACE_END

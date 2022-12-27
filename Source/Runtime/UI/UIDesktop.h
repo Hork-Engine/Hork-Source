@@ -33,6 +33,8 @@ SOFTWARE.
 #include "UIWidget.h"
 #include "UIShortcut.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIDesktop : public UIObject
 {
     UI_CLASS(UIDesktop, UIObject)
@@ -112,3 +114,5 @@ private:
     Float2                    m_DraggingCursor{};
     Float2                    m_DraggingWidgetPos{};
 };
+
+HK_NAMESPACE_END

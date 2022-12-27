@@ -31,6 +31,8 @@ SOFTWARE.
 #include "VXGIVoxelizer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA16_FLOAT; // TODO: try compression
@@ -379,3 +381,5 @@ void VXGIVoxelizer::Render()
 #endif
     #endif
 }
+
+HK_NAMESPACE_END

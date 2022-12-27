@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 Freeverb::Freeverb(int SampleRate)
 {
     // These values assume 44.1KHz sample rate
@@ -293,3 +295,5 @@ bool Freeverb::IsFreeze() const
 {
     return bFreeze;
 }
+
+HK_NAMESPACE_END

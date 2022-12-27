@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include "AudioBuffer.h"
 
+HK_NAMESPACE_BEGIN
+
 struct AudioFileInfo
 {
     int FrameCount;
@@ -45,3 +47,5 @@ struct AudioFileInfo
 bool LoadAudioFile(IBinaryStreamReadInterface& File, AudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void** ppFrames = nullptr);
 
 bool CreateAudioBuffer(IBinaryStreamReadInterface& File, AudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef<AudioBuffer>* ppBuffer);
+
+HK_NAMESPACE_END

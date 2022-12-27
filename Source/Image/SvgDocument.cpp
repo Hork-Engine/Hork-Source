@@ -34,6 +34,8 @@ SOFTWARE.
 #include <lunasvg/layoutcontext.h>
 #include <lunasvg/parser.h>
 
+HK_NAMESPACE_BEGIN
+
 SvgDocument::~SvgDocument()
 {
     delete m_Root;
@@ -104,3 +106,5 @@ SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream)
     document.m_Root = root.release();
     return document;
 }
+
+HK_NAMESPACE_END

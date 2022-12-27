@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -232,3 +234,5 @@ FramebufferGL::~FramebufferGL()
 //}
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

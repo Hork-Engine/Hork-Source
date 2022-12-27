@@ -38,6 +38,12 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Containers/BitMask.h>
 
+class dtNavMesh;
+class dtNavMeshQuery;
+class dtTileCache;
+
+HK_NAMESPACE_BEGIN
+
 #ifdef DT_POLYREF64
 typedef uint64_t NavPolyRef;
 #else
@@ -566,10 +572,10 @@ private:
     BvAxisAlignedBox m_BoundingBox;
 
     // Detour data
-    class dtNavMesh*      m_NavMesh{};
-    class dtNavMeshQuery* m_NavQuery{};
-    //class dtCrowd * m_Crowd{};
-    class dtTileCache* m_TileCache{};
+    dtNavMesh*      m_NavMesh{};
+    dtNavMeshQuery* m_NavQuery{};
+    //dtCrowd * m_Crowd{};
+    dtTileCache* m_TileCache{};
 
     // For tile cache
     TUniqueRef<struct DetourLinearAllocator> m_LinearAllocator;
@@ -581,3 +587,5 @@ private:
     // Temp array to reduce memory allocations during MoveAlongSurface
     mutable TPodVector<NavPolyRef> m_LastVisitedPolys;
 };
+
+HK_NAMESPACE_END

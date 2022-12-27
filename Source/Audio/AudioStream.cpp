@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <miniaudio/miniaudio.h>
 
+HK_NAMESPACE_BEGIN
+
 AudioStream::AudioStream(FileInMemory* pFileInMemory, int FrameCount, int SampleRate, int SampleBits, int Channels)
 {
     ma_format format = ma_format_unknown;
@@ -111,3 +113,5 @@ int AudioStream::ReadFrames(void* pFrames, int FrameCount, size_t SizeInBytes)
 
     return ma_decoder_read_pcm_frames(m_Decoder, pFrames, FrameCount);
 }
+
+HK_NAMESPACE_END

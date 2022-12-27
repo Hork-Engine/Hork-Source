@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Core/IO.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Runtime
 {
 
@@ -39,3 +41,5 @@ namespace Runtime
 Archive const& GetEmbeddedResources();
 
 } // namespace Runtime
+
+HK_NAMESPACE_END

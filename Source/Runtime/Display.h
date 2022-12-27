@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Containers/Vector.h>
 
+HK_NAMESPACE_BEGIN
+
 enum DISPLAY_ORIENTATION
 {
     /** The display orientation can't be determined */
@@ -107,3 +109,5 @@ void GetCurrentDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);
 bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, int RefreshRate, DisplayMode& Mode);
 
 } // namespace Core
+
+HK_NAMESPACE_END

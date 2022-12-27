@@ -41,6 +41,8 @@ SOFTWARE.
 #    define DBL_DIG 10
 #endif
 
+HK_NAMESPACE_BEGIN
+
 namespace Math
 {
 
@@ -1198,3 +1200,5 @@ struct Int2
         return (&X)[_Index];
     }
 };
+
+HK_NAMESPACE_END

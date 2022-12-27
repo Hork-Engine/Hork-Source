@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "glutess/glutess.h"
 
+HK_NAMESPACE_BEGIN
+
 TriangulatorBase::TriangulatorBase()
 {
     m_Tesselator = gluNewTess();
@@ -81,3 +83,5 @@ void TriangulatorBase::ProcessVertex(Double3& vertex, const void* data)
 {
     gluTessVertex(static_cast<GLUtesselator*>(m_Tesselator), &vertex.X, const_cast<void*>(data));
 }
+
+HK_NAMESPACE_END

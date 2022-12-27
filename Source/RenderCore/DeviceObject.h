@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Ref.h>
 #include <Core/String.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -142,3 +144,5 @@ private:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

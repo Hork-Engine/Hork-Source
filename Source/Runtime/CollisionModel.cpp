@@ -66,6 +66,8 @@ SOFTWARE.
 #    include <bullet3/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h>
 #endif
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(CollisionModel)
 
 ATTRIBUTE_ALIGNED16(class)
@@ -1921,3 +1923,5 @@ int CollisionInstance::GetCollisionBodiesCount() const
 {
     return m_CompoundShape->getNumChildShapes();
 }
+
+HK_NAMESPACE_END

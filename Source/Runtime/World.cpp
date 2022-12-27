@@ -40,6 +40,8 @@ SOFTWARE.
 
 #include <angelscript.h>
 
+HK_NAMESPACE_BEGIN
+
 World*          World::m_PendingKillWorlds = nullptr;
 TVector<World*> World::m_Worlds;
 TVector<World*> World::m_TickingWorlds;
@@ -1231,3 +1233,5 @@ void World::SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap)
 {
     m_GlobalEnvironmentMap = EnvironmentMap;
 }
+
+HK_NAMESPACE_END

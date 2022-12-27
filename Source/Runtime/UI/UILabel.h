@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIText.h"
 
+HK_NAMESPACE_BEGIN
+
 class UILabel : public UIWidget
 {
     UI_CLASS(UILabel, UIWidget)
@@ -56,3 +58,5 @@ protected:
 
     void Draw(Canvas& canvas) override;
 };
+
+HK_NAMESPACE_END

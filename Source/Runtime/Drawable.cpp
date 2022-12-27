@@ -33,6 +33,8 @@ SOFTWARE.
 #include "RenderFrontend.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Drawable)
 
 static void EvaluateRaycastResult(PrimitiveDef*       Self,
@@ -335,3 +337,5 @@ bool Drawable::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, 
 
     return m_Primitive->RaycastClosestCallback(m_Primitive, InRayStart, InRayEnd, Hit, &pVertices);
 }
+
+HK_NAMESPACE_END

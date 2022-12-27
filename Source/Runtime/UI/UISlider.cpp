@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Runtime/InputDefs.h>
 #include <Geometry/BV/BvIntersect.h>
 
+HK_NAMESPACE_BEGIN
+
 UISlider& UISlider::SetValue(float value)
 {
     float NewValue = Math::Clamp(m_Step > 0.0f ? Math::Snap(value, m_Step) : value, m_MinValue, m_MaxValue);
@@ -218,6 +220,8 @@ void UISlider::Draw(Canvas& cv)
         if (!SliderBrush)
             SliderBrush = GUIManager->DefaultSliderBrush();
 
-        ::DrawBrush(cv, geometry.SliderMins, geometry.SliderMaxs, {}, SliderBrush);
+        Hk::DrawBrush(cv, geometry.SliderMins, geometry.SliderMaxs, {}, SliderBrush);
     }
 }
+
+HK_NAMESPACE_END

@@ -34,6 +34,8 @@ SOFTWARE.
 #include "String.h"
 #include "HeapBlob.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -47,3 +49,5 @@ bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView 
 void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, BlobRef Blob, bool bEncodeBase85);
 
 } // namespace Core
+
+HK_NAMESPACE_END

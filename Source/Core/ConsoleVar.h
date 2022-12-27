@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "String.h"
 
+HK_NAMESPACE_BEGIN
+
 enum CVAR_FLAGS
 {
     CVAR_LATCHED    = HK_BIT(0),
@@ -174,3 +176,5 @@ private:
     uint16_t m_Flags{};
     ConsoleVar* m_Next;
 };
+
+HK_NAMESPACE_END

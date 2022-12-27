@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Geometry/BV/BvIntersect.h>
 
+HK_NAMESPACE_BEGIN
+
 UIWindow::UIWindow(UIWidget* caption, UIWidget* central) :
     m_Caption(caption ? caption : UINew(UIWidget)),
     m_Central(central ? central : UINew(UIWidget))
@@ -226,3 +228,5 @@ UIWindow* UIMakeWindow(StringView captionText, UIWidget* centralWidget)
                             .WithRounding({8, 8, 0, 0}))
         .WithPadding(UIPadding(0));
 }
+
+HK_NAMESPACE_END

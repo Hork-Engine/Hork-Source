@@ -39,6 +39,8 @@ SOFTWARE.
 
 #define USE_MIMALLOC
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -494,3 +496,5 @@ void MemoryHeap::MemoryNewFrame()
 void MemoryHeap::MemoryCleanup()
 {
 }
+
+HK_NAMESPACE_END

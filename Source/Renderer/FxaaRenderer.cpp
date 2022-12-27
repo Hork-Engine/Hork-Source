@@ -31,6 +31,8 @@ SOFTWARE.
 #include "FxaaRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 FxaaRenderer::FxaaRenderer()
@@ -80,3 +82,5 @@ void FxaaRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture
 
     *ppFxaaTexture = renderPass.GetColorAttachments()[0].pResource;
 }
+
+HK_NAMESPACE_END

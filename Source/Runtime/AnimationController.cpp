@@ -32,6 +32,8 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "Animation.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(AnimationController)
 
 AnimationController::AnimationController()
@@ -118,3 +120,5 @@ void AnimationController::SetEnabled(bool _Enabled)
         Owner->m_bUpdateBounds = true;
     }
 }
+
+HK_NAMESPACE_END

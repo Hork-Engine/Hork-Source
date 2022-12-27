@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Audio/AudioBuffer.h>
 #include <Audio/AudioDecoder.h>
 
+HK_NAMESPACE_BEGIN
+
 enum SOUND_STREAM_TYPE
 {
     /** Short sound effects. Most used. */
@@ -140,3 +142,5 @@ private:
     int                m_Revision;
     String             m_FileName;
 };
+
+HK_NAMESPACE_END

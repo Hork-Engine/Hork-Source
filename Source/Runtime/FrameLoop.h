@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include "InputDefs.h"
 
+HK_NAMESPACE_BEGIN
+
 class FontStash;
 
 //struct Joystick
@@ -207,3 +209,5 @@ private:
     TVector<WorldRenderView*> m_Views;
     TRef<FontStash> m_FontStash;
 };
+
+HK_NAMESPACE_END

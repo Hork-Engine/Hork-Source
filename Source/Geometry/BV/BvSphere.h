@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Geometry/Plane.h>
 #include "BvAxisAlignedBox.h"
 
+HK_NAMESPACE_BEGIN
+
 struct BvSphere
 {
     Float3 Center;
@@ -282,3 +284,5 @@ struct BvSphere
 
 struct alignas(16) BvSphereSSE : BvSphere
 {};
+
+HK_NAMESPACE_END

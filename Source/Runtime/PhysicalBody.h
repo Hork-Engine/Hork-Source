@@ -33,6 +33,11 @@ SOFTWARE.
 #include "Collision.h"
 #include "AINavigationMesh.h"
 
+class btRigidBody;
+class btSoftBody;
+
+HK_NAMESPACE_BEGIN
+
 class PhysicalBodyMotionState;
 class BoneCollisionInstance;
 
@@ -362,8 +367,8 @@ protected:
         return Float3x4::Identity();
     }
 
-    bool              bSoftBodySimulation = false;
-    class btSoftBody* SoftBody            = nullptr; // managed by SoftMeshComponent
+    bool        bSoftBodySimulation = false;
+    btSoftBody* SoftBody            = nullptr; // managed by SoftMeshComponent
 
 private:
     void CreateRigidBody();
@@ -379,7 +384,7 @@ private:
     TRef<CollisionModel>        m_CollisionModel;
     TRef<CollisionInstance>     m_CollisionInstance;
     TPodVector<BoneCollisionInstance*> m_BoneCollisionInst;
-    class btRigidBody*          m_RigidBody = nullptr;
+    btRigidBody*               m_RigidBody = nullptr;
     PhysicalBodyMotionState*   m_MotionState = nullptr;
     TUniqueRef<DebugDrawCache> m_DebugDrawCache;
 
@@ -409,3 +414,5 @@ private:
     PhysicalBody* pNextNav{};
     PhysicalBody* pPrevNav{};
 };
+
+HK_NAMESPACE_END

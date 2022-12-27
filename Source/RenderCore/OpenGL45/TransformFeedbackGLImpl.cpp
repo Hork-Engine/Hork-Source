@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -56,3 +58,5 @@ TransformFeedbackGLImpl::~TransformFeedbackGLImpl()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

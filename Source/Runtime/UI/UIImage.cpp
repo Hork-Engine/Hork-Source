@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "UIImage.h"
 
+HK_NAMESPACE_BEGIN
+
 void UIImage::AdjustSize(Float2 const& size)
 {
     Super::AdjustSize(size);
@@ -109,3 +111,5 @@ void UIImage::Draw(Canvas& canvas)
 
     canvas.CompositeOperation(prevComposite);
 }
+
+HK_NAMESPACE_END

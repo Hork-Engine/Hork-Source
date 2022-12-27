@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Format.h"
 
+HK_NAMESPACE_BEGIN
+
 struct CommandLine
 {
     HK_FORBID_COPY(CommandLine)
@@ -257,3 +259,5 @@ HK_FORCEINLINE void CriticalError(fmt::format_string<T...> Format, T&&... args)
 
     _CriticalError(buffer.data());
 }
+
+HK_NAMESPACE_END

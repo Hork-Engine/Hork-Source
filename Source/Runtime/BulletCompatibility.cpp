@@ -45,6 +45,8 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 
+HK_NAMESPACE_BEGIN
+
 // TODO: replace btIDebugDraw by DebugRenderer
 void btDrawCollisionShape(DebugRenderer* InRenderer, const btTransform& worldTransform, const btCollisionShape* shape)
 {
@@ -285,3 +287,5 @@ void btDrawCollisionObject(DebugRenderer* InRenderer, btCollisionObject* Collisi
 
     btDrawCollisionShape(InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape());
 }
+
+HK_NAMESPACE_END
