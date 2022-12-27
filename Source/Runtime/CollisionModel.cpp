@@ -870,7 +870,7 @@ struct CollisionConvexHull : CollisionBody
 
     void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
-        if (_Vertices.IsEmpty())
+        if (Vertices.IsEmpty() || Indices.IsEmpty())
         {
             return;
         }
@@ -915,7 +915,7 @@ struct CollisionTriangleSoupBVH : CollisionBody
 
     void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
-        if (Vertices.IsEmpty())
+        if (Vertices.IsEmpty() || Indices.IsEmpty())
         {
             return;
         }
@@ -1056,7 +1056,7 @@ struct CollisionTriangleSoupGimpact : CollisionBody
 
     void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
-        if (Vertices.IsEmpty())
+        if (Vertices.IsEmpty() || Indices.IsEmpty())
         {
             return;
         }
