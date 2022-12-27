@@ -41,8 +41,7 @@ class EnvironmentMap : public Resource
     HK_CLASS(EnvironmentMap, Resource)
 
 public:
-    EnvironmentMap()
-    {}
+    EnvironmentMap() = default;
 
     static EnvironmentMap* CreateFromImage(ImageStorage const& Image)
     {
