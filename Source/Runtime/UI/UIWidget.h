@@ -90,6 +90,27 @@ struct UIGridOffset
     }
 };
 
+enum UI_TOOLTIP_POSITION : uint8_t
+{
+    UI_TOOLTIP_POSITION_AT_CURSOR,
+    UI_TOOLTIP_POSITION_LEFT_TOP_BOUNDARY,
+    UI_TOOLTIP_POSITION_LEFT_CENTER_BOUNDARY,
+    UI_TOOLTIP_POSITION_LEFT_BOTTOM_BOUNDARY,
+    UI_TOOLTIP_POSITION_RIGHT_TOP_BOUNDARY,
+    UI_TOOLTIP_POSITION_RIGHT_CENTER_BOUNDARY,
+    UI_TOOLTIP_POSITION_RIGHT_BOTTOM_BOUNDARY,
+    UI_TOOLTIP_POSITION_TOP_LEFT_BOUNDARY,
+    UI_TOOLTIP_POSITION_TOP_CENTER_BOUNDARY,
+    UI_TOOLTIP_POSITION_TOP_RIGHT_BOUNDARY,
+    UI_TOOLTIP_POSITION_BOTTOM_LEFT_BOUNDARY,
+    UI_TOOLTIP_POSITION_BOTTOM_CENTER_BOUNDARY,
+    UI_TOOLTIP_POSITION_BOTTOM_RIGHT_BOUNDARY,
+    UI_TOOLTIP_POSITION_TOP_LEFT_CORNER,
+    UI_TOOLTIP_POSITION_TOP_RIGHT_CORNER,
+    UI_TOOLTIP_POSITION_BOTTOM_LEFT_CORNER,
+    UI_TOOLTIP_POSITION_BOTTOM_RIGHT_CORNER
+};
+
 class UIWidget : public UIObject
 {
     UI_CLASS(UIWidget, UIObject)
@@ -123,6 +144,7 @@ public:
     TRef<UIShareInputs> ShareInputs;
     TRef<UIWidget>      Tooltip;
     float               TooltipTime = 0.1f;
+    UI_TOOLTIP_POSITION TooltipPosition = UI_TOOLTIP_POSITION_AT_CURSOR;
     int                 Layer       = 0; // layer is used by StackLayout
 
     TEvent<bool> E_OnHovered;
@@ -299,6 +321,12 @@ public:
     UIWidget& WithTooltipTime(float tooltipTime)
     {
         TooltipTime = tooltipTime;
+        return *this;
+    }
+
+    UIWidget& WithTooltipPosition(UI_TOOLTIP_POSITION tooltipPosition)
+    {
+        TooltipPosition = tooltipPosition;
         return *this;
     }
 

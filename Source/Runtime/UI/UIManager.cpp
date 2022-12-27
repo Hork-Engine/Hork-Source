@@ -108,6 +108,74 @@ bool UIManager::IsInsertMode() const
     return m_bInsertMode;
 }
 
+static Float2 CalcTooltipPosition(UIWidget* widget)
+{
+    UIWidget* tooltipWidget = widget->Tooltip;
+    if (!tooltipWidget)
+        return {};
+
+    UIWidgetGeometry const& geometry = widget->m_Geometry;
+
+    Float2 tooltipSize = tooltipWidget->MeasureLayout(true, true, tooltipWidget->Size);
+
+    const float padding = 2;
+
+    switch (widget->TooltipPosition)
+    {
+        case UI_TOOLTIP_POSITION_AT_CURSOR:
+            return GUIManager->CursorPosition;
+
+        case UI_TOOLTIP_POSITION_LEFT_TOP_BOUNDARY:
+            return Float2(geometry.Mins.X - tooltipSize.X - padding, geometry.Mins.Y);
+
+        case UI_TOOLTIP_POSITION_LEFT_CENTER_BOUNDARY:
+            return Float2(geometry.Mins.X - tooltipSize.X - padding, (geometry.Mins.Y + geometry.Maxs.Y - tooltipSize.Y) * 0.5f);
+
+        case UI_TOOLTIP_POSITION_LEFT_BOTTOM_BOUNDARY:
+            return Float2(geometry.Mins.X - tooltipSize.X - padding, geometry.Maxs.Y - tooltipSize.Y);
+
+        case UI_TOOLTIP_POSITION_RIGHT_TOP_BOUNDARY:
+            return Float2(geometry.Maxs.X + padding, geometry.Mins.Y);
+
+        case UI_TOOLTIP_POSITION_RIGHT_CENTER_BOUNDARY:
+            return Float2(geometry.Maxs.X + padding, (geometry.Mins.Y + geometry.Maxs.Y - tooltipSize.Y) * 0.5f);
+
+        case UI_TOOLTIP_POSITION_RIGHT_BOTTOM_BOUNDARY:
+            return Float2(geometry.Maxs.X + padding, geometry.Maxs.Y - tooltipSize.Y);
+
+        case UI_TOOLTIP_POSITION_TOP_LEFT_BOUNDARY:
+            return Float2(geometry.Mins.X, geometry.Mins.Y - tooltipSize.Y - padding);
+
+        case UI_TOOLTIP_POSITION_TOP_CENTER_BOUNDARY:
+            return Float2((geometry.Mins.X + geometry.Maxs.X - tooltipSize.X) * 0.5f, geometry.Mins.Y - tooltipSize.Y - padding);
+
+        case UI_TOOLTIP_POSITION_TOP_RIGHT_BOUNDARY:
+            return Float2(geometry.Maxs.X - tooltipSize.X, geometry.Mins.Y - tooltipSize.Y - padding);
+
+        case UI_TOOLTIP_POSITION_BOTTOM_LEFT_BOUNDARY:
+            return Float2(geometry.Mins.X, geometry.Maxs.Y + padding);
+
+        case UI_TOOLTIP_POSITION_BOTTOM_CENTER_BOUNDARY:
+            return Float2((geometry.Mins.X + geometry.Maxs.X - tooltipSize.X) * 0.5f, geometry.Maxs.Y + padding);
+
+        case UI_TOOLTIP_POSITION_BOTTOM_RIGHT_BOUNDARY:
+            return Float2(geometry.Maxs.X - tooltipSize.X, geometry.Maxs.Y + padding);
+
+        case UI_TOOLTIP_POSITION_TOP_LEFT_CORNER:
+            return Float2(geometry.Mins.X - tooltipSize.X - padding, geometry.Mins.Y - tooltipSize.Y - padding);
+
+        case UI_TOOLTIP_POSITION_TOP_RIGHT_CORNER:
+            return Float2(geometry.Maxs.X + padding, geometry.Mins.Y - tooltipSize.Y - padding);
+
+        case UI_TOOLTIP_POSITION_BOTTOM_LEFT_CORNER:
+            return Float2(geometry.Mins.X - tooltipSize.X - padding, geometry.Maxs.Y + padding);
+
+        case UI_TOOLTIP_POSITION_BOTTOM_RIGHT_CORNER:
+            return Float2(geometry.Maxs.X + padding, geometry.Maxs.Y + padding);
+    }
+    return {};
+}
+
 void UIManager::Update(float timeStep)
 {
     HK_PROFILER_EVENT("Update UI");
@@ -162,7 +230,7 @@ void UIManager::Update(float timeStep)
 
                 m_TooltipWidget = widget->Tooltip;
                 m_TooltipTime = widget->TooltipTime;
-                m_TooltipPosition = CursorPosition;
+                m_TooltipPosition = CalcTooltipPosition(widget);
             }
             else
             {
