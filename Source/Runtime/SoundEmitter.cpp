@@ -39,32 +39,32 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-SoundEmitter* SoundEmitter::SoundEmitters;
-SoundEmitter* SoundEmitter::SoundEmittersTail;
+SoundEmitter* SoundEmitter::m_SoundEmitters;
+SoundEmitter* SoundEmitter::m_SoundEmittersTail;
 
-SoundOneShot* SoundEmitter::OneShots     = nullptr;
-SoundOneShot* SoundEmitter::OneShotsTail = nullptr;
+SoundOneShot* SoundEmitter::m_OneShots = nullptr;
+SoundOneShot* SoundEmitter::m_OneShotsTail = nullptr;
 
 HK_CLASS_META(SoundGroup)
 HK_CLASS_META(SoundEmitter)
 
 SoundEmitter::SoundEmitter()
 {
-    ListenerMask          = ~0u;
-    EmitterType           = SOUND_EMITTER_POINT;
-    Volume                = 1.0f;
-    ChanVolume[0]         = 0;
-    ChanVolume[1]         = 0;
-    ReferenceDistance     = SOUND_REF_DISTANCE_DEFAULT;
-    MaxDistance           = SOUND_DISTANCE_DEFAULT;
-    RolloffRate           = SOUND_ROLLOFF_RATE_DEFAULT;
-    ConeInnerAngle        = 360;
-    ConeOuterAngle        = 360;
-    bEmitterPaused        = false;
-    bVirtualizeWhenSilent = false;
-    bSpatializedStereo    = false;
-    ResourceRevision      = 0;
-    Channel               = nullptr;
+    m_ListenerMask = ~0u;
+    m_EmitterType = SOUND_EMITTER_POINT;
+    m_Volume = 1.0f;
+    m_ChanVolume[0] = 0;
+    m_ChanVolume[1] = 0;
+    m_ReferenceDistance = SOUND_REF_DISTANCE_DEFAULT;
+    m_MaxDistance = SOUND_DISTANCE_DEFAULT;
+    m_RolloffRate = SOUND_ROLLOFF_RATE_DEFAULT;
+    m_ConeInnerAngle = 360;
+    m_ConeOuterAngle = 360;
+    m_bEmitterPaused = false;
+    m_bVirtualizeWhenSilent = false;
+    m_bSpatializedStereo = false;
+    m_ResourceRevision = 0;
+    m_Channel = nullptr;
 }
 
 void SoundEmitter::InitializeComponent()
@@ -76,7 +76,7 @@ void SoundEmitter::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    INTRUSIVE_REMOVE(this, Next, Prev, SoundEmitters, SoundEmittersTail);
+    INTRUSIVE_REMOVE(this, m_Next, m_Prev, m_SoundEmitters, m_SoundEmittersTail);
 
     ClearSound();
 }
@@ -88,7 +88,7 @@ void SoundEmitter::OnTransformDirty()
 
 void SoundEmitter::BeginPlay()
 {
-    INTRUSIVE_ADD(this, Next, Prev, SoundEmitters, SoundEmittersTail);
+    INTRUSIVE_ADD(this, m_Next, m_Prev, m_SoundEmitters, m_SoundEmittersTail);
 
     Spatialize();
 
@@ -113,18 +113,18 @@ void SoundEmitter::PlaySound(SoundResource* SoundResource, int StartFrame, int _
 
     ClearSound();
 
-    if (Client && Client->IsPendingKill())
+    if (m_Client && m_Client->IsPendingKill())
     {
         // Client is dead
         return;
     }
 
     bool bLooped                     = _LoopStart >= 0;
-    bool bShouldVirtualizeWhenSilent = bVirtualizeWhenSilent || bLooped;
+    bool bShouldVirtualizeWhenSilent = m_bVirtualizeWhenSilent || bLooped;
 
-    if (EmitterType != SOUND_EMITTER_BACKGROUND && !bShouldVirtualizeWhenSilent)
+    if (m_EmitterType != SOUND_EMITTER_BACKGROUND && !bShouldVirtualizeWhenSilent)
     {
-        float maxDist  = Math::Clamp(MaxDistance, ReferenceDistance, SOUND_DISTANCE_MAX);
+        float maxDist = Math::Clamp(m_MaxDistance, m_ReferenceDistance, SOUND_DISTANCE_MAX);
         float falloff  = FalloffDistance(maxDist);
         float cullDist = maxDist + falloff;
 
@@ -139,7 +139,7 @@ void SoundEmitter::PlaySound(SoundResource* SoundResource, int StartFrame, int _
 
     Spatialize();
 
-    if (!bShouldVirtualizeWhenSilent && ChanVolume[0] == 0 && ChanVolume[1] == 0)
+    if (!bShouldVirtualizeWhenSilent && m_ChanVolume[0] == 0 && m_ChanVolume[1] == 0)
     {
         // Don't even start
         return;
@@ -157,22 +157,22 @@ void SoundEmitter::PlayOneShot(SoundResource* SoundResource, float VolumeScale, 
     }
 
     SoundSpawnInfo spawnInfo;
-    spawnInfo.EmitterType                   = EmitterType;
-    spawnInfo.Priority                      = AUDIO_CHANNEL_PRIORITY_ONESHOT;
-    spawnInfo.bVirtualizeWhenSilent         = bVirtualizeWhenSilent;
-    spawnInfo.bFollowInstigator             = !bFixedPosition;
-    spawnInfo.AudioClient                   = Client;
-    spawnInfo.ListenerMask                  = ListenerMask;
-    spawnInfo.Group                         = Group;
-    spawnInfo.Attenuation.ReferenceDistance = ReferenceDistance;
-    spawnInfo.Attenuation.Distance          = MaxDistance;
-    spawnInfo.Attenuation.RolloffRate       = RolloffRate;
-    spawnInfo.Volume                        = Volume * VolumeScale;
-    spawnInfo.StartFrame                    = StartFrame;
-    spawnInfo.bStopWhenInstigatorDead       = false; //true;
-    spawnInfo.ConeInnerAngle                = ConeInnerAngle;
-    spawnInfo.ConeOuterAngle                = ConeOuterAngle;
-    spawnInfo.Direction                     = GetWorldForwardVector();
+    spawnInfo.EmitterType = m_EmitterType;
+    spawnInfo.Priority = AUDIO_CHANNEL_PRIORITY_ONESHOT;
+    spawnInfo.bVirtualizeWhenSilent = m_bVirtualizeWhenSilent;
+    spawnInfo.bFollowInstigator = !bFixedPosition;
+    spawnInfo.AudioClient = m_Client;
+    spawnInfo.ListenerMask = m_ListenerMask;
+    spawnInfo.Group = m_Group;
+    spawnInfo.Attenuation.ReferenceDistance = m_ReferenceDistance;
+    spawnInfo.Attenuation.Distance = m_MaxDistance;
+    spawnInfo.Attenuation.RolloffRate = m_RolloffRate;
+    spawnInfo.Volume = m_Volume * VolumeScale;
+    spawnInfo.StartFrame = StartFrame;
+    spawnInfo.bStopWhenInstigatorDead = false; //true;
+    spawnInfo.ConeInnerAngle = m_ConeInnerAngle;
+    spawnInfo.ConeOuterAngle = m_ConeOuterAngle;
+    spawnInfo.Direction = GetWorldForwardVector();
 
     SpawnSound(SoundResource, GetWorldPosition(), GetWorld(), this, &spawnInfo);
 }
@@ -269,51 +269,51 @@ bool SoundEmitter::StartPlay(SoundResource* SoundResource, int StartFrame, int L
         }
     }
 
-    Resource         = SoundResource;
-    ResourceRevision = Resource->GetRevision();
+    m_Resource = SoundResource;
+    m_ResourceRevision = m_Resource->GetRevision();
 
-    Channel = new AudioChannel(StartFrame,
-                                LoopStart,
-                                loopsCount,
-                                SoundResource->GetAudioBuffer(),
-                                streamInterface,
-                                bVirtualizeWhenSilent,
-                                ChanVolume,
-                                LocalDir,
-                                bSpatializedStereo,
-                                IsPaused());
+    m_Channel = new AudioChannel(StartFrame,
+                                 LoopStart,
+                                 loopsCount,
+                                 SoundResource->GetAudioBuffer(),
+                                 streamInterface,
+                                 m_bVirtualizeWhenSilent,
+                                 m_ChanVolume,
+                                 m_LocalDir,
+                                 m_bSpatializedStereo,
+                                 IsPaused());
 
-    GEngine->GetAudioSystem()->GetMixer()->SubmitChannel(Channel);
+    GEngine->GetAudioSystem()->GetMixer()->SubmitChannel(m_Channel);
 
     return true;
 }
 
 bool SoundEmitter::RestartSound()
 {
-    TRef<SoundResource> newSound = Resource;
+    TRef<SoundResource> newSound = m_Resource;
 
-    int loopStart = Channel ? Channel->GetLoopStart() : -1;
+    int loopStart = m_Channel ? m_Channel->GetLoopStart() : -1;
 
-    if (Channel)
+    if (m_Channel)
     {
-        Channel->RemoveRef();
-        Channel = nullptr;
+        m_Channel->RemoveRef();
+        m_Channel = nullptr;
     }
 
-    Resource.Reset();
+    m_Resource.Reset();
 
     return StartPlay(newSound.GetObject(), 0, loopStart);
 }
 
 void SoundEmitter::ClearSound()
 {
-    if (Channel)
+    if (m_Channel)
     {
-        Channel->RemoveRef();
-        Channel = nullptr;
+        m_Channel->RemoveRef();
+        m_Channel = nullptr;
     }
 
-    Resource.Reset();
+    m_Resource.Reset();
 
     ClearQueue();
 }
@@ -353,13 +353,13 @@ bool SoundEmitter::SelectNextSound()
 {
     bool bSelected = false;
 
-    if (Channel)
+    if (m_Channel)
     {
-        Channel->RemoveRef();
-        Channel = nullptr;
+        m_Channel->RemoveRef();
+        m_Channel = nullptr;
     }
 
-    Resource.Reset();
+    m_Resource.Reset();
 
     while (!AudioQueue.IsEmpty() && !bSelected)
     {
@@ -384,18 +384,18 @@ void SoundEmitter::ClearQueue()
 
 bool SoundEmitter::IsPaused() const
 {
-    bool paused = bEmitterPaused;
+    bool paused = m_bEmitterPaused;
 
-    bool bPlayEvenWhenPaused = Group ? Group->ShouldPlayEvenWhenPaused() : false;
+    bool bPlayEvenWhenPaused = m_Group ? m_Group->ShouldPlayEvenWhenPaused() : false;
 
     if (!bPlayEvenWhenPaused)
     {
         paused = paused || GetWorld()->IsPaused();
     }
 
-    if (Group)
+    if (m_Group)
     {
-        paused = paused || Group->IsPaused();
+        paused = paused || m_Group->IsPaused();
     }
 
     return paused;
@@ -403,14 +403,14 @@ bool SoundEmitter::IsPaused() const
 
 void SoundEmitter::Update()
 {
-    if (!Resource)
+    if (!m_Resource)
     {
         // silent
         return;
     }
 
     // Check if the audio clip has been modified
-    if (ResourceRevision != Resource->GetRevision())
+    if (m_ResourceRevision != m_Resource->GetRevision())
     {
         if (!RestartSound())
         {
@@ -420,7 +420,7 @@ void SoundEmitter::Update()
     }
 
     // Select next sound from queue if playback position is reached the end
-    if (Channel->GetPlaybackPos() >= Channel->FrameCount)
+    if (m_Channel->GetPlaybackPos() >= m_Channel->FrameCount)
     {
         if (!SelectNextSound())
         {
@@ -428,7 +428,7 @@ void SoundEmitter::Update()
         }
     }
 
-    if (Channel->IsStopped())
+    if (m_Channel->IsStopped())
     {
         ClearSound();
         return;
@@ -441,7 +441,7 @@ void SoundEmitter::Update()
         Spatialize();
     }
 
-    Channel->Commit(ChanVolume, LocalDir, bSpatializedStereo, paused);
+    m_Channel->Commit(m_ChanVolume, m_LocalDir, m_bSpatializedStereo, paused);
 }
 
 static void CalcAttenuation(SOUND_EMITTER_TYPE EmitterType,
@@ -526,33 +526,33 @@ void SoundEmitter::Spatialize()
 {
     AudioListener const& listener = GEngine->GetAudioSystem()->GetListener();
 
-    ChanVolume[0] = 0;
-    ChanVolume[1] = 0;
+    m_ChanVolume[0] = 0;
+    m_ChanVolume[1] = 0;
 
     // Cull if muted
-    if (bMuted)
+    if (m_bMuted)
     {
         return;
     }
 
     // Cull by client
-    if (Client && listener.Id != Client->Id)
+    if (m_Client && listener.Id != m_Client->Id)
     {
         return;
     }
 
     // Cull by mask
-    if ((ListenerMask & listener.Mask) == 0)
+    if ((m_ListenerMask & listener.Mask) == 0)
     {
         return;
     }
 
-    float volume = Volume;
+    float volume = m_Volume;
     volume *= listener.VolumeScale;
     volume *= GetWorld()->GetAudioVolume();
-    if (Group)
+    if (m_Group)
     {
-        volume *= Group->GetVolume();
+        volume *= m_Group->GetVolume();
     }
 
     // Cull by volume
@@ -572,13 +572,13 @@ void SoundEmitter::Spatialize()
     volume *= VolumeFtoI;
 
     // If the sound is played from the listener, consider it as background
-    if (EmitterType == SOUND_EMITTER_BACKGROUND || GetOwnerActor()->Id == listener.Id)
+    if (m_EmitterType == SOUND_EMITTER_BACKGROUND || GetOwnerActor()->Id == listener.Id)
     {
         // Use full volume without attenuation
-        ChanVolume[0] = ChanVolume[1] = (int)volume;
+        m_ChanVolume[0] = m_ChanVolume[1] = (int)volume;
 
         // Don't spatialize stereo sounds
-        bSpatializedStereo = false;
+        m_bSpatializedStereo = false;
         return;
     }
 
@@ -586,113 +586,113 @@ void SoundEmitter::Spatialize()
 
     float leftVol, rightVol;
 
-    CalcAttenuation(EmitterType, soundPosition, GetWorldForwardVector(), listener.Position, listener.RightVec, ReferenceDistance, MaxDistance, RolloffRate, ConeInnerAngle, ConeOuterAngle, &leftVol, &rightVol);
+    CalcAttenuation(m_EmitterType, soundPosition, GetWorldForwardVector(), listener.Position, listener.RightVec, m_ReferenceDistance, m_MaxDistance, m_RolloffRate, m_ConeInnerAngle, m_ConeOuterAngle, &leftVol, &rightVol);
 
-    ChanVolume[0] = (int)(volume * leftVol);
-    ChanVolume[1] = (int)(volume * rightVol);
+    m_ChanVolume[0] = (int)(volume * leftVol);
+    m_ChanVolume[1] = (int)(volume * rightVol);
 
     // Should never happen, but just in case
-    if (ChanVolume[0] < 0)
-        ChanVolume[0] = 0;
-    if (ChanVolume[1] < 0)
-        ChanVolume[1] = 0;
-    if (ChanVolume[0] > 65535)
-        ChanVolume[0] = 65535;
-    if (ChanVolume[1] > 65535)
-        ChanVolume[1] = 65535;
+    if (m_ChanVolume[0] < 0)
+        m_ChanVolume[0] = 0;
+    if (m_ChanVolume[1] < 0)
+        m_ChanVolume[1] = 0;
+    if (m_ChanVolume[0] > 65535)
+        m_ChanVolume[0] = 65535;
+    if (m_ChanVolume[1] > 65535)
+        m_ChanVolume[1] = 65535;
 
-    bSpatializedStereo = !GEngine->GetAudioSystem()->GetPlaybackDevice()->IsMono();
+    m_bSpatializedStereo = !GEngine->GetAudioSystem()->GetPlaybackDevice()->IsMono();
 
     if (Snd_HRTF)
     {
-        LocalDir = listener.TransformInv * soundPosition;
-        float d  = LocalDir.NormalizeSelf();
+        m_LocalDir = listener.TransformInv * soundPosition;
+        float d = m_LocalDir.NormalizeSelf();
         if (d < 0.0001f)
         {
             // Sound has same position as listener
-            LocalDir = Float3(0, 1, 0);
+            m_LocalDir = Float3(0, 1, 0);
         }
     }
 }
 
 void SoundEmitter::SetSoundGroup(SoundGroup* SoundGroup)
 {
-    Group = SoundGroup;
+    m_Group = SoundGroup;
 }
 
-void SoundEmitter::SetAudioClient(AActor* AudioClient)
+void SoundEmitter::SetAudioClient(Actor* AudioClient)
 {
-    Client = AudioClient;
+    m_Client = AudioClient;
 }
 
 void SoundEmitter::SetListenerMask(uint32_t Mask)
 {
-    ListenerMask = Mask;
+    m_ListenerMask = Mask;
 }
 
 void SoundEmitter::SetEmitterType(SOUND_EMITTER_TYPE _EmitterType)
 {
-    EmitterType = _EmitterType;
+    m_EmitterType = _EmitterType;
 }
 
 void SoundEmitter::SetVirtualizeWhenSilent(bool _bVirtualizeWhenSilent)
 {
-    bVirtualizeWhenSilent = _bVirtualizeWhenSilent;
+    m_bVirtualizeWhenSilent = _bVirtualizeWhenSilent;
 }
 
 void SoundEmitter::SetVolume(float _Volume)
 {
-    Volume = Math::Saturate(_Volume);
+    m_Volume = Math::Saturate(_Volume);
 }
 
 void SoundEmitter::SetReferenceDistance(float Dist)
 {
-    ReferenceDistance = Math::Clamp(Dist, SOUND_DISTANCE_MIN, SOUND_DISTANCE_MAX);
+    m_ReferenceDistance = Math::Clamp(Dist, SOUND_DISTANCE_MIN, SOUND_DISTANCE_MAX);
 }
 
 void SoundEmitter::SetMaxDistance(float Dist)
 {
-    MaxDistance = Math::Clamp(Dist, SOUND_DISTANCE_MIN, SOUND_DISTANCE_MAX);
+    m_MaxDistance = Math::Clamp(Dist, SOUND_DISTANCE_MIN, SOUND_DISTANCE_MAX);
 }
 
 void SoundEmitter::SetRolloffRate(float Rolloff)
 {
-    RolloffRate = Math::Clamp(Rolloff, 0.0f, 1.0f);
+    m_RolloffRate = Math::Clamp(Rolloff, 0.0f, 1.0f);
 }
 
 void SoundEmitter::SetConeInnerAngle(float Angle)
 {
-    ConeInnerAngle = Math::Clamp(Angle, 0.0f, 360.0f);
+    m_ConeInnerAngle = Math::Clamp(Angle, 0.0f, 360.0f);
 }
 
 void SoundEmitter::SetConeOuterAngle(float Angle)
 {
-    ConeOuterAngle = Math::Clamp(Angle, 0.0f, 360.0f);
+    m_ConeOuterAngle = Math::Clamp(Angle, 0.0f, 360.0f);
 }
 
 void SoundEmitter::SetPaused(bool _bPaused)
 {
-    bEmitterPaused = _bPaused;
+    m_bEmitterPaused = _bPaused;
 }
 
 void SoundEmitter::SetPlaybackPosition(int FrameNum)
 {
-    if (!Channel)
+    if (!m_Channel)
     {
         return;
     }
 
-    if (Channel->GetPlaybackPos() == FrameNum)
+    if (m_Channel->GetPlaybackPos() == FrameNum)
     {
         return;
     }
 
-    Channel->ChangePlaybackPosition(Math::Clamp(FrameNum, 0, Channel->FrameCount));
+    m_Channel->ChangePlaybackPosition(Math::Clamp(FrameNum, 0, m_Channel->FrameCount));
 }
 
 int SoundEmitter::GetPlaybackPosition() const
 {
-    return Channel->GetPlaybackPos();
+    return m_Channel->GetPlaybackPos();
 }
 
 void SoundEmitter::SetPlaybackTime(float Time)
@@ -708,27 +708,27 @@ float SoundEmitter::GetPlaybackTime() const
 {
     AudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
-    return (float)Channel->GetPlaybackPos() / device->GetSampleRate();
+    return (float)m_Channel->GetPlaybackPos() / device->GetSampleRate();
 }
 
 void SoundEmitter::SetMuted(bool _bMuted)
 {
-    bMuted = _bMuted;
+    m_bMuted = _bMuted;
 }
 
 bool SoundEmitter::IsMuted() const
 {
-    return bMuted;
+    return m_bMuted;
 }
 
 //bool SoundEmitter::IsVirtual() const
 //{
-//    return Channel->bVirtual; // TODO: Needs synchronization
+//    return m_Channel->bVirtual; // TODO: Needs synchronization
 //}
 
 bool SoundEmitter::IsSilent() const
 {
-    return !Resource.GetObject();
+    return !m_Resource.GetObject();
 }
 
 void SoundEmitter::SpawnSound(SoundResource* SoundResource, Float3 const& SpawnPosition, World* World, SceneComponent* Instigator, SoundSpawnInfo const* SpawnInfo)
@@ -851,7 +851,7 @@ void SoundEmitter::SpawnSound(SoundResource* SoundResource, Float3 const& SpawnP
         return;
     }
 
-    INTRUSIVE_ADD(sound, Next, Prev, OneShots, OneShotsTail);
+    INTRUSIVE_ADD(sound, Next, Prev, m_OneShots, m_OneShotsTail);
 
     sound->Channel = new AudioChannel(startFrame,
                                        -1,
@@ -871,14 +871,14 @@ void SoundEmitter::ClearOneShotSounds()
 {
     SoundOneShot* next;
 
-    for (SoundOneShot* sound = OneShots; sound; sound = next)
+    for (SoundOneShot* sound = m_OneShots; sound; sound = next)
     {
         next = sound->Next;
 
         FreeSound(sound);
     }
 
-    HK_ASSERT(OneShots == nullptr);
+    HK_ASSERT(m_OneShots == nullptr);
 }
 
 void SoundEmitter::FreeSound(SoundOneShot* Sound)
@@ -888,7 +888,7 @@ void SoundEmitter::FreeSound(SoundOneShot* Sound)
         Sound->Channel->RemoveRef();
     }
 
-    INTRUSIVE_REMOVE(Sound, Next, Prev, OneShots, OneShotsTail);
+    INTRUSIVE_REMOVE(Sound, Next, Prev, m_OneShots, m_OneShotsTail);
 
     Sound->~SoundOneShot();
 
@@ -940,6 +940,22 @@ void SoundEmitter::UpdateSound(SoundOneShot* Sound)
     }
 
     chan->Commit(Sound->ChanVolume, Sound->LocalDir, Sound->bSpatializedStereo, paused);
+}
+
+void SoundEmitter::UpdateSounds()
+{
+    SoundOneShot* next;
+
+    for (SoundOneShot* sound = m_OneShots; sound; sound = next)
+    {
+        next = sound->Next;
+        UpdateSound(sound);
+    }
+
+    for (SoundEmitter* e = m_SoundEmitters; e; e = e->GetNext())
+    {
+        e->Update();
+    }
 }
 
 void SoundOneShot::Spatialize()
@@ -1045,22 +1061,6 @@ bool SoundOneShot::IsPaused() const
     }
 
     return paused;
-}
-
-void SoundEmitter::UpdateSounds()
-{
-    SoundOneShot* next;
-
-    for (SoundOneShot* sound = OneShots; sound; sound = next)
-    {
-        next = sound->Next;
-        UpdateSound(sound);
-    }
-
-    for (SoundEmitter* e = SoundEmitters; e; e = e->GetNext())
-    {
-        e->Update();
-    }
 }
 
 HK_NAMESPACE_END

@@ -42,7 +42,7 @@ HK_END_CLASS_META()
 
 LightComponent::LightComponent()
 {
-    bCanEverTick = true;
+    m_bCanEverTick = true;
 }
 
 void LightComponent::SetEnabled(bool _Enabled)

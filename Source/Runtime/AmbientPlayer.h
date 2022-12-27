@@ -35,13 +35,13 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AAmbientPlayer : public AActor
+class Actor_AmbientPlayer : public Actor
 {
-    HK_ACTOR(AAmbientPlayer, AActor)
+    HK_ACTOR(Actor_AmbientPlayer, Actor)
 
 public:
 protected:
-    AAmbientPlayer();
+    Actor_AmbientPlayer();
 
     void Initialize(ActorInitializer& Initializer) override;
     void PreInitializeComponents() override;

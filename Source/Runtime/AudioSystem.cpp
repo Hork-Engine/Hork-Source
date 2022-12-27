@@ -57,7 +57,7 @@ AudioSystem::~AudioSystem()
     LOG("Deinitializing audio system...\n");
 }
 
-void AudioSystem::Update(APlayerController* _Controller, float _TimeStep)
+void AudioSystem::Update(Actor_PlayerController* _Controller, float _TimeStep)
 {
     SceneComponent*  audioListener = _Controller ? _Controller->GetAudioListener() : nullptr;
     AudioParameters* audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;

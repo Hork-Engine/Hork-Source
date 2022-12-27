@@ -38,7 +38,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AActor;
+class Actor;
 class World;
 class Level;
 class Texture;
@@ -60,13 +60,13 @@ enum VSD_PRIMITIVE
 
 enum VSD_QUERY_MASK : uint32_t
 {
-    VSD_QUERY_MASK_VISIBLE   = 0x00000001,
+    VSD_QUERY_MASK_VISIBLE = 0x00000001,
     VSD_QUERY_MASK_INVISIBLE = 0x00000002,
 
-    VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS   = 0x00000004,
+    VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS = 0x00000004,
     VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS = 0x00000008,
 
-    VSD_QUERY_MASK_SHADOW_CAST    = 0x00000010,
+    VSD_QUERY_MASK_SHADOW_CAST = 0x00000010,
     VSD_QUERY_MASK_NO_SHADOW_CAST = 0x00000020,
 
     VSD_QUERY_LIGHTMAP_EXPERIMENTAL = 0x00000040,
@@ -83,16 +83,16 @@ enum VSD_QUERY_MASK : uint32_t
     VSD_QUERY_MASK_RESERVED9 = 0x00008000,
 
     // User filter mask
-    VSD_QUERY_MASK_USER0  = 0x00010000,
-    VSD_QUERY_MASK_USER1  = 0x00020000,
-    VSD_QUERY_MASK_USER2  = 0x00040000,
-    VSD_QUERY_MASK_USER3  = 0x00080000,
-    VSD_QUERY_MASK_USER4  = 0x00100000,
-    VSD_QUERY_MASK_USER5  = 0x00200000,
-    VSD_QUERY_MASK_USER6  = 0x00400000,
-    VSD_QUERY_MASK_USER7  = 0x00800000,
-    VSD_QUERY_MASK_USER8  = 0x01000000,
-    VSD_QUERY_MASK_USER9  = 0x02000000,
+    VSD_QUERY_MASK_USER0 = 0x00010000,
+    VSD_QUERY_MASK_USER1 = 0x00020000,
+    VSD_QUERY_MASK_USER2 = 0x00040000,
+    VSD_QUERY_MASK_USER3 = 0x00080000,
+    VSD_QUERY_MASK_USER4 = 0x00100000,
+    VSD_QUERY_MASK_USER5 = 0x00200000,
+    VSD_QUERY_MASK_USER6 = 0x00400000,
+    VSD_QUERY_MASK_USER7 = 0x00800000,
+    VSD_QUERY_MASK_USER8 = 0x01000000,
+    VSD_QUERY_MASK_USER9 = 0x02000000,
     VSD_QUERY_MASK_USER10 = 0x04000000,
     VSD_QUERY_MASK_USER11 = 0x08000000,
     VSD_QUERY_MASK_USER12 = 0x10000000,
@@ -106,7 +106,7 @@ HK_FLAG_ENUM_OPERATORS(VSD_QUERY_MASK)
 enum VISIBILITY_GROUP : uint32_t
 {
     VISIBILITY_GROUP_DEFAULT = 1,
-    VISIBILITY_GROUP_SKYBOX  = 2,
+    VISIBILITY_GROUP_SKYBOX = 2,
     VISIBILITY_GROUP_TERRAIN = 4,
 
     VISIBILITY_GROUP_ALL = ~0u
@@ -136,28 +136,28 @@ enum SURFACE_FLAGS : uint8_t
 
 HK_FLAG_ENUM_OPERATORS(SURFACE_FLAGS)
 
-using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(PrimitiveDef const*            Self,
-                                            Float3 const&                   RayStart,
-                                            Float3 const&                   RayEnd,
+using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(PrimitiveDef const* Self,
+                                            Float3 const& RayStart,
+                                            Float3 const& RayEnd,
                                             TPodVector<TriangleHitResult>& Hits);
 
 using PRIMITIVE_RAYCAST_CLOSEST_CALLBACK = bool (*)(PrimitiveDef const* Self,
-                                                    Float3 const&        RayStart,
-                                                    Float3 const&        RayEnd,
-                                                    TriangleHitResult&  Hit,
-                                                    MeshVertex const**  pVertices);
+                                                    Float3 const& RayStart,
+                                                    Float3 const& RayEnd,
+                                                    TriangleHitResult& Hit,
+                                                    MeshVertex const** pVertices);
 
-using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(PrimitiveDef*       Self,
-                                                   Level const*        LightingLevel,
-                                                   MeshVertex const*   pVertices,
+using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(PrimitiveDef* Self,
+                                                   Level const* LightingLevel,
+                                                   MeshVertex const* pVertices,
                                                    MeshVertexUV const* pLightmapVerts,
-                                                   int                  LightmapBlock,
-                                                   unsigned int const*  pIndices,
-                                                   Float3 const&        HitLocation,
-                                                   Float2 const&        HitUV,
-                                                   Float3*              Vertices,
-                                                   Float2&              TexCoord,
-                                                   Float3&              LightmapSample);
+                                                   int LightmapBlock,
+                                                   unsigned int const* pIndices,
+                                                   Float3 const& HitLocation,
+                                                   Float2 const& HitUV,
+                                                   Float3* Vertices,
+                                                   Float2& TexCoord,
+                                                   Float3& LightmapSample);
 struct PrimitiveDef
 {
     /** Owner component */
@@ -216,7 +216,8 @@ struct PrimitiveDef
     /** Is primitive outdoor/indoor */
     bool bIsOutdoor : 1;
 
-    PrimitiveDef() : bIsOutdoor(false) {}
+    PrimitiveDef() :
+        bIsOutdoor(false) {}
 
     void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
     {
@@ -342,8 +343,8 @@ struct BoxHitResult
 
     Float3 LocationMin;
     Float3 LocationMax;
-    float  DistanceMin;
-    float  DistanceMax;
+    float DistanceMin;
+    float DistanceMax;
 
     void Clear()
     {
@@ -461,8 +462,8 @@ struct WorldRaycastFilter
 
     WorldRaycastFilter()
     {
-        VisibilityMask  = VISIBILITY_GROUP_ALL;
-        QueryMask       = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        VisibilityMask = VISIBILITY_GROUP_ALL;
+        QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         bSortByDistance = true;
     }
 };
@@ -689,9 +690,9 @@ struct VisibilityAreaDef
 struct VisibilitySystemPVS
 {
     byte const* Visdata;
-    size_t      VisdataSize;
-    int         ClustersCount;
-    bool        bCompressedVisData;
+    size_t VisdataSize;
+    int ClustersCount;
+    bool bCompressedVisData;
 };
 
 class VisibilityLevel;
@@ -699,23 +700,23 @@ class VisibilityLevel;
 struct VisibilitySystemCreateInfo
 {
     VisibilityAreaDef* Areas{};
-    int                NumAreas{};
+    int NumAreas{};
 
     int const* AreaSurfaces{};
-    int        NumAreaSurfaces{};
+    int NumAreaSurfaces{};
 
     PortalDef const* Portals{};
-    int             PortalsCount{};
-    Float3 const*     HullVertices{};
+    int PortalsCount{};
+    Float3 const* HullVertices{};
 
     BinarySpacePlane const* Planes{};
-    int                     NumPlanes{};
+    int NumPlanes{};
 
     BinarySpaceNodeDef const* Nodes{};
-    int                       NumNodes{};
+    int NumNodes{};
 
     BinarySpaceLeafDef const* Leafs{};
-    int                       NumLeafs{};
+    int NumLeafs{};
 
     VisibilitySystemPVS const* PVS{};
 
@@ -734,12 +735,15 @@ struct PortalScissor
 
 struct PortalStack
 {
-    enum { MAX_CULL_PLANES = 5 };
+    enum
+    {
+        MAX_CULL_PLANES = 5
+    };
 
-    PlaneF            AreaFrustum[MAX_CULL_PLANES];
-    int               PlanesCount;
+    PlaneF AreaFrustum[MAX_CULL_PLANES];
+    int PlanesCount;
     PortalLink const* Portal;
-    PortalScissor     Scissor;
+    PortalScissor Scissor;
 };
 
 class VisibilityLevel;
@@ -791,24 +795,24 @@ public:
 
     bool RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    TPodVector<VisibilityLevel*> const& GetLevels() const { return Levels; }
+    TPodVector<VisibilityLevel*> const& GetLevels() const { return m_Levels; }
 
-    static TPoolAllocator<PrimitiveDef>  PrimitivePool;
+    static TPoolAllocator<PrimitiveDef> PrimitivePool;
     static TPoolAllocator<PrimitiveLink> PrimitiveLinkPool;
 
     static PrimitiveDef* AllocatePrimitive();
-    static void          DeallocatePrimitive(PrimitiveDef* Primitive);
+    static void DeallocatePrimitive(PrimitiveDef* Primitive);
 
 private:
     /** Unlink primitive from the level areas */
     void UnlinkPrimitive(PrimitiveDef* Primitive);
 
-    TPodVector<VisibilityLevel*> Levels;
+    TPodVector<VisibilityLevel*> m_Levels;
 
-    PrimitiveDef* PrimitiveList          = nullptr;
-    PrimitiveDef* PrimitiveListTail      = nullptr;
-    PrimitiveDef* PrimitiveDirtyList     = nullptr;
-    PrimitiveDef* PrimitiveDirtyListTail = nullptr;
+    PrimitiveDef* m_PrimitiveList = nullptr;
+    PrimitiveDef* m_PrimitiveListTail = nullptr;
+    PrimitiveDef* m_PrimitiveDirtyList = nullptr;
+    PrimitiveDef* m_PrimitiveDirtyListTail = nullptr;
 };
 
 class VisibilityLevel : public RefCounted
@@ -821,13 +825,13 @@ public:
     virtual ~VisibilityLevel();
 
     /** Get level indoor bounding box */
-    BvAxisAlignedBox const& GetIndoorBounds() const { return IndoorBounds; }
+    BvAxisAlignedBox const& GetIndoorBounds() const { return m_IndoorBounds; }
 
     /** Get level areas */
-    TPodVector<VisArea> const& GetAreas() const { return Areas; }
+    TPodVector<VisArea> const& GetAreas() const { return m_Areas; }
 
     /** Get level outdoor area */
-    VisArea const* GetOutdoorArea() const { return pOutdoorArea; }
+    VisArea const* GetOutdoorArea() const { return m_pOutdoorArea; }
 
     /** Find level leaf */
     int FindLeaf(Float3 const& _Position);
@@ -839,7 +843,7 @@ public:
     int MarkLeafs(int _ViewLeaf);
 
     /** BSP leafs */
-    ArrayOfLeafs const& GetLeafs() const { return Leafs; }
+    ArrayOfLeafs const& GetLeafs() const { return m_Leafs; }
 
     /** Query vis areas by bounding box */
     void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
@@ -909,27 +913,27 @@ private:
         Float3 RayEnd;
         Float3 RayDir;
         Float3 InvRayDir;
-        float  RayLength;
-        float  HitDistanceMin;
-        float  HitDistanceMax; // only for bounds test
+        float RayLength;
+        float HitDistanceMin;
+        float HitDistanceMax; // only for bounds test
 
         // For closest raycast
         HIT_PROXY_TYPE HitProxyType;
         union
         {
             PrimitiveDef* HitPrimitive;
-            SurfaceDef*   HitSurface;
+            SurfaceDef* HitSurface;
         };
-        Float3              HitLocation;
-        Float2              HitUV;
-        Float3              HitNormal;
-        MeshVertex const*   pVertices;
+        Float3 HitLocation;
+        Float2 HitUV;
+        Float3 HitNormal;
+        MeshVertex const* pVertices;
         MeshVertexUV const* pLightmapVerts;
-        int                 LightmapBlock;
-        Level const*        LightingLevel;
-        unsigned int        Indices[3];
-        MaterialInstance*   Material;
-        int                 NumHits; // For debug
+        int LightmapBlock;
+        Level const* LightingLevel;
+        unsigned int Indices[3];
+        MaterialInstance* Material;
+        int NumHits; // For debug
 
         bool bClosest;
 
@@ -951,73 +955,73 @@ private:
     void LevelRaycastPortals_r(VisArea* Area);
     void LevelRaycastBoundsPortals_r(VisArea* Area);
 
-    VisibilityLevel* PersistentLevel{};
+    VisibilityLevel* m_PersistentLevel{};
 
     /** Level portals */
-    TPodVector<VisPortal> Portals;
+    TPodVector<VisPortal> m_Portals;
 
-    TVector<ConvexHull> PortalHulls;
+    TVector<ConvexHull> m_PortalHulls;
 
     /** Links between the portals and areas */
-    TPodVector<PortalLink> AreaLinks;
+    TPodVector<PortalLink> m_AreaLinks;
 
     /** Level indoor areas */
-    TPodVector<VisArea> Areas;
+    TPodVector<VisArea> m_Areas;
 
     /** Level outdoor area */
-    VisArea OutdoorArea;
-    VisArea* pOutdoorArea;
+    VisArea m_OutdoorArea;
+    VisArea* m_pOutdoorArea;
 
-    BvAxisAlignedBox IndoorBounds;
+    BvAxisAlignedBox m_IndoorBounds;
 
     /** Node split planes */
-    TPodVector<BinarySpacePlane> SplitPlanes;
+    TPodVector<BinarySpacePlane> m_SplitPlanes;
 
     /** BSP nodes */
-    ArrayOfNodes Nodes;
+    ArrayOfNodes m_Nodes;
 
     /** BSP leafs */
-    ArrayOfLeafs Leafs;
+    ArrayOfLeafs m_Leafs;
 
     /** PVS data */
-    byte* Visdata = nullptr;
+    byte* m_Visdata = nullptr;
 
-    byte* DecompressedVisData = nullptr;
+    byte* m_DecompressedVisData = nullptr;
 
     /** Is PVS data compressed or not (ZRLE) */
-    bool bCompressedVisData = false;
+    bool m_bCompressedVisData = false;
 
     /** Count of a clusters in PVS data */
-    int PVSClustersCount = 0;
+    int m_PVSClustersCount = 0;
 
     /** Visibility method */
-    LEVEL_VISIBILITY_METHOD VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
+    LEVEL_VISIBILITY_METHOD m_VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
 
     /** Node visitor mark */
-    int ViewMark = 0;
+    int m_ViewMark = 0;
 
     /** Cluster index for view origin */
-    int ViewCluster = -1;
+    int m_ViewCluster = -1;
 
     /** Surface to area attachments */
-    TPodVector<int> AreaSurfaces;
+    TPodVector<int> m_AreaSurfaces;
 
     /** Baked surface data */
-    TRef<BrushModel> Model;
+    TRef<BrushModel> m_Model;
 
     // Visibility query temp vars:
-    static int               VisQueryMarker;
-    int                      CachedSignBits[PortalStack::MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
-    PlaneF*                  ViewFrustum;
-    int                      ViewFrustumPlanes;
-    int                      NodeViewMark;
-    VisibilityQueryContext* pQueryContext;
-    VisibilityQueryResult*  pQueryResult;
+    static int m_VisQueryMarker;
+    int m_CachedSignBits[PortalStack::MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
+    PlaneF* m_ViewFrustum;
+    int m_ViewFrustumPlanes;
+    int m_NodeViewMark;
+    VisibilityQueryContext* m_pQueryContext;
+    VisibilityQueryResult* m_pQueryResult;
 
     //Raycast temp vars
-    VisRaycast*               pRaycast;
-    WorldRaycastResult*       pRaycastResult;
-    TPodVector<BoxHitResult>* pBoundsRaycastResult;
+    VisRaycast* m_pRaycast;
+    WorldRaycastResult* m_pRaycastResult;
+    TPodVector<BoxHitResult>* m_pBoundsRaycastResult;
 };
 
 HK_NAMESPACE_END

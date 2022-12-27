@@ -59,14 +59,14 @@ public:
 
 /**
 
-APlayerController
+Actor_PlayerController
 
 Base class for players
 
 */
-class APlayerController : public AController
+class Actor_PlayerController : public Actor_Controller
 {
-    HK_ACTOR(APlayerController, AController)
+    HK_ACTOR(Actor_PlayerController, Actor_Controller)
 
 public:
     /** Player viewport. */
@@ -76,7 +76,7 @@ public:
     void SetAudioListener(SceneComponent* _AudioListener);
 
     /** Set HUD actor */
-    void SetHUD(AHUD* _HUD);
+    void SetHUD(Actor_HUD* _HUD);
 
     /** Set world render view */
     void SetRenderView(WorldRenderView* renderView);
@@ -102,7 +102,7 @@ public:
     SceneComponent* GetAudioListener();
 
     /** Get HUD actor */
-    AHUD* GetHUD() const { return m_HUD; }
+    Actor_HUD* GetHUD() const { return m_HUD; }
 
     /** Get world render view */
     WorldRenderView* GetRenderView() { return m_RenderView; }
@@ -120,15 +120,15 @@ public:
     int GetPlayerIndex() const;
 
     /** Primary audio listener */
-    static APlayerController* GetCurrentAudioListener();
+    static Actor_PlayerController* GetCurrentAudioListener();
 
     virtual void UpdatePawnCamera();
 
 protected:
     InputComponent* m_InputComponent{};
 
-    APlayerController() = default;
-    ~APlayerController();
+    Actor_PlayerController() = default;
+    ~Actor_PlayerController();
 
     void Initialize(ActorInitializer& Initializer);
 
@@ -137,15 +137,15 @@ protected:
 private:
     void TogglePause();
 
-    TRef<WorldRenderView>      m_RenderView;
-    TRef<AudioParameters>     m_AudioParameters;
-    TWeakRef<SceneComponent>  m_AudioListener;
-    TWeakRef<AHUD>             m_HUD;
-    float                      m_ViewportAspectRatio{};
-    int                        m_ViewportWidth{};
-    int                        m_ViewportHeight{};
+    TRef<WorldRenderView> m_RenderView;
+    TRef<AudioParameters> m_AudioParameters;
+    TWeakRef<SceneComponent> m_AudioListener;
+    TWeakRef<Actor_HUD> m_HUD;
+    float m_ViewportAspectRatio{};
+    int m_ViewportWidth{};
+    int m_ViewportHeight{};
 
-    static APlayerController* m_CurrentAudioListener;
+    static Actor_PlayerController* m_CurrentAudioListener;
 };
 
 HK_NAMESPACE_END

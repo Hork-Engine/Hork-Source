@@ -37,11 +37,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_CLASS_META(APlayerController)
+HK_CLASS_META(Actor_PlayerController)
 
-APlayerController* APlayerController::m_CurrentAudioListener = nullptr;
+Actor_PlayerController* Actor_PlayerController::m_CurrentAudioListener = nullptr;
 
-APlayerController::~APlayerController()
+Actor_PlayerController::~Actor_PlayerController()
 {
     if (m_CurrentAudioListener == this)
     {
@@ -49,7 +49,7 @@ APlayerController::~APlayerController()
     }
 }
 
-void APlayerController::Initialize(ActorInitializer& Initializer)
+void Actor_PlayerController::Initialize(ActorInitializer& Initializer)
 {
     Super::Initialize(Initializer);
 
@@ -61,11 +61,11 @@ void APlayerController::Initialize(ActorInitializer& Initializer)
     }
 }
 
-void APlayerController::OnPawnChanged()
+void Actor_PlayerController::OnPawnChanged()
 {
     m_InputComponent->UnbindAll();
 
-    m_InputComponent->BindAction("Pause", IA_PRESS, this, &APlayerController::TogglePause, true);
+    m_InputComponent->BindAction("Pause", IA_PRESS, this, &Actor_PlayerController::TogglePause, true);
 
     if (m_Pawn)
     {
@@ -81,12 +81,12 @@ void APlayerController::OnPawnChanged()
     UpdatePawnCamera();
 }
 
-void APlayerController::SetAudioListener(SceneComponent* _AudioListener)
+void Actor_PlayerController::SetAudioListener(SceneComponent* _AudioListener)
 {
     m_AudioListener = _AudioListener;
 }
 
-void APlayerController::SetHUD(AHUD* _HUD)
+void Actor_PlayerController::SetHUD(Actor_HUD* _HUD)
 {
     if (m_HUD == _HUD)
     {
@@ -101,7 +101,7 @@ void APlayerController::SetHUD(AHUD* _HUD)
     if (m_HUD)
     {
         m_HUD->m_OwnerPlayer = nullptr;
-        m_HUD->m_OwnerPawn   = nullptr;
+        m_HUD->m_OwnerPawn = nullptr;
     }
 
     m_HUD = _HUD;
@@ -109,46 +109,46 @@ void APlayerController::SetHUD(AHUD* _HUD)
     if (m_HUD)
     {
         m_HUD->m_OwnerPlayer = this;
-        m_HUD->m_OwnerPawn   = m_Pawn;
+        m_HUD->m_OwnerPawn = m_Pawn;
     }
 }
 
-void APlayerController::SetRenderView(WorldRenderView* renderView)
+void Actor_PlayerController::SetRenderView(WorldRenderView* renderView)
 {
     m_RenderView = renderView;
 }
 
-void APlayerController::SetAudioParameters(AudioParameters* _AudioParameters)
+void Actor_PlayerController::SetAudioParameters(AudioParameters* _AudioParameters)
 {
     m_AudioParameters = _AudioParameters;
 }
 
-void APlayerController::SetInputMappings(InputMappings* _InputMappings)
+void Actor_PlayerController::SetInputMappings(InputMappings* _InputMappings)
 {
     m_InputComponent->SetInputMappings(_InputMappings);
 }
 
-InputMappings* APlayerController::GetInputMappings()
+InputMappings* Actor_PlayerController::GetInputMappings()
 {
     return m_InputComponent->GetInputMappings();
 }
 
-void APlayerController::SetPlayerIndex(int _ControllerId)
+void Actor_PlayerController::SetPlayerIndex(int _ControllerId)
 {
     m_InputComponent->ControllerId = _ControllerId;
 }
 
-int APlayerController::GetPlayerIndex() const
+int Actor_PlayerController::GetPlayerIndex() const
 {
     return m_InputComponent->ControllerId;
 }
 
-void APlayerController::TogglePause()
+void Actor_PlayerController::TogglePause()
 {
     GetWorld()->SetPaused(!GetWorld()->IsPaused());
 }
 
-SceneComponent* APlayerController::GetAudioListener()
+SceneComponent* Actor_PlayerController::GetAudioListener()
 {
     if (m_AudioListener)
     {
@@ -163,22 +163,22 @@ SceneComponent* APlayerController::GetAudioListener()
     return nullptr;
 }
 
-void APlayerController::SetCurrentAudioListener()
+void Actor_PlayerController::SetCurrentAudioListener()
 {
     m_CurrentAudioListener = this;
 }
 
-APlayerController* APlayerController::GetCurrentAudioListener()
+Actor_PlayerController* Actor_PlayerController::GetCurrentAudioListener()
 {
     return m_CurrentAudioListener;
 }
 
-float APlayerController::GetViewportAspectRatio() const
+float Actor_PlayerController::GetViewportAspectRatio() const
 {
     return m_ViewportAspectRatio;
 }
 
-void APlayerController::SetViewport(int w, int h)
+void Actor_PlayerController::SetViewport(int w, int h)
 {
     if (m_RenderView)
     {
@@ -187,7 +187,7 @@ void APlayerController::SetViewport(int w, int h)
 
     if (m_ViewportWidth != w || m_ViewportHeight != h)
     {
-        m_ViewportWidth  = w;
+        m_ViewportWidth = w;
         m_ViewportHeight = h;
 
         if (w > 0 && h > 0)
@@ -199,7 +199,7 @@ void APlayerController::SetViewport(int w, int h)
     }
 }
 
-void APlayerController::UpdatePawnCamera()
+void Actor_PlayerController::UpdatePawnCamera()
 {
     if (!m_Pawn)
     {

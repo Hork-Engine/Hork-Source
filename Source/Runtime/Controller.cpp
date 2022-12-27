@@ -33,17 +33,17 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_CLASS_META(AController)
+HK_CLASS_META(Actor_Controller)
 
-AController::AController()
+Actor_Controller::Actor_Controller()
 {}
 
-void AController::Initialize(ActorInitializer& Initializer)
+void Actor_Controller::Initialize(ActorInitializer& Initializer)
 {
     Super::Initialize(Initializer);
 }
 
-void AController::SetPawn(AActor* pNewPawn)
+void Actor_Controller::SetPawn(Actor* pNewPawn)
 {
     if (m_Pawn == pNewPawn)
     {

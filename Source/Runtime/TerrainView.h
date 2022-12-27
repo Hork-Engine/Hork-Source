@@ -82,37 +82,37 @@ public:
 
     int GetTextureSize() const
     {
-        return TextureSize;
+        return m_TextureSize;
     }
 
     size_t GetInstanceBufferStreamHandle() const
     {
-        return InstanceBufferStreamHandle;
+        return m_InstanceBufferStreamHandle;
     }
 
     size_t GetIndirectBufferStreamHandle() const
     {
-        return IndirectBufferStreamHandle;
+        return m_IndirectBufferStreamHandle;
     }
 
     int GetIndirectBufferDrawCount() const
     {
-        return IndirectBuffer.Size();
+        return m_IndirectBuffer.Size();
     }
 
     RenderCore::ITexture* GetClipmapArray() const
     {
-        return ClipmapArray;
+        return m_ClipmapArray;
     }
 
     RenderCore::ITexture* GetNormalMapArray() const
     {
-        return NormalMapArray;
+        return m_NormalMapArray;
     }
 
     float GetViewHeight() const
     {
-        return ViewHeight;
+        return m_ViewHeight;
     }
 
     void DrawDebug(DebugRenderer* InRenderer, TerrainMesh* TerrainMesh);
@@ -138,21 +138,21 @@ private:
 
     TerrainPatchInstance& AddInstance()
     {
-        return InstanceBuffer.Add();
+        return m_InstanceBuffer.Add();
     }
 
     void AddPatchInstances(TerrainPatch const& Patch, int InstanceCount)
     {
         if (InstanceCount > 0)
         {
-            RenderCore::DrawIndexedIndirectCmd& blocks = IndirectBuffer.Add();
-            blocks.IndexCountPerInstance                = Patch.IndexCount;
-            blocks.InstanceCount                        = InstanceCount;
-            blocks.StartIndexLocation                   = Patch.StartIndex;
-            blocks.BaseVertexLocation                   = Patch.BaseVertex;
-            blocks.StartInstanceLocation                = StartInstanceLocation;
+            RenderCore::DrawIndexedIndirectCmd& blocks = m_IndirectBuffer.Add();
+            blocks.IndexCountPerInstance = Patch.IndexCount;
+            blocks.InstanceCount = InstanceCount;
+            blocks.StartIndexLocation = Patch.StartIndex;
+            blocks.BaseVertexLocation = Patch.BaseVertex;
+            blocks.StartInstanceLocation = m_StartInstanceLocation;
 
-            StartInstanceLocation += InstanceCount;
+            m_StartInstanceLocation += InstanceCount;
         }
     }
 
@@ -164,43 +164,43 @@ private:
         INTERIOR_BOTTOM_RIGHT
     };
 
-    const int TextureSize;
-    const int TextureWrapMask;
-    const int GapWidth;
-    const int BlockWidth;
-    const int LodGridSize;
-    const int HalfGridSize;
+    const int m_TextureSize;
+    const int m_TextureWrapMask;
+    const int m_GapWidth;
+    const int m_BlockWidth;
+    const int m_LodGridSize;
+    const int m_HalfGridSize;
 
     TRef<Terrain> m_Terrain;
 
     /** Current lod state */
-    TerrainLodInfo LodInfo[MAX_TERRAIN_LODS];
+    TerrainLodInfo m_LodInfo[MAX_TERRAIN_LODS];
 
     /** Min viewable lod */
-    int MinViewLod;
+    int m_MinViewLod;
     /** Max viewable lod */
-    int MaxViewLod;
+    int m_MaxViewLod;
     /** Height above the terrain */
-    float ViewHeight;
+    float m_ViewHeight;
 
-    TPodVector<TerrainPatchInstance>               InstanceBuffer;
-    TPodVector<RenderCore::DrawIndexedIndirectCmd> IndirectBuffer;
+    TPodVector<TerrainPatchInstance> m_InstanceBuffer;
+    TPodVector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
 
-    TRef<RenderCore::ITexture> ClipmapArray;
-    TRef<RenderCore::ITexture> NormalMapArray;
+    TRef<RenderCore::ITexture> m_ClipmapArray;
+    TRef<RenderCore::ITexture> m_NormalMapArray;
 
-    size_t InstanceBufferStreamHandle;
-    size_t IndirectBufferStreamHandle;
+    size_t m_InstanceBufferStreamHandle;
+    size_t m_IndirectBufferStreamHandle;
 
-    int StartInstanceLocation;
+    int m_StartInstanceLocation;
 
     // Debug draw
-    void                         DrawIndexedTriStrip(TerrainVertex const* Vertices, unsigned short const* Indices, int IndexCount);
-    void                         DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex const& b, TerrainVertex const& c);
-    Float3                       VertexShader(TerrainVertex const& v);
-    DebugRenderer*              TerrainRenderer;
-    TerrainPatchInstance const* pDrawCallUniformData;
-    TPodVector<BvAxisAlignedBox> BoundingBoxes;
+    void DrawIndexedTriStrip(TerrainVertex const* Vertices, unsigned short const* Indices, int IndexCount);
+    void DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex const& b, TerrainVertex const& c);
+    Float3 VertexShader(TerrainVertex const& v);
+    DebugRenderer* m_TerrainRenderer;
+    TerrainPatchInstance const* m_pDrawCallUniformData;
+    TPodVector<BvAxisAlignedBox> m_BoundingBoxes;
 };
 
 HK_NAMESPACE_END

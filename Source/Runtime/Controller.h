@@ -36,20 +36,20 @@ HK_NAMESPACE_BEGIN
 
 /**
 
-AController
+Actor_Controller
 
 Base class for controllers
 
 */
-class AController : public AActor
+class Actor_Controller : public Actor
 {
-    HK_ACTOR(AController, AActor)
+    HK_ACTOR(Actor_Controller, Actor)
 
 public:
-    AController();
+    Actor_Controller();
 
-    void    SetPawn(AActor* pNewPawn);
-    AActor* GetPawn() const { return m_Pawn; }
+    void    SetPawn(Actor* pNewPawn);
+    Actor* GetPawn() const { return m_Pawn; }
 
 protected:
     void Initialize(ActorInitializer& Initializer) override;
@@ -58,7 +58,7 @@ protected:
     virtual void OnPawnChanged() {}
 
 protected:
-    TRef<AActor> m_Pawn;
+    TRef<Actor> m_Pawn;
 };
 
 HK_NAMESPACE_END

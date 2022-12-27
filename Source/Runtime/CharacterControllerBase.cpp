@@ -217,12 +217,12 @@ void CharacterControllerBase::SetCollisionFilter(COLLISION_MASK _CollisionGroup,
     m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void CharacterControllerBase::AddCollisionIgnoreActor(AActor* _Actor)
+void CharacterControllerBase::AddCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void CharacterControllerBase::RemoveCollisionIgnoreActor(AActor* _Actor)
+void CharacterControllerBase::RemoveCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
@@ -298,8 +298,8 @@ public:
             return true;
         }
 
-        AActor* actor0 = hitProxy0->GetOwnerActor();
-        AActor* actor1 = hitProxy1->GetOwnerActor();
+        Actor* actor0 = hitProxy0->GetOwnerActor();
+        Actor* actor1 = hitProxy1->GetOwnerActor();
 
         if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {
@@ -381,8 +381,8 @@ public:
             return true;
         }
 
-        AActor* actor0 = hitProxy0->GetOwnerActor();
-        AActor* actor1 = hitProxy1->GetOwnerActor();
+        Actor* actor0 = hitProxy0->GetOwnerActor();
+        Actor* actor1 = hitProxy1->GetOwnerActor();
 
         if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {
@@ -913,12 +913,12 @@ void ProjectileExperimental::SetCollisionFilter(COLLISION_MASK _CollisionGroup, 
     m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void ProjectileExperimental::AddCollisionIgnoreActor(AActor* _Actor)
+void ProjectileExperimental::AddCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void ProjectileExperimental::RemoveCollisionIgnoreActor(AActor* _Actor)
+void ProjectileExperimental::RemoveCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
@@ -993,8 +993,8 @@ public:
             return true;
         }
 
-        AActor* actor0 = hitProxy0->GetOwnerActor();
-        AActor* actor1 = hitProxy1->GetOwnerActor();
+        Actor* actor0 = hitProxy0->GetOwnerActor();
+        Actor* actor1 = hitProxy1->GetOwnerActor();
 
         if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {

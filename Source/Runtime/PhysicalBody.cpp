@@ -96,11 +96,11 @@ public:
 
     // Public members
 
-    PhysicalBody*  Self;
+    PhysicalBody* Self;
     mutable Float3 WorldPosition;
-    mutable Quat   WorldRotation;
-    Float3         CenterOfMass;
-    bool           bDuringMotionStateUpdate = false;
+    mutable Quat WorldRotation;
+    Float3 CenterOfMass;
+    bool bDuringMotionStateUpdate = false;
 };
 
 void PhysicalBodyMotionState::getWorldTransform(btTransform& _CenterOfMassTransform) const
@@ -121,8 +121,8 @@ void PhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMass
     }
 
     bDuringMotionStateUpdate = true;
-    WorldRotation            = btQuaternionToQuat(_CenterOfMassTransform.getRotation());
-    WorldPosition            = btVectorToFloat3(_CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3(CenterOfMass));
+    WorldRotation = btQuaternionToQuat(_CenterOfMassTransform.getRotation());
+    WorldPosition = btVectorToFloat3(_CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3(CenterOfMass));
     Self->SetWorldPosition(WorldPosition);
     Self->SetWorldRotation(WorldRotation);
     bDuringMotionStateUpdate = false;
@@ -155,43 +155,43 @@ EnumDef const* EnumDefinition<AI_NAVIGATION_BEHAVIOR>()
 template <>
 EnumDef const* EnumDefinition<COLLISION_MASK>()
 {
-    static const EnumDef EnumDef[] = { {CM_NOCOLLISION, "CM_NOCOLLISION"},
-                                        {CM_WORLD_STATIC, "CM_WORLD_STATIC"},
-                                        {CM_WORLD_DYNAMIC, "CM_WORLD_DYNAMIC"},
-                                        {CM_WORLD, "CM_WORLD"},
-                                        {CM_PAWN, "CM_PAWN"},
-                                        {CM_PROJECTILE, "CM_PROJECTILE"},
-                                        {CM_TRIGGER, "CM_TRIGGER"},
-                                        {CM_CHARACTER_CONTROLLER, "CM_CHARACTER_CONTROLLER"},
-                                        {CM_WATER, "CM_WATER"},
-                                        {CM_SOLID, "CM_SOLID"},
-                                        {CM_UNUSED7, "CM_UNUSED7"},
-                                        {CM_UNUSED8, "CM_UNUSED8" },
-                                        {CM_UNUSED9, "CM_UNUSED9"},
-                                        {CM_UNUSED10, "CM_UNUSED10"},
-                                        {CM_UNUSED11, "CM_UNUSED11"},
-                                        {CM_UNUSED12, "CM_UNUSED12"},
-                                        {CM_UNUSED13, "CM_UNUSED13"},
-                                        {CM_UNUSED14, "CM_UNUSED14"},
-                                        {CM_UNUSED15, "CM_UNUSED15"},
-                                        {CM_UNUSED16, "CM_UNUSED16"},
-                                        {CM_UNUSED17, "CM_UNUSED17"},
-                                        {CM_UNUSED18, "CM_UNUSED18"},
-                                        {CM_UNUSED19, "CM_UNUSED19"},
-                                        {CM_UNUSED20, "CM_UNUSED20"},
-                                        {CM_UNUSED21, "CM_UNUSED21"},
-                                        {CM_UNUSED22, "CM_UNUSED22"},
-                                        {CM_UNUSED23, "CM_UNUSED23"},
-                                        {CM_UNUSED24, "CM_UNUSED24"},
-                                        {CM_UNUSED25, "CM_UNUSED25"},
-                                        {CM_UNUSED26, "CM_UNUSED26"},
-                                        {CM_UNUSED27, "CM_UNUSED27"},
-                                        {CM_UNUSED28, "CM_UNUSED28"},
-                                        {CM_UNUSED29, "CM_UNUSED29"},
-                                        {CM_UNUSED30, "CM_UNUSED30"},
-                                        {CM_UNUSED31, "CM_UNUSED31"},
-                                        {CM_ALL, "CM_ALL"},
-                                        {0, nullptr}};
+    static const EnumDef EnumDef[] = {{CM_NOCOLLISION, "CM_NOCOLLISION"},
+                                      {CM_WORLD_STATIC, "CM_WORLD_STATIC"},
+                                      {CM_WORLD_DYNAMIC, "CM_WORLD_DYNAMIC"},
+                                      {CM_WORLD, "CM_WORLD"},
+                                      {CM_PAWN, "CM_PAWN"},
+                                      {CM_PROJECTILE, "CM_PROJECTILE"},
+                                      {CM_TRIGGER, "CM_TRIGGER"},
+                                      {CM_CHARACTER_CONTROLLER, "CM_CHARACTER_CONTROLLER"},
+                                      {CM_WATER, "CM_WATER"},
+                                      {CM_SOLID, "CM_SOLID"},
+                                      {CM_UNUSED7, "CM_UNUSED7"},
+                                      {CM_UNUSED8, "CM_UNUSED8"},
+                                      {CM_UNUSED9, "CM_UNUSED9"},
+                                      {CM_UNUSED10, "CM_UNUSED10"},
+                                      {CM_UNUSED11, "CM_UNUSED11"},
+                                      {CM_UNUSED12, "CM_UNUSED12"},
+                                      {CM_UNUSED13, "CM_UNUSED13"},
+                                      {CM_UNUSED14, "CM_UNUSED14"},
+                                      {CM_UNUSED15, "CM_UNUSED15"},
+                                      {CM_UNUSED16, "CM_UNUSED16"},
+                                      {CM_UNUSED17, "CM_UNUSED17"},
+                                      {CM_UNUSED18, "CM_UNUSED18"},
+                                      {CM_UNUSED19, "CM_UNUSED19"},
+                                      {CM_UNUSED20, "CM_UNUSED20"},
+                                      {CM_UNUSED21, "CM_UNUSED21"},
+                                      {CM_UNUSED22, "CM_UNUSED22"},
+                                      {CM_UNUSED23, "CM_UNUSED23"},
+                                      {CM_UNUSED24, "CM_UNUSED24"},
+                                      {CM_UNUSED25, "CM_UNUSED25"},
+                                      {CM_UNUSED26, "CM_UNUSED26"},
+                                      {CM_UNUSED27, "CM_UNUSED27"},
+                                      {CM_UNUSED28, "CM_UNUSED28"},
+                                      {CM_UNUSED29, "CM_UNUSED29"},
+                                      {CM_UNUSED30, "CM_UNUSED30"},
+                                      {CM_UNUSED31, "CM_UNUSED31"},
+                                      {CM_ALL, "CM_ALL"},
+                                      {0, nullptr}};
     return EnumDef;
 }
 
@@ -229,7 +229,7 @@ PhysicalBody::PhysicalBody()
 
 bool PhysicalBody::ShouldHaveCollisionBody() const
 {
-    if (bSoftBodySimulation)
+    if (m_bSoftBodySimulation)
     {
         return false;
     }
@@ -332,7 +332,7 @@ public:
         Float3x4 jointTransform = Self->GetWorldTransformMatrix() * Self->_GetJointTransform(HitProxy->GetJointIndex());
 
         Float3 position = jointTransform.DecomposeTranslation();
-        Quat   rotation;
+        Quat rotation;
 
         rotation.FromMatrix(jointTransform.DecomposeRotation());
 
@@ -350,8 +350,8 @@ public:
     PhysicalBody* Self;
 
     TRef<HitProxy> HitProxy;
-    Float3          OffsetPosition;
-    Quat            OffsetRotation;
+    Float3 OffsetPosition;
+    Quat OffsetRotation;
 };
 
 void PhysicalBody::ClearBoneCollisions()
@@ -361,7 +361,7 @@ void PhysicalBody::ClearBoneCollisions()
         BoneCollisionInstance* boneCollision = m_BoneCollisionInst[i];
 
         btCollisionObject* colObject = boneCollision->HitProxy->GetCollisionObject();
-        btCollisionShape*  shape     = colObject->getCollisionShape();
+        btCollisionShape* shape = colObject->getCollisionShape();
 
         boneCollision->HitProxy->Deinitialize();
 
@@ -401,15 +401,15 @@ void PhysicalBody::CreateBoneCollisions()
     m_BoneCollisionInst.Resize(boneCollisions.Size());
     for (int i = 0; i < boneCollisions.Size(); i++)
     {
-        BoneCollisionInstance*           boneCollision = new BoneCollisionInstance;
+        BoneCollisionInstance* boneCollision = new BoneCollisionInstance;
         TUniqueRef<CollisionBody> const& collisionBody = boneCollisions[i].CollisionBody;
 
         m_BoneCollisionInst[i] = boneCollision;
 
-        boneCollision->Self           = this;
+        boneCollision->Self = this;
         boneCollision->OffsetPosition = collisionBody->Position;
         boneCollision->OffsetRotation = collisionBody->Rotation;
-        boneCollision->HitProxy       = NewObj<HitProxy>();
+        boneCollision->HitProxy = NewObj<HitProxy>();
         boneCollision->HitProxy->SetCollisionMask(boneCollisions[i].CollisionMask);
         boneCollision->HitProxy->SetCollisionGroup(boneCollisions[i].CollisionGroup);
         boneCollision->HitProxy->SetJointIndex(boneCollisions[i].JointIndex);
@@ -417,7 +417,7 @@ void PhysicalBody::CreateBoneCollisions()
         btCollisionShape* shape = collisionBody->Create(m_CachedScale);
         shape->setMargin(collisionBody->Margin);
 
-        constructInfo.m_motionState    = boneCollision;
+        constructInfo.m_motionState = boneCollision;
         constructInfo.m_collisionShape = shape;
 
         int collisionFlags = btCollisionObject::CF_KINEMATIC_OBJECT;
@@ -551,7 +551,7 @@ void PhysicalBody::CreateRigidBody()
     m_MotionState->CenterOfMass = m_CollisionInstance->GetCenterOfMass();
 
     Float3 localInertia(0.0f, 0.0f, 0.0f);
-    float  mass = 0;
+    float mass = 0;
 
     if (m_MotionBehavior == MB_SIMULATED)
     {
@@ -688,7 +688,7 @@ void PhysicalBody::OnTransformDirty()
             if (m_MotionBehavior != MB_KINEMATIC)
             {
                 Float3 position = GetWorldPosition();
-                Quat   rotation = GetWorldRotation();
+                Quat rotation = GetWorldRotation();
 
                 if (rotation != m_MotionState->WorldRotation)
                 {
@@ -727,7 +727,7 @@ void PhysicalBody::OnTransformDirty()
         }
     }
 
-    //if ( SoftBody && !bUpdateSoftbodyTransform ) {
+    //if ( m_SoftBody && !bUpdateSoftbodyTransform ) {
     //    if ( !PrevWorldPosition.CompareEps( GetWorldPosition(), PHYS_COMPARE_EbPSILON )
     //        || !PrevWorldRotation.CompareEps( GetWorldRotation(), PHYS_COMPARE_EPSILON ) ) {
     //        bUpdateSoftbodyTransform = true;
@@ -797,9 +797,9 @@ void PhysicalBody::SetLinearVelocity(Float3 const& _Velocity)
         }
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setVelocity(btVectorToFloat3(_Velocity));
+        m_SoftBody->setVelocity(btVectorToFloat3(_Velocity));
         if (_Velocity != Float3::Zero())
         {
             ActivatePhysics();
@@ -818,9 +818,9 @@ void PhysicalBody::AddLinearVelocity(Float3 const& _Velocity)
         }
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->addVelocity(btVectorToFloat3(_Velocity));
+        m_SoftBody->addVelocity(btVectorToFloat3(_Velocity));
         if (_Velocity != Float3::Zero())
         {
             ActivatePhysics();
@@ -919,9 +919,9 @@ void PhysicalBody::SetFriction(float _Friction)
         m_RigidBody->setFriction(_Friction);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setFriction(_Friction);
+        m_SoftBody->setFriction(_Friction);
     }
 
     m_Friction = _Friction;
@@ -934,9 +934,9 @@ void PhysicalBody::SetAnisotropicFriction(Float3 const& _Friction)
         m_RigidBody->setAnisotropicFriction(btVectorToFloat3(_Friction));
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setAnisotropicFriction(btVectorToFloat3(_Friction));
+        m_SoftBody->setAnisotropicFriction(btVectorToFloat3(_Friction));
     }
 
     m_AnisotropicFriction = _Friction;
@@ -949,9 +949,9 @@ void PhysicalBody::SetRollingFriction(float _Friction)
         m_RigidBody->setRollingFriction(_Friction);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setRollingFriction(_Friction);
+        m_SoftBody->setRollingFriction(_Friction);
     }
 
     m_RollingFriction = _Friction;
@@ -964,9 +964,9 @@ void PhysicalBody::SetRestitution(float _Restitution)
         m_RigidBody->setRestitution(_Restitution);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setRestitution(_Restitution);
+        m_SoftBody->setRestitution(_Restitution);
     }
 
     m_Restitution = _Restitution;
@@ -979,9 +979,9 @@ void PhysicalBody::SetContactProcessingThreshold(float _Threshold)
         m_RigidBody->setContactProcessingThreshold(_Threshold);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setContactProcessingThreshold(_Threshold);
+        m_SoftBody->setContactProcessingThreshold(_Threshold);
     }
 
     m_ContactProcessingThreshold = _Threshold;
@@ -996,9 +996,9 @@ void PhysicalBody::SetCcdRadius(float _Radius)
         m_RigidBody->setCcdSweptSphereRadius(m_CcdRadius);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setCcdSweptSphereRadius(m_CcdRadius);
+        m_SoftBody->setCcdSweptSphereRadius(m_CcdRadius);
     }
 }
 
@@ -1011,9 +1011,9 @@ void PhysicalBody::SetCcdMotionThreshold(float _Threshold)
         m_RigidBody->setCcdMotionThreshold(m_CcdMotionThreshold);
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->setCcdMotionThreshold(m_CcdMotionThreshold);
+        m_SoftBody->setCcdMotionThreshold(m_CcdMotionThreshold);
     }
 }
 
@@ -1117,9 +1117,9 @@ void PhysicalBody::ActivatePhysics()
         }
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->activate(true);
+        m_SoftBody->activate(true);
     }
 }
 
@@ -1130,9 +1130,9 @@ bool PhysicalBody::IsPhysicsActive() const
         return m_RigidBody->isActive();
     }
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        return SoftBody->isActive();
+        return m_SoftBody->isActive();
     }
 
     return false;
@@ -1350,12 +1350,12 @@ void PhysicalBody::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_
     m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void PhysicalBody::AddCollisionIgnoreActor(AActor* _Actor)
+void PhysicalBody::AddCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void PhysicalBody::RemoveCollisionIgnoreActor(AActor* _Actor)
+void PhysicalBody::RemoveCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
@@ -1365,7 +1365,7 @@ void PhysicalBody::CollisionContactQuery(TPodVector<HitProxy*>& _Result) const
     m_HitProxy->CollisionContactQuery(_Result);
 }
 
-void PhysicalBody::CollisionContactQueryActor(TPodVector<AActor*>& _Result) const
+void PhysicalBody::CollisionContactQueryActor(TPodVector<Actor*>& _Result) const
 {
     m_HitProxy->CollisionContactQueryActor(_Result);
 }
@@ -1506,7 +1506,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
         for (BoneCollisionInstance* boneCollision : m_BoneCollisionInst)
         {
             btCollisionObject* colObject = boneCollision->HitProxy->GetCollisionObject();
-            btCollisionShape*  shape     = colObject->getCollisionShape();
+            btCollisionShape* shape = colObject->getCollisionShape();
 
             shape->getAabb(colObject->getWorldTransform(), mins, maxs);
 
@@ -1594,7 +1594,7 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
     }
 
 
-    TVector<Float3>       collisionVertices;
+    TVector<Float3> collisionVertices;
     TVector<unsigned int> collisionIndices;
 
     GatherCollisionGeometry(collisionVertices, collisionIndices);
@@ -1602,7 +1602,7 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
     if (collisionIndices.IsEmpty())
     {
         // Try to get from mesh
-        MeshComponent const * mesh = Upcast<MeshComponent>(this);
+        MeshComponent const* mesh = Upcast<MeshComponent>(this);
 
         if (mesh && !mesh->IsSkinnedMesh())
         {
@@ -1613,11 +1613,11 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
             {
                 Float3x4 const& worldTransform = mesh->GetWorldTransformMatrix();
 
-                MeshVertex const*  srcVertices = indexedMesh->GetVertices();
-                unsigned int const* srcIndices  = indexedMesh->GetIndices();
+                MeshVertex const* srcVertices = indexedMesh->GetVertices();
+                unsigned int const* srcIndices = indexedMesh->GetIndices();
 
-                int firstVertex   = Vertices.Size();
-                int firstIndex    = Indices.Size();
+                int firstVertex = Vertices.Size();
+                int firstIndex = Indices.Size();
                 int firstTriangle = Indices.Size() / 3;
 
                 // indexCount may be different from indexedMesh->GetIndexCount()
@@ -1631,8 +1631,8 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
                 Indices.Resize(firstIndex + indexCount);
                 WalkableTriangles.Resize(firstTriangle + indexCount / 3);
 
-                Float3*       pVertices = Vertices.ToPtr() + firstVertex;
-                unsigned int* pIndices  = Indices.ToPtr() + firstIndex;
+                Float3* pVertices = Vertices.ToPtr() + firstVertex;
+                unsigned int* pIndices = Indices.ToPtr() + firstIndex;
 
                 for (int i = 0; i < indexedMesh->GetVertexCount(); i++)
                 {
@@ -1643,7 +1643,7 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
                 {
                     // Clip triangles
                     unsigned int i0, i1, i2;
-                    int          triangleNum = 0;
+                    int triangleNum = 0;
                     for (IndexedMeshSubpart const* subpart : indexedMesh->GetSubparts())
                     {
                         const int numTriangles = subpart->GetIndexCount() / 3;
@@ -1699,21 +1699,21 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
     }
     else
     {
-        Float3 const*       srcVertices = collisionVertices.ToPtr();
-        unsigned int const* srcIndices  = collisionIndices.ToPtr();
+        Float3 const* srcVertices = collisionVertices.ToPtr();
+        unsigned int const* srcIndices = collisionIndices.ToPtr();
 
-        int firstVertex   = Vertices.Size();
-        int firstIndex    = Indices.Size();
+        int firstVertex = Vertices.Size();
+        int firstIndex = Indices.Size();
         int firstTriangle = Indices.Size() / 3;
-        int vertexCount   = collisionVertices.Size();
-        int indexCount    = collisionIndices.Size();
+        int vertexCount = collisionVertices.Size();
+        int indexCount = collisionIndices.Size();
 
         Vertices.Resize(firstVertex + vertexCount);
         Indices.Resize(firstIndex + indexCount);
         WalkableTriangles.Resize(firstTriangle + indexCount / 3);
 
-        Float3*       pVertices = Vertices.ToPtr() + firstVertex;
-        unsigned int* pIndices  = Indices.ToPtr() + firstIndex;
+        Float3* pVertices = Vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = Indices.ToPtr() + firstIndex;
 
         Platform::Memcpy(pVertices, srcVertices, vertexCount * sizeof(Float3));
 
@@ -1721,8 +1721,8 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
         {
             // Clip triangles
             unsigned int i0, i1, i2;
-            const int    numTriangles = indexCount / 3;
-            int          triangleNum  = 0;
+            const int numTriangles = indexCount / 3;
+            int triangleNum = 0;
             for (int i = 0; i < numTriangles; i++)
             {
                 i0 = firstVertex + srcIndices[i * 3 + 0];

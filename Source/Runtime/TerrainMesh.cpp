@@ -120,11 +120,11 @@ TerrainMesh::TerrainMesh(int InTextureSize)
 
     HK_ASSERT(IsPowerOfTwo(InTextureSize));
 
-    const int BlockWidth          = InTextureSize / 4 - 1;
-    const int GapWidth            = 2;
+    const int BlockWidth = InTextureSize / 4 - 1;
+    const int GapWidth = 2;
     const int CrackTrianglesCount = (BlockWidth * 4 + GapWidth) / 2;
 
-    TextureSize = InTextureSize;
+    m_TextureSize = InTextureSize;
 
     // Blocks
     CreateTriangleStripPatch(BlockWidth, BlockWidth, blockVerts, blockIndices);
@@ -305,7 +305,7 @@ TerrainMesh::TerrainMesh(int InTextureSize)
         crackVertices.Add(MakeVertex(i * 2 + 1, j - debugOffset));
     }
     // right line
-    j           = CrackTrianglesCount * 2;
+    j = CrackTrianglesCount * 2;
     int vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
@@ -318,7 +318,7 @@ TerrainMesh::TerrainMesh(int InTextureSize)
         crackVertices.Add(MakeVertex(j + debugOffset, i * 2 + 1));
     }
     // bottom line
-    j       = CrackTrianglesCount * 2;
+    j = CrackTrianglesCount * 2;
     vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
@@ -331,7 +331,7 @@ TerrainMesh::TerrainMesh(int InTextureSize)
         crackVertices.Add(MakeVertex(j - i * 2 - 1, j + debugOffset));
     }
     // left line
-    j       = CrackTrianglesCount * 2;
+    j = CrackTrianglesCount * 2;
     vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
@@ -351,27 +351,27 @@ TerrainMesh::TerrainMesh(int InTextureSize)
 
     // Create single vertex and index buffer
 
-    VertexBuffer.Resize(blockVerts.Size() +
-                        horGapVertices.Size() +
-                        vertGapVertices.Size() +
-                        interiorTLVertices.Size() +
-                        interiorTRVertices.Size() +
-                        interiorBLVertices.Size() +
-                        interiorBRVertices.Size() +
-                        interiorFinestVertices.Size() +
-                        crackVertices.Size());
+    m_VertexBuffer.Resize(blockVerts.Size() +
+                          horGapVertices.Size() +
+                          vertGapVertices.Size() +
+                          interiorTLVertices.Size() +
+                          interiorTRVertices.Size() +
+                          interiorBLVertices.Size() +
+                          interiorBRVertices.Size() +
+                          interiorFinestVertices.Size() +
+                          crackVertices.Size());
 
-    IndexBuffer.Resize(blockIndices.Size() +
-                       horGapIndices.Size() +
-                       vertGapIndices.Size() +
-                       interiorTLIndices.Size() +
-                       interiorTRIndices.Size() +
-                       interiorBLIndices.Size() +
-                       interiorBRIndices.Size() +
-                       interiorFinestIndices.Size() +
-                       crackIndices.Size());
+    m_IndexBuffer.Resize(blockIndices.Size() +
+                         horGapIndices.Size() +
+                         vertGapIndices.Size() +
+                         interiorTLIndices.Size() +
+                         interiorTRIndices.Size() +
+                         interiorBLIndices.Size() +
+                         interiorBRIndices.Size() +
+                         interiorFinestIndices.Size() +
+                         crackIndices.Size());
 
-    int firstVert  = 0;
+    int firstVert = 0;
     int firstIndex = 0;
 
     auto AddPatch = [&](TerrainPatch& Patch, TVector<TerrainVertex> const& VB, TVector<unsigned short> const& IB)
@@ -379,37 +379,37 @@ TerrainMesh::TerrainMesh(int InTextureSize)
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;
         Patch.IndexCount = IB.Size();
-        Platform::Memcpy(VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof(TerrainVertex));
+        Platform::Memcpy(m_VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof(TerrainVertex));
         firstVert += VB.Size();
-        Platform::Memcpy(IndexBuffer.ToPtr() + firstIndex, IB.ToPtr(), IB.Size() * sizeof(unsigned short));
+        Platform::Memcpy(m_IndexBuffer.ToPtr() + firstIndex, IB.ToPtr(), IB.Size() * sizeof(unsigned short));
         firstIndex += IB.Size();
     };
 
-    AddPatch(BlockPatch, blockVerts, blockIndices);
-    AddPatch(HorGapPatch, horGapVertices, horGapIndices);
-    AddPatch(VertGapPatch, vertGapVertices, vertGapIndices);
-    AddPatch(InteriorTLPatch, interiorTLVertices, interiorTLIndices);
-    AddPatch(InteriorTRPatch, interiorTRVertices, interiorTRIndices);
-    AddPatch(InteriorBLPatch, interiorBLVertices, interiorBLIndices);
-    AddPatch(InteriorBRPatch, interiorBRVertices, interiorBRIndices);
-    AddPatch(InteriorFinestPatch, interiorFinestVertices, interiorFinestIndices);
-    AddPatch(CrackPatch, crackVertices, crackIndices);
+    AddPatch(m_BlockPatch, blockVerts, blockIndices);
+    AddPatch(m_HorGapPatch, horGapVertices, horGapIndices);
+    AddPatch(m_VertGapPatch, vertGapVertices, vertGapIndices);
+    AddPatch(m_InteriorTLPatch, interiorTLVertices, interiorTLIndices);
+    AddPatch(m_InteriorTRPatch, interiorTRVertices, interiorTRIndices);
+    AddPatch(m_InteriorBLPatch, interiorBLVertices, interiorBLIndices);
+    AddPatch(m_InteriorBRPatch, interiorBRVertices, interiorBRIndices);
+    AddPatch(m_InteriorFinestPatch, interiorFinestVertices, interiorFinestIndices);
+    AddPatch(m_CrackPatch, crackVertices, crackIndices);
 
-    HK_ASSERT(firstVert == VertexBuffer.Size());
-    HK_ASSERT(firstIndex == IndexBuffer.Size());
+    HK_ASSERT(firstVert == m_VertexBuffer.Size());
+    HK_ASSERT(firstIndex == m_IndexBuffer.Size());
 
     RenderCore::IDevice* device = GEngine->GetRenderDevice();
 
     RenderCore::BufferDesc ci = {};
-    ci.bImmutableStorage       = true;
+    ci.bImmutableStorage = true;
 
-    ci.SizeInBytes = VertexBuffer.Size() * sizeof(TerrainVertex);
-    device->CreateBuffer(ci, VertexBuffer.ToPtr(), &VertexBufferGPU);
+    ci.SizeInBytes = m_VertexBuffer.Size() * sizeof(TerrainVertex);
+    device->CreateBuffer(ci, m_VertexBuffer.ToPtr(), &m_VertexBufferGPU);
 
-    ci.SizeInBytes = IndexBuffer.Size() * sizeof(unsigned short);
-    device->CreateBuffer(ci, IndexBuffer.ToPtr(), &IndexBufferGPU);
+    ci.SizeInBytes = m_IndexBuffer.Size() * sizeof(unsigned short);
+    device->CreateBuffer(ci, m_IndexBuffer.ToPtr(), &m_IndexBufferGPU);
 
-    LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", VertexBuffer.Size(), IndexBuffer.Size());
+    LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", m_VertexBuffer.Size(), m_IndexBuffer.Size());
 }
 
 HK_NAMESPACE_END

@@ -2423,28 +2423,28 @@ ScriptEngine::ScriptEngine(World* pWorld) :
     RegisterMath(m_pEngine);
 
     // Register the game object. The scripts cannot create these directly, so there is no factory function.
-    r = m_pEngine->RegisterObjectType("AActor", 0, asOBJ_REF);
+    r = m_pEngine->RegisterObjectType("Actor", 0, asOBJ_REF);
     assert(r >= 0);
-    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_ADDREF, "void f()", asMETHOD(AActor, AddRef), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectBehaviour("Actor", asBEHAVE_ADDREF, "void f()", asMETHOD(Actor, AddRef), asCALL_THISCALL);
     assert(r >= 0);
-    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_RELEASE, "void f()", asMETHOD(AActor, RemoveRef), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectBehaviour("Actor", asBEHAVE_RELEASE, "void f()", asMETHOD(Actor, RemoveRef), asCALL_THISCALL);
     assert(r >= 0);
-    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_GET_WEAKREF_FLAG, "int &f()", asMETHOD(AActor, ScriptGetWeakRefFlag), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectBehaviour("Actor", asBEHAVE_GET_WEAKREF_FLAG, "int &f()", asMETHOD(Actor, ScriptGetWeakRefFlag), asCALL_THISCALL);
     assert(r >= 0);
 
     r = m_pEngine->RegisterObjectType("ActorDamage", sizeof(ActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
     assert(r >= 0);
 
-    //r = m_pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
+    //r = m_pEngine->RegisterObjectProperty("Actor", "bool bTickEvenWhenPaused", offsetof(Actor, bTickEvenWhenPaused));
     //assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectMethod("AActor", "void Destroy()", asMETHOD(AActor, Destroy), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("Actor", "void Destroy()", asMETHOD(Actor, Destroy), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectMethod("AActor", "bool get_bPendingKill() const property", asMETHOD(AActor, IsPendingKill), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("Actor", "bool get_bPendingKill() const property", asMETHOD(Actor, IsPendingKill), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = m_pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const ActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("Actor", "void ApplyDamage(const ActorDamage& in)", asMETHOD(Actor, ApplyDamage), asCALL_THISCALL);
     assert(r >= 0);
 
 
@@ -2454,7 +2454,7 @@ ScriptEngine::ScriptEngine(World* pWorld) :
     assert(r >= 0);
     r = m_pEngine->RegisterObjectProperty("ActorDamage", "float Radius", offsetof(ActorDamage, Radius));
     assert(r >= 0);
-    //r = m_pEngine->RegisterObjectProperty("ActorDamage", "AActor@+ DamageCauser", offsetof(ActorDamage, DamageCauser));
+    //r = m_pEngine->RegisterObjectProperty("ActorDamage", "Actor@+ DamageCauser", offsetof(ActorDamage, DamageCauser));
     //assert(r >= 0);
 
 
@@ -2586,7 +2586,7 @@ ActorScript* ScriptEngine::GetActorScript(String const& ModuleName)
         return nullptr;
     }
 
-    String s = String(type->GetName()) + "@ " + type->GetName() + "(AActor @)";
+    String s = String(type->GetName()) + "@ " + type->GetName() + "(Actor @)";
 
     pScript->M_FactoryFunc = type->GetFactoryByDecl(s.CStr());
     if (pScript->M_FactoryFunc == 0)
@@ -2611,7 +2611,7 @@ ActorScript* ScriptEngine::GetActorScript(String const& ModuleName)
     return m_Scripts.Last().get();
 }
 
-asIScriptObject* ScriptEngine::CreateScriptInstance(String const& ModuleName, AActor* pActor)
+asIScriptObject* ScriptEngine::CreateScriptInstance(String const& ModuleName, Actor* pActor)
 {
     asIScriptObject* pInstance{};
 

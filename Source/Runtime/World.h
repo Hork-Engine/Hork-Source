@@ -41,7 +41,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AActor;
+class Actor;
 class ActorComponent;
 class CameraComponent;
 class WorldTimer;
@@ -59,7 +59,7 @@ struct ActorSpawnInfo
     Level* Level;
 
     /** Who spawn the actor */
-    AActor* Instigator;
+    Actor* Instigator;
 
     /** Actor spawned for editing */
     bool bInEditor;
@@ -76,17 +76,17 @@ struct ActorSpawnInfo
     ActorSpawnInfo(const char* _ActorClassName);
 
     /** Set actor template */
-    void SetTemplate(AActor const* _Template);
+    void SetTemplate(Actor const* _Template);
 
     /** Get actor template */
-    AActor const* GetTemplate() const { return Template; }
+    Actor const* GetTemplate() const { return Template; }
 
     /** Get actor meta class */
     ClassMeta const* ActorClassMeta() const { return ActorTypeClassMeta; }
 
 protected:
     /** NOTE: template type meta must match ActorTypeClassMeta */
-    AActor const* Template;
+    Actor const* Template;
 
     /** Actor type */
     ClassMeta const* ActorTypeClassMeta;
@@ -107,7 +107,7 @@ class World : public GCObject
 {
 public:
     /** Delegate to notify when any actor spawned */
-    using OnActorSpawned = TEvent<AActor*>;
+    using OnActorSpawned = TEvent<Actor*>;
     OnActorSpawned E_OnActorSpawned;
 
     /** Called on each tick after physics simulation */
@@ -147,7 +147,7 @@ public:
     void BuildNavigation(AINavigationConfig const& _NavigationConfig);
 
     /** DEPRECATED!!!! Spawn a new actor */
-    AActor* SpawnActor(ActorSpawnInfo const& _SpawnInfo);
+    Actor* SpawnActor(ActorSpawnInfo const& _SpawnInfo);
 
     /** DEPRECATED!!!! Spawn a new actor */
     template <typename ActorType>
@@ -158,32 +158,32 @@ public:
     }
 
     /** Spawn empty actor */
-    AActor* SpawnActor2(Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor2(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with definition */
-    AActor* SpawnActor2(class ActorDefinition* ActorDef, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor2(class ActorDefinition* ActorDef, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with script module */
-    AActor* SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
-    AActor* SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
     template <typename T>
-    T* SpawnActor2(Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {})
+    T* SpawnActor2(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {})
     {
-        if (T::GetClassMeta().Factory() != &AActor::Factory())
+        if (T::GetClassMeta().Factory() != &Actor::Factory())
             CriticalError("World::SpawnActor: not an actor class\n");
 
         return static_cast<T*>(SpawnActor2(&T::GetClassMeta(), SpawnTransform, Instigator, Level, bInEditor));
     }
 
     /** Clone actor */
-    AActor* SpawnActor2(AActor const* Template, Transform const& SpawnTransform = {}, AActor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor2(Actor const* Template, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Get all actors in the world */
-    TVector<AActor*> const& GetActors() const { return m_Actors; }
+    TVector<Actor*> const& GetActors() const { return m_Actors; }
 
     /** Destroy this world */
     void Destroy();
@@ -330,19 +330,19 @@ public:
     }
 
     /** Query actors in sphere */
-    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<Actor*>& Result, Float3 const& Position, float Radius, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query actors in box */
-    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, Float3 const& HalfExtents, CollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<Actor*>& Result, Float3 const& Position, Float3 const& HalfExtents, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query actors in AABB */
-    void QueryActors(TPodVector<AActor*>& Result, BvAxisAlignedBox const& BoundingBox, CollisionQueryFilter const* QueryFilter = nullptr) const
+    void QueryActors(TPodVector<Actor*>& Result, BvAxisAlignedBox const& BoundingBox, CollisionQueryFilter const* QueryFilter = nullptr) const
     {
         PhysicsSystem.QueryActors(Result, BoundingBox, QueryFilter);
     }
@@ -386,7 +386,7 @@ public:
     void DrawDebug(DebugRenderer* InRenderer);
 
     /** Same as Actor->Destroy() */
-    static void DestroyActor(AActor* Actor);
+    static void DestroyActor(Actor* Actor);
 
     /** Same as Component->Destroy() */
     static void DestroyComponent(ActorComponent* Component);
@@ -399,8 +399,8 @@ protected:
     void Tick(float TimeStep);
 
 private:
-    AActor*          m_PendingSpawnActors{};
-    AActor*          m_PendingKillActors{};
+    Actor*          m_PendingSpawnActors{};
+    Actor*          m_PendingKillActors{};
     ActorComponent* m_PendingKillComponents{};
 
 private:
@@ -409,8 +409,8 @@ private:
         ClassMeta const* ActorClass{};
         ActorDefinition* ActorDef{};
         String           ScriptModule;
-        AActor const*    Template{};
-        AActor*          Instigator{};
+        Actor const*    Template{};
+        Actor*          Instigator{};
         Level*           Level{};
         bool             bInEditor{};
     };
@@ -418,11 +418,11 @@ private:
     World();
     ~World();
 
-    AActor* _SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform = {});
+    Actor* _SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform = {});
 
-    void BroadcastActorSpawned(AActor* _SpawnedActor);
+    void BroadcastActorSpawned(Actor* _SpawnedActor);
 
-    asIScriptObject* CreateScriptModule(String const& Module, AActor* Actor);
+    asIScriptObject* CreateScriptModule(String const& Module, Actor* Actor);
 
     void UpdatePauseStatus();
     void UpdateTimers(float TimeStep);
@@ -437,16 +437,16 @@ private:
     void HandlePrePhysics(float TimeStep);
     void HandlePostPhysics(float TimeStep);
 
-    void InitializeAndPlay(AActor* Actor);
-    void CleanupActor(AActor* Actor);
+    void InitializeAndPlay(Actor* Actor);
+    void CleanupActor(Actor* Actor);
 
     void KillActors(bool bClearSpawnQueue = false);
 
-    TVector<AActor*>         m_Actors;
-    TVector<AActor*>         m_TickingActors;
-    TVector<AActor*>         m_PrePhysicsTickActors;
-    TVector<AActor*>         m_PostPhysicsTickActors;
-    TVector<AActor*>         m_LateUpdateActors;
+    TVector<Actor*>         m_Actors;
+    TVector<Actor*>         m_TickingActors;
+    TVector<Actor*>         m_PrePhysicsTickActors;
+    TVector<Actor*>         m_PostPhysicsTickActors;
+    TVector<Actor*>         m_LateUpdateActors;
     TVector<ActorComponent*> m_TickingComponents;
 
     bool m_bPauseRequest       = false;
@@ -544,7 +544,7 @@ struct TActorIterator
 
     void Next()
     {
-        AActor* a;
+        Actor* a;
         while (i < Actors.Size())
         {
             a = Actors[i++];
@@ -562,7 +562,7 @@ struct TActorIterator
     }
 
 private:
-    TVector<AActor*> const& Actors;
+    TVector<Actor*> const& Actors;
     T*                      Actor;
     int                     i;
 };
@@ -597,7 +597,7 @@ struct TActorIterator2
 
     T* Next()
     {
-        AActor* a;
+        Actor* a;
         while (i < Actors.Size())
         {
             a = Actors[i++];
@@ -614,7 +614,7 @@ struct TActorIterator2
     }
 
 private:
-    TVector<AActor*> const& Actors;
+    TVector<Actor*> const& Actors;
     int                     i;
 };
 
@@ -634,7 +634,7 @@ for ( TComponentIterator< AMyComponent > it( actor ) ; it ; ++it ) {
 template <typename T>
 struct TComponentIterator
 {
-    explicit TComponentIterator(AActor* _Actor) :
+    explicit TComponentIterator(Actor* _Actor) :
         Components(_Actor->GetComponents()), i(0)
     {
         Next();
@@ -710,7 +710,7 @@ for ( AMyComponent * component = it.First() ; component ; component = it.Next() 
 template <typename T>
 struct TComponentIterator2
 {
-    explicit TComponentIterator2(AActor* _Actor) :
+    explicit TComponentIterator2(Actor* _Actor) :
         Components(_Actor->GetComponents()), i(0)
     {
     }

@@ -44,12 +44,12 @@ class World;
 class ActorComponent;
 class SceneComponent;
 class InputComponent;
-class AController;
+class Actor_Controller;
 
 using ActorComponents = TSmallVector<ActorComponent*, 8>;
 
 #define HK_ACTOR(_Class, _SuperClass) \
-    HK_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
+    HK_FACTORY_CLASS(Actor::Factory(), _Class, _SuperClass)
 
 struct ActorInitializer
 {
@@ -65,7 +65,7 @@ struct ActorDamage
     float   Amount;
     Float3  Position;
     float   Radius;
-    AActor* DamageCauser;
+    Actor* DamageCauser;
 };
 
 constexpr float LIFESPAN_ALIVE = 0;
@@ -74,17 +74,17 @@ constexpr float LIFESPAN_DEAD  = -1;
 
 /**
 
-AActor
+Actor
 
 Base class for all actors
 
 */
-class AActor : public BaseObject
+class Actor : public BaseObject
 {
-    HK_ACTOR(AActor, BaseObject)
+    HK_ACTOR(Actor, BaseObject)
 
     friend class World;
-    friend class AController;
+    friend class Actor_Controller;
     friend class PhysicsSystem;
 
 public:
@@ -100,7 +100,7 @@ public:
     Note that ticking must be enabled (bCanEverTick set to true). */
     float LifeSpan{LIFESPAN_ALIVE};
 
-    AActor();
+    Actor();
 
     /** Get actor's world */
     World* GetWorld() const { return m_World; }
@@ -122,9 +122,9 @@ public:
     CameraComponent* GetPawnCamera() { return m_PawnCamera; }
 
     /** Actor's instigator */
-    AActor* GetInstigator() { return m_Instigator; }
+    Actor* GetInstigator() { return m_Instigator; }
 
-    AController* GetController() { return m_Controller; }
+    Actor_Controller* GetController() { return m_Controller; }
 
     /** Create component by it's class id */
     ActorComponent* CreateComponent(uint64_t _ClassId, StringView Name);
@@ -270,8 +270,8 @@ private:
     TWeakRef<Level>        m_Level;
     ActorComponents        m_Components;
     TRef<ActorDefinition>  m_pActorDef;
-    AActor*                m_Instigator{};
-    AController*           m_Controller{};
+    Actor*                m_Instigator{};
+    Actor_Controller*           m_Controller{};
     asIScriptObject*       m_ScriptModule{};
     asILockableSharedBool* m_pWeakRefFlag{};
     String                 m_Name;
@@ -284,8 +284,8 @@ private:
     /** Index in level array of actors */
     int m_IndexInLevelArrayOfActors{-1};
 
-    AActor* m_NextSpawnActor{};
-    AActor* m_NextPendingKillActor{};
+    Actor* m_NextSpawnActor{};
+    Actor* m_NextPendingKillActor{};
 
     WorldTimer* m_TimerList{};
     WorldTimer* m_TimerListTail{};

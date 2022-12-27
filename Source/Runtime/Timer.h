@@ -66,26 +66,26 @@ public:
 
     bool IsStopped() const;
 
-    float GetElapsedTime() const { return ElapsedTime; }
+    float GetElapsedTime() const { return m_ElapsedTime; }
 
-    int GetPulseIndex() const { return NumPulses - 1; }
+    int GetPulseIndex() const { return m_NumPulses - 1; }
 
     void Tick(World* World, float TimeStep);
 
 private:
     // Allow a world to register actors
     friend class World;
-    WorldTimer* NextInActor = {};
-    WorldTimer* PrevInActor = {};
+    WorldTimer* m_NextInActor = {};
+    WorldTimer* m_PrevInActor = {};
 
     // Allow an actor to keep a list of timers
-    friend class AActor;
-    WorldTimer* NextInWorld = {};
-    WorldTimer* PrevInWorld = {};
+    friend class Actor;
+    WorldTimer* m_NextInWorld = {};
+    WorldTimer* m_PrevInWorld = {};
 
-    int   State       = 0;
-    int   NumPulses   = 0;
-    float ElapsedTime = 0.0f;
+    int m_State = 0;
+    int m_NumPulses = 0;
+    float m_ElapsedTime = 0.0f;
 
     void Trigger();
 };

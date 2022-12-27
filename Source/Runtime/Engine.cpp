@@ -355,7 +355,7 @@ void Engine::Run(EntryDecl const& entryDecl)
         World::UpdateWorlds(m_FrameDurationInSeconds);
 
         // Update audio system
-        m_AudioSystem.Update(APlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
+        m_AudioSystem.Update(Actor_PlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
 
         // Poll runtime events
         m_FrameLoop->PollEvents(this);

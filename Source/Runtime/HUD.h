@@ -35,14 +35,14 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class APlayerController;
+class Actor_PlayerController;
 class Canvas;
 
-class AHUD : public AActor
+class Actor_HUD : public Actor
 {
-    HK_ACTOR(AHUD, AActor)
+    HK_ACTOR(Actor_HUD, Actor)
 
-    friend class APlayerController;
+    friend class Actor_PlayerController;
 
 public:
     void Draw(Canvas& canvas, int x, int y, int width, int height);
@@ -52,10 +52,10 @@ public:
     int GetViewportW() const { return m_ViewportW; }
     int GetViewportH() const { return m_ViewportH; }
 
-    AActor* GetOwnerPawn() const { return m_OwnerPawn; }
+    Actor* GetOwnerPawn() const { return m_OwnerPawn; }
 
 protected:
-    AHUD();
+    Actor_HUD();
 
     virtual void DrawHUD(Canvas& canvas) {}
 
@@ -65,8 +65,8 @@ private:
     int m_ViewportW = 0;
     int m_ViewportH = 0;
 
-    APlayerController* m_OwnerPlayer = nullptr;
-    AActor*            m_OwnerPawn   = nullptr;
+    Actor_PlayerController* m_OwnerPlayer = nullptr;
+    Actor*            m_OwnerPawn   = nullptr;
 };
 
 HK_NAMESPACE_END

@@ -118,7 +118,7 @@ private:
     void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
 
     TRef<IndexedMesh> m_Mesh;
-    MeshRenderViews    m_Views;
+    MeshRenderViews   m_Views;
 
     /** Transform matrix used during last rendering */
     Float3x4 m_RenderTransformMatrix[2];

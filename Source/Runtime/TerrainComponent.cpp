@@ -548,12 +548,12 @@ void TerrainComponent::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLIS
     m_HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
 
-void TerrainComponent::AddCollisionIgnoreActor(AActor* _Actor)
+void TerrainComponent::AddCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->AddCollisionIgnoreActor(_Actor);
 }
 
-void TerrainComponent::RemoveCollisionIgnoreActor(AActor* _Actor)
+void TerrainComponent::RemoveCollisionIgnoreActor(Actor* _Actor)
 {
     m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }

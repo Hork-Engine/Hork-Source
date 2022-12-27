@@ -60,7 +60,7 @@ void ActorDefinition::InitializeFromDocument(Document const& Document)
     }
 
     if (!m_ActorClass)
-        m_ActorClass = &AActor::GetClassMeta();
+        m_ActorClass = &Actor::GetClassMeta();
 
     auto* mComponents = Document.FindMember("components");
     if (mComponents)

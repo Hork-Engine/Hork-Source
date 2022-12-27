@@ -51,9 +51,9 @@ HK_CLASS_META(SoftMeshComponent)
 
 SoftMeshComponent::SoftMeshComponent()
 {
-    bSoftBodySimulation = true;
-    bCanEverTick        = true;
+    m_bCanEverTick = true;
 
+    m_bSoftBodySimulation = true;
     m_bJointsSimulatedByPhysics = true;
 
     //PrevTransformBasis.SetIdentity();
@@ -77,12 +77,12 @@ void SoftMeshComponent::DeinitializeComponent()
 
     DetachAllVertices();
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
         btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->PhysicsSystem.GetInternal());
-        physicsWorld->removeSoftBody(SoftBody);
-        delete SoftBody;
-        SoftBody = nullptr;
+        physicsWorld->removeSoftBody(m_SoftBody);
+        delete m_SoftBody;
+        m_SoftBody = nullptr;
     }
 }
 
@@ -106,11 +106,11 @@ void SoftMeshComponent::RecreateSoftBody()
 
     btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->PhysicsSystem.GetInternal());
 
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        physicsWorld->removeSoftBody(SoftBody);
-        delete SoftBody;
-        SoftBody = nullptr;
+        physicsWorld->removeSoftBody(m_SoftBody);
+        delete m_SoftBody;
+        m_SoftBody = nullptr;
         //PrevTransformBasis.SetIdentity();
         //PrevTransformOrigin.Clear();
     }
@@ -131,46 +131,46 @@ void SoftMeshComponent::RecreateSoftBody()
         vtx[i] = btVectorToFloat3(skin.OffsetMatrices[i].DecomposeTranslation());
     }
 
-    SoftBody = new btSoftBody(GetWorld()->PhysicsSystem.GetSoftBodyWorldInfo(), vtx.size(), &vtx[0], 0);
+    m_SoftBody = new btSoftBody(GetWorld()->PhysicsSystem.GetSoftBodyWorldInfo(), vtx.size(), &vtx[0], 0);
     for (SoftbodyLink const& link : softbodyLinks)
     {
-        SoftBody->appendLink(link.Indices[0], link.Indices[1]);
+        m_SoftBody->appendLink(link.Indices[0], link.Indices[1]);
     }
     for (SoftbodyFace const& face : softbodyFaces)
     {
-        SoftBody->appendFace(face.Indices[0], face.Indices[1], face.Indices[2]);
+        m_SoftBody->appendFace(face.Indices[0], face.Indices[1], face.Indices[2]);
     }
-    btSoftBody::Material* pm = SoftBody->appendMaterial();
+    btSoftBody::Material* pm = m_SoftBody->appendMaterial();
     pm->m_kLST               = LinearStiffness;
     pm->m_kAST               = AngularStiffness;
     pm->m_kVST               = VolumeStiffness;
     pm->m_flags -= btSoftBody::fMaterial::DebugDraw;
-    SoftBody->generateBendingConstraints(2, pm);
-    SoftBody->m_cfg.piterations = 10;
-    SoftBody->m_cfg.viterations = 2;
-    SoftBody->m_cfg.kVC         = VelocitiesCorrection;
-    SoftBody->m_cfg.kDP         = DampingCoefficient;
-    SoftBody->m_cfg.kDG         = DragCoefficient;
-    SoftBody->m_cfg.kLF         = LiftCoefficient;
-    SoftBody->m_cfg.kPR         = Pressure;
-    SoftBody->m_cfg.kVC         = VolumeConversation;
-    SoftBody->m_cfg.kDF         = DynamicFriction;
-    SoftBody->m_cfg.kMT         = PoseMatching;
-    SoftBody->m_cfg.collisions |= btSoftBody::fCollision::VF_SS;
+    m_SoftBody->generateBendingConstraints(2, pm);
+    m_SoftBody->m_cfg.piterations = 10;
+    m_SoftBody->m_cfg.viterations = 2;
+    m_SoftBody->m_cfg.kVC = VelocitiesCorrection;
+    m_SoftBody->m_cfg.kDP = DampingCoefficient;
+    m_SoftBody->m_cfg.kDG = DragCoefficient;
+    m_SoftBody->m_cfg.kLF = LiftCoefficient;
+    m_SoftBody->m_cfg.kPR = Pressure;
+    m_SoftBody->m_cfg.kVC = VolumeConversation;
+    m_SoftBody->m_cfg.kDF = DynamicFriction;
+    m_SoftBody->m_cfg.kMT = PoseMatching;
+    m_SoftBody->m_cfg.collisions |= btSoftBody::fCollision::VF_SS;
 
-    //SoftBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSided;
+    //m_SoftBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSided;
     //if ( bRandomizeConstraints ) {
-    //    SoftBody->randomizeConstraints();
+    //    m_SoftBody->randomizeConstraints();
     //}
 
     bool bFromFaces = false;
     if (GetMass() > 0.01f)
     {
-        SoftBody->setTotalMass(GetMass(), bFromFaces);
+        m_SoftBody->setTotalMass(GetMass(), bFromFaces);
     }
     else
     {
-        SoftBody->setTotalMass(0.01f, bFromFaces);
+        m_SoftBody->setTotalMass(0.01f, bFromFaces);
     }
 
     m_bUpdateAnchors = true;
@@ -179,12 +179,12 @@ void SoftMeshComponent::RecreateSoftBody()
 
     if (bRandomizeConstraints)
     {
-        SoftBody->randomizeConstraints();
+        m_SoftBody->randomizeConstraints();
     }
 
-    physicsWorld->addSoftBody(SoftBody);
+    physicsWorld->addSoftBody(m_SoftBody);
 
-    //SoftBody->setVelocity( btVector3( 0, 0, 0 ) );
+    //m_SoftBody->setVelocity( btVector3( 0, 0, 0 ) );
 
     //bUpdateSoftbodyTransform = true;
 }
@@ -204,11 +204,11 @@ void SoftMeshComponent::UpdateMesh()
 
 Float3 SoftMeshComponent::GetVertexPosition(int _VertexIndex) const
 {
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        if (_VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size())
+        if (_VertexIndex >= 0 && _VertexIndex < m_SoftBody->m_nodes.size())
         {
-            return btVectorToFloat3(SoftBody->m_nodes[_VertexIndex].m_x);
+            return btVectorToFloat3(m_SoftBody->m_nodes[_VertexIndex].m_x);
         }
     }
     return Float3::Zero();
@@ -216,11 +216,11 @@ Float3 SoftMeshComponent::GetVertexPosition(int _VertexIndex) const
 
 Float3 SoftMeshComponent::GetVertexNormal(int _VertexIndex) const
 {
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        if (_VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size())
+        if (_VertexIndex >= 0 && _VertexIndex < m_SoftBody->m_nodes.size())
         {
-            return btVectorToFloat3(SoftBody->m_nodes[_VertexIndex].m_n);
+            return btVectorToFloat3(m_SoftBody->m_nodes[_VertexIndex].m_n);
         }
     }
     return Float3::Zero();
@@ -228,11 +228,11 @@ Float3 SoftMeshComponent::GetVertexNormal(int _VertexIndex) const
 
 Float3 SoftMeshComponent::GetVertexVelocity(int _VertexIndex) const
 {
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        if (_VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size())
+        if (_VertexIndex >= 0 && _VertexIndex < m_SoftBody->m_nodes.size())
         {
-            return btVectorToFloat3(SoftBody->m_nodes[_VertexIndex].m_v);
+            return btVectorToFloat3(m_SoftBody->m_nodes[_VertexIndex].m_v);
         }
     }
     return Float3::Zero();
@@ -240,31 +240,31 @@ Float3 SoftMeshComponent::GetVertexVelocity(int _VertexIndex) const
 
 void SoftMeshComponent::SetWindVelocity(Float3 const& _Velocity)
 {
-    //if ( SoftBody ) {
-    //    SoftBody->setWindVelocity( btVectorToFloat3( _Velocity ) );
+    //if ( m_SoftBody ) {
+    //    m_SoftBody->setWindVelocity( btVectorToFloat3( _Velocity ) );
     //}
 
-    WindVelocity = _Velocity;
+    m_WindVelocity = _Velocity;
 }
 
 Float3 const& SoftMeshComponent::GetWindVelocity() const
 {
-    return WindVelocity;
+    return m_WindVelocity;
 }
 
 void SoftMeshComponent::AddForceSoftBody(Float3 const& _Force)
 {
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        SoftBody->addForce(btVectorToFloat3(_Force));
+        m_SoftBody->addForce(btVectorToFloat3(_Force));
     }
 }
 
 void SoftMeshComponent::AddForceToVertex(Float3 const& _Force, int _VertexIndex)
 {
-    if (SoftBody && _VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size())
+    if (m_SoftBody && _VertexIndex >= 0 && _VertexIndex < m_SoftBody->m_nodes.size())
     {
-        SoftBody->addForce(btVectorToFloat3(_Force), _VertexIndex);
+        m_SoftBody->addForce(btVectorToFloat3(_Force), _VertexIndex);
     }
 }
 
@@ -285,11 +285,11 @@ void SoftMeshComponent::UpdateSoftbodyTransform()
     //        btTransform prevTransform;
     //        prevTransform.setOrigin( btVectorToFloat3( PrevTransformOrigin ) );
     //        prevTransform.setBasis( btMatrixToFloat3x3( PrevTransformBasis ) );
-    //        if ( SoftBody ) {
-    //            SoftBody->transform( transform * prevTransform.inverse() );
+    //        if ( m_SoftBody ) {
+    //            m_SoftBody->transform( transform * prevTransform.inverse() );
     //        }
     //#else
-    //        //if ( SoftBody ) {
+    //        //if ( m_SoftBody ) {
     //        //    Anchor->setWorldTransform( transform );
     //        //}
     //#endif
@@ -303,7 +303,7 @@ void SoftMeshComponent::UpdateSoftbodyTransform()
 
 void SoftMeshComponent::UpdateSoftbodyBoundingBox()
 {
-    if (SoftBody)
+    if (m_SoftBody)
     {
         btVector3 mins, maxs;
 
@@ -315,11 +315,11 @@ void SoftMeshComponent::UpdateSoftbodyBoundingBox()
         //btTransform t;
         //t.setIdentity();
 
-        //SoftBody->getAabb( mins, maxs );
-        //SoftBody->getCollisionShape()->getAabb( t, mins, maxs );
-        //SoftBody->getCollisionShape()->getAabb( prevTransform, mins, maxs );
+        //m_SoftBody->getAabb( mins, maxs );
+        //m_SoftBody->getCollisionShape()->getAabb( t, mins, maxs );
+        //m_SoftBody->getCollisionShape()->getAabb( prevTransform, mins, maxs );
 
-        SoftBody->getAabb(mins, maxs);
+        m_SoftBody->getAabb(mins, maxs);
 
         ForceOverrideBounds(true);
         SetBoundsOverride(BvAxisAlignedBox(btVectorToFloat3(mins), btVectorToFloat3(maxs)));
@@ -328,7 +328,7 @@ void SoftMeshComponent::UpdateSoftbodyBoundingBox()
 
 void SoftMeshComponent::UpdateAnchorPoints()
 {
-    if (!SoftBody)
+    if (!m_SoftBody)
     {
         return;
     }
@@ -339,14 +339,14 @@ void SoftMeshComponent::UpdateAnchorPoints()
         auto* physicsWorld = GetWorld()->PhysicsSystem.GetInternal();
 
         // Remove old anchors. FIXME: is it correct?
-        SoftBody->m_collisionDisabledObjects.clear();
-        SoftBody->m_anchors.clear();
+        m_SoftBody->m_collisionDisabledObjects.clear();
+        m_SoftBody->m_anchors.clear();
 
         // Add new anchors
         for (AnchorBinding& binding : m_Anchors)
         {
 
-            if (binding.VertexIndex < 0 || binding.VertexIndex >= SoftBody->m_nodes.size())
+            if (binding.VertexIndex < 0 || binding.VertexIndex >= m_SoftBody->m_nodes.size())
             {
                 continue;
             }
@@ -383,14 +383,14 @@ void SoftMeshComponent::UpdateAnchorPoints()
                 binding.Anchor->Anchor = anchorBody;
             }
 
-            //SoftBody->appendAnchor( binding.VertexIndex, binding.Anchor->Anchor );
-            SoftBody->appendAnchor(binding.VertexIndex, binding.Anchor->Anchor,
+            //m_SoftBody->appendAnchor( binding.VertexIndex, binding.Anchor->Anchor );
+            m_SoftBody->appendAnchor(binding.VertexIndex, binding.Anchor->Anchor,
                                    btVector3(0, 0, 0), false, 1);
 
-            SoftBody->setMass(binding.VertexIndex, 1);
+            m_SoftBody->setMass(binding.VertexIndex, 1);
         }
 
-        //SoftBody->setVelocity( btVector3( 0, 0, 0 ) );
+        //m_SoftBody->setVelocity( btVector3( 0, 0, 0 ) );
 
         m_bUpdateAnchors = false;
     }
@@ -403,15 +403,15 @@ void SoftMeshComponent::TickComponent(float _TimeStep)
     UpdateAnchorPoints();
 
     // TODO: This must be done in pre physics tick!!!
-    if (SoftBody)
+    if (m_SoftBody)
     {
-        //SoftBody->addVelocity( btVectorToFloat3( WindVelocity*_TimeStep*(Math::Rand()*0.5f+0.5f) ) );
+        //m_SoftBody->addVelocity( btVectorToFloat3( m_WindVelocity*_TimeStep*(Math::Rand()*0.5f+0.5f) ) );
 
-        btVector3 vel = btVectorToFloat3(WindVelocity * _TimeStep);
+        btVector3 vel = btVectorToFloat3(m_WindVelocity * _TimeStep);
 
         MersenneTwisterRand& rng = GEngine->Rand;
 
-        for (int i = 0, ni = SoftBody->m_nodes.size(); i < ni; ++i) SoftBody->addVelocity(vel * (rng.GetFloat() * 0.5f + 0.5f), i);
+        for (int i = 0, ni = m_SoftBody->m_nodes.size(); i < ni; ++i) m_SoftBody->addVelocity(vel * (rng.GetFloat() * 0.5f + 0.5f), i);
     }
 
     // TODO: This must be done in post physics tick!!!
@@ -425,14 +425,14 @@ void SoftMeshComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
-    if (!SoftBody)
+    if (!m_SoftBody)
     {
         return;
     }
 
     // Draw AABB
     //btVector3 mins, maxs;
-    //SoftBody->getCollisionShape()->getAabb( SoftBody->getWorldTransform(), mins, maxs );
+    //m_SoftBody->getCollisionShape()->getAabb( m_SoftBody->getWorldTransform(), mins, maxs );
     //InRenderer->SetDepthTest( true );
     //InRenderer->SetColor( 1, 1, 0, 1 );
     //InRenderer->DrawAABB( BvAxisAlignedBox( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) ) );
@@ -442,10 +442,10 @@ void SoftMeshComponent::DrawDebug(DebugRenderer* InRenderer)
     {
         InRenderer->SetDepthTest(true);
         InRenderer->SetColor(Color4(1, 0, 0, 1));
-        for (int i = 0; i < SoftBody->m_faces.size(); i++)
+        for (int i = 0; i < m_SoftBody->m_faces.size(); i++)
         {
 
-            btSoftBody::Face& f = SoftBody->m_faces[i];
+            btSoftBody::Face& f = m_SoftBody->m_faces[i];
 
             Color4 color;
             color[0] = f.m_normal[0] * 0.5f + 0.5f;

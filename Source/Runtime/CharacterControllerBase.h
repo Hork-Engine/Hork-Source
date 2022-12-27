@@ -132,10 +132,10 @@ public:
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* _Actor);
+    void AddCollisionIgnoreActor(Actor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* _Actor);
+    void RemoveCollisionIgnoreActor(Actor* _Actor);
 
     void SetCapsuleHeight(float _CapsuleHeight)
     {
@@ -334,10 +334,10 @@ public:
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* _Actor);
+    void AddCollisionIgnoreActor(Actor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* _Actor);
+    void RemoveCollisionIgnoreActor(Actor* _Actor);
 
     void TraceSelf(Float3 const& Start, Float3 const& End, ProjectileTrace& Trace) const;
     void TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, ProjectileTrace& Trace) const;

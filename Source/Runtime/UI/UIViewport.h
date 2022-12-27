@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class APlayerController;
+class Actor_PlayerController;
 
 class UIViewport : public UIWidget
 {
@@ -45,9 +45,9 @@ public:
     Color4           TintColor;
     CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_COPY;
 
-    UIViewport(APlayerController* playerController = nullptr);
+    UIViewport(Actor_PlayerController* playerController = nullptr);
 
-    UIViewport& SetPlayerController(APlayerController* playerController);
+    UIViewport& SetPlayerController(Actor_PlayerController* playerController);
     UIViewport& WithRounding(RoundingDesc const& rounding);
     UIViewport& WithTint(Color4 const& tintColor);
     UIViewport& WithComposite(CANVAS_COMPOSITE composite);
@@ -76,7 +76,7 @@ protected:
 private:
     void UpdateViewSize();
 
-    TRef<APlayerController> m_PlayerController;
+    TRef<Actor_PlayerController> m_PlayerController;
     int                     m_ViewWidth{};
     int                     m_ViewHeight{};
 };

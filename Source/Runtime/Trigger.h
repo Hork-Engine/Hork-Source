@@ -36,9 +36,9 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 /** Helper class to create triggers */
-class ATrigger : public AActor
+class Actor_Trigger : public Actor
 {
-    HK_ACTOR(ATrigger, AActor)
+    HK_ACTOR(Actor_Trigger, Actor)
 
 public:
     void SetBoxCollider();
@@ -54,7 +54,7 @@ public:
     void SetCollisionModel(CollisionModel* model);
 
 protected:
-    ATrigger();
+    Actor_Trigger();
 
     void SetLevelGeometry(LevelGeometry const& geometry) override;
 

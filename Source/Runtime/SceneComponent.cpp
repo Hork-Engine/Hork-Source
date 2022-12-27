@@ -53,7 +53,7 @@ void SceneComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    AActor* owner = GetOwnerActor();
+    Actor* owner = GetOwnerActor();
 
     HK_ASSERT(owner);
 
@@ -227,7 +227,7 @@ bool SceneComponent::IsChild(SceneComponent* _Child, bool _Recursive) const
 
 bool SceneComponent::IsRoot() const
 {
-    AActor* owner = GetOwnerActor();
+    Actor* owner = GetOwnerActor();
     return owner && owner->GetRootComponent() == this;
 }
 

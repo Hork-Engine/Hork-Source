@@ -43,41 +43,41 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawRootComponentAxis("com_DrawRootComponentAxis"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(AActor)
+HK_CLASS_META(Actor)
 
 static uint32_t UniqueName = 0;
 
-AActor::AActor()
+Actor::Actor()
 {
     SetObjectName(HK_FORMAT("Actor{}", UniqueName));
     UniqueName++;
 }
 
-void AActor::Destroy()
+void Actor::Destroy()
 {
     World::DestroyActor(this);
 }
 
-void AActor::SetRootComponent(SceneComponent* rootComponent)
+void Actor::SetRootComponent(SceneComponent* rootComponent)
 {
     m_RootComponent = rootComponent;
 }
 
-ActorComponent* AActor::CreateComponent(uint64_t _ClassId, StringView InName)
+ActorComponent* Actor::CreateComponent(uint64_t _ClassId, StringView InName)
 {
     ActorComponent* component = static_cast<ActorComponent*>(ActorComponent::Factory().CreateInstance(_ClassId));
     AddComponent(component, InName);
     return component;
 }
 
-ActorComponent* AActor::CreateComponent(const char* _ClassName, StringView InName)
+ActorComponent* Actor::CreateComponent(const char* _ClassName, StringView InName)
 {
     ActorComponent* component = static_cast<ActorComponent*>(ActorComponent::Factory().CreateInstance(_ClassName));
     AddComponent(component, InName);
     return component;
 }
 
-ActorComponent* AActor::CreateComponent(ClassMeta const* _ClassMeta, StringView InName)
+ActorComponent* Actor::CreateComponent(ClassMeta const* _ClassMeta, StringView InName)
 {
     HK_ASSERT(_ClassMeta->Factory() == &ActorComponent::Factory());
     ActorComponent* component = static_cast<ActorComponent*>(_ClassMeta->CreateInstance());
@@ -85,7 +85,7 @@ ActorComponent* AActor::CreateComponent(ClassMeta const* _ClassMeta, StringView 
     return component;
 }
 
-void AActor::AddComponent(ActorComponent* Component, StringView InName)
+void Actor::AddComponent(ActorComponent* Component, StringView InName)
 {
     if (!Component)
         return;
@@ -99,7 +99,7 @@ void AActor::AddComponent(ActorComponent* Component, StringView InName)
     m_Components.Add(Component);
 }
 
-ActorComponent* AActor::GetComponent(uint64_t _ClassId)
+ActorComponent* Actor::GetComponent(uint64_t _ClassId)
 {
     for (ActorComponent* component : m_Components)
     {
@@ -111,7 +111,7 @@ ActorComponent* AActor::GetComponent(uint64_t _ClassId)
     return nullptr;
 }
 
-ActorComponent* AActor::GetComponent(const char* _ClassName)
+ActorComponent* Actor::GetComponent(const char* _ClassName)
 {
     for (ActorComponent* component : m_Components)
     {
@@ -123,7 +123,7 @@ ActorComponent* AActor::GetComponent(const char* _ClassName)
     return nullptr;
 }
 
-ActorComponent* AActor::GetComponent(ClassMeta const* _ClassMeta)
+ActorComponent* Actor::GetComponent(ClassMeta const* _ClassMeta)
 {
     HK_ASSERT(_ClassMeta->Factory() == &ActorComponent::Factory());
     for (ActorComponent* component : m_Components)
@@ -154,42 +154,42 @@ ActorComponent* AActor::GetComponent(ClassMeta const* _ClassMeta)
         }                                                                    \
     }
 
-void AActor::CallBeginPlay()
+void Actor::CallBeginPlay()
 {
     BeginPlay();
 
     CALL_SCRIPT(BeginPlay);
 }
 
-void AActor::CallTick(float TimeStep)
+void Actor::CallTick(float TimeStep)
 {
     Tick(TimeStep);
 
     CALL_SCRIPT_ARG(Tick, TimeStep);
 }
 
-void AActor::CallTickPrePhysics(float TimeStep)
+void Actor::CallTickPrePhysics(float TimeStep)
 {
     TickPrePhysics(TimeStep);
 
     CALL_SCRIPT_ARG(TickPrePhysics, TimeStep);
 }
 
-void AActor::CallTickPostPhysics(float TimeStep)
+void Actor::CallTickPostPhysics(float TimeStep)
 {
     TickPostPhysics(TimeStep);
 
     CALL_SCRIPT_ARG(TickPostPhysics, TimeStep);
 }
 
-void AActor::CallLateUpdate(float TimeStep)
+void Actor::CallLateUpdate(float TimeStep)
 {
     LateUpdate(TimeStep);
 
     CALL_SCRIPT_ARG(LateUpdate, TimeStep);
 }
 
-void AActor::CallDrawDebug(DebugRenderer* Renderer)
+void Actor::CallDrawDebug(DebugRenderer* Renderer)
 {
     for (ActorComponent* component : m_Components)
     {
@@ -210,14 +210,14 @@ void AActor::CallDrawDebug(DebugRenderer* Renderer)
     CALL_SCRIPT_ARG(DrawDebug, Renderer);
 }
 
-void AActor::ApplyDamage(ActorDamage const& Damage)
+void Actor::ApplyDamage(ActorDamage const& Damage)
 {
     OnApplyDamage(Damage);
 
     CALL_SCRIPT_ARG(OnApplyDamage, Damage);
 }
 
-asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
+asILockableSharedBool* Actor::ScriptGetWeakRefFlag()
 {
     if (!m_pWeakRefFlag)
         m_pWeakRefFlag = asCreateLockableSharedBool();
@@ -225,7 +225,7 @@ asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
     return m_pWeakRefFlag;
 }
 
-bool AActor::SetPublicProperty(StringView PublicName, StringView Value)
+bool Actor::SetPublicProperty(StringView PublicName, StringView Value)
 {
     if (!m_pActorDef)
         return false;
@@ -274,11 +274,11 @@ bool AActor::SetPublicProperty(StringView PublicName, StringView Value)
     return false;
 }
 
-WorldTimer* AActor::AddTimer(TCallback<void()> const& Callback)
+WorldTimer* Actor::AddTimer(TCallback<void()> const& Callback)
 {
     if (m_bPendingKill)
     {
-        LOG("AActor::AddTimer: Attempting to add a timer to a destroyed actor\n");
+        LOG("Actor::AddTimer: Attempting to add a timer to a destroyed actor\n");
         return {};
     }
 
@@ -292,12 +292,12 @@ WorldTimer* AActor::AddTimer(TCallback<void()> const& Callback)
         m_World->RegisterTimer(timer);
     }
 
-    INTRUSIVE_ADD(timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail);
+    INTRUSIVE_ADD(timer, m_NextInActor, m_PrevInActor, m_TimerList, m_TimerListTail);
 
     return timer;
 }
 
-void AActor::RemoveTimer(WorldTimer* Timer)
+void Actor::RemoveTimer(WorldTimer* Timer)
 {
     if (!Timer)
     {
@@ -305,7 +305,7 @@ void AActor::RemoveTimer(WorldTimer* Timer)
         return;
     }
 
-    if (!INTRUSIVE_EXISTS(Timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail))
+    if (!INTRUSIVE_EXISTS(Timer, m_NextInActor, m_PrevInActor, m_TimerList, m_TimerListTail))
     {
         LOG("Timer is not exists\n");
         return;
@@ -316,13 +316,13 @@ void AActor::RemoveTimer(WorldTimer* Timer)
         m_World->UnregisterTimer(Timer);
     }
 
-    INTRUSIVE_REMOVE(Timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail);
+    INTRUSIVE_REMOVE(Timer, m_NextInActor, m_PrevInActor, m_TimerList, m_TimerListTail);
     Timer->RemoveRef();
 }
 
-void AActor::RemoveAllTimers()
+void Actor::RemoveAllTimers()
 {
-    for (WorldTimer* timer = m_TimerList; timer; timer = timer->NextInActor)
+    for (WorldTimer* timer = m_TimerList; timer; timer = timer->m_NextInActor)
     {
         if (m_World)
         {

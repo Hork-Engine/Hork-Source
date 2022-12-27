@@ -130,7 +130,7 @@ private:
     void UpdateSoftbodyTransform();
     void UpdateSoftbodyBoundingBox();
 
-    Float3 WindVelocity = Float3(0.0f);
+    Float3 m_WindVelocity = Float3(0.0f);
 
     //Float3x3 PrevTransformBasis;
     //Float3 PrevTransformOrigin;

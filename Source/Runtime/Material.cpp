@@ -42,11 +42,11 @@ HK_NAMESPACE_BEGIN
 HK_CLASS_META(Material)
 HK_CLASS_META(MaterialInstance)
 
-TList<Material> Material::MaterialRegistry;
+TList<Material> Material::m_MaterialRegistry;
 
 Material::Material()
 {
-    MaterialRegistry.Add(this);
+    m_MaterialRegistry.Add(this);
 }
 
 Material::Material(CompiledMaterial* pCompiledMaterial) :
@@ -56,12 +56,12 @@ Material::Material(CompiledMaterial* pCompiledMaterial) :
 
     m_GpuMaterial = MakeRef<MaterialGPU>(pCompiledMaterial);
 
-    MaterialRegistry.Add(this);
+    m_MaterialRegistry.Add(this);
 }
 
 Material::~Material()
 {
-    MaterialRegistry.Remove(this);
+    m_MaterialRegistry.Remove(this);
 }
 
 MaterialInstance* Material::Instantiate()

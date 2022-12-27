@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 class AudioDevice;
 class AudioMixer;
-class APlayerController;
+class Actor_PlayerController;
 
 struct AudioListener
 {
@@ -85,7 +85,7 @@ public:
         return m_Listener;
     }
 
-    void Update(APlayerController* _Controller, float _TimeStep);
+    void Update(Actor_PlayerController* _Controller, float _TimeStep);
 
 private:
     TRef<AudioDevice>                 m_pPlaybackDevice;

@@ -55,24 +55,24 @@ void WorldTimer::Trigger()
 
 void WorldTimer::Restart()
 {
-    State       = 0;
-    NumPulses   = 0;
-    ElapsedTime = 0;
+    m_State = 0;
+    m_NumPulses = 0;
+    m_ElapsedTime = 0;
 }
 
 void WorldTimer::Stop()
 {
-    State = TIMER_STATE_FINISHED;
+    m_State = TIMER_STATE_FINISHED;
 }
 
 bool WorldTimer::IsStopped() const
 {
-    return !!(State & TIMER_STATE_FINISHED);
+    return !!(m_State & TIMER_STATE_FINISHED);
 }
 
 void WorldTimer::Tick(World* World, float TimeStep)
 {
-    if (State & TIMER_STATE_FINISHED)
+    if (m_State & TIMER_STATE_FINISHED)
     {
         return;
     }
@@ -87,97 +87,97 @@ void WorldTimer::Tick(World* World, float TimeStep)
         return;
     }
 
-    if (State & TIMER_STATE_PULSE)
+    if (m_State & TIMER_STATE_PULSE)
     {
-        if (ElapsedTime >= PulseTime)
+        if (m_ElapsedTime >= PulseTime)
         {
-            ElapsedTime = 0;
-            if (MaxPulses > 0 && NumPulses == MaxPulses)
+            m_ElapsedTime = 0;
+            if (MaxPulses > 0 && m_NumPulses == MaxPulses)
             {
-                State = TIMER_STATE_FINISHED;
+                m_State = TIMER_STATE_FINISHED;
                 return;
             }
-            State &= ~TIMER_STATE_PULSE;
+            m_State &= ~TIMER_STATE_PULSE;
         }
         else
         {
             Trigger();
-            if (State & TIMER_STATE_FINISHED)
+            if (m_State & TIMER_STATE_FINISHED)
             {
                 // Called Stop() in trigger function
                 return;
             }
-            ElapsedTime += TimeStep;
+            m_ElapsedTime += TimeStep;
             return;
         }
     }
 
-    if (!(State & TIMER_STATE_TRIGGERED_ON_FIRST_DELAY))
+    if (!(m_State & TIMER_STATE_TRIGGERED_ON_FIRST_DELAY))
     {
-        if (ElapsedTime >= FirstDelay)
+        if (m_ElapsedTime >= FirstDelay)
         {
-            State |= TIMER_STATE_TRIGGERED_ON_FIRST_DELAY | TIMER_STATE_PULSE;
+            m_State |= TIMER_STATE_TRIGGERED_ON_FIRST_DELAY | TIMER_STATE_PULSE;
 
-            NumPulses++;
+            m_NumPulses++;
             Trigger();
-            if (State & TIMER_STATE_FINISHED)
+            if (m_State & TIMER_STATE_FINISHED)
             {
                 // Called Stop() in trigger function
                 return;
             }
-            if (State == 0)
+            if (m_State == 0)
             {
                 // Called Restart() in trigger function
-                ElapsedTime += TimeStep;
+                m_ElapsedTime += TimeStep;
                 return;
             }
-            ElapsedTime = 0;
+            m_ElapsedTime = 0;
 
             if (PulseTime <= 0)
             {
-                if (MaxPulses > 0 && NumPulses == MaxPulses)
+                if (MaxPulses > 0 && m_NumPulses == MaxPulses)
                 {
-                    State = TIMER_STATE_FINISHED;
+                    m_State = TIMER_STATE_FINISHED;
                     return;
                 }
-                State &= ~TIMER_STATE_PULSE;
+                m_State &= ~TIMER_STATE_PULSE;
             }
         }
         else
         {
-            ElapsedTime += TimeStep;
+            m_ElapsedTime += TimeStep;
             return;
         }
     }
 
-    if (ElapsedTime >= SleepDelay)
+    if (m_ElapsedTime >= SleepDelay)
     {
-        State |= TIMER_STATE_PULSE;
-        NumPulses++;
+        m_State |= TIMER_STATE_PULSE;
+        m_NumPulses++;
         Trigger();
-        if (State & TIMER_STATE_FINISHED)
+        if (m_State & TIMER_STATE_FINISHED)
         {
             // Called Stop() in trigger function
             return;
         }
-        if (State == 0)
+        if (m_State == 0)
         {
             // Called Restart() in trigger function
-            ElapsedTime += TimeStep;
+            m_ElapsedTime += TimeStep;
             return;
         }
-        ElapsedTime = 0;
-        if (MaxPulses > 0 && NumPulses == MaxPulses)
+        m_ElapsedTime = 0;
+        if (MaxPulses > 0 && m_NumPulses == MaxPulses)
         {
-            State = TIMER_STATE_FINISHED;
+            m_State = TIMER_STATE_FINISHED;
             return;
         }
         if (PulseTime <= 0)
         {
-            State &= ~TIMER_STATE_PULSE;
+            m_State &= ~TIMER_STATE_PULSE;
         }
     }
-    ElapsedTime += TimeStep;
+    m_ElapsedTime += TimeStep;
 }
 
 HK_NAMESPACE_END

@@ -74,7 +74,7 @@ struct CollisionTraceResult
 struct CollisionQueryFilter
 {
     /** List of actors that will be ignored during collision query */
-    AActor** IgnoreActors;
+    Actor** IgnoreActors;
     int      ActorsCount;
 
     /** List of bodies that will be ignored during collision query */
@@ -137,8 +137,8 @@ struct CollisionContact
 {
     btPersistentManifold* Manifold;
 
-    TRef<AActor>   ActorA;
-    TRef<AActor>   ActorB;
+    TRef<Actor>   ActorA;
+    TRef<Actor>   ActorB;
     TRef<HitProxy> ComponentA;
     TRef<HitProxy> ComponentB;
 
@@ -258,13 +258,13 @@ public:
     void QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in sphere */
-    void QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Sphere(TPodVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in box */
-    void QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Box(TPodVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in AABB */
-    void QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors(TPodVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     void QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const;
 
@@ -278,9 +278,9 @@ public:
     void DrawDebug(DebugRenderer* InRenderer);
 
     // Internal
-    btSoftRigidDynamicsWorld* GetInternal() const { return DynamicsWorld.GetObject(); }
+    btSoftRigidDynamicsWorld* GetInternal() const { return m_DynamicsWorld.GetObject(); }
 
-    btSoftBodyWorldInfo* GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
+    btSoftBodyWorldInfo* GetSoftBodyWorldInfo() { return m_SoftBodyWorldInfo; }
 
 private:
     friend class HitProxy;
@@ -310,20 +310,20 @@ private:
     static void OnPrePhysics(btDynamicsWorld* _World, float _TimeStep);
     static void OnPostPhysics(btDynamicsWorld* _World, float _TimeStep);
 
-    TUniqueRef<btSoftRigidDynamicsWorld>                  DynamicsWorld;
-    TUniqueRef<btDbvtBroadphase>                          BroadphaseInterface;
-    TUniqueRef<btSoftBodyRigidBodyCollisionConfiguration> CollisionConfiguration;
-    TUniqueRef<btCollisionDispatcher>                     CollisionDispatcher;
-    TUniqueRef<btSequentialImpulseConstraintSolver>       ConstraintSolver;
-    TUniqueRef<btGhostPairCallback>                       GhostPairCallback;
-    btSoftBodyWorldInfo*                                  SoftBodyWorldInfo;
-    TVector<CollisionContact>                             CollisionContacts[2];
-    THashSet<ContactKey>                                  ContactHash[2];
-    TPodVector<ContactPoint>                              ContactPoints;
-    HitProxy*                                             PendingAddToWorldHead = nullptr;
-    HitProxy*                                             PendingAddToWorldTail = nullptr;
-    int                                                   FixedTickNumber       = 0;
-    int                                                   CacheContactPoints    = -1;
+    TUniqueRef<btSoftRigidDynamicsWorld> m_DynamicsWorld;
+    TUniqueRef<btDbvtBroadphase> m_BroadphaseInterface;
+    TUniqueRef<btSoftBodyRigidBodyCollisionConfiguration> m_CollisionConfiguration;
+    TUniqueRef<btCollisionDispatcher> m_CollisionDispatcher;
+    TUniqueRef<btSequentialImpulseConstraintSolver> m_ConstraintSolver;
+    TUniqueRef<btGhostPairCallback> m_GhostPairCallback;
+    btSoftBodyWorldInfo* m_SoftBodyWorldInfo;
+    TVector<CollisionContact> m_CollisionContacts[2];
+    THashSet<ContactKey> m_ContactHash[2];
+    TPodVector<ContactPoint> m_ContactPoints;
+    HitProxy* m_PendingAddToWorldHead = nullptr;
+    HitProxy* m_PendingAddToWorldTail = nullptr;
+    int m_FixedTickNumber = 0;
+    int m_CacheContactPoints = -1;
 };
 
 HK_NAMESPACE_END

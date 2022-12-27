@@ -44,50 +44,50 @@ ConsoleVar com_TerrainMaxLod("com_TerrainMaxLod"s, "5"s);
 ConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"s, "0"s);
 
 TerrainView::TerrainView(int InTextureSize) :
-    TextureSize(InTextureSize), TextureWrapMask(InTextureSize - 1), GapWidth(2), BlockWidth(TextureSize / 4 - 1), LodGridSize(TextureSize - 2), HalfGridSize(LodGridSize >> 1), ViewHeight(0.0f)
+    m_TextureSize(InTextureSize), m_TextureWrapMask(InTextureSize - 1), m_GapWidth(2), m_BlockWidth(m_TextureSize / 4 - 1), m_LodGridSize(m_TextureSize - 2), m_HalfGridSize(m_LodGridSize >> 1), m_ViewHeight(0.0f)
 {
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
-        LodInfo[i].HeightMap = (Float2*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(TextureSize * TextureSize * sizeof(Float2));
-        LodInfo[i].NormalMap = (byte*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(TextureSize * TextureSize * 4);
-        LodInfo[i].LodIndex  = i;
+        m_LodInfo[i].HeightMap = (Float2*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(m_TextureSize * m_TextureSize * sizeof(Float2));
+        m_LodInfo[i].NormalMap = (byte*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(m_TextureSize * m_TextureSize * 4);
+        m_LodInfo[i].LodIndex = i;
 
-        LodInfo[i].TextureOffset.X = 0;
-        LodInfo[i].TextureOffset.Y = 0;
+        m_LodInfo[i].TextureOffset.X = 0;
+        m_LodInfo[i].TextureOffset.Y = 0;
 
-        LodInfo[i].PrevTextureOffset.X = 0;
-        LodInfo[i].PrevTextureOffset.Y = 0;
+        m_LodInfo[i].PrevTextureOffset.X = 0;
+        m_LodInfo[i].PrevTextureOffset.Y = 0;
 
-        LodInfo[i].bForceUpdateTexture = true;
+        m_LodInfo[i].bForceUpdateTexture = true;
     }
 
-    MinViewLod = MaxViewLod = 0;
+    m_MinViewLod = m_MaxViewLod = 0;
 
     auto textureFormat = RenderCore::TextureDesc()
                              .SetFormat(TEXTURE_FORMAT_RG32_FLOAT)
-                             .SetResolution(RenderCore::TextureResolution2DArray(TextureSize,
-                                                                                  TextureSize,
-                                                                                  MAX_TERRAIN_LODS))
+                             .SetResolution(RenderCore::TextureResolution2DArray(m_TextureSize,
+                                                                                 m_TextureSize,
+                                                                                 MAX_TERRAIN_LODS))
                              .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-    GEngine->GetRenderDevice()->CreateTexture(textureFormat, &ClipmapArray);
-    ClipmapArray->SetDebugName("Terrain Clipmap Array");
+    GEngine->GetRenderDevice()->CreateTexture(textureFormat, &m_ClipmapArray);
+    m_ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
     auto normalMapFormat = RenderCore::TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_BGRA8_UNORM)
-                               .SetResolution(RenderCore::TextureResolution2DArray(TextureSize,
-                                                                                    TextureSize,
-                                                                                    MAX_TERRAIN_LODS))
+                               .SetResolution(RenderCore::TextureResolution2DArray(m_TextureSize,
+                                                                                   m_TextureSize,
+                                                                                   MAX_TERRAIN_LODS))
                                .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-    GEngine->GetRenderDevice()->CreateTexture(normalMapFormat, &NormalMapArray);
-    NormalMapArray->SetDebugName("Terrain Normal Map Array");
+    GEngine->GetRenderDevice()->CreateTexture(normalMapFormat, &m_NormalMapArray);
+    m_NormalMapArray->SetDebugName("Terrain Normal Map Array");
 }
 
 TerrainView::~TerrainView()
 {
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
-        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(LodInfo[i].HeightMap);
-        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(LodInfo[i].NormalMap);
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_LodInfo[i].HeightMap);
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_LodInfo[i].NormalMap);
     }
 }
 
@@ -101,20 +101,20 @@ void TerrainView::SetTerrain(Terrain* terrain)
     m_Terrain = terrain;
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
-        LodInfo[i].bForceUpdateTexture = true;
+        m_LodInfo[i].bForceUpdateTexture = true;
     }
 }
 
 void TerrainView::Update(StreamedMemoryGPU* StreamedMemory, TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
-    HK_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
+    HK_ASSERT(TerrainMesh->GetTextureSize() == m_TextureSize);
 
-    BoundingBoxes.Clear();
+    m_BoundingBoxes.Clear();
 
-    IndirectBuffer.Clear();
-    InstanceBuffer.Clear();
+    m_IndirectBuffer.Clear();
+    m_InstanceBuffer.Clear();
 
-    StartInstanceLocation = 0;
+    m_StartInstanceLocation = 0;
 
     if (!ViewFrustum.IsBoxVisible(m_Terrain->GetBoundingBox()))
     {
@@ -123,17 +123,17 @@ void TerrainView::Update(StreamedMemoryGPU* StreamedMemory, TerrainMesh* Terrain
 
     MakeView(TerrainMesh, ViewPosition, ViewFrustum);
 
-    InstanceBufferStreamHandle = StreamedMemory->AllocateVertex(InstanceBuffer.Size() * sizeof(TerrainPatchInstance),
-                                                                InstanceBuffer.ToPtr());
+    m_InstanceBufferStreamHandle = StreamedMemory->AllocateVertex(m_InstanceBuffer.Size() * sizeof(TerrainPatchInstance),
+                                                                  m_InstanceBuffer.ToPtr());
 
-    IndirectBufferStreamHandle = StreamedMemory->AllocateWithCustomAlignment(IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd),
-                                                                             16, // FIXME: is this alignment correct for DrawIndirect commands?
-                                                                             IndirectBuffer.ToPtr());
+    m_IndirectBufferStreamHandle = StreamedMemory->AllocateWithCustomAlignment(m_IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd),
+                                                                               16, // FIXME: is this alignment correct for DrawIndirect commands?
+                                                                               m_IndirectBuffer.ToPtr());
 
     if (com_ShowTerrainMemoryUsage)
     {
-        LOG("Instance buffer size in bytes {}\n", InstanceBuffer.Size() * sizeof(TerrainPatchInstance));
-        LOG("Indirect buffer size in bytes {}\n", IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd));
+        LOG("Instance buffer size in bytes {}\n", m_InstanceBuffer.Size() * sizeof(TerrainPatchInstance));
+        LOG("Indirect buffer size in bytes {}\n", m_IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd));
     }
 }
 
@@ -147,11 +147,11 @@ static HK_FORCEINLINE Int2 GetTexcoordOffset(TerrainLodInfo const& Lod)
 
 bool TerrainView::CullBlock(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset)
 {
-    int blockSize = BlockWidth * Lod.GridScale;
-    int minX      = Offset.X * Lod.GridScale + Lod.Offset.X;
-    int minZ      = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    int maxX      = minX + blockSize;
-    int maxZ      = minZ + blockSize;
+    int blockSize = m_BlockWidth * Lod.GridScale;
+    int minX = Offset.X * Lod.GridScale + Lod.Offset.X;
+    int minZ = Offset.Y * Lod.GridScale + Lod.Offset.Y;
+    int maxX = minX + blockSize;
+    int maxZ = minZ + blockSize;
 
     BvAxisAlignedBox box;
     box.Mins.X = minX;
@@ -174,11 +174,11 @@ bool TerrainView::CullBlock(BvFrustum const& ViewFrustum, TerrainLodInfo const& 
 
 bool TerrainView::CullGapV(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset)
 {
-    int blockSize = BlockWidth * Lod.GridScale;
-    int minX      = Offset.X * Lod.GridScale + Lod.Offset.X;
-    int minZ      = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    int maxX      = minX + 2 * Lod.GridScale;
-    int maxZ      = minZ + blockSize;
+    int blockSize = m_BlockWidth * Lod.GridScale;
+    int minX = Offset.X * Lod.GridScale + Lod.Offset.X;
+    int minZ = Offset.Y * Lod.GridScale + Lod.Offset.Y;
+    int maxX = minX + 2 * Lod.GridScale;
+    int maxZ = minZ + blockSize;
 
     BvAxisAlignedBox box;
     box.Mins.X = minX;
@@ -201,11 +201,11 @@ bool TerrainView::CullGapV(BvFrustum const& ViewFrustum, TerrainLodInfo const& L
 
 bool TerrainView::CullGapH(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod, Int2 const& Offset)
 {
-    int blockSize = BlockWidth * Lod.GridScale;
-    int minX      = Offset.X * Lod.GridScale + Lod.Offset.X;
-    int minZ      = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    int maxX      = minX + blockSize;
-    int maxZ      = minZ + 2 * Lod.GridScale;
+    int blockSize = m_BlockWidth * Lod.GridScale;
+    int minX = Offset.X * Lod.GridScale + Lod.Offset.X;
+    int minZ = Offset.Y * Lod.GridScale + Lod.Offset.Y;
+    int maxX = minX + blockSize;
+    int maxZ = minZ + 2 * Lod.GridScale;
 
     BvAxisAlignedBox box;
     box.Mins.X = minX;
@@ -228,8 +228,8 @@ bool TerrainView::CullGapH(BvFrustum const& ViewFrustum, TerrainLodInfo const& L
 
 bool TerrainView::CullInteriorTrim(BvFrustum const& ViewFrustum, TerrainLodInfo const& Lod)
 {
-    int blockSize    = BlockWidth * Lod.GridScale;
-    int interiorSize = (BlockWidth * 2 + GapWidth) * Lod.GridScale;
+    int blockSize = m_BlockWidth * Lod.GridScale;
+    int interiorSize = (m_BlockWidth * 2 + m_GapWidth) * Lod.GridScale;
 
     int minX = blockSize + Lod.Offset.X;
     int minZ = blockSize + Lod.Offset.Y;
@@ -259,83 +259,83 @@ void TerrainView::AddBlock(TerrainLodInfo const& Lod, Int2 const& Offset)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale       = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    instance.TexcoordOffset    = GetTexcoordOffset(Lod);
-    instance.QuadColor         = Color4(0.5f, 0.5f, 0.5f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.5f, 0.5f, 0.5f, 1.0f);
 }
 
 void TerrainView::AddGapV(TerrainLodInfo const& Lod, Int2 const& Offset)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale       = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    instance.TexcoordOffset    = GetTexcoordOffset(Lod);
-    instance.QuadColor         = Color4(0.2f, 0.7f, 0.2f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.2f, 0.7f, 0.2f, 1.0f);
 }
 
 void TerrainView::AddGapH(TerrainLodInfo const& Lod, Int2 const& Offset)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale       = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
-    instance.TexcoordOffset    = GetTexcoordOffset(Lod);
-    instance.QuadColor         = Color4(0.2f, 0.7f, 0.2f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.2f, 0.7f, 0.2f, 1.0f);
 }
 
 void TerrainView::AddInteriorTopLeft(TerrainLodInfo const& Lod)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale     = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate = Lod.Offset;
-    instance.TexcoordOffset  = GetTexcoordOffset(Lod);
-    instance.QuadColor       = Color4(0.5f, 0.5f, 1.0f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.5f, 0.5f, 1.0f, 1.0f);
 }
 
 void TerrainView::AddInteriorTopRight(TerrainLodInfo const& Lod)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale     = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate = Lod.Offset;
-    instance.TexcoordOffset  = GetTexcoordOffset(Lod);
-    instance.QuadColor       = Color4(0.5f, 0.5f, 1.0f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.5f, 0.5f, 1.0f, 1.0f);
 }
 
 void TerrainView::AddInteriorBottomLeft(TerrainLodInfo const& Lod)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale     = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate = Lod.Offset;
-    instance.TexcoordOffset  = GetTexcoordOffset(Lod);
-    instance.QuadColor       = Color4(0.5f, 0.5f, 1.0f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.5f, 0.5f, 1.0f, 1.0f);
 }
 
 void TerrainView::AddInteriorBottomRight(TerrainLodInfo const& Lod)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale     = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate = Lod.Offset;
-    instance.TexcoordOffset  = GetTexcoordOffset(Lod);
-    instance.QuadColor       = Color4(0.5f, 0.5f, 1.0f, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0.5f, 0.5f, 1.0f, 1.0f);
 }
 
 void TerrainView::AddCrackLines(TerrainLodInfo const& Lod)
 {
     TerrainPatchInstance& instance = AddInstance();
 
-    instance.VertexScale     = Int2(Lod.GridScale, Lod.LodIndex);
+    instance.VertexScale = Int2(Lod.GridScale, Lod.LodIndex);
     instance.VertexTranslate = Lod.Offset;
-    instance.TexcoordOffset  = GetTexcoordOffset(Lod);
-    instance.QuadColor       = Color4(0, 1, 0, 1.0f);
+    instance.TexcoordOffset = GetTexcoordOffset(Lod);
+    instance.QuadColor = Color4(0, 1, 0, 1.0f);
 }
 
 void TerrainView::MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
@@ -346,15 +346,15 @@ void TerrainView::MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition,
     float terrainH = m_Terrain->ReadHeight(ViewPosition.X, ViewPosition.Z, 0);
 
     // height above the terrain
-    ViewHeight = Math::Max(ViewPosition.Y - terrainH, 0.0f);
+    m_ViewHeight = Math::Max(ViewPosition.Y - terrainH, 0.0f);
 
     for (int lod = minLod; lod <= maxLod; lod++)
     {
-        TerrainLodInfo& lodInfo = LodInfo[lod];
+        TerrainLodInfo& lodInfo = m_LodInfo[lod];
 
-        int gridScale  = 1 << lod;
-        int snapSize   = gridScale * 2;
-        int gridExtent = gridScale * LodGridSize;
+        int gridScale = 1 << lod;
+        int snapSize = gridScale * 2;
+        int gridExtent = gridScale * m_LodGridSize;
 
         Int2 snapPos;
         snapPos.X = (Math::Floor(ViewPosition.X / snapSize) + 0.5f) * snapSize;
@@ -364,17 +364,17 @@ void TerrainView::MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition,
         snapOffset.X = ViewPosition.X - snapPos.X;
         snapOffset.Y = ViewPosition.Z - snapPos.Y;
 
-        lodInfo.Offset.X        = snapPos.X - HalfGridSize * gridScale;
-        lodInfo.Offset.Y        = snapPos.Y - HalfGridSize * gridScale;
+        lodInfo.Offset.X = snapPos.X - m_HalfGridSize * gridScale;
+        lodInfo.Offset.Y = snapPos.Y - m_HalfGridSize * gridScale;
         lodInfo.TextureOffset.X = snapPos.X / gridScale;
         lodInfo.TextureOffset.Y = snapPos.Y / gridScale;
-        lodInfo.GridScale       = gridScale;
+        lodInfo.GridScale = gridScale;
 
         lodInfo.InteriorTrim = snapOffset.X > 0.0f ?
             (snapOffset.Y > 0.0f ? INTERIOR_TOP_LEFT : INTERIOR_BOTTOM_LEFT) :
             (snapOffset.Y > 0.0f ? INTERIOR_TOP_RIGHT : INTERIOR_BOTTOM_RIGHT);
 
-        if (minLod < maxLod && gridExtent < ViewHeight * 2.5f)
+        if (minLod < maxLod && gridExtent < m_ViewHeight * 2.5f)
         {
             minLod++;
             //lodInfo.bForceUpdateTexture = true;
@@ -387,8 +387,8 @@ void TerrainView::MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition,
         }
     }
 
-    MinViewLod = minLod;
-    MaxViewLod = maxLod;
+    m_MinViewLod = minLod;
+    m_MaxViewLod = maxLod;
 
     UpdateTextures();
     AddPatches(TerrainMesh, ViewFrustum);
@@ -396,7 +396,7 @@ void TerrainView::MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition,
 
 void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrustum)
 {
-    TerrainLodInfo const& finestLod = LodInfo[MinViewLod];
+    TerrainLodInfo const& finestLod = m_LodInfo[m_MinViewLod];
 
     Int2 trimOffset;
 
@@ -417,26 +417,26 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
             break;
     }
 
-    trimOffset.X += BlockWidth;
-    trimOffset.Y += BlockWidth;
+    trimOffset.X += m_BlockWidth;
+    trimOffset.Y += m_BlockWidth;
 
     //
     // Draw interior L-shape for finest lod
     //
 
     TerrainPatchInstance& instance = AddInstance();
-    instance.VertexScale            = Int2(finestLod.GridScale, finestLod.LodIndex);
-    instance.VertexTranslate.X      = finestLod.Offset.X + trimOffset.X * finestLod.GridScale;
-    instance.VertexTranslate.Y      = finestLod.Offset.Y + trimOffset.Y * finestLod.GridScale;
-    instance.TexcoordOffset         = GetTexcoordOffset(finestLod);
-    instance.QuadColor              = Color4(0.3f, 0.5f, 0.4f, 1.0f);
+    instance.VertexScale = Int2(finestLod.GridScale, finestLod.LodIndex);
+    instance.VertexTranslate.X = finestLod.Offset.X + trimOffset.X * finestLod.GridScale;
+    instance.VertexTranslate.Y = finestLod.Offset.Y + trimOffset.Y * finestLod.GridScale;
+    instance.TexcoordOffset = GetTexcoordOffset(finestLod);
+    instance.QuadColor = Color4(0.3f, 0.5f, 0.4f, 1.0f);
     AddPatchInstances(TerrainMesh->GetInteriorFinestPatch(), 1);
 
     //
     // Draw blocks
     //
 
-    int numBlocks       = 0;
+    int numBlocks = 0;
     int numCulledBlocks = 0;
 
     Int2 offset(trimOffset);
@@ -451,7 +451,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         numCulledBlocks++;
     }
 
-    offset.X += BlockWidth;
+    offset.X += m_BlockWidth;
     if (!CullBlock(ViewFrustum, finestLod, offset))
     {
         AddBlock(finestLod, offset);
@@ -463,7 +463,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     }
 
     offset.X = trimOffset.X;
-    offset.Y += BlockWidth;
+    offset.Y += m_BlockWidth;
     if (!CullBlock(ViewFrustum, finestLod, offset))
     {
         AddBlock(finestLod, offset);
@@ -474,7 +474,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         numCulledBlocks++;
     }
 
-    offset.X += BlockWidth;
+    offset.X += m_BlockWidth;
     if (!CullBlock(ViewFrustum, finestLod, offset))
     {
         AddBlock(finestLod, offset);
@@ -485,9 +485,9 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         numCulledBlocks++;
     }
 
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         offset.X = 0;
         offset.Y = 0;
@@ -502,7 +502,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
         // 2
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -513,8 +513,8 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
-        offset.X += GapWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_GapWidth;
         // 3
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -525,7 +525,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
         // 4
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -537,7 +537,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
             numCulledBlocks++;
         }
         offset.X = 0;
-        offset.Y += BlockWidth;
+        offset.Y += m_BlockWidth;
 
         // 5
         if (!CullBlock(ViewFrustum, lodInfo, offset))
@@ -549,10 +549,10 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
-        offset.X += BlockWidth;
-        offset.X += GapWidth;
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_GapWidth;
+        offset.X += m_BlockWidth;
         // 6
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -564,8 +564,8 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
             numCulledBlocks++;
         }
         offset.X = 0;
-        offset.Y += BlockWidth;
-        offset.Y += GapWidth;
+        offset.Y += m_BlockWidth;
+        offset.Y += m_GapWidth;
 
         // 7
         if (!CullBlock(ViewFrustum, lodInfo, offset))
@@ -577,10 +577,10 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
-        offset.X += BlockWidth;
-        offset.X += GapWidth;
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_GapWidth;
+        offset.X += m_BlockWidth;
         // 8
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -592,7 +592,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
             numCulledBlocks++;
         }
         offset.X = 0;
-        offset.Y += BlockWidth;
+        offset.Y += m_BlockWidth;
 
         // 9
         if (!CullBlock(ViewFrustum, lodInfo, offset))
@@ -604,7 +604,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
         // 10
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -615,8 +615,8 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
-        offset.X += GapWidth;
+        offset.X += m_BlockWidth;
+        offset.X += m_GapWidth;
         // 11
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -627,7 +627,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledBlocks++;
         }
-        offset.X += BlockWidth;
+        offset.X += m_BlockWidth;
         // 12
         if (!CullBlock(ViewFrustum, lodInfo, offset))
         {
@@ -646,12 +646,12 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     // Draw interior trims
     //
 
-    int numTrims       = 0;
-    int totalTrims     = 0;
+    int numTrims = 0;
+    int totalTrims = 0;
     int numCulledTrims = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         if (lodInfo.InteriorTrim == INTERIOR_TOP_LEFT)
         {
@@ -670,9 +670,9 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     totalTrims += numTrims;
 
     numTrims = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         if (lodInfo.InteriorTrim == INTERIOR_TOP_RIGHT)
         {
@@ -691,9 +691,9 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     totalTrims += numTrims;
 
     numTrims = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         if (lodInfo.InteriorTrim == INTERIOR_BOTTOM_LEFT)
         {
@@ -712,9 +712,9 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     totalTrims += numTrims;
 
     numTrims = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         if (lodInfo.InteriorTrim == INTERIOR_BOTTOM_RIGHT)
         {
@@ -736,13 +736,13 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     // Draw vertical gaps
     //
 
-    int numVertGaps   = 0;
+    int numVertGaps = 0;
     int numCulledGaps = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
-        offset.X = BlockWidth * 2;
+        offset.X = m_BlockWidth * 2;
         offset.Y = 0;
         if (!CullGapV(ViewFrustum, lodInfo, offset))
         {
@@ -753,7 +753,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledGaps++;
         }
-        offset.Y += (BlockWidth * 3 + GapWidth);
+        offset.Y += (m_BlockWidth * 3 + m_GapWidth);
         if (!CullGapV(ViewFrustum, lodInfo, offset))
         {
             AddGapV(lodInfo, offset);
@@ -771,12 +771,12 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     //
 
     int numHorGaps = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         offset.X = 0;
-        offset.Y = BlockWidth * 2;
+        offset.Y = m_BlockWidth * 2;
         if (!CullGapH(ViewFrustum, lodInfo, offset))
         {
             AddGapH(lodInfo, offset);
@@ -786,7 +786,7 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
         {
             numCulledGaps++;
         }
-        offset.X += (BlockWidth * 3 + GapWidth);
+        offset.X += (m_BlockWidth * 3 + m_GapWidth);
         if (!CullGapH(ViewFrustum, lodInfo, offset))
         {
             AddGapH(lodInfo, offset);
@@ -804,9 +804,9 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
     //
 
     int numCrackStrips = 0;
-    for (int lod = MinViewLod; lod <= MaxViewLod - 1; lod++)
+    for (int lod = m_MinViewLod; lod <= m_MaxViewLod - 1; lod++)
     {
-        TerrainLodInfo const& lodInfo = LodInfo[lod];
+        TerrainLodInfo const& lodInfo = m_LodInfo[lod];
 
         AddCrackLines(lodInfo);
         numCrackStrips++;
@@ -829,8 +829,8 @@ void TerrainView::AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrus
 
 void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& CoarserLod, int MinX, int MaxX, int MinY, int MaxY)
 {
-    Int2   texelWorldPos;
-    float  h[4];
+    Int2 texelWorldPos;
+    float h[4];
     Float3 n;
 
     const float InvGridSizeCoarse = 1.0f / CoarserLod.GridScale;
@@ -840,19 +840,19 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
     {
         for (int x = MinX; x < MaxX; x++)
         {
-            int wrapX = x & TextureWrapMask;
-            int wrapY = y & TextureWrapMask;
+            int wrapX = x & m_TextureWrapMask;
+            int wrapY = y & m_TextureWrapMask;
 
             // from texture space to world space
             texelWorldPos.X = (x - Lod.TextureOffset.X) * Lod.GridScale + Lod.Offset.X;
             texelWorldPos.Y = (y - Lod.TextureOffset.Y) * Lod.GridScale + Lod.Offset.Y;
 
             HK_ASSERT(wrapX >= 0 && wrapY >= 0);
-            HK_ASSERT(wrapX <= TextureSize - 1 && wrapY <= TextureSize - 1);
+            HK_ASSERT(wrapX <= m_TextureSize - 1 && wrapY <= m_TextureSize - 1);
 
             int sampleLod = Lod.LodIndex;
 
-            Float2& heightMap = Lod.HeightMap[wrapY * TextureSize + wrapX];
+            Float2& heightMap = Lod.HeightMap[wrapY * m_TextureSize + wrapX];
 
             heightMap.X = m_Terrain->ReadHeight(texelWorldPos.X, texelWorldPos.Y, sampleLod);
 
@@ -875,9 +875,9 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
             n.X *= invLength;
             n.Z *= invLength;
 
-            byte* normal = &Lod.NormalMap[(wrapY * TextureSize + wrapX) * 4];
-            normal[0]    = n.X * 127.5f + 127.5f;
-            normal[1]    = n.Z * 127.5f + 127.5f;
+            byte* normal = &Lod.NormalMap[(wrapY * m_TextureSize + wrapX) * 4];
+            normal[0] = n.X * 127.5f + 127.5f;
+            normal[1] = n.Z * 127.5f + 127.5f;
 
             int ofsX = texelWorldPos.X - CoarserLod.Offset.X;
             int ofsY = texelWorldPos.Y - CoarserLod.Offset.Y;
@@ -887,28 +887,28 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
             wrapY = ofsY / CoarserLod.GridScale + CoarserLod.TextureOffset.Y;
 
             // wrap coordinates
-            wrapX &= TextureWrapMask;
-            wrapY &= TextureWrapMask;
-            int wrapX2 = (wrapX + 1) & TextureWrapMask;
-            int wrapY2 = (wrapY + 1) & TextureWrapMask;
+            wrapX &= m_TextureWrapMask;
+            wrapY &= m_TextureWrapMask;
+            int wrapX2 = (wrapX + 1) & m_TextureWrapMask;
+            int wrapY2 = (wrapY + 1) & m_TextureWrapMask;
 
             float fx = Math::Fract(float(ofsX) * InvGridSizeCoarse);
             float fy = Math::Fract(float(ofsY) * InvGridSizeCoarse);
 
-            h[0] = CoarserLod.HeightMap[wrapY * TextureSize + wrapX].X;
-            h[1] = CoarserLod.HeightMap[wrapY * TextureSize + wrapX2].X;
-            h[2] = CoarserLod.HeightMap[wrapY2 * TextureSize + wrapX2].X;
-            h[3] = CoarserLod.HeightMap[wrapY2 * TextureSize + wrapX].X;
+            h[0] = CoarserLod.HeightMap[wrapY * m_TextureSize + wrapX].X;
+            h[1] = CoarserLod.HeightMap[wrapY * m_TextureSize + wrapX2].X;
+            h[2] = CoarserLod.HeightMap[wrapY2 * m_TextureSize + wrapX2].X;
+            h[3] = CoarserLod.HeightMap[wrapY2 * m_TextureSize + wrapX].X;
 
             heightMap.Y = Math::Bilerp(h[0], h[1], h[3], h[2], Float2(fx, fy));
 
             //float zf = floor( zf_zd );
             //float zd = zf_zd / 512 + 256;
 
-            byte* n0 = &CoarserLod.NormalMap[(wrapY * TextureSize + wrapX) * 4];
-            byte* n1 = &CoarserLod.NormalMap[(wrapY * TextureSize + wrapX2) * 4];
-            byte* n2 = &CoarserLod.NormalMap[(wrapY2 * TextureSize + wrapX2) * 4];
-            byte* n3 = &CoarserLod.NormalMap[(wrapY2 * TextureSize + wrapX) * 4];
+            byte* n0 = &CoarserLod.NormalMap[(wrapY * m_TextureSize + wrapX) * 4];
+            byte* n1 = &CoarserLod.NormalMap[(wrapY * m_TextureSize + wrapX2) * 4];
+            byte* n2 = &CoarserLod.NormalMap[(wrapY2 * m_TextureSize + wrapX2) * 4];
+            byte* n3 = &CoarserLod.NormalMap[(wrapY2 * m_TextureSize + wrapX) * 4];
 
             normal[2] = Math::Clamp(Math::Bilerp(float(n0[0]), float(n1[0]), float(n3[0]), float(n2[0]), Float2(fx, fy)), 0.0f, 255.0f);
             normal[3] = Math::Clamp(Math::Bilerp(float(n0[1]), float(n1[1]), float(n3[1]), float(n2[1]), Float2(fx, fy)), 0.0f, 255.0f);
@@ -920,12 +920,12 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
 
 void TerrainView::UpdateTextures()
 {
-    const int count = TextureSize * TextureSize;
+    const int count = m_TextureSize * m_TextureSize;
 
-    for (int lod = MaxViewLod; lod >= MinViewLod; lod--)
+    for (int lod = m_MaxViewLod; lod >= m_MinViewLod; lod--)
     {
-        TerrainLodInfo& lodInfo        = LodInfo[lod];
-        TerrainLodInfo& coarserLodInfo = LodInfo[lod < MaxViewLod ? lod + 1 : lod];
+        TerrainLodInfo& lodInfo = m_LodInfo[lod];
+        TerrainLodInfo& coarserLodInfo = m_LodInfo[lod < m_MaxViewLod ? lod + 1 : lod];
 
         Int2 DeltaMove;
         DeltaMove.X = lodInfo.TextureOffset.X - lodInfo.PrevTextureOffset.X;
@@ -945,8 +945,8 @@ void TerrainView::UpdateTextures()
             }
             else if (DeltaMove[i] > 0)
             {
-                Min[i] = lodInfo.TextureOffset[i] + TextureSize - DeltaMove[i];
-                Max[i] = lodInfo.TextureOffset[i] + TextureSize;
+                Min[i] = lodInfo.TextureOffset[i] + m_TextureSize - DeltaMove[i];
+                Max[i] = lodInfo.TextureOffset[i] + m_TextureSize;
             }
         }
 
@@ -957,7 +957,7 @@ void TerrainView::UpdateTextures()
 
         bool bUpdateToGPU = false;
 
-        if (Math::Abs(DeltaMove.X) >= TextureSize || Math::Abs(DeltaMove.Y) >= TextureSize || lodInfo.bForceUpdateTexture)
+        if (Math::Abs(DeltaMove.X) >= m_TextureSize || Math::Abs(DeltaMove.Y) >= m_TextureSize || lodInfo.bForceUpdateTexture)
         {
 
             lodInfo.bForceUpdateTexture = false;
@@ -965,8 +965,8 @@ void TerrainView::UpdateTextures()
             // Update whole texture
             UpdateRect(lodInfo,
                        coarserLodInfo,
-                       lodInfo.TextureOffset.X, lodInfo.TextureOffset.X + TextureSize,
-                       lodInfo.TextureOffset.Y, lodInfo.TextureOffset.Y + TextureSize);
+                       lodInfo.TextureOffset.X, lodInfo.TextureOffset.X + m_TextureSize,
+                       lodInfo.TextureOffset.Y, lodInfo.TextureOffset.Y + m_TextureSize);
 
             bUpdateToGPU = true;
         }
@@ -974,13 +974,13 @@ void TerrainView::UpdateTextures()
         {
             if (MinY != MaxY)
             {
-                UpdateRect(lodInfo, coarserLodInfo, lodInfo.TextureOffset.X, lodInfo.TextureOffset.X + TextureSize, MinY, MaxY);
+                UpdateRect(lodInfo, coarserLodInfo, lodInfo.TextureOffset.X, lodInfo.TextureOffset.X + m_TextureSize, MinY, MaxY);
 
                 bUpdateToGPU = true;
             }
             if (MinX != MaxX)
             {
-                UpdateRect(lodInfo, coarserLodInfo, MinX, MaxX, lodInfo.TextureOffset.Y, lodInfo.TextureOffset.Y + TextureSize);
+                UpdateRect(lodInfo, coarserLodInfo, MinX, MaxX, lodInfo.TextureOffset.Y, lodInfo.TextureOffset.Y + m_TextureSize);
 
                 bUpdateToGPU = true;
             }
@@ -991,12 +991,12 @@ void TerrainView::UpdateTextures()
             RenderCore::TextureRect rect;
 
             rect.Offset.MipLevel = 0;
-            rect.Offset.X        = 0;
-            rect.Offset.Y        = 0;
-            rect.Offset.Z        = lod;
-            rect.Dimension.X     = TextureSize;
-            rect.Dimension.Y     = TextureSize;
-            rect.Dimension.Z     = 1;
+            rect.Offset.X = 0;
+            rect.Offset.Y = 0;
+            rect.Offset.Z = lod;
+            rect.Dimension.X = m_TextureSize;
+            rect.Dimension.Y = m_TextureSize;
+            rect.Dimension.Z = 1;
 
             lodInfo.MinH = 99999;
             lodInfo.MaxH = -99999;
@@ -1013,23 +1013,23 @@ void TerrainView::UpdateTextures()
             lodInfo.MaxH += Margin;
 
             // TODO: Update only dirty regions
-            ClipmapArray->WriteRect(rect, count * sizeof(Float2), 4, lodInfo.HeightMap);
+            m_ClipmapArray->WriteRect(rect, count * sizeof(Float2), 4, lodInfo.HeightMap);
 
-            NormalMapArray->WriteRect(rect, count * 4, 4, lodInfo.NormalMap);
+            m_NormalMapArray->WriteRect(rect, count * 4, 4, lodInfo.NormalMap);
         }
     }
 }
 
 void TerrainView::DrawDebug(DebugRenderer* InRenderer, TerrainMesh* TerrainMesh)
 {
-    HK_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
+    HK_ASSERT(TerrainMesh->GetTextureSize() == m_TextureSize);
 
-    TerrainRenderer = InRenderer;
+    m_TerrainRenderer = InRenderer;
 
-    TerrainRenderer->SetColor(Color4(1, 1, 1, 1));
-    for (BvAxisAlignedBox& box : BoundingBoxes)
+    m_TerrainRenderer->SetColor(Color4(1, 1, 1, 1));
+    for (BvAxisAlignedBox& box : m_BoundingBoxes)
     {
-        TerrainRenderer->DrawAABB(box);
+        m_TerrainRenderer->DrawAABB(box);
     }
 
 #if 0
@@ -1097,7 +1097,7 @@ void TerrainView::DrawIndexedTriStrip(TerrainVertex const* Vertices, unsigned sh
 
     int i = 0;
 
-    int t  = 0;
+    int t = 0;
     v[t++] = Vertices[Indices[i++]];
     v[t++] = Vertices[Indices[i++]];
 
@@ -1142,37 +1142,37 @@ void TerrainView::DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex cons
     Float3 v2 = VertexShader(c);
 
     const Float3 lightVec = Float3(0.5f, 0.5f, -0.5f).Normalized();
-    Float3       n        = Math::Cross((v1 - v0), (v2 - v0)).Normalized();
-    float        dp       = Math::Max(Math::Dot(n, lightVec), 0.1f);
+    Float3 n = Math::Cross((v1 - v0), (v2 - v0)).Normalized();
+    float dp = Math::Max(Math::Dot(n, lightVec), 0.1f);
 
-    TerrainRenderer->SetDepthTest(true);
-    TerrainRenderer->SetColor(Color4(pDrawCallUniformData->QuadColor.R * dp,
-                                     pDrawCallUniformData->QuadColor.G * dp,
-                                     pDrawCallUniformData->QuadColor.B * dp,
-                                     1));
-    TerrainRenderer->DrawTriangle(v0, v1, v2, false);
+    m_TerrainRenderer->SetDepthTest(true);
+    m_TerrainRenderer->SetColor(Color4(m_pDrawCallUniformData->QuadColor.R * dp,
+                                       m_pDrawCallUniformData->QuadColor.G * dp,
+                                       m_pDrawCallUniformData->QuadColor.B * dp,
+                                       1));
+    m_TerrainRenderer->DrawTriangle(v0, v1, v2, false);
 
     // Add little offset for zfighting
     v0.Y += 0.01f;
     v1.Y += 0.01f;
     v2.Y += 0.01f;
-    TerrainRenderer->SetColor(Color4::White());
-    //TerrainRenderer->SetColor( pDrawCallUniformData->QuadColor );
-    TerrainRenderer->DrawLine(v0, v1);
-    TerrainRenderer->DrawLine(v1, v2);
-    TerrainRenderer->DrawLine(v2, v0);
+    m_TerrainRenderer->SetColor(Color4::White());
+    //m_TerrainRenderer->SetColor( pDrawCallUniformData->QuadColor );
+    m_TerrainRenderer->DrawLine(v0, v1);
+    m_TerrainRenderer->DrawLine(v1, v2);
+    m_TerrainRenderer->DrawLine(v2, v0);
 }
 
 Float3 TerrainView::VertexShader(TerrainVertex const& v)
 {
     Float3 result;
-    Int2   texelWorldPos;
+    Int2 texelWorldPos;
 
-    texelWorldPos.X = v.X * pDrawCallUniformData->VertexScale.X + pDrawCallUniformData->VertexTranslate.X;
-    texelWorldPos.Y = v.Y * pDrawCallUniformData->VertexScale.X + pDrawCallUniformData->VertexTranslate.Y;
+    texelWorldPos.X = v.X * m_pDrawCallUniformData->VertexScale.X + m_pDrawCallUniformData->VertexTranslate.X;
+    texelWorldPos.Y = v.Y * m_pDrawCallUniformData->VertexScale.X + m_pDrawCallUniformData->VertexTranslate.Y;
 
-    int     lodIndex = (int)pDrawCallUniformData->VertexScale.Y;
-    Float2* texture  = LodInfo[lodIndex].HeightMap;
+    int lodIndex = (int)m_pDrawCallUniformData->VertexScale.Y;
+    Float2* texture = m_LodInfo[lodIndex].HeightMap;
 
 #if 0
     const int MIN_TERRAIN_BOUNDS = -40;
@@ -1188,17 +1188,17 @@ Float3 TerrainView::VertexShader(TerrainVertex const& v)
     Int2 texCoord;
 
     // from world space to texture space
-    texCoord.X = (texelWorldPos.X + pDrawCallUniformData->TexcoordOffset.X) / pDrawCallUniformData->VertexScale.X;
-    texCoord.Y = (texelWorldPos.Y + pDrawCallUniformData->TexcoordOffset.Y) / pDrawCallUniformData->VertexScale.X;
+    texCoord.X = (texelWorldPos.X + m_pDrawCallUniformData->TexcoordOffset.X) / m_pDrawCallUniformData->VertexScale.X;
+    texCoord.Y = (texelWorldPos.Y + m_pDrawCallUniformData->TexcoordOffset.Y) / m_pDrawCallUniformData->VertexScale.X;
 
     // wrap coordinates
-    texCoord.X &= TextureWrapMask;
-    texCoord.Y &= TextureWrapMask;
+    texCoord.X &= m_TextureWrapMask;
+    texCoord.Y &= m_TextureWrapMask;
 
     HK_ASSERT(texCoord.X >= 0 && texCoord.Y >= 0);
-    HK_ASSERT(texCoord.X <= TextureSize - 1 && texCoord.Y <= TextureSize - 1);
+    HK_ASSERT(texCoord.X <= m_TextureSize - 1 && texCoord.Y <= m_TextureSize - 1);
 
-    result.Y = texture[texCoord.Y * TextureSize + texCoord.X].X;
+    result.Y = texture[texCoord.Y * m_TextureSize + texCoord.X].X;
     return result;
 }
 

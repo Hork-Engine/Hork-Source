@@ -197,10 +197,10 @@ public:
     void SetCollisionFilter(COLLISION_MASK collisionGroup, COLLISION_MASK collisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* actor);
+    void AddCollisionIgnoreActor(Actor* actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* actor);
+    void RemoveCollisionIgnoreActor(Actor* actor);
 
     /** Force physics activation */
     void ActivatePhysics();
@@ -337,7 +337,7 @@ public:
 
     void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
 
-    void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
+    void CollisionContactQueryActor(TPodVector<Actor*>& _Result) const;
 
     void GatherNavigationGeometry(NavigationGeometry& Geometry) const override;
 
@@ -362,13 +362,13 @@ protected:
     virtual CollisionModel* GetMeshCollisionModel() const { return nullptr; }
 
     friend class BoneCollisionInstance;
-    virtual Float3x4 const& _GetJointTransform(int _JointIndex)
+    virtual Float3x4 const& _GetJointTransform(int jointIndex)
     {
         return Float3x4::Identity();
     }
 
-    bool        bSoftBodySimulation = false;
-    btSoftBody* SoftBody            = nullptr; // managed by SoftMeshComponent
+    bool        m_bSoftBodySimulation = false;
+    btSoftBody* m_SoftBody = nullptr; // managed by SoftMeshComponent
 
 private:
     void CreateRigidBody();

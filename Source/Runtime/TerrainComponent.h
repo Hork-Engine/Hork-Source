@@ -85,10 +85,10 @@ public:
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* _Actor);
+    void AddCollisionIgnoreActor(Actor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* _Actor);
+    void RemoveCollisionIgnoreActor(Actor* _Actor);
 
     /** Set terrain resource */
     void SetTerrain(Terrain* terrain);
@@ -182,8 +182,8 @@ protected:
     bool bAllowRaycast : 1;
 
     friend class Terrain;
-    TerrainComponent* pNext{};
-    TerrainComponent* pPrev{};
+    TerrainComponent* m_pNext{};
+    TerrainComponent* m_pPrev{};
 };
 
 HK_NAMESPACE_END

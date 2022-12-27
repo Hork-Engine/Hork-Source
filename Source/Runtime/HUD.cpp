@@ -34,12 +34,12 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_CLASS_META(AHUD)
+HK_CLASS_META(Actor_HUD)
 
-AHUD::AHUD()
+Actor_HUD::Actor_HUD()
 {}
 
-void AHUD::Draw(Canvas& canvas, int x, int y, int width, int height)
+void Actor_HUD::Draw(Canvas& canvas, int x, int y, int width, int height)
 {
     m_ViewportX = x;
     m_ViewportY = y;

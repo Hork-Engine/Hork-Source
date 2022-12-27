@@ -140,23 +140,23 @@ void World::Destroy()
 
 void World::DestroyActors()
 {
-    for (AActor* actor : m_Actors)
+    for (Actor* actor : m_Actors)
     {
         DestroyActor(actor);
     }
 
     // Destroy actors from spawn queue
-    AActor* actor = m_PendingSpawnActors;
+    Actor* actor = m_PendingSpawnActors;
     m_PendingSpawnActors = nullptr;
     while (actor)
     {
-        AActor* nextActor = actor->m_NextSpawnActor;
+        Actor* nextActor = actor->m_NextSpawnActor;
         DestroyActor(actor);
         actor = nextActor;
     }
 }
 
-void World::DestroyActor(AActor* Actor)
+void World::DestroyActor(Actor* Actor)
 {
     if (Actor->m_bPendingKill)
     {
@@ -218,22 +218,22 @@ void World::BuildNavigation(AINavigationConfig const& _NavigationConfig)
 }
 
 ActorSpawnInfo::ActorSpawnInfo(uint64_t _ActorClassId) :
-    ActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassId))
+    ActorSpawnInfo(Actor::Factory().LookupClass(_ActorClassId))
 {
 }
 
 ActorSpawnInfo::ActorSpawnInfo(const char* _ActorClassName) :
-    ActorSpawnInfo(AActor::Factory().LookupClass(_ActorClassName))
+    ActorSpawnInfo(Actor::Factory().LookupClass(_ActorClassName))
 {
 }
 
-void ActorSpawnInfo::SetTemplate(AActor const* _Template)
+void ActorSpawnInfo::SetTemplate(Actor const* _Template)
 {
     HK_ASSERT(&_Template->FinalClassMeta() == ActorTypeClassMeta);
     Template = _Template;
 }
 
-asIScriptObject* World::CreateScriptModule(String const& Module, AActor* Actor)
+asIScriptObject* World::CreateScriptModule(String const& Module, Actor* Actor)
 {
     if (!m_ScriptEngine)
         m_ScriptEngine = std::make_unique<ScriptEngine>(this);
@@ -269,7 +269,7 @@ asIScriptObject* World::CreateScriptModule(String const& Module, AActor* Actor)
     return scriptModule;
 }
 
-AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform)
+Actor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform)
 {
     if (m_bPendingKill)
     {
@@ -287,14 +287,14 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
     {
         actorClass = pActorDef->GetActorClass();
 
-        if (actorClass->Factory() != &AActor::Factory())
+        if (actorClass->Factory() != &Actor::Factory())
         {
             LOG("World::SpawnActor: wrong C++ actor class specified\n");
-            actorClass = &AActor::GetClassMeta();
+            actorClass = &Actor::GetClassMeta();
         }
     }
 
-    AActor* actor = static_cast<AActor*>(actorClass->CreateInstance());
+    Actor* actor = static_cast<Actor*>(actorClass->CreateInstance());
     actor->AddRef();
     actor->m_bInEditor = SpawnInfo.bInEditor;
     actor->m_pActorDef = pActorDef;
@@ -381,7 +381,7 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
     {
         actor->LifeSpan = SpawnInfo.Template->LifeSpan;
 
-        auto FindTemplateComponent = [](AActor const* Template, ActorComponent* Component) -> ActorComponent*
+        auto FindTemplateComponent = [](Actor const* Template, ActorComponent* Component) -> ActorComponent*
         {
             auto classId = Component->FinalClassId();
             auto localId = Component->m_LocalId;
@@ -441,7 +441,7 @@ AActor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& Spawn
     return actor;
 }
 
-AActor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
+Actor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
 {
     ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = _SpawnInfo.ActorClassMeta();
@@ -456,7 +456,7 @@ AActor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
         return nullptr;
     }
 
-    if (spawnInfo.ActorClass->Factory() != &AActor::Factory())
+    if (spawnInfo.ActorClass->Factory() != &Actor::Factory())
     {
         LOG("World::SpawnActor: not an actor class\n");
         return nullptr;
@@ -471,17 +471,17 @@ AActor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
     return _SpawnActor2(spawnInfo, _SpawnInfo.SpawnTransform);
 }
 
-AActor* World::SpawnActor2(Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor2(Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     ActorSpawnPrivate spawnInfo;
-    spawnInfo.ActorClass = &AActor::GetClassMeta();
+    spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
     spawnInfo.bInEditor  = bInEditor;
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (!pActorDef)
     {
@@ -490,14 +490,14 @@ AActor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTra
 
     ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorDef   = pActorDef;
-    spawnInfo.ActorClass = &AActor::GetClassMeta();
+    spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
     spawnInfo.bInEditor  = bInEditor;
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (ScriptModule.IsEmpty())
     {
@@ -505,7 +505,7 @@ AActor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTra
     }
 
     ActorSpawnPrivate spawnInfo;
-    spawnInfo.ActorClass   = &AActor::GetClassMeta();
+    spawnInfo.ActorClass   = &Actor::GetClassMeta();
     spawnInfo.ScriptModule = ScriptModule;
     spawnInfo.Instigator   = Instigator;
     spawnInfo.Level        = Level;
@@ -513,12 +513,12 @@ AActor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTra
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (!ActorClass)
     {
         LOG("World::SpawnActor: invalid C++ module class\n");
-        ActorClass = &AActor::GetClassMeta();
+        ActorClass = &Actor::GetClassMeta();
     }
 
     ActorSpawnPrivate spawnInfo;
@@ -529,7 +529,7 @@ AActor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTr
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-AActor* World::SpawnActor2(AActor const* Template, Transform const& SpawnTransform, AActor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor2(Actor const* Template, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     ActorSpawnPrivate spawnInfo;
 
@@ -550,7 +550,7 @@ AActor* World::SpawnActor2(AActor const* Template, Transform const& SpawnTransfo
         LOG("World::SpawnActor: invalid template\n");
     }
 
-    spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &AActor::GetClassMeta();
+    spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &Actor::GetClassMeta();
     spawnInfo.Template   = Template;
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level      = Level;
@@ -558,7 +558,7 @@ AActor* World::SpawnActor2(AActor const* Template, Transform const& SpawnTransfo
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
-void World::InitializeAndPlay(AActor* Actor)
+void World::InitializeAndPlay(Actor* Actor)
 {
     if (Actor->m_bCanEverTick)
     {
@@ -577,7 +577,7 @@ void World::InitializeAndPlay(AActor* Actor)
         m_LateUpdateActors.Add(Actor);
     }
 
-    for (WorldTimer* timer = Actor->m_TimerList; timer; timer = timer->NextInActor)
+    for (WorldTimer* timer = Actor->m_TimerList; timer; timer = timer->m_NextInActor)
     {
         RegisterTimer(timer);
     }
@@ -591,7 +591,7 @@ void World::InitializeAndPlay(AActor* Actor)
         component->InitializeComponent();
         component->m_bInitialized = true;
 
-        if (component->bCanEverTick)
+        if (component->m_bCanEverTick)
         {
             m_TickingComponents.Add(component);
             component->m_bTicking = true;
@@ -609,7 +609,7 @@ void World::InitializeAndPlay(AActor* Actor)
     Actor->CallBeginPlay();
 }
 
-void World::CleanupActor(AActor* Actor)
+void World::CleanupActor(Actor* Actor)
 {
     E_OnActorSpawned.Remove(Actor);
     E_OnPrepareRenderFrontend.Remove(Actor);
@@ -640,7 +640,7 @@ void World::CleanupActor(AActor* Actor)
     }
 }
 
-void World::BroadcastActorSpawned(AActor* _SpawnedActor)
+void World::BroadcastActorSpawned(Actor* _SpawnedActor)
 {
     E_OnActorSpawned.Dispatch(_SpawnedActor);
 }
@@ -666,7 +666,7 @@ void World::UpdateTimers(float TimeStep)
     for (WorldTimer* timer = m_TimerList; timer;)
     {
         // The timer can be unregistered during the Tick function, so we keep a pointer to the next timer.
-        m_pNextTickingTimer = timer->NextInWorld;
+        m_pNextTickingTimer = timer->m_NextInWorld;
 
         timer->Tick(this, TimeStep);
 
@@ -676,13 +676,13 @@ void World::UpdateTimers(float TimeStep)
 
 void World::SpawnActors()
 {
-    AActor* actor = m_PendingSpawnActors;
+    Actor* actor = m_PendingSpawnActors;
 
     m_PendingSpawnActors = nullptr;
 
     while (actor)
     {
-        AActor* nextActor = actor->m_NextSpawnActor;
+        Actor* nextActor = actor->m_NextSpawnActor;
 
         if (!actor->IsPendingKill())
         {
@@ -723,7 +723,7 @@ void World::KillActors(bool bClearSpawnQueue)
             }
 
             // Remove component from actor
-            AActor* owner = component->m_OwnerActor;
+            Actor* owner = component->m_OwnerActor;
             if (owner)
             {
                 owner->m_Components[component->m_ComponentIndex]               = owner->m_Components[owner->m_Components.Size() - 1];
@@ -742,13 +742,13 @@ void World::KillActors(bool bClearSpawnQueue)
         }
 
         // Remove actors
-        AActor* actor = m_PendingKillActors;
+        Actor* actor = m_PendingKillActors;
 
         m_PendingKillActors = nullptr;
 
         while (actor)
         {
-            AActor* nextActor = actor->m_NextPendingKillActor;
+            Actor* nextActor = actor->m_NextPendingKillActor;
 
             // Actor is not in spawn queue
             if (!actor->m_bSpawning)
@@ -789,11 +789,11 @@ void World::KillActors(bool bClearSpawnQueue)
     if (bClearSpawnQueue)
     {
         // Kill the actors from the spawn queue
-        AActor* actor        = m_PendingSpawnActors;
+        Actor* actor        = m_PendingSpawnActors;
         m_PendingSpawnActors = nullptr;
         while (actor)
         {
-            AActor* nextActor = actor->m_NextSpawnActor;
+            Actor* nextActor = actor->m_NextSpawnActor;
             actor->m_bSpawning = false;
             CleanupActor(actor);
             actor->RemoveRef();
@@ -806,7 +806,7 @@ void World::UpdateActors(float TimeStep)
 {
     for (ActorComponent* component : m_TickingComponents)
     {
-        AActor* actor = component->GetOwnerActor();
+        Actor* actor = component->GetOwnerActor();
 
         if (actor->IsPendingKill() || component->IsPendingKill())
         {
@@ -821,7 +821,7 @@ void World::UpdateActors(float TimeStep)
         component->TickComponent(TimeStep);
     }
 
-    for (AActor* actor : m_TickingActors)
+    for (Actor* actor : m_TickingActors)
     {
         if (actor->IsPendingKill())
         {
@@ -841,7 +841,7 @@ void World::UpdateActorsPrePhysics(float TimeStep)
 {
     // TickComponentsPrePhysics - TODO?
 
-    for (AActor* actor : m_PrePhysicsTickActors)
+    for (Actor* actor : m_PrePhysicsTickActors)
     {
         if (actor->IsPendingKill())
         {
@@ -856,7 +856,7 @@ void World::UpdateActorsPostPhysics(float TimeStep)
 {
     // TickComponentsPostPhysics - TODO?
 
-    for (AActor* actor : m_PostPhysicsTickActors)
+    for (Actor* actor : m_PostPhysicsTickActors)
     {
         if (actor->IsPendingKill())
         {
@@ -866,7 +866,7 @@ void World::UpdateActorsPostPhysics(float TimeStep)
         actor->CallTickPostPhysics(TimeStep);
     }
 
-    for (AActor* actor : m_TickingActors)
+    for (Actor* actor : m_TickingActors)
     {
         if (actor->IsPendingKill())
         {
@@ -930,7 +930,7 @@ void World::UpdatePhysics(float TimeStep)
 
 void World::LateUpdate(float TimeStep)
 {
-    for (AActor* actor : m_LateUpdateActors)
+    for (Actor* actor : m_LateUpdateActors)
     {
         if (actor->IsPendingKill())
         {
@@ -1019,7 +1019,7 @@ void World::QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Are
 
 void World::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter)
 {
-    TPodVector<AActor*> damagedActors;
+    TPodVector<Actor*> damagedActors;
     ActorDamage        damage;
 
     QueryActors(damagedActors, _Position, _Radius, _QueryFilter);
@@ -1029,7 +1029,7 @@ void World::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, floa
     damage.Radius       = _Radius;
     damage.DamageCauser = nullptr;
 
-    for (AActor* damagedActor : damagedActors)
+    for (Actor* damagedActor : damagedActors)
     {
         damagedActor->ApplyDamage(damage);
     }
@@ -1093,28 +1093,28 @@ void World::RemoveLevel(Level* _Level)
 
 void World::RegisterTimer(WorldTimer* Timer)
 {
-    if (INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail))
+    if (INTRUSIVE_EXISTS(Timer, m_NextInWorld, m_PrevInWorld, m_TimerList, m_TimerListTail))
     {
         // Already in the world
         return;
     }
 
     Timer->AddRef();
-    INTRUSIVE_ADD(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail);
+    INTRUSIVE_ADD(Timer, m_NextInWorld, m_PrevInWorld, m_TimerList, m_TimerListTail);
 }
 
 void World::UnregisterTimer(WorldTimer* Timer)
 {
-    if (!INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail))
+    if (!INTRUSIVE_EXISTS(Timer, m_NextInWorld, m_PrevInWorld, m_TimerList, m_TimerListTail))
     {
         return;
     }
 
     if (m_pNextTickingTimer && m_pNextTickingTimer == Timer)
     {
-        m_pNextTickingTimer = Timer->NextInWorld;
+        m_pNextTickingTimer = Timer->m_NextInWorld;
     }
-    INTRUSIVE_REMOVE(Timer, NextInWorld, PrevInWorld, m_TimerList, m_TimerListTail);
+    INTRUSIVE_REMOVE(Timer, m_NextInWorld, m_PrevInWorld, m_TimerList, m_TimerListTail);
 
     Timer->RemoveRef();
 }
@@ -1128,7 +1128,7 @@ void World::DrawDebug(DebugRenderer* InRenderer)
         level->DrawDebug(InRenderer);
     }
 
-    for (AActor* actor : m_Actors)
+    for (Actor* actor : m_Actors)
     {
         actor->CallDrawDebug(InRenderer);
     }

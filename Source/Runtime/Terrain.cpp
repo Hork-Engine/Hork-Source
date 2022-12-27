@@ -626,17 +626,17 @@ bool Terrain::GetTriangle(float X, float Z, TerrainTriangle& Triangle) const
 
 void Terrain::AddListener(TerrainComponent* Listener)
 {
-    INTRUSIVE_ADD_UNIQUE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
+    INTRUSIVE_ADD_UNIQUE(Listener, m_pNext, m_pPrev, m_Listeners, m_ListenersTail);
 }
 
 void Terrain::RemoveListener(TerrainComponent* Listener)
 {
-    INTRUSIVE_REMOVE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
+    INTRUSIVE_REMOVE(Listener, m_pNext, m_pPrev, m_Listeners, m_ListenersTail);
 }
 
 void Terrain::NotifyTerrainModified()
 {
-    for (TerrainComponent* component = m_Listeners; component; component = component->pNext)
+    for (TerrainComponent* component = m_Listeners; component; component = component->m_pNext)
     {
         component->OnTerrainModified();
     }

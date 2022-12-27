@@ -46,50 +46,50 @@ public:
     /** Scale volume for all sounds in group */
     void SetVolume(float _Volume)
     {
-        Volume = Math::Saturate(_Volume);
+        m_Volume = Math::Saturate(_Volume);
     }
 
     /** Scale volume for all sounds in group */
     float GetVolume() const
     {
-        return Volume;
+        return m_Volume;
     }
 
     /** Pause/unpause all sounds in group */
     void SetPaused(bool _bGroupIsPaused)
     {
-        bGroupIsPaused = _bGroupIsPaused;
+        m_bGroupIsPaused = _bGroupIsPaused;
     }
 
     /** Is group paused */
     bool IsPaused() const
     {
-        return bGroupIsPaused;
+        return m_bGroupIsPaused;
     }
 
     /** Play sounds even when game is paused */
     void SetPlayEvenWhenPaused(bool _bPlayEvenWhenPaused)
     {
-        bPlayEvenWhenPaused = _bPlayEvenWhenPaused;
+        m_bPlayEvenWhenPaused = _bPlayEvenWhenPaused;
     }
 
     /** Play sounds even when game is paused */
     bool ShouldPlayEvenWhenPaused() const
     {
-        return bPlayEvenWhenPaused;
+        return m_bPlayEvenWhenPaused;
     }
 
     SoundGroup() = default;
 
 protected:
     /** Scale volume for all sounds in group */
-    float Volume = 1;
+    float m_Volume = 1;
 
     /** Pause all sounds in group */
-    bool bGroupIsPaused = false;
+    bool m_bGroupIsPaused = false;
 
     /** Play sounds even when game is paused */
-    bool bPlayEvenWhenPaused = false;
+    bool m_bPlayEvenWhenPaused = false;
 };
 
 enum SOUND_EMITTER_TYPE
@@ -164,7 +164,7 @@ struct SoundSpawnInfo
     bool bFollowInstigator = false;
 
     /** If audio client is not specified, audio will be hearable for all listeners */
-    AActor* AudioClient = nullptr;
+    Actor* AudioClient = nullptr;
 
     /** With listener mask you can filter listeners for the sound */
     uint32_t ListenerMask = ~0u;
@@ -199,31 +199,31 @@ class SoundOneShot
     HK_FORBID_COPY(SoundOneShot)
 
 public:
-    int                   Priority; // AUDIO_CHANNEL_PRIORITY
-    SOUND_EMITTER_TYPE     EmitterType;
-    uint64_t              AudioClient;
-    uint32_t              ListenerMask;
+    int                  Priority; // AUDIO_CHANNEL_PRIORITY
+    SOUND_EMITTER_TYPE   EmitterType;
+    uint64_t             AudioClient;
+    uint32_t             ListenerMask;
     TRef<World>          World;
     TRef<SoundGroup>     Group;
     TRef<SceneComponent> Instigator;
     TRef<SoundResource>  Resource;
-    uint64_t              InstigatorId;
-    int                   ResourceRevision;
-    Float3                SoundPosition;
-    Float3                SoundDirection;
-    float                 Volume;
-    int                   ChanVolume[2];
-    Float3                LocalDir;
-    float                 ReferenceDistance;
-    float                 MaxDistance;
-    float                 RolloffRate;
-    float                 ConeInnerAngle;
-    float                 ConeOuterAngle;
-    int                   UpdateFrame;
-    bool                  bStopWhenInstigatorDead : 1;
-    bool                  bVirtualizeWhenSilent : 1;
-    bool                  bFollowInstigator : 1;
-    bool                  bSpatializedStereo : 1;
+    uint64_t             InstigatorId;
+    int                  ResourceRevision;
+    Float3               SoundPosition;
+    Float3               SoundDirection;
+    float                Volume;
+    int                  ChanVolume[2];
+    Float3               LocalDir;
+    float                ReferenceDistance;
+    float                MaxDistance;
+    float                RolloffRate;
+    float                ConeInnerAngle;
+    float                ConeOuterAngle;
+    int                  UpdateFrame;
+    bool                 bStopWhenInstigatorDead : 1;
+    bool                 bVirtualizeWhenSilent : 1;
+    bool                 bFollowInstigator : 1;
+    bool                 bSpatializedStereo : 1;
 
     AudioChannel* Channel;
 
@@ -303,37 +303,37 @@ public:
     void SetSoundGroup(SoundGroup* SoundGroup);
 
     /** We can control the volume by groups of sound emitters */
-    SoundGroup* GetSoundGroup() const { return Group; }
+    SoundGroup* GetSoundGroup() const { return m_Group; }
 
     /** If audio client is not specified, audio will be hearable for all listeners */
-    void SetAudioClient(AActor* AudioClient);
+    void SetAudioClient(Actor* AudioClient);
 
     /** If audio client is not specified, audio will be hearable for all listeners */
-    AActor* GetAudioClient() const { return Client; }
+    Actor* GetAudioClient() const { return m_Client; }
 
     /** With listener mask you can filter listeners for the sound */
     void SetListenerMask(uint32_t Mask);
 
     /** With listener mask you can filter listeners for the sound */
-    uint32_t GetListenerMask() const { return ListenerMask; }
+    uint32_t GetListenerMask() const { return m_ListenerMask; }
 
     /** Set emitter type. See SOUND_EMITTER_TYPE */
     void SetEmitterType(SOUND_EMITTER_TYPE EmitterType);
 
     /** Get emitter type. See SOUND_EMITTER_TYPE */
-    SOUND_EMITTER_TYPE GetEmitterType() const { return EmitterType; }
+    SOUND_EMITTER_TYPE GetEmitterType() const { return m_EmitterType; }
 
     /** Virtualize sound when silent. Looped sounds has this by default. */
     void SetVirtualizeWhenSilent(bool bVirtualizeWhenSilent);
 
     /** Virtualize sound when silent. Looped sounds has this by default. */
-    bool ShouldVirtualizeWhenSilent() const { return bVirtualizeWhenSilent; }
+    bool ShouldVirtualizeWhenSilent() const { return m_bVirtualizeWhenSilent; }
 
     /** Audio volume scale */
     void SetVolume(float Volume);
 
     /** Audio volume scale */
-    float GetVolume() const { return Volume; }
+    float GetVolume() const { return m_Volume; }
 
     /** Distance attenuation parameter
     Can be from SOUND_DISTANCE_MIN to SOUND_DISTANCE_MAX */
@@ -341,7 +341,7 @@ public:
 
     /** Distance attenuation parameter
     Can be from SOUND_DISTANCE_MIN to SOUND_DISTANCE_MAX */
-    float GetReferenceDistance() const { return ReferenceDistance; }
+    float GetReferenceDistance() const { return m_ReferenceDistance; }
 
     /** Distance attenuation parameter
     Can be from ReferenceDistance to SOUND_DISTANCE_MAX */
@@ -349,7 +349,7 @@ public:
 
     /** Distance attenuation parameter
     Can be from ReferenceDistance to SOUND_DISTANCE_MAX */
-    float GetMaxDistance() const { return MaxDistance; }
+    float GetMaxDistance() const { return m_MaxDistance; }
 
     /** Distance attenuation parameter
     Gain rolloff factor */
@@ -357,19 +357,19 @@ public:
 
     /** Distance attenuation parameter
     Gain rolloff factor */
-    float GetRollofRate() const { return RolloffRate; }
+    float GetRollofRate() const { return m_RolloffRate; }
 
     /** Directional sound inner cone angle in degrees. [0-360] */
     void SetConeInnerAngle(float Angle);
 
     /** Directional sound inner cone angle in degrees. [0-360] */
-    float GetConeInnerAngle() const { return ConeInnerAngle; }
+    float GetConeInnerAngle() const { return m_ConeInnerAngle; }
 
     /** Directional sound outer cone angle in degrees. [0-360] */
     void SetConeOuterAngle(float Angle);
 
     /** Directional sound outer cone angle in degrees. [0-360] */
-    float GetConeOuterAngle() const { return ConeOuterAngle; }
+    float GetConeOuterAngle() const { return m_ConeOuterAngle; }
 
     /** Pause/Unpause the emitter */
     void SetPaused(bool bPaused);
@@ -401,16 +401,16 @@ public:
     bool IsPaused() const;
 
     /** Next sound emitter from global list */
-    SoundEmitter* GetNext() { return Next; }
+    SoundEmitter* GetNext() { return m_Next; }
 
     /** Prev sound emitter from global list */
-    SoundEmitter* GetPrev() { return Prev; }
+    SoundEmitter* GetPrev() { return m_Prev; }
 
     /** Global sound emitters list */
-    static SoundEmitter* GetSoundEmitters() { return SoundEmitters; }
+    static SoundEmitter* GetSoundEmitters() { return m_SoundEmitters; }
 
     /** Global list of one shot sounds */
-    static SoundOneShot* GetOneShots() { return OneShots; }
+    static SoundOneShot* GetOneShots() { return m_OneShots; }
 
     /** Internal. Called by Audio System to update the sounds. */
     static void UpdateSounds();
@@ -444,34 +444,34 @@ private:
 
     Queue AudioQueue;
 
-    TRef<SoundGroup>    Group;
-    TRef<AActor>        Client;
-    uint32_t            ListenerMask;
-    SOUND_EMITTER_TYPE  EmitterType;
-    TRef<SoundResource> Resource;
-    int                 ResourceRevision;
-    AudioChannel*       Channel;
-    float               Volume;
-    float               ReferenceDistance;
-    float               MaxDistance;
-    float               RolloffRate;
-    float               ConeInnerAngle;
-    float               ConeOuterAngle;
-    int                 ChanVolume[2];
-    Float3              LocalDir;
-    bool                bSpatializedStereo;
-    bool                bEmitterPaused : 1;
-    bool                bVirtualizeWhenSilent : 1;
-    bool                bMuted : 1;
+    TRef<SoundGroup>    m_Group;
+    TRef<Actor>         m_Client;
+    uint32_t            m_ListenerMask;
+    SOUND_EMITTER_TYPE  m_EmitterType;
+    TRef<SoundResource> m_Resource;
+    int                 m_ResourceRevision;
+    AudioChannel*       m_Channel;
+    float               m_Volume;
+    float               m_ReferenceDistance;
+    float               m_MaxDistance;
+    float               m_RolloffRate;
+    float               m_ConeInnerAngle;
+    float               m_ConeOuterAngle;
+    int                 m_ChanVolume[2];
+    Float3              m_LocalDir;
+    bool                m_bSpatializedStereo;
+    bool                m_bEmitterPaused : 1;
+    bool                m_bVirtualizeWhenSilent : 1;
+    bool                m_bMuted : 1;
 
-    SoundEmitter* Next = nullptr;
-    SoundEmitter* Prev = nullptr;
+    SoundEmitter* m_Next = nullptr;
+    SoundEmitter* m_Prev = nullptr;
 
-    static SoundEmitter* SoundEmitters;
-    static SoundEmitter* SoundEmittersTail;
+    static SoundEmitter* m_SoundEmitters;
+    static SoundEmitter* m_SoundEmittersTail;
 
-    static SoundOneShot* OneShots;
-    static SoundOneShot* OneShotsTail;
+    static SoundOneShot* m_OneShots;
+    static SoundOneShot* m_OneShotsTail;
 };
 
 HK_NAMESPACE_END

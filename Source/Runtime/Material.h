@@ -110,7 +110,7 @@ public:
 
     static void UpdateGpuMaterials()
     {
-        for (TListIterator<Material> it(MaterialRegistry); it; it++)
+        for (TListIterator<Material> it(m_MaterialRegistry); it; it++)
         {
             it->UpdateGpuMaterial();
         }
@@ -130,7 +130,7 @@ private:
     TRef<CompiledMaterial> m_pCompiledMaterial;
 
     TLink<Material>        Link;
-    static TList<Material> MaterialRegistry;
+    static TList<Material> m_MaterialRegistry;
 
     friend struct TList<Material>;
     friend struct TListIterator<Material>;

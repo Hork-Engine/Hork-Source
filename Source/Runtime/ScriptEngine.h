@@ -43,7 +43,7 @@ struct asSMessageInfo;
 
 HK_NAMESPACE_BEGIN
 
-class AActor;
+class Actor;
 class World;
 
 class ScriptContextPool
@@ -103,7 +103,7 @@ public:
     ScriptEngine(World* pWorld);
     ~ScriptEngine();
 
-    asIScriptObject* CreateScriptInstance(String const& ModuleName, AActor* pActor);
+    asIScriptObject* CreateScriptInstance(String const& ModuleName, Actor* pActor);
 
     ScriptContextPool& GetContextPool() { return m_ContextPool; }
 

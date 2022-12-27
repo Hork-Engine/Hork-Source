@@ -60,14 +60,14 @@ struct RenderFrontendStat
 struct RenderFrontendDef
 {
     RenderViewData* View;
-    BvFrustum const * Frustum;
+    BvFrustum const* Frustum;
     VISIBILITY_GROUP VisibilityMask;
     int FrameNumber;
     int PolyCount;
     int ShadowMapPolyCount;
     //int LightPortalPolyCount;
     //int TerrainPolyCount;
-    class StreamedMemoryGPU *StreamedMemory;
+    class StreamedMemoryGPU* StreamedMemory;
 };
 
 class RenderFrontend : public RefCounted
@@ -81,7 +81,7 @@ public:
     /** Get render frame data */
     RenderFrameData* GetFrameData() { return &m_FrameData; }
 
-    RenderFrontendStat const& GetStat() const { return Stat; }
+    RenderFrontendStat const& GetStat() const { return m_Stat; }
 
 private:
     void RenderView(int _Index);
@@ -108,27 +108,27 @@ private:
     bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
-    DebugRenderer DebugDraw;
-    int            FrameNumber = 0;
+    DebugRenderer m_DebugDraw;
+    int m_FrameNumber = 0;
 
-    RenderFrontendStat Stat;
+    RenderFrontendStat m_Stat;
 
-    TPodVector<PrimitiveDef*>           VisPrimitives;
-    TPodVector<SurfaceDef*>             VisSurfaces;
-    TPodVector<PunctualLightComponent*> VisLights;
-    TPodVector<EnvironmentProbe*>       VisEnvProbes;
+    TPodVector<PrimitiveDef*> m_VisPrimitives;
+    TPodVector<SurfaceDef*> m_VisSurfaces;
+    TPodVector<PunctualLightComponent*> m_VisLights;
+    TPodVector<EnvironmentProbe*> m_VisEnvProbes;
 
-    int VisPass = 0;
+    int m_VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    TPodVector<Drawable*>          ShadowCasters;
-    TPodVector<BvAxisAlignedBoxSSE> ShadowBoxes;
+    TPodVector<Drawable*> m_ShadowCasters;
+    TPodVector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
 
     struct alignas(16) CullResult
     {
         int32_t Result[4];
     };
-    TPodVector<CullResult> ShadowCasterCullResult;
+    TPodVector<CullResult> m_ShadowCasterCullResult;
 
     struct SurfaceStream
     {
@@ -140,15 +140,15 @@ private:
 
     SurfaceStream SurfaceStream;
 
-    RenderFrontendDef    RenderDef;
+    RenderFrontendDef m_RenderDef;
     WorldRenderView* m_WorldRenderView;
 
-    TRef<RenderCore::ITexture> PhotometricProfiles;
-    TRef<EnvironmentMap> DummyEnvironmentMap;
+    TRef<RenderCore::ITexture> m_PhotometricProfiles;
+    TRef<EnvironmentMap> m_DummyEnvironmentMap;
 
     TRef<TerrainMesh> m_TerrainMesh;
 
-    LightVoxelizer LightVoxelizer;
+    LightVoxelizer m_LightVoxelizer;
 
     FrameLoop* m_FrameLoop;
 };

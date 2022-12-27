@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 
 bool GUILockViewportScaling = false;
 
-UIViewport::UIViewport(APlayerController* playerController) :
+UIViewport::UIViewport(Actor_PlayerController* playerController) :
     m_PlayerController(playerController)
 {}
 
@@ -61,7 +61,7 @@ UIViewport& UIViewport::WithComposite(CANVAS_COMPOSITE composite)
     return *this;
 }
 
-UIViewport& UIViewport::SetPlayerController(APlayerController* playerController)
+UIViewport& UIViewport::SetPlayerController(Actor_PlayerController* playerController)
 {
     m_PlayerController = playerController;
 
@@ -190,7 +190,7 @@ void UIViewport::Draw(Canvas& canvas)
         Float2 const& pos  = m_Geometry.Mins;
         Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
 
-        AActor* pawn = m_PlayerController->GetPawn();
+        Actor* pawn = m_PlayerController->GetPawn();
         if (pawn && size.X >= 1 && size.Y >= 1)
         {
             WorldRenderView* pView = m_PlayerController->GetRenderView();
@@ -215,7 +215,7 @@ void UIViewport::Draw(Canvas& canvas)
             canvas.DrawTexture(desc);
         }
 
-        AHUD* hud = m_PlayerController->GetHUD();
+        Actor_HUD* hud = m_PlayerController->GetHUD();
         if (hud)
             hud->Draw(canvas, pos.X, pos.Y, size.X, size.Y);
     }

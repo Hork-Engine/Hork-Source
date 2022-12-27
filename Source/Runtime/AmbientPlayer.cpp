@@ -33,18 +33,18 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_CLASS_META(AAmbientPlayer)
+HK_CLASS_META(Actor_AmbientPlayer)
 
-AAmbientPlayer::AAmbientPlayer()
+Actor_AmbientPlayer::Actor_AmbientPlayer()
 {
 }
 
-void AAmbientPlayer::Initialize(ActorInitializer& Initializer)
+void Actor_AmbientPlayer::Initialize(ActorInitializer& Initializer)
 {
     Initializer.bCanEverTick = true;
 }
 
-void AAmbientPlayer::PreInitializeComponents()
+void Actor_AmbientPlayer::PreInitializeComponents()
 {
     Super::PreInitializeComponents();
 
@@ -64,7 +64,7 @@ void AAmbientPlayer::PreInitializeComponents()
     }
 }
 
-void AAmbientPlayer::BeginPlay()
+void Actor_AmbientPlayer::BeginPlay()
 {
     Super::BeginPlay();
 
@@ -82,14 +82,14 @@ void AAmbientPlayer::BeginPlay()
     }
 }
 
-void AAmbientPlayer::Tick(float _TimeStep)
+void Actor_AmbientPlayer::Tick(float _TimeStep)
 {
     Super::Tick(_TimeStep);
 
     UpdateAmbientVolume(_TimeStep);
 }
 
-void AAmbientPlayer::UpdateAmbientVolume(float _TimeStep)
+void Actor_AmbientPlayer::UpdateAmbientVolume(float _TimeStep)
 {
     Level* level = GetLevel();
     LevelAudio* audio = level->Audio;

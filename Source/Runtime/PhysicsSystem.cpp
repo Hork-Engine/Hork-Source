@@ -87,8 +87,8 @@ struct CollisionFilterCallback : public btOverlapFilterCallback
                 return true;
             }
 
-            AActor* actor0 = hitProxy0->GetOwnerActor();
-            AActor* actor1 = hitProxy1->GetOwnerActor();
+            Actor* actor0 = hitProxy0->GetOwnerActor();
+            Actor* actor1 = hitProxy1->GetOwnerActor();
 
             if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
             {
@@ -109,13 +109,13 @@ struct CollisionFilterCallback : public btOverlapFilterCallback
 
 static CollisionFilterCallback CollisionFilterCallback;
 
-static bool CustomMaterialCombinerCallback(btManifoldPoint&                cp,
+static bool CustomMaterialCombinerCallback(btManifoldPoint& cp,
                                            const btCollisionObjectWrapper* colObj0Wrap,
-                                           int                             partId0,
-                                           int                             index0,
+                                           int partId0,
+                                           int index0,
                                            const btCollisionObjectWrapper* colObj1Wrap,
-                                           int                             partId1,
-                                           int                             index1)
+                                           int partId1,
+                                           int index1)
 {
     const int normalAdjustFlags = 0
         //| BT_TRIANGLE_CONVEX_BACKFACE_MODE
@@ -125,7 +125,7 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint&                cp,
 
     btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, partId1, index1, normalAdjustFlags);
 
-    cp.m_combinedFriction    = btManifoldResult::calculateCombinedFriction(colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
+    cp.m_combinedFriction = btManifoldResult::calculateCombinedFriction(colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
     cp.m_combinedRestitution = btManifoldResult::calculateCombinedRestitution(colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
 
     return true;
@@ -133,15 +133,15 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint&                cp,
 
 void PhysicsSystem::GenerateContactPoints(int _ContactIndex, CollisionContact& _Contact)
 {
-    if (CacheContactPoints == _ContactIndex)
+    if (m_CacheContactPoints == _ContactIndex)
     {
         // Contact points already generated for this contact
         return;
     }
 
-    CacheContactPoints = _ContactIndex;
+    m_CacheContactPoints = _ContactIndex;
 
-    ContactPoints.ResizeInvalidate(_Contact.Manifold->getNumContacts());
+    m_ContactPoints.ResizeInvalidate(_Contact.Manifold->getNumContacts());
 
     bool bSwapped = static_cast<HitProxy*>(_Contact.Manifold->getBody0()->getUserPointer()) == _Contact.ComponentB;
 
@@ -153,24 +153,24 @@ void PhysicsSystem::GenerateContactPoints(int _ContactIndex, CollisionContact& _
         {
             for (int j = 0; j < _Contact.Manifold->getNumContacts(); ++j)
             {
-                btManifoldPoint& point   = _Contact.Manifold->getContactPoint(j);
-                ContactPoint&   contact = ContactPoints[j];
-                contact.Position         = btVectorToFloat3(point.m_positionWorldOnA);
-                contact.Normal           = -btVectorToFloat3(point.m_normalWorldOnB);
-                contact.Distance         = point.m_distance1;
-                contact.Impulse          = point.m_appliedImpulse;
+                btManifoldPoint& point = _Contact.Manifold->getContactPoint(j);
+                ContactPoint& contact = m_ContactPoints[j];
+                contact.Position = btVectorToFloat3(point.m_positionWorldOnA);
+                contact.Normal = -btVectorToFloat3(point.m_normalWorldOnB);
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
             }
         }
         else
         {
             for (int j = 0; j < _Contact.Manifold->getNumContacts(); ++j)
             {
-                btManifoldPoint& point   = _Contact.Manifold->getContactPoint(j);
-                ContactPoint&   contact = ContactPoints[j];
-                contact.Position         = btVectorToFloat3(point.m_positionWorldOnB);
-                contact.Normal           = btVectorToFloat3(point.m_normalWorldOnB);
-                contact.Distance         = point.m_distance1;
-                contact.Impulse          = point.m_appliedImpulse;
+                btManifoldPoint& point = _Contact.Manifold->getContactPoint(j);
+                ContactPoint& contact = m_ContactPoints[j];
+                contact.Position = btVectorToFloat3(point.m_positionWorldOnB);
+                contact.Normal = btVectorToFloat3(point.m_normalWorldOnB);
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
             }
         }
     }
@@ -182,24 +182,24 @@ void PhysicsSystem::GenerateContactPoints(int _ContactIndex, CollisionContact& _
         {
             for (int j = 0; j < _Contact.Manifold->getNumContacts(); ++j)
             {
-                btManifoldPoint& point   = _Contact.Manifold->getContactPoint(j);
-                ContactPoint&   contact = ContactPoints[j];
-                contact.Position         = btVectorToFloat3(point.m_positionWorldOnB);
-                contact.Normal           = btVectorToFloat3(point.m_normalWorldOnB);
-                contact.Distance         = point.m_distance1;
-                contact.Impulse          = point.m_appliedImpulse;
+                btManifoldPoint& point = _Contact.Manifold->getContactPoint(j);
+                ContactPoint& contact = m_ContactPoints[j];
+                contact.Position = btVectorToFloat3(point.m_positionWorldOnB);
+                contact.Normal = btVectorToFloat3(point.m_normalWorldOnB);
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
             }
         }
         else
         {
             for (int j = 0; j < _Contact.Manifold->getNumContacts(); ++j)
             {
-                btManifoldPoint& point   = _Contact.Manifold->getContactPoint(j);
-                ContactPoint&   contact = ContactPoints[j];
-                contact.Position         = btVectorToFloat3(point.m_positionWorldOnA);
-                contact.Normal           = -btVectorToFloat3(point.m_normalWorldOnB);
-                contact.Distance         = point.m_distance1;
-                contact.Impulse          = point.m_appliedImpulse;
+                btManifoldPoint& point = _Contact.Manifold->getContactPoint(j);
+                ContactPoint& contact = m_ContactPoints[j];
+                contact.Position = btVectorToFloat3(point.m_positionWorldOnA);
+                contact.Normal = -btVectorToFloat3(point.m_normalWorldOnB);
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
             }
         }
     }
@@ -212,50 +212,50 @@ PhysicsSystem::PhysicsSystem()
     gContactAddedCallback = CustomMaterialCombinerCallback;
 
 #if 1
-    BroadphaseInterface = MakeUnique<btDbvtBroadphase>();
+    m_BroadphaseInterface = MakeUnique<btDbvtBroadphase>();
 #else
-    BroadphaseInterface = MakeUnique<btAxisSweep3>(btVector3(-10000, -10000, -10000), btVector3(10000, 10000, 10000));
+    m_BroadphaseInterface = MakeUnique<btAxisSweep3>(btVector3(-10000, -10000, -10000), btVector3(10000, 10000, 10000));
 #endif
 
-    //CollisionConfiguration = MakeUnique< btDefaultCollisionConfiguration >();
-    CollisionConfiguration = MakeUnique<btSoftBodyRigidBodyCollisionConfiguration>();
-    CollisionDispatcher    = MakeUnique<btCollisionDispatcher>(CollisionConfiguration.GetObject());
+    //m_CollisionConfiguration = MakeUnique< btDefaultCollisionConfiguration >();
+    m_CollisionConfiguration = MakeUnique<btSoftBodyRigidBodyCollisionConfiguration>();
+    m_CollisionDispatcher = MakeUnique<btCollisionDispatcher>(m_CollisionConfiguration.GetObject());
     // TODO: remove this if we don't use gimpact
-    btGImpactCollisionAlgorithm::registerAlgorithm(CollisionDispatcher.GetObject());
-    ConstraintSolver = MakeUnique<btSequentialImpulseConstraintSolver>();
+    btGImpactCollisionAlgorithm::registerAlgorithm(m_CollisionDispatcher.GetObject());
+    m_ConstraintSolver = MakeUnique<btSequentialImpulseConstraintSolver>();
 
 #ifdef SOFT_BODY_WORLD
-    DynamicsWorld = MakeUnique<btSoftRigidDynamicsWorld>(CollisionDispatcher.GetObject(),
-                                                         BroadphaseInterface.GetObject(),
-                                                         ConstraintSolver.GetObject(),
-                                                         CollisionConfiguration.GetObject(),
-                                                         /* SoftBodySolver */ nullptr);
+    m_DynamicsWorld = MakeUnique<btSoftRigidDynamicsWorld>(m_CollisionDispatcher.GetObject(),
+                                                           m_BroadphaseInterface.GetObject(),
+                                                           m_ConstraintSolver.GetObject(),
+                                                           m_CollisionConfiguration.GetObject(),
+                                                           /* SoftBodySolver */ nullptr);
 #else
-    DynamicsWorld = MakeUnique<btDiscreteDynamicsWorld>(CollisionDispatcher, BroadphaseInterface, ConstraintSolver, CollisionConfiguration);
+    m_DynamicsWorld = MakeUnique<btDiscreteDynamicsWorld>(m_CollisionDispatcher, m_BroadphaseInterface, m_ConstraintSolver, m_CollisionConfiguration);
 #endif
 
-    DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
-    DynamicsWorld->getDispatchInfo().m_useContinuous = true;
-    //DynamicsWorld->getSolverInfo().m_splitImpulse = pOwnerWorld->bContactSolverSplitImpulse;
-    //DynamicsWorld->getSolverInfo().m_numIterations = pOwnerWorld->NumContactSolverIterations;
-    DynamicsWorld->getPairCache()->setOverlapFilterCallback(&CollisionFilterCallback);
-    DynamicsWorld->setInternalTickCallback(OnPrePhysics, static_cast<void*>(this), true);
-    DynamicsWorld->setInternalTickCallback(OnPostPhysics, static_cast<void*>(this), false);
-    //DynamicsWorld->setSynchronizeAllMotionStates( true ); // TODO: check how it works
+    m_DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
+    m_DynamicsWorld->getDispatchInfo().m_useContinuous = true;
+    //m_DynamicsWorld->getSolverInfo().m_splitImpulse = pOwnerWorld->bContactSolverSplitImpulse;
+    //m_DynamicsWorld->getSolverInfo().m_numIterations = pOwnerWorld->NumContactSolverIterations;
+    m_DynamicsWorld->getPairCache()->setOverlapFilterCallback(&CollisionFilterCallback);
+    m_DynamicsWorld->setInternalTickCallback(OnPrePhysics, static_cast<void*>(this), true);
+    m_DynamicsWorld->setInternalTickCallback(OnPostPhysics, static_cast<void*>(this), false);
+    //m_DynamicsWorld->setSynchronizeAllMotionStates( true ); // TODO: check how it works
 
-    GhostPairCallback = MakeUnique<btGhostPairCallback>();
-    BroadphaseInterface->getOverlappingPairCache()->setInternalGhostPairCallback(GhostPairCallback.GetObject());
+    m_GhostPairCallback = MakeUnique<btGhostPairCallback>();
+    m_BroadphaseInterface->getOverlappingPairCache()->setInternalGhostPairCallback(m_GhostPairCallback.GetObject());
 
 #ifdef SOFT_BODY_WORLD
-    SoftBodyWorldInfo                = &DynamicsWorld->getWorldInfo();
-    SoftBodyWorldInfo->m_dispatcher  = CollisionDispatcher.GetObject();
-    SoftBodyWorldInfo->m_broadphase  = BroadphaseInterface.GetObject();
-    SoftBodyWorldInfo->m_gravity     = btVectorToFloat3(GravityVector);
-    SoftBodyWorldInfo->air_density   = (btScalar)1.2;
-    SoftBodyWorldInfo->water_density = 0;
-    SoftBodyWorldInfo->water_offset  = 0;
-    SoftBodyWorldInfo->water_normal  = btVector3(0, 0, 0);
-    SoftBodyWorldInfo->m_sparsesdf.Initialize();
+    m_SoftBodyWorldInfo = &m_DynamicsWorld->getWorldInfo();
+    m_SoftBodyWorldInfo->m_dispatcher = m_CollisionDispatcher.GetObject();
+    m_SoftBodyWorldInfo->m_broadphase = m_BroadphaseInterface.GetObject();
+    m_SoftBodyWorldInfo->m_gravity = btVectorToFloat3(GravityVector);
+    m_SoftBodyWorldInfo->air_density = (btScalar)1.2;
+    m_SoftBodyWorldInfo->water_density = 0;
+    m_SoftBodyWorldInfo->water_offset = 0;
+    m_SoftBodyWorldInfo->water_normal = btVector3(0, 0, 0);
+    m_SoftBodyWorldInfo->m_sparsesdf.Initialize();
 #endif
 }
 
@@ -263,20 +263,20 @@ PhysicsSystem::~PhysicsSystem()
 {
     RemoveCollisionContacts();
 
-    DynamicsWorld.Reset();
-    ConstraintSolver.Reset();
-    CollisionDispatcher.Reset();
-    CollisionConfiguration.Reset();
-    BroadphaseInterface.Reset();
-    GhostPairCallback.Reset();
+    m_DynamicsWorld.Reset();
+    m_ConstraintSolver.Reset();
+    m_CollisionDispatcher.Reset();
+    m_CollisionConfiguration.Reset();
+    m_BroadphaseInterface.Reset();
+    m_GhostPairCallback.Reset();
 }
 
 void PhysicsSystem::RemoveCollisionContacts()
 {
     for (int i = 0; i < 2; i++)
     {
-        TVector<CollisionContact>& currentContacts = CollisionContacts[i];
-        auto&                          contactHash  = ContactHash[i];
+        TVector<CollisionContact>& currentContacts = m_CollisionContacts[i];
+        auto& contactHash = m_ContactHash[i];
 
         currentContacts.Clear();
         contactHash.Clear();
@@ -285,12 +285,12 @@ void PhysicsSystem::RemoveCollisionContacts()
 
 void PhysicsSystem::AddPendingBody(HitProxy* InPhysicalBody)
 {
-    INTRUSIVE_ADD_UNIQUE(InPhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail);
+    INTRUSIVE_ADD_UNIQUE(InPhysicalBody, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
 }
 
 void PhysicsSystem::RemovePendingBody(HitProxy* InPhysicalBody)
 {
-    INTRUSIVE_REMOVE(InPhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail);
+    INTRUSIVE_REMOVE(InPhysicalBody, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
 }
 
 void PhysicsSystem::AddHitProxy(HitProxy* HitProxy)
@@ -306,7 +306,7 @@ void PhysicsSystem::AddHitProxy(HitProxy* HitProxy)
         // Physical body is already in world, so remove it from the world
         if (HitProxy->GetCollisionObject())
         {
-            DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
+            m_DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
         }
         HitProxy->bInWorld = false;
     }
@@ -335,7 +335,7 @@ void PhysicsSystem::RemoveHitProxy(HitProxy* HitProxy)
         return;
     }
 
-    DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
+    m_DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
 
     HitProxy->bInWorld = false;
 }
@@ -343,7 +343,7 @@ void PhysicsSystem::RemoveHitProxy(HitProxy* HitProxy)
 void PhysicsSystem::AddPendingBodies()
 {
     HitProxy* next;
-    for (HitProxy* hitProxy = PendingAddToWorldHead; hitProxy; hitProxy = next)
+    for (HitProxy* hitProxy = m_PendingAddToWorldHead; hitProxy; hitProxy = next)
     {
         next = hitProxy->NextMarked;
 
@@ -356,16 +356,16 @@ void PhysicsSystem::AddPendingBodies()
             btRigidBody* rigidBody = btRigidBody::upcast(hitProxy->GetCollisionObject());
             if (rigidBody)
             {
-                DynamicsWorld->addRigidBody(rigidBody, hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
+                m_DynamicsWorld->addRigidBody(rigidBody, hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
             }
             else
             {
-                DynamicsWorld->addCollisionObject(hitProxy->GetCollisionObject(), hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
+                m_DynamicsWorld->addCollisionObject(hitProxy->GetCollisionObject(), hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
             }
             hitProxy->bInWorld = true;
         }
     }
-    PendingAddToWorldHead = PendingAddToWorldTail = nullptr;
+    m_PendingAddToWorldHead = m_PendingAddToWorldTail = nullptr;
 }
 
 void PhysicsSystem::DispatchContactAndOverlapEvents()
@@ -374,14 +374,14 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
 #    pragma warning(disable : 4456)
 #endif
 
-    int curTickNumber  = FixedTickNumber & 1;
-    int prevTickNumber = (FixedTickNumber + 1) & 1;
+    int curTickNumber = m_FixedTickNumber & 1;
+    int prevTickNumber = (m_FixedTickNumber + 1) & 1;
 
-    TVector<CollisionContact>& currentContacts = CollisionContacts[curTickNumber];
-    TVector<CollisionContact>& prevContacts    = CollisionContacts[prevTickNumber];
+    TVector<CollisionContact>& currentContacts = m_CollisionContacts[curTickNumber];
+    TVector<CollisionContact>& prevContacts = m_CollisionContacts[prevTickNumber];
 
-    auto& contactHash     = ContactHash[curTickNumber];
-    auto& prevContactHash = ContactHash[prevTickNumber];
+    auto& contactHash = m_ContactHash[curTickNumber];
+    auto& prevContactHash = m_ContactHash[prevTickNumber];
 
     OverlapEvent overlapEvent;
     ContactEvent contactEvent;
@@ -389,10 +389,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
     contactHash.Clear();
     currentContacts.Clear();
 
-    int numManifolds = CollisionDispatcher->getNumManifolds();
+    int numManifolds = m_CollisionDispatcher->getNumManifolds();
     for (int i = 0; i < numManifolds; i++)
     {
-        btPersistentManifold* contactManifold = CollisionDispatcher->getManifoldByIndexInternal(i);
+        btPersistentManifold* contactManifold = m_CollisionDispatcher->getManifoldByIndexInternal(i);
 
         if (!contactManifold->getNumContacts())
         {
@@ -413,8 +413,8 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
             std::swap(objectA, objectB);
         }
 
-        AActor* actorA = objectA->GetOwnerActor();
-        AActor* actorB = objectB->GetOwnerActor();
+        Actor* actorA = objectA->GetOwnerActor();
+        Actor* actorB = objectB->GetOwnerActor();
 
         SceneComponent* componentA = objectA->GetOwnerComponent();
         SceneComponent* componentB = objectB->GetOwnerComponent();
@@ -440,11 +440,11 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
 
         if (contact.bComponentADispatchContactEvents || contact.bComponentBDispatchContactEvents || contact.bComponentADispatchOverlapEvents || contact.bComponentBDispatchOverlapEvents || contact.bActorADispatchContactEvents || contact.bActorBDispatchContactEvents || contact.bActorADispatchOverlapEvents || contact.bActorBDispatchOverlapEvents)
         {
-            contact.ActorA     = actorA;
-            contact.ActorB     = actorB;
+            contact.ActorA = actorA;
+            contact.ActorB = actorB;
             contact.ComponentA = objectA;
             contact.ComponentB = objectB;
-            contact.Manifold   = contactManifold;
+            contact.Manifold = contactManifold;
 
             ContactKey key(contact);
 
@@ -462,7 +462,7 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
     }
 
     // Reset cache
-    CacheContactPoints = -1;
+    m_CacheContactPoints = -1;
 
     struct DispatchContactCondition
     {
@@ -549,19 +549,19 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
                     {
                         GenerateContactPoints(i << 1, contact);
 
-                        contactEvent.Points    = ContactPoints.ToPtr();
-                        contactEvent.NumPoints = ContactPoints.Size();
+                        contactEvent.Points = m_ContactPoints.ToPtr();
+                        contactEvent.NumPoints = m_ContactPoints.Size();
                     }
                     else
                     {
-                        contactEvent.Points    = nullptr;
+                        contactEvent.Points = nullptr;
                         contactEvent.NumPoints = 0;
                     }
 
-                    contactEvent.SelfActor  = contact.ActorA;
-                    contactEvent.SelfBody   = contact.ComponentA;
+                    contactEvent.SelfActor = contact.ActorA;
+                    contactEvent.SelfBody = contact.ComponentA;
                     contactEvent.OtherActor = contact.ActorB;
-                    contactEvent.OtherBody  = contact.ComponentB;
+                    contactEvent.OtherBody = contact.ComponentB;
 
                     if (bFirstContact)
                     {
@@ -575,10 +575,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
             }
             else if (contact.bActorADispatchOverlapEvents)
             {
-                overlapEvent.SelfActor  = contact.ActorA;
-                overlapEvent.SelfBody   = contact.ComponentA;
+                overlapEvent.SelfActor = contact.ActorA;
+                overlapEvent.SelfBody = contact.ComponentA;
                 overlapEvent.OtherActor = contact.ActorB;
-                overlapEvent.OtherBody  = contact.ComponentB;
+                overlapEvent.OtherBody = contact.ComponentB;
 
                 if (bFirstContact)
                 {
@@ -601,19 +601,19 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
                     {
                         GenerateContactPoints(i << 1, contact);
 
-                        contactEvent.Points    = ContactPoints.ToPtr();
-                        contactEvent.NumPoints = ContactPoints.Size();
+                        contactEvent.Points = m_ContactPoints.ToPtr();
+                        contactEvent.NumPoints = m_ContactPoints.Size();
                     }
                     else
                     {
-                        contactEvent.Points    = nullptr;
+                        contactEvent.Points = nullptr;
                         contactEvent.NumPoints = 0;
                     }
 
-                    contactEvent.SelfActor  = contact.ActorA;
-                    contactEvent.SelfBody   = contact.ComponentA;
+                    contactEvent.SelfActor = contact.ActorA;
+                    contactEvent.SelfBody = contact.ComponentA;
                     contactEvent.OtherActor = contact.ActorB;
-                    contactEvent.OtherBody  = contact.ComponentB;
+                    contactEvent.OtherBody = contact.ComponentB;
 
                     if (bFirstContact)
                     {
@@ -628,10 +628,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
             else if (contact.bComponentADispatchOverlapEvents)
             {
 
-                overlapEvent.SelfActor  = contact.ActorA;
-                overlapEvent.SelfBody   = contact.ComponentA;
+                overlapEvent.SelfActor = contact.ActorA;
+                overlapEvent.SelfBody = contact.ComponentA;
                 overlapEvent.OtherActor = contact.ActorB;
-                overlapEvent.OtherBody  = contact.ComponentB;
+                overlapEvent.OtherBody = contact.ComponentB;
 
                 if (bFirstContact)
                 {
@@ -655,19 +655,19 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
                     {
                         GenerateContactPoints((i << 1) + 1, contact);
 
-                        contactEvent.Points    = ContactPoints.ToPtr();
-                        contactEvent.NumPoints = ContactPoints.Size();
+                        contactEvent.Points = m_ContactPoints.ToPtr();
+                        contactEvent.NumPoints = m_ContactPoints.Size();
                     }
                     else
                     {
-                        contactEvent.Points    = nullptr;
+                        contactEvent.Points = nullptr;
                         contactEvent.NumPoints = 0;
                     }
 
-                    contactEvent.SelfActor  = contact.ActorB;
-                    contactEvent.SelfBody   = contact.ComponentB;
+                    contactEvent.SelfActor = contact.ActorB;
+                    contactEvent.SelfBody = contact.ComponentB;
                     contactEvent.OtherActor = contact.ActorA;
-                    contactEvent.OtherBody  = contact.ComponentA;
+                    contactEvent.OtherBody = contact.ComponentA;
 
                     if (bFirstContact)
                     {
@@ -681,10 +681,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
             }
             else if (contact.bActorBDispatchOverlapEvents)
             {
-                overlapEvent.SelfActor  = contact.ActorB;
-                overlapEvent.SelfBody   = contact.ComponentB;
+                overlapEvent.SelfActor = contact.ActorB;
+                overlapEvent.SelfBody = contact.ComponentB;
                 overlapEvent.OtherActor = contact.ActorA;
-                overlapEvent.OtherBody  = contact.ComponentA;
+                overlapEvent.OtherBody = contact.ComponentA;
 
                 if (bFirstContact)
                 {
@@ -708,19 +708,19 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
                     {
                         GenerateContactPoints((i << 1) + 1, contact);
 
-                        contactEvent.Points    = ContactPoints.ToPtr();
-                        contactEvent.NumPoints = ContactPoints.Size();
+                        contactEvent.Points = m_ContactPoints.ToPtr();
+                        contactEvent.NumPoints = m_ContactPoints.Size();
                     }
                     else
                     {
-                        contactEvent.Points    = nullptr;
+                        contactEvent.Points = nullptr;
                         contactEvent.NumPoints = 0;
                     }
 
-                    contactEvent.SelfActor  = contact.ActorB;
-                    contactEvent.SelfBody   = contact.ComponentB;
+                    contactEvent.SelfActor = contact.ActorB;
+                    contactEvent.SelfBody = contact.ComponentB;
                     contactEvent.OtherActor = contact.ActorA;
-                    contactEvent.OtherBody  = contact.ComponentA;
+                    contactEvent.OtherBody = contact.ComponentA;
 
                     if (bFirstContact)
                     {
@@ -735,10 +735,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
             else if (contact.bComponentBDispatchOverlapEvents)
             {
 
-                overlapEvent.SelfActor  = contact.ActorB;
-                overlapEvent.SelfBody   = contact.ComponentB;
+                overlapEvent.SelfActor = contact.ActorB;
+                overlapEvent.SelfBody = contact.ComponentB;
                 overlapEvent.OtherActor = contact.ActorA;
-                overlapEvent.OtherBody  = contact.ComponentA;
+                overlapEvent.OtherBody = contact.ComponentA;
 
                 if (bFirstContact)
                 {
@@ -756,7 +756,7 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
     for (int i = 0; i < prevContacts.Size(); i++)
     {
         CollisionContact& contact = prevContacts[i];
-        ContactKey        key(contact);
+        ContactKey key(contact);
         bool bHaveContact = contactHash.Contains(key);
 
         if (bHaveContact)
@@ -768,22 +768,22 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
         {
             if (contact.ActorA->E_OnEndContact)
             {
-                contactEvent.SelfActor  = contact.ActorA;
-                contactEvent.SelfBody   = contact.ComponentA;
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
                 contactEvent.OtherActor = contact.ActorB;
-                contactEvent.OtherBody  = contact.ComponentB;
-                contactEvent.Points     = nullptr;
-                contactEvent.NumPoints  = 0;
+                contactEvent.OtherBody = contact.ComponentB;
+                contactEvent.Points = nullptr;
+                contactEvent.NumPoints = 0;
 
                 contact.ActorA->E_OnEndContact.DispatchConditional(DispatchContactCondition(contactEvent), contactEvent);
             }
         }
         else if (contact.bActorADispatchOverlapEvents)
         {
-            overlapEvent.SelfActor  = contact.ActorA;
-            overlapEvent.SelfBody   = contact.ComponentA;
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
             overlapEvent.OtherActor = contact.ActorB;
-            overlapEvent.OtherBody  = contact.ComponentB;
+            overlapEvent.OtherBody = contact.ComponentB;
 
             contact.ActorA->E_OnEndOverlap.DispatchConditional(DispatchOverlapCondition(overlapEvent), overlapEvent);
         }
@@ -793,12 +793,12 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
 
             if (contact.ComponentA->E_OnEndContact)
             {
-                contactEvent.SelfActor  = contact.ActorA;
-                contactEvent.SelfBody   = contact.ComponentA;
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
                 contactEvent.OtherActor = contact.ActorB;
-                contactEvent.OtherBody  = contact.ComponentB;
-                contactEvent.Points     = nullptr;
-                contactEvent.NumPoints  = 0;
+                contactEvent.OtherBody = contact.ComponentB;
+                contactEvent.Points = nullptr;
+                contactEvent.NumPoints = 0;
 
                 contact.ComponentA->E_OnEndContact.DispatchConditional(DispatchContactCondition(contactEvent), contactEvent);
             }
@@ -806,10 +806,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
         else if (contact.bComponentADispatchOverlapEvents)
         {
 
-            overlapEvent.SelfActor  = contact.ActorA;
-            overlapEvent.SelfBody   = contact.ComponentA;
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
             overlapEvent.OtherActor = contact.ActorB;
-            overlapEvent.OtherBody  = contact.ComponentB;
+            overlapEvent.OtherBody = contact.ComponentB;
 
             contact.ComponentA->E_OnEndOverlap.DispatchConditional(DispatchOverlapCondition(overlapEvent), overlapEvent);
         }
@@ -819,22 +819,22 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
 
             if (contact.ActorB->E_OnEndContact)
             {
-                contactEvent.SelfActor  = contact.ActorB;
-                contactEvent.SelfBody   = contact.ComponentB;
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
                 contactEvent.OtherActor = contact.ActorA;
-                contactEvent.OtherBody  = contact.ComponentA;
-                contactEvent.Points     = nullptr;
-                contactEvent.NumPoints  = 0;
+                contactEvent.OtherBody = contact.ComponentA;
+                contactEvent.Points = nullptr;
+                contactEvent.NumPoints = 0;
 
                 contact.ActorB->E_OnEndContact.DispatchConditional(DispatchContactCondition(contactEvent), contactEvent);
             }
         }
         else if (contact.bActorBDispatchOverlapEvents)
         {
-            overlapEvent.SelfActor  = contact.ActorB;
-            overlapEvent.SelfBody   = contact.ComponentB;
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
             overlapEvent.OtherActor = contact.ActorA;
-            overlapEvent.OtherBody  = contact.ComponentA;
+            overlapEvent.OtherBody = contact.ComponentA;
 
             contact.ActorB->E_OnEndOverlap.DispatchConditional(DispatchOverlapCondition(overlapEvent), overlapEvent);
         }
@@ -844,12 +844,12 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
 
             if (contact.ComponentB->E_OnEndContact)
             {
-                contactEvent.SelfActor  = contact.ActorB;
-                contactEvent.SelfBody   = contact.ComponentB;
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
                 contactEvent.OtherActor = contact.ActorA;
-                contactEvent.OtherBody  = contact.ComponentA;
-                contactEvent.Points     = nullptr;
-                contactEvent.NumPoints  = 0;
+                contactEvent.OtherBody = contact.ComponentA;
+                contactEvent.Points = nullptr;
+                contactEvent.NumPoints = 0;
 
                 contact.ComponentB->E_OnEndContact.DispatchConditional(DispatchContactCondition(contactEvent), contactEvent);
             }
@@ -857,10 +857,10 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
         else if (contact.bComponentBDispatchOverlapEvents)
         {
 
-            overlapEvent.SelfActor  = contact.ActorB;
-            overlapEvent.SelfBody   = contact.ComponentB;
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
             overlapEvent.OtherActor = contact.ActorA;
-            overlapEvent.OtherBody  = contact.ComponentA;
+            overlapEvent.OtherBody = contact.ComponentA;
 
             contact.ComponentB->E_OnEndOverlap.DispatchConditional(DispatchOverlapCondition(overlapEvent), overlapEvent);
         }
@@ -883,7 +883,7 @@ void PhysicsSystem::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
     self->DispatchContactAndOverlapEvents();
 
     self->PostPhysicsCallback(_TimeStep);
-    self->FixedTickNumber++;
+    self->m_FixedTickNumber++;
 }
 
 void PhysicsSystem::Simulate(float _TimeStep)
@@ -900,24 +900,24 @@ void PhysicsSystem::Simulate(float _TimeStep)
     int maxSubSteps = Math::ToIntFast(Math::Floor(_TimeStep * PhysicsHertz)) + 1;
     //maxSubSteps = Math::Min( maxSubSteps, MAX_SIMULATION_SUB_STEPS );
 
-    btContactSolverInfo& contactSolverInfo = DynamicsWorld->getSolverInfo();
-    contactSolverInfo.m_numIterations      = Math::Clamp(NumContactSolverIterations, 1, 256);
-    contactSolverInfo.m_splitImpulse       = bContactSolverSplitImpulse;
+    btContactSolverInfo& contactSolverInfo = m_DynamicsWorld->getSolverInfo();
+    contactSolverInfo.m_numIterations = Math::Clamp(NumContactSolverIterations, 1, 256);
+    contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
 
     // Update world gravity
     if (bGravityDirty)
     {
-        DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
+        m_DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
         bGravityDirty = false;
     }
 
     // Simulation
     bDuringPhysicsUpdate = true;
-    DynamicsWorld->stepSimulation(_TimeStep, maxSubSteps, FixedTimeStep);
+    m_DynamicsWorld->stepSimulation(_TimeStep, maxSubSteps, FixedTimeStep);
     bDuringPhysicsUpdate = false;
 
 #ifdef SOFT_BODY_WORLD
-    SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
+    m_SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
 #endif
 }
 
@@ -942,7 +942,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer* InRenderer)
         {
         public:
             DebugRenderer* Renderer;
-            int             DebugMode;
+            int DebugMode;
 
             void drawLine(btVector3 const& from, btVector3 const& to, btVector3 const& color) override
             {
@@ -984,8 +984,8 @@ void PhysicsSystem::DrawDebug(DebugRenderer* InRenderer)
         InRenderer->SetDepthTest(false);
         debugDrawer.Renderer = InRenderer;
         debugDrawer.setDebugMode(mode);
-        DynamicsWorld->setDebugDrawer(&debugDrawer);
-        DynamicsWorld->debugDrawWorld();
+        m_DynamicsWorld->setDebugDrawer(&debugDrawer);
+        m_DynamicsWorld->debugDrawWorld();
     }
 }
 
@@ -994,7 +994,7 @@ static bool CompareDistance(CollisionTraceResult const& A, CollisionTraceResult 
     return A.Distance < B.Distance;
 }
 
-static bool FindCollisionActor(CollisionQueryFilter const& _QueryFilter, AActor* _Actor)
+static bool FindCollisionActor(CollisionQueryFilter const& _QueryFilter, Actor* _Actor)
 {
     for (int i = 0; i < _QueryFilter.ActorsCount; i++)
     {
@@ -1123,7 +1123,7 @@ struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
         RayLength(_RayDir.Length()), RayStart(_RayStart), RayDir(_RayDir), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
     {
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
 
         if (QueryFilter.bCullBackFace)
         {
@@ -1162,17 +1162,17 @@ struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
         hit.Clear();
         hit.HitProxy = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = RayStart + RayResult.m_hitFraction * RayDir;
-        hit.Normal   = bNormalInWorldSpace ? btVectorToFloat3(RayResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal);
+        hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(RayResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal);
         hit.Distance = RayResult.m_hitFraction * RayLength;
         hit.Fraction = RayResult.m_hitFraction;
 
         return m_closestHitFraction;
     }
 
-    float                              RayLength;
-    Float3                             RayStart;
-    Float3                             RayDir;
-    CollisionQueryFilter const&       QueryFilter;
+    float RayLength;
+    Float3 RayStart;
+    Float3 RayDir;
+    CollisionQueryFilter const& QueryFilter;
     TPodVector<CollisionTraceResult>& Result;
 };
 
@@ -1183,7 +1183,7 @@ struct TraceClosestRayResultCallback : btCollisionWorld::RayResultCallback
 
     {
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
 
         if (QueryFilter.bCullBackFace)
         {
@@ -1209,17 +1209,17 @@ struct TraceClosestRayResultCallback : btCollisionWorld::RayResultCallback
         btAssert(RayResult.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = RayResult.m_hitFraction;
-        m_collisionObject    = RayResult.m_collisionObject;
-        m_hitNormalWorld     = bNormalInWorldSpace ? RayResult.m_hitNormalLocal : m_collisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal;
+        m_collisionObject = RayResult.m_collisionObject;
+        m_hitNormalWorld = bNormalInWorldSpace ? RayResult.m_hitNormalLocal : m_collisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal;
         m_hitPointWorld.setInterpolate3(m_rayFromWorld, m_rayToWorld, RayResult.m_hitFraction);
         return RayResult.m_hitFraction;
     }
 
     CollisionQueryFilter const& QueryFilter;
-    btVector3                    m_rayFromWorld;
-    btVector3                    m_rayToWorld;
-    btVector3                    m_hitPointWorld;
-    btVector3                    m_hitNormalWorld;
+    btVector3 m_rayFromWorld;
+    btVector3 m_rayToWorld;
+    btVector3 m_hitPointWorld;
+    btVector3 m_hitNormalWorld;
 };
 
 struct TraceClosestConvexResultCallback : btCollisionWorld::ConvexResultCallback
@@ -1228,12 +1228,12 @@ struct TraceClosestConvexResultCallback : btCollisionWorld::ConvexResultCallback
         m_hitCollisionObject(0), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
     {
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
     }
 
 
-    btVector3                m_hitNormalWorld;
-    btVector3                m_hitPointWorld;
+    btVector3 m_hitNormalWorld;
+    btVector3 m_hitPointWorld;
     const btCollisionObject* m_hitCollisionObject;
 
     bool needsCollision(btBroadphaseProxy* proxy0) const override
@@ -1275,7 +1275,7 @@ struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
         RayLength(_RayLength), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
     {
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
     }
 
     bool needsCollision(btBroadphaseProxy* proxy0) const override
@@ -1296,15 +1296,15 @@ struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
         hit.Clear();
         hit.HitProxy = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = btVectorToFloat3(ConvexResult.m_hitPointLocal);
-        hit.Normal   = bNormalInWorldSpace ? btVectorToFloat3(ConvexResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * ConvexResult.m_hitNormalLocal);
+        hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(ConvexResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * ConvexResult.m_hitNormalLocal);
         hit.Distance = ConvexResult.m_hitFraction * RayLength;
         hit.Fraction = ConvexResult.m_hitFraction;
 
         return m_closestHitFraction;
     }
 
-    float                              RayLength;
-    CollisionQueryFilter const&       QueryFilter;
+    float RayLength;
+    CollisionQueryFilter const& QueryFilter;
     TPodVector<CollisionTraceResult>& Result;
 };
 
@@ -1321,7 +1321,7 @@ bool PhysicsSystem::Trace(TPodVector<CollisionTraceResult>& _Result, Float3 cons
 
     TraceRayResultCallback hitResult(_QueryFilter, _RayStart, rayDir, _Result);
 
-    DynamicsWorld->rayTest(btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd), hitResult);
+    m_DynamicsWorld->rayTest(btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd), hitResult);
 
     if (_QueryFilter->bSortByDistance)
     {
@@ -1335,7 +1335,7 @@ bool PhysicsSystem::TraceClosest(CollisionTraceResult& _Result, Float3 const& _R
 {
     TraceClosestRayResultCallback hitResult(_QueryFilter, btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd));
 
-    DynamicsWorld->rayTest(hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult);
+    m_DynamicsWorld->rayTest(hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult);
 
     _Result.Clear();
 
@@ -1346,7 +1346,7 @@ bool PhysicsSystem::TraceClosest(CollisionTraceResult& _Result, Float3 const& _R
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_collisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = (_Result.Position - _RayStart).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1359,9 +1359,9 @@ bool PhysicsSystem::TraceSphere(CollisionTraceResult& _Result, float _Radius, Fl
     btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
 
-    DynamicsWorld->convexSweepTest(&shape,
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
+    m_DynamicsWorld->convexSweepTest(&shape,
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
 
     _Result.Clear();
 
@@ -1372,7 +1372,7 @@ bool PhysicsSystem::TraceSphere(CollisionTraceResult& _Result, float _Radius, Fl
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1382,17 +1382,17 @@ bool PhysicsSystem::TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins,
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos    = boxPosition + _RayStart;
-    Float3 endPos      = boxPosition + _RayEnd;
+    Float3 startPos = boxPosition + _RayStart;
+    Float3 endPos = boxPosition + _RayEnd;
 
     TraceClosestConvexResultCallback hitResult(_QueryFilter);
 
     btBoxShape shape(btVectorToFloat3(halfExtents));
     shape.setMargin(0.0f);
 
-    DynamicsWorld->convexSweepTest(&shape,
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
+    m_DynamicsWorld->convexSweepTest(&shape,
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
 
     _Result.Clear();
 
@@ -1403,7 +1403,7 @@ bool PhysicsSystem::TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins,
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1414,9 +1414,9 @@ bool PhysicsSystem::TraceBox2(TPodVector<CollisionTraceResult>& _Result, Float3 
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos    = boxPosition + _RayStart;
-    Float3 endPos      = boxPosition + _RayEnd;
-    float  rayLength   = (endPos - startPos).Length();
+    Float3 startPos = boxPosition + _RayStart;
+    Float3 endPos = boxPosition + _RayEnd;
+    float rayLength = (endPos - startPos).Length();
 
     _Result.Clear();
 
@@ -1425,9 +1425,9 @@ bool PhysicsSystem::TraceBox2(TPodVector<CollisionTraceResult>& _Result, Float3 
     btBoxShape shape(btVectorToFloat3(halfExtents));
     shape.setMargin(0.0f);
 
-    DynamicsWorld->convexSweepTest(&shape,
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
+    m_DynamicsWorld->convexSweepTest(&shape,
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
 
     return !_Result.IsEmpty();
 }
@@ -1436,17 +1436,17 @@ bool PhysicsSystem::TraceCylinder(CollisionTraceResult& _Result, Float3 const& _
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos    = boxPosition + _RayStart;
-    Float3 endPos      = boxPosition + _RayEnd;
+    Float3 startPos = boxPosition + _RayStart;
+    Float3 endPos = boxPosition + _RayEnd;
 
     TraceClosestConvexResultCallback hitResult(_QueryFilter);
 
     btCylinderShape shape(btVectorToFloat3(halfExtents));
     shape.setMargin(0.0f);
 
-    DynamicsWorld->convexSweepTest(&shape,
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
+    m_DynamicsWorld->convexSweepTest(&shape,
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
 
     _Result.Clear();
 
@@ -1457,7 +1457,7 @@ bool PhysicsSystem::TraceCylinder(CollisionTraceResult& _Result, Float3 const& _
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1470,9 +1470,9 @@ bool PhysicsSystem::TraceCapsule(CollisionTraceResult& _Result, float _CapsuleHe
     btCapsuleShape shape(CapsuleRadius, _CapsuleHeight);
     shape.setMargin(0.0f);
 
-    DynamicsWorld->convexSweepTest(&shape,
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
-                                   btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
+    m_DynamicsWorld->convexSweepTest(&shape,
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
+                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
 
     _Result.Clear();
 
@@ -1483,7 +1483,7 @@ bool PhysicsSystem::TraceCapsule(CollisionTraceResult& _Result, float _CapsuleHe
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1499,9 +1499,9 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
     endTransform.Compose(_SweepTest.EndPosition, _SweepTest.EndRotation.ToMatrix3x3());
 
     TUniqueRef<btConvexShape> shape;
-    Float3                    position;
-    Quat                      rotation;
-    float                     margin;
+    Float3 position;
+    Quat rotation;
+    float margin;
 
     COLLISION_SHAPE type = _SweepTest.CollisionSphere->Type;
     switch (type)
@@ -1510,24 +1510,24 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
             shape.Reset(new btSphereShape(_SweepTest.CollisionSphere->Radius));
             position = _SweepTest.CollisionSphere->Position;
             rotation = Quat::Identity();
-            margin   = _SweepTest.CollisionSphere->Margin;
+            margin = _SweepTest.CollisionSphere->Margin;
             break;
         }
         case COLLISION_SHAPE_SPHERE_RADII: {
             btVector3 pos(0, 0, 0);
-            float     radius = 1.0f;
+            float radius = 1.0f;
             shape.Reset(new btMultiSphereShape(&pos, &radius, 1));
             shape->setLocalScaling(btVectorToFloat3(_SweepTest.CollisionSphereRADII->Radius));
             position = _SweepTest.CollisionSphereRADII->Position;
             rotation = _SweepTest.CollisionSphereRADII->Rotation;
-            margin   = _SweepTest.CollisionSphereRADII->Margin;
+            margin = _SweepTest.CollisionSphereRADII->Margin;
             break;
         }
         case COLLISION_SHAPE_BOX:
             shape.Reset(new btBoxShape(btVectorToFloat3(_SweepTest.CollisionBox->HalfExtents)));
             position = _SweepTest.CollisionBox->Position;
             rotation = _SweepTest.CollisionBox->Rotation;
-            margin   = _SweepTest.CollisionBox->Margin;
+            margin = _SweepTest.CollisionBox->Margin;
             break;
         case COLLISION_SHAPE_CYLINDER:
             switch (_SweepTest.CollisionCylinder->Axial)
@@ -1545,7 +1545,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
             }
             position = _SweepTest.CollisionCylinder->Position;
             rotation = _SweepTest.CollisionCylinder->Rotation;
-            margin   = _SweepTest.CollisionCylinder->Margin;
+            margin = _SweepTest.CollisionCylinder->Margin;
             break;
         case COLLISION_SHAPE_CONE:
             switch (_SweepTest.CollisionCone->Axial)
@@ -1565,7 +1565,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
             }
             position = _SweepTest.CollisionCone->Position;
             rotation = _SweepTest.CollisionCone->Rotation;
-            margin   = _SweepTest.CollisionCone->Margin;
+            margin = _SweepTest.CollisionCone->Margin;
             break;
         case COLLISION_SHAPE_CAPSULE:
             switch (_SweepTest.CollisionCapsule->Axial)
@@ -1585,13 +1585,13 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
             }
             position = _SweepTest.CollisionCapsule->Position;
             rotation = _SweepTest.CollisionCapsule->Rotation;
-            margin   = _SweepTest.CollisionCapsule->Margin;
+            margin = _SweepTest.CollisionCapsule->Margin;
             break;
         case COLLISION_SHAPE_CONVEX_HULL:
             shape.Reset(new btConvexHullShape(&_SweepTest.CollisionConvexHull->pVertices[0][0], _SweepTest.CollisionConvexHull->VertexCount, sizeof(Float3)));
             position = _SweepTest.CollisionConvexHull->Position;
             rotation = _SweepTest.CollisionConvexHull->Rotation;
-            margin   = _SweepTest.CollisionConvexHull->Margin;
+            margin = _SweepTest.CollisionConvexHull->Margin;
             break;
         default:
             LOG("World::TraceConvex: unsupported collision shape\n");
@@ -1600,15 +1600,15 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
 
     shape->setMargin(margin);
     Float3 startPos = startTransform * position;
-    Float3 endPos   = endTransform * position;
-    Quat   startRot = _SweepTest.StartRotation * rotation;
-    Quat   endRot   = _SweepTest.EndRotation * rotation;
+    Float3 endPos = endTransform * position;
+    Quat startRot = _SweepTest.StartRotation * rotation;
+    Quat endRot = _SweepTest.EndRotation * rotation;
 
     TraceClosestConvexResultCallback hitResult(&_SweepTest.QueryFilter);
 
-    DynamicsWorld->convexSweepTest(shape.GetObject(),
-                                   btTransform(btQuaternionToQuat(startRot), btVectorToFloat3(startPos)),
-                                   btTransform(btQuaternionToQuat(endRot), btVectorToFloat3(endPos)), hitResult);
+    m_DynamicsWorld->convexSweepTest(shape.GetObject(),
+                                     btTransform(btQuaternionToQuat(startRot), btVectorToFloat3(startPos)),
+                                     btTransform(btQuaternionToQuat(endRot), btVectorToFloat3(endPos)), hitResult);
 
     if (!hitResult.hasHit())
     {
@@ -1617,7 +1617,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
 
     _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal   = btVectorToFloat3(hitResult.m_hitNormalWorld);
+    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
     _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
@@ -1631,7 +1631,7 @@ struct QueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCal
         _Result.Clear();
 
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
     }
 
     bool needsCollision(btBroadphaseProxy* proxy0) const override
@@ -1670,7 +1670,7 @@ struct QueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCal
         Result.Add(hitProxy);
     }
 
-    TPodVector<HitProxy*>&      Result;
+    TPodVector<HitProxy*>& Result;
     CollisionQueryFilter const& QueryFilter;
 };
 
@@ -1682,7 +1682,7 @@ struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
         _Result.Clear();
 
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
     }
 
     bool needsCollision(btBroadphaseProxy* proxy0) const override
@@ -1715,7 +1715,7 @@ struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
 
         contact.HitProxy = HitProxy;
         contact.Position = btVectorToFloat3(cp.m_positionWorldOnB);
-        contact.Normal   = btVectorToFloat3(cp.m_normalWorldOnB);
+        contact.Normal = btVectorToFloat3(cp.m_normalWorldOnB);
         contact.Distance = cp.m_distance1; // FIXME?
         //contact.Fraction; // FIXME
 
@@ -1725,18 +1725,18 @@ struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
     }
 
     TPodVector<CollisionQueryResult>& Result;
-    CollisionQueryFilter const&       QueryFilter;
+    CollisionQueryFilter const& QueryFilter;
 };
 
 struct QueryActorsCallback : public btCollisionWorld::ContactResultCallback
 {
-    QueryActorsCallback(TPodVector<AActor*>& _Result, CollisionQueryFilter const* _QueryFilter) :
+    QueryActorsCallback(TPodVector<Actor*>& _Result, CollisionQueryFilter const* _QueryFilter) :
         Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
     {
         _Result.Clear();
 
         m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask  = QueryFilter.CollisionMask;
+        m_collisionFilterMask = QueryFilter.CollisionMask;
     }
 
     bool needsCollision(btBroadphaseProxy* proxy0) const override
@@ -1763,12 +1763,12 @@ struct QueryActorsCallback : public btCollisionWorld::ContactResultCallback
         return 0.0f;
     }
 
-    void AddUnique(AActor* Actor)
+    void AddUnique(Actor* Actor)
     {
         Result.AddUnique(Actor);
     }
 
-    TPodVector<AActor*>&         Result;
+    TPodVector<Actor*>& Result;
     CollisionQueryFilter const& QueryFilter;
 };
 
@@ -1784,17 +1784,17 @@ static void CollisionShapeContactTest(btDiscreteDynamicsWorld const* InWorld, Fl
 void PhysicsSystem::QueryHitProxies_Sphere(TPodVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
-    btSphereShape                  shape(_Radius);
+    btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryHitProxies_Box(TPodVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
-    btBoxShape                     shape(btVectorToFloat3(_HalfExtents));
+    btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
@@ -1802,23 +1802,23 @@ void PhysicsSystem::QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAligne
     QueryHitProxies_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
 
-void PhysicsSystem::QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors_Sphere(TPodVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActorsCallback callback(_Result, _QueryFilter);
-    btSphereShape        shape(_Radius);
+    btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors_Box(TPodVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActorsCallback callback(_Result, _QueryFilter);
-    btBoxShape           shape(btVectorToFloat3(_HalfExtents));
+    btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors(TPodVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActors_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
@@ -1826,17 +1826,17 @@ void PhysicsSystem::QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox c
 void PhysicsSystem::QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionCallback callback(_Result, _QueryFilter);
-    btSphereShape           shape(_Radius);
+    btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryCollision_Box(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionCallback callback(_Result, _QueryFilter);
-    btBoxShape              shape(btVectorToFloat3(_HalfExtents));
+    btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryCollision(TPodVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const

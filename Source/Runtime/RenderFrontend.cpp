@@ -72,9 +72,9 @@ RenderFrontend::RenderFrontend()
                                                   .SetResolution(RenderCore::TextureResolution1DArray(256, 256))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
-                                              &PhotometricProfiles);
+                                              &m_PhotometricProfiles);
 
-    PhotometricProfiles->SetDebugName("Photometric Profiles");
+    m_PhotometricProfiles->SetDebugName("Photometric Profiles");
 }
 
 RenderFrontend::~RenderFrontend()
@@ -103,11 +103,11 @@ void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
 
     m_FrameLoop = InFrameLoop;
 
-    m_FrameData.FrameNumber = FrameNumber = m_FrameLoop->SysFrameNumber();
+    m_FrameData.FrameNumber = m_FrameNumber = m_FrameLoop->SysFrameNumber();
 
-    Stat.FrontendTime       = Platform::SysMilliseconds();
-    Stat.PolyCount          = 0;
-    Stat.ShadowMapPolyCount = 0;
+    m_Stat.FrontendTime = Platform::SysMilliseconds();
+    m_Stat.PolyCount = 0;
+    m_Stat.ShadowMapPolyCount = 0;
 
     TVector<WorldRenderView*> const& renderViews = InFrameLoop->GetRenderViews();
 
@@ -137,7 +137,7 @@ void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
     m_FrameData.TerrainInstances.Clear();
 
     //m_FrameData.ShadowCascadePoolSize = 0;
-    DebugDraw.Reset();
+    m_DebugDraw.Reset();
 
     // Allocate views
     m_FrameData.NumViews = renderViews.Size();
@@ -162,63 +162,63 @@ void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
     }
     //LOG( "Sort instances time {} instances count {}\n", m_FrameLoop->SysMilliseconds() - t, m_FrameData.Instances.Size() + m_FrameData.ShadowInstances.Size() );
 
-    if (DebugDraw.CommandsCount() > 0)
+    if (m_DebugDraw.CommandsCount() > 0)
     {
-        m_FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
-        m_FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex(DebugDraw.GetVertices().Size() * sizeof(DebugVertex), DebugDraw.GetVertices().ToPtr());
-        m_FrameData.DbgIndexStreamOffset = streamedMemory->AllocateIndex(DebugDraw.GetIndices().Size() * sizeof(unsigned short), DebugDraw.GetIndices().ToPtr());
+        m_FrameData.DbgCmds = m_DebugDraw.GetCmds().ToPtr();
+        m_FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex(m_DebugDraw.GetVertices().Size() * sizeof(DebugVertex), m_DebugDraw.GetVertices().ToPtr());
+        m_FrameData.DbgIndexStreamOffset = streamedMemory->AllocateIndex(m_DebugDraw.GetIndices().Size() * sizeof(unsigned short), m_DebugDraw.GetIndices().ToPtr());
     }
 
-    Stat.FrontendTime = Platform::SysMilliseconds() - Stat.FrontendTime;
+    m_Stat.FrontendTime = Platform::SysMilliseconds() - m_Stat.FrontendTime;
 }
 
 void RenderFrontend::RenderView(int _Index)
 {
     WorldRenderView* worldRenderView = m_FrameLoop->GetRenderViews()[_Index];
-    CameraComponent*     camera          = worldRenderView->m_pCamera;
-    World*               world          = camera->GetWorld();
+    CameraComponent* camera = worldRenderView->m_pCamera;
+    World* world = camera->GetWorld();
     RenderViewData* view = &m_FrameData.RenderViews[_Index];
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-    TextureView*         renderTextureView = worldRenderView->GetTextureView();
+    TextureView* renderTextureView = worldRenderView->GetTextureView();
 
     uint32_t width = renderTextureView->GetWidth();
     uint32_t height = renderTextureView->GetHeight();
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
-    view->GameplayTimeSeconds    = world->GetGameplayTimeMicro() * 0.000001;
+    view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max(m_FrameLoop->SysFrameDuration() * 0.000001f, 0.0001f);
-    view->ViewIndex              = _Index;
+    view->ViewIndex = _Index;
     //view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
     //view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
-    view->WidthP  = worldRenderView->m_ScaledWidth;
+    view->WidthP = worldRenderView->m_ScaledWidth;
     view->HeightP = worldRenderView->m_ScaledHeight;
     view->Width = worldRenderView->m_ScaledWidth = width * r_ResolutionScaleX.GetFloat();
     view->Height = worldRenderView->m_ScaledHeight = height * r_ResolutionScaleY.GetFloat();
-    view->WidthR                                   = width;
-    view->HeightR                                  = height;
+    view->WidthR = width;
+    view->HeightR = height;
 
     if (camera)
     {
-        view->ViewPosition     = camera->GetWorldPosition();
-        view->ViewRotation     = camera->GetWorldRotation();
-        view->ViewRightVec     = camera->GetWorldRightVector();
-        view->ViewUpVec        = camera->GetWorldUpVector();
-        view->ViewDir          = camera->GetWorldForwardVector();
-        view->ViewMatrix       = camera->GetViewMatrix();
+        view->ViewPosition = camera->GetWorldPosition();
+        view->ViewRotation = camera->GetWorldRotation();
+        view->ViewRightVec = camera->GetWorldRightVector();
+        view->ViewUpVec = camera->GetWorldUpVector();
+        view->ViewDir = camera->GetWorldForwardVector();
+        view->ViewMatrix = camera->GetViewMatrix();
         view->ProjectionMatrix = camera->GetProjectionMatrix();
 
-        view->ViewMatrixP       = worldRenderView->m_ViewMatrix;
+        view->ViewMatrixP = worldRenderView->m_ViewMatrix;
         view->ProjectionMatrixP = worldRenderView->m_ProjectionMatrix;
 
-        worldRenderView->m_ViewMatrix     = view->ViewMatrix;
+        worldRenderView->m_ViewMatrix = view->ViewMatrix;
         worldRenderView->m_ProjectionMatrix = view->ProjectionMatrix;
 
-        view->ViewZNear     = camera->GetZNear();
-        view->ViewZFar      = camera->GetZFar();
+        view->ViewZNear = camera->GetZNear();
+        view->ViewZFar = camera->GetZFar();
         view->ViewOrthoMins = camera->GetOrthoMins();
         view->ViewOrthoMaxs = camera->GetOrthoMaxs();
         camera->GetEffectiveFov(view->ViewFovX, view->ViewFovY);
-        view->bPerspective       = camera->IsPerspective();
+        view->bPerspective = camera->IsPerspective();
         view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
         view->NormalToViewMatrix = Float3x3(view->ViewMatrix);
 
@@ -227,17 +227,17 @@ void RenderFrontend::RenderView(int _Index)
             view->ProjectionMatrix.OrthoProjectionInverseFast();
         camera->MakeClusterProjectionMatrix(view->ClusterProjectionMatrix);
 
-        view->ClusterViewProjection         = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
+        view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
         view->ClusterViewProjectionInversed = view->ClusterViewProjection.Inversed();
     }
 
-    view->ViewProjection        = view->ProjectionMatrix * view->ViewMatrix;
-    view->ViewProjectionP       = view->ProjectionMatrixP * view->ViewMatrixP;
+    view->ViewProjection = view->ProjectionMatrix * view->ViewMatrix;
+    view->ViewProjectionP = view->ProjectionMatrixP * view->ViewMatrixP;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
-    view->BackgroundColor       = Float3(worldRenderView->BackgroundColor.R, worldRenderView->BackgroundColor.G, worldRenderView->BackgroundColor.B);
-    view->bClearBackground      = worldRenderView->bClearBackground;
-    view->bWireframe            = worldRenderView->bWireframe;
+    view->BackgroundColor = Float3(worldRenderView->BackgroundColor.R, worldRenderView->BackgroundColor.G, worldRenderView->BackgroundColor.B);
+    view->bClearBackground = worldRenderView->bClearBackground;
+    view->bWireframe = worldRenderView->bWireframe;
     if (worldRenderView->Vignette)
     {
         view->VignetteColorIntensity = worldRenderView->Vignette->ColorIntensity;
@@ -253,23 +253,23 @@ void RenderFrontend::RenderView(int _Index)
     {
         ColorGradingParameters* params = worldRenderView->ColorGrading;
 
-        view->ColorGradingLUT             = params->GetLUT() ? params->GetLUT()->GetGPUResource() : nullptr;
-        view->CurrentColorGradingLUT      = worldRenderView->GetCurrentColorGradingLUT()->GetGPUResource();
+        view->ColorGradingLUT = params->GetLUT() ? params->GetLUT()->GetGPUResource() : nullptr;
+        view->CurrentColorGradingLUT = worldRenderView->GetCurrentColorGradingLUT()->GetGPUResource();
         view->ColorGradingAdaptationSpeed = params->GetAdaptationSpeed();
 
         // Procedural color grading
-        view->ColorGradingGrain                   = params->GetGrain();
-        view->ColorGradingGamma                   = params->GetGamma();
-        view->ColorGradingLift                    = params->GetLift();
-        view->ColorGradingPresaturation           = params->GetPresaturation();
-        view->ColorGradingTemperatureScale        = params->GetTemperatureScale();
-        view->ColorGradingTemperatureStrength     = params->GetTemperatureStrength();
+        view->ColorGradingGrain = params->GetGrain();
+        view->ColorGradingGamma = params->GetGamma();
+        view->ColorGradingLift = params->GetLift();
+        view->ColorGradingPresaturation = params->GetPresaturation();
+        view->ColorGradingTemperatureScale = params->GetTemperatureScale();
+        view->ColorGradingTemperatureStrength = params->GetTemperatureStrength();
         view->ColorGradingBrightnessNormalization = params->GetBrightnessNormalization();
     }
     else
     {
-        view->ColorGradingLUT             = NULL;
-        view->CurrentColorGradingLUT      = NULL;
+        view->ColorGradingLUT = NULL;
+        view->CurrentColorGradingLUT = NULL;
         view->ColorGradingAdaptationSpeed = 0;
     }
 
@@ -296,22 +296,22 @@ void RenderFrontend::RenderView(int _Index)
 
     view->VTFeedback = &worldRenderView->m_VTFeedback;
 
-    view->PhotometricProfiles = PhotometricProfiles;
+    view->PhotometricProfiles = m_PhotometricProfiles;
 
-    view->NumShadowMapCascades     = 0;
-    view->NumCascadedShadowMaps    = 0;
+    view->NumShadowMapCascades = 0;
+    view->NumCascadedShadowMaps = 0;
     view->FirstInstance = m_FrameData.Instances.Size();
-    view->InstanceCount            = 0;
+    view->InstanceCount = 0;
     view->FirstTranslucentInstance = m_FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
     view->FirstOutlineInstance = m_FrameData.OutlineInstances.Size();
-    view->OutlineInstanceCount     = 0;
+    view->OutlineInstanceCount = 0;
     //view->FirstLightPortal = m_FrameData.LightPortals.Size();
     //view->LightPortalsCount = 0;
     //view->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
     //view->ShadowInstanceCount = 0;
     view->FirstDirectionalLight = m_FrameData.DirectionalLights.Size();
-    view->NumDirectionalLights  = 0;
+    view->NumDirectionalLights = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
 
@@ -320,12 +320,12 @@ void RenderFrontend::RenderView(int _Index)
     size_t size = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof(Float4x4);
 
     view->ShadowMapMatricesStreamHandle = streamedMemory->AllocateConstant(size, nullptr);
-    view->ShadowMapMatrices             = (Float4x4*)streamedMemory->Map(view->ShadowMapMatricesStreamHandle);
+    view->ShadowMapMatrices = (Float4x4*)streamedMemory->Map(view->ShadowMapMatricesStreamHandle);
 
     size_t numFrustumClusters = MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z;
 
     view->ClusterLookupStreamHandle = streamedMemory->AllocateConstant(numFrustumClusters * sizeof(ClusterHeader), nullptr);
-    view->ClusterLookup             = (ClusterHeader*)streamedMemory->Map(view->ClusterLookupStreamHandle);
+    view->ClusterLookup = (ClusterHeader*)streamedMemory->Map(view->ClusterLookupStreamHandle);
 
     view->FirstTerrainInstance = m_FrameData.TerrainInstances.Size();
     view->TerrainInstanceCount = 0;
@@ -335,15 +335,15 @@ void RenderFrontend::RenderView(int _Index)
         return;
     }
 
-    world->E_OnPrepareRenderFrontend.Dispatch(camera, FrameNumber);
+    world->E_OnPrepareRenderFrontend.Dispatch(camera, m_FrameNumber);
 
-    RenderDef.FrameNumber        = FrameNumber;
-    RenderDef.View               = view;
-    RenderDef.Frustum            = &camera->GetFrustum();
-    RenderDef.VisibilityMask     = worldRenderView ? worldRenderView->VisibilityMask : VISIBILITY_GROUP_ALL;
-    RenderDef.PolyCount          = 0;
-    RenderDef.ShadowMapPolyCount = 0;
-    RenderDef.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
+    m_RenderDef.FrameNumber = m_FrameNumber;
+    m_RenderDef.View = view;
+    m_RenderDef.Frustum = &camera->GetFrustum();
+    m_RenderDef.VisibilityMask = worldRenderView ? worldRenderView->VisibilityMask : VISIBILITY_GROUP_ALL;
+    m_RenderDef.PolyCount = 0;
+    m_RenderDef.ShadowMapPolyCount = 0;
+    m_RenderDef.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     m_WorldRenderView = worldRenderView;
 
@@ -361,23 +361,23 @@ void RenderFrontend::RenderView(int _Index)
     }
     else
     {
-        if (!DummyEnvironmentMap)
+        if (!m_DummyEnvironmentMap)
         {
-            DummyEnvironmentMap = Resource::CreateDefault<EnvironmentMap>();
+            m_DummyEnvironmentMap = Resource::CreateDefault<EnvironmentMap>();
         }
-        view->GlobalIrradianceMap = DummyEnvironmentMap->GetIrradianceHandle();
-        view->GlobalReflectionMap = DummyEnvironmentMap->GetReflectionHandle();
+        view->GlobalIrradianceMap = m_DummyEnvironmentMap->GetIrradianceHandle();
+        view->GlobalReflectionMap = m_DummyEnvironmentMap->GetReflectionHandle();
     }
 
     // Generate debug draw commands
     if (worldRenderView->bDrawDebug)
     {
-        DebugDraw.BeginRenderView(view, VisPass);
-        world->DrawDebug(&DebugDraw);
+        m_DebugDraw.BeginRenderView(view, m_VisPass);
+        world->DrawDebug(&m_DebugDraw);
 
         if (com_DrawFrustumClusters)
         {
-            LightVoxelizer.DrawVoxels(&DebugDraw);
+            m_LightVoxelizer.DrawVoxels(&m_DebugDraw);
         }
     }
 
@@ -385,17 +385,17 @@ void RenderFrontend::RenderView(int _Index)
 
     AddDirectionalShadowmapInstances(world);
 
-    Stat.PolyCount += RenderDef.PolyCount;
-    Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
+    m_Stat.PolyCount += m_RenderDef.PolyCount;
+    m_Stat.ShadowMapPolyCount += m_RenderDef.ShadowMapPolyCount;
 
     if (worldRenderView->bDrawDebug)
     {
         for (auto& it : worldRenderView->m_TerrainViews)
         {
-            it.second->DrawDebug(&DebugDraw, m_TerrainMesh);
+            it.second->DrawDebug(&m_DebugDraw, m_TerrainMesh);
         }
 
-        DebugDraw.EndRenderView();
+        m_DebugDraw.EndRenderView();
     }
 }
 
@@ -405,21 +405,21 @@ void RenderFrontend::QueryVisiblePrimitives(World* InWorld)
 
     for (int i = 0; i < 6; i++)
     {
-        query.FrustumPlanes[i] = &(*RenderDef.Frustum)[i];
+        query.FrustumPlanes[i] = &(*m_RenderDef.Frustum)[i];
     }
-    query.ViewPosition   = RenderDef.View->ViewPosition;
-    query.ViewRightVec   = RenderDef.View->ViewRightVec;
-    query.ViewUpVec      = RenderDef.View->ViewUpVec;
-    query.VisibilityMask = RenderDef.VisibilityMask;
-    query.QueryMask      = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS; // | VSD_QUERY_MASK_SHADOW_CAST;
+    query.ViewPosition = m_RenderDef.View->ViewPosition;
+    query.ViewRightVec = m_RenderDef.View->ViewRightVec;
+    query.ViewUpVec = m_RenderDef.View->ViewUpVec;
+    query.VisibilityMask = m_RenderDef.VisibilityMask;
+    query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS; // | VSD_QUERY_MASK_SHADOW_CAST;
 
-    InWorld->QueryVisiblePrimitives(VisPrimitives, VisSurfaces, &VisPass, query);
+    InWorld->QueryVisiblePrimitives(m_VisPrimitives, m_VisSurfaces, &m_VisPass, query);
 }
 
 void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<PrimitiveDef*>& Primitives, TPodVector<SurfaceDef*>& Surfaces)
 {
     VisibilityQuery query;
-    BvFrustum        frustum;
+    BvFrustum frustum;
 
     frustum.FromMatrix(LightViewProjection, true);
 
@@ -427,11 +427,11 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
     {
         query.FrustumPlanes[i] = &frustum[i];
     }
-    query.ViewPosition   = LightPosition;
-    query.ViewRightVec   = LightBasis[0];
-    query.ViewUpVec      = LightBasis[1];
-    query.VisibilityMask = RenderDef.VisibilityMask;
-    query.QueryMask      = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
+    query.ViewPosition = LightPosition;
+    query.ViewRightVec = LightBasis[0];
+    query.ViewUpVec = LightBasis[1];
+    query.VisibilityMask = m_RenderDef.VisibilityMask;
+    query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
 #if 0
 #    if 0
     Float3 clipBox[8] =
@@ -451,9 +451,9 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
         clipBox[i] = Float3( inversed * Float4( clipBox[i], 1.0f ) );
     }
 
-    DebugDraw.SetDepthTest( false );
-    DebugDraw.SetColor(Color4(1,1,0,1));
-    DebugDraw.DrawLine( clipBox, 8 );
+    m_DebugDraw.SetDepthTest( false );
+    m_DebugDraw.SetColor(Color4(1,1,0,1));
+    m_DebugDraw.DrawLine( clipBox, 8 );
 #    else
     Float3 vectorTR;
     Float3 vectorTL;
@@ -495,18 +495,18 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
     faces[3][1] = v[1];
     faces[3][2] = v[0];
 
-    DebugDraw.SetDepthTest( true );
+    m_DebugDraw.SetDepthTest( true );
 
-    DebugDraw.SetColor( Color4( 0, 1, 1, 1 ) );
-    DebugDraw.DrawLine( origin, v[0] );
-    DebugDraw.DrawLine( origin, v[3] );
-    DebugDraw.DrawLine( origin, v[1] );
-    DebugDraw.DrawLine( origin, v[2] );
-    DebugDraw.DrawLine( v, 4, true );
+    m_DebugDraw.SetColor( Color4( 0, 1, 1, 1 ) );
+    m_DebugDraw.DrawLine( origin, v[0] );
+    m_DebugDraw.DrawLine( origin, v[3] );
+    m_DebugDraw.DrawLine( origin, v[1] );
+    m_DebugDraw.DrawLine( origin, v[2] );
+    m_DebugDraw.DrawLine( v, 4, true );
 
-    DebugDraw.SetColor( Color4( 1, 1, 1, 0.3f ) );
-    DebugDraw.DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
-    DebugDraw.DrawConvexPoly( v, 4, false );
+    m_DebugDraw.SetColor( Color4( 1, 1, 1, 0.3f ) );
+    m_DebugDraw.DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
+    m_DebugDraw.DrawConvexPoly( v, 4, false );
 #    endif
 #endif
     InWorld->QueryVisiblePrimitives(Primitives, Surfaces, nullptr, query);
@@ -516,18 +516,18 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
 {
     HK_PROFILER_EVENT("Add Render Instances");
 
-    RenderViewData* view = RenderDef.View;
-    Drawable*               drawable;
-    TerrainComponent*       terrain;
+    RenderViewData* view = m_RenderDef.View;
+    Drawable* drawable;
+    TerrainComponent* terrain;
     PunctualLightComponent* light;
-    EnvironmentProbe*       envProbe;
+    EnvironmentProbe* envProbe;
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-    LightingSystem&         lightingSystem = InWorld->LightingSystem;
+    LightingSystem& lightingSystem = InWorld->LightingSystem;
 
-    VisLights.Clear();
-    VisEnvProbes.Clear();
+    m_VisLights.Clear();
+    m_VisEnvProbes.Clear();
 
-    for (PrimitiveDef* primitive : VisPrimitives)
+    for (PrimitiveDef* primitive : m_VisPrimitives)
     {
         // TODO: Replace upcasting by something better (virtual function?)
 
@@ -550,9 +550,9 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
                 continue;
             }
 
-            if (VisLights.Size() < MAX_LIGHTS)
+            if (m_VisLights.Size() < MAX_LIGHTS)
             {
-                VisLights.Add(light);
+                m_VisLights.Add(light);
             }
             else
             {
@@ -568,9 +568,9 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
                 continue;
             }
 
-            if (VisEnvProbes.Size() < MAX_PROBES)
+            if (m_VisEnvProbes.Size() < MAX_PROBES)
             {
-                VisEnvProbes.Add(envProbe);
+                m_VisEnvProbes.Add(envProbe);
             }
             else
             {
@@ -582,7 +582,7 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
         LOG("Unhandled primitive\n");
     }
 
-    if (r_RenderSurfaces && !VisSurfaces.IsEmpty())
+    if (r_RenderSurfaces && !m_VisSurfaces.IsEmpty())
     {
         struct SortFunction
         {
@@ -592,13 +592,13 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
             }
         } SortFunction;
 
-        std::sort(VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction);
+        std::sort(m_VisSurfaces.ToPtr(), m_VisSurfaces.ToPtr() + m_VisSurfaces.Size(), SortFunction);
 
-        AddSurfaces(VisSurfaces.ToPtr(), VisSurfaces.Size());
+        AddSurfaces(m_VisSurfaces.ToPtr(), m_VisSurfaces.Size());
     }
 
     // Add directional lights
-    view->NumShadowMapCascades  = 0;
+    view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
     for (TListIterator<DirectionalLightComponent> dirlight(lightingSystem.DirectionalLights); dirlight; dirlight++)
     {
@@ -622,30 +622,30 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
         view->NumCascadedShadowMaps += instance->NumCascades > 0 ? 1 : 0; // Just statistics
 
         instance->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
-        instance->Matrix                   = dirlight->GetWorldRotation().ToMatrix3x3();
-        instance->MaxShadowCascades        = dirlight->GetMaxShadowCascades();
-        instance->RenderMask               = ~0; //dirlight->RenderingGroup;
-        instance->ShadowmapIndex           = -1;
-        instance->ShadowCascadeResolution  = dirlight->GetShadowCascadeResolution();
+        instance->Matrix = dirlight->GetWorldRotation().ToMatrix3x3();
+        instance->MaxShadowCascades = dirlight->GetMaxShadowCascades();
+        instance->RenderMask = ~0; //dirlight->RenderingGroup;
+        instance->ShadowmapIndex = -1;
+        instance->ShadowCascadeResolution = dirlight->GetShadowCascadeResolution();
 
         view->NumDirectionalLights++;
     }
 
-    LightVoxelizer.Reset();
+    m_LightVoxelizer.Reset();
 
     // Allocate lights
-    view->NumPointLights          = VisLights.Size();
-    view->PointLightsStreamSize   = sizeof(LightParameters) * view->NumPointLights;
+    view->NumPointLights = m_VisLights.Size();
+    view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
     view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
-    view->PointLights             = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
+    view->PointLights = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
     view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
-    view->NumOmnidirectionalShadowMaps  = 0;
+    view->NumOmnidirectionalShadowMaps = 0;
 
     int maxOmnidirectionalShadowMaps = GEngine->GetRenderBackend()->MaxOmnidirectionalShadowMapsPerView();
 
     for (int i = 0; i < view->NumPointLights; i++)
     {
-        light = VisLights[i];
+        light = m_VisLights[i];
 
         light->PackLight(view->ViewMatrix, view->PointLights[i]);
 
@@ -667,18 +667,18 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
         PhotometricProfile* profile = light->GetPhotometricProfile();
         if (profile)
         {
-            profile->WritePhotometricData(PhotometricProfiles, FrameNumber);
+            profile->WritePhotometricData(m_PhotometricProfiles, m_FrameNumber);
         }
 
-        ItemInfo* info = LightVoxelizer.AllocItem();
-        info->Type      = ITEM_TYPE_LIGHT;
+        ItemInfo* info = m_LightVoxelizer.AllocItem();
+        info->Type = ITEM_TYPE_LIGHT;
         info->ListIndex = i;
 
         BvAxisAlignedBox const& AABB = light->GetWorldBounds();
-        info->Mins                   = AABB.Mins;
-        info->Maxs                   = AABB.Maxs;
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
 
-        if (LightVoxelizer.IsSSE())
+        if (m_LightVoxelizer.IsSSE())
         {
             info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
@@ -689,28 +689,28 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
     }
 
     // Allocate probes
-    view->NumProbes         = VisEnvProbes.Size();
-    view->ProbeStreamSize   = sizeof(ProbeParameters) * view->NumProbes;
+    view->NumProbes = m_VisEnvProbes.Size();
+    view->ProbeStreamSize = sizeof(ProbeParameters) * view->NumProbes;
     view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
         streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :
         0;
-    view->Probes            = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
+    view->Probes = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
 
     for (int i = 0; i < view->NumProbes; i++)
     {
-        envProbe = VisEnvProbes[i];
+        envProbe = m_VisEnvProbes[i];
 
         envProbe->PackProbe(view->ViewMatrix, view->Probes[i]);
 
-        ItemInfo* info = LightVoxelizer.AllocItem();
-        info->Type      = ITEM_TYPE_PROBE;
+        ItemInfo* info = m_LightVoxelizer.AllocItem();
+        info->Type = ITEM_TYPE_PROBE;
         info->ListIndex = i;
 
         BvAxisAlignedBox const& AABB = envProbe->GetWorldBounds();
-        info->Mins                   = AABB.Mins;
-        info->Maxs                   = AABB.Maxs;
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
 
-        if (LightVoxelizer.IsSSE())
+        if (m_LightVoxelizer.IsSSE())
         {
             info->ClipToBoxMatSSE = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
@@ -722,7 +722,7 @@ void RenderFrontend::AddRenderInstances(World* InWorld)
 
     if (!r_FixFrustumClusters)
     {
-        LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
+        m_LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
     }
 }
 
@@ -746,7 +746,7 @@ void RenderFrontend::AddDrawable(Drawable* InComponent)
 
 void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
 {
-    RenderViewData* view = RenderDef.View;
+    RenderViewData* view = m_RenderDef.View;
 
     if (!r_RenderTerrain)
     {
@@ -764,7 +764,7 @@ void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
     auto it = m_WorldRenderView->m_TerrainViews.find(terrainResource->Id);
     if (it == m_WorldRenderView->m_TerrainViews.end())
     {
-        terrainView                               = new TerrainView(TerrainTileSize);
+        terrainView = new TerrainView(TerrainTileSize);
         m_WorldRenderView->m_TerrainViews[terrainResource->Id] = terrainView;
     }
     else
@@ -785,8 +785,8 @@ void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
     // Camera rotation in terrain space
     Float3x3 localRotation = rotation.Transposed() * view->ViewRotation.ToMatrix3x3();
 
-    Float3x3 basis  = localRotation.Transposed();
-    Float3   origin = basis * (-localViewPosition);
+    Float3x3 basis = localRotation.Transposed();
+    Float3 origin = basis * (-localViewPosition);
 
     Float4x4 localViewMatrix;
     localViewMatrix[0] = Float4(basis[0], 0.0f);
@@ -818,17 +818,17 @@ void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
     instance->IndexBuffer = m_TerrainMesh->GetIndexBufferGPU();
     instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
     instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
-    instance->IndirectBufferDrawCount    = terrainView->GetIndirectBufferDrawCount();
-    instance->Clipmaps                   = terrainView->GetClipmapArray();
-    instance->Normals                    = terrainView->GetNormalMapArray();
-    instance->ViewPositionAndHeight.X    = localViewPosition.X;
-    instance->ViewPositionAndHeight.Y    = localViewPosition.Y;
-    instance->ViewPositionAndHeight.Z    = localViewPosition.Z;
-    instance->ViewPositionAndHeight.W    = terrainView->GetViewHeight();
-    instance->LocalViewProjection        = localMVP;
-    instance->ModelNormalToViewSpace     = view->NormalToViewMatrix * rotation;
-    instance->ClipMin                    = terrainResource->GetClipMin();
-    instance->ClipMax                    = terrainResource->GetClipMax();
+    instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
+    instance->Clipmaps = terrainView->GetClipmapArray();
+    instance->Normals = terrainView->GetNormalMapArray();
+    instance->ViewPositionAndHeight.X = localViewPosition.X;
+    instance->ViewPositionAndHeight.Y = localViewPosition.Y;
+    instance->ViewPositionAndHeight.Z = localViewPosition.Z;
+    instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
+    instance->LocalViewProjection = localMVP;
+    instance->ModelNormalToViewSpace = view->NormalToViewMatrix * rotation;
+    instance->ClipMin = terrainResource->GetClipMin();
+    instance->ClipMax = terrainResource->GetClipMax();
 
     view->TerrainInstanceCount++;
 }
@@ -840,14 +840,14 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
-    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
-    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
+    Float3x4 const& componentWorldTransform = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
-    Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
+    Float4x4 instanceMatrix = m_RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = m_RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
@@ -877,7 +877,7 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
             MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -889,18 +889,18 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
             if (material->IsTranslucent())
             {
                 m_FrameData.TranslucentInstances.Add(instance);
-                RenderDef.View->TranslucentInstanceCount++;
+                m_RenderDef.View->TranslucentInstanceCount++;
             }
             else
             {
                 m_FrameData.Instances.Add(instance);
-                RenderDef.View->InstanceCount++;
+                m_RenderDef.View->InstanceCount++;
             }
 
             if (InComponent->bOutline)
             {
                 m_FrameData.OutlineInstances.Add(instance);
-                RenderDef.View->OutlineInstanceCount++;
+                m_RenderDef.View->OutlineInstanceCount++;
             }
 
             instance->Material = material->GetGPUResource();
@@ -943,7 +943,7 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
             instance->SkeletonSize = 0;
             instance->Matrix = instanceMatrix;
             instance->MatrixP = instanceMatrixP;
-            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
+            instance->ModelNormalToViewSpace = m_RenderDef.View->NormalToViewMatrix * worldRotation;
 
             uint8_t priority = material->GetRenderingPriority();
             if (InComponent->GetMotionBehavior() != MB_STATIC)
@@ -953,7 +953,7 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
 
             instance->GenerateSortKey(priority, (uint64_t)mesh);
 
-            RenderDef.PolyCount += instance->IndexCount / 3;
+            m_RenderDef.PolyCount += instance->IndexCount / 3;
         }
     }
 }
@@ -967,20 +967,20 @@ void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
-    size_t skeletonOffset   = 0;
+    size_t skeletonOffset = 0;
     size_t skeletonOffsetMB = 0;
-    size_t skeletonSize     = 0;
+    size_t skeletonSize = 0;
 
     InComponent->GetSkeletonHandle(skeletonOffset, skeletonOffsetMB, skeletonSize);
 
-    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
-    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
+    Float3x4 const& componentWorldTransform = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
-    Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
+    Float4x4 instanceMatrix = m_RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = m_RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
@@ -1000,7 +1000,7 @@ void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
             MaterialInstance* materialInstance = meshRender->GetMaterial(subpartIndex);
             HK_ASSERT(materialInstance);
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -1012,18 +1012,18 @@ void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
             if (material->IsTranslucent())
             {
                 m_FrameData.TranslucentInstances.Add(instance);
-                RenderDef.View->TranslucentInstanceCount++;
+                m_RenderDef.View->TranslucentInstanceCount++;
             }
             else
             {
                 m_FrameData.Instances.Add(instance);
-                RenderDef.View->InstanceCount++;
+                m_RenderDef.View->InstanceCount++;
             }
 
             if (InComponent->bOutline)
             {
                 m_FrameData.OutlineInstances.Add(instance);
-                RenderDef.View->OutlineInstanceCount++;
+                m_RenderDef.View->OutlineInstanceCount++;
             }
 
             instance->Material = material->GetGPUResource();
@@ -1047,7 +1047,7 @@ void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
             instance->SkeletonSize = skeletonSize;
             instance->Matrix = instanceMatrix;
             instance->MatrixP = instanceMatrixP;
-            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
+            instance->ModelNormalToViewSpace = m_RenderDef.View->NormalToViewMatrix * worldRotation;
 
             uint8_t priority = material->GetRenderingPriority();
 
@@ -1056,7 +1056,7 @@ void RenderFrontend::AddSkinnedMesh(SkinnedComponent* InComponent)
 
             instance->GenerateSortKey(priority, (uint64_t)mesh);
 
-            RenderDef.PolyCount += instance->IndexCount / 3;
+            m_RenderDef.PolyCount += instance->IndexCount / 3;
         }
     }
 }
@@ -1068,7 +1068,7 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
     ProceduralMesh* mesh = InComponent->GetMesh();
     if (!mesh)
@@ -1076,19 +1076,19 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
         return;
     }
 
-    mesh->PreRenderUpdate(&RenderDef);
+    mesh->PreRenderUpdate(&m_RenderDef);
 
     if (mesh->IndexCache.IsEmpty())
     {
         return;
     }
 
-    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
-    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
+    Float3x4 const& componentWorldTransform = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(m_RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
-    Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
+    Float4x4 instanceMatrix = m_RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = m_RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     auto& meshRenderViews = InComponent->GetRenderViews();
 
@@ -1100,7 +1100,7 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
         MaterialInstance* materialInstance = meshRender->GetMaterial();
         HK_ASSERT(materialInstance);
 
-        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
         if (!materialInstanceFrameData)
             return;
 
@@ -1112,25 +1112,25 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
         if (material->IsTranslucent())
         {
             m_FrameData.TranslucentInstances.Add(instance);
-            RenderDef.View->TranslucentInstanceCount++;
+            m_RenderDef.View->TranslucentInstanceCount++;
         }
         else
         {
             m_FrameData.Instances.Add(instance);
-            RenderDef.View->InstanceCount++;
+            m_RenderDef.View->InstanceCount++;
         }
 
         if (InComponent->bOutline)
         {
             m_FrameData.OutlineInstances.Add(instance);
-            RenderDef.View->OutlineInstanceCount++;
+            m_RenderDef.View->OutlineInstanceCount++;
         }
 
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
 
-        mesh->GetVertexBufferGPU(RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
-        mesh->GetIndexBufferGPU(RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
+        mesh->GetVertexBufferGPU(m_RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
+        mesh->GetIndexBufferGPU(m_RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
 
         instance->WeightsBuffer = nullptr;
         instance->WeightsBufferOffset = 0;
@@ -1145,7 +1145,7 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
         instance->SkeletonSize = 0;
         instance->Matrix = instanceMatrix;
         instance->MatrixP = instanceMatrixP;
-        instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix3x3();
+        instance->ModelNormalToViewSpace = m_RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix3x3();
 
         uint8_t priority = material->GetRenderingPriority();
         if (InComponent->GetMotionBehavior() != MB_STATIC)
@@ -1155,7 +1155,7 @@ void RenderFrontend::AddProceduralMesh(ProceduralMeshComponent* InComponent)
 
         instance->GenerateSortKey(priority, (uint64_t)mesh);
 
-        RenderDef.PolyCount += instance->IndexCount / 3;
+        m_RenderDef.PolyCount += instance->IndexCount / 3;
     }
 }
 
@@ -1166,7 +1166,7 @@ void RenderFrontend::AddShadowmap_StaticMesh(LightShadowmap* ShadowMap, MeshComp
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
     IndexedMesh* mesh = InComponent->GetMesh();
 
@@ -1198,7 +1198,7 @@ void RenderFrontend::AddShadowmap_StaticMesh(LightShadowmap* ShadowMap, MeshComp
                 continue;
             }
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -1233,7 +1233,7 @@ void RenderFrontend::AddShadowmap_StaticMesh(LightShadowmap* ShadowMap, MeshComp
 
             ShadowMap->ShadowInstanceCount++;
 
-            RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+            m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
         }
     }
 }
@@ -1245,13 +1245,13 @@ void RenderFrontend::AddShadowmap_SkinnedMesh(LightShadowmap* ShadowMap, Skinned
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
     IndexedMesh* mesh = InComponent->GetMesh();
 
-    size_t skeletonOffset   = 0;
+    size_t skeletonOffset = 0;
     size_t skeletonOffsetMB = 0;
-    size_t skeletonSize     = 0;
+    size_t skeletonSize = 0;
 
     InComponent->GetSkeletonHandle(skeletonOffset, skeletonOffsetMB, skeletonSize);
 
@@ -1283,7 +1283,7 @@ void RenderFrontend::AddShadowmap_SkinnedMesh(LightShadowmap* ShadowMap, Skinned
                 continue;
             }
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -1317,7 +1317,7 @@ void RenderFrontend::AddShadowmap_SkinnedMesh(LightShadowmap* ShadowMap, Skinned
 
             ShadowMap->ShadowInstanceCount++;
 
-            RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+            m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
         }
     }
 }
@@ -1329,7 +1329,7 @@ void RenderFrontend::AddShadowmap_ProceduralMesh(LightShadowmap* ShadowMap, Proc
         return;
     }
 
-    InComponent->PreRenderUpdate(&RenderDef);
+    InComponent->PreRenderUpdate(&m_RenderDef);
 
     auto& meshRenderViews = InComponent->GetRenderViews();
 
@@ -1355,14 +1355,14 @@ void RenderFrontend::AddShadowmap_ProceduralMesh(LightShadowmap* ShadowMap, Proc
             return;
         }
 
-        mesh->PreRenderUpdate(&RenderDef);
+        mesh->PreRenderUpdate(&m_RenderDef);
 
         if (mesh->IndexCache.IsEmpty())
         {
             return;
         }
 
-        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+        MaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
         if (!materialInstanceFrameData)
             return;
 
@@ -1374,8 +1374,8 @@ void RenderFrontend::AddShadowmap_ProceduralMesh(LightShadowmap* ShadowMap, Proc
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
 
-        mesh->GetVertexBufferGPU(RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
-        mesh->GetIndexBufferGPU(RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
+        mesh->GetVertexBufferGPU(m_RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
+        mesh->GetIndexBufferGPU(m_RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
 
         instance->WeightsBuffer = nullptr;
         instance->WeightsBufferOffset = 0;
@@ -1399,13 +1399,13 @@ void RenderFrontend::AddShadowmap_ProceduralMesh(LightShadowmap* ShadowMap, Proc
 
         ShadowMap->ShadowInstanceCount++;
 
-        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+        m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
 }
 
 void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 {
-    if (!RenderDef.View->NumShadowMapCascades)
+    if (!m_RenderDef.View->NumShadowMapCascades)
     {
         return;
     }
@@ -1414,35 +1414,35 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 
     // Create shadow instances
 
-    ShadowCasters.Clear();
-    ShadowBoxes.Clear();
+    m_ShadowCasters.Clear();
+    m_ShadowBoxes.Clear();
 
     LightingSystem& lightingSystem = InWorld->LightingSystem;
 
     for (TListIterator<Drawable> component(lightingSystem.ShadowCasters); component; component++)
     {
-        if ((component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0)
+        if ((component->GetVisibilityGroup() & m_RenderDef.VisibilityMask) == 0)
         {
             continue;
         }
         //component->CascadeMask = 0;
 
-        ShadowCasters.Add(*component);
-        ShadowBoxes.Add(component->GetWorldBounds());
+        m_ShadowCasters.Add(*component);
+        m_ShadowBoxes.Add(component->GetWorldBounds());
     }
 
-    if (ShadowBoxes.IsEmpty())
+    if (m_ShadowBoxes.IsEmpty())
         return;
 
-    ShadowBoxes.Resize(Align(ShadowBoxes.Size(), 4));
+    m_ShadowBoxes.Resize(Align(m_ShadowBoxes.Size(), 4));
 
-    ShadowCasterCullResult.ResizeInvalidate(ShadowBoxes.Size() / 4);
+    m_ShadowCasterCullResult.ResizeInvalidate(m_ShadowBoxes.Size() / 4);
 
     BvFrustum frustum;
 
-    for (int lightIndex = 0; lightIndex < RenderDef.View->NumDirectionalLights; lightIndex++)
+    for (int lightIndex = 0; lightIndex < m_RenderDef.View->NumDirectionalLights; lightIndex++)
     {
-        int lightOffset = RenderDef.View->FirstDirectionalLight + lightIndex;
+        int lightOffset = m_RenderDef.View->FirstDirectionalLight + lightIndex;
 
         DirectionalLightInstance* lightDef = m_FrameData.DirectionalLights[lightOffset];
 
@@ -1458,7 +1458,7 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
         shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;
         shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
-        shadowMap->LightPortalsCount   = 0;
+        shadowMap->LightPortalsCount = 0;
 
         Float4x4* lightViewProjectionMatrices = (Float4x4*)streamedMemory->Map(lightDef->ViewProjStreamHandle);
 
@@ -1468,21 +1468,21 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
         {
             frustum.FromMatrix(lightViewProjectionMatrices[cascadeIndex]);
 
-            ShadowCasterCullResult.ZeroMem();
+            m_ShadowCasterCullResult.ZeroMem();
 
-            frustum.CullBox_SSE(ShadowBoxes.ToPtr(), ShadowCasters.Size(), &ShadowCasterCullResult[0].Result[0]);
-            //frustum.CullBox_Generic( ShadowBoxes.ToPtr(), ShadowCasters.Size(), ShadowCasterCullResult.ToPtr() );
+            frustum.CullBox_SSE(m_ShadowBoxes.ToPtr(), m_ShadowCasters.Size(), &m_ShadowCasterCullResult[0].Result[0]);
+            //frustum.CullBox_Generic( m_ShadowBoxes.ToPtr(), m_ShadowCasters.Size(), m_ShadowCasterCullResult.ToPtr() );
 
-            for (int n = 0, n2 = 0; n < ShadowCasters.Size(); n+=4, n2++)
+            for (int n = 0, n2 = 0; n < m_ShadowCasters.Size(); n += 4, n2++)
             {
-                for (int t = 0 ; t < 4 && n + t < ShadowCasters.Size() ; t++)
-                    ShadowCasters[n + t]->CascadeMask |= (ShadowCasterCullResult[n2].Result[t] == 0) << cascadeIndex;
+                for (int t = 0; t < 4 && n + t < m_ShadowCasters.Size(); t++)
+                    m_ShadowCasters[n + t]->CascadeMask |= (m_ShadowCasterCullResult[n2].Result[t] == 0) << cascadeIndex;
             }
         }
 
-        for (int n = 0; n < ShadowCasters.Size(); n++)
+        for (int n = 0; n < m_ShadowCasters.Size(); n++)
         {
-            Drawable* component = ShadowCasters[n];
+            Drawable* component = m_ShadowCasters[n];
 
             if (component->CascadeMask == 0)
             {
@@ -1528,26 +1528,26 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 
             m_FrameData.ShadowInstances.Add(instance);
 
-            instance->Material            = nullptr;
-            instance->MaterialInstance    = nullptr;
-            instance->VertexBuffer        = lighting->GetShadowCasterVB();
-            instance->VertexBufferOffset  = 0;
-            instance->IndexBuffer         = lighting->GetShadowCasterIB();
-            instance->IndexBufferOffset   = 0;
-            instance->WeightsBuffer       = nullptr;
+            instance->Material = nullptr;
+            instance->MaterialInstance = nullptr;
+            instance->VertexBuffer = lighting->GetShadowCasterVB();
+            instance->VertexBufferOffset = 0;
+            instance->IndexBuffer = lighting->GetShadowCasterIB();
+            instance->IndexBufferOffset = 0;
+            instance->WeightsBuffer = nullptr;
             instance->WeightsBufferOffset = 0;
-            instance->IndexCount          = lighting->GetShadowCasterIndexCount();
-            instance->StartIndexLocation  = 0;
-            instance->BaseVertexLocation  = 0;
-            instance->SkeletonOffset      = 0;
-            instance->SkeletonSize        = 0;
+            instance->IndexCount = lighting->GetShadowCasterIndexCount();
+            instance->StartIndexLocation = 0;
+            instance->BaseVertexLocation = 0;
+            instance->SkeletonOffset = 0;
+            instance->SkeletonSize = 0;
             instance->WorldTransformMatrix.SetIdentity();
             instance->CascadeMask = 0xffff; // TODO: Calculate!!!
-            instance->SortKey     = 0;
+            instance->SortKey = 0;
 
             shadowMap->ShadowInstanceCount++;
 
-            RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+            m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
         }
 
         std::sort(m_FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
@@ -1581,17 +1581,17 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 
                     m_FrameData.LightPortals.Add(instance);
 
-                    instance->VertexBuffer       = lighting->GetLightPortalsVB();
+                    instance->VertexBuffer = lighting->GetLightPortalsVB();
                     instance->VertexBufferOffset = 0;
-                    instance->IndexBuffer        = lighting->GetLightPortalsIB();
-                    instance->IndexBufferOffset  = 0;
-                    instance->IndexCount         = lightPortal.NumIndices;
+                    instance->IndexBuffer = lighting->GetLightPortalsIB();
+                    instance->IndexBufferOffset = 0;
+                    instance->IndexCount = lightPortal.NumIndices;
                     instance->StartIndexLocation = lightPortal.FirstIndex;
                     instance->BaseVertexLocation = 0;
 
                     shadowMap->LightPortalsCount++;
 
-                    //RenderDef.LightPortalPolyCount += instance->IndexCount / 3;
+                    //m_RenderDef.LightPortalPolyCount += instance->IndexCount / 3;
                 }
             }
         }
@@ -1617,7 +1617,7 @@ void RenderFrontend::AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount)
         return;
     }
 
-    int totalVerts   = 0;
+    int totalVerts = 0;
     int totalIndices = 0;
     for (int i = 0; i < SurfaceCount; i++)
     {
@@ -1635,17 +1635,17 @@ void RenderFrontend::AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount)
 
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
-    SurfaceStream.VertexAddr      = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
+    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
     SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexLight), nullptr);
-    SurfaceStream.VertexUVAddr    = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexUV), nullptr);
-    SurfaceStream.IndexAddr       = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
+    SurfaceStream.VertexUVAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexUV), nullptr);
+    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
 
-    MeshVertex*      vertices    = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
+    MeshVertex* vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
     MeshVertexLight* vertexLight = (MeshVertexLight*)streamedMemory->Map(SurfaceStream.VertexLightAddr);
-    MeshVertexUV*    vertexUV    = (MeshVertexUV*)streamedMemory->Map(SurfaceStream.VertexUVAddr);
-    unsigned int*     indices     = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
+    MeshVertexUV* vertexUV = (MeshVertexUV*)streamedMemory->Map(SurfaceStream.VertexUVAddr);
+    unsigned int* indices = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
 
-    int numVerts   = 0;
+    int numVerts = 0;
     int numIndices = 0;
     int firstIndex = 0;
 
@@ -1667,15 +1667,15 @@ void RenderFrontend::AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount)
                         merge->RenderingOrder*/
             );
 
-            merge      = surfDef;
-            model      = merge->Model;
+            merge = surfDef;
+            model = merge->Model;
             firstIndex = numIndices;
         }
 
-        MeshVertex const*      srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
-        MeshVertexUV const*    srcLM      = model->LightmapVerts.ToPtr() + surfDef->FirstVertex;
-        MeshVertexLight const* srcVL      = model->VertexLight.ToPtr() + surfDef->FirstVertex;
-        unsigned int const*     srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
+        MeshVertex const* srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
+        MeshVertexUV const* srcLM = model->LightmapVerts.ToPtr() + surfDef->FirstVertex;
+        MeshVertexLight const* srcVL = model->VertexLight.ToPtr() + surfDef->FirstVertex;
+        unsigned int const* srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
 
@@ -1715,7 +1715,7 @@ void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef*
         return;
     }
 
-    int totalVerts   = 0;
+    int totalVerts = 0;
     int totalIndices = 0;
     for (int i = 0; i < SurfaceCount; i++)
     {
@@ -1739,12 +1739,12 @@ void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef*
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
-    SurfaceStream.IndexAddr  = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
+    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
 
-    MeshVertex*  vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
-    unsigned int* indices  = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
+    MeshVertex* vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
+    unsigned int* indices = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
 
-    int numVerts   = 0;
+    int numVerts = 0;
     int numIndices = 0;
     int firstIndex = 0;
 
@@ -1771,21 +1771,21 @@ void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef*
                                  merge->RenderingOrder*/
             );
 
-            merge      = surfDef;
-            model      = merge->Model;
+            merge = surfDef;
+            model = merge->Model;
             firstIndex = numIndices;
         }
 
-        MeshVertex const*  srcVerts   = model->Vertices.ToPtr() + surfDef->FirstVertex;
+        MeshVertex const* srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
         unsigned int const* srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
 #if 0
-        DebugDraw.SetDepthTest( false );
-        DebugDraw.SetColor( Color4( 1, 1, 0, 1 ) );
-        DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( MeshVertex ),
+        m_DebugDraw.SetDepthTest( false );
+        m_DebugDraw.SetColor( Color4( 1, 1, 0, 1 ) );
+        m_DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( MeshVertex ),
                                              srcIndices, surfDef->NumIndices );
-        //DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
-        //DebugDraw.DrawAABB( surfDef->Bounds );
+        //m_DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
+        //m_DebugDraw.DrawAABB( surfDef->Bounds );
 #endif
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
@@ -1818,8 +1818,8 @@ void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef*
 
 void RenderFrontend::AddSurface(Level* Level, MaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
 {
-    Material*          material                  = MaterialInstance->GetMaterial();
-    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+    Material* material = MaterialInstance->GetMaterial();
+    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
 
     if (!materialInstanceFrameData)
         return;
@@ -1830,20 +1830,20 @@ void RenderFrontend::AddSurface(Level* Level, MaterialInstance* MaterialInstance
     if (material->IsTranslucent())
     {
         m_FrameData.TranslucentInstances.Add(instance);
-        RenderDef.View->TranslucentInstanceCount++;
+        m_RenderDef.View->TranslucentInstanceCount++;
     }
     else
     {
         m_FrameData.Instances.Add(instance);
-        RenderDef.View->InstanceCount++;
+        m_RenderDef.View->InstanceCount++;
     }
 
     //if ( bOutline ) {
     //    m_FrameData.OutlineInstances.Add( instance );
-    //    RenderDef.View->OutlineInstanceCount++;
+    //    m_RenderDef.View->OutlineInstanceCount++;
     //}
 
-    instance->Material         = material->GetGPUResource();
+    instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
@@ -1867,33 +1867,33 @@ void RenderFrontend::AddSurface(Level* Level, MaterialInstance* MaterialInstance
     }
     else
     {
-        instance->Lightmap          = nullptr;
+        instance->Lightmap = nullptr;
         instance->LightmapUVChannel = nullptr;
     }
 
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexLightAddr, &instance->VertexLightChannel, &instance->VertexLightOffset);
 
-    instance->IndexCount             = _NumIndices;
-    instance->StartIndexLocation     = _FirstIndex;
-    instance->BaseVertexLocation     = 0;
-    instance->SkeletonOffset         = 0;
-    instance->SkeletonOffsetMB       = 0;
-    instance->SkeletonSize           = 0;
-    instance->Matrix                 = RenderDef.View->ViewProjection;
-    instance->MatrixP                = RenderDef.View->ViewProjectionP;
-    instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;
+    instance->IndexCount = _NumIndices;
+    instance->StartIndexLocation = _FirstIndex;
+    instance->BaseVertexLocation = 0;
+    instance->SkeletonOffset = 0;
+    instance->SkeletonOffsetMB = 0;
+    instance->SkeletonSize = 0;
+    instance->Matrix = m_RenderDef.View->ViewProjection;
+    instance->MatrixP = m_RenderDef.View->ViewProjectionP;
+    instance->ModelNormalToViewSpace = m_RenderDef.View->NormalToViewMatrix;
 
     uint8_t priority = material->GetRenderingPriority();
 
     instance->GenerateSortKey(priority, SurfaceStream.VertexAddr);
 
-    RenderDef.PolyCount += instance->IndexCount / 3;
+    m_RenderDef.PolyCount += instance->IndexCount / 3;
 }
 
 void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
 {
-    Material*          material                  = MaterialInstance->GetMaterial();
-    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, FrameNumber);
+    Material* material = MaterialInstance->GetMaterial();
+    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
 
     if (!materialInstanceFrameData)
         return;
@@ -1903,7 +1903,7 @@ void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInst
 
     m_FrameData.ShadowInstances.Add(instance);
 
-    instance->Material         = material->GetGPUResource();
+    instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
@@ -1911,15 +1911,15 @@ void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInst
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset);
     streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset);
 
-    instance->WeightsBuffer       = nullptr;
+    instance->WeightsBuffer = nullptr;
     instance->WeightsBufferOffset = 0;
     instance->WorldTransformMatrix.SetIdentity();
-    instance->IndexCount         = _NumIndices;
+    instance->IndexCount = _NumIndices;
     instance->StartIndexLocation = _FirstIndex;
     instance->BaseVertexLocation = 0;
-    instance->SkeletonOffset     = 0;
-    instance->SkeletonSize       = 0;
-    instance->CascadeMask        = 0xffff; // TODO?
+    instance->SkeletonOffset = 0;
+    instance->SkeletonSize = 0;
+    instance->CascadeMask = 0xffff; // TODO?
 
     uint8_t priority = material->GetRenderingPriority();
 
@@ -1927,7 +1927,7 @@ void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInst
 
     ShadowMap->ShadowInstanceCount++;
 
-    RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+    m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
 bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radius)
@@ -1940,7 +1940,7 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
     World* world = Light->GetWorld();
 
     Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4        projMat          = Float4x4::PerspectiveRevCC_Cube(0.1f, 1000/*Radius*/);
+    Float4x4 projMat = Float4x4::PerspectiveRevCC_Cube(0.1f, 1000 /*Radius*/);
 
     Float4x4 lightViewProjection;
     Float4x4 lightViewMatrix;
@@ -1950,12 +1950,12 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
     Drawable* drawable;
 
     int totalInstances = 0;
-    int totalSurfaces  = 0;
+    int totalSurfaces = 0;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        Float3x3 basis  = Float3x3(cubeFaceMatrices[faceIndex]);
-        Float3   origin = basis * (-lightPos);
+        Float3x3 basis = Float3x3(cubeFaceMatrices[faceIndex]);
+        Float3 origin = basis * (-lightPos);
 
         lightViewMatrix[0] = Float4(basis[0], 0.0f);
         lightViewMatrix[1] = Float4(basis[1], 0.0f);
@@ -1968,17 +1968,17 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
         lightViewProjection = projMat * lightViewMatrix;
 
         // TODO: VSD не учитывает FarPlane для кулинга - исправить это
-        QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), VisPrimitives, VisSurfaces);
+        QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), m_VisPrimitives, m_VisSurfaces);
 
         LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
 
         shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;
         shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
-        shadowMap->LightPortalsCount   = 0;
-        shadowMap->LightPosition       = lightPos;
+        shadowMap->LightPortalsCount = 0;
+        shadowMap->LightPosition = lightPos;
 
-        for (PrimitiveDef* primitive : VisPrimitives)
+        for (PrimitiveDef* primitive : m_VisPrimitives)
         {
             // TODO: Replace upcasting by something better (virtual function?)
 
@@ -2002,16 +2002,16 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
                 }
 
 #if 0
-                DebugDraw.SetDepthTest( false );
-                DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
-                DebugDraw.DrawAABB( drawable->GetWorldBounds() );
+                m_DebugDraw.SetDepthTest( false );
+                m_DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
+                m_DebugDraw.DrawAABB( drawable->GetWorldBounds() );
 #endif
 
                 drawable->CascadeMask = 0;
             }
         }
 
-        if (r_RenderSurfaces && !VisSurfaces.IsEmpty())
+        if (r_RenderSurfaces && !m_VisSurfaces.IsEmpty())
         {
             struct SortFunction
             {
@@ -2021,11 +2021,11 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
                 }
             } SortFunction;
 
-            std::sort(VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction);
+            std::sort(m_VisSurfaces.ToPtr(), m_VisSurfaces.ToPtr() + m_VisSurfaces.Size(), SortFunction);
 
-            AddShadowmapSurfaces(shadowMap, VisSurfaces.ToPtr(), VisSurfaces.Size());
+            AddShadowmapSurfaces(shadowMap, m_VisSurfaces.ToPtr(), m_VisSurfaces.Size());
 
-            totalSurfaces += VisSurfaces.Size();
+            totalSurfaces += m_VisSurfaces.Size();
         }
 
         std::sort(m_FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,

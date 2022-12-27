@@ -32,9 +32,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_CLASS_META(ATrigger)
+HK_CLASS_META(Actor_Trigger)
 
-ATrigger::ATrigger()
+Actor_Trigger::Actor_Trigger()
 {
     m_TriggerBody = CreateComponent<PhysicalBody>("TriggerBody");
     m_RootComponent = m_TriggerBody;
@@ -46,42 +46,42 @@ ATrigger::ATrigger()
     m_TriggerBody->SetCollisionMask(CM_PAWN);
 }
 
-void ATrigger::SetCollisionModel(CollisionModel* model)
+void Actor_Trigger::SetCollisionModel(CollisionModel* model)
 {
     m_TriggerBody->SetCollisionModel(model);
 }
 
-void ATrigger::SetBoxCollider()
+void Actor_Trigger::SetBoxCollider()
 {
     CollisionBoxDef box;
     m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(&box));
 }
 
-void ATrigger::SetSphereCollider()
+void Actor_Trigger::SetSphereCollider()
 {
     CollisionSphereDef sphere;
     m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(&sphere));
 }
 
-void ATrigger::SetCylinderCollider()
+void Actor_Trigger::SetCylinderCollider()
 {
     CollisionCylinderDef cylinder;
     m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(&cylinder));
 }
 
-void ATrigger::SetConeCollider()
+void Actor_Trigger::SetConeCollider()
 {
     CollisionConeDef cone;
     m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(&cone));
 }
 
-void ATrigger::SetCapsuleCollider()
+void Actor_Trigger::SetCapsuleCollider()
 {
     CollisionCapsuleDef capsule;
     m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(&capsule));
 }
 
-void ATrigger::SetLevelGeometry(LevelGeometry const& geometry)
+void Actor_Trigger::SetLevelGeometry(LevelGeometry const& geometry)
 {
     // TODO:
     //m_TriggerBody->SetCollisionModel(NewObj<CollisionModel>(geometry));

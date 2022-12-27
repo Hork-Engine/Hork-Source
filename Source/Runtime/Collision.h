@@ -68,7 +68,7 @@ public:
 
     SceneComponent* GetOwnerComponent() const { return OwnerComponent; }
 
-    AActor* GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
+    Actor* GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
 
     World* GetWorld() const { return OwnerComponent->GetWorld(); }
 
@@ -88,10 +88,10 @@ public:
     void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor(AActor* _Actor);
+    void AddCollisionIgnoreActor(Actor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor(AActor* _Actor);
+    void RemoveCollisionIgnoreActor(Actor* _Actor);
 
     void SetTrigger(bool _Trigger) { bTrigger = _Trigger; }
 
@@ -101,11 +101,11 @@ public:
 
     int GetJointIndex() const { return JointIndex; }
 
-    TPodVector<AActor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+    TPodVector<Actor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
     void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
 
-    void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
+    void CollisionContactQueryActor(TPodVector<Actor*>& _Result) const;
 
     btCollisionObject* GetCollisionObject() const { return CollisionObject; }
 
@@ -129,7 +129,7 @@ private:
 
     bool bInWorld = false;
 
-    TPodVector<AActor*> CollisionIgnoreActors;
+    TPodVector<Actor*> CollisionIgnoreActors;
 
     HitProxy* NextMarked = nullptr;
     HitProxy* PrevMarked = nullptr;

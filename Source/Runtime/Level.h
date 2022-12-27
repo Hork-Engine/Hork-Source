@@ -38,7 +38,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AActor;
+class Actor;
 class World;
 class Level;
 class Texture;
@@ -171,7 +171,7 @@ Subpart of a world. Contains actors, level visibility, baked data like lightmaps
 class Level : public GCObject
 {
     friend class World;
-    friend class AActor;
+    friend class Actor;
 
 public:
     TRef<VisibilityLevel> Visibility;
@@ -187,7 +187,7 @@ public:
     World* GetOwnerWorld() const { return m_OwnerWorld; }
 
     /** Get actors in level */
-    TVector<AActor*> const& GetActors() const { return m_Actors; }
+    TVector<Actor*> const& GetActors() const { return m_Actors; }
 
     /** Destroy all actors in the level */
     void DestroyActors();
@@ -225,7 +225,7 @@ private:
     bool m_bIsPersistent = false;
 
     /** Array of actors */
-    TVector<AActor*> m_Actors;
+    TVector<Actor*> m_Actors;
 
     TVector<VertexLight*> m_VertexLightChannels;
     TVector<uint32_t> m_FreeVertexLightChannels;

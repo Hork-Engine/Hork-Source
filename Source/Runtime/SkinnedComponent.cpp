@@ -202,7 +202,7 @@ void SkinnedComponent::MergeJointAnimations()
     if (m_bJointsSimulatedByPhysics)
     {
         // TODO:
-        if (SoftBody && m_bUpdateAbsoluteTransforms)
+        if (m_SoftBody && m_bUpdateAbsoluteTransforms)
         {
 
             //LOG("Update abs matrices\n");
@@ -210,7 +210,7 @@ void SkinnedComponent::MergeJointAnimations()
             for (int j = 0; j < joints.Size(); j++)
             {
                 // TODO: joint rotation from normal?
-                m_AbsoluteTransforms[j + 1].Compose(btVectorToFloat3(SoftBody->m_nodes[j].m_x), Float3x3::Identity());
+                m_AbsoluteTransforms[j + 1].Compose(btVectorToFloat3(m_SoftBody->m_nodes[j].m_x), Float3x3::Identity());
             }
             m_bUpdateAbsoluteTransforms = false;
             //bWriteTransforms = true;

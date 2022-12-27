@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 class World;
 class Level;
-class AActor;
+class Actor;
 class DebugRenderer;
 
 #define HK_COMPONENT(_Class, _SuperClass) \
@@ -53,7 +53,7 @@ class ActorComponent : public BaseObject
 {
     HK_COMPONENT(ActorComponent, BaseObject)
 
-    friend class AActor;
+    friend class Actor;
     friend class World;
 
 public:
@@ -65,7 +65,7 @@ public:
     }
 
     /** Component owner */
-    AActor* GetOwnerActor() const { return m_OwnerActor; }
+    Actor* GetOwnerActor() const { return m_OwnerActor; }
 
     /** Component parent level */
     Level* GetLevel() const;
@@ -97,7 +97,7 @@ public:
     int GetLocalId() const { return m_LocalId; }
 
 protected:
-    bool bCanEverTick = false;
+    bool m_bCanEverTick = false;
 
     ActorComponent();
 
@@ -114,7 +114,7 @@ protected:
     virtual void DrawDebug(DebugRenderer* InRenderer) {}
 
 private:
-    AActor* m_OwnerActor = nullptr;
+    Actor* m_OwnerActor = nullptr;
 
     ActorComponent* m_NextPendingKillComponent = nullptr;
 

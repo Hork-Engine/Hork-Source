@@ -34,14 +34,14 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AActor;
+class Actor;
 class HitProxy;
 
 struct OverlapEvent
 {
-    AActor*   SelfActor;
+    Actor*   SelfActor;
     HitProxy* SelfBody;
-    AActor*   OtherActor;
+    Actor*   OtherActor;
     HitProxy* OtherBody;
 };
 
@@ -55,9 +55,9 @@ struct ContactPoint
 
 struct ContactEvent
 {
-    AActor*             SelfActor;
+    Actor*             SelfActor;
     HitProxy*           SelfBody;
-    AActor*             OtherActor;
+    Actor*             OtherActor;
     HitProxy*           OtherBody;
     ContactPoint const* Points;
     int                 NumPoints;

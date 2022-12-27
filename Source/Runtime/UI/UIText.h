@@ -139,7 +139,7 @@ public:
     void Draw(Canvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs);
 
 private:
-    TRef<Font>          m_Font;
+    TRef<Font>           m_Font;
     float                m_FontSize     = 14;
     float                m_FontBlur     = 0;
     float                m_LetterSpacing = 0;
