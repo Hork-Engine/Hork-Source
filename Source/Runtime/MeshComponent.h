@@ -92,6 +92,11 @@ public:
         return m_RenderTransformMatrix[frameNum & 1];
     }
 
+    void ResetRenderTransformMatrix()
+    {
+        m_RenderTransformMatrixFrame = 0;
+    }
+
 protected:
     MeshComponent();
     ~MeshComponent();
@@ -103,12 +108,11 @@ protected:
 
     void DrawDebug(DebugRenderer* InRenderer) override;
 
-    virtual void OnMeshChanged() {}
-
     void OnPreRenderUpdate(RenderFrontendDef const* _Def) override;
 
+    virtual void UpdateMesh();
+
 private:
-    void NotifyMeshChanged();
     void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
 
     TRef<IndexedMesh> m_Mesh;

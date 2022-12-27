@@ -91,8 +91,6 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void OnMeshChanged() override;
-
     void DrawDebug(DebugRenderer* InRenderer) override;
 
     void OnPreRenderUpdate(RenderFrontendDef const* def) override;
@@ -101,6 +99,8 @@ protected:
     {
         return GetJointTransform(jointIndex);
     }
+
+    void UpdateMesh() override;
 
 private:
     void UpdateControllersIfDirty();

@@ -116,11 +116,11 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void OnMeshChanged() override;
-
     void TickComponent(float _TimeStep) override;
 
     void DrawDebug(DebugRenderer* InRenderer) override;
+
+    void UpdateMesh() override;
 
 private:
     void RecreateSoftBody();

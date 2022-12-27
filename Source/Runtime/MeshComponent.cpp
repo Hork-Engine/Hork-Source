@@ -281,11 +281,6 @@ void MeshComponent::SetMesh(IndexedMesh* mesh)
 
     m_Mesh = mesh;
 
-    for (SceneSocket& socket : m_Sockets)
-    {
-        socket.SocketDef->RemoveRef();
-    }
-
     if (!m_Mesh)
     {
         static TStaticResourceFinder<IndexedMesh> MeshResource("/Default/Meshes/Box"s);
@@ -294,10 +289,18 @@ void MeshComponent::SetMesh(IndexedMesh* mesh)
 
     m_Mesh->Listeners.Add(this);
 
+    UpdateMesh();
+}
+
+void MeshComponent::UpdateMesh()
+{
     // Update bounding box
     m_Bounds = m_Mesh->GetBoundingBox();
 
     // Update sockets
+    for (SceneSocket& socket : m_Sockets)
+        socket.SocketDef->RemoveRef();
+
     TVector<SocketDef*> const& socketDef = m_Mesh->GetSockets();
     m_Sockets.ResizeInvalidate(socketDef.Size());
     for (int i = 0; i < socketDef.Size(); i++)
@@ -306,8 +309,6 @@ void MeshComponent::SetMesh(IndexedMesh* mesh)
         m_Sockets[i].SocketDef   = socketDef[i];
         m_Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast<SkinnedComponent*>(this) : nullptr;
     }
-
-    NotifyMeshChanged();
 
     // Mark to update world bounds
     UpdateWorldBounds();
@@ -375,18 +376,17 @@ CollisionModel* MeshComponent::GetMeshCollisionModel() const
     return m_Mesh->GetCollisionModel();
 }
 
-void MeshComponent::NotifyMeshChanged()
-{
-    OnMeshChanged();
-}
-
 void MeshComponent::OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
 {
-    TRef<IndexedMesh> curMesh = m_Mesh;
-
-    // Reset mesh
-    SetMesh(nullptr);
-    SetMesh(curMesh);
+    if (UpdateFlag == INDEXED_MESH_UPDATE_BOUNDING_BOX)
+    {
+        m_Bounds = m_Mesh->GetBoundingBox();
+        UpdateWorldBounds();
+    }
+    else
+    {
+        UpdateMesh();
+    }
 }
 
 void MeshComponent::OnPreRenderUpdate(RenderFrontendDef const* _Def)

@@ -187,8 +187,10 @@ void SoftMeshComponent::RecreateSoftBody()
     //bUpdateSoftbodyTransform = true;
 }
 
-void SoftMeshComponent::OnMeshChanged()
+void SoftMeshComponent::UpdateMesh()
 {
+    Super::UpdateMesh();
+
     if (!GetWorld())
     {
         // Component not initialized yet

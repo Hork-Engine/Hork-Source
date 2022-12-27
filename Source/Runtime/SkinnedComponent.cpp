@@ -89,9 +89,9 @@ void SkinnedComponent::DeinitializeComponent()
     GetWorld()->SkinningSystem.SkinnedMeshes.Remove(this);
 }
 
-void SkinnedComponent::OnMeshChanged()
+void SkinnedComponent::UpdateMesh()
 {
-    Super::OnMeshChanged();
+    Super::UpdateMesh();
 
     Skeleton* newSkeleton = GetMesh()->GetSkeleton();
 
