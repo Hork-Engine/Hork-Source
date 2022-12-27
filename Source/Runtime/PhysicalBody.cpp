@@ -1380,7 +1380,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
-    if (com_DrawCollisionModel || com_DrawTriggers)
+    if ((com_DrawCollisionModel || com_DrawTriggers) && m_RigidBody)
     {
         if (!m_DebugDrawCache)
         {
