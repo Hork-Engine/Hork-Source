@@ -45,6 +45,30 @@ public:
     TEvent<UIAction*> E_OnActivate;
     TEvent<UIAction*> E_OnDeactivate;
 
+    UIAction() = default;
+
+    UIAction(TEvent<UIAction*> OnActivate) :
+        E_OnActivate(std::move(OnActivate))
+    {}
+
+    UIAction(TEvent<UIAction*> OnActivate, TEvent<UIAction*> OnDeactivate) :
+        E_OnActivate(std::move(OnActivate)),
+        E_OnDeactivate(std::move(OnDeactivate))
+    {}
+
+    template <typename T>
+    UIAction(T* object, void (T::*OnActivate)(UIAction*))
+    {
+        E_OnActivate.Add(object, OnActivate);
+    }
+
+    template <typename T>
+    UIAction(T* object, void (T::* OnActivate)(UIAction*), void (T::* OnDeactivate)(UIAction*))
+    {
+        E_OnActivate.Add(object, OnActivate);
+        E_OnDeactivate.Add(object, OnDeactivate);
+    }
+
     void Activate()
     {
         if (bDisabled)
