@@ -39,6 +39,8 @@ SOFTWARE.
 #include "ShaderLoader.h"
 #include "ShaderFactory.h"
 
+HK_NAMESPACE_BEGIN
+
 struct ViewConstantBuffer
 {
     Float4x4 ViewProjection;
@@ -329,3 +331,5 @@ HK_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed(Float3x4 const& _In, Float
     _Out[3][2] = _In[2][3];
     _Out[3][3] = 1;
 }
+
+HK_NAMESPACE_END

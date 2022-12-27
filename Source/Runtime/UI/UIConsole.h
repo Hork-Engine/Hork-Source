@@ -35,6 +35,8 @@ SOFTWARE.
 #include "../CommandContext.h"
 #include <Platform/ConsoleBuffer.h>
 
+HK_NAMESPACE_BEGIN
+
 class UIConsole
 {
     HK_FORBID_COPY(UIConsole)
@@ -98,3 +100,5 @@ private:
     bool     m_bDown         = false;
     bool     m_bFullscreen   = false;
 };
+
+HK_NAMESPACE_END

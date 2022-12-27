@@ -33,6 +33,8 @@ SOFTWARE.
 #include "UIWidget.h"
 #include "UIDecorator.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIScroll : public UIWidget
 {
     UI_CLASS(UIScroll, UIWidget)
@@ -217,3 +219,5 @@ private:
 
     STATE m_State{STATE_IDLE};
 };
+
+HK_NAMESPACE_END

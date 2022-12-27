@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+HK_NAMESPACE_BEGIN
+
 struct Complex
 {
     float R{0};
@@ -114,3 +116,5 @@ struct Complex
         I *= invRhs;
     }
 };
+
+HK_NAMESPACE_END

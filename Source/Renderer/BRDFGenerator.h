@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
+HK_NAMESPACE_BEGIN
+
 class BRDFGenerator
 {
 public:
@@ -42,3 +44,5 @@ public:
 private:
     TRef<RenderCore::IPipeline> Pipeline;
 };
+
+HK_NAMESPACE_END

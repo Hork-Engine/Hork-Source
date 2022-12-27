@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace HashTraits
 {
 
@@ -163,3 +165,5 @@ HK_FORCEINLINE uint32_t HashCombine(uint32_t seed, T const& v)
 }
 
 } // namespace HashTraits
+
+HK_NAMESPACE_END

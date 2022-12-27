@@ -41,6 +41,8 @@ SOFTWARE.
 
 #include <muFFT/fft.h>
 
+HK_NAMESPACE_BEGIN
+
 #define FILTER_SIZE_POW2
 
 ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
@@ -425,7 +427,6 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
 }
 
 #if 0
-#    include "DebugRenderer.h"
 void DrawHRTF( DebugRenderer * InRenderer )
 {
     static bool binit = false;
@@ -446,3 +447,5 @@ void DrawHRTF( DebugRenderer * InRenderer )
     InRenderer->DrawTriangleSoupWireframe( sphereVerts, sphereIndices );
 }
 #endif
+
+HK_NAMESPACE_END

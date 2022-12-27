@@ -38,10 +38,10 @@ SOFTWARE.
 
 #ifdef HK_DEBUG
 #    define BC6H_ASSERT(x) HK_ASSERT(x)
-#    define BC6H_LOG(x)    LOG("{}", x)
+#    define BC6H_LOG(x)    Hk::LOG("{}", x)
 #endif
-#define BC6H_HALF_TO_FLOAT(h) fast_half_to_float(h)
-#define BC6H_FLOAT_TO_HALF(f) half_from_float(f)
+#define BC6H_HALF_TO_FLOAT(h) Hk::fast_half_to_float(h)
+#define BC6H_FLOAT_TO_HALF(f) Hk::half_from_float(f)
 
 #define BC6H_ENC_IMPLEMENTATION
 #include <bc6h_enc/bc6h_enc.h>
@@ -68,6 +68,8 @@ struct CompressionParams
 CompressionParams compressionParams;
 
 } // namespace
+
+HK_NAMESPACE_BEGIN
 
 namespace TextureBlockCompression
 {
@@ -874,3 +876,5 @@ Float3 UnpackNormalRGBA_BC3_Compatible(void const* pData, uint32_t Index)
     n.Z = data[2] / 255.0f * 2.0f - 1.0f;
     return n;
 }
+
+HK_NAMESPACE_END

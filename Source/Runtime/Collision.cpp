@@ -32,6 +32,8 @@ SOFTWARE.
 #include "World.h"
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 static uint64_t GUniqueIdGenerator = 0;
 
 HitProxy::HitProxy() :
@@ -270,3 +272,5 @@ void HitProxy::DrawCollisionShape(DebugRenderer* InRenderer)
         btDrawCollisionShape(InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape());
     }
 }
+
+HK_NAMESPACE_END

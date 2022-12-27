@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Renderer/RenderDefs.h>
 #include <Platform/Memory/PoolAllocator.h>
 
+HK_NAMESPACE_BEGIN
+
 class AActor;
 class World;
 class Level;
@@ -1017,3 +1019,5 @@ private:
     WorldRaycastResult*       pRaycastResult;
     TPodVector<BoxHitResult>* pBoundsRaycastResult;
 };
+
+HK_NAMESPACE_END

@@ -41,6 +41,8 @@ SOFTWARE.
 #include <angelscript_addon/weakref/weakref.h>
 #include <angelscript_addon/scripthandle/scripthandle.h>
 
+HK_NAMESPACE_BEGIN
+
 void PrintMessage(std::string const& message)
 {
     LOG(message.c_str());
@@ -2758,3 +2760,5 @@ void ActorScript::DrawDebug(asIScriptObject* pObject, DebugRenderer* InRenderer)
 {
     // TODO
 }
+
+HK_NAMESPACE_END

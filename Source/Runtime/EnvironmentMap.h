@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Resource.h"
 #include <Renderer/RenderDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 /**
 An environment map in terms of the engine is both an irradiance map for image-based lighting and a prefiltered reflection map.
 */
@@ -76,3 +78,5 @@ private:
     RenderCore::BindlessHandle m_IrradianceMapHandle{};
     RenderCore::BindlessHandle m_ReflectionMapHandle{};
 };
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class SSAORenderer
 {
 public:
@@ -68,3 +70,5 @@ private:
     TRef<RenderCore::IPipeline> DeinterleavePipe;
     TRef<RenderCore::IPipeline> ReinterleavePipe;
 };
+
+HK_NAMESPACE_END

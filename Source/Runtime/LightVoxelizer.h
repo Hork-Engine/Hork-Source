@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "DebugRenderer.h"
 
+HK_NAMESPACE_BEGIN
+
 enum ITEM_TYPE
 {
     ITEM_TYPE_LIGHT,
@@ -150,3 +152,5 @@ private:
 
     bool bUseSSE;
 };
+
+HK_NAMESPACE_END

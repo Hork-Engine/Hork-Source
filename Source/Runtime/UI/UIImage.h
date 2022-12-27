@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIImage : public UIWidget
 {
     UI_CLASS(UIImage, UIWidget)
@@ -150,3 +152,5 @@ protected:
 
     void Draw(Canvas& canvas) override;
 };
+
+HK_NAMESPACE_END

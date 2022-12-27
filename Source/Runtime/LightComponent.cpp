@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "LightComponent.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_BEGIN_CLASS_META(LightComponent)
 HK_PROPERTY(bEnabled, SetEnabled, IsEnabled, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(bCastShadow, SetCastShadow, IsCastShadow, HK_PROPERTY_DEFAULT)
@@ -120,3 +122,5 @@ void LightComponent::TickComponent(float _TimeStep)
     m_AnimTime += _TimeStep;
     m_bEffectiveColorDirty = true;
 }
+
+HK_NAMESPACE_END

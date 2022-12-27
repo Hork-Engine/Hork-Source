@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr uint32_t ASSET_MESH                = 1;
 constexpr uint32_t ASSET_SKELETON            = 2;
 constexpr uint32_t ASSET_ANIMATION           = 3;
@@ -49,3 +51,5 @@ constexpr uint32_t ASSET_VERSION_MATERIAL            = 1;
 constexpr uint32_t ASSET_VERSION_TEXTURE             = 2;
 constexpr uint32_t ASSET_VERSION_PHOTOMETRIC_PROFILE = 1;
 constexpr uint32_t ASSET_VERSION_ENVMAP              = 2;
+
+HK_NAMESPACE_END

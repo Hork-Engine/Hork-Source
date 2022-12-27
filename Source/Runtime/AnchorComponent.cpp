@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_BEGIN_CLASS_META(AnchorComponent)
 HK_END_CLASS_META()
 
@@ -77,3 +79,5 @@ void AnchorComponent::OnTransformDirty()
 
     //bUpdateSoftbodyTransform = false;
 }
+
+HK_NAMESPACE_END

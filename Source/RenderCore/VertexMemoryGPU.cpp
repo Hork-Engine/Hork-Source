@@ -31,6 +31,8 @@ SOFTWARE.
 #include "VertexMemoryGPU.h"
 #include <Platform/Platform.h>
 
+HK_NAMESPACE_BEGIN
+
 VertexMemoryGPU::VertexMemoryGPU(RenderCore::IDevice* pDevice) :
     m_pDevice(pDevice)
 {
@@ -574,3 +576,5 @@ void StreamedMemoryGPU::ShrinkLastAllocatedMemoryBlock(size_t _SizeInBytes)
 
     m_LastAllocatedBlockSize = _SizeInBytes;
 }
+
+HK_NAMESPACE_END

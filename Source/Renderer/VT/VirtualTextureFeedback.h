@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Geometry/VectorMath.h>
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class VirtualTextureFeedback
 {
 public:
@@ -61,3 +63,5 @@ private:
     int FeedbackSize[2];
     TRef<RenderCore::IPipeline> DrawFeedbackPipeline;
 };
+
+HK_NAMESPACE_END

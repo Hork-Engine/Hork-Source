@@ -1,6 +1,8 @@
 #include "ShadowMapRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "32"s); // Allowed 16, 32 bits
@@ -481,3 +483,5 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, LightShadowmap const* Sh
 
     *ppOmnidirectionalShadowMapArray = OmnidirectionalShadowMapArray_R;
 }
+
+HK_NAMESPACE_END

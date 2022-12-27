@@ -35,6 +35,8 @@ SOFTWARE.
 #include <fastlz/fastlz.h>
 #include <miniz/miniz.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -183,3 +185,5 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

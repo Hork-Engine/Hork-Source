@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Array.h"
 #include "Vector.h"
 
+HK_NAMESPACE_BEGIN
+
 template <typename T>
 class TArrayView
 {
@@ -255,3 +257,5 @@ private:
     ConstPointer m_Data;
     SizeType m_Size;
 };
+
+HK_NAMESPACE_END

@@ -32,4 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 void AddDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppDepthTexture, RenderCore::FGTextureProxy** ppVelocity);
+
+HK_NAMESPACE_END

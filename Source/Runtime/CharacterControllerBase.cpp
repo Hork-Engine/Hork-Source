@@ -40,6 +40,8 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCylinderShape.h>
 #include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawCharacterControllerCapsule("com_DrawCharacterControllerCapsule"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_RecoverFromPenetration("com_RecoverFromPenetration"s, "1"s);
 ConsoleVar com_UseGhostObjectSweepTest("com_UseGhostObjectSweepTest"s, "1"s);
@@ -66,7 +68,6 @@ public:
     {
     }
 };
-
 
 HK_CLASS_META(CharacterControllerBase)
 
@@ -791,11 +792,6 @@ void CharacterControllerBase::DrawDebug(DebugRenderer* InRenderer)
     }
 }
 
-
-
-
-
-
 ATTRIBUTE_ALIGNED16(class)
 ProjectileActionInterface : public btActionInterface
 {
@@ -817,7 +813,6 @@ public:
     {
     }
 };
-
 
 HK_CLASS_META(ProjectileExperimental)
 
@@ -1280,3 +1275,5 @@ void ProjectileExperimental::Update(float _TimeStep)
     }
 #endif
 }
+
+HK_NAMESPACE_END

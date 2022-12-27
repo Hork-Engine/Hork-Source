@@ -31,6 +31,8 @@ SOFTWARE.
 #include "DepthRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, RenderInstance const* instance)
@@ -209,3 +211,5 @@ void AddDepthPass( FrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, FG
 
     *ppDepthTexture = depthPass.GetDepthStencilAttachment().pResource;
 }
+
+HK_NAMESPACE_END

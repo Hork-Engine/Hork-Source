@@ -32,6 +32,8 @@ SOFTWARE.
 #include "QuadTree.h"
 #include "../RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 #define USE_PBO
@@ -356,3 +358,5 @@ void VirtualTexture::MakePageNonResident(uint32_t AbsIndex)
                        AddressTable.NumLods);
     }
 }
+
+HK_NAMESPACE_END

@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -75,3 +77,5 @@ QueryPoolGLImpl::~QueryPoolGLImpl()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

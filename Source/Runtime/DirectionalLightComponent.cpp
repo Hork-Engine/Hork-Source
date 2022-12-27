@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
@@ -282,3 +284,5 @@ void DirectionalLightComponent::AddShadowmapCascades(StreamedMemoryGPU* Streamed
     *pFirstCascade = firstCascade;
     *pNumCascades  = numVisibleCascades;
 }
+
+HK_NAMESPACE_END

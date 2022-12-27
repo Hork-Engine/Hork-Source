@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <Platform/Utf8.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -521,3 +523,5 @@ int WideStrEncodeUTF8(char* _Buf, int _BufSize, WideChar const* _Str, WideChar c
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

@@ -40,6 +40,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
 
 FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
@@ -966,3 +968,5 @@ void FrameLoop::PollEvents(IEventListener* Listener)
         }
     }
 }
+
+HK_NAMESPACE_END

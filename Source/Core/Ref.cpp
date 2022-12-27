@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <Core/Ref.h>
 
+HK_NAMESPACE_BEGIN
+
 WeakRefCounter* WeakReference::AllocateWeakRefCounter()
 {
     return new WeakRefCounter;
@@ -39,3 +41,5 @@ void WeakReference::DeallocateWeakRefCounter(WeakRefCounter* pRefCounter)
 {
     delete pRefCounter;
 }
+
+HK_NAMESPACE_END

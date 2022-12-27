@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 struct Transform2D
 {
     Float2 Col0{1,0};
@@ -124,3 +126,5 @@ struct Transform2D
 
     Transform2D Inversed() const;
 };
+
+HK_NAMESPACE_END

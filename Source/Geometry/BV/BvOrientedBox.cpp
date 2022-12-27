@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <Geometry/BV/BvOrientedBox.h>
 
+HK_NAMESPACE_BEGIN
+
 void BvOrientedBox::GetVertices(Float3 vertices[8]) const
 {
     vertices[0] = Orient * Float3(-HalfSize.X, HalfSize.Y, -HalfSize.Z) + Center;
@@ -41,3 +43,5 @@ void BvOrientedBox::GetVertices(Float3 vertices[8]) const
     vertices[6] = Orient * Float3(HalfSize.X, -HalfSize.Y, HalfSize.Z) + Center;
     vertices[7] = Orient * Float3(-HalfSize.X, -HalfSize.Y, HalfSize.Z) + Center;
 }
+
+HK_NAMESPACE_END

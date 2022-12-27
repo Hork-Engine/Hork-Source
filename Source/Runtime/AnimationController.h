@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class SkeletalAnimation;
 class SkinnedComponent;
 
@@ -117,3 +119,5 @@ private:
     ANIMATION_PLAY_MODE     PlayMode;
     bool                    bEnabled;
 };
+
+HK_NAMESPACE_END

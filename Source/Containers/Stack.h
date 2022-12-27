@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Vector.h"
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 TStack
@@ -212,10 +214,12 @@ inline bool operator>=(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, 
     return !(lhs.Array < rhs.Array);
 }
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <typename T, size_t BaseCapacity, typename Container>
-inline void swap(TStack<T, BaseCapacity, Container>& lhs, TStack<T, BaseCapacity, Container>& rhs)
+inline void swap(Hk::TStack<T, BaseCapacity, Container>& lhs, Hk::TStack<T, BaseCapacity, Container>& rhs)
 {
     lhs.Swap(rhs);
 }

@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Containers/Vector.h>
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 SphereMesh::SphereMesh(int _HDiv, int _VDiv)
@@ -114,3 +116,5 @@ SphereMesh::SphereMesh(int _HDiv, int _VDiv)
 
     IndexCount = indices.Size();
 }
+
+HK_NAMESPACE_END

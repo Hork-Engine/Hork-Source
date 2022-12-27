@@ -31,6 +31,8 @@ SOFTWARE.
 #include "Factory.h"
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 ObjectFactory* ObjectFactory::m_FactoryList = nullptr;
 
 ObjectFactory::ObjectFactory(const char* Tag) :
@@ -140,3 +142,5 @@ void ClassMeta::CloneProperties(BaseObject const* Template, BaseObject* Destinat
 
     CloneProperties_r(&Template->FinalClassMeta(), Template, Destination);
 }
+
+HK_NAMESPACE_END

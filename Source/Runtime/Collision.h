@@ -35,6 +35,10 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "CollisionModel.h"
 
+class btCollisionObject;
+
+HK_NAMESPACE_BEGIN
+
 class HitProxy : public GCObject
 {
     friend class PhysicsSystem;
@@ -59,7 +63,7 @@ public:
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     bool bGenerateContactPoints = false;
 
-    void Initialize(SceneComponent* _OwnerComponent, class btCollisionObject* _CollisionObject);
+    void Initialize(SceneComponent* _OwnerComponent, btCollisionObject* _CollisionObject);
     void Deinitialize();
 
     SceneComponent* GetOwnerComponent() const { return OwnerComponent; }
@@ -103,7 +107,7 @@ public:
 
     void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
 
-    class btCollisionObject* GetCollisionObject() const { return CollisionObject; }
+    btCollisionObject* GetCollisionObject() const { return CollisionObject; }
 
     void DrawCollisionShape(DebugRenderer* InRenderer);
 
@@ -130,3 +134,5 @@ private:
     HitProxy* NextMarked = nullptr;
     HitProxy* PrevMarked = nullptr;
 };
+
+HK_NAMESPACE_END

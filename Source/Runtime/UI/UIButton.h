@@ -35,6 +35,8 @@ SOFTWARE.
 #include "UIDecorator.h"
 #include "UIAction.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIButton : public UIWidget
 {
     UI_CLASS(UIButton, UIWidget)
@@ -88,3 +90,5 @@ private:
 
     DRAW GetDrawType() const;
 };
+
+HK_NAMESPACE_END

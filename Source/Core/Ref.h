@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 struct WeakRefCounter
 {
     void* Object;
@@ -646,3 +648,5 @@ TRef<T> GetSharedInstance()
     }
     return strongPtr;
 }
+
+HK_NAMESPACE_END

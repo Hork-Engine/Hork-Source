@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar Snd_MixAhead("Snd_MixAhead"s, "0.1"s);
 ConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"s, "16"s);
 ConsoleVar Snd_HRTF("Snd_HRTF"s, "1"s);
@@ -1232,3 +1234,5 @@ void AudioMixer::WriteToTransferBuffer(int const* pSamples, int64_t EndFrame)
         }
     }
 }
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Core/Ref.h>
 
+HK_NAMESPACE_BEGIN
+
 /** AudioBuffer
 Designed as immutable structure, so we can use it from several threads. Owns the heap pointer. */
 class AudioBuffer : public InterlockedRef
@@ -97,3 +99,5 @@ private:
     /** Stride between frames in bytes */
     int m_SampleStride;
 };
+
+HK_NAMESPACE_END

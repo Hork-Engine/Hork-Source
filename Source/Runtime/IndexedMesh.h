@@ -40,6 +40,8 @@ SOFTWARE.
 #include <Geometry/BV/BvhTree.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 class IndexedMesh;
 struct VertexHandle;
 
@@ -552,3 +554,5 @@ void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<u
 void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
 void CreateSkydomeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
+
+HK_NAMESPACE_END

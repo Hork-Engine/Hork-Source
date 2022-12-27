@@ -44,6 +44,8 @@ See ThridParty.md for details.
 
 #include <ThirdParty/nanovg/fontstash.h>
 
+HK_NAMESPACE_BEGIN
+
 static ConsoleVar vg_EdgeAntialias("vg_EdgeAntialias"s, "1"s);
 static ConsoleVar vg_StencilStrokes("vg_StencilStrokes"s, "1"s);
 
@@ -2871,3 +2873,5 @@ CanvasDrawData const* Canvas::GetDrawData() const
     }
     return &m_DrawData;
 }
+
+HK_NAMESPACE_END

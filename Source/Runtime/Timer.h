@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class World;
 
 class WorldTimer : public BaseObject
@@ -87,3 +89,5 @@ private:
 
     void Trigger();
 };
+
+HK_NAMESPACE_END

@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(SkeletalAnimation)
 
 SkeletalAnimation::SkeletalAnimation()
@@ -156,3 +158,5 @@ bool SkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 
     return true;
 }
+
+HK_NAMESPACE_END

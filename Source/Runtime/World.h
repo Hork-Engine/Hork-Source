@@ -39,6 +39,8 @@ SOFTWARE.
 
 #include <Platform/Platform.h>
 
+HK_NAMESPACE_BEGIN
+
 class AActor;
 class ActorComponent;
 class CameraComponent;
@@ -741,3 +743,5 @@ private:
     ActorComponents const& Components;
     int                    i;
 };
+
+HK_NAMESPACE_END

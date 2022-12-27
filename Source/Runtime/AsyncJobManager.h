@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Core/Ref.h>
 
+HK_NAMESPACE_BEGIN
+
 //#define HK_ACTIVE_THREADS_COUNTERS
 
 /** Job for job list */
@@ -155,3 +157,5 @@ private:
 
     bool bTerminated{false};
 };
+
+HK_NAMESPACE_END

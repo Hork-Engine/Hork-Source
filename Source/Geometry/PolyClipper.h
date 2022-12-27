@@ -34,6 +34,13 @@ SOFTWARE.
 #include <Core/Ref.h>
 #include "VectorMath.h"
 
+namespace ClipperLib
+{
+class Clipper;
+}
+
+HK_NAMESPACE_BEGIN
+
 using ClipperContour = TVector<Double2>;
 
 struct ClipperPolygon
@@ -49,11 +56,6 @@ enum POLY_CLIP_TYPE
     POLY_CLIP_TYPE_DIFF,
     POLY_CLIP_TYPE_XOR
 };
-
-namespace ClipperLib
-{
-class Clipper;
-}
 
 class PolyClipper
 {
@@ -96,3 +98,5 @@ private:
     Float3x3                        m_Transform3D;
     Float3x3                        m_InvTransform3D;
 };
+
+HK_NAMESPACE_END

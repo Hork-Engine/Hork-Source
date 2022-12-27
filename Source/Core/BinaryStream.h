@@ -36,6 +36,8 @@ SOFTWARE.
 #include "HeapBlob.h"
 #include "Ref.h"
 
+HK_NAMESPACE_BEGIN
+
 class IBinaryStreamBaseInterface : public RefCounted
 {
 public:
@@ -556,3 +558,5 @@ public:
         Write(buffer.data(), buffer.size());
     }
 };
+
+HK_NAMESPACE_END

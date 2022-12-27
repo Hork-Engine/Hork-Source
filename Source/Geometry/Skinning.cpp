@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "Skinning.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Geometry
 {
 
@@ -166,3 +168,5 @@ void CalcBoundingBoxes(MeshVertex const*         Vertices,
 }
 
 } // namespace Geometry
+
+HK_NAMESPACE_END

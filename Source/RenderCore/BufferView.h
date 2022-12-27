@@ -33,6 +33,8 @@ SOFTWARE.
 #include "DeviceObject.h"
 #include "Texture.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -101,3 +103,5 @@ protected:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

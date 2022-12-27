@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Quat.h"
 
+HK_NAMESPACE_BEGIN
+
 struct Angl
 {
     using ElementType = float;
@@ -287,4 +289,6 @@ HK_FORCEINLINE Angl operator*(float lhs, Angl const& rhs)
     return Angl(lhs * rhs.Pitch, lhs * rhs.Yaw, lhs * rhs.Roll);
 }
 
-HK_FORMAT_DEF_(Angl, "( {} {} {} )", v.Pitch, v.Yaw, v.Roll);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::Angl, "( {} {} {} )", v.Pitch, v.Yaw, v.Roll);

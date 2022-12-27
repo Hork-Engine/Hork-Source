@@ -32,6 +32,10 @@ SOFTWARE.
 
 #include "Texture.h"
 
+struct FONScontext;
+
+HK_NAMESPACE_BEGIN
+
 class FontStash : public RefCounted
 {
 public:
@@ -57,7 +61,7 @@ private:
         MAX_FONTIMAGE_SIZE = 2048,
         INITIAL_FONTIMAGE_SIZE = 512
     };
-    struct FONScontext*        m_pImpl{};
+    FONScontext*               m_pImpl{};
     TRef<RenderCore::ITexture> m_FontImages[MAX_FONT_IMAGES];
     int                        m_FontImageIdx{};
 
@@ -186,8 +190,10 @@ protected:
     const char* GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
-    int                  m_FontId = -1;
+    int                 m_FontId = -1;
     mutable TRef<FontStash> m_FontStash;
-    HeapBlob             m_Blob;
+    HeapBlob            m_Blob;
     TVector<TRef<Font>> m_Fallbacks;
 };
+
+HK_NAMESPACE_END

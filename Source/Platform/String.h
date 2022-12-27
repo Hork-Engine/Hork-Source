@@ -33,6 +33,8 @@ SOFTWARE.
 #include "BaseTypes.h"
 #include <stdarg.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -99,3 +101,5 @@ uint32_t HexToUInt32(const char* _Str, int _Len);
 uint64_t HexToUInt64(const char* _Str, int _Len);
 
 } // namespace Platform
+
+HK_NAMESPACE_END

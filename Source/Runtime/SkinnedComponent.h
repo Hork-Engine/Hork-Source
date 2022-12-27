@@ -34,6 +34,8 @@ SOFTWARE.
 #include "Skeleton.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 class AnimationController;
 
 /**
@@ -136,3 +138,5 @@ protected:
     bool m_bUpdateAbsoluteTransforms : 1;
     bool m_bJointsSimulatedByPhysics : 1;
 };
+
+HK_NAMESPACE_END

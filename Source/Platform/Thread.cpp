@@ -38,6 +38,8 @@ SOFTWARE.
 #include <thread>
 #include <chrono>
 
+HK_NAMESPACE_BEGIN
+
 const int Thread::NumHardwareThreads = std::thread::hardware_concurrency();
 
 void Thread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData)
@@ -267,3 +269,5 @@ void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
     m_bSignaled = false;
 #endif
 }
+
+HK_NAMESPACE_END

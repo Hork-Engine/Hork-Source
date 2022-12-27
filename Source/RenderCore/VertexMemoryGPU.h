@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <RenderCore/Device.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_SIZE             = 32 << 20; // 32 MB
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_COUNT            = 256;      // max memory VERTEX_MEMORY_GPU_BLOCK_SIZE * VERTEX_MEMORY_GPU_BLOCK_COUNT = 8 GB
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_INDEX_MASK       = 0xff00000000000000;
@@ -265,3 +267,5 @@ private:
     int                       m_IndexBufferAlignment;
     int                       m_ConstantBufferAlignment;
 };
+
+HK_NAMESPACE_END

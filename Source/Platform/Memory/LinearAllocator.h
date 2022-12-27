@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Memory.h"
 
+HK_NAMESPACE_BEGIN
+
 template <size_t BlockSize = 64 << 10>
 class TLinearAllocator
 {
@@ -489,3 +491,5 @@ public:
         Allocators::FrameMemoryAllocator::GetAllocator().TryFree(Ptr);
     }
 };
+
+HK_NAMESPACE_END

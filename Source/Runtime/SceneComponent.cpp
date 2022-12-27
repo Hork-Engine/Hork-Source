@@ -38,6 +38,8 @@ SOFTWARE.
 
 #include <algorithm> // find
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(SceneComponent)
@@ -993,3 +995,5 @@ void SceneComponent::DrawDebug(DebugRenderer* InRenderer)
         }
     }
 }
+
+HK_NAMESPACE_END

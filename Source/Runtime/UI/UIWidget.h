@@ -35,6 +35,8 @@ SOFTWARE.
 #include "UIBrush.h"
 #include "UICursor.h"
 
+HK_NAMESPACE_BEGIN
+
 enum UI_WIDGET_VISIBILITY
 {
     UI_WIDGET_VISIBILITY_VISIBLE,   // The widget will appear normally
@@ -475,3 +477,5 @@ private:
     int  m_VisFrame = -1;
     bool m_bSetFocusOnAddToDesktop{};
 };
+
+HK_NAMESPACE_END

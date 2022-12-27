@@ -33,6 +33,8 @@ SOFTWARE.
 #include "VT.h"
 #include <RenderCore/DeviceObject.h>
 
+HK_NAMESPACE_BEGIN
+
 class VirtualTextureFile : public RefCounted
 {
 public:
@@ -86,3 +88,5 @@ protected:
     /** log2( TextureResolution ) */
     uint32_t TextureResolutionLog2;
 };
+
+HK_NAMESPACE_END

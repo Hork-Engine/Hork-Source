@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Vector.h"
 
+HK_NAMESPACE_BEGIN
+
 template <typename T, size_t ArraySize>
 struct TArray
 {
@@ -42,8 +44,8 @@ public:
     using ConstReference       = const ValueType&;
     using Iterator             = ValueType*;
     using ConstIterator        = const ValueType*;
-    using ReverseIterator      = eastl::reverse_iterator<Iterator>;
-    using ConstReverseIterator = eastl::reverse_iterator<ConstIterator>;
+    using ReverseIterator      = ::eastl::reverse_iterator<Iterator>;
+    using ConstReverseIterator = ::eastl::reverse_iterator<ConstIterator>;
     using SizeType             = eastl_size_t;
 
 public:
@@ -301,10 +303,12 @@ constexpr inline bool operator>=(TArray<T, ArraySize> const& a, TArray<T, ArrayS
     return !eastl::lexicographical_compare(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0], &b.m_Data[ArraySize]);
 }
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <typename T, size_t ArraySize>
-inline void swap(TArray<T, ArraySize>& a, TArray<T, ArraySize>& b)
+inline void swap(Hk::TArray<T, ArraySize>& a, Hk::TArray<T, ArraySize>& b)
 {
     eastl::swap_ranges(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
 }

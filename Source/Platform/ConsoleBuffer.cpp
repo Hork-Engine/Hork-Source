@@ -31,6 +31,8 @@ SOFTWARE.
 #include <Platform/ConsoleBuffer.h>
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 void ConsoleBuffer::Resize(int _VidWidth)
 {
     MutexGurad syncGuard(m_Mutex);
@@ -329,3 +331,5 @@ void ConsoleBuffer::Unlock()
 {
     m_Mutex.Unlock();
 }
+
+HK_NAMESPACE_END

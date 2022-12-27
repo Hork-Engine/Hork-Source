@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -119,3 +121,5 @@ ITexture* SwapChainGLImpl::GetDepthBuffer()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

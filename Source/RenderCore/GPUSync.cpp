@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Device.h>
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 GPUSync::GPUSync(RenderCore::IImmediateContext* _pImmediateContext) :
@@ -96,3 +98,5 @@ void GPUSync::Wait()
         pImmediateContext->ReadTexture(Staging, 0, 4, 4, data);
     }
 }
+
+HK_NAMESPACE_END

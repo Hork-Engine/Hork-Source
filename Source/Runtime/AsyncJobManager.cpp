@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Platform/Profiler.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr int AsyncJobManager::MAX_WORKER_THREADS;
 constexpr int AsyncJobManager::MAX_JOB_LISTS;
 
@@ -340,3 +342,5 @@ void AsyncJobList::SubmitAndWait()
 
 //    jobManager.Deinitialize();
 //}
+
+HK_NAMESPACE_END

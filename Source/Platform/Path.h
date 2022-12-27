@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -75,3 +77,5 @@ bool IsPathSeparator(CharT Ch)
 }
 
 } // namespace Platform
+
+HK_NAMESPACE_END

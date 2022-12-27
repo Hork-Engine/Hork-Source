@@ -47,6 +47,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawSkeleton("com_DrawSkeleton"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(SkinnedComponent)
@@ -696,3 +698,5 @@ void FromMatrix( Float3x4 const & _JointTransform, Float3 & Position, Quat & Rot
     Position.z = mat[ 2 * 4 + 3 ];
 }
 */
+
+HK_NAMESPACE_END

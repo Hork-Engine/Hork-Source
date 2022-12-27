@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Runtime/Canvas/Canvas.h>
 #include <Containers/ArrayView.h>
 
+HK_NAMESPACE_BEGIN
+
 class UIBrush : public UIObject
 {
     UI_CLASS(UIBrush, UIObject)
@@ -337,3 +339,5 @@ public:
 };
 
 void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush);
+
+HK_NAMESPACE_END

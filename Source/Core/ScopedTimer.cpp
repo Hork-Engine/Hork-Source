@@ -30,4 +30,8 @@ SOFTWARE.
 
 #include "ScopedTimer.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar rt_ScopedTimeCheck("rt_ScopedTimeCheck"s, "0"s);
+
+HK_NAMESPACE_END

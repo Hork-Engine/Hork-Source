@@ -36,6 +36,8 @@ SOFTWARE.
 #include "Terrain.h"
 #include <Renderer/VT/VirtualTextureFeedback.h>
 
+HK_NAMESPACE_BEGIN
+
 class ColorGradingParameters : public BaseObject
 {
     HK_CLASS(ColorGradingParameters, BaseObject)
@@ -243,3 +245,5 @@ private:
 
     friend class RenderFrontend;
 };
+
+HK_NAMESPACE_END

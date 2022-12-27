@@ -33,6 +33,8 @@ SOFTWARE.
 #include <RenderCore/ImmediateContext.h>
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 class CubemapGenerator
 {
 public:
@@ -51,3 +53,5 @@ private:
     ConstantData               ConstantBufferData;
     TRef<RenderCore::IPipeline> Pipeline;
 };
+
+HK_NAMESPACE_END

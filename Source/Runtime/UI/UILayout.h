@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIWidget;
 
 struct UIPadding
@@ -333,3 +335,5 @@ protected:
 
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
 };
+
+HK_NAMESPACE_END

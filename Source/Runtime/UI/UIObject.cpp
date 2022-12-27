@@ -30,8 +30,12 @@ SOFTWARE.
 
 #include "UIObject.h"
 
+HK_NAMESPACE_BEGIN
+
 static uint64_t GUniqueIdGenerator = 0;
 
 UIObject::UIObject() :
     Id(++GUniqueIdGenerator)
 {}
+
+HK_NAMESPACE_END

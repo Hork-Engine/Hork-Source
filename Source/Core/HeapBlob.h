@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "String.h"
 
+HK_NAMESPACE_BEGIN
+
 struct HeapBlob final
 {
     HeapBlob() = default;
@@ -210,3 +212,5 @@ private:
     void const* m_HeapPtr{};
     size_t      m_HeapSize{};
 };
+
+HK_NAMESPACE_END

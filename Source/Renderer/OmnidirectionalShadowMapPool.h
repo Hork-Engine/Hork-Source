@@ -2,6 +2,8 @@
 
 #include "RenderDefs.h"
 
+HK_NAMESPACE_BEGIN
+
 class OmnidirectionalShadowMapPool
 {
 public:
@@ -17,3 +19,5 @@ private:
     TRef<RenderCore::ITexture> Texture;
     int                        PoolSize;
 };
+
+HK_NAMESPACE_END

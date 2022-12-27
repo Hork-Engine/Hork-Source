@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BvAxisAlignedBox.h"
 
+HK_NAMESPACE_BEGIN
+
 struct BvOrientedBox
 {
     Float3   Center;
@@ -104,3 +106,5 @@ struct BvOrientedBox
         Center.Z          = transformMatrix[2][0] * AabbCenter[0] + transformMatrix[2][1] * AabbCenter[1] + transformMatrix[2][2] * AabbCenter[2] + transformMatrix[2][3];
     }
 };
+
+HK_NAMESPACE_END

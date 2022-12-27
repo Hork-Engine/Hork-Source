@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Renderer/GpuMaterial.h>
 
+HK_NAMESPACE_BEGIN
+
 class MaterialInstance;
 
 /**
@@ -216,3 +218,5 @@ private:
     MaterialFrameData* m_FrameData = nullptr;
     int                m_VisFrame  = -1;
 };
+
+HK_NAMESPACE_END

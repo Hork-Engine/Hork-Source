@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIWindow : public UIWidget
 {
     UI_CLASS(UIWindow, UIWidget)
@@ -139,3 +141,5 @@ private:
 
 
 UIWindow* UIMakeWindow(StringView captionText, UIWidget* centralWidget);
+
+HK_NAMESPACE_END

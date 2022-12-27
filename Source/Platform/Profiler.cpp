@@ -31,6 +31,8 @@ SOFTWARE.
 #include <Platform/Profiler.h>
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -57,3 +59,5 @@ void ShutdownProfiler()
 }
 
 } // namespace Platform
+
+HK_NAMESPACE_END

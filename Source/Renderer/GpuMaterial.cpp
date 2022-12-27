@@ -32,6 +32,8 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include "GpuMaterial.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static constexpr SAMPLER_FILTER SamplerFilterLUT[] = {
@@ -1963,3 +1965,5 @@ MaterialGPU::MaterialGPU(CompiledMaterial const* pCompiledMaterial)
             HK_ASSERT(0);
     }
 }
+
+HK_NAMESPACE_END

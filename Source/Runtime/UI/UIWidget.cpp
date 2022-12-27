@@ -36,6 +36,8 @@ SOFTWARE.
 #include "UIScroll.h"
 #include "UIManager.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
 
 extern int UIVisibilityFrame;
@@ -593,7 +595,7 @@ void UIWidget::AdjustSize(Float2 const& size)
 
 void UIWidget::DrawBrush(Canvas& canvas, UIBrush* brush)
 {
-    ::DrawBrush(canvas, m_Geometry.Mins, m_Geometry.Maxs, {}, brush);
+    Hk::DrawBrush(canvas, m_Geometry.Mins, m_Geometry.Maxs, {}, brush);
 }
 
 UIShareInputs::UIShareInputs(std::initializer_list<UIWidget*> list)
@@ -700,3 +702,5 @@ UIWidget* UIWidget::FindChildren(StringView name)
 
     return nullptr;
 }
+
+HK_NAMESPACE_END

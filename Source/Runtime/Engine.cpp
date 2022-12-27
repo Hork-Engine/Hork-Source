@@ -56,6 +56,10 @@ SOFTWARE.
 #    include <unistd.h> // chdir
 #endif
 
+#include <SDL.h>
+
+HK_NAMESPACE_BEGIN
+
 static ConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
 static ConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
 
@@ -474,7 +478,6 @@ void Engine::SaveMemoryStats()
         GMemoryStatGlobal.MemoryPeakAlloc += GMemoryStat[n].MemoryPeakAlloc;
     }
 }
-#include <SDL.h>
 
 void Engine::ShowStats()
 {
@@ -744,11 +747,17 @@ RenderCore::IDevice* Engine::GetRenderDevice()
     return m_RenderDevice;
 }
 
+HK_NAMESPACE_END
 
 extern "C" const size_t   EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
 
-static Archive EmbeddedResourcesArch;
+namespace
+{
+Hk::Archive EmbeddedResourcesArch;
+}
+
+HK_NAMESPACE_BEGIN
 
 namespace Runtime
 {
@@ -784,7 +793,7 @@ void RunEngine(int _Argc, char** _Argv, EntryDecl const& EntryDecl)
 
     PlatformInitialize init;
 #ifdef HK_OS_WIN32
-    init.pCommandLine = ::GetCommandLineA();
+    init.pCommandLine = GetCommandLineA();
 #else
     init.Argc = _Argc;
     init.Argv = _Argv;
@@ -801,6 +810,7 @@ void RunEngine(int _Argc, char** _Argv, EntryDecl const& EntryDecl)
 
     Platform::Deinitialize();
 }
+HK_NAMESPACE_END
 
 #if defined(HK_DEBUG) && defined(HK_COMPILER_MSVC)
 BOOL WINAPI DllMain(

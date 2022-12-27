@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "VirtualTextureResource.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(VirtualTextureResource)
 
 VirtualTextureResource::VirtualTextureResource()
@@ -50,3 +52,5 @@ bool VirtualTextureResource::LoadResource(IBinaryStreamReadInterface& _Stream)
 
     return true;
 }
+
+HK_NAMESPACE_END

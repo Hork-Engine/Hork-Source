@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Ref.h>
 #include <Containers/Vector.h>
 
+HK_NAMESPACE_BEGIN
+
 struct WeakRefCounter;
 
 class GCObject
@@ -118,3 +120,5 @@ private:
 
     static TVector<GCObject*> m_KeepAlivePtrs;
 };
+
+HK_NAMESPACE_END

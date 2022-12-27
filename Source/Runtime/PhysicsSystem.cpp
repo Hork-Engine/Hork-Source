@@ -57,6 +57,10 @@ SOFTWARE.
 
 #define SOFT_BODY_WORLD
 
+extern ContactAddedCallback gContactAddedCallback;
+
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawContactPoints("com_DrawContactPoints"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawConstraints("com_DrawConstraints"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawConstraintLimits("com_DrawConstraintLimits"s, "0"s, CVAR_CHEAT);
@@ -104,8 +108,6 @@ struct CollisionFilterCallback : public btOverlapFilterCallback
 };
 
 static CollisionFilterCallback CollisionFilterCallback;
-
-extern ContactAddedCallback gContactAddedCallback;
 
 static bool CustomMaterialCombinerCallback(btManifoldPoint&                cp,
                                            const btCollisionObjectWrapper* colObj0Wrap,
@@ -1841,3 +1843,5 @@ void PhysicsSystem::QueryCollision(TPodVector<CollisionQueryResult>& _Result, Bv
 {
     QueryCollision_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
+
+HK_NAMESPACE_END

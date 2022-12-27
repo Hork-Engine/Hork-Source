@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/Platform.h>
 #include <Runtime/EmbeddedResources.h>
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 /** Render device */
@@ -307,3 +309,5 @@ void SaveSnapshot(ITexture& _Texture)
     Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
     #endif
 }
+
+HK_NAMESPACE_END

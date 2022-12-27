@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <Core/Random.h>
 
+HK_NAMESPACE_BEGIN
+
 void MersenneTwisterRand::Initialize(uint32_t InSeed)
 {
     // Initialize generator state with seed
@@ -61,3 +63,5 @@ void MersenneTwisterRand::Reload()
 
     m_Left = N, m_Next = m_State;
 }
+
+HK_NAMESPACE_END

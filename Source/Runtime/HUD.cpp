@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Canvas/Canvas.h"
 #include <Platform/Utf8.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(AHUD)
 
 AHUD::AHUD()
@@ -46,3 +48,5 @@ void AHUD::Draw(Canvas& canvas, int x, int y, int width, int height)
 
     DrawHUD(canvas);
 }
+
+HK_NAMESPACE_END

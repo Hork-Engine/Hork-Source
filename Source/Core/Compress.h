@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 /** Lightning-fast lossless compression */
 enum FASTLZ_COMPRESS
 {
@@ -129,3 +131,5 @@ The source buffer and the compressed buffer can not overlap.
 bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte** pDest, size_t* pDestSize, MemoryHeap& Heap);
 
 } // namespace Core
+
+HK_NAMESPACE_END

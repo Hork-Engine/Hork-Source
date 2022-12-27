@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include "GL/glew.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore {
 
 /*
@@ -619,3 +621,5 @@ constexpr GLenum SwizzleLUT[] = {
 };
 
 }
+
+HK_NAMESPACE_END

@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "AudioChannel.h"
 
+HK_NAMESPACE_BEGIN
+
 TPoolAllocator<AudioChannel> AudioChannel::ChannelPool;
 Mutex AudioChannel::PoolMutex;
 
@@ -123,3 +125,5 @@ void AudioChannel::FreePool()
 {
     ChannelPool.Free();
 }
+
+HK_NAMESPACE_END

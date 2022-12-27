@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "Resource.h"
 
+HK_NAMESPACE_BEGIN
 
 /**
 
@@ -55,3 +56,5 @@ protected:
 
     const char* GetDefaultResourcePath() const override { return "/Default/Textures/DefaultVT"; }
 };
+
+HK_NAMESPACE_END

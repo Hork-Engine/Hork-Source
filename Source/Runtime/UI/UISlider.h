@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 struct UISliderGeometry
 {
     Float2 SliderMins;
@@ -130,3 +132,5 @@ private:
     float            m_SliderWidth{12};
     bool             m_bVerticalOrientation{};
 };
+
+HK_NAMESPACE_END

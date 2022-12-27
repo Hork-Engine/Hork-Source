@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Platform.h"
 #include "Format.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_FORCEINLINE void LOG(const char* Message)
 {
     Platform::WriteDebugString(Message);
@@ -101,3 +103,5 @@ HK_FORCEINLINE void DEBUG(fmt::format_string<T...> Format, T&&... args)
     Platform::WriteConsole(buffer.data());
 #endif
 }
+
+HK_NAMESPACE_END

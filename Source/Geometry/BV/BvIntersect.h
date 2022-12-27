@@ -34,6 +34,8 @@ SOFTWARE.
 #include "BvOrientedBox.h"
 #include "BvSphere.h"
 
+HK_NAMESPACE_BEGIN
+
 /*
 
 Overlap tests:
@@ -2017,3 +2019,5 @@ HK_INLINE bool BvSegmentIntersectPlane( SegmentF const & _Segment, PlaneF const 
     return _Distance >= 0.0f && _Distance <= Length;
 }
 #endif
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Image.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace TextureBlockCompression
 {
 
@@ -584,3 +586,5 @@ Float3 UnpackNormalStereographic_BC5_Compatible(void const* pData, uint32_t Inde
 Float3 UnpackNormalParaboloid_BC5_Compatible(void const* pData, uint32_t Index);
 
 Float3 UnpackNormalRGBA_BC3_Compatible(void const* pData, uint32_t Index);
+
+HK_NAMESPACE_END

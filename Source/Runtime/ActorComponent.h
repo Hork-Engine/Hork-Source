@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class World;
 class Level;
 class AActor;
@@ -131,3 +133,5 @@ private:
     bool m_bHideInEditor : 1;
     bool m_bTicking : 1;
 };
+
+HK_NAMESPACE_END

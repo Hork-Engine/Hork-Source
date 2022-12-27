@@ -31,6 +31,8 @@ SOFTWARE.
 #include "GameSession.h"
 #include "ResourceManager.h"
 
+HK_NAMESPACE_BEGIN
+
 GameSession::GameSession()
 {
 
@@ -73,3 +75,5 @@ void GameSession::UnloadResources()
 {
     m_Resources.Clear();
 }
+
+HK_NAMESPACE_END

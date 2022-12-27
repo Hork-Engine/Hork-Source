@@ -33,6 +33,8 @@ SOFTWARE.
 #include "BinaryStream.h"
 #include "String.h"
 
+HK_NAMESPACE_BEGIN
+
 struct FileHandle
 {
     FileHandle() = default;
@@ -305,7 +307,7 @@ private:
     static void* Realloc(void* pMemory, size_t SizeInBytes);
     static void  Free(void* pMemory);
 
-    String   m_Name;
+    String    m_Name;
     FILE_TYPE m_Type{FILE_TYPE_UNDEFINED};
     union
     {
@@ -339,3 +341,5 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
 bool WriteResourcePack(StringView SourcePath, StringView ResultFile);
 
 } // namespace Core
+
+HK_NAMESPACE_END

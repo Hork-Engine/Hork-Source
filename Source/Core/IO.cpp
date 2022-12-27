@@ -45,6 +45,42 @@ SOFTWARE.
 
 #include <miniz/miniz.h>
 
+namespace
+{
+FILE* OpenFile(const char* FileName, const char* Mode)
+{
+    FILE* f;
+#if defined(_MSC_VER)
+    wchar_t wMode[64];
+
+    if (0 == MultiByteToWideChar(CP_UTF8, 0, Mode, -1, wMode, HK_ARRAY_SIZE(wMode)))
+        return NULL;
+
+    int n = MultiByteToWideChar(CP_UTF8, 0, FileName, -1, NULL, 0);
+    if (0 == n)
+    {
+        return NULL;
+    }
+
+    wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
+
+    MultiByteToWideChar(CP_UTF8, 0, FileName, -1, wFilename, n);
+
+#    if _MSC_VER >= 1400
+    if (0 != _wfopen_s(&f, wFilename, wMode))
+        f = NULL;
+#    else
+    f = _wfopen(wFilename, wMode);
+#    endif
+#else
+    f = fopen(FileName, Mode);
+#endif
+    return f;
+}
+}
+
+HK_NAMESPACE_BEGIN
+
 File::~File()
 {
     Close();
@@ -63,37 +99,6 @@ File File::OpenWrite(StringView FileName)
 File File::OpenAppend(StringView FileName)
 {
     return OpenFromFileSystem(FileName, FILE_TYPE_APPEND_FILE_SYSTEM);
-}
-
-static FILE* OpenFile(const char* FileName, const char* Mode)
-{
-    FILE* f;
-#if defined(_MSC_VER)
-    wchar_t wMode[64];
-
-    if (0 == MultiByteToWideChar(CP_UTF8, 0, Mode, -1, wMode, HK_ARRAY_SIZE(wMode)))
-        return NULL;
-
-    int n = MultiByteToWideChar(CP_UTF8, 0, FileName, -1, NULL, 0);
-    if (0 == n)
-    {
-        return NULL;
-    }
-
-    wchar_t* wFilename = (wchar_t*)StackAlloc(n * sizeof(wchar_t));
-
-    MultiByteToWideChar(CP_UTF8, 0, FileName, -1, wFilename, n);
-
-#    if _MSC_VER >= 1400
-    if (0 != _wfopen_s(&f, wFilename, wMode))
-        f = NULL;
-#    else
-    f = _wfopen(wFilename, wMode);
-#    endif
-#else
-    f = fopen(FileName, Mode);
-#endif
-    return f;
 }
 
 File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
@@ -130,7 +135,7 @@ File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
             return {};
     }
 
-    f.m_Handle = ::OpenFile(f.m_Name.CStr(), fopen_mode);
+    f.m_Handle = OpenFile(f.m_Name.CStr(), fopen_mode);
     if (!f.m_Handle)
     {
         LOG("Couldn't open {}\n", f.m_Name);
@@ -868,7 +873,7 @@ void RemoveFile(StringView FileName)
     int n = MultiByteToWideChar(CP_UTF8, 0, s.CStr(), -1, NULL, 0);
     if (0 != n)
     {
-        wchar_t* wFilename = (wchar_t*)StackAlloc(n * sizeof(wchar_t));
+        wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
         MultiByteToWideChar(CP_UTF8, 0, s.CStr(), -1, wFilename, n);
 
@@ -1031,3 +1036,5 @@ bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

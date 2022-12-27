@@ -31,6 +31,8 @@ SOFTWARE.
 #include <Platform/Path.h>
 #include <Platform/Memory/Memory.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Platform
 {
 
@@ -276,3 +278,5 @@ int FindExtWithoutDot(const char* _Path)
 }
 
 } // namespace Platform
+
+HK_NAMESPACE_END

@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "Transform2D.h"
 
+HK_NAMESPACE_BEGIN
+
 void Transform2D::SetIdentity()
 {
     Col0[0] = 1.0f;
@@ -115,3 +117,5 @@ Transform2D Transform2D::Inversed() const
     return inv;
     #endif
 }
+
+HK_NAMESPACE_END

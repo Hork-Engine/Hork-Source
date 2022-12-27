@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "SoundEmitter.h"
 
+HK_NAMESPACE_BEGIN
+
 class AudioDevice;
 class AudioMixer;
 class APlayerController;
@@ -91,3 +93,5 @@ private:
     TPoolAllocator<SoundOneShot, 128> m_OneShotPool;
     AudioListener                     m_Listener;
 };
+
+HK_NAMESPACE_END

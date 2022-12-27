@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Platform/Profiler.h>
 
+HK_NAMESPACE_BEGIN
+
 GCObject*          GarbageCollector::m_GarbageObjects     = nullptr;
 GCObject*          GarbageCollector::m_GarbageObjectsTail = nullptr;
 TVector<GCObject*> GarbageCollector::m_KeepAlivePtrs;
@@ -122,3 +124,5 @@ void GarbageCollector::ClearPointers()
     }
     m_KeepAlivePtrs.Clear();
 }
+
+HK_NAMESPACE_END

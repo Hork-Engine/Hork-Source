@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <SDL.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -134,3 +136,5 @@ void IGenericWindow::ParseEvent(SDL_Event const& event)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

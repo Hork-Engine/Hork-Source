@@ -48,6 +48,8 @@ SOFTWARE.
 #    pragma warning(pop)
 #endif
 
+HK_NAMESPACE_BEGIN
+
 HK_FORCEINLINE Float3 btVectorToFloat3(btVector3 const& _In)
 {
     return Float3(_In.x(), _In.y(), _In.z());
@@ -95,3 +97,5 @@ HK_FORCEINLINE btMatrix3x3 btMatrixToFloat3x3(Float3x3 const& _In)
 void btDrawCollisionShape(DebugRenderer* InRenderer, btTransform const& Transform, btCollisionShape const* Shape);
 
 void btDrawCollisionObject(DebugRenderer* InRenderer, btCollisionObject* CollisionObject);
+
+HK_NAMESPACE_END

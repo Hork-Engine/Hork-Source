@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "SkinningSystem.h"
 
+HK_NAMESPACE_BEGIN
+
 void SkinningSystem::Update()
 {
     for (TListIterator<SkinnedComponent> skinnedMesh(SkinnedMeshes); skinnedMesh; skinnedMesh++)
@@ -37,3 +39,5 @@ void SkinningSystem::Update()
         skinnedMesh->UpdateBounds();
     }
 }
+
+HK_NAMESPACE_END

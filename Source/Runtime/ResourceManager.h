@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Resource.h"
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 class ResourceFactory : public RefCounted
 {
 public:
@@ -251,3 +253,5 @@ private:
     StringView m_ResourcePath;
     TWeakRef<T> m_Object;
 };
+
+HK_NAMESPACE_END

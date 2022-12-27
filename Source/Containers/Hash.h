@@ -42,6 +42,8 @@ THashSet
 #include <Core/String.h>
 #include <Core/HashFunc.h>
 
+HK_NAMESPACE_BEGIN
+
 template <typename T>
 struct Hasher
 {
@@ -315,15 +317,18 @@ public:
     }
 };
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <typename Key, typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
-HK_INLINE void swap(THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+HK_INLINE void swap(Hk::THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
 {
     lhs.Swap(rhs);
 }
 } // namespace eastl
 
+HK_NAMESPACE_BEGIN
 
 template <typename Val, typename Hash = Hasher<StringView>, typename Predicate = eastl::equal_to<StringView>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>>
 class TStringHashMap : public THashMap<StringView, Val, Hash, Predicate, Allocator>
@@ -709,10 +714,12 @@ public:
     }
 };
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
-HK_INLINE void swap(THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+HK_INLINE void swap(Hk::THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
 {
     lhs.Swap(rhs);
 }

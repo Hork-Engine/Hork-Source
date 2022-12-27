@@ -32,24 +32,32 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 struct EntryDecl
 {
-    const char*            GameTitle;
-    const char*            RootPath;
+    const char* GameTitle;
+    const char* RootPath;
     class ClassMeta const* ModuleClass;
 };
+
+HK_NAMESPACE_END
 
 #ifdef HK_OS_WIN32
 
 #    include <Platform/WindowsDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 /** Runtime entry point */
 void RunEngine(EntryDecl const& _EntryDecl);
+
+HK_NAMESPACE_END
 
 #    define HK_ENTRY_DECL(_EntryDecl)                                                                     \
         int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
         {                                                                                                 \
-            RunEngine(_EntryDecl);                                                                        \
+            Hk::RunEngine(_EntryDecl);                                                                    \
             return 0;                                                                                     \
         }
 #    define HK_NO_RUNTIME_MAIN(_MainFunc)                                                                 \
@@ -57,17 +65,20 @@ void RunEngine(EntryDecl const& _EntryDecl);
         {                                                                                                 \
             return _MainFunc();                                                                           \
         }
-
 #else
+
+HK_NAMESPACE_BEGIN
 
 /** Runtime entry point */
 void RunEngine(int _Argc, char** _Argv, EntryDecl const& _EntryDecl);
 
-#    define HK_ENTRY_DECL(_EntryDecl)          \
-        int main(int argc, char* argv[])       \
-        {                                      \
-            RunEngine(argc, argv, _EntryDecl); \
-            return 0;                          \
+HK_NAMESPACE_END
+
+#    define HK_ENTRY_DECL(_EntryDecl)              \
+        int main(int argc, char* argv[])           \
+        {                                          \
+            Hk::RunEngine(argc, argv, _EntryDecl); \
+            return 0;                              \
         }
 #    define HK_NO_RUNTIME_MAIN(_MainFunc) \
         int main(int argc, char* argv[])  \

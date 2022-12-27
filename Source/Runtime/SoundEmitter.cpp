@@ -37,6 +37,8 @@ SOFTWARE.
 #include <Audio/AudioMixer.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 SoundEmitter* SoundEmitter::SoundEmitters;
 SoundEmitter* SoundEmitter::SoundEmittersTail;
 
@@ -1084,3 +1086,5 @@ void SoundEmitter::UpdateSounds()
         e->Update();
     }
 }
+
+HK_NAMESPACE_END

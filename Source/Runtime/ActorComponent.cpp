@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(ActorComponent)
 
 ActorComponent::ActorComponent()
@@ -88,3 +90,5 @@ void ActorComponent::Destroy()
 {
     World::DestroyComponent(this);
 }
+
+HK_NAMESPACE_END

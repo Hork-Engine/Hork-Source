@@ -33,6 +33,8 @@ SOFTWARE.
 #include "LightComponent.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
+HK_NAMESPACE_BEGIN
+
 class DirectionalLightComponent : public LightComponent
 {
     HK_COMPONENT(DirectionalLightComponent, LightComponent)
@@ -79,3 +81,5 @@ private:
     int            m_ShadowCascadeResolution = 1024;
     float          m_ShadowCascadeSplitLambda = 0.5f;
 };
+
+HK_NAMESPACE_END

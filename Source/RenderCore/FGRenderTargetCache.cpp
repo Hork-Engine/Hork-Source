@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include <RenderCore/FGRenderTargetCache.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -74,3 +76,5 @@ void FGRenderTargetCache::Release(ITexture* pTexture)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

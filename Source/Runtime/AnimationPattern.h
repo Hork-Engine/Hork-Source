@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 class AnimationPattern : public BaseObject
 {
     HK_CLASS(AnimationPattern, BaseObject)
@@ -45,3 +47,5 @@ public:
 
     AnimationPattern() {}
 };
+
+HK_NAMESPACE_END

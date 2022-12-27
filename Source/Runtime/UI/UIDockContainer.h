@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIDockWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 enum DOCK_ZONE : int
 {
     DOCK_ZONE_LEFT,
@@ -163,3 +165,5 @@ private:
     Float2 m_DragPos;
     float m_StartSplitPos;
 };
+
+HK_NAMESPACE_END

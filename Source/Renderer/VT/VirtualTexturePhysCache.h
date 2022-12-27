@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include "VT.h"
 
+HK_NAMESPACE_BEGIN
+
 class VirtualTexture;
 
 struct VTCacheLayerInfo
@@ -181,3 +183,5 @@ private:
     // For debugging
     TRef<RenderCore::IPipeline> m_DrawCachePipeline;
 };
+
+HK_NAMESPACE_END

@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Core/Parse.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(ActorDefinition)
 
 ActorDefinition::ActorDefinition()
@@ -333,3 +335,5 @@ void ActorDefinition::LoadInternalResource(StringView _Path)
 {
     // Empty resource
 }
+
+HK_NAMESPACE_END

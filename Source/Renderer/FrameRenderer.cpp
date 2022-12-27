@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Platform/Profiler.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_ShowNormals("r_ShowNormals"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"s, "0"s);
 ConsoleVar r_ShowCacheVT("r_ShowCacheVT"s, "-1"s);
@@ -525,3 +527,5 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
         }
     }
 }
+
+HK_NAMESPACE_END

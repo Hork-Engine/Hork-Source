@@ -51,6 +51,8 @@ SOFTWARE.
 
 #define VerifyContext() HK_ASSERT(ImmediateContextGLImpl::Current == this);
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -5603,3 +5605,5 @@ GLuint ImmediateContextGLImpl::GetProgramPipeline(PipelineGLImpl* pPipeline)
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

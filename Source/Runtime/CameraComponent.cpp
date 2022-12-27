@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(CameraComponent)
@@ -399,3 +401,5 @@ void CameraComponent::DrawDebug(DebugRenderer* InRenderer)
         InRenderer->DrawConvexPoly(v, false);
     }
 }
+
+HK_NAMESPACE_END

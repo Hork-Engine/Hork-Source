@@ -45,6 +45,8 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 */
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s);
@@ -310,3 +312,5 @@ void VirtualTextureFeedback::DrawFeedback(FrameGraph& FrameGraph, FGTextureProxy
                         DrawSAQ(immediateCtx, DrawFeedbackPipeline);
                     });
 }
+
+HK_NAMESPACE_END

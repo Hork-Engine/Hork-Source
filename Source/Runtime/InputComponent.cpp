@@ -37,6 +37,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/Parse.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
 ConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);
 ConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
@@ -1339,3 +1341,5 @@ void InputMappings::UnmapAll()
     Mappings.Clear();
     AxisMappings.Clear();
 }
+
+HK_NAMESPACE_END

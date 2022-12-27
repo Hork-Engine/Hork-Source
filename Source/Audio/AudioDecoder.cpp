@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <miniaudio/miniaudio.h>
 
+HK_NAMESPACE_BEGIN
+
 static size_t Read(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead)
 {
     IBinaryStreamReadInterface* file = (IBinaryStreamReadInterface*)pDecoder->pUserData;
@@ -194,3 +196,5 @@ bool CreateAudioBuffer(IBinaryStreamReadInterface& File, AudioFileInfo* pAudioFi
 
     return true;
 }
+
+HK_NAMESPACE_END

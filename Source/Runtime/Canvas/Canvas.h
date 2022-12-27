@@ -37,7 +37,7 @@ SOFTWARE.
 #include "Paint.h"
 #include "Transform2D.h"
 
-class CameraComponent;
+HK_NAMESPACE_BEGIN
 
 enum CANVAS_PUSH_FLAG
 {
@@ -555,3 +555,5 @@ private:
     // slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
     bool m_bStencilStrokes{};
 };
+
+HK_NAMESPACE_END

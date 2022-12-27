@@ -34,6 +34,8 @@ SOFTWARE.
 #include "Level.h"
 #include "PhotometricProfile.h"
 
+HK_NAMESPACE_BEGIN
+
 class PunctualLightComponent : public LightComponent
 {
     HK_COMPONENT(PunctualLightComponent, LightComponent)
@@ -119,3 +121,5 @@ private:
     mutable Float3           m_EffectiveColor; // Composed from Temperature, Lumens, Color
     bool                     m_bPhotometricAsMask = false;
 };
+
+HK_NAMESPACE_END

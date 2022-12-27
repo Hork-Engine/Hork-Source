@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/ConsoleVar.h>
 #include <Runtime/EmbeddedResources.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"s, "0"s);
 
 using namespace RenderCore;
@@ -340,3 +342,5 @@ bool ShaderLoader::LoadShaderWithInclude(StringView FileName, String& Out)
 
     return LoadShaderFromString(FileName, source, Out);
 }
+
+HK_NAMESPACE_END

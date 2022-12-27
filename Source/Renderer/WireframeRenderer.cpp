@@ -31,6 +31,8 @@ SOFTWARE.
 #include "WireframeRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, RenderInstance const* instance)
@@ -153,3 +155,5 @@ void AddWireframePass(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
                                  }
                              });
 }
+
+HK_NAMESPACE_END

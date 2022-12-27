@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(EnvironmentMap)
 
 void EnvironmentMap::InitializeFromImage(ImageStorage const& Image)
@@ -218,3 +220,5 @@ void EnvironmentMap::LoadInternalResource(StringView _Path)
     
     InitializeFromImage(storage);
 }
+
+HK_NAMESPACE_END

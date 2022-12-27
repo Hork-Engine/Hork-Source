@@ -42,6 +42,8 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 void Level::OnAddLevelToWorld()
 {
 }
@@ -302,3 +304,5 @@ LevelAudio::LevelAudio(LevelAudioCreateInfo const& CreateInfo)
 
     AmbientSounds = CreateInfo.AmbientSounds;
 }
+
+HK_NAMESPACE_END

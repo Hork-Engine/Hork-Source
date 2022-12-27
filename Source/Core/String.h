@@ -38,6 +38,8 @@ SOFTWARE.
 
 #include "BaseMath.h"
 
+HK_NAMESPACE_BEGIN
+
 using StringSizeType = uint32_t;
 
 static constexpr StringSizeType NullTerminatedBit = StringSizeType(1) << (sizeof(StringSizeType) * 8 - 1);
@@ -595,7 +597,7 @@ public:
     {
         CharT* p = m_pData;
         while (*p)
-            *p = ::ToLower(*p), p++;
+            *p = Hk::ToLower(*p), p++;
     }
 
     /** Convert the string to uppercase. */
@@ -603,7 +605,7 @@ public:
     {
         CharT* p = m_pData;
         while (*p)
-            *p = ::ToUpper(*p), p++;
+            *p = Hk::ToUpper(*p), p++;
     }
 
     /** Compares strings (case insensitive). */
@@ -1566,64 +1568,67 @@ HK_INLINE String ToHexString(T const& _Value, bool bLeadingZeros = false, bool b
 
 } // namespace Core
 
-template <> struct fmt::formatter<TString<char>>
+HK_NAMESPACE_END
+
+template <> struct fmt::formatter<Hk::TString<char>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TString<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TString<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());
     }
 };
-template <> struct fmt::formatter<TStringView<char>>
+template <> struct fmt::formatter<Hk::TStringView<char>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());
     }
 };
-template <> struct fmt::formatter<TGlobalStringView<char>>
+template <> struct fmt::formatter<Hk::TGlobalStringView<char>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TGlobalStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TGlobalStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         return fmt::detail::copy_str<char, const char*>(v.CStr(), v.CStr() + StringLength(v), ctx.out());
     }
 };
-template <> struct fmt::formatter<TString<WideChar>>
+template <> struct fmt::formatter<Hk::TString<Hk::WideChar>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TString<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TString<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
-template <> struct fmt::formatter<TStringView<WideChar>>
+template <> struct fmt::formatter<Hk::TStringView<Hk::WideChar>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TStringView<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
-template <> struct fmt::formatter<TGlobalStringView<WideChar>>
+template <> struct fmt::formatter<Hk::TGlobalStringView<Hk::WideChar>>
 {
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(TGlobalStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    template <typename FormatContext> auto format(Hk::TGlobalStringView<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
         String str = Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
 
+HK_NAMESPACE_BEGIN
 
 template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
 struct TPathUtils
@@ -1846,3 +1851,5 @@ struct TPathUtils
 
 using PathUtils  = TPathUtils<char>;
 using PathUtilsW = TPathUtils<WideChar>;
+
+HK_NAMESPACE_END

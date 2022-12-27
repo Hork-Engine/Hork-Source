@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class SmaaRenderer
 {
 public:
@@ -52,3 +54,5 @@ private:
     TRef<RenderCore::ITexture> AreaTex;
     TRef<RenderCore::ITexture> SearchTex;
 };
+
+HK_NAMESPACE_END

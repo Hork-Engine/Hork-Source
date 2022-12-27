@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 TPodQueue
@@ -266,3 +268,5 @@ private:
     int m_QueueTail;
     int m_MaxQueueLength;
 };
+
+HK_NAMESPACE_END

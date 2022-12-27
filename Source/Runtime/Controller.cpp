@@ -31,6 +31,8 @@ SOFTWARE.
 #include "Controller.h"
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(AController)
 
 AController::AController()
@@ -70,3 +72,5 @@ void AController::SetPawn(AActor* pNewPawn)
 
     OnPawnChanged();
 }
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Core/Parse.h>
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 static const char* TokenType[] = {
     "Unknown token",
     "EOF",
@@ -936,3 +938,5 @@ void Document::DeserializeFromString(DocumentDeserializeInfo const& DeserializeI
         AddMember(member);
     }
 }
+
+HK_NAMESPACE_END

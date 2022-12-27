@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Containers/Hash.h>
 #include "Variant.h"
 
+HK_NAMESPACE_BEGIN
+
 class ClassMeta;
 class Property;
 class BaseObject;
@@ -473,3 +475,5 @@ struct RemoveCVRef
 
 /** Provides access to a property via a setter/getter. */
 #define HK_PROPERTY(TheProperty, Setter, Getter, Flags) HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, RangeUnbound())
+
+HK_NAMESPACE_END

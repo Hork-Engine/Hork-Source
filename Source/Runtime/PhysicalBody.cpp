@@ -38,6 +38,8 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 #define PHYS_COMPARE_EPSILON 0.0001f
 #define MIN_MASS             0.001f
 #define MAX_MASS             1000.0f
@@ -1764,3 +1766,5 @@ void PhysicalBody::GatherNavigationGeometry(NavigationGeometry& Geometry) const
         //}
     }
 }
+
+HK_NAMESPACE_END

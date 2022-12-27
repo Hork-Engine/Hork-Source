@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Runtime/Canvas/Canvas.h>
 
+HK_NAMESPACE_BEGIN
+
 class UICursor : public UIObject
 {
     UI_CLASS(UICursor, UIObject)
@@ -78,3 +80,5 @@ public:
 
     void Draw(Canvas& canvas, Float2 const& position) override;
 };
+
+HK_NAMESPACE_END

@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Image/Image.h>
 #include <Renderer/RenderDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 class MGNode;
 class MGMaterialGraph;
 class MaterialBuildContext;
@@ -1080,3 +1082,5 @@ private:
     TVector<MGTextureSlot*> m_TextureSlots;
     uint32_t                m_NodeIdGen{};
 };
+
+HK_NAMESPACE_END

@@ -33,6 +33,8 @@ SOFTWARE.
 
 #include <Core/Random.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar r_HBAODeinterleaved("r_HBAODeinterleaved"s, "1"s);
 ConsoleVar r_HBAOBlur("r_HBAOBlur"s, "1"s);
 ConsoleVar r_HBAORadius("r_HBAORadius"s, "2"s);
@@ -495,3 +497,5 @@ void SSAORenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* LinearDepth
         AddAOBlurPass(FrameGraph, *ppSSAOTexture, LinearDepth, ppSSAOTexture);
     }
 }
+
+HK_NAMESPACE_END

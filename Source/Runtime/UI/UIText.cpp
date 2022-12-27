@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "UIText.h"
 
+HK_NAMESPACE_BEGIN
+
 void UIText::ApplyTextChanges()
 {
     m_BreakRowWidth = -1;
@@ -75,3 +77,5 @@ void UIText::Draw(Canvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
     canvas.FillColor(m_Color);
     canvas.TextBox(fontStyle, boxMins, boxMaxs, m_AlignmentFlags, m_bWordWrap, Text);
 }
+
+HK_NAMESPACE_END

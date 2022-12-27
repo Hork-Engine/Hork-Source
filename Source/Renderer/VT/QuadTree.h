@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 /** Max levels of detail */
 constexpr int QUADTREE_MAX_LODS_32 = 16;
 
@@ -261,3 +263,5 @@ HK_FORCEINLINE bool QuadTreeIsIndexValid(uint32_t AbsIndex, int Lod)
 {
     return AbsIndex >= GQuadTreeRemapTable.Rel2Abs[Lod] && AbsIndex < GQuadTreeRemapTable.Rel2Abs[Lod + 1];
 }
+
+HK_NAMESPACE_END

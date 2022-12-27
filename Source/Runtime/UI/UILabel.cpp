@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "UILabel.h"
 
+HK_NAMESPACE_BEGIN
+
 void UILabel::AdjustSize(Float2 const& size)
 {
     Super::AdjustSize(size);
@@ -62,3 +64,5 @@ void UILabel::Draw(Canvas& canvas)
     if (Text)
         Text->Draw(canvas, m_Geometry.PaddedMins, m_Geometry.PaddedMaxs);
 }
+
+HK_NAMESPACE_END

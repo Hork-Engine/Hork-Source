@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Vector.h"
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 TBitMask
@@ -193,10 +195,12 @@ private:
     size_t                                                  m_NumBits{};
 };
 
+HK_NAMESPACE_END
+
 namespace eastl
 {
 template <size_t BaseCapacityInBits, typename OverflowAllocator>
-HK_INLINE void swap(TBitMask<BaseCapacityInBits, OverflowAllocator>& lhs, TBitMask<BaseCapacityInBits, OverflowAllocator>& rhs)
+HK_INLINE void swap(Hk::TBitMask<BaseCapacityInBits, OverflowAllocator>& lhs, Hk::TBitMask<BaseCapacityInBits, OverflowAllocator>& rhs)
 {
     lhs.Swap(rhs);
 }

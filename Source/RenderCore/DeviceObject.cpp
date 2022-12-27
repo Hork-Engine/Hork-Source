@@ -35,6 +35,8 @@ SOFTWARE.
 #    include <Core/IntrusiveLinkedListMacro.h>
 #endif
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -67,3 +69,5 @@ IDeviceObject::~IDeviceObject()
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

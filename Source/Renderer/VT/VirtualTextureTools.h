@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Containers/Hash.h>
 
+HK_NAMESPACE_BEGIN
+
 struct VirtualTextureStructure
 {
     int PageResolutionB;
@@ -221,3 +223,5 @@ void VT_TransformTextureCoords(float* _TexCoord,
                                const RectangleBinBack_RectNode& _BinRect,
                                unsigned int _BinWidth,
                                unsigned int _BinHeight);
+
+HK_NAMESPACE_END

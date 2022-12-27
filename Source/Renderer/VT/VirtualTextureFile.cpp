@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/BaseMath.h>
 
+HK_NAMESPACE_BEGIN
+
 VirtualTextureFile::VirtualTextureFile(const char* FileName)
 {
     SFileOffset fileOffset;
@@ -273,3 +275,5 @@ void VirtualTextureFile::ReadPageEx( SFileOffset PhysAddress, byte * PageData[],
     }
 }
 #endif
+
+HK_NAMESPACE_END

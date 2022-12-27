@@ -46,6 +46,8 @@ SOFTWARE.
 #include <cgltf/cgltf.h>
 #include <fast_obj/fast_obj.h>
 
+HK_NAMESPACE_BEGIN
+
 class AssetImporter
 {
 public:
@@ -2681,3 +2683,5 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
 
     return true;
 }
+
+HK_NAMESPACE_END

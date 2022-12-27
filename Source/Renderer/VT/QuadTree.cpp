@@ -30,4 +30,8 @@ SOFTWARE.
 
 #include "QuadTree.h"
 
+HK_NAMESPACE_BEGIN
+
 const QuadTreeRemapTable GQuadTreeRemapTable;
+
+HK_NAMESPACE_END

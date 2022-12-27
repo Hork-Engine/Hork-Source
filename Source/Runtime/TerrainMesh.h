@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 struct TerrainPatch
 {
     int IndexCount;
@@ -96,3 +98,5 @@ private:
     /** Index buffer in CPU. We keep it only for debug draw */
     TVector<unsigned short> IndexBuffer;
 };
+
+HK_NAMESPACE_END

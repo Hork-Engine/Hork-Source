@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Actor.h"
 #include "PhysicalBody.h"
 
+HK_NAMESPACE_BEGIN
+
 /** Helper class to create triggers */
 class ATrigger : public AActor
 {
@@ -58,3 +60,5 @@ protected:
 
     PhysicalBody* m_TriggerBody;
 };
+
+HK_NAMESPACE_END

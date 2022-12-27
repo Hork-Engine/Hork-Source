@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Image/Image.h>
 #include <Geometry/Quat.h>
 
+HK_NAMESPACE_BEGIN
+
 struct AssetImportSettings
 {
     AssetImportSettings()
@@ -107,3 +109,5 @@ bool ImportOBJ(AssetImportSettings const& Settings);
 bool ImportSkybox(AssetImportSettings const& Settings);
 
 bool SaveSkyboxTexture(StringView FileName, ImageStorage const& Image);
+
+HK_NAMESPACE_END

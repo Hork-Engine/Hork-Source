@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr float DEFAULT_RADIUS = 1.0f;
 
 ConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"s, "0"s, CVAR_CHEAT);
@@ -168,3 +170,5 @@ void EnvironmentProbe::PackProbe(Float4x4 const& InViewMatrix, ProbeParameters& 
     Probe.IrradianceMap = m_IrradianceMapHandle;
     Probe.ReflectionMap = m_ReflectionMapHandle;
 }
+
+HK_NAMESPACE_END

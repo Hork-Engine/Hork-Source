@@ -31,6 +31,8 @@ SOFTWARE.
 #include "CommandProcessor.h"
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 CommandProcessor::CommandProcessor()
 {
     ClearBuffer();
@@ -216,3 +218,5 @@ bool CommandProcessor::IsValidCommandName(const char* _Name)
     }
     return true;
 }
+
+HK_NAMESPACE_END

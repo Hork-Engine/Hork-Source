@@ -31,6 +31,8 @@ SOFTWARE.
 #include "IrradianceGenerator.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
@@ -198,3 +200,5 @@ void IrradianceGenerator::Generate(ITexture* _SourceCubemap, TRef<RenderCore::IT
     frameGraph.Build();
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
+
+HK_NAMESPACE_END

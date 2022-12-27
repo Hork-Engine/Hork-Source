@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIObject.h"
 
+HK_NAMESPACE_BEGIN
+
 struct UIShortcutInfo
 {
     int               Key;
@@ -65,3 +67,5 @@ public:
 private:
     TVector<UIShortcutInfo> m_Shortcuts;
 };
+
+HK_NAMESPACE_END

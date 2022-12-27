@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 
+HK_NAMESPACE_BEGIN
+
 class DebugRenderer;
 
 struct TerrainLodInfo
@@ -200,3 +202,5 @@ private:
     TerrainPatchInstance const* pDrawCallUniformData;
     TPodVector<BvAxisAlignedBox> BoundingBoxes;
 };
+
+HK_NAMESPACE_END

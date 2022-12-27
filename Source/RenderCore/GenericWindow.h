@@ -36,6 +36,8 @@ SOFTWARE.
 struct SDL_Window;
 union SDL_Event;
 
+HK_NAMESPACE_BEGIN
+
 struct DisplayVideoMode
 {
     /** Horizontal position on display (read only) */
@@ -101,3 +103,5 @@ protected:
 };
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

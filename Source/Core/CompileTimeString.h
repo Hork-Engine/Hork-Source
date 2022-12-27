@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+HK_NAMESPACE_BEGIN
+
 template <char... Chars>
 struct TCompileTimeString
 {
@@ -65,3 +67,5 @@ struct TMakeCompileTimeString<Str, 0, Chars...>
 
 
 #define _CTS MakeCompileTimeString
+
+HK_NAMESPACE_END

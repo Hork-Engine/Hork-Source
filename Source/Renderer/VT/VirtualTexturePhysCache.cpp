@@ -38,6 +38,8 @@ SOFTWARE.
 
 #define PAGE_STREAM_PBO
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 ConsoleVar r_ResetCacheVT("r_ResetCacheVT"s, "0"s);
@@ -564,3 +566,5 @@ void VirtualTextureCache::Draw(FrameGraph& FrameGraph, FGTextureProxy* RenderTar
                         DrawSAQ(RenderPassContext.pImmediateContext, m_DrawCachePipeline);
                     });
 }
+
+HK_NAMESPACE_END

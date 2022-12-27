@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_LightEnergyScale("com_LightEnergyScale"s, "16"s);
 ConsoleVar com_DrawPunctualLights("com_DrawPunctualLights"s, "0"s, CVAR_CHEAT);
 
@@ -350,3 +352,5 @@ void PunctualLightComponent::PackLight(Float4x4 const& InViewMatrix, LightParame
         Light.LightType = CLUSTER_LIGHT_POINT;  
     }
 }
+
+HK_NAMESPACE_END

@@ -31,6 +31,8 @@ SOFTWARE.
 #include "BvhTree.h"
 #include "BvIntersect.h"
 
+HK_NAMESPACE_BEGIN
+
 struct BvhPrimitiveBounds
 {
     BvAxisAlignedBox Bounds;
@@ -374,3 +376,5 @@ void BvhTree::Subdivide(BvhBuildContext& Build, int Axis, int FirstPrimitive, in
         m_Nodes[curNodeInex].Index   = -nextNode;
     }
 }
+
+HK_NAMESPACE_END

@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include "../FrameLoop.h"
 
+HK_NAMESPACE_BEGIN
+
 UIDockWidget::UIDockWidget(UIDockContainer* container) :
     m_Container(container)
 {
@@ -77,3 +79,5 @@ void UIDockWidget::PostDraw(Canvas& canvas)
                               maxs,
                               Color4(0, 0, 0, 0.9f));
 }
+
+HK_NAMESPACE_END

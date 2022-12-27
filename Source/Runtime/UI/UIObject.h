@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Runtime/BaseObject.h>
 
+HK_NAMESPACE_BEGIN
+
 #define UI_CLASS(Class, SuperClass) \
     using ThisClass = Class; \
     using Super = SuperClass;
@@ -45,3 +47,5 @@ public:
 
     UIObject();
 };
+
+HK_NAMESPACE_END

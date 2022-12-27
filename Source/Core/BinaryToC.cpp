@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Core/IO.h>
 #include <Core/HeapBlob.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -140,3 +142,5 @@ void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, Blo
 }
 
 } // namespace Core
+
+HK_NAMESPACE_END

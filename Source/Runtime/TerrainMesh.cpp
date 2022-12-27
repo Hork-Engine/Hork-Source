@@ -56,6 +56,8 @@ Modify NavMesh
 #include "TerrainMesh.h"
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 static const unsigned short RESET_INDEX = 0xffff;
 
 static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<TerrainVertex>& Vertices, TVector<unsigned short>& Indices)
@@ -409,3 +411,5 @@ TerrainMesh::TerrainMesh(int InTextureSize)
 
     LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", VertexBuffer.Size(), IndexBuffer.Size());
 }
+
+HK_NAMESPACE_END

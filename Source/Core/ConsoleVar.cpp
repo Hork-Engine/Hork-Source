@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 static ConsoleVar* GlobalVars         = nullptr;
 static bool         GVariableAllocated = false;
 
@@ -256,3 +258,5 @@ void ConsoleVar::Print()
         LOG("]\n");
     }
 }
+
+HK_NAMESPACE_END

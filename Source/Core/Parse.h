@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "String.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -194,3 +196,5 @@ HK_FORCEINLINE bool ParseNumber<bool>(StringView Str)
 }
 
 }
+
+HK_NAMESPACE_END

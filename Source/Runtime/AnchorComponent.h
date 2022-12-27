@@ -32,6 +32,10 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
+class btRigidBody;
+
+HK_NAMESPACE_BEGIN
+
 /*
 
 AnchorComponent
@@ -55,6 +59,8 @@ protected:
     void OnTransformDirty() override;
 
 private:
-    class btRigidBody* Anchor      = nullptr;
-    int                AttachCount = 0;
+    btRigidBody* Anchor      = nullptr;
+    int          AttachCount = 0;
 };
+
+HK_NAMESPACE_END

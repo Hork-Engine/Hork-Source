@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Containers/Vector.h>
 #include <Core/String.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr size_t PHOTOMETRIC_DATA_SIZE = 256;
 
 class PhotometricData
@@ -79,3 +81,5 @@ public:
 };
 
 PhotometricData ParsePhotometricData(StringView Text);
+
+HK_NAMESPACE_END

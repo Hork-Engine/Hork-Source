@@ -43,6 +43,8 @@ SOFTWARE.
 #include <Core/Random.h>
 #include <Core/CommandProcessor.h>
 
+HK_NAMESPACE_BEGIN
+
 enum
 {
     RENDER_FRONTEND_JOB_LIST,
@@ -228,3 +230,5 @@ private:
 };
 
 extern Engine* GEngine;
+
+HK_NAMESPACE_END

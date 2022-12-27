@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Renderer/RenderDefs.h>
 #include "VisibilitySystem.h"
 
+HK_NAMESPACE_BEGIN
+
 class AActor;
 class World;
 class Level;
@@ -228,3 +230,5 @@ private:
     TVector<VertexLight*> m_VertexLightChannels;
     TVector<uint32_t> m_FreeVertexLightChannels;
 };
+
+HK_NAMESPACE_END

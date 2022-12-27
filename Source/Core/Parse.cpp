@@ -31,6 +31,8 @@ SOFTWARE.
 #include "Parse.h"
 #include "fast_float.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace Core
 {
 
@@ -287,3 +289,5 @@ bool ParseBool(StringView Str)
 }
 
 }
+
+HK_NAMESPACE_END

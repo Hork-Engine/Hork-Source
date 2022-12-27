@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class DebugDrawRenderer {
 public:
     DebugDrawRenderer();
@@ -41,3 +43,5 @@ public:
 private:
     TRef< RenderCore::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];
 };
+
+HK_NAMESPACE_END

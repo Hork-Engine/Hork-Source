@@ -38,6 +38,8 @@ SOFTWARE.
 #include <Geometry/BV/BvIntersect.h>
 #include <Core/ConsoleVar.h>
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawBrushBounds("com_DrawBrushBounds"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawIndexedMeshBVH("com_DrawIndexedMeshBVH"s, "0"s, CVAR_CHEAT);
@@ -807,3 +809,5 @@ void ProceduralMeshComponent::OnPreRenderUpdate(RenderFrontendDef const* _Def)
 
     m_RenderTransformMatrix[m_RenderTransformMatrixFrame & 1] = GetWorldTransformMatrix();
 }
+
+HK_NAMESPACE_END

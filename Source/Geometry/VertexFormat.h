@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Color.h>
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 //
 // Vertex formats
 //
@@ -243,3 +245,5 @@ struct MeshVertexSkin
         Stream.Read(JointIndices, 8);
     }
 };
+
+HK_NAMESPACE_END

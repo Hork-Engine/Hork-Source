@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore {
 
 /**
@@ -50,3 +52,5 @@ enum
 };
 
 }
+
+HK_NAMESPACE_END

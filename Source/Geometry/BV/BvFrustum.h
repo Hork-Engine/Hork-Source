@@ -41,6 +41,8 @@ SOFTWARE.
 
 #define HK_FRUSTUM_USE_SSE
 
+HK_NAMESPACE_BEGIN
+
 enum FRUSTUM_PLANE
 {
     FRUSTUM_PLANE_RIGHT,
@@ -313,3 +315,5 @@ HK_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ(BvOrientedBox const&
 
     return true;
 }
+
+HK_NAMESPACE_END

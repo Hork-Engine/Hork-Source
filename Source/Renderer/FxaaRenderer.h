@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class FxaaRenderer
 {
 public:
@@ -44,3 +46,5 @@ private:
 
     TRef<RenderCore::IPipeline> FxaaPipeline;
 };
+
+HK_NAMESPACE_END

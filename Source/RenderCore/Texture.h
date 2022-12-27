@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "TextureView.h"
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -737,3 +739,5 @@ HK_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, TextureResolution co
 }
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

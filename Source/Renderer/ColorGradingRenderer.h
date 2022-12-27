@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph.h>
 
+HK_NAMESPACE_BEGIN
+
 class ColorGradingRenderer
 {
 public:
@@ -43,3 +45,5 @@ private:
     TRef<RenderCore::IPipeline> PipelineLUT;
     TRef<RenderCore::IPipeline> PipelineProcedural;
 };
+
+HK_NAMESPACE_END

@@ -60,6 +60,8 @@ Future:
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Terrain)
 
 Terrain::Terrain()
@@ -750,3 +752,5 @@ void Terrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3
         }
     }
 }
+
+HK_NAMESPACE_END

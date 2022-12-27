@@ -31,6 +31,8 @@ SOFTWARE.
 #include "NormalsRenderer.h"
 #include "RenderLocal.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, RenderInstance const* instance)
@@ -105,3 +107,5 @@ void AddNormalsPass(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
                               }
                           });
 }
+
+HK_NAMESPACE_END

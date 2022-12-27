@@ -37,6 +37,8 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawTerrainBounds("com_DrawTerrainBounds"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(TerrainComponent)
@@ -719,3 +721,5 @@ void TerrainComponent::GatherNavigationGeometry(NavigationGeometry& Geometry) co
         }
     }
 }
+
+HK_NAMESPACE_END

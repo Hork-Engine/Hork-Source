@@ -31,6 +31,8 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/String.h>
 
+HK_NAMESPACE_BEGIN
+
 static HK_FORCEINLINE unsigned int Decode85Byte(const char c)
 {
     return c >= '\\' ? c - 36 : c - 35;
@@ -125,3 +127,5 @@ size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85)
 }
 
 }
+
+HK_NAMESPACE_END

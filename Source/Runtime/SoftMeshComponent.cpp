@@ -43,6 +43,8 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
+HK_NAMESPACE_BEGIN
+
 ConsoleVar com_DrawSoftmeshFaces("com_DrawSoftmeshFaces"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(SoftMeshComponent)
@@ -529,3 +531,5 @@ AnchorComponent* SoftMeshComponent::GetVertexAnchor(int _VertexIndex) const
     }
     return nullptr;
 }
+
+HK_NAMESPACE_END

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
+HK_NAMESPACE_BEGIN
+
 typedef uint16_t WideChar;
 
 namespace Core
@@ -87,3 +89,5 @@ HK_FORCEINLINE bool WideCharIsBlank(WideChar _Ch) { return _Ch == ' ' || _Ch == 
 HK_FORCEINLINE bool CharIsBlank(char _Ch) { return _Ch == ' ' || _Ch == '\t'; }
 
 } // namespace Core
+
+HK_NAMESPACE_END

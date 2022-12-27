@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/BaseMath.h>
 #include <Core/IO.h>
 
+HK_NAMESPACE_BEGIN
+
 struct Bool2
 {
     bool X{false};
@@ -256,6 +258,8 @@ struct Bool4
     }
 };
 
-HK_FORMAT_DEF_(Bool2, "( {} {} )", v.X, v.Y);
-HK_FORMAT_DEF_(Bool3, "( {} {} {} )", v.X, v.Y, v.Z);
-HK_FORMAT_DEF_(Bool4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_NAMESPACE_END
+
+HK_FORMAT_DEF_(Hk::Bool2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Hk::Bool3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Hk::Bool4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);

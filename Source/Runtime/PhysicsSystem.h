@@ -33,6 +33,18 @@ SOFTWARE.
 #include "Collision.h"
 #include "CollisionModel.h"
 
+class btDynamicsWorld;
+class btSoftRigidDynamicsWorld;
+class btPersistentManifold;
+class btSoftBodyRigidBodyCollisionConfiguration;
+class btCollisionDispatcher;
+class btSequentialImpulseConstraintSolver;
+class btGhostPairCallback;
+struct btSoftBodyWorldInfo;
+struct btDbvtBroadphase;
+
+HK_NAMESPACE_BEGIN
+
 class DebugRenderer;
 class PhysicalBody;
 class TerrainComponent;
@@ -123,7 +135,7 @@ struct ConvexSweepTest
 /** Collision contact */
 struct CollisionContact
 {
-    class btPersistentManifold* Manifold;
+    btPersistentManifold* Manifold;
 
     TRef<AActor>   ActorA;
     TRef<AActor>   ActorB;
@@ -266,9 +278,9 @@ public:
     void DrawDebug(DebugRenderer* InRenderer);
 
     // Internal
-    class btSoftRigidDynamicsWorld* GetInternal() const { return DynamicsWorld.GetObject(); }
+    btSoftRigidDynamicsWorld* GetInternal() const { return DynamicsWorld.GetObject(); }
 
-    struct btSoftBodyWorldInfo* GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
+    btSoftBodyWorldInfo* GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
 
 private:
     friend class HitProxy;
@@ -295,21 +307,23 @@ private:
 
     void RemoveCollisionContacts();
 
-    static void OnPrePhysics(class btDynamicsWorld* _World, float _TimeStep);
-    static void OnPostPhysics(class btDynamicsWorld* _World, float _TimeStep);
+    static void OnPrePhysics(btDynamicsWorld* _World, float _TimeStep);
+    static void OnPostPhysics(btDynamicsWorld* _World, float _TimeStep);
 
-    TUniqueRef<class btSoftRigidDynamicsWorld>                  DynamicsWorld;
-    TUniqueRef<struct btDbvtBroadphase>                         BroadphaseInterface;
-    TUniqueRef<class btSoftBodyRigidBodyCollisionConfiguration> CollisionConfiguration;
-    TUniqueRef<class btCollisionDispatcher>                     CollisionDispatcher;
-    TUniqueRef<class btSequentialImpulseConstraintSolver>       ConstraintSolver;
-    TUniqueRef<class btGhostPairCallback>                       GhostPairCallback;
-    struct btSoftBodyWorldInfo*                                 SoftBodyWorldInfo;
-    TVector<CollisionContact>                                   CollisionContacts[2];
-    THashSet<ContactKey>                                        ContactHash[2];
-    TPodVector<ContactPoint>                                    ContactPoints;
-    HitProxy*                                                   PendingAddToWorldHead = nullptr;
-    HitProxy*                                                   PendingAddToWorldTail = nullptr;
-    int                                                         FixedTickNumber       = 0;
-    int                                                         CacheContactPoints    = -1;
+    TUniqueRef<btSoftRigidDynamicsWorld>                  DynamicsWorld;
+    TUniqueRef<btDbvtBroadphase>                          BroadphaseInterface;
+    TUniqueRef<btSoftBodyRigidBodyCollisionConfiguration> CollisionConfiguration;
+    TUniqueRef<btCollisionDispatcher>                     CollisionDispatcher;
+    TUniqueRef<btSequentialImpulseConstraintSolver>       ConstraintSolver;
+    TUniqueRef<btGhostPairCallback>                       GhostPairCallback;
+    btSoftBodyWorldInfo*                                  SoftBodyWorldInfo;
+    TVector<CollisionContact>                             CollisionContacts[2];
+    THashSet<ContactKey>                                  ContactHash[2];
+    TPodVector<ContactPoint>                              ContactPoints;
+    HitProxy*                                             PendingAddToWorldHead = nullptr;
+    HitProxy*                                             PendingAddToWorldTail = nullptr;
+    int                                                   FixedTickNumber       = 0;
+    int                                                   CacheContactPoints    = -1;
 };
+
+HK_NAMESPACE_END

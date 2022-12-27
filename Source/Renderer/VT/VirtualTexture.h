@@ -35,6 +35,8 @@ SOFTWARE.
 
 #include <unordered_map>
 
+HK_NAMESPACE_BEGIN
+
 class VirtualTexture : public VirtualTextureFile
 {
 public:
@@ -128,3 +130,5 @@ private:
     friend class VirtualTextureCache;
     friend class VirtualTextureFeedbackAnalyzer;
 };
+
+HK_NAMESPACE_END

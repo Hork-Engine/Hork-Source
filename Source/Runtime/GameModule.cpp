@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Engine.h"
 #include "Material.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(GameModule)
 
 GameModule::GameModule()
@@ -64,3 +66,5 @@ void GameModule::RebuildMaterials(CommandProcessor const& _Proc)
 {
     Material::UpdateGpuMaterials();
 }
+
+HK_NAMESPACE_END

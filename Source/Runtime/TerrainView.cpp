@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Core/ConsoleVar.h>
 #include <Geometry/BV/BvIntersect.h>
 
+HK_NAMESPACE_BEGIN
+
 static const unsigned short RESET_INDEX = 0xffff;
 
 ConsoleVar com_TerrainMinLod("com_TerrainMinLod"s, "0"s);
@@ -1199,3 +1201,5 @@ Float3 TerrainView::VertexShader(TerrainVertex const& v)
     result.Y = texture[texCoord.Y * TextureSize + texCoord.X].X;
     return result;
 }
+
+HK_NAMESPACE_END

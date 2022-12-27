@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "Actor.h"
 
+HK_NAMESPACE_BEGIN
 
 /**
 
@@ -59,3 +60,5 @@ protected:
 protected:
     TRef<AActor> m_Pawn;
 };
+
+HK_NAMESPACE_END

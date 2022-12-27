@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Memory.h"
 #include "../Logger.h"
 
+HK_NAMESPACE_BEGIN
+
 template <typename T, size_t BlockCapacity = 1024>
 class TPoolAllocator
 {
@@ -265,3 +267,5 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::Deallocate(void* _Bytes)
     }
     HK_ASSERT(m_CurBlock != nullptr);
 }
+
+HK_NAMESPACE_END

@@ -33,8 +33,7 @@ SOFTWARE.
 #include "IO.h"
 #include "HashFunc.h"
 
-namespace Hk
-{
+HK_NAMESPACE_BEGIN
 
 struct GUID
 {
@@ -102,4 +101,4 @@ struct GUID
     }
 };
 
-}
+HK_NAMESPACE_END

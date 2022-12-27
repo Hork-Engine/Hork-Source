@@ -44,6 +44,8 @@ SOFTWARE.
 #include "SSAORenderer.h"
 #include "ShadowMapRenderer.h"
 
+HK_NAMESPACE_BEGIN
+
 class FrameRenderer : public RefCounted
 {
 public:
@@ -90,3 +92,5 @@ private:
     TRef<RenderCore::IPipeline> OutlineApplyPipe;
     TRef<RenderCore::IPipeline> CopyPipeline;
 };
+
+HK_NAMESPACE_END

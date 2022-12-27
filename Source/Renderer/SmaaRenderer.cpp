@@ -33,6 +33,8 @@ SOFTWARE.
 #include "SMAA/AreaTex.h"
 #include "SMAA/SearchTex.h"
 
+HK_NAMESPACE_BEGIN
+
 using namespace RenderCore;
 
 SmaaRenderer::SmaaRenderer()
@@ -185,3 +187,5 @@ void SmaaRenderer::NeighborhoodBlendingPass(FrameGraph& FrameGraph, FGTexturePro
 
     *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;
 }
+
+HK_NAMESPACE_END

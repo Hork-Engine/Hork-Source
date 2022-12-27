@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Geometry/VectorMath.h>
 #include <Platform/Memory/PoolAllocator.h>
 
+HK_NAMESPACE_BEGIN
 
 /**
 AudioChannel
@@ -206,3 +207,5 @@ private:
     static TPoolAllocator<AudioChannel> ChannelPool;
     static Mutex PoolMutex;
 };
+
+HK_NAMESPACE_END

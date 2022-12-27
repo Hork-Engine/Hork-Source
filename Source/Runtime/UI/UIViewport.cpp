@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Runtime/FrameLoop.h>
 #include <Runtime/Engine.h>
 
+HK_NAMESPACE_BEGIN
+
 bool GUILockViewportScaling = false;
 
 UIViewport::UIViewport(APlayerController* playerController) :
@@ -218,3 +220,5 @@ void UIViewport::Draw(Canvas& canvas)
             hud->Draw(canvas, pos.X, pos.Y, size.X, size.Y);
     }
 }
+
+HK_NAMESPACE_END

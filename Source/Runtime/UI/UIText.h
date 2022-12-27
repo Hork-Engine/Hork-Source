@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIWidget.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIText : public UIObject
 {
     UI_CLASS(UIText, UIObject)
@@ -151,3 +153,5 @@ private:
     mutable Float2       m_CachedSize;
     mutable float        m_BreakRowWidth{-1};
 };
+
+HK_NAMESPACE_END

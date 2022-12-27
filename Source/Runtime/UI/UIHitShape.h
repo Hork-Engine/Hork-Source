@@ -33,6 +33,8 @@ SOFTWARE.
 #include "UIObject.h"
 #include <Containers/BitMask.h>
 
+HK_NAMESPACE_BEGIN
+
 class UIHitShape : public UIObject
 {
     UI_CLASS(UIHitShape, UIObject)
@@ -93,3 +95,5 @@ public:
     // x, y in normalized space 0..1
     bool IsOverlap(struct UIWidgetGeometry const& geometry, float x, float y) const override;
 };
+
+HK_NAMESPACE_END

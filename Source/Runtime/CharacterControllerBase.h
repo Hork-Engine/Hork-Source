@@ -34,6 +34,13 @@ SOFTWARE.
 
 #include "Collision.h"
 
+class btDiscreteDynamicsWorld;
+class btGhostObject;
+class btPairCachingGhostObject;
+class btConvexShape;
+
+HK_NAMESPACE_BEGIN
+
 struct CharacterControllerTrace
 {
     HitProxy* HitProxy;
@@ -225,10 +232,10 @@ private:
     TRef<HitProxy> m_HitProxy;
 
     class CharacterControllerActionInterface* ActionInterface;
-    class btPairCachingGhostObject*           GhostObject;
-    class btConvexShape*                      ConvexShape;
-    class btConvexShape*                      CylinderShape;
-    class btDiscreteDynamicsWorld*            World;
+    btPairCachingGhostObject*           GhostObject;
+    btConvexShape*                      ConvexShape;
+    btConvexShape*                      CylinderShape;
+    btDiscreteDynamicsWorld*            World;
 
     float AnglePitch;
     float AngleYaw;
@@ -380,10 +387,12 @@ private:
     TRef<HitProxy> m_HitProxy;
 
     class ProjectileActionInterface* ActionInterface;
-    //class btPairCachingGhostObject * GhostObject;
-    class btGhostObject*           GhostObject;
-    class btConvexShape*           ConvexShape;
-    class btDiscreteDynamicsWorld* World;
+    //btPairCachingGhostObject * GhostObject;
+    btGhostObject*           GhostObject;
+    btConvexShape*           ConvexShape;
+    btDiscreteDynamicsWorld* World;
 
     bool bInsideUpdate = false;
 };
+
+HK_NAMESPACE_END

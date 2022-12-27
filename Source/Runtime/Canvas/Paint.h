@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Runtime/Texture.h>
 #include "Transform2D.h"
 
+HK_NAMESPACE_BEGIN
+
 /**
 Paints
 
@@ -70,3 +72,5 @@ struct CanvasPaint
 
     CanvasPaint& Solid(Color4 const& color);
 };
+
+HK_NAMESPACE_END

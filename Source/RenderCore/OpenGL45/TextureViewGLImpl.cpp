@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore
 {
 
@@ -127,3 +129,5 @@ TextureViewGLImpl::~TextureViewGLImpl()
 
 
 } // namespace RenderCore
+
+HK_NAMESPACE_END

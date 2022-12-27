@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "AnimationPattern.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(AnimationPattern)
 
 HK_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
@@ -61,3 +63,5 @@ float AnimationPattern::Calculate(float _Time)
 
     return 1.0f;
 }
+
+HK_NAMESPACE_END

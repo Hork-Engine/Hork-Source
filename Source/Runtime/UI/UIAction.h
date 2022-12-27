@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIBrush.h"
 
+HK_NAMESPACE_BEGIN
+
 class UIAction : public UIObject
 {
     UI_CLASS(UIAction, UIObject)
@@ -91,3 +93,5 @@ public:
 private:
     bool m_bActive{};
 };
+
+HK_NAMESPACE_END

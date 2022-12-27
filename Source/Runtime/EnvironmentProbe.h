@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "PunctualLightComponent.h"
 
+HK_NAMESPACE_BEGIN
+
 class EnvironmentMap;
 
 class EnvironmentProbe : public SceneComponent
@@ -82,3 +84,5 @@ private:
     RenderCore::BindlessHandle m_IrradianceMapHandle{};
     RenderCore::BindlessHandle m_ReflectionMapHandle{};
 };
+
+HK_NAMESPACE_END

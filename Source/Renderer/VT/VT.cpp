@@ -41,6 +41,8 @@ SOFTWARE.
 
 #    include <io.h>
 
+HK_NAMESPACE_BEGIN
+
 bool VTFileHandle::OpenRead(StringView FileName)
 {
     int n = MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), NULL, 0);
@@ -49,7 +51,7 @@ bool VTFileHandle::OpenRead(StringView FileName)
         return false;
     }
 
-    wchar_t* wFilename = (wchar_t*)StackAlloc(n * sizeof(wchar_t));
+    wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
     MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
 
@@ -72,7 +74,7 @@ bool VTFileHandle::OpenWrite(StringView FileName)
         return false;
     }
 
-    wchar_t* wFilename = (wchar_t*)StackAlloc(n * sizeof(wchar_t));
+    wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
     MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
 
@@ -488,3 +490,5 @@ SFileOffset VirtualTextureAddressTable::Read(VTFileHandle* File, SFileOffset Off
     }
     return Offset;
 }
+
+HK_NAMESPACE_END

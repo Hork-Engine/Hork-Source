@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/SparseTexture.h>
 
+HK_NAMESPACE_BEGIN
+
 namespace RenderCore {
 
 class DeviceGLImpl;
@@ -44,3 +46,5 @@ public:
 };
 
 }
+
+HK_NAMESPACE_END

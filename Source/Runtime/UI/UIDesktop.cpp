@@ -39,6 +39,8 @@ SOFTWARE.
 #define DOUBLECLICKTIME_MSEC 250
 #define DOUBLECLICKHALFSIZE  4.0f
 
+HK_NAMESPACE_BEGIN
+
 int UIVisibilityFrame = 0;
 
 UIDesktop::UIDesktop()
@@ -828,3 +830,5 @@ void UIDesktop::ClosePopupWidget()
         m_Popup.Reset();
     }
 }
+
+HK_NAMESPACE_END

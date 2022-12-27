@@ -32,6 +32,8 @@ SOFTWARE.
 #include "TerrainView.h"
 #include "Engine.h"
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(WorldRenderView)
 HK_CLASS_META(ColorGradingParameters)
 
@@ -287,3 +289,5 @@ void WorldRenderView::ReleaseHBAOMaps()
 {
     m_HBAOMaps.Reset();
 }
+
+HK_NAMESPACE_END

@@ -33,13 +33,14 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-#define STBIR_MALLOC(sz, context) Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(sz)
-#define STBIR_FREE(p, context)    Platform::GetHeapAllocator<HEAP_TEMP>().Free(p)
+#define STBIR_MALLOC(sz, context) Hk::Platform::GetHeapAllocator<Hk::HEAP_TEMP>().Alloc(sz)
+#define STBIR_FREE(p, context)    Hk::Platform::GetHeapAllocator<Hk::HEAP_TEMP>().Free(p)
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_STATIC
 #define STBIR_MAX_CHANNELS 4
 #include "stb/stb_image_resize.h"
 
+HK_NAMESPACE_BEGIN
 
 // NOTE: The texture format is compatible with the NVRHI API which will be used in the future.
 // clang-format off
@@ -663,27 +664,27 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
             break;
 
         case IMAGE_DATA_TYPE_ENCODED_R4G4B4A4:
-            ::GenerateMipmaps<Decoder_R4G4B4A4>(*this, SliceIndex, resampleMode, resampleFilter);
+            Hk::GenerateMipmaps<Decoder_R4G4B4A4>(*this, SliceIndex, resampleMode, resampleFilter);
             return true;
         case IMAGE_DATA_TYPE_ENCODED_R5G6B5:
-            ::GenerateMipmaps<Decoder_R5G6B5>(*this, SliceIndex, resampleMode, resampleFilter);
+            Hk::GenerateMipmaps<Decoder_R5G6B5>(*this, SliceIndex, resampleMode, resampleFilter);
             return true;
         case IMAGE_DATA_TYPE_ENCODED_R5G5B5A1:
-            ::GenerateMipmaps<Decoder_R5G5B5A1>(*this, SliceIndex, resampleMode, resampleFilter);
+            Hk::GenerateMipmaps<Decoder_R5G5B5A1>(*this, SliceIndex, resampleMode, resampleFilter);
             return true;
         case IMAGE_DATA_TYPE_ENCODED_R10G10B10A2:
-            ::GenerateMipmaps<Decoder_R10G10B10A2>(*this, SliceIndex, resampleMode, resampleFilter);
+            Hk::GenerateMipmaps<Decoder_R10G10B10A2>(*this, SliceIndex, resampleMode, resampleFilter);
             return true;
         case IMAGE_DATA_TYPE_ENCODED_R11G11B10F:
-            ::GenerateMipmaps<Decoder_R11G11B10F>(*this, SliceIndex, resampleMode, resampleFilter);
+            Hk::GenerateMipmaps<Decoder_R11G11B10F>(*this, SliceIndex, resampleMode, resampleFilter);
             return true;
         case IMAGE_DATA_TYPE_HALF:
             if (m_Desc.Format == TEXTURE_FORMAT_R16_FLOAT)
-                ::GenerateMipmaps<Decoder_R16F>(*this, SliceIndex, resampleMode, resampleFilter);
+                Hk::GenerateMipmaps<Decoder_R16F>(*this, SliceIndex, resampleMode, resampleFilter);
             else if (m_Desc.Format == TEXTURE_FORMAT_RG16_FLOAT)
-                ::GenerateMipmaps<Decoder_RG16F>(*this, SliceIndex, resampleMode, resampleFilter);
+                Hk::GenerateMipmaps<Decoder_RG16F>(*this, SliceIndex, resampleMode, resampleFilter);
             else if (m_Desc.Format == TEXTURE_FORMAT_RGBA16_FLOAT)
-                ::GenerateMipmaps<Decoder_RGBA16F>(*this, SliceIndex, resampleMode, resampleFilter);
+                Hk::GenerateMipmaps<Decoder_RGBA16F>(*this, SliceIndex, resampleMode, resampleFilter);
             else
                 HK_ASSERT(0);
             return true;
@@ -2574,3 +2575,5 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
 
     return true;
 }
+
+HK_NAMESPACE_END

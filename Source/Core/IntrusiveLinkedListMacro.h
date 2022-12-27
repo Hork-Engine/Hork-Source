@@ -112,7 +112,7 @@ Intrusive linked list macro
     for (auto* object = head_or_tail; object; object = object->next_or_prev)
 
 
-
+HK_NAMESPACE_BEGIN
 
 template <typename T>
 struct TLink
@@ -246,3 +246,5 @@ struct TListReverseIterator
 private:
     T* Node;
 };
+
+HK_NAMESPACE_END

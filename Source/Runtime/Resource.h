@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+HK_NAMESPACE_BEGIN
+
 enum RESOURCE_FLAGS : uint32_t
 {
     RESOURCE_FLAG_DEFAULT = 0,
@@ -138,3 +140,5 @@ private:
     void*  m_pBinaryData = nullptr;
     size_t m_SizeInBytes = 0;
 };
+
+HK_NAMESPACE_END

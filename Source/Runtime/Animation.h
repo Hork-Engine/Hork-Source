@@ -35,6 +35,8 @@ SOFTWARE.
 #include <Geometry/Transform.h>
 #include <Geometry/Skinning.h>
 
+HK_NAMESPACE_BEGIN
+
 /**
 
 SkeletalAnimation
@@ -102,3 +104,5 @@ HK_FORCEINLINE unsigned short SkeletalAnimation::GetChannelIndex(int _JointIndex
 {
     return (_JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex) ? (unsigned short)-1 : ChannelsMap[_JointIndex - MinNodeIndex];
 }
+
+HK_NAMESPACE_END

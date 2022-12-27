@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Geometry/VectorMath.h>
 
+HK_NAMESPACE_BEGIN
+
 class MaterialInstance;
 
 /**
@@ -50,3 +52,5 @@ struct TriangleHitResult
     unsigned int      Indices[3];
     MaterialInstance* Material;
 };
+
+HK_NAMESPACE_END

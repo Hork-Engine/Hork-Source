@@ -35,6 +35,8 @@ SOFTWARE.
 #define FONTSTASH_IMPLEMENTATION
 #include <ThirdParty/nanovg/fontstash.h>
 
+HK_NAMESPACE_BEGIN
+
 HK_CLASS_META(Font)
 
 FontStash::FontStash()
@@ -1378,3 +1380,5 @@ void Font::ResetFallbackFonts()
     fonsResetFallbackFont(m_FontStash->GetImpl(), m_FontId);
     m_Fallbacks.Clear();
 }
+
+HK_NAMESPACE_END

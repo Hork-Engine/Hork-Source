@@ -34,6 +34,8 @@ SOFTWARE.
 #include <RenderCore/Texture.h>
 #include <Image/PhotometricData.h>
 
+HK_NAMESPACE_BEGIN
+
 class Texture;
 
 /**
@@ -78,3 +80,5 @@ protected:
 
     static int m_PhotometricProfileCounter;
 };
+
+HK_NAMESPACE_END

@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Geometry/Complex.h>
 #include <Containers/Vector.h>
 
+HK_NAMESPACE_BEGIN
+
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
 class AudioHRTF
@@ -108,3 +110,5 @@ private:
 
     Complex* m_pHRTFs[4] = {nullptr, nullptr, nullptr, nullptr};
 };
+
+HK_NAMESPACE_END
