@@ -211,17 +211,20 @@ TEvent
 
 */
 template <typename... TArgs>
-struct TEvent
+struct TEvent : public Noncopyable
 {
-    HK_FORBID_COPY(TEvent)
-
     using Callback = TCallback<void(TArgs...)>;
 
     TEvent() = default;
 
-    ~TEvent()
+    TEvent(TEvent&& rhs) :
+        m_Callbacks(std::move(rhs.m_Callbacks))
+    {}
+
+    TEvent& operator=(TEvent&& rhs)
     {
-        RemoveAll();
+        m_Callbacks = std::move(rhs);
+        return *this;
     }
 
     template <typename T>
