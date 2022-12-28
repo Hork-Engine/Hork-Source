@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "UIViewport.h"
 #include "UIManager.h"
-#include <Runtime/InputComponent.h>
-#include <Runtime/PlayerController.h>
+#include <Runtime/World/InputComponent.h>
+#include <Runtime/World/PlayerController.h>
 #include <Runtime/FrameLoop.h>
 #include <Runtime/Engine.h>
 
@@ -217,7 +217,7 @@ void UIViewport::Draw(Canvas& canvas)
 
         Actor_HUD* hud = m_PlayerController->GetHUD();
         if (hud)
-            hud->Draw(canvas, pos.X, pos.Y, size.X, size.Y);
+            hud->DrawHUD(canvas, pos.X, pos.Y, size.X, size.Y);
     }
 }
 

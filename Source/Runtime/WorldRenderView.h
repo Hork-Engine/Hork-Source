@@ -30,13 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include "Controller.h"
-#include "HUD.h"
-#include "AudioSystem.h"
+#include "Texture.h"
 #include "Terrain.h"
+#include "VisibilitySystem.h"
 #include <Renderer/VT/VirtualTextureFeedback.h>
 
 HK_NAMESPACE_BEGIN
+
+class CameraComponent;
 
 class ColorGradingParameters : public BaseObject
 {

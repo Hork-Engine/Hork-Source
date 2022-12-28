@@ -46,6 +46,8 @@ GameSession::~GameSession()
 void GameSession::Start()
 {
     m_PrecacheResources.Clear();
+
+    Rand.Seed(0xc0dec0de);
 }
 
 void GameSession::Stop()

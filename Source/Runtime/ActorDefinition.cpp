@@ -29,8 +29,9 @@ SOFTWARE.
 */
 
 #include "ActorDefinition.h"
-#include "Actor.h"
-#include "SceneComponent.h"
+
+#include "World/SceneComponent.h"
+#include "World/Actor.h"
 
 #include <Core/Parse.h>
 

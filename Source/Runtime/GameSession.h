@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Resource.h"
+#include <Core/Random.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,6 +40,8 @@ class GameSession : public RefCounted
 public:
     GameSession();
     virtual ~GameSession();
+
+    MersenneTwisterRand Rand;
 
     void Start();
     void Stop();

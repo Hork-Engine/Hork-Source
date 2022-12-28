@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/BaseObject.h>
+#include <Runtime/GarbageCollector.h>
 
 HK_NAMESPACE_BEGIN
 

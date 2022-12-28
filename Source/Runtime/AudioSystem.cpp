@@ -29,7 +29,8 @@ SOFTWARE.
 */
 
 #include "AudioSystem.h"
-#include "PlayerController.h"
+#include "World/SoundEmitter.h"
+#include "World/PlayerController.h"
 
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>

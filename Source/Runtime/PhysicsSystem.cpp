@@ -29,10 +29,7 @@ SOFTWARE.
 */
 
 #include "PhysicsSystem.h"
-#include "TerrainComponent.h"
-#include "PhysicalBody.h"
-#include "Actor.h"
-#include "World.h"
+#include "World/PhysicalBody.h"
 #include "DebugRenderer.h"
 #include <Core/ConsoleVar.h>
 #include <Core/IntrusiveLinkedListMacro.h>
@@ -1594,7 +1591,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
             margin = _SweepTest.CollisionConvexHull->Margin;
             break;
         default:
-            LOG("World::TraceConvex: unsupported collision shape\n");
+            LOG("PhysicsSystem::TraceConvex: unsupported collision shape\n");
             return false;
     }
 

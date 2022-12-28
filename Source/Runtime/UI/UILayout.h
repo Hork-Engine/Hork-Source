@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "UIObject.h"
 
+#include <Geometry/VectorMath.h>
+
 HK_NAMESPACE_BEGIN
 
 class UIWidget;

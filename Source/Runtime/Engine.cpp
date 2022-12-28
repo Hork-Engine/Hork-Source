@@ -34,11 +34,11 @@ SOFTWARE.
 #include "ResourceManager.h"
 #include "RenderFrontend.h"
 #include "AudioSystem.h"
-#include "Actor.h"
-#include "PlayerController.h"
-#include "InputComponent.h"
 #include "Canvas/Canvas.h"
-#include "World.h"
+
+#include "World/PlayerController.h"
+#include "World/InputComponent.h"
+#include "World/World.h"
 
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>

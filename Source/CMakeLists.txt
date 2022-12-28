@@ -253,11 +253,13 @@ file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 file( GLOB RuntimeUI Runtime/UI/*.h Runtime/UI/*.cpp )
 file( GLOB RuntimeCanvas Runtime/Canvas/*.h Runtime/Canvas/*.cpp )
+file( GLOB RuntimeWorld Runtime/World/*.h Runtime/World/*.cpp )
 
 source_group( "Runtime" FILES ${Runtime} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 source_group( "Runtime\\UI" FILES ${RuntimeUI} )
 source_group( "Runtime\\Canvas" FILES ${RuntimeCanvas} )
+source_group( "Runtime\\World" FILES ${RuntimeWorld} )
 
 #---------------------------------------------------------------------
 # Audio module
@@ -323,6 +325,7 @@ ${Runtime}
 ${RuntimeSTB}
 ${RuntimeUI}
 ${RuntimeCanvas}
+${RuntimeWorld}
 
 ${Audio}
 

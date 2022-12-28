@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "Vector.h"
 
+#include <Core/BinaryStream.h>
+
 HK_NAMESPACE_BEGIN
 
 /**

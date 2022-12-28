@@ -34,7 +34,6 @@ SOFTWARE.
 #include "DebugRenderer.h"
 #include "Canvas/Canvas.h"
 #include "IndexedMesh.h"
-#include "World.h"
 #include "Terrain.h"
 #include "TerrainMesh.h"
 #include "LightVoxelizer.h"
@@ -43,12 +42,14 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+class World;
 class PunctualLightComponent;
 class EnvironmentProbe;
+class Drawable;
 class MeshComponent;
 class SkinnedComponent;
 class ProceduralMeshComponent;
-class Drawable;
+class TerrainComponent;
 
 struct RenderFrontendStat
 {

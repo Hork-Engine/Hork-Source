@@ -29,8 +29,7 @@ SOFTWARE.
 */
 
 #include "ScriptEngine.h"
-#include "World.h"
-#include "Actor.h"
+#include "World/World.h"
 
 #include <Platform/Logger.h>
 #include <Geometry/BV/BvIntersect.h>

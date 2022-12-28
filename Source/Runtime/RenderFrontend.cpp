@@ -29,17 +29,17 @@ SOFTWARE.
 */
 
 #include "RenderFrontend.h"
-#include "World.h"
-#include "TerrainView.h"
-#include "CameraComponent.h"
-#include "SkinnedComponent.h"
-#include "DirectionalLightComponent.h"
-#include "PunctualLightComponent.h"
-#include "EnvironmentProbe.h"
-#include "TerrainComponent.h"
-#include "PlayerController.h"
 #include "Engine.h"
+#include "TerrainView.h"
 #include "EnvironmentMap.h"
+
+#include "World/World.h"
+#include "World/CameraComponent.h"
+#include "World/SkinnedComponent.h"
+#include "World/DirectionalLightComponent.h"
+#include "World/PunctualLightComponent.h"
+#include "World/EnvironmentProbe.h"
+#include "World/TerrainComponent.h"
 
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Platform/Profiler.h>

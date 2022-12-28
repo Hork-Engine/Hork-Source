@@ -29,13 +29,8 @@ SOFTWARE.
 */
 
 #include "Level.h"
-#include "Actor.h"
-#include "World.h"
-#include "SkinnedComponent.h"
-#include "CameraComponent.h"
-#include "PlayerController.h"
 #include "Texture.h"
-#include "Engine.h"
+#include "Engine.h" // TODO: remove dependency
 
 #include <Geometry/BV/BvIntersect.h>
 #include <Geometry/ConvexHull.h>

@@ -34,7 +34,6 @@ SOFTWARE.
 #include "GameModule.h"
 #include "Font.h"
 #include "UI/UIManager.h"
-#include "World.h"
 #include "RenderFrontend.h"
 #include "AudioSystem.h"
 #include "AsyncJobManager.h"
@@ -55,6 +54,7 @@ enum
 struct EntryDecl;
 
 class ResourceManager;
+class World;
 
 class Engine : public IEventListener
 {

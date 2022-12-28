@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Collision.h"
+#include "World/HitProxy.h"
 #include "CollisionModel.h"
 
 class btDynamicsWorld;
@@ -75,11 +75,11 @@ struct CollisionQueryFilter
 {
     /** List of actors that will be ignored during collision query */
     Actor** IgnoreActors;
-    int      ActorsCount;
+    int     ActorsCount;
 
     /** List of bodies that will be ignored during collision query */
     PhysicalBody** IgnoreBodies;
-    int             BodiesCount;
+    int            BodiesCount;
 
     /** Physical body collision mask */
     int CollisionMask;

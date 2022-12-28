@@ -30,10 +30,6 @@ SOFTWARE.
 
 
 #include "AINavigationMesh.h"
-#include "World.h"
-#include "MeshComponent.h"
-#include "TerrainComponent.h"
-#include "Engine.h"
 #include <Platform/Logger.h>
 #include <Platform/Memory/LinearAllocator.h>
 #include <Core/Compress.h>
@@ -1590,41 +1586,51 @@ public:
 
 NavQueryFilter::NavQueryFilter()
 {
-    Filter = MakeUnique<NavQueryFilterPrivate>();
+    m_Filter = MakeUnique<NavQueryFilterPrivate>();
 }
 
 NavQueryFilter::~NavQueryFilter()
 {
 }
 
+void NavQueryFilter::SetGameSession(GameSession* session)
+{
+    m_GameSession = session;
+}
+
+GameSession* NavQueryFilter::GetGameSession() const
+{
+    return m_GameSession;
+}
+
 void NavQueryFilter::SetAreaCost(int _AreaId, float _Cost)
 {
-    Filter->setAreaCost(_AreaId, _Cost);
+    m_Filter->setAreaCost(_AreaId, _Cost);
 }
 
 float NavQueryFilter::GetAreaCost(int _AreaId) const
 {
-    return Filter->getAreaCost(_AreaId);
+    return m_Filter->getAreaCost(_AreaId);
 }
 
 void NavQueryFilter::SetIncludeFlags(unsigned short _Flags)
 {
-    Filter->setIncludeFlags(_Flags);
+    m_Filter->setIncludeFlags(_Flags);
 }
 
 unsigned short NavQueryFilter::GetIncludeFlags() const
 {
-    return Filter->getIncludeFlags();
+    return m_Filter->getIncludeFlags();
 }
 
 void NavQueryFilter::SetExcludeFlags(unsigned short _Flags)
 {
-    Filter->setExcludeFlags(_Flags);
+    m_Filter->setExcludeFlags(_Flags);
 }
 
 unsigned short NavQueryFilter::GetExcludeFlags() const
 {
-    return Filter->getExcludeFlags();
+    return m_Filter->getExcludeFlags();
 }
 
 bool AINavigationMesh::Trace(AINavigationTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, NavQueryFilter const& _Filter) const
@@ -1641,7 +1647,7 @@ bool AINavigationMesh::Trace(AINavigationTraceResult& _Result, Float3 const& _Ra
 
     _Result.HitFraction = Math::MaxValue<float>();
 
-    m_NavQuery->raycast(StartRef, (const float*)_RayStart.ToPtr(), (const float*)_RayEnd.ToPtr(), _Filter.Filter.GetObject(), &_Result.HitFraction, (float*)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS);
+    m_NavQuery->raycast(StartRef, (const float*)_RayStart.ToPtr(), (const float*)_RayEnd.ToPtr(), _Filter.m_Filter.GetObject(), &_Result.HitFraction, (float*)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS);
 
     bool bHasHit = _Result.HitFraction != Math::MaxValue<float>();
     if (!bHasHit)
@@ -1682,7 +1688,7 @@ bool AINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.Filter.GetObject(), _NearestPolyRef, NULL);
+    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.GetObject(), _NearestPolyRef, NULL);
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1706,7 +1712,7 @@ bool AINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& 
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.Filter.GetObject(), &_NearestPointRef->PolyRef, (float*)_NearestPointRef->Position.ToPtr());
+    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.GetObject(), &_NearestPointRef->PolyRef, (float*)_NearestPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1721,10 +1727,18 @@ bool AINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& 
 }
 
 // Function returning a random number [0..1).
+// TODO: Rewrite random function: float NavRandom(MersenneTwisterRand* pRandomGenerator)
+static MersenneTwisterRand* pRandomGenerator{};
 static float NavRandom()
 {
+    // TODO: The random number generator must come from the current Session!!!
+
     const float range = 1.0f - FLT_EPSILON;
-    return GEngine->Rand.GetFloat() * range;
+
+    if (pRandomGenerator)
+        return pRandomGenerator->GetFloat() * range;
+    else
+        return static_cast<float>(rand()) / RAND_MAX * range;
 }
 
 bool AINavigationMesh::QueryRandomPoint(NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
@@ -1737,7 +1751,13 @@ bool AINavigationMesh::QueryRandomPoint(NavQueryFilter const& _Filter, NavPointR
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findRandomPoint(_Filter.Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
+    GameSession* gameSession = _Filter.GetGameSession();
+    if (gameSession)
+        pRandomGenerator = &gameSession->Rand;
+    else
+        pRandomGenerator = nullptr;
+
+    dtStatus Status = m_NavQuery->findRandomPoint(_Filter.m_Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1780,7 +1800,13 @@ bool AINavigationMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findRandomPointAroundCircle(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
+    GameSession* gameSession = _Filter.GetGameSession();
+    if (gameSession)
+        pRandomGenerator = &gameSession->Rand;
+    else
+        pRandomGenerator = nullptr;
+
+    dtStatus Status = m_NavQuery->findRandomPointAroundCircle(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1835,7 +1861,7 @@ bool AINavigationMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 con
 
     _MaxVisitedSize = Math::Max(_MaxVisitedSize, 0);
 
-    dtStatus Status = m_NavQuery->moveAlongSurface(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_Destination.ToPtr(), _Filter.Filter.GetObject(), (float*)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize);
+    dtStatus Status = m_NavQuery->moveAlongSurface(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_Destination.ToPtr(), _Filter.m_Filter.GetObject(), (float*)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize);
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1891,7 +1917,7 @@ bool AINavigationMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const&
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findPath(_StartRef.PolyRef, _EndRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_EndRef.Position.ToPtr(), _Filter.Filter.GetObject(), _Path, _PathCount, _MaxPath);
+    dtStatus Status = m_NavQuery->findPath(_StartRef.PolyRef, _EndRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_EndRef.Position.ToPtr(), _Filter.m_Filter.GetObject(), _Path, _PathCount, _MaxPath);
     if (dtStatusFailed(Status))
     {
         *_PathCount = 0;
@@ -2026,7 +2052,7 @@ bool AINavigationMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& _
 
 bool AINavigationMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const
 {
-    dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter.GetObject(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
+    dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.GetObject(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;

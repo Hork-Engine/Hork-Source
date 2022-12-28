@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 #include <Core/IntrusiveLinkedListMacro.h>
-#include "SkinnedComponent.h"
+#include "World/SkinnedComponent.h"
 
 HK_NAMESPACE_BEGIN
 

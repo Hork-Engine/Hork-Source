@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Resource.h"
 #include "HitTest.h"
 #include <Geometry/BV/BvAxisAlignedBox.h>
+#include <Core/IntrusiveLinkedListMacro.h>
 
 class btHeightfieldTerrainShape;
 
@@ -45,14 +46,29 @@ struct TerrainTriangle
     Float2 Texcoord;
 };
 
-class TerrainComponent;
+enum TERRAIN_UPDATE_FLAG : uint8_t
+{
+    TERRAIN_UPDATE_ALL = TERRAIN_UPDATE_FLAG(~0),
+};
+
+HK_FLAG_ENUM_OPERATORS(TERRAIN_UPDATE_FLAG)
+
+class TerrainResourceListener
+{
+public:
+    TLink<TerrainResourceListener> Link;
+
+    virtual void OnTerrainResourceUpdate(TERRAIN_UPDATE_FLAG UpdateFlag) = 0;
+};
 
 class Terrain : public Resource
 {
     HK_CLASS(Terrain, Resource)
 
 public:
-    Terrain();
+    TList<TerrainResourceListener> Listeners;
+
+    Terrain() = default;
     Terrain(int Resolution, const float* pData);
 
     ~Terrain();
@@ -92,10 +108,7 @@ public:
 
     void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const;
 
-    btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape.GetObject(); }
-
-    void AddListener(TerrainComponent* Listener);
-    void RemoveListener(TerrainComponent* Listener);
+    btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape; }
 
 protected:
     /** Load resource from file */
@@ -111,21 +124,17 @@ private:
     void GenerateLods();
     void UpdateTerrainBounds();
     void UpdateTerrainShape();
-    void NotifyTerrainModified();
+    void NotifyTerrainResourceUpdate(TERRAIN_UPDATE_FLAG UpdateFlag);
 
-    int                                   m_HeightmapResolution{};
-    int                                   m_HeightmapLods{};
-    TPodVector<float*>                    m_Heightmap;
-    float                                 m_MinHeight{};
-    float                                 m_MaxHeight{};
-    TUniqueRef<btHeightfieldTerrainShape> m_HeightfieldShape;
-    Int2                                  m_ClipMin;
-    Int2                                  m_ClipMax;
-    BvAxisAlignedBox                      m_BoundingBox;
-
-    // Terrain components that uses this resource
-    TerrainComponent* m_Listeners{};
-    TerrainComponent* m_ListenersTail{};
+    int m_HeightmapResolution{};
+    int m_HeightmapLods{};
+    TPodVector<float*> m_Heightmap;
+    float m_MinHeight{};
+    float m_MaxHeight{};
+    btHeightfieldTerrainShape* m_HeightfieldShape{};
+    Int2 m_ClipMin{};
+    Int2 m_ClipMax{};
+    BvAxisAlignedBox m_BoundingBox;
 };
 
 HK_NAMESPACE_END

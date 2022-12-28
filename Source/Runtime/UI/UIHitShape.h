@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "UIObject.h"
 #include <Containers/BitMask.h>
+#include <Geometry/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 

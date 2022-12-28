@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "SoundEmitter.h"
+#include <Runtime/World/SoundEmitter.h>
 
 HK_NAMESPACE_BEGIN
 

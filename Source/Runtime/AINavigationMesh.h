@@ -33,6 +33,7 @@ SOFTWARE.
 // TODO: dynamic obstacles, areas, area connections, crowd
 
 #include "BaseObject.h"
+#include "GameSession.h"
 #include "DebugRenderer.h"
 
 #include <Core/IntrusiveLinkedListMacro.h>
@@ -53,7 +54,7 @@ typedef unsigned int NavPolyRef;
 struct NavPointRef
 {
     NavPolyRef PolyRef;
-    Float3      Position;
+    Float3     Position;
 };
 
 struct AINavigationPathPoint
@@ -89,11 +90,11 @@ struct AINavigationHitResult
 
 struct NavigationGeometry
 {
-    TVector<Float3>       Vertices;
+    TVector<Float3> Vertices;
     TVector<unsigned int> Indices;
-    BvAxisAlignedBox             BoundingBox;
-    TBitMask<>                   WalkableMask;
-    BvAxisAlignedBox const*      pClipBoundingBox;
+    BvAxisAlignedBox BoundingBox;
+    TBitMask<> WalkableMask;
+    BvAxisAlignedBox const* pClipBoundingBox;
 };
 
 enum AI_NAV_MESH_PARTITION
@@ -286,10 +287,15 @@ struct NavQueryFilter
     NavQueryFilter();
     virtual ~NavQueryFilter();
 
-    /** Sets the traversal cost of the area */
+    /** Sets game session for random number generator. */
+    void SetGameSession(GameSession* session);
+
+    GameSession* GetGameSession() const;
+
+    /** Sets the traversal cost of the area. */
     void SetAreaCost(int _AreaId, float _Cost);
 
-    /** Returns the traversal cost of the area */
+    /** Returns the traversal cost of the area. */
     float GetAreaCost(int _AreaId) const;
 
     /** Sets the include flags for the filter. */
@@ -307,7 +313,8 @@ struct NavQueryFilter
     unsigned short GetExcludeFlags() const;
 
 private:
-    TUniqueRef<class NavQueryFilterPrivate> Filter;
+    TUniqueRef<class NavQueryFilterPrivate> m_Filter;
+    TRef<GameSession> m_GameSession;
 };
 
 struct AINavigationConfig

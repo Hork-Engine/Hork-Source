@@ -52,9 +52,7 @@ Future:
 */
 
 #include "Terrain.h"
-#include "TerrainComponent.h"
 
-#include <Core/IntrusiveLinkedListMacro.h>
 #include <Geometry/BV/BvIntersect.h>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
@@ -63,9 +61,6 @@ Future:
 HK_NAMESPACE_BEGIN
 
 HK_CLASS_META(Terrain)
-
-Terrain::Terrain()
-{}
 
 Terrain::~Terrain()
 {
@@ -87,7 +82,7 @@ Terrain::Terrain(int Resolution, const float* pData)
     m_Heightmap.Resize(m_HeightmapLods);
     for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz         = 1 << (m_HeightmapLods - i - 1);
+        int sz = 1 << (m_HeightmapLods - i - 1);
         m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
@@ -97,7 +92,7 @@ Terrain::Terrain(int Resolution, const float* pData)
     GenerateLods();
     UpdateTerrainBounds();
     UpdateTerrainShape();
-    NotifyTerrainModified();
+    NotifyTerrainResourceUpdate(TERRAIN_UPDATE_ALL);
 }
 
 bool Terrain::LoadResource(IBinaryStreamReadInterface& Stream)
@@ -112,7 +107,7 @@ bool Terrain::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Heightmap.Resize(m_HeightmapLods);
     for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz         = 1 << (m_HeightmapLods - i - 1);
+        int sz = 1 << (m_HeightmapLods - i - 1);
         m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
@@ -122,7 +117,7 @@ bool Terrain::LoadResource(IBinaryStreamReadInterface& Stream)
     GenerateLods();
     UpdateTerrainBounds();
     UpdateTerrainShape();
-    NotifyTerrainModified();
+    NotifyTerrainResourceUpdate(TERRAIN_UPDATE_ALL);
 
     return true;
 }
@@ -140,7 +135,7 @@ void Terrain::LoadInternalResource(StringView Path)
     m_Heightmap.Resize(m_HeightmapLods);
     for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz         = 1 << (m_HeightmapLods - i - 1);
+        int sz = 1 << (m_HeightmapLods - i - 1);
         m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(float) * (sz + 1) * (sz + 1), 0, MALLOC_ZERO);
     }
 
@@ -149,10 +144,10 @@ void Terrain::LoadInternalResource(StringView Path)
 
     // Calc clipping region
     int halfResolution = m_HeightmapResolution >> 1;
-    m_ClipMin.X        = halfResolution;
-    m_ClipMin.Y        = halfResolution;
-    m_ClipMax.X          = halfResolution;
-    m_ClipMax.Y        = halfResolution;
+    m_ClipMin.X = halfResolution;
+    m_ClipMin.Y = halfResolution;
+    m_ClipMax.X = halfResolution;
+    m_ClipMax.Y = halfResolution;
 
     // Calc bounding box
     m_BoundingBox.Mins.X = -m_ClipMin.X;
@@ -163,7 +158,7 @@ void Terrain::LoadInternalResource(StringView Path)
     m_BoundingBox.Maxs.Z = m_ClipMax.Y;
 
     UpdateTerrainShape();
-    NotifyTerrainModified();
+    NotifyTerrainResourceUpdate(TERRAIN_UPDATE_ALL);
 }
 
 void Terrain::Purge()
@@ -175,18 +170,21 @@ void Terrain::Purge()
 
     m_HeightmapLods = 0;
     m_Heightmap.Clear();
+
+    delete m_HeightfieldShape;
+    m_HeightfieldShape = nullptr;
 }
 
 void Terrain::GenerateLods()
 {
     float h1, h2, h3, h4;
-    int   x, y;
+    int x, y;
     for (int i = 1; i < m_HeightmapLods; i++)
     {
-        float* lod    = m_Heightmap[i];
+        float* lod = m_Heightmap[i];
         float* srcLod = m_Heightmap[i - 1];
 
-        int sz  = 1 << (m_HeightmapLods - i - 1);
+        int sz = 1 << (m_HeightmapLods - i - 1);
         int sz2 = 1 << (m_HeightmapLods - i);
 
         sz++;
@@ -198,17 +196,17 @@ void Terrain::GenerateLods()
             for (x = 0; x < sz - 1; x++)
             {
                 int src_x = x << 1;
-                h1        = srcLod[src_y * sz2 + src_x];
-                h2        = srcLod[src_y * sz2 + src_x + 1];
-                h3        = srcLod[(src_y + 1) * sz2 + src_x];
-                h4        = srcLod[(src_y + 1) * sz2 + src_x + 1];
+                h1 = srcLod[src_y * sz2 + src_x];
+                h2 = srcLod[src_y * sz2 + src_x + 1];
+                h3 = srcLod[(src_y + 1) * sz2 + src_x];
+                h4 = srcLod[(src_y + 1) * sz2 + src_x + 1];
 
                 lod[y * sz + x] = (h1 + h2 + h3 + h4) * 0.25f;
             }
 
-            int src_x       = x << 1;
-            h1              = srcLod[src_y * sz2 + src_x];
-            h2              = srcLod[(src_y + 1) * sz2 + src_x];
+            int src_x = x << 1;
+            h1 = srcLod[src_y * sz2 + src_x];
+            h2 = srcLod[(src_y + 1) * sz2 + src_x];
             lod[y * sz + x] = (h1 + h2) * 0.5f;
         }
 
@@ -216,13 +214,13 @@ void Terrain::GenerateLods()
         for (x = 0; x < sz - 1; x++)
         {
             int src_x = x << 1;
-            h1        = srcLod[src_y * sz2 + src_x];
-            h2        = srcLod[src_y * sz2 + src_x + 1];
+            h1 = srcLod[src_y * sz2 + src_x];
+            h2 = srcLod[src_y * sz2 + src_x + 1];
 
             lod[y * sz + x] = (h1 + h2) * 0.5f;
         }
 
-        int src_x       = x << 1;
+        int src_x = x << 1;
         lod[y * sz + x] = srcLod[src_y * sz2 + src_x];
     }
 }
@@ -236,7 +234,7 @@ void Terrain::UpdateTerrainBounds()
     {
         for (int x = 0; x < m_HeightmapResolution; x++)
         {
-            float h   = m_Heightmap[0][y * m_HeightmapResolution + x];
+            float h = m_Heightmap[0][y * m_HeightmapResolution + x];
             m_MinHeight = Math::Min(m_MinHeight, h);
             m_MaxHeight = Math::Max(m_MaxHeight, h);
         }
@@ -244,10 +242,10 @@ void Terrain::UpdateTerrainBounds()
 
     // Calc clipping region
     int halfResolution = m_HeightmapResolution >> 1;
-    m_ClipMin.X          = halfResolution;
-    m_ClipMin.Y        = halfResolution;
-    m_ClipMax.X          = halfResolution;
-    m_ClipMax.Y          = halfResolution;
+    m_ClipMin.X = halfResolution;
+    m_ClipMin.Y = halfResolution;
+    m_ClipMax.X = halfResolution;
+    m_ClipMax.Y = halfResolution;
 
     // Calc bounding box
     m_BoundingBox.Mins.X = -m_ClipMin.X;
@@ -270,7 +268,8 @@ void Terrain::UpdateTerrainShape()
     */
 
     // Generate accelerated terrain collision shape
-    m_HeightfieldShape = MakeUnique<btHeightfieldTerrainShape>(m_HeightmapResolution, m_HeightmapResolution, m_Heightmap[0], 1, m_MinHeight, m_MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
+    delete m_HeightfieldShape;
+    m_HeightfieldShape = new btHeightfieldTerrainShape(m_HeightmapResolution, m_HeightmapResolution, m_Heightmap[0], 1, m_MinHeight, m_MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
     m_HeightfieldShape->buildAccelerator();
 }
 
@@ -296,8 +295,8 @@ bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distan
     public:
         Float3 RayStart;
         Float3 RayDir;
-        bool   bCullBackFace;
-        int    IntersectionCount = 0;
+        bool bCullBackFace;
+        int IntersectionCount = 0;
 
         TPodVector<TriangleHitResult>* Result;
 
@@ -306,19 +305,19 @@ bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distan
             Float3 v0 = btVectorToFloat3(triangle[0]);
             Float3 v1 = btVectorToFloat3(triangle[1]);
             Float3 v2 = btVectorToFloat3(triangle[2]);
-            float  d, u, v;
+            float d, u, v;
             if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
             {
                 TriangleHitResult& hit = Result->Add();
-                hit.Location            = RayStart + RayDir * d;
-                hit.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
-                hit.UV.X                = u;
-                hit.UV.Y                = v;
-                hit.Distance            = d;
-                hit.Indices[0]          = 0;
-                hit.Indices[1]          = 0;
-                hit.Indices[2]          = 0;
-                hit.Material            = nullptr;
+                hit.Location = RayStart + RayDir * d;
+                hit.Normal = Math::Cross(v1 - v0, v2 - v0).Normalized();
+                hit.UV.X = u;
+                hit.UV.Y = v;
+                hit.Distance = d;
+                hit.Indices[0] = 0;
+                hit.Indices[1] = 0;
+                hit.Indices[2] = 0;
+                hit.Material = nullptr;
                 IntersectionCount++;
             }
         }
@@ -340,13 +339,13 @@ bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distan
         return false;
     }
 
-    Float3 ShapeOffset   = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
+    Float3 ShapeOffset = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
     Float3 RayStartLocal = RayStart - ShapeOffset;
 
     ATriangleRaycastCallback triangleRaycastCallback;
-    triangleRaycastCallback.RayStart      = RayStartLocal;
-    triangleRaycastCallback.RayDir        = RayDir;
-    triangleRaycastCallback.Result        = &HitResult;
+    triangleRaycastCallback.RayStart = RayStartLocal;
+    triangleRaycastCallback.RayDir = RayDir;
+    triangleRaycastCallback.Result = &HitResult;
     triangleRaycastCallback.bCullBackFace = bCullBackFace;
 
     m_HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
@@ -368,9 +367,9 @@ bool Terrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float
     public:
         Float3 RayStart;
         Float3 RayDir;
-        float  Distance;
-        bool   bCullBackFace;
-        int    IntersectionCount = 0;
+        float Distance;
+        bool bCullBackFace;
+        int IntersectionCount = 0;
 
         TriangleHitResult* Result;
 
@@ -382,18 +381,18 @@ bool Terrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float
                 Float3 v0 = btVectorToFloat3(triangle[0]);
                 Float3 v1 = btVectorToFloat3(triangle[1]);
                 Float3 v2 = btVectorToFloat3(triangle[2]);
-                float  d, u, v;
+                float d, u, v;
                 if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
                 {
-                    Result->Location   = RayStart + RayDir * d;
-                    Result->Normal     = Math::Cross(v1 - v0, v2 - v0).Normalized();
-                    Result->UV.X       = u;
-                    Result->UV.Y       = v;
-                    Result->Distance   = d;
+                    Result->Location = RayStart + RayDir * d;
+                    Result->Normal = Math::Cross(v1 - v0, v2 - v0).Normalized();
+                    Result->UV.X = u;
+                    Result->UV.Y = v;
+                    Result->Distance = d;
                     Result->Indices[0] = 0;
                     Result->Indices[1] = 0;
                     Result->Indices[2] = 0;
-                    Result->Material   = nullptr;
+                    Result->Material = nullptr;
                     IntersectionCount++;
                 }
             }
@@ -401,21 +400,21 @@ bool Terrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float
             Float3 v0 = btVectorToFloat3(triangle[0]);
             Float3 v1 = btVectorToFloat3(triangle[1]);
             Float3 v2 = btVectorToFloat3(triangle[2]);
-            float  d, u, v;
+            float d, u, v;
             if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
             {
                 if (d < Distance)
                 {
-                    Result->Location   = RayStart + RayDir * d;
-                    Result->Normal     = Math::Cross(v1 - v0, v2 - v0).Normalized();
-                    Result->UV.X       = u;
-                    Result->UV.Y       = v;
-                    Result->Distance   = d;
+                    Result->Location = RayStart + RayDir * d;
+                    Result->Normal = Math::Cross(v1 - v0, v2 - v0).Normalized();
+                    Result->UV.X = u;
+                    Result->UV.Y = v;
+                    Result->Distance = d;
                     Result->Indices[0] = 0;
                     Result->Indices[1] = 0;
                     Result->Indices[2] = 0;
-                    Result->Material   = nullptr;
-                    Distance           = d;
+                    Result->Material = nullptr;
+                    Distance = d;
                     IntersectionCount++;
                 }
             }
@@ -439,14 +438,14 @@ bool Terrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float
         return false;
     }
 
-    Float3 ShapeOffset   = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
+    Float3 ShapeOffset = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
     Float3 RayStartLocal = RayStart - ShapeOffset;
 
     ATriangleRaycastCallback triangleRaycastCallback;
-    triangleRaycastCallback.RayStart      = RayStartLocal;
-    triangleRaycastCallback.RayDir        = RayDir;
-    triangleRaycastCallback.Distance      = Distance;
-    triangleRaycastCallback.Result        = &HitResult;
+    triangleRaycastCallback.RayStart = RayStartLocal;
+    triangleRaycastCallback.RayDir = RayDir;
+    triangleRaycastCallback.Distance = Distance;
+    triangleRaycastCallback.Result = &HitResult;
     triangleRaycastCallback.bCullBackFace = bCullBackFace;
 
     m_HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
@@ -500,17 +499,17 @@ float Terrain::SampleHeight(float X, float Z) const
     if (fx >= fz)
     {
         float h2 = m_Heightmap[0][(quadZ + 1) * m_HeightmapResolution + quadX + 1];
-        float u  = fz;
-        float v  = fx - fz;
-        float w  = 1.0f - fx;
+        float u = fz;
+        float v = fx - fz;
+        float w = 1.0f - fx;
         return h1 * u + h2 * v + h3 * w;
     }
     else
     {
         float h0 = m_Heightmap[0][quadZ * m_HeightmapResolution + quadX];
-        float u  = fz - fx;
-        float v  = fx;
-        float w  = 1.0f - fz;
+        float u = fz - fx;
+        float v = fx;
+        float w = 1.0f - fz;
         return h0 * u + h1 * v + h3 * w;
     }
 }
@@ -624,21 +623,11 @@ bool Terrain::GetTriangle(float X, float Z, TerrainTriangle& Triangle) const
     return true;
 }
 
-void Terrain::AddListener(TerrainComponent* Listener)
+void Terrain::NotifyTerrainResourceUpdate(TERRAIN_UPDATE_FLAG UpdateFlag)
 {
-    INTRUSIVE_ADD_UNIQUE(Listener, m_pNext, m_pPrev, m_Listeners, m_ListenersTail);
-}
-
-void Terrain::RemoveListener(TerrainComponent* Listener)
-{
-    INTRUSIVE_REMOVE(Listener, m_pNext, m_pPrev, m_Listeners, m_ListenersTail);
-}
-
-void Terrain::NotifyTerrainModified()
-{
-    for (TerrainComponent* component = m_Listeners; component; component = component->m_pNext)
+    for (TListIterator<TerrainResourceListener> it(Listeners); it; it++)
     {
-        component->OnTerrainModified();
+        it->OnTerrainResourceUpdate(UpdateFlag);
     }
 
     // TODO: Update terrain views
@@ -672,14 +661,14 @@ void Terrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3
 
     int n = Vertices.Size();
 
-    for (int qz = minQuadZ ; qz < maxQuadZ ; qz++)
+    for (int qz = minQuadZ; qz < maxQuadZ; qz++)
     {
         float z = qz - halfResolution;
 
         float h0 = m_Heightmap[0][qz * m_HeightmapResolution + minQuadX];
         float h3 = m_Heightmap[0][(qz + 1) * m_HeightmapResolution + minQuadX];
 
-        for (int qx = minQuadX ; qx < maxQuadX ; qx++)
+        for (int qx = minQuadX; qx < maxQuadX; qx++)
         {
             float x = qx - halfResolution;
 
@@ -695,9 +684,9 @@ void Terrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3
 
             */
 
-            float h1 = m_Heightmap[0][qz * m_HeightmapResolution + qx + 1];            
+            float h1 = m_Heightmap[0][qz * m_HeightmapResolution + qx + 1];
             float h2 = m_Heightmap[0][(qz + 1) * m_HeightmapResolution + qx + 1];
-            
+
             bool firstTriangleCut = false;
 
             // Triangle h0 h3 h1
