@@ -89,7 +89,16 @@ void Actor_PlayerController::SetHUD(Actor_HUD* _HUD)
     }
 
     if (m_HUD)
+    {
         m_HUD->OnControllerDetached();
+    }
+
+    if (_HUD)
+    {
+        Actor_PlayerController* controller = _HUD->GetController();
+        if (controller)
+            controller->m_HUD.Reset();
+    }
 
     m_HUD = _HUD;
 
