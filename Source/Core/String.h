@@ -144,14 +144,16 @@ struct TGlobalStringView
 using GlobalStringView = TGlobalStringView<char>;
 using AGlobalStringViewW = TGlobalStringView<WideChar>;
 
+HK_NAMESPACE_END
+
 #ifdef __GNUC__
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wliteral-suffix"
 #endif
 
-HK_FORCEINLINE GlobalStringView operator"" s(const char* s, size_t sz)
+HK_FORCEINLINE Hk::GlobalStringView operator"" s(const char* s, size_t sz)
 {
-    GlobalStringView v;
+    Hk::GlobalStringView v;
     v.pRawString = s;
     return v;
 }
@@ -159,6 +161,8 @@ HK_FORCEINLINE GlobalStringView operator"" s(const char* s, size_t sz)
 #ifdef __GNUC__
 #    pragma GCC diagnostic pop
 #endif
+
+HK_NAMESPACE_BEGIN
 
 template <typename CharT>
 CharT const* NullStr();

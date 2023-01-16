@@ -331,7 +331,7 @@ public:                                              \
         static const ThisClassMeta __Meta;           \
         return __Meta;                               \
     }                                                \
-    static ClassMeta const* SuperClass()            \
+    static Hk::ClassMeta const* SuperClass()            \
     {                                                \
         return GetClassMeta().SuperClass();             \
     }                                                \
@@ -343,7 +343,7 @@ public:                                              \
     {                                                \
         return GetClassMeta().GetId();                  \
     }                                                \
-    virtual ClassMeta const& FinalClassMeta() const \
+    virtual Hk::ClassMeta const& FinalClassMeta() const \
     {                                                \
         return GetClassMeta();                          \
     }                                                \
@@ -365,7 +365,7 @@ public:                                              \
     }
 
 #define HK_CLASS(Class, SuperClass) \
-    HK_FACTORY_CLASS(ClassMeta::DummyFactory(), Class, SuperClass)
+    HK_FACTORY_CLASS(Hk::ClassMeta::DummyFactory(), Class, SuperClass)
 
 #define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
     HK_FACTORY_CLASS_A(Factory, Class, SuperClass, BaseObject::Allocator)
@@ -378,10 +378,10 @@ public:                                                                         
     typedef SuperClass Super;                                                           \
     typedef Class      ThisClass;                                                       \
     typedef _Allocator Allocator;                                                       \
-    class ThisClassMeta : public ClassMeta                                             \
+    class ThisClassMeta : public Hk::ClassMeta                                             \
     {                                                                                   \
     public:                                                                             \
-        ThisClassMeta() : ClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::GetClassMeta()) \
+        ThisClassMeta() : Hk::ClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::GetClassMeta()) \
         {                                                                               \
             RegisterProperties();                                                       \
         }                                                                               \
@@ -399,7 +399,7 @@ private:
 
 
 #define HK_BEGIN_CLASS_META(Class)                               \
-    ClassMeta const& Class##__Meta = Class::GetClassMeta();        \
+    Hk::ClassMeta const& Class##__Meta = Class::GetClassMeta();        \
     void              Class::ThisClassMeta::RegisterProperties() \
     {
 
