@@ -197,6 +197,7 @@ public:
 
     /** Add string */
     DocumentMember* AddString(GlobalStringView Name, StringView Str);
+    DocumentMember* AddString(StringView Name, StringView Str);
 
     /** Add object */
     DocumentMember* AddObject(GlobalStringView Name, DocumentValue* Object);
@@ -242,6 +243,9 @@ class DocumentMember : public RefCounted
 public:
     DocumentMember();
     ~DocumentMember();
+
+    void SetName(GlobalStringView Name);
+    void SetName(StringView Name);
 
     /** Add value to array */
     void AddValue(DocumentValue* Value);
@@ -321,6 +325,7 @@ public:
 private:
     const char* m_NameBegin;
     const char* m_NameEnd;
+    char* m_NameData{};
 
     DocumentValue* m_Values{};
     DocumentValue* m_ValuesEnd{};

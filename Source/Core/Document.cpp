@@ -535,8 +535,32 @@ DocumentMember* DocumentValue::AddString(GlobalStringView Name, StringView Str)
 
     // Create member
     TRef<DocumentMember> member = MakeRef<DocumentMember>();
-    member->m_NameBegin     = Name.CStr();
-    member->m_NameEnd       = Name.CStr() + StringLength(Name);
+    member->SetName(Name);
+
+    // Create string
+    TRef<DocumentValue> value = MakeRef<DocumentValue>(TYPE_STRING);
+
+    // Allocate string
+    value->SetString(Str);
+
+    member->AddValue(value);
+
+    AddMember(member);
+
+    return member;
+}
+
+DocumentMember* DocumentValue::AddString(StringView Name, StringView Str)
+{
+    if (!IsObject())
+    {
+        LOG("DocumentValue::AddString: called on non-object type\n");
+        return nullptr;
+    }
+
+    // Create member
+    TRef<DocumentMember> member = MakeRef<DocumentMember>();
+    member->SetName(Name);
 
     // Create string
     TRef<DocumentValue> value = MakeRef<DocumentValue>(TYPE_STRING);
@@ -561,8 +585,7 @@ DocumentMember* DocumentValue::AddObject(GlobalStringView Name, DocumentValue* O
 
     // Create member
     TRef<DocumentMember> member = MakeRef<DocumentMember>();
-    member->m_NameBegin     = Name.CStr();
-    member->m_NameEnd       = Name.CStr() + StringLength(Name);
+    member->SetName(Name);
 
     member->AddValue(Object);
 
@@ -580,8 +603,7 @@ DocumentMember* DocumentValue::AddArray(GlobalStringView ArrayName)
     }
 
     TRef<DocumentMember> array = MakeRef<DocumentMember>();
-    array->m_NameBegin     = ArrayName.CStr();
-    array->m_NameEnd       = ArrayName.CStr() + StringLength(ArrayName);
+    array->SetName(ArrayName);
 
     AddMember(array);
 
@@ -640,6 +662,23 @@ DocumentMember::DocumentMember()
     m_NameBegin = m_NameEnd = "";
 }
 
+void DocumentMember::SetName(GlobalStringView Name)
+{
+    m_NameBegin = Name.CStr();
+    m_NameEnd = Name.CStr() + StringLength(Name);
+}
+
+void DocumentMember::SetName(StringView Name)
+{
+    if (m_NameData)
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(m_NameData);
+    m_NameData = (char*)Platform::GetHeapAllocator<HEAP_STRING>().Alloc(Name.Size() + 1);
+    Platform::Memcpy(m_NameData, Name.Begin(), Name.Size());
+    m_NameData[Name.Size()] = 0;
+    m_NameBegin = m_NameData;
+    m_NameEnd = m_NameData + Name.Size();
+}
+
 DocumentMember::~DocumentMember()
 {
     for (DocumentValue* value = m_Values; value;)
@@ -647,6 +686,11 @@ DocumentMember::~DocumentMember()
         DocumentValue* next = value->m_Next;
         value->RemoveRef();
         value = next;
+    }
+
+    if (m_NameData)
+    {
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(m_NameData);
     }
 }
 
@@ -800,11 +844,6 @@ TRef<DocumentValue> Document::ParseObject()
         {
             if (*token.Begin == '}')
             {
-                if (value->m_MembersTail == nullptr)
-                {
-                    LOG("empty object\n");
-                    break;
-                }
                 m_Tokenizer.NextToken();
                 return value;
             }
