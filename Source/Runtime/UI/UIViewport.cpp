@@ -190,34 +190,37 @@ void UIViewport::Draw(Canvas& canvas)
         Float2 const& pos  = m_Geometry.Mins;
         Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
 
-        Actor* pawn = m_PlayerController->GetPawn();
-        if (pawn && size.X >= 1 && size.Y >= 1)
+        if (size.X >= 1 && size.Y >= 1)
         {
-            WorldRenderView* pView = m_PlayerController->GetRenderView();
+            Actor* pawn = m_PlayerController->GetPawn();
+            if (pawn)
+            {
+                WorldRenderView* pView = m_PlayerController->GetRenderView();
 
-            pView->SetCamera(pawn->GetPawnCamera());
-            pView->SetCullingCamera(pawn->GetPawnCamera());
+                pView->SetCamera(pawn->GetPawnCamera());
+                pView->SetCullingCamera(pawn->GetPawnCamera());
 
-            GEngine->GetFrameLoop()->RegisterView(pView);
+                GEngine->GetFrameLoop()->RegisterView(pView);
 
-            DrawTextureDesc desc;
-            desc.pTextureView = pView->GetTextureView();
-            desc.X            = pos.X;
-            desc.Y            = pos.Y;
-            desc.W            = size.X;
-            desc.H            = size.Y;
-            desc.Rounding     = Rounding;
-            desc.Angle        = 0;
-            desc.TintColor    = TintColor;
-            desc.Composite    = Composite;
-            desc.bFlipY       = true;
+                DrawTextureDesc desc;
+                desc.pTextureView = pView->GetTextureView();
+                desc.X = pos.X;
+                desc.Y = pos.Y;
+                desc.W = size.X;
+                desc.H = size.Y;
+                desc.Rounding = Rounding;
+                desc.Angle = 0;
+                desc.TintColor = TintColor;
+                desc.Composite = Composite;
+                desc.bFlipY = true;
 
-            canvas.DrawTexture(desc);
+                canvas.DrawTexture(desc);
+            }
+
+            Actor_HUD* hud = m_PlayerController->GetHUD();
+            if (hud)
+                hud->DrawHUD(canvas, pos.X, pos.Y, size.X, size.Y);
         }
-
-        Actor_HUD* hud = m_PlayerController->GetHUD();
-        if (hud)
-            hud->DrawHUD(canvas, pos.X, pos.Y, size.X, size.Y);
     }
 }
 
