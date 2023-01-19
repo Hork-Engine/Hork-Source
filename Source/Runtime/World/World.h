@@ -157,29 +157,29 @@ public:
     }
 
     /** Spawn empty actor */
-    Actor* SpawnActor2(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with definition */
-    Actor* SpawnActor2(class ActorDefinition* ActorDef, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor(class ActorDefinition* ActorDef, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with script module */
-    Actor* SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor(String const& ScriptModule, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
-    Actor* SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor(ClassMeta const* ActorClass, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Spawn actor with C++ module */
     template <typename T>
-    T* SpawnActor2(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {})
+    T* SpawnActor(Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {})
     {
         if (T::GetClassMeta().Factory() != &Actor::Factory())
             CriticalError("World::SpawnActor: not an actor class\n");
 
-        return static_cast<T*>(SpawnActor2(&T::GetClassMeta(), SpawnTransform, Instigator, Level, bInEditor));
+        return static_cast<T*>(SpawnActor(&T::GetClassMeta(), SpawnTransform, Instigator, Level, bInEditor));
     }
 
     /** Clone actor */
-    Actor* SpawnActor2(Actor const* Template, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
+    Actor* SpawnActor(Actor const* Template, Transform const& SpawnTransform = {}, Actor* Instigator = {}, Level* Level = {}, bool bInEditor = {});
 
     /** Get all actors in the world */
     TVector<Actor*> const& GetActors() const { return m_Actors; }
@@ -417,7 +417,7 @@ private:
     World();
     ~World();
 
-    Actor* _SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform = {});
+    Actor* _SpawnActor(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform = {});
 
     void BroadcastActorSpawned(Actor* SpawnedActor);
 

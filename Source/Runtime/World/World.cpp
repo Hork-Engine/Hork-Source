@@ -269,7 +269,7 @@ asIScriptObject* World::CreateScriptModule(String const& Module, Actor* Actor)
     return scriptModule;
 }
 
-Actor* World::_SpawnActor2(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform)
+Actor* World::_SpawnActor(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTransform)
 {
     if (m_bPendingKill)
     {
@@ -468,20 +468,20 @@ Actor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
         return nullptr;
     }
 
-    return _SpawnActor2(spawnInfo, _SpawnInfo.SpawnTransform);
+    return _SpawnActor(spawnInfo, _SpawnInfo.SpawnTransform);
 }
 
-Actor* World::SpawnActor2(Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor(Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level = Level;
     spawnInfo.bInEditor = bInEditor;
-    return _SpawnActor2(spawnInfo, SpawnTransform);
+    return _SpawnActor(spawnInfo, SpawnTransform);
 }
 
-Actor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor(ActorDefinition* pActorDef, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (!pActorDef)
     {
@@ -494,10 +494,10 @@ Actor* World::SpawnActor2(ActorDefinition* pActorDef, Transform const& SpawnTran
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level = Level;
     spawnInfo.bInEditor = bInEditor;
-    return _SpawnActor2(spawnInfo, SpawnTransform);
+    return _SpawnActor(spawnInfo, SpawnTransform);
 }
 
-Actor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor(String const& ScriptModule, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (ScriptModule.IsEmpty())
     {
@@ -510,10 +510,10 @@ Actor* World::SpawnActor2(String const& ScriptModule, Transform const& SpawnTran
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level = Level;
     spawnInfo.bInEditor = bInEditor;
-    return _SpawnActor2(spawnInfo, SpawnTransform);
+    return _SpawnActor(spawnInfo, SpawnTransform);
 }
 
-Actor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor(ClassMeta const* ActorClass, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     if (!ActorClass)
     {
@@ -526,10 +526,10 @@ Actor* World::SpawnActor2(ClassMeta const* ActorClass, Transform const& SpawnTra
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level = Level;
     spawnInfo.bInEditor = bInEditor;
-    return _SpawnActor2(spawnInfo, SpawnTransform);
+    return _SpawnActor(spawnInfo, SpawnTransform);
 }
 
-Actor* World::SpawnActor2(Actor const* Template, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
+Actor* World::SpawnActor(Actor const* Template, Transform const& SpawnTransform, Actor* Instigator, Level* Level, bool bInEditor)
 {
     ActorSpawnPrivate spawnInfo;
 
@@ -555,7 +555,7 @@ Actor* World::SpawnActor2(Actor const* Template, Transform const& SpawnTransform
     spawnInfo.Instigator = Instigator;
     spawnInfo.Level = Level;
     spawnInfo.bInEditor = bInEditor;
-    return _SpawnActor2(spawnInfo, SpawnTransform);
+    return _SpawnActor(spawnInfo, SpawnTransform);
 }
 
 void World::InitializeAndPlay(Actor* Actor)
