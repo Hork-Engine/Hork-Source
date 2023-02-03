@@ -1,24 +1,24 @@
-[submodule "Source/ThirdParty/EASTL"]
-	path = Source/ThirdParty/EASTL
+[submodule "ThirdParty/EASTL"]
+	path = ThirdParty/EASTL
 	url = https://github.com/0xc0de/EASTL.git
-[submodule "Source/ThirdParty/fmt"]
-	path = Source/ThirdParty/fmt
+[submodule "ThirdParty/fmt"]
+	path = ThirdParty/fmt
 	url = https://github.com/0xc0de/fmt.git
-[submodule "Source/ThirdParty/mimalloc"]
-	path = Source/ThirdParty/mimalloc
+[submodule "ThirdParty/mimalloc"]
+	path = ThirdParty/mimalloc
 	url = https://github.com/0xc0de/mimalloc.git
-[submodule "Source/ThirdParty/bullet3"]
-	path = Source/ThirdParty/bullet3
+[submodule "ThirdParty/bullet3"]
+	path = ThirdParty/bullet3
 	url = https://github.com/0xc0de/bullet3.git
-[submodule "Source/ThirdParty/SDL2"]
-	path = Source/ThirdParty/SDL2
+[submodule "ThirdParty/SDL2"]
+	path = ThirdParty/SDL2
 	url = https://github.com/0xc0de/SDL2.git
-[submodule "Source/ThirdParty/bcdec"]
-	path = Source/ThirdParty/bcdec
+[submodule "ThirdParty/bcdec"]
+	path = ThirdParty/bcdec
 	url = https://github.com/0xc0de/bcdec.git
-[submodule "Source/ThirdParty/bc7enc_rdo"]
-	path = Source/ThirdParty/bc7enc_rdo
+[submodule "ThirdParty/bc7enc_rdo"]
+	path = ThirdParty/bc7enc_rdo
 	url = https://github.com/0xc0de/bc7enc_rdo.git
-[submodule "Source/ThirdParty/bc6h_enc"]
-	path = Source/ThirdParty/bc6h_enc
+[submodule "ThirdParty/bc6h_enc"]
+	path = ThirdParty/bc6h_enc
 	url = https://github.com/0xc0de/bc6h_enc.git
