@@ -118,7 +118,7 @@ struct VirtualTextureLayer
 // Создает структуру виртуальной текстуры, на выходе _struct и binRects
 bool VT_MakeStructure(VirtualTextureStructure& _struct,
                       int _PageWidthLog2,
-                      const std::vector<ARectangleBinPack::RectSize>& _textureRects,
+                      const std::vector<RectangleBinPack::RectSize>& _textureRects,
                       std::vector<RectangleBinBack_RectNode>& _binRects,
                       unsigned int& _binWidth,
                       unsigned int& _binHeight);
@@ -211,7 +211,7 @@ bool VT_CreateVirtualTexture(const VirtualTextureLayerDesc* _Layers,
                              const char* _TempDir,
                              int _MaxLods,
                              int _PageWidthLog2,
-                             const std::vector<ARectangleBinPack::RectSize>& _TextureRects,
+                             const std::vector<RectangleBinPack::RectSize>& _TextureRects,
                              std::vector<RectangleBinBack_RectNode>& _BinRects,
                              unsigned int& _BinWidth,
                              unsigned int& _BinHeight,

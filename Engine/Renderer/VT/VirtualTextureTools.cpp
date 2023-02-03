@@ -122,12 +122,12 @@ VirtualTextureLayer::~VirtualTextureLayer()
 
 bool VT_MakeStructure(VirtualTextureStructure& _Struct,
                       int _PageWidthLog2,
-                      const std::vector<ARectangleBinPack::RectSize>& _TextureRects,
+                      const std::vector<RectangleBinPack::RectSize>& _TextureRects,
                       std::vector<RectangleBinBack_RectNode>& _BinRects,
                       unsigned int& _BinWidth,
                       unsigned int& _BinHeight)
 {
-    std::vector<ARectangleBinPack::RectSize> tempRects;
+    std::vector<RectangleBinPack::RectSize> tempRects;
     double space = 0.0;
 
     _Struct.PageResolutionB = 1 << _PageWidthLog2;
@@ -147,8 +147,8 @@ bool VT_MakeStructure(VirtualTextureStructure& _Struct,
     // adjust rect sizes and compute virtual texture space
     for (int i = 0; i < numTextureRectangles; i++)
     {
-        const ARectangleBinPack::RectSize& in = _TextureRects[i];
-        ARectangleBinPack::RectSize& out = tempRects[i];
+        const RectangleBinPack::RectSize& in = _TextureRects[i];
+        RectangleBinPack::RectSize& out = tempRects[i];
 
         // copy rect
         out = in;
@@ -177,12 +177,12 @@ bool VT_MakeStructure(VirtualTextureStructure& _Struct,
     {
         _BinWidth = _BinHeight = (1 << (_Struct.NumLods - 1));
 
-        ARectangleBinPack binPack(_BinWidth, _BinHeight);
-        std::vector<ARectangleBinPack::RectSize> rectVec = tempRects;
+        RectangleBinPack binPack(_BinWidth, _BinHeight);
+        std::vector<RectangleBinPack::RectSize> rectVec = tempRects;
         binPack.Insert(rectVec,
                        false,
-                       ARectangleBinPack::RectBestAreaFit,
-                       ARectangleBinPack::SplitShorterLeftoverAxis,
+                       RectangleBinPack::RectBestAreaFit,
+                       RectangleBinPack::SplitShorterLeftoverAxis,
                        true);
 
         if ((int)binPack.GetUsedRectangles().size() == numTextureRectangles)
@@ -1666,7 +1666,7 @@ bool VT_CreateVirtualTexture(const VirtualTextureLayerDesc* _Layers,
                              const char* _TempDir,
                              int _MaxLods,
                              int _PageWidthLog2,
-                             const std::vector<ARectangleBinPack::RectSize>& _TextureRects,
+                             const std::vector<RectangleBinPack::RectSize>& _TextureRects,
                              std::vector<RectangleBinBack_RectNode>& _BinRects,
                              unsigned int& _BinWidth,
                              unsigned int& _BinHeight,
@@ -1921,10 +1921,10 @@ void TestVT()
     textureLayers[0].Height = 1416;
 #endif
 
-    std::vector<ARectangleBinPack::RectSize> inputRects(NumTextures);
+    std::vector<RectangleBinPack::RectSize> inputRects(NumTextures);
     for (unsigned int i = 0; i < NumTextures; i++)
     {
-        ARectangleBinPack::RectSize& rect = inputRects[i];
+        RectangleBinPack::RectSize& rect = inputRects[i];
 
         rect.width = textureLayers[i].Width;
         rect.height = textureLayers[i].Height;

@@ -206,7 +206,7 @@ void DocumentTokenizer::NextToken()
 }
 
 
-struct ADocumentSerializer
+struct DocumentSerializer
 {
     int DocumentStack = 0;
 
@@ -221,14 +221,14 @@ struct ADocumentSerializer
     String SerializeObjectCompact(DocumentMember const* Members);
 };
 
-String ADocumentSerializer::InsertSpaces()
+String DocumentSerializer::InsertSpaces()
 {
     String s;
     s.Resize(DocumentStack);
     return s;
 }
 
-String ADocumentSerializer::SerializeValue(DocumentValue const* Value)
+String DocumentSerializer::SerializeValue(DocumentValue const* Value)
 {
     if (Value->IsString())
     {
@@ -251,7 +251,7 @@ String ADocumentSerializer::SerializeValue(DocumentValue const* Value)
     return s;
 }
 
-String ADocumentSerializer::SerializeMember(DocumentMember const* Member)
+String DocumentSerializer::SerializeMember(DocumentMember const* Member)
 {
     String s;
 
@@ -301,7 +301,7 @@ String ADocumentSerializer::SerializeMember(DocumentMember const* Member)
     return s;
 }
 
-String ADocumentSerializer::SerializeObject(DocumentMember const* Members, bool& bSingleMember)
+String DocumentSerializer::SerializeObject(DocumentMember const* Members, bool& bSingleMember)
 {
     String s;
     bSingleMember = true;
@@ -331,7 +331,7 @@ String ADocumentSerializer::SerializeObject(DocumentMember const* Members, bool&
     return s;
 }
 
-String ADocumentSerializer::SerializeValueCompact(DocumentValue const* Value)
+String DocumentSerializer::SerializeValueCompact(DocumentValue const* Value)
 {
     if (Value->IsString())
     {
@@ -340,7 +340,7 @@ String ADocumentSerializer::SerializeValueCompact(DocumentValue const* Value)
     return HK_FORMAT("{{{}}}", SerializeObjectCompact(Value->GetListOfMembers()));
 }
 
-String ADocumentSerializer::SerializeMemberCompact(DocumentMember const* Member)
+String DocumentSerializer::SerializeMemberCompact(DocumentMember const* Member)
 {
     String s;
 
@@ -373,7 +373,7 @@ String ADocumentSerializer::SerializeMemberCompact(DocumentMember const* Member)
     return s;
 }
 
-String ADocumentSerializer::SerializeObjectCompact(DocumentMember const* Members)
+String DocumentSerializer::SerializeObjectCompact(DocumentMember const* Members)
 {
     String s;
     for (DocumentMember const* member = Members; member; member = member->GetNext())
@@ -646,7 +646,7 @@ void DocumentValue::Print() const
 
 String DocumentValue::SerializeToString(DocumentSerializeInfo const& SerializeInfo) const
 {
-    ADocumentSerializer serializer;
+    DocumentSerializer serializer;
 
     if (SerializeInfo.bCompactStringConversion)
     {

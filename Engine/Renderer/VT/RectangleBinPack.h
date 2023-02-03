@@ -72,10 +72,10 @@ public:
     }
 };
 
-class ARectangleBinPack
+class RectangleBinPack
 {
 public:
-    ARectangleBinPack(int _Width, int _Height);
+    RectangleBinPack(int _Width, int _Height);
 
     /// Specifies the different choice heuristics that can be used when deciding which of the free subrectangles
     /// to place the to-be-packed rectangle into.

@@ -271,12 +271,12 @@ void CharacterControllerBase::_Update(float _TimeStep)
     bInsideUpdate = false;
 }
 
-class ACharacterControllerTraceCallback : public btCollisionWorld::ConvexResultCallback
+class CharacterControllerTraceCallback : public btCollisionWorld::ConvexResultCallback
 {
     using Super = btCollisionWorld::ConvexResultCallback;
 
 public:
-    ACharacterControllerTraceCallback(btCollisionObject* _Self, Float3 const& _UpVec, float _MinSlopeDot) :
+    CharacterControllerTraceCallback(btCollisionObject* _Self, Float3 const& _UpVec, float _MinSlopeDot) :
         m_HitProxy(nullptr), m_Self(_Self), m_UpVec(btVectorToFloat3(_UpVec)), m_MinSlopeDot(_MinSlopeDot)
     {
         m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
@@ -354,12 +354,12 @@ protected:
     btScalar m_MinSlopeDot;
 };
 
-class ACharacterControllerTraceNoSlopeCallback : public btCollisionWorld::ConvexResultCallback
+class CharacterControllerTraceNoSlopeCallback : public btCollisionWorld::ConvexResultCallback
 {
     using Super = btCollisionWorld::ConvexResultCallback;
 
 public:
-    ACharacterControllerTraceNoSlopeCallback(btCollisionObject* _Self) :
+    CharacterControllerTraceNoSlopeCallback(btCollisionObject* _Self) :
         m_HitProxy(nullptr), m_Self(_Self)
     {
         m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
@@ -431,7 +431,7 @@ protected:
 
 void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, Float3 const& Up, float MinSlopeDot, CharacterControllerTrace& Trace, bool bCylinder) const
 {
-    ACharacterControllerTraceCallback callback(GhostObject, Up, MinSlopeDot);
+    CharacterControllerTraceCallback callback(GhostObject, Up, MinSlopeDot);
 
     const float ccdPenetration = com_CharacterCcdPenetration.GetFloat(); //World->getDispatchInfo().m_allowedCcdPenetration;
 
@@ -464,7 +464,7 @@ void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, 
 
 void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, CharacterControllerTrace& Trace, bool bCylinder) const
 {
-    ACharacterControllerTraceNoSlopeCallback callback(GhostObject);
+    CharacterControllerTraceNoSlopeCallback callback(GhostObject);
 
     const float ccdPenetration = com_CharacterCcdPenetration.GetFloat(); //World->getDispatchInfo().m_allowedCcdPenetration;
 

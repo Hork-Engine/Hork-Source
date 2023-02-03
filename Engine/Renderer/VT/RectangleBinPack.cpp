@@ -47,21 +47,21 @@ static int __ScoreWorstintSideFit(int _Width, int _Height, const RectangleBinBac
 }
 
 /// Returns the heuristic score value for placing a rectangle of size width*height into freeRect. Does not try to rotate.
-static int __ScoreByHeuristic(int _Width, int _Height, const RectangleBinBack_RectNode& _FreeRect, ARectangleBinPack::FreeRectChoiceHeuristic _RectChoice)
+static int __ScoreByHeuristic(int _Width, int _Height, const RectangleBinBack_RectNode& _FreeRect, RectangleBinPack::FreeRectChoiceHeuristic _RectChoice)
 {
     switch (_RectChoice)
     {
-        case ARectangleBinPack::RectBestAreaFit:
+        case RectangleBinPack::RectBestAreaFit:
             return __ScoreBestAreaFit(_Width, _Height, _FreeRect);
-        case ARectangleBinPack::RectBestShortSideFit:
+        case RectangleBinPack::RectBestShortSideFit:
             return __ScoreBestShortSideFit(_Width, _Height, _FreeRect);
-        case ARectangleBinPack::RectBestintSideFit:
+        case RectangleBinPack::RectBestintSideFit:
             return __ScoreBestintSideFit(_Width, _Height, _FreeRect);
-        case ARectangleBinPack::RectWorstAreaFit:
+        case RectangleBinPack::RectWorstAreaFit:
             return __ScoreWorstAreaFit(_Width, _Height, _FreeRect);
-        case ARectangleBinPack::RectWorstShortSideFit:
+        case RectangleBinPack::RectWorstShortSideFit:
             return __ScoreWorstShortSideFit(_Width, _Height, _FreeRect);
-        case ARectangleBinPack::RectWorstintSideFit:
+        case RectangleBinPack::RectWorstintSideFit:
             return __ScoreWorstintSideFit(_Width, _Height, _FreeRect);
         default:
             HK_ASSERT(0);
@@ -71,7 +71,7 @@ static int __ScoreByHeuristic(int _Width, int _Height, const RectangleBinBack_Re
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ARectangleBinPack::ARectangleBinPack(int _Width, int _Height)
+RectangleBinPack::RectangleBinPack(int _Width, int _Height)
 {
     m_BinWidth = _Width;
     m_BinHeight = _Height;
@@ -94,7 +94,7 @@ ARectangleBinPack::ARectangleBinPack(int _Width, int _Height)
     m_FreeRectangles.push_back(n);
 }
 
-void ARectangleBinPack::Insert(std::vector<RectSize>& _Rects, /*std::vector<Rect> &dst, */ bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod, bool _AllowFlip)
+void RectangleBinPack::Insert(std::vector<RectSize>& _Rects, /*std::vector<Rect> &dst, */ bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod, bool _AllowFlip)
 {
     //dst.clear();
 
@@ -383,7 +383,7 @@ void FRectangleBinPack::InsertMaxFitting(std::vector<RectSize> &rects, std::vect
 }
 */
 
-RectangleBinBack_RectNode ARectangleBinPack::Insert(int _Width, int _Height, bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod)
+RectangleBinBack_RectNode RectangleBinPack::Insert(int _Width, int _Height, bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod)
 {
     // Find where to put the new rectangle.
     int freeNodeIndex = 0;
@@ -417,7 +417,7 @@ RectangleBinBack_RectNode ARectangleBinPack::Insert(int _Width, int _Height, boo
 }
 
 /// Computes the ratio of used surface area to the total bin area.
-float ARectangleBinPack::Occupancy() const
+float RectangleBinPack::Occupancy() const
 {
     ///\todo The occupancy rate could be cached/tracked incrementally instead
     ///      of looping through the list of packed rectangles here.
@@ -430,7 +430,7 @@ float ARectangleBinPack::Occupancy() const
     return (float)usedSurfaceArea / (m_BinWidth * m_BinHeight);
 }
 
-RectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode(int _Width, int _Height, FreeRectChoiceHeuristic _RectChoice, int* _NodeIndex)
+RectangleBinBack_RectNode RectangleBinPack::FindPositionForNewNode(int _Width, int _Height, FreeRectChoiceHeuristic _RectChoice, int* _NodeIndex)
 {
     RectangleBinBack_RectNode bestNode;
 
@@ -501,7 +501,7 @@ RectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode(int _Width, 
     return bestNode;
 }
 
-void ARectangleBinPack::SplitFreeRectByHeuristic(const RectangleBinBack_RectNode& _FreeRect, const RectangleBinBack_RectNode& _PlacedRect, SplitHeuristic _Method)
+void RectangleBinPack::SplitFreeRectByHeuristic(const RectangleBinBack_RectNode& _FreeRect, const RectangleBinBack_RectNode& _PlacedRect, SplitHeuristic _Method)
 {
     // Compute the lengths of the leftover area.
     const int w = _FreeRect.width - _PlacedRect.width;
@@ -553,7 +553,7 @@ void ARectangleBinPack::SplitFreeRectByHeuristic(const RectangleBinBack_RectNode
 
 /// This function will add the two generated rectangles into the freeRectangles array. The caller is expected to
 /// remove the original rectangle from the freeRectangles array after that.
-void ARectangleBinPack::SplitFreeRectAintAxis(const RectangleBinBack_RectNode& _FreeRect, const RectangleBinBack_RectNode& _PlacedRect, bool _SplitHorizontal)
+void RectangleBinPack::SplitFreeRectAintAxis(const RectangleBinBack_RectNode& _FreeRect, const RectangleBinBack_RectNode& _PlacedRect, bool _SplitHorizontal)
 {
     // Form the two new rectangles.
     RectangleBinBack_RectNode bottom;
@@ -593,7 +593,7 @@ void ARectangleBinPack::SplitFreeRectAintAxis(const RectangleBinBack_RectNode& _
     HK_ASSERT(m_DisjointRects.Disjoint(right));
 }
 
-void ARectangleBinPack::MergeFreeList()
+void RectangleBinPack::MergeFreeList()
 {
     //#ifdef _DEBUG
     DisjointRectCollection test;

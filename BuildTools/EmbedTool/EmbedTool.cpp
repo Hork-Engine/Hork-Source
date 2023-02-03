@@ -41,7 +41,7 @@ Resource embedding tool program
 
 using byte = uint8_t;
 
-using SReadDirCallback = std::function< void( std::string const & FileName, bool bIsDirectory ) >;
+using ReadDirCallback = std::function< void( std::string const & FileName, bool bIsDirectory ) >;
 
 #ifdef __linux__
 
@@ -49,7 +49,7 @@ using SReadDirCallback = std::function< void( std::string const & FileName, bool
 #include <sys/stat.h>
 #include <functional>
 
-void ReadDir( std::string const & Path, bool bSubDirs, SReadDirCallback Callback )
+void ReadDir( std::string const & Path, bool bSubDirs, ReadDirCallback Callback )
 {
     std::string fn;
     DIR * dir = opendir( Path.c_str() );
@@ -95,7 +95,7 @@ void ReadDir( std::string const & Path, bool bSubDirs, SReadDirCallback Callback
 
 #pragma warning( disable : 4996 )
 
-void ReadDir( std::string const & Path, bool bSubDirs, SReadDirCallback Callback )
+void ReadDir( std::string const & Path, bool bSubDirs, ReadDirCallback Callback )
 {
     std::string fn;
 
