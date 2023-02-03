@@ -42,7 +42,7 @@ public:
     /** Toggle fullscreen on ALT+ENTER */
     bool bToggleFullscreenAltEnter = true;
 
-    CommandContext CommandContext;
+    CommandContext CmdContext;
 
     GameModule();
 

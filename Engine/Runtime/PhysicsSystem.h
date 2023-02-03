@@ -53,7 +53,7 @@ class TerrainComponent;
 struct CollisionTraceResult
 {
     /** Colliding body */
-    HitProxy* HitProxy;
+    HitProxy* pObject;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -181,7 +181,7 @@ struct ContactKey
 struct CollisionQueryResult
 {
     /** Colliding body */
-    HitProxy* HitProxy;
+    HitProxy* pObject;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -286,17 +286,17 @@ private:
     friend class HitProxy;
 
     /** Add or re-add physical body to the world */
-    void AddHitProxy(HitProxy* HitProxy);
+    void AddHitProxy(HitProxy* pObject);
 
     /** Remove physical body from the world */
-    void RemoveHitProxy(HitProxy* HitProxy);
+    void RemoveHitProxy(HitProxy* pObject);
 
 private:
     /** Add physical body to pending list */
-    void AddPendingBody(HitProxy* InPhysicalBody);
+    void AddPendingBody(HitProxy* pObject);
 
     /** Remove physical body from pending list */
-    void RemovePendingBody(HitProxy* InPhysicalBody);
+    void RemovePendingBody(HitProxy* pObject);
 
     /** Add physical bodies in pending list to physics world */
     void AddPendingBodies();

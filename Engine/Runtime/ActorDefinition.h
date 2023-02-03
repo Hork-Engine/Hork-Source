@@ -43,7 +43,7 @@ class ActorDefinition : public Resource
 public:
     struct ComponentDef
     {
-        ClassMeta const*       ClassMeta;
+        ClassMeta const*       ComponentClass;
         String                 Name;
         uint64_t               Id;
         uint64_t               Attach;

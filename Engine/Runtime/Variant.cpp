@@ -76,87 +76,87 @@ ResourceRef StringToResourceRef(StringView String)
     return ref;
 }
 
-void Variant::SetFromString(VARIANT_TYPE Type, EnumDef const* EnumDef, StringView String)
+void Variant::SetFromString(VARIANT_TYPE type, EnumDef const* enumDef, StringView string)
 {
-    switch (Type)
+    switch (type)
     {
         case VARIANT_UNDEFINED:
             return;
         case VARIANT_BOOLEAN:
-            *this = Core::ParseBool(String);
+            *this = Core::ParseBool(string);
             break;
         case VARIANT_BOOL2:
-            *this = ParseVector<Bool2>(String);
+            *this = ParseVector<Bool2>(string);
             break;
         case VARIANT_BOOL3:
-            *this = ParseVector<Bool3>(String);
+            *this = ParseVector<Bool3>(string);
             break;
         case VARIANT_BOOL4:
-            *this = ParseVector<Bool4>(String);
+            *this = ParseVector<Bool4>(string);
             break;
         case VARIANT_INT8:
-            *this = Core::ParseInt8(String);
+            *this = Core::ParseInt8(string);
             break;
         case VARIANT_INT16:
-            *this = Core::ParseInt16(String);
+            *this = Core::ParseInt16(string);
             break;
         case VARIANT_INT32:
-            *this = Core::ParseInt32(String);
+            *this = Core::ParseInt32(string);
             break;
         case VARIANT_INT64:
-            *this = Core::ParseInt64(String);
+            *this = Core::ParseInt64(string);
             break;
         case VARIANT_UINT8:
-            *this = Core::ParseUInt8(String);
+            *this = Core::ParseUInt8(string);
             break;
         case VARIANT_UINT16:
-            *this = Core::ParseUInt16(String);
+            *this = Core::ParseUInt16(string);
             break;
         case VARIANT_UINT32:
-            *this = Core::ParseUInt32(String);
+            *this = Core::ParseUInt32(string);
             break;
         case VARIANT_UINT64:
-            *this = Core::ParseUInt64(String);
+            *this = Core::ParseUInt64(string);
             break;
         case VARIANT_FLOAT32:
-            *this = Core::ParseFloat(String);
+            *this = Core::ParseFloat(string);
             break;
         case VARIANT_FLOAT64:
-            *this = Core::ParseDouble(String);
+            *this = Core::ParseDouble(string);
             break;
         case VARIANT_FLOAT2:
-            *this = ParseVector<Float2>(String);
+            *this = ParseVector<Float2>(string);
             break;
         case VARIANT_FLOAT3:
-            *this = ParseVector<Float3>(String);
+            *this = ParseVector<Float3>(string);
             break;
         case VARIANT_FLOAT4:
-            *this = ParseVector<Float4>(String);
+            *this = ParseVector<Float4>(string);
             break;
         case VARIANT_FLOAT2X2:
-            *this = ParseMatrix<Float2x2>(String);
+            *this = ParseMatrix<Float2x2>(string);
             break;
         case VARIANT_FLOAT3X3:
-            *this = ParseMatrix<Float3x3>(String);
+            *this = ParseMatrix<Float3x3>(string);
             break;
         case VARIANT_FLOAT3X4:
-            *this = ParseMatrix<Float3x4>(String);
+            *this = ParseMatrix<Float3x4>(string);
             break;
         case VARIANT_FLOAT4X4:
-            *this = ParseMatrix<Float4x4>(String);
+            *this = ParseMatrix<Float4x4>(string);
             break;
         case VARIANT_QUAT:
-            *this = ParseVector<Quat>(String);
+            *this = ParseVector<Quat>(string);
             break;
         case VARIANT_STRING:
-            *this = String;
+            *this = string;
             break;
         case VARIANT_RESOURCE_REF:
-            *this = StringToResourceRef(String);
+            *this = StringToResourceRef(string);
             break;
         case VARIANT_ENUM:
-            HK_ASSERT(EnumDef);
-            SetEnum(EnumDef, EnumFromString(EnumDef, String));
+            HK_ASSERT(enumDef);
+            SetEnum(enumDef, EnumFromString(enumDef, string));
             break;
         default:
             HK_ASSERT(0);
@@ -218,7 +218,7 @@ String Variant::ToString() const
         case VARIANT_RESOURCE_REF:
             return Core::ToString(*Get<ResourceRef>());
         case VARIANT_ENUM:
-            return FindEnumValue(m_EnumType.EnumDef, m_EnumType.EnumValue);
+            return FindEnumValue(m_EnumType.Definition, m_EnumType.Value);
         default:
             HK_ASSERT(0);
     }

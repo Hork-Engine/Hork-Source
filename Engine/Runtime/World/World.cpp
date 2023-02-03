@@ -308,7 +308,7 @@ Actor* World::_SpawnActor(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTr
         int componentIndex = 0;
         for (auto& componentDef : pActorDef->GetComponents())
         {
-            auto* component = actor->CreateComponent(componentDef.ClassMeta, componentDef.Name);
+            auto* component = actor->CreateComponent(componentDef.ComponentClass, componentDef.Name);
             if (component)
             {
                 component->SetProperties(componentDef.PropertyHash);
@@ -428,7 +428,7 @@ Actor* World::_SpawnActor(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTr
     }
 
     actor->m_World = this;
-    actor->m_Level = SpawnInfo.Level ? SpawnInfo.Level : m_PersistentLevel;
+    actor->m_Level = SpawnInfo.pLevel ? SpawnInfo.pLevel : m_PersistentLevel;
 
     if (actor->m_RootComponent)
     {
@@ -447,7 +447,7 @@ Actor* World::SpawnActor(ActorSpawnInfo const& _SpawnInfo)
     spawnInfo.ActorClass = _SpawnInfo.ActorClassMeta();
     spawnInfo.Template = _SpawnInfo.GetTemplate();
     spawnInfo.Instigator = _SpawnInfo.Instigator;
-    spawnInfo.Level = _SpawnInfo.Level;
+    spawnInfo.pLevel = _SpawnInfo.pLevel;
     spawnInfo.bInEditor = _SpawnInfo.bInEditor;
 
     if (!spawnInfo.ActorClass)
@@ -476,7 +476,7 @@ Actor* World::SpawnActor(Transform const& SpawnTransform, Actor* Instigator, Lev
     ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
-    spawnInfo.Level = Level;
+    spawnInfo.pLevel = Level;
     spawnInfo.bInEditor = bInEditor;
     return _SpawnActor(spawnInfo, SpawnTransform);
 }
@@ -492,7 +492,7 @@ Actor* World::SpawnActor(ActorDefinition* pActorDef, Transform const& SpawnTrans
     spawnInfo.ActorDef = pActorDef;
     spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.Instigator = Instigator;
-    spawnInfo.Level = Level;
+    spawnInfo.pLevel = Level;
     spawnInfo.bInEditor = bInEditor;
     return _SpawnActor(spawnInfo, SpawnTransform);
 }
@@ -508,7 +508,7 @@ Actor* World::SpawnActor(String const& ScriptModule, Transform const& SpawnTrans
     spawnInfo.ActorClass = &Actor::GetClassMeta();
     spawnInfo.ScriptModule = ScriptModule;
     spawnInfo.Instigator = Instigator;
-    spawnInfo.Level = Level;
+    spawnInfo.pLevel = Level;
     spawnInfo.bInEditor = bInEditor;
     return _SpawnActor(spawnInfo, SpawnTransform);
 }
@@ -524,7 +524,7 @@ Actor* World::SpawnActor(ClassMeta const* ActorClass, Transform const& SpawnTran
     ActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = ActorClass;
     spawnInfo.Instigator = Instigator;
-    spawnInfo.Level = Level;
+    spawnInfo.pLevel = Level;
     spawnInfo.bInEditor = bInEditor;
     return _SpawnActor(spawnInfo, SpawnTransform);
 }
@@ -553,7 +553,7 @@ Actor* World::SpawnActor(Actor const* Template, Transform const& SpawnTransform,
     spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &Actor::GetClassMeta();
     spawnInfo.Template = Template;
     spawnInfo.Instigator = Instigator;
-    spawnInfo.Level = Level;
+    spawnInfo.pLevel = Level;
     spawnInfo.bInEditor = bInEditor;
     return _SpawnActor(spawnInfo, SpawnTransform);
 }

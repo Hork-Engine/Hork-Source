@@ -1197,7 +1197,7 @@ struct RenderFrameData
     TVector<TerrainRenderInstance*> TerrainInstances;
 
     /** Canvas draw commands */
-    CanvasDrawData const* CanvasDrawData;
+    CanvasDrawData const* pCanvasDrawData;
     size_t CanvasVertexData;
 
     /** Debug draw commands */

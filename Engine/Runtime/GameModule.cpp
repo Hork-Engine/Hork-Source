@@ -49,12 +49,12 @@ void GameModule::OnGameClose()
 
 void GameModule::AddCommand(GlobalStringView _Name, TCallback<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment)
 {
-    CommandContext.AddCommand(_Name, _Callback, _Comment);
+    CmdContext.AddCommand(_Name, _Callback, _Comment);
 }
 
 void GameModule::RemoveCommand(StringView _Name)
 {
-    CommandContext.RemoveCommand(_Name);
+    CmdContext.RemoveCommand(_Name);
 }
 
 void GameModule::Quit(CommandProcessor const& _Proc)

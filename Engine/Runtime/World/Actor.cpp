@@ -246,7 +246,7 @@ bool Actor::SetPublicProperty(StringView PublicName, StringView Value)
             if (prop.ComponentIndex != -1)
             {
                 // NOTE: component->LocalId should match ComponentIndex
-                ActorComponent* component = FindComponent(m_pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
+                ActorComponent* component = FindComponent(m_pActorDef->GetComponents()[prop.ComponentIndex].ComponentClass, prop.ComponentIndex);
                 if (component)
                 {
                     return component->SetProperty(prop.PropertyName, Value);

@@ -65,7 +65,7 @@ struct VisibilityQueryContext
     };
 
 
-    PortalStack PortalStack[MAX_PORTAL_STACK];
+    PortalStack PStack[MAX_PORTAL_STACK];
     int PortalStackPos;
 
     Float3 ViewPosition;
@@ -859,8 +859,8 @@ void VisibilityLevel::ProcessLevelVisibility(VisibilityQueryContext& QueryContex
     m_pQueryContext = &QueryContext;
     m_pQueryResult = &QueryResult;
 
-    m_ViewFrustum = QueryContext.PortalStack[0].AreaFrustum;
-    m_ViewFrustumPlanes = QueryContext.PortalStack[0].PlanesCount; // Can be 4 or 5
+    m_ViewFrustum = QueryContext.PStack[0].AreaFrustum;
+    m_ViewFrustumPlanes = QueryContext.PStack[0].PlanesCount; // Can be 4 or 5
 
     int cullBits = 0;
 
@@ -1116,7 +1116,7 @@ void VisibilityLevel::LevelTraverse_r(int NodeIndex, int InCullBits)
 
 void VisibilityLevel::FlowThroughPortals_r(VisArea const* InArea)
 {
-    PortalStack* prevStack = &m_pQueryContext->PortalStack[m_pQueryContext->PortalStackPos];
+    PortalStack* prevStack = &m_pQueryContext->PStack[m_pQueryContext->PortalStackPos];
     PortalStack* stack = prevStack + 1;
 
     CullPrimitives(InArea, prevStack->AreaFrustum, prevStack->PlanesCount);
@@ -1766,17 +1766,17 @@ void VisibilityLevel::QueryVisiblePrimitives(TPodVector<VisibilityLevel*> const&
     // h = tan( half_fov_y_rad ) * znear * 2;
 
     QueryContext.PortalStackPos = 0;
-    QueryContext.PortalStack[0].AreaFrustum[0] = *InQuery.FrustumPlanes[0];
-    QueryContext.PortalStack[0].AreaFrustum[1] = *InQuery.FrustumPlanes[1];
-    QueryContext.PortalStack[0].AreaFrustum[2] = *InQuery.FrustumPlanes[2];
-    QueryContext.PortalStack[0].AreaFrustum[3] = *InQuery.FrustumPlanes[3];
-    QueryContext.PortalStack[0].AreaFrustum[4] = *InQuery.FrustumPlanes[4]; // far plane
-    QueryContext.PortalStack[0].PlanesCount = 5;
-    QueryContext.PortalStack[0].Portal = NULL;
-    QueryContext.PortalStack[0].Scissor.MinX = x;
-    QueryContext.PortalStack[0].Scissor.MinY = y;
-    QueryContext.PortalStack[0].Scissor.MaxX = -x;
-    QueryContext.PortalStack[0].Scissor.MaxY = -y;
+    QueryContext.PStack[0].AreaFrustum[0] = *InQuery.FrustumPlanes[0];
+    QueryContext.PStack[0].AreaFrustum[1] = *InQuery.FrustumPlanes[1];
+    QueryContext.PStack[0].AreaFrustum[2] = *InQuery.FrustumPlanes[2];
+    QueryContext.PStack[0].AreaFrustum[3] = *InQuery.FrustumPlanes[3];
+    QueryContext.PStack[0].AreaFrustum[4] = *InQuery.FrustumPlanes[4]; // far plane
+    QueryContext.PStack[0].PlanesCount = 5;
+    QueryContext.PStack[0].Portal = NULL;
+    QueryContext.PStack[0].Scissor.MinX = x;
+    QueryContext.PStack[0].Scissor.MinY = y;
+    QueryContext.PStack[0].Scissor.MaxX = -x;
+    QueryContext.PStack[0].Scissor.MaxY = -y;
 
     for (VisibilityLevel* level : m_Levels)
     {

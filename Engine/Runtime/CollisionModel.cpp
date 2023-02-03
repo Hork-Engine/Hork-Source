@@ -1191,7 +1191,7 @@ void CollisionModel::AddSphere(CollisionSphereDef const* pShape, int& NumShapes)
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1217,7 +1217,7 @@ void CollisionModel::AddSphereRadii(CollisionSphereRadiiDef const* pShape, int& 
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1243,7 +1243,7 @@ void CollisionModel::AddBox(CollisionBoxDef const* pShape, int& NumShapes)
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1271,7 +1271,7 @@ void CollisionModel::AddCylinder(CollisionCylinderDef const* pShape, int& NumSha
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1299,7 +1299,7 @@ void CollisionModel::AddCone(CollisionConeDef const* pShape, int& NumShapes)
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1327,7 +1327,7 @@ void CollisionModel::AddCapsule(CollisionCapsuleDef const* pShape, int& NumShape
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else
@@ -1418,7 +1418,7 @@ void CollisionModel::AddConvexHull(CollisionConvexHullDef const* pShape, int& Nu
         boneCol.JointIndex     = pShape->Bone.JointIndex;
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
-        boneCol.CollisionBody  = std::move(body);
+        boneCol.Body           = std::move(body);
         m_BoneCollisions.Add(std::move(boneCol));
     }
     else

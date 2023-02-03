@@ -258,7 +258,7 @@ int SceneComponent::FindSocket(StringView _Name) const
 {
     for (int socketIndex = 0; socketIndex < m_Sockets.Size(); socketIndex++)
     {
-        if (!m_Sockets[socketIndex].SocketDef->Name.Icmp(_Name))
+        if (!m_Sockets[socketIndex].Definition->Name.Icmp(_Name))
         {
             return socketIndex;
         }
@@ -783,20 +783,20 @@ Float3x4 SceneSocket::EvaluateTransform() const
 
     if (SkinnedMesh)
     {
-        Float3x4 const& jointTransform = SkinnedMesh->GetJointTransform(SocketDef->JointIndex);
+        Float3x4 const& jointTransform = SkinnedMesh->GetJointTransform(Definition->JointIndex);
 
         Quat jointRotation;
         jointRotation.FromMatrix(jointTransform.DecomposeRotation());
 
         Float3 jointScale = jointTransform.DecomposeScale();
 
-        Quat worldRotation = jointRotation * SocketDef->Rotation;
+        Quat worldRotation = jointRotation * Definition->Rotation;
 
-        transform.Compose(jointTransform * SocketDef->Position, worldRotation.ToMatrix3x3(), SocketDef->Scale * jointScale);
+        transform.Compose(jointTransform * Definition->Position, worldRotation.ToMatrix3x3(), Definition->Scale * jointScale);
     }
     else
     {
-        transform.Compose(SocketDef->Position, SocketDef->Rotation.ToMatrix3x3(), SocketDef->Scale);
+        transform.Compose(Definition->Position, Definition->Rotation.ToMatrix3x3(), Definition->Scale);
     }
 
     return transform;

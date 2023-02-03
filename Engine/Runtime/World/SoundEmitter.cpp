@@ -835,7 +835,7 @@ void SoundEmitter::SpawnSound(SoundResource* SoundResource, Float3 const& SpawnP
     sound->Group                 = SpawnInfo->Group;
     sound->Instigator            = Instigator;
     sound->InstigatorId          = Instigator ? Instigator->GetOwnerActor()->Id : 0;
-    sound->World                 = World;
+    sound->pWorld                = World;
     sound->SoundPosition         = SpawnPosition;
     sound->bVirtualizeWhenSilent = SpawnInfo->bVirtualizeWhenSilent;
     sound->Spatialize();
@@ -975,9 +975,9 @@ void SoundOneShot::Spatialize()
 
     float volume = Volume;
     volume *= listener.VolumeScale;
-    if (World)
+    if (pWorld)
     {
-        volume *= World->GetAudioVolume();
+        volume *= pWorld->GetAudioVolume();
     }
     if (Group)
     {
@@ -1047,9 +1047,9 @@ bool SoundOneShot::IsPaused() const
     bool bPlayEvenWhenPaused = Group ? Group->ShouldPlayEvenWhenPaused() : false;
 
     bool paused = false;
-    if (World && !bPlayEvenWhenPaused)
+    if (pWorld && !bPlayEvenWhenPaused)
     {
-        paused = World->IsPaused();
+        paused = pWorld->IsPaused();
     }
     if (Group)
     {

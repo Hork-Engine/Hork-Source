@@ -454,7 +454,7 @@ void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, 
         World->convexSweepTest(shape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.m_HitProxy;
+    Trace.pObject = callback.m_HitProxy;
     Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
     Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
@@ -487,7 +487,7 @@ void CharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, 
         World->convexSweepTest(shape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.m_HitProxy;
+    Trace.pObject = callback.m_HitProxy;
     Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
     Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
@@ -712,12 +712,12 @@ void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& Li
         }
 
         // Add touched objects
-        if (pContacts && trace.HitProxy)
+        if (pContacts && trace.pObject)
         {
             CharacterControllerContact& contact = pContacts->Add();
-            contact.HitProxy                     = trace.HitProxy;
-            contact.Position                     = trace.Position;
-            contact.Normal                       = trace.Normal;
+            contact.pObject = trace.pObject;
+            contact.Position = trace.Position;
+            contact.Normal = trace.Normal;
         }
 
         dt = dt - trace.Fraction * dt;
@@ -1066,7 +1066,7 @@ void ProjectileExperimental::TraceSelf(Float3 const& Start, Float3 const& End, P
         World->convexSweepTest(ConvexShape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.m_HitProxy;
+    Trace.pObject = callback.m_HitProxy;
     Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
     Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
@@ -1097,7 +1097,7 @@ void ProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRot
         World->convexSweepTest(ConvexShape, transformStart, transformEnd, callback, ccdPenetration);
     }
 
-    Trace.HitProxy = callback.m_HitProxy;
+    Trace.pObject = callback.m_HitProxy;
     Trace.Position = btVectorToFloat3(callback.m_HitPointWorld);
     Trace.Normal = btVectorToFloat3(callback.m_HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
@@ -1158,14 +1158,9 @@ void ProjectileExperimental::Update(float _TimeStep)
         if (trace.HasHit())
         {
 
-            OnHit.Dispatch(trace.HitProxy, trace.Position, trace.Normal);
+            OnHit.Dispatch(trace.pObject, trace.Position, trace.Normal);
 
             LinearVelocity.Clear();
-
-            //HitProxy * HitProxy;
-            //Float3 Position;
-            //Float3 Normal;
-            //float Fraction;
         }
     }
     else

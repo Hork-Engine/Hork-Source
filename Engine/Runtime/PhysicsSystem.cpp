@@ -280,61 +280,61 @@ void PhysicsSystem::RemoveCollisionContacts()
     }
 }
 
-void PhysicsSystem::AddPendingBody(HitProxy* InPhysicalBody)
+void PhysicsSystem::AddPendingBody(HitProxy* pObject)
 {
-    INTRUSIVE_ADD_UNIQUE(InPhysicalBody, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
+    INTRUSIVE_ADD_UNIQUE(pObject, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
 }
 
-void PhysicsSystem::RemovePendingBody(HitProxy* InPhysicalBody)
+void PhysicsSystem::RemovePendingBody(HitProxy* pObject)
 {
-    INTRUSIVE_REMOVE(InPhysicalBody, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
+    INTRUSIVE_REMOVE(pObject, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
 }
 
-void PhysicsSystem::AddHitProxy(HitProxy* HitProxy)
+void PhysicsSystem::AddHitProxy(HitProxy* pObject)
 {
-    if (!HitProxy)
+    if (!pObject)
     {
         // Passed a null pointer
         return;
     }
 
-    if (HitProxy->bInWorld)
+    if (pObject->bInWorld)
     {
         // Physical body is already in world, so remove it from the world
-        if (HitProxy->GetCollisionObject())
+        if (pObject->GetCollisionObject())
         {
-            m_DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
+            m_DynamicsWorld->removeCollisionObject(pObject->GetCollisionObject());
         }
-        HitProxy->bInWorld = false;
+        pObject->bInWorld = false;
     }
 
-    if (HitProxy->GetCollisionObject())
+    if (pObject->GetCollisionObject())
     {
         // Add physical body to pending list
-        AddPendingBody(HitProxy);
+        AddPendingBody(pObject);
     }
 }
 
-void PhysicsSystem::RemoveHitProxy(HitProxy* HitProxy)
+void PhysicsSystem::RemoveHitProxy(HitProxy* pObject)
 {
-    if (!HitProxy)
+    if (!pObject)
     {
         // Passed a null pointer
         return;
     }
 
     // Remove physical body from pending list
-    RemovePendingBody(HitProxy);
+    RemovePendingBody(pObject);
 
-    if (!HitProxy->bInWorld)
+    if (!pObject->bInWorld)
     {
         // Physical body is not in world
         return;
     }
 
-    m_DynamicsWorld->removeCollisionObject(HitProxy->GetCollisionObject());
+    m_DynamicsWorld->removeCollisionObject(pObject->GetCollisionObject());
 
-    HitProxy->bInWorld = false;
+    pObject->bInWorld = false;
 }
 
 void PhysicsSystem::AddPendingBodies()
@@ -1157,7 +1157,7 @@ struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
 
         CollisionTraceResult& hit = Result.Add();
         hit.Clear();
-        hit.HitProxy = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
+        hit.pObject = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = RayStart + RayResult.m_hitFraction * RayDir;
         hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(RayResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal);
         hit.Distance = RayResult.m_hitFraction * RayLength;
@@ -1291,7 +1291,7 @@ struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 
         CollisionTraceResult& hit = Result.Add();
         hit.Clear();
-        hit.HitProxy = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
+        hit.pObject = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = btVectorToFloat3(ConvexResult.m_hitPointLocal);
         hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(ConvexResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * ConvexResult.m_hitNormalLocal);
         hit.Distance = ConvexResult.m_hitFraction * RayLength;
@@ -1341,7 +1341,7 @@ bool PhysicsSystem::TraceClosest(CollisionTraceResult& _Result, Float3 const& _R
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_collisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_collisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = (_Result.Position - _RayStart).Length();
@@ -1367,7 +1367,7 @@ bool PhysicsSystem::TraceSphere(CollisionTraceResult& _Result, float _Radius, Fl
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
@@ -1398,7 +1398,7 @@ bool PhysicsSystem::TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins,
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
@@ -1452,7 +1452,7 @@ bool PhysicsSystem::TraceCylinder(CollisionTraceResult& _Result, Float3 const& _
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
@@ -1478,7 +1478,7 @@ bool PhysicsSystem::TraceCapsule(CollisionTraceResult& _Result, float _CapsuleHe
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
@@ -1612,7 +1612,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
         return false;
     }
 
-    _Result.HitProxy = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
+    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
     _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
     _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
     _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
@@ -1706,11 +1706,11 @@ struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
         return 0.0f;
     }
 
-    void AddContact(HitProxy* HitProxy, btManifoldPoint& cp)
+    void AddContact(HitProxy* pObject, btManifoldPoint& cp)
     {
         CollisionQueryResult& contact = Result.Add();
 
-        contact.HitProxy = HitProxy;
+        contact.pObject = pObject;
         contact.Position = btVectorToFloat3(cp.m_positionWorldOnB);
         contact.Normal = btVectorToFloat3(cp.m_normalWorldOnB);
         contact.Distance = cp.m_distance1; // FIXME?

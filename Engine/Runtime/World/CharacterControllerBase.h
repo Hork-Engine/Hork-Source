@@ -41,18 +41,18 @@ HK_NAMESPACE_BEGIN
 
 struct CharacterControllerTrace
 {
-    HitProxy* HitProxy;
+    HitProxy* pObject;
     Float3    Position;
     Float3    Normal;
     float     Fraction;
 
     CharacterControllerTrace() :
-        HitProxy(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
+        pObject(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
     {}
 
     void Clear()
     {
-        HitProxy = nullptr;
+        pObject = nullptr;
         Position.Clear();
         Normal   = Float3(0, 1, 0);
         Fraction = 1;
@@ -66,7 +66,7 @@ struct CharacterControllerTrace
 
 struct CharacterControllerContact
 {
-    HitProxy* HitProxy;
+    HitProxy* pObject;
     Float3    Position;
     Float3    Normal;
 };
@@ -248,18 +248,18 @@ private:
 
 struct ProjectileTrace
 {
-    HitProxy* HitProxy;
+    HitProxy* pObject;
     Float3    Position;
     Float3    Normal;
     float     Fraction;
 
     ProjectileTrace() :
-        HitProxy(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
+        pObject(nullptr), Position(0, 0, 0), Normal(0, 1, 0), Fraction(1)
     {}
 
     void Clear()
     {
-        HitProxy = nullptr;
+        pObject = nullptr;
         Position.Clear();
         Normal   = Float3(0, 1, 0);
         Fraction = 1;

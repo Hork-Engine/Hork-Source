@@ -56,7 +56,7 @@ struct ActorSpawnInfo
     Transform SpawnTransform;
 
     /** Level for actor spawn */
-    Level* Level;
+    Level* pLevel;
 
     /** Who spawn the actor */
     Actor* Instigator;
@@ -67,7 +67,7 @@ struct ActorSpawnInfo
     ActorSpawnInfo() = delete;
 
     ActorSpawnInfo(ClassMeta const* _ActorTypeClassMeta) :
-        Level(nullptr), Instigator(nullptr), bInEditor(false), m_Template(nullptr), m_ActorTypeClassMeta(_ActorTypeClassMeta)
+        pLevel(nullptr), Instigator(nullptr), bInEditor(false), m_Template(nullptr), m_ActorTypeClassMeta(_ActorTypeClassMeta)
     {
     }
 
@@ -118,15 +118,15 @@ public:
     using OnPrepareRenderFrontend = TEvent<CameraComponent*, int>;
     OnPrepareRenderFrontend E_OnPrepareRenderFrontend;
 
-    VisibilitySystem VisibilitySystem;
+    Hk::VisibilitySystem VisibilitySystem;
 
-    PhysicsSystem PhysicsSystem;
+    Hk::PhysicsSystem PhysicsSystem;
 
-    AINavigationMesh NavigationMesh;
+    Hk::AINavigationMesh NavigationMesh;
 
-    SkinningSystem SkinningSystem;
+    Hk::SkinningSystem SkinningSystem;
 
-    LightingSystem LightingSystem;
+    Hk::LightingSystem LightingSystem;
 
     /** Create a new world */
     static World* CreateWorld();
@@ -410,7 +410,7 @@ private:
         String ScriptModule;
         Actor const* Template{};
         Actor* Instigator{};
-        Level* Level{};
+        Level* pLevel{};
         bool bInEditor{};
     };
 

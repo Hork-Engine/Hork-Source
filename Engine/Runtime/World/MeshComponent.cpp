@@ -300,14 +300,14 @@ void MeshComponent::UpdateMesh()
 
     // Update sockets
     for (SceneSocket& socket : m_Sockets)
-        socket.SocketDef->RemoveRef();
+        socket.Definition->RemoveRef();
 
     TVector<SocketDef*> const& socketDef = m_Mesh->GetSockets();
     m_Sockets.ResizeInvalidate(socketDef.Size());
     for (int i = 0; i < socketDef.Size(); i++)
     {
         socketDef[i]->AddRef();
-        m_Sockets[i].SocketDef   = socketDef[i];
+        m_Sockets[i].Definition = socketDef[i];
         m_Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast<SkinnedComponent*>(this) : nullptr;
     }
 

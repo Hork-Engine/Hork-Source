@@ -329,7 +329,7 @@ class BoneCollisionInstance : public MotionState
 public:
     void getWorldTransform(btTransform& _CenterOfMassTransform) const override
     {
-        Float3x4 jointTransform = Self->GetWorldTransformMatrix() * Self->_GetJointTransform(HitProxy->GetJointIndex());
+        Float3x4 jointTransform = Self->GetWorldTransformMatrix() * Self->_GetJointTransform(pObject->GetJointIndex());
 
         Float3 position = jointTransform.DecomposeTranslation();
         Quat rotation;
@@ -349,7 +349,7 @@ public:
 
     PhysicalBody* Self;
 
-    TRef<HitProxy> HitProxy;
+    TRef<HitProxy> pObject;
     Float3 OffsetPosition;
     Quat OffsetRotation;
 };
@@ -360,10 +360,10 @@ void PhysicalBody::ClearBoneCollisions()
     {
         BoneCollisionInstance* boneCollision = m_BoneCollisionInst[i];
 
-        btCollisionObject* colObject = boneCollision->HitProxy->GetCollisionObject();
+        btCollisionObject* colObject = boneCollision->pObject->GetCollisionObject();
         btCollisionShape* shape = colObject->getCollisionShape();
 
-        boneCollision->HitProxy->Deinitialize();
+        boneCollision->pObject->Deinitialize();
 
         delete colObject;
         delete shape;
@@ -402,17 +402,17 @@ void PhysicalBody::CreateBoneCollisions()
     for (int i = 0; i < boneCollisions.Size(); i++)
     {
         BoneCollisionInstance* boneCollision = new BoneCollisionInstance;
-        TUniqueRef<CollisionBody> const& collisionBody = boneCollisions[i].CollisionBody;
+        TUniqueRef<CollisionBody> const& collisionBody = boneCollisions[i].Body;
 
         m_BoneCollisionInst[i] = boneCollision;
 
         boneCollision->Self = this;
         boneCollision->OffsetPosition = collisionBody->Position;
         boneCollision->OffsetRotation = collisionBody->Rotation;
-        boneCollision->HitProxy = NewObj<HitProxy>();
-        boneCollision->HitProxy->SetCollisionMask(boneCollisions[i].CollisionMask);
-        boneCollision->HitProxy->SetCollisionGroup(boneCollisions[i].CollisionGroup);
-        boneCollision->HitProxy->SetJointIndex(boneCollisions[i].JointIndex);
+        boneCollision->pObject = NewObj<HitProxy>();
+        boneCollision->pObject->SetCollisionMask(boneCollisions[i].CollisionMask);
+        boneCollision->pObject->SetCollisionGroup(boneCollisions[i].CollisionGroup);
+        boneCollision->pObject->SetJointIndex(boneCollisions[i].JointIndex);
 
         btCollisionShape* shape = collisionBody->Create(m_CachedScale);
         shape->setMargin(collisionBody->Margin);
@@ -425,9 +425,9 @@ void PhysicalBody::CreateBoneCollisions()
         btRigidBody* rigidBody = new btRigidBody(constructInfo);
         rigidBody->setCollisionFlags(collisionFlags);
         rigidBody->forceActivationState(DISABLE_DEACTIVATION);
-        rigidBody->setUserPointer(boneCollision->HitProxy.GetObject());
+        rigidBody->setUserPointer(boneCollision->pObject.GetObject());
 
-        boneCollision->HitProxy->Initialize(this, rigidBody);
+        boneCollision->pObject->Initialize(this, rigidBody);
     }
 }
 
@@ -1505,7 +1505,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
         InRenderer->SetColor(Color4(1.0f, 1.0f, 0.0f, 1));
         for (BoneCollisionInstance* boneCollision : m_BoneCollisionInst)
         {
-            btCollisionObject* colObject = boneCollision->HitProxy->GetCollisionObject();
+            btCollisionObject* colObject = boneCollision->pObject->GetCollisionObject();
             btCollisionShape* shape = colObject->getCollisionShape();
 
             shape->getAabb(colObject->getWorldTransform(), mins, maxs);
@@ -1520,7 +1520,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
         InRenderer->SetColor(Color4(1.0f, 1.0f, 0.0f, 1));
         for (BoneCollisionInstance* boneCollision : m_BoneCollisionInst)
         {
-            btCollisionObject* colObject = boneCollision->HitProxy->GetCollisionObject();
+            btCollisionObject* colObject = boneCollision->pObject->GetCollisionObject();
 
             btDrawCollisionShape(InRenderer, colObject->getWorldTransform(), colObject->getCollisionShape());
         }

@@ -420,7 +420,7 @@ CanvasRenderer::~CanvasRenderer()
 
 void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 {
-    if (GFrameData->CanvasDrawData->NumDrawCommands == 0)
+    if (GFrameData->pCanvasDrawData->NumDrawCommands == 0)
     {
         return;
     }
@@ -462,7 +462,7 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 
                         immediateCtx->BindResourceTable(rtbl);
                         rtbl->BindBuffer(0, GStreamBuffer, canvasBinding.Offset, canvasBinding.Size);
-                        RenderVG(immediateCtx, GFrameData->CanvasDrawData);
+                        RenderVG(immediateCtx, GFrameData->pCanvasDrawData);
                     });
 }
 

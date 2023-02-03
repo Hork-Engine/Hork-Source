@@ -113,10 +113,10 @@ void RenderFrontend::Render(FrameLoop* InFrameLoop, Canvas* InCanvas)
 
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
-    m_FrameData.CanvasDrawData = InCanvas->GetDrawData();
+    m_FrameData.pCanvasDrawData = InCanvas->GetDrawData();
 
-    if (m_FrameData.CanvasDrawData->VertexCount > 0)
-        m_FrameData.CanvasVertexData = streamedMemory->AllocateVertex(m_FrameData.CanvasDrawData->VertexCount * sizeof(CanvasVertex), m_FrameData.CanvasDrawData->Vertices);
+    if (m_FrameData.pCanvasDrawData->VertexCount > 0)
+        m_FrameData.CanvasVertexData = streamedMemory->AllocateVertex(m_FrameData.pCanvasDrawData->VertexCount * sizeof(CanvasVertex), m_FrameData.pCanvasDrawData->Vertices);
     else
         m_FrameData.CanvasVertexData = 0;
 

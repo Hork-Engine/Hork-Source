@@ -46,7 +46,7 @@ class SkinnedComponent;
 struct SceneSocket
 {
     /** Socket resource object */
-    SocketDef* SocketDef;
+    SocketDef* Definition;
     /** Skinned mesh if socket is attached to joint */
     SkinnedComponent* SkinnedMesh;
     /** Evaluate socket transform */

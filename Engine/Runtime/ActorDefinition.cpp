@@ -84,7 +84,7 @@ void ActorDefinition::InitializeFromDocument(Document const& Document)
                 continue;
 
             ComponentDef componentDef;
-            componentDef.ClassMeta = classMeta;
+            componentDef.ComponentClass = classMeta;
 
             componentDef.Name = mComponent->GetString("name", "Unnamed");
             componentDef.Id   = mComponent->GetUInt64("id");
@@ -136,7 +136,7 @@ void ActorDefinition::InitializeFromDocument(Document const& Document)
         {
             int            index        = it->second;
             ComponentDef& componentDef = m_Components[index];
-            if (componentDef.ClassMeta->IsSubclassOf<SceneComponent>())
+            if (componentDef.ComponentClass->IsSubclassOf<SceneComponent>())
             {
                 m_RootIndex = index;
             }
@@ -161,7 +161,7 @@ void ActorDefinition::InitializeFromDocument(Document const& Document)
                 int index = it->second;
 
                 ComponentDef& parentComponentDecl = m_Components[index];
-                if (parentComponentDecl.ClassMeta->IsSubclassOf<SceneComponent>() && componentDef.Id != componentDef.Attach)
+                if (parentComponentDecl.ComponentClass->IsSubclassOf<SceneComponent>() && componentDef.Id != componentDef.Attach)
                 {
                     // TODO: Check cyclical relationship
                     componentDef.ParentIndex = index;

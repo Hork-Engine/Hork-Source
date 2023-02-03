@@ -204,7 +204,7 @@ public:
     SOUND_EMITTER_TYPE   EmitterType;
     uint64_t             AudioClient;
     uint32_t             ListenerMask;
-    TRef<World>          World;
+    TRef<World>          pWorld;
     TRef<SoundGroup>     Group;
     TRef<SceneComponent> Instigator;
     TRef<SoundResource>  Resource;

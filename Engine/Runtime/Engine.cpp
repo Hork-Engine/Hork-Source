@@ -349,7 +349,7 @@ void Engine::Run(EntryDecl const& entryDecl)
         }
 
         // Execute console commands
-        m_CommandProcessor.Execute(m_GameModule->CommandContext);
+        m_CommandProcessor.Execute(m_GameModule->CmdContext);
 
         // Tick worlds
         World::UpdateWorlds(m_FrameDurationInSeconds);
@@ -591,7 +591,7 @@ void Engine::OnKeyEvent(KeyEvent const& event, double timeStamp)
 
     DeveloperKeys(event);
 
-    m_UIManager->GenerateKeyEvents(event, timeStamp, m_GameModule->CommandContext, m_CommandProcessor);
+    m_UIManager->GenerateKeyEvents(event, timeStamp, m_GameModule->CmdContext, m_CommandProcessor);
 }
 
 void Engine::OnMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)

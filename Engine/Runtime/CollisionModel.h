@@ -282,7 +282,7 @@ struct BoneCollision
     int                       JointIndex;
     COLLISION_MASK            CollisionGroup;
     COLLISION_MASK            CollisionMask;
-    TUniqueRef<CollisionBody> CollisionBody;
+    TUniqueRef<CollisionBody> Body;
 };
 
 struct CollisionModelCreateInfo
