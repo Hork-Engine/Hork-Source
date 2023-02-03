@@ -309,7 +309,7 @@ namespace
 
 static bool LoadImageEXR(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumRequiredChannels, bool bAsHDRI, uint32_t* pWidth, uint32_t* pHeight, uint32_t* pNumChannels, void** ppData)
 {
-    Hk::LOG("LoadImageEXR: exr images are not allowed\n);
+    Hk::LOG("LoadImageEXR: exr images are not allowed\n");
     return false;
 }
 
