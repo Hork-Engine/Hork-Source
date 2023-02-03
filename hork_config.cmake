@@ -111,7 +111,7 @@ if(UNIX)
         )
     set(HK_COMPILER_DEFINES "")
 	
-    set(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wno-reorder)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 endif()
 
 if(WIN32)
@@ -211,8 +211,7 @@ endfunction()
 function(make_link SOURCE DESTINATION)
 	if(WIN32)
 	  file(TO_NATIVE_PATH "${DESTINATION}" DESTINATION_NATIVE)
-	  file(TO_NATIVE_PATH "${SOURCE}" SOURCE_NATIVE)
-	  
+	  file(TO_NATIVE_PATH "${SOURCE}" SOURCE_NATIVE)	  
 	  if (NOT EXISTS ${DESTINATION_NATIVE})
 		execute_process(
 		  COMMAND cmd /c mklink /J "${DESTINATION_NATIVE}" "${SOURCE_NATIVE}"
@@ -220,9 +219,8 @@ function(make_link SOURCE DESTINATION)
 		)
 	  endif()
 	else()
-	  # TODO: Check
 	  if (NOT EXISTS ${DESTINATION})
-		execute_process(COMMAND "ln -s ${SOURCE} ${DESTINATION}")
+		execute_process(COMMAND ln -s ${SOURCE} ${DESTINATION})
 	  endif()
 	endif()
 endfunction()
