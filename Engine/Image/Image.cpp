@@ -1923,7 +1923,7 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
         }        
     }
 
-    if (bHDRI && Settings.HDRIScale != 1.0f || Settings.HDRIPow != 1.0f)
+    if (bHDRI && (Settings.HDRIScale != 1.0f || Settings.HDRIPow != 1.0f))
     {
         int    numChannels = rawImage[0].NumChannels();
         size_t count = (size_t)w * h * numChannels;
