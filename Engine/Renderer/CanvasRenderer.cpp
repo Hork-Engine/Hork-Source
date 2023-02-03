@@ -514,6 +514,8 @@ void CanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData co
                 case CANVAS_DRAW_COMMAND_TRIANGLES:
                     DrawTriangles(drawCommand, pTexture);
                     break;
+                default:
+                    break;
             }
         }
     }
