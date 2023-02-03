@@ -85,7 +85,7 @@ static float nvg__cross(float dx0, float dy0, float dx1, float dy1) { return dx1
 
 static float nvg__normalize(float* x, float* y)
 {
-    float d = std::sqrtf((*x) * (*x) + (*y) * (*y));
+    float d = std::sqrt((*x) * (*x) + (*y) * (*y));
     if (d > 1e-6f)
     {
         float id = 1.0f / d;
@@ -179,15 +179,15 @@ static void nvg__polyReverse(VGPoint* pts, int npts)
 
 static float nvg__getAverageScale(Transform2D const& t)
 {
-    float sx = sqrtf(t[0][0] * t[0][0] + t[1][0] * t[1][0]);
-    float sy = sqrtf(t[0][1] * t[0][1] + t[1][1] * t[1][1]);
+    float sx = std::sqrt(t[0][0] * t[0][0] + t[1][0] * t[1][0]);
+    float sy = std::sqrt(t[0][1] * t[0][1] + t[1][1] * t[1][1]);
     return (sx + sy) * 0.5f;
 }
 
 static int nvg__curveDivs(float r, float arc, float tol)
 {
-    float da = acosf(r / (r + tol)) * 2.0f;
-    return nvg__maxi(2, (int)ceilf(arc / da));
+    float da = std::acos(r / (r + tol)) * 2.0f;
+    return nvg__maxi(2, (int)std::ceil(arc / da));
 }
 
 static void nvg__chooseBevel(int bevel, VGPoint* p0, VGPoint* p1, float w, float* x0, float* y0, float* x1, float* y1)
@@ -229,8 +229,8 @@ static CanvasVertex* nvg__roundJoin(CanvasVertex* dst, VGPoint* p0, VGPoint* p1,
     {
         float lx0, ly0, lx1, ly1, a0, a1;
         nvg__chooseBevel(p1->flags & VG_PR_INNERBEVEL, p0, p1, lw, &lx0, &ly0, &lx1, &ly1);
-        a0 = atan2f(-dly0, -dlx0);
-        a1 = atan2f(-dly1, -dlx1);
+        a0 = std::atan2(-dly0, -dlx0);
+        a1 = std::atan2(-dly1, -dlx1);
         if (a1 > a0) a1 -= Math::_PI * 2;
 
         nvg__vset(dst, lx0, ly0, lu, 1);
@@ -238,13 +238,13 @@ static CanvasVertex* nvg__roundJoin(CanvasVertex* dst, VGPoint* p0, VGPoint* p1,
         nvg__vset(dst, p1->x - dlx0 * rw, p1->y - dly0 * rw, ru, 1);
         dst++;
 
-        n = nvg__clampi((int)ceilf(((a0 - a1) / Math::_PI) * ncap), 2, ncap);
+        n = nvg__clampi((int)std::ceil(((a0 - a1) / Math::_PI) * ncap), 2, ncap);
         for (i = 0; i < n; i++)
         {
             float u  = i / (float)(n - 1);
             float a  = a0 + u * (a1 - a0);
-            float rx = p1->x + cosf(a) * rw;
-            float ry = p1->y + sinf(a) * rw;
+            float rx = p1->x + std::cos(a) * rw;
+            float ry = p1->y + std::sin(a) * rw;
             nvg__vset(dst, p1->x, p1->y, 0.5f, 1);
             dst++;
             nvg__vset(dst, rx, ry, ru, 1);
@@ -260,8 +260,8 @@ static CanvasVertex* nvg__roundJoin(CanvasVertex* dst, VGPoint* p0, VGPoint* p1,
     {
         float rx0, ry0, rx1, ry1, a0, a1;
         nvg__chooseBevel(p1->flags & VG_PR_INNERBEVEL, p0, p1, -rw, &rx0, &ry0, &rx1, &ry1);
-        a0 = atan2f(dly0, dlx0);
-        a1 = atan2f(dly1, dlx1);
+        a0 = std::atan2(dly0, dlx0);
+        a1 = std::atan2(dly1, dlx1);
         if (a1 < a0) a1 += Math::_PI * 2;
 
         nvg__vset(dst, p1->x + dlx0 * rw, p1->y + dly0 * rw, lu, 1);
@@ -269,13 +269,13 @@ static CanvasVertex* nvg__roundJoin(CanvasVertex* dst, VGPoint* p0, VGPoint* p1,
         nvg__vset(dst, rx0, ry0, ru, 1);
         dst++;
 
-        n = nvg__clampi((int)ceilf(((a1 - a0) / Math::_PI) * ncap), 2, ncap);
+        n = nvg__clampi((int)std::ceil(((a1 - a0) / Math::_PI) * ncap), 2, ncap);
         for (i = 0; i < n; i++)
         {
             float u  = i / (float)(n - 1);
             float a  = a0 + u * (a1 - a0);
-            float lx = p1->x + cosf(a) * lw;
-            float ly = p1->y + sinf(a) * lw;
+            float lx = p1->x + std::cos(a) * lw;
+            float ly = p1->y + std::sin(a) * lw;
             nvg__vset(dst, lx, ly, lu, 1);
             dst++;
             nvg__vset(dst, p1->x, p1->y, 0.5f, 1);
@@ -443,7 +443,7 @@ static CanvasVertex* nvg__roundCapStart(CanvasVertex* dst, VGPoint* p, float dx,
     for (i = 0; i < ncap; i++)
     {
         float a  = i / (float)(ncap - 1) * Math::_PI;
-        float ax = cosf(a) * w, ay = sinf(a) * w;
+        float ax = std::cos(a) * w, ay = std::sin(a) * w;
         nvg__vset(dst, px - dlx * ax - dx * ay, py - dly * ax - dy * ay, u0, 1);
         dst++;
         nvg__vset(dst, px, py, 0.5f, 1);
@@ -471,7 +471,7 @@ static CanvasVertex* nvg__roundCapEnd(CanvasVertex* dst, VGPoint* p, float dx, f
     for (i = 0; i < ncap; i++)
     {
         float a  = i / (float)(ncap - 1) * Math::_PI;
-        float ax = cosf(a) * w, ay = sinf(a) * w;
+        float ax = std::cos(a) * w, ay = std::sin(a) * w;
         nvg__vset(dst, px, py, 0.5f, 1);
         dst++;
         nvg__vset(dst, px - dlx * ax + dx * ay, py - dly * ax + dy * ay, u0, 1);
@@ -669,7 +669,7 @@ void Canvas::Reset()
     state->Scissor.Extent[0] = -1.0f;
     state->Scissor.Extent[1] = -1.0f;
 
-    state->Font = nullptr;
+    state->pFont = nullptr;
 }
 
 void Canvas::DrawLine(Float2 const& p0, Float2 const& p1, Color4 const& color, float thickness)
@@ -896,8 +896,8 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
 
         frag->ScissorExt[0]   = scissor.Extent[0];
         frag->ScissorExt[1]   = scissor.Extent[1];
-        frag->ScissorScale[0] = sqrtf(scissor.Xform[0][0] * scissor.Xform[0][0] + scissor.Xform[1][0] * scissor.Xform[1][0]) / fringe;
-        frag->ScissorScale[1] = sqrtf(scissor.Xform[0][1] * scissor.Xform[0][1] + scissor.Xform[1][1] * scissor.Xform[1][1]) / fringe;
+        frag->ScissorScale[0] = std::sqrt(scissor.Xform[0][0] * scissor.Xform[0][0] + scissor.Xform[1][0] * scissor.Xform[1][0]) / fringe;
+        frag->ScissorScale[1] = std::sqrt(scissor.Xform[0][1] * scissor.Xform[0][1] + scissor.Xform[1][1] * scissor.Xform[1][1]) / fringe;
     }
 
     frag->Extent[0] = paint->Extent[0];
@@ -1467,8 +1467,8 @@ void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
     dy1 = y2 - y1;
     nvg__normalize(&dx0, &dy0);
     nvg__normalize(&dx1, &dy1);
-    a = std::acosf(dx0 * dx1 + dy0 * dy1);
-    d = radius / std::tanf(a / 2.0f);
+    a = std::acos(dx0 * dx1 + dy0 * dy1);
+    d = radius / std::tan(a / 2.0f);
 
     if (d > 10000.0f)
     {
@@ -1480,16 +1480,16 @@ void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
     {
         cx  = x1 + dx0 * d + dy0 * radius;
         cy  = y1 + dy0 * d + -dx0 * radius;
-        a0  = std::atan2f(dx0, -dy0);
-        a1  = std::atan2f(-dx1, dy1);
+        a0  = std::atan2(dx0, -dy0);
+        a1  = std::atan2(-dx1, dy1);
         dir = CANVAS_PATH_WINDING_CW;
     }
     else
     {
         cx  = x1 + dx0 * d + -dy0 * radius;
         cy  = y1 + dy0 * d + dx0 * radius;
-        a0  = std::atan2f(-dx0, dy0);
-        a1  = std::atan2f(dx1, -dy1);
+        a0  = std::atan2(-dx0, dy0);
+        a1  = std::atan2(dx1, -dy1);
         dir = CANVAS_PATH_WINDING_CCW;
     }
 
@@ -1545,7 +1545,7 @@ void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WI
     // Split arc into max 90 degree segments.
     ndivs = nvg__maxi(1, nvg__mini((int)(Math::Abs(da) / (Math::_PI * 0.5f) + 0.5f), 5));
     hda   = (da / (float)ndivs) / 2.0f;
-    kappa = Math::Abs(4.0f / 3.0f * (1.0f - std::cosf(hda)) / std::sinf(hda));
+    kappa = Math::Abs(4.0f / 3.0f * (1.0f - std::cos(hda)) / std::sin(hda));
 
     if (dir == CANVAS_PATH_WINDING_CCW)
         kappa = -kappa;
@@ -1554,8 +1554,8 @@ void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WI
     for (i = 0; i <= ndivs; i++)
     {
         a    = a0 + da * (i / (float)ndivs);
-        dx   = std::cosf(a);
-        dy   = std::sinf(a);
+        dx   = std::cos(a);
+        dy   = std::sin(a);
         x    = cx + dx * r;
         y    = cy + dy * r;
         tanx = -dy * r * kappa;
@@ -1819,7 +1819,7 @@ void Canvas::FontFace(Font* font)
 {
     VGState* state = GetState();
 
-    state->Font = font ? font : GetDefaultFont();
+    state->pFont = font ? font : GetDefaultFont();
 }
 
 void Canvas::FontFace(StringView font)
@@ -1862,7 +1862,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
     int           cverts   = 0;
     int           nverts   = 0;
 
-    if (!state->Font || state->Font->GetId() == FONS_INVALID) return x;
+    if (!state->pFont || state->pFont->GetId() == FONS_INVALID) return x;
 
     auto fs = m_FontStash->GetImpl();
 
@@ -1870,7 +1870,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
     fonsSetSpacing(fs, style.LetterSpacing * scale);
     fonsSetBlur(fs, style.FontBlur * scale);
     fonsSetAlign(fs, align);
-    fonsSetFont(fs, state->Font->GetId());
+    fonsSetFont(fs, state->pFont->GetId());
 
     cverts = Math::Max(2, (int)(string.Size())) * 6; // conservative estimate.
     verts  = m_PathCache.AllocVerts(cverts);
@@ -1991,7 +1991,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
     int           cverts   = 0;
     int           nverts   = 0;
 
-    if (!state->Font || state->Font->GetId() == FONS_INVALID) return x;
+    if (!state->pFont || state->pFont->GetId() == FONS_INVALID) return x;
 
     auto fs = m_FontStash->GetImpl();
 
@@ -1999,7 +1999,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
     fonsSetSpacing(fs, style.LetterSpacing * scale);
     fonsSetBlur(fs, style.FontBlur * scale);
     fonsSetAlign(fs, align);
-    fonsSetFont(fs, state->Font->GetId());
+    fonsSetFont(fs, state->pFont->GetId());
 
     cverts = Math::Max(2, (int)string.Size()) * 6; // conservative estimate.
     verts  = m_PathCache.AllocVerts(cverts);
@@ -2096,7 +2096,7 @@ void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& m
         return;
 
     VGState* state = GetState();
-    Font*   font  = state->Font;
+    Font*   font  = state->pFont;
     if (!font || font->GetId() == FONS_INVALID)
         return;
 
@@ -2175,7 +2175,7 @@ void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& m
         return;
 
     VGState* state = GetState();
-    Font*   font  = state->Font;
+    Font*   font  = state->pFont;
     if (!font || font->GetId() == FONS_INVALID)
         return;
 

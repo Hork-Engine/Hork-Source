@@ -486,7 +486,7 @@ private:
         float            Alpha;
         Transform2D      Xform;
         VGScissor        Scissor;
-        Font*           Font;
+        Font*            pFont;
     };
 
     void FlattenPaths();
@@ -533,7 +533,7 @@ private:
     TVector<VGState>         m_States;
     int                      m_NumStates{};
     CanvasDrawData           m_DrawData;
-    mutable TRef<FontStash> m_FontStash;
+    mutable TRef<FontStash>  m_FontStash;
     TVector<float>           m_Commands;
     Float2                   m_CommandPos;
     VGPathCache              m_PathCache;
@@ -545,7 +545,7 @@ private:
     int                      m_FillTriCount{};
     int                      m_StrokeTriCount{};
     int                      m_TextTriCount{};
-    TRef<Texture>           m_Cursors;
+    TRef<Texture>            m_Cursors;
     mutable bool             m_bUpdateFontTexture{};
 
     // Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).

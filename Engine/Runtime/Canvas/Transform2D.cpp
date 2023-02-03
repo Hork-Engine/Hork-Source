@@ -58,7 +58,7 @@ Transform2D Transform2D::Scaling(Float2 const& scale)
 
 Transform2D Transform2D::Rotation(float angleInRadians)
 {
-    float cs = std::cosf(angleInRadians), sn = std::sinf(angleInRadians);
+    float cs = std::cos(angleInRadians), sn = std::sin(angleInRadians);
 
     return Transform2D(cs, sn,
                        -sn, cs,
@@ -68,13 +68,13 @@ Transform2D Transform2D::Rotation(float angleInRadians)
 Transform2D Transform2D::SkewX(float angleInRadians)
 {
     return Transform2D(1, 0,
-                       std::tanf(angleInRadians), 1,
+                       std::tan(angleInRadians), 1,
                        0, 0);
 }
 
 Transform2D Transform2D::SkewY(float angleInRadians)
 {
-    return Transform2D(1.0f, std::tanf(angleInRadians),
+    return Transform2D(1.0f, std::tan(angleInRadians),
                        0, 1,
                        0, 0);
 }
