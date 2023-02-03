@@ -112,7 +112,7 @@ struct AudioChannel final
     /** Channel iterator. Used by mixer thread. */
     AudioChannel* Prev;
 
-    SpinLock SpinLock;
+    SpinLock Lock;
 
     /** Frame count. Read only. */
     int FrameCount;

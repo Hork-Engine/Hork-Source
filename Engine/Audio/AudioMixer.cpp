@@ -279,7 +279,7 @@ void AudioMixer::RenderChannels(int64_t EndFrame)
             bool bSeek = false;
 
             {
-                SpinLockGuard guard(chan->SpinLock);
+                SpinLockGuard guard(chan->Lock);
                 m_NewVol[0] = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[0];
                 m_NewVol[1] = chan->bPaused_COMMIT ? 0 : chan->Volume_COMMIT[1];
                 m_NewDir = chan->LocalDir_COMMIT;

@@ -107,7 +107,7 @@ AudioChannel::~AudioChannel()
 
 void AudioChannel::Commit(int _Volume[2], Float3 const& _LocalDir, bool _bSpatializedStereo, bool _bPaused)
 {
-    SpinLockGuard guard(SpinLock);
+    SpinLockGuard guard(Lock);
     Volume_COMMIT[0] = _Volume[0];
     Volume_COMMIT[1] = _Volume[1];
     LocalDir_COMMIT = _LocalDir;
@@ -117,7 +117,7 @@ void AudioChannel::Commit(int _Volume[2], Float3 const& _LocalDir, bool _bSpatia
 
 void AudioChannel::ChangePlaybackPosition(int _PlaybackPos)
 {
-    SpinLockGuard guard(SpinLock);
+    SpinLockGuard guard(Lock);
     PlaybackPos_COMMIT = _PlaybackPos;
 }
 
