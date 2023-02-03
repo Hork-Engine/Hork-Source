@@ -67,11 +67,11 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
 
     SamplerDesc motionBlurSamplers[3];
     motionBlurSamplers[0] = linearSampler;
@@ -81,12 +81,12 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(motionBlurSamplers);
     resourceLayout.Samplers    = motionBlurSamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &linearSampler;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
 
     SamplerDesc outlineApplySamplers[2];
     outlineApplySamplers[0] = linearSampler;
@@ -95,12 +95,12 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(outlineApplySamplers);
     resourceLayout.Samplers    = outlineApplySamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
 
     resourceLayout = PipelineResourceLayout{};
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
-    ShaderFactory::CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    ShaderFactory::CreateFullscreenQuadPipeline(&m_CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
     
 }
 
@@ -124,11 +124,11 @@ void FrameRenderer::AddLinearizeDepthPass(FrameGraph& FrameGraph, FGTextureProxy
 
                                       if (GRenderView->bPerspective)
                                       {
-                                          DrawSAQ(RenderPassContext.pImmediateContext, LinearDepthPipe);
+                                          DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe);
                                       }
                                       else
                                       {
-                                          DrawSAQ(RenderPassContext.pImmediateContext, LinearDepthPipe_ORTHO);
+                                          DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe_ORTHO);
                                       }
                                   });
     *ppLinearDepth = linearizeDepthPass.GetColorAttachments()[0].pResource;
@@ -154,11 +154,11 @@ void FrameRenderer::AddReconstrutNormalsPass(FrameGraph& FrameGraph, FGTexturePr
 
                                          if (GRenderView->bPerspective)
                                          {
-                                             DrawSAQ(RenderPassContext.pImmediateContext, ReconstructNormalPipe);
+                                             DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe);
                                          }
                                          else
                                          {
-                                             DrawSAQ(RenderPassContext.pImmediateContext, ReconstructNormalPipe_ORTHO);
+                                             DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe_ORTHO);
                                          }
                                      });
     *ppNormalTexture = reconstructNormalPass.GetColorAttachments()[0].pResource;
@@ -191,7 +191,7 @@ void FrameRenderer::AddMotionBlurPass(FrameGraph&     FrameGraph,
                               rtbl->BindTexture(1, VelocityTexture->Actual());
                               rtbl->BindTexture(2, LinearDepth->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, MotionBlurPipeline);
+                              DrawSAQ(RenderPassContext.pImmediateContext, m_MotionBlurPipeline);
                           });
 
     *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -327,7 +327,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
 
                             rtbl->BindTexture(0, OutlineMaskTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, OutlineBlurPipe);
+                            DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineBlurPipe);
                         });
 
     FGTextureProxy* OutlineBlurTexture = blurPass.GetColorAttachments()[0].pResource;
@@ -351,7 +351,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
                              rtbl->BindTexture(0, OutlineMaskTexture->Actual());
                              rtbl->BindTexture(1, OutlineBlurTexture->Actual());
 
-                             DrawSAQ(RenderPassContext.pImmediateContext, OutlineApplyPipe);
+                             DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineApplyPipe);
                          });
 }
 
@@ -374,7 +374,7 @@ void FrameRenderer::AddCopyPass(FrameGraph& FrameGraph, FGTextureProxy* Source, 
 
                             rtbl->BindTexture(0, Source->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
+                            DrawSAQ(RenderPassContext.pImmediateContext, m_CopyPipeline);
                         });
 }
 
@@ -403,21 +403,21 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
 
         DirectionalLightInstance* dirLight = GFrameData->DirectionalLights[lightOffset];
 
-        ShadowMapRenderer.AddPass(FrameGraph, dirLight, &ShadowMapDepth[lightIndex]);
+        m_ShadowMapRenderer.AddPass(FrameGraph, dirLight, &ShadowMapDepth[lightIndex]);
     }
     for (int lightIndex = numDirLights; lightIndex < MAX_DIRECTIONAL_LIGHTS; lightIndex++)
     {
-        ShadowMapRenderer.AddDummyShadowMap(FrameGraph, &ShadowMapDepth[lightIndex]);
+        m_ShadowMapRenderer.AddDummyShadowMap(FrameGraph, &ShadowMapDepth[lightIndex]);
     }
 
     FGTextureProxy* OmnidirectionalShadowMapArray;
     if (GRenderView->NumOmnidirectionalShadowMaps > 0)
     {
-        ShadowMapRenderer.AddPass(FrameGraph, &GFrameData->LightShadowmaps[GRenderView->FirstOmnidirectionalShadowMap], GRenderView->NumOmnidirectionalShadowMaps, OmniShadowMapPool, &OmnidirectionalShadowMapArray);
+        m_ShadowMapRenderer.AddPass(FrameGraph, &GFrameData->LightShadowmaps[GRenderView->FirstOmnidirectionalShadowMap], GRenderView->NumOmnidirectionalShadowMaps, m_OmniShadowMapPool, &OmnidirectionalShadowMapArray);
     }
     else
     {
-        ShadowMapRenderer.AddPass(FrameGraph, nullptr, 0, OmniShadowMapPool, &OmnidirectionalShadowMapArray);
+        m_ShadowMapRenderer.AddPass(FrameGraph, nullptr, 0, m_OmniShadowMapPool, &OmnidirectionalShadowMapArray);
     }
 
     FGTextureProxy *DepthTexture, *VelocityTexture;
@@ -432,7 +432,7 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
     FGTextureProxy* SSAOTexture;
     if (r_HBAO && GRenderView->bAllowHBAO)
     {
-        SSAORenderer.AddPasses(FrameGraph, LinearDepth, NormalTexture, &SSAOTexture);
+        m_SSAORenderer.AddPasses(FrameGraph, LinearDepth, NormalTexture, &SSAOTexture);
     }
     else
     {
@@ -440,12 +440,12 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
     }
 
     FGTextureProxy* LightTexture;
-    LightRenderer.AddPass(FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], OmnidirectionalShadowMapArray, LinearDepth, &LightTexture);
+    m_LightRenderer.AddPass(FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], OmnidirectionalShadowMapArray, LinearDepth, &LightTexture);
 
     if (GRenderView->AntialiasingType == ANTIALIASING_SMAA)
     {
         FGTextureProxy* AntialiasedTexture;
-        SmaaRenderer.AddPass(FrameGraph, LightTexture, &AntialiasedTexture);
+        m_SmaaRenderer.AddPass(FrameGraph, LightTexture, &AntialiasedTexture);
         LightTexture = AntialiasedTexture;
     }
 
@@ -455,13 +455,13 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
     }
 
     BloomRenderer::Textures BloomTex;
-    BloomRenderer.AddPasses(FrameGraph, LightTexture, &BloomTex);
+    m_BloomRenderer.AddPasses(FrameGraph, LightTexture, &BloomTex);
 
     FGTextureProxy* Exposure;
-    ExposureRenderer.AddPass(FrameGraph, LightTexture, &Exposure);
+    m_ExposureRenderer.AddPass(FrameGraph, LightTexture, &Exposure);
 
     FGTextureProxy* ColorGrading;
-    ColorGradingRenderer.AddPass(FrameGraph, &ColorGrading);
+    m_ColorGradingRenderer.AddPass(FrameGraph, &ColorGrading);
 
     bool bFxaaPassRequired = GRenderView->AntialiasingType == ANTIALIASING_FXAA;
 
@@ -469,12 +469,12 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
 
     if (bFxaaPassRequired)
     {
-        PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, TEXTURE_FORMAT_RGBA16_FLOAT, &FinalTexture);
+        m_PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, TEXTURE_FORMAT_RGBA16_FLOAT, &FinalTexture);
     }
     else
     {
         FinalTexture = FrameGraph.AddExternalResource<FGTextureProxy>("RenderTarget", GRenderView->RenderTarget);
-        PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, FinalTexture);
+        m_PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, FinalTexture);
     }
 
     // Apply outline
@@ -488,7 +488,7 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
     if (bFxaaPassRequired)
     {
         FGTextureProxy* FxaaTexture;
-        FxaaRenderer.AddPass(FrameGraph, FinalTexture, &FxaaTexture);
+        m_FxaaRenderer.AddPass(FrameGraph, FinalTexture, &FxaaTexture);
 
         FinalTexture = FrameGraph.AddExternalResource<FGTextureProxy>("RenderTarget", GRenderView->RenderTarget);
         AddCopyPass(FrameGraph, FxaaTexture, FinalTexture);
@@ -511,7 +511,7 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
 
     if (GRenderView->DebugDrawCommandCount > 0)
     {
-        DebugDrawRenderer.AddPass(FrameGraph, FinalTexture, DepthTexture);
+        m_DebugDrawRenderer.AddPass(FrameGraph, FinalTexture, DepthTexture);
     }
 
     if (bVirtualTexturing)

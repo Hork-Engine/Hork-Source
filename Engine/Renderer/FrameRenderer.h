@@ -53,7 +53,7 @@ public:
 
     void Render(RenderCore::FrameGraph& FrameGraph, bool bVirtualTexturing, class VirtualTextureCache* PhysCacheVT);
 
-    OmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return OmniShadowMapPool; }
+    OmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return m_OmniShadowMapPool; }
 
 private:
     void AddLinearizeDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
@@ -70,27 +70,27 @@ private:
     void AddOutlineOverlayPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
     void AddCopyPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* Source, RenderCore::FGTextureProxy* Dest);
 
-    ShadowMapRenderer    ShadowMapRenderer;
-    LightRenderer        LightRenderer;
-    DebugDrawRenderer    DebugDrawRenderer;
-    BloomRenderer        BloomRenderer;
-    ExposureRenderer     ExposureRenderer;
-    ColorGradingRenderer ColorGradingRenderer;
-    PostprocessRenderer  PostprocessRenderer;
-    FxaaRenderer         FxaaRenderer;
-    SmaaRenderer         SmaaRenderer;
-    SSAORenderer         SSAORenderer;
+    ShadowMapRenderer    m_ShadowMapRenderer;
+    LightRenderer        m_LightRenderer;
+    DebugDrawRenderer    m_DebugDrawRenderer;
+    BloomRenderer        m_BloomRenderer;
+    ExposureRenderer     m_ExposureRenderer;
+    ColorGradingRenderer m_ColorGradingRenderer;
+    PostprocessRenderer  m_PostprocessRenderer;
+    FxaaRenderer         m_FxaaRenderer;
+    SmaaRenderer         m_SmaaRenderer;
+    SSAORenderer         m_SSAORenderer;
 
-    OmnidirectionalShadowMapPool OmniShadowMapPool;
+    OmnidirectionalShadowMapPool m_OmniShadowMapPool;
 
-    TRef<RenderCore::IPipeline> LinearDepthPipe;
-    TRef<RenderCore::IPipeline> LinearDepthPipe_ORTHO;
-    TRef<RenderCore::IPipeline> ReconstructNormalPipe;
-    TRef<RenderCore::IPipeline> ReconstructNormalPipe_ORTHO;
-    TRef<RenderCore::IPipeline> MotionBlurPipeline;
-    TRef<RenderCore::IPipeline> OutlineBlurPipe;
-    TRef<RenderCore::IPipeline> OutlineApplyPipe;
-    TRef<RenderCore::IPipeline> CopyPipeline;
+    TRef<RenderCore::IPipeline> m_LinearDepthPipe;
+    TRef<RenderCore::IPipeline> m_LinearDepthPipe_ORTHO;
+    TRef<RenderCore::IPipeline> m_ReconstructNormalPipe;
+    TRef<RenderCore::IPipeline> m_ReconstructNormalPipe_ORTHO;
+    TRef<RenderCore::IPipeline> m_MotionBlurPipeline;
+    TRef<RenderCore::IPipeline> m_OutlineBlurPipe;
+    TRef<RenderCore::IPipeline> m_OutlineApplyPipe;
+    TRef<RenderCore::IPipeline> m_CopyPipeline;
 };
 
 HK_NAMESPACE_END
