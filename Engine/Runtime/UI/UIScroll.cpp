@@ -445,6 +445,8 @@ void UIScroll::OnMouseMoveEvent(MouseMoveEvent const& event, double timeStamp)
         case STATE_MOVE_VSLIDER:
             MoveVSlider(GUIManager->CursorPosition.Y - m_DragCursor);
             break;
+        default:
+            break;
     }
 }
 

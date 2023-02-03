@@ -133,6 +133,8 @@ void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayVie
         case UIBrush::IMAGE:
             DrawImage(paint, mins, maxs, static_cast<UIImageBrush*>(brush));
             break;
+        default:
+            break;
     }
 
     if (brush->bFilled)
