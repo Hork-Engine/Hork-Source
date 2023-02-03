@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Platform/BaseTypes.h>
 #include <Engine/Core/IntrusiveLinkedListMacro.h>
-#include "DirectionalLightComponent.h"
+#include "World/DirectionalLightComponent.h"
 
 HK_NAMESPACE_BEGIN
 
