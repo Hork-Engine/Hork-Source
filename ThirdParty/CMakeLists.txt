@@ -26,6 +26,9 @@ message(STATUS "FMT.................................")
 add_subdirectory(fmt)
 install_thirdparty_includes(fmt/include/fmt/ fmt)
 
+message(STATUS "STB.................................")
+install_thirdparty_includes(stb/ stb)
+
 message(STATUS "BULLET PHYSICS.................................")
 set(USE_DOUBLE_PRECISION OFF CACHE BOOL "" FORCE)
 set(USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD OFF CACHE BOOL "" FORCE)

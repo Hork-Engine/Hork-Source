@@ -33,7 +33,7 @@ SOFTWARE.
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define STB_SPRINTF_STATIC
-#include "stb_sprintf.h"
+#include <stb/stb_sprintf.h>
 
 HK_NAMESPACE_BEGIN
 

@@ -43,7 +43,7 @@ SOFTWARE.
 #define STB_IMAGE_STATIC
 #define STBI_NO_STDIO
 #define STBI_NO_GIF // Maybe in future gif will be used, but not now
-#include "stb/stb_image.h"
+#include <stb/stb_image.h>
 
 #define STBIW_MALLOC(sz)        Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
 #define STBIW_FREE(p)           Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
@@ -97,7 +97,7 @@ HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, i
 
 } // namespace
 
-#include "stb/stb_image_write.h"
+#include <stb/stb_image_write.h>
 
 #define SUPPORT_EXR
 #define SUPPORT_WEBP

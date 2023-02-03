@@ -38,7 +38,7 @@ SOFTWARE.
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_STATIC
 #define STBIR_MAX_CHANNELS 4
-#include "stb/stb_image_resize.h"
+#include <stb/stb_image_resize.h>
 
 HK_NAMESPACE_BEGIN
 
