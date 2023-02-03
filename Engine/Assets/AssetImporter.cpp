@@ -101,7 +101,7 @@ private:
         TVector<BvAxisAlignedBox> Bounds;
     };
 
-    bool         ReadGLTF(cgltf_data* Data);
+    void         ReadGLTF(cgltf_data* Data);
     void         ReadMaterial(cgltf_material* Material);
     void         ReadNode_r(cgltf_node* Node);
     void         ReadMesh(cgltf_node* Node);
@@ -711,7 +711,6 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
 
 bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
 {
-    bool           ret    = false;
     String const& Source = Settings.ImportFile;
 
     m_Settings = Settings;
@@ -769,7 +768,7 @@ bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
         return false;
     }
 
-    ret = ReadGLTF(data);
+    ReadGLTF(data);
 
     WriteAssets();
 
@@ -809,7 +808,7 @@ void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
     }
 }
 
-bool AssetImporter::ReadGLTF(cgltf_data* Data)
+void AssetImporter::ReadGLTF(cgltf_data* Data)
 {
     m_Data      = Data;
     m_bSkeletal = Data->skins_count > 0 && m_Settings.bImportSkinning;
@@ -1023,8 +1022,6 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
             ReadAnimations(Data);
         }
     }
-
-    return true;
 }
 
 #if 0
