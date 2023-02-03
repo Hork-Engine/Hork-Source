@@ -79,4 +79,6 @@ private:
     friend SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream);
 };
 
+SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream);
+
 HK_NAMESPACE_END
