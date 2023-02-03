@@ -1607,7 +1607,7 @@ template <> struct fmt::formatter<Hk::TString<Hk::WideChar>>
 
     template <typename FormatContext> auto format(Hk::TString<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        String str = Core::GetString(v);
+        String str = Hk::Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
@@ -1617,7 +1617,7 @@ template <> struct fmt::formatter<Hk::TStringView<Hk::WideChar>>
 
     template <typename FormatContext> auto format(Hk::TStringView<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        String str = Core::GetString(v);
+        String str = Hk::Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };
@@ -1627,7 +1627,7 @@ template <> struct fmt::formatter<Hk::TGlobalStringView<Hk::WideChar>>
 
     template <typename FormatContext> auto format(Hk::TGlobalStringView<Hk::WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        String str = Core::GetString(v);
+        String str = Hk::Core::GetString(v);
         return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
     }
 };

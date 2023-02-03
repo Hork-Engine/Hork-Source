@@ -442,7 +442,7 @@ static void InitializeProcess()
         len = readlink("/proc/self/exe", Process.Executable, curLen);
         if (len == -1)
         {
-            CriticalError("InitializeProcess: Failed on readlink\n");
+            Hk::CriticalError("InitializeProcess: Failed on readlink\n");
             len = 0;
             break;
         }
@@ -456,23 +456,23 @@ static void InitializeProcess()
 
     uint32_t appHash = SDBMHash(Process.Executable, len);
     char pid[32];
-    Platform::Sprintf(pid, sizeof(pid), "/tmp/hork_%x.pid", appHash);
+    Hk::Platform::Sprintf(pid, sizeof(pid), "/tmp/hork_%x.pid", appHash);
     int f = open(pid, O_RDWR | O_CREAT, 0666);
     int locked = flock(f, LOCK_EX | LOCK_NB);
     if (locked)
     {
         if (errno == EWOULDBLOCK)
         {
-            Process.ProcessAttribute = PROCESS_ALREADY_EXISTS;
+            Process.ProcessAttribute = Hk::PROCESS_ALREADY_EXISTS;
         }
         else
         {
-            Process.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
+            Process.ProcessAttribute = Hk::PROCESS_COULDNT_CHECK_UNIQUE;
         }
     }
     else
     {
-        Process.ProcessAttribute = PROCESS_UNIQUE;
+        Process.ProcessAttribute = Hk::PROCESS_UNIQUE;
     }
 #else
 #    error "Not implemented under current platform"

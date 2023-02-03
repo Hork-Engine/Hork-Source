@@ -152,9 +152,13 @@ void VTFileHandle::Write(const void* Data, unsigned int Size, uint64_t Offset)
     HK_UNUSED(r);
 }
 
+HK_NAMESPACE_END
+
 #else
 
 #    include <unistd.h>
+
+HK_NAMESPACE_BEGIN
 
 bool VTFileHandle::OpenRead(StringView FileName)
 {
@@ -189,7 +193,11 @@ void VTFileHandle::Write(const void* Data, unsigned int Size, uint64_t Offset)
     HK_UNUSED(r);
 }
 
+HK_NAMESPACE_END
+
 #endif
+
+HK_NAMESPACE_BEGIN
 
 VirtualTexturePIT::VirtualTexturePIT()
 {
