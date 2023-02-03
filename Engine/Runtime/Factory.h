@@ -324,44 +324,44 @@ struct TReturnType<R (Class::*)(As...)>
     using Type = R;
 };
 
-#define _HK_GENERATED_CLASS_BODY()                   \
-public:                                              \
+#define _HK_GENERATED_CLASS_BODY()                      \
+public:                                                 \
     static ThisClassMeta const& GetClassMeta()          \
-    {                                                \
-        static const ThisClassMeta __Meta;           \
-        return __Meta;                               \
-    }                                                \
+    {                                                   \
+        static const ThisClassMeta __Meta;              \
+        return __Meta;                                  \
+    }                                                   \
     static Hk::ClassMeta const* SuperClass()            \
-    {                                                \
+    {                                                   \
         return GetClassMeta().SuperClass();             \
-    }                                                \
-    static const char* ClassName()                   \
-    {                                                \
+    }                                                   \
+    static const char* ClassName()                      \
+    {                                                   \
         return GetClassMeta().GetName();                \
-    }                                                \
-    static uint64_t ClassId()                        \
-    {                                                \
+    }                                                   \
+    static uint64_t ClassId()                           \
+    {                                                   \
         return GetClassMeta().GetId();                  \
-    }                                                \
+    }                                                   \
     virtual Hk::ClassMeta const& FinalClassMeta() const \
-    {                                                \
+    {                                                   \
         return GetClassMeta();                          \
-    }                                                \
-    virtual const char* FinalClassName() const       \
-    {                                                \
-        return ClassName();                          \
-    }                                                \
-    virtual uint64_t FinalClassId() const            \
-    {                                                \
-        return ClassId();                            \
-    }                                                \
-    void* operator new(size_t SizeInBytes)           \
-    {                                                \
-        return Allocator().allocate(SizeInBytes);    \
-    }                                                \
-    void operator delete(void* Ptr)                  \
-    {                                                \
-        Allocator().deallocate(Ptr);                 \
+    }                                                   \
+    virtual const char* FinalClassName() const          \
+    {                                                   \
+        return ClassName();                             \
+    }                                                   \
+    virtual uint64_t FinalClassId() const               \
+    {                                                   \
+        return ClassId();                               \
+    }                                                   \
+    void* operator new(size_t SizeInBytes)              \
+    {                                                   \
+        return Allocator().allocate(SizeInBytes);       \
+    }                                                   \
+    void operator delete(void* Ptr)                     \
+    {                                                   \
+        Allocator().deallocate(Ptr);                    \
     }
 
 #define HK_CLASS(Class, SuperClass) \
@@ -370,37 +370,37 @@ public:                                              \
 #define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
     HK_FACTORY_CLASS_A(Factory, Class, SuperClass, BaseObject::Allocator)
 
-#define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                      \
-    HK_FORBID_COPY(Class)                                                               \
-    friend class BaseObject;                                                                \
-                                                                                        \
-public:                                                                                 \
-    typedef SuperClass Super;                                                           \
-    typedef Class      ThisClass;                                                       \
-    typedef _Allocator Allocator;                                                       \
-    class ThisClassMeta : public Hk::ClassMeta                                             \
-    {                                                                                   \
-    public:                                                                             \
-        ThisClassMeta() : Hk::ClassMeta(Factory, HK_STRINGIFY(Class)##s, &Super::GetClassMeta()) \
-        {                                                                               \
-            RegisterProperties();                                                       \
-        }                                                                               \
-        BaseObject* CreateInstance() const override                                         \
-        {                                                                               \
-            return new ThisClass;                                                       \
-        }                                                                               \
-                                                                                        \
-    private:                                                                            \
-        void RegisterProperties();                                                      \
-    };                                                                                  \
-    _HK_GENERATED_CLASS_BODY()                                                          \
+#define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                                          \
+    HK_FORBID_COPY(Class)                                                                                   \
+    friend class BaseObject;                                                                                \
+                                                                                                            \
+public:                                                                                                     \
+    typedef SuperClass Super;                                                                               \
+    typedef Class ThisClass;                                                                                \
+    typedef _Allocator Allocator;                                                                           \
+    class ThisClassMeta : public Hk::ClassMeta                                                              \
+    {                                                                                                       \
+    public:                                                                                                 \
+        ThisClassMeta() : Hk::ClassMeta(Factory, HK_CONCAT(HK_STRINGIFY(Class), s), &Super::GetClassMeta()) \
+        {                                                                                                   \
+            RegisterProperties();                                                                           \
+        }                                                                                                   \
+        BaseObject* CreateInstance() const override                                                         \
+        {                                                                                                   \
+            return new ThisClass;                                                                           \
+        }                                                                                                   \
+                                                                                                            \
+    private:                                                                                                \
+        void RegisterProperties();                                                                          \
+    };                                                                                                      \
+    _HK_GENERATED_CLASS_BODY()                                                                              \
 private:
 
 
 
-#define HK_BEGIN_CLASS_META(Class)                               \
-    Hk::ClassMeta const& Class##__Meta = Class::GetClassMeta();        \
-    void              Class::ThisClassMeta::RegisterProperties() \
+#define HK_BEGIN_CLASS_META(Class)                              \
+    Hk::ClassMeta const& Class##__Meta = Class::GetClassMeta(); \
+    void Class::ThisClassMeta::RegisterProperties()             \
     {
 
 #define HK_END_CLASS_META() \
@@ -411,29 +411,29 @@ private:
     HK_END_CLASS_META()
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, Range)                                               \
-    {                                                                                                  \
-        using PropertyType = decltype(ThisClass::TheProperty);                                            \
-        static Property const decl_##TheProperty(                                                        \
-            *this,                                                                                     \
-            VariantTraits::GetVariantType<PropertyType>(),                                             \
-            VariantTraits::GetVariantEnum<PropertyType>(),                                             \
-            #TheProperty##s,                                                                              \
-            [](BaseObject* pObject, Variant const& Value) {                                          \
-                auto* pValue = Value.Get<PropertyType>();                                              \
-                if (pValue)                                                                            \
-                {                                                                                      \
-                    static_cast<ThisClass*>(pObject)->TheProperty = *pValue;                              \
-                }                                                                                      \
-            },                                                                                         \
-            [](BaseObject const* pObject) -> Variant {                                               \
-                return static_cast<ThisClass const*>(pObject)->TheProperty;                               \
-            },                                                                                         \
-            [](BaseObject* Dst, BaseObject const* Src) {                                             \
+#define HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, Range)                                                  \
+    {                                                                                                        \
+        using PropertyType = decltype(ThisClass::TheProperty);                                               \
+        static Property const decl_##TheProperty(                                                            \
+            *this,                                                                                           \
+            VariantTraits::GetVariantType<PropertyType>(),                                                   \
+            VariantTraits::GetVariantEnum<PropertyType>(),                                                   \
+            #TheProperty##s,                                                                                 \
+            [](BaseObject* pObject, Variant const& Value) {                                                  \
+                auto* pValue = Value.Get<PropertyType>();                                                    \
+                if (pValue)                                                                                  \
+                {                                                                                            \
+                    static_cast<ThisClass*>(pObject)->TheProperty = *pValue;                                 \
+                }                                                                                            \
+            },                                                                                               \
+            [](BaseObject const* pObject) -> Variant {                                                       \
+                return static_cast<ThisClass const*>(pObject)->TheProperty;                                  \
+            },                                                                                               \
+            [](BaseObject* Dst, BaseObject const* Src) {                                                     \
                 static_cast<ThisClass*>(Dst)->TheProperty = static_cast<ThisClass const*>(Src)->TheProperty; \
-            },                                                                                         \
-            Range,                                                                                     \
-            Flags);                                                                                    \
+            },                                                                                               \
+            Range,                                                                                           \
+            Flags);                                                                                          \
     }
 
 /** Provides direct access to a class member. */
@@ -446,31 +446,31 @@ struct RemoveCVRef
 };
 
 /** Provides access to a property via a setter/getter. */
-#define HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, Range)                                                   \
-    {                                                                                                               \
-        using PropertyType     = RemoveCVRef<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type>::type; \
-        using GetterReturnType = RemoveCVRef<TReturnType<decltype(&ThisClass::Getter)>::Type>::type;                \
-        static_assert(std::is_same<PropertyType, GetterReturnType>::value, "Setter and getter type mismatch");      \
-        static Property const decl_##TheProperty(                                                                     \
-            *this,                                                                                                  \
-            VariantTraits::GetVariantType<PropertyType>(),                                                          \
-            VariantTraits::GetVariantEnum<PropertyType>(),                                                          \
-            #TheProperty##s,                                                                                           \
-            [](BaseObject* pObject, Variant const& Value) {                                                       \
-                auto* pValue = Value.Get<PropertyType>();                                                           \
-                if (pValue)                                                                                         \
-                {                                                                                                   \
-                    static_cast<ThisClass*>(pObject)->Setter(*pValue);                                              \
-                }                                                                                                   \
-            },                                                                                                      \
-            [](BaseObject const* pObject) -> Variant {                                                            \
-                return static_cast<ThisClass const*>(pObject)->Getter();                                            \
-            },                                                                                                      \
-            [](BaseObject* Dst, BaseObject const* Src) {                                                          \
-                static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                 \
-            },                                                                                                      \
-            Range,                                                                                                  \
-            Flags);                                                                                                 \
+#define HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, Range)                                            \
+    {                                                                                                           \
+        using PropertyType = RemoveCVRef<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type>::type; \
+        using GetterReturnType = RemoveCVRef<TReturnType<decltype(&ThisClass::Getter)>::Type>::type;            \
+        static_assert(std::is_same<PropertyType, GetterReturnType>::value, "Setter and getter type mismatch");  \
+        static Property const decl_##TheProperty(                                                               \
+            *this,                                                                                              \
+            VariantTraits::GetVariantType<PropertyType>(),                                                      \
+            VariantTraits::GetVariantEnum<PropertyType>(),                                                      \
+            #TheProperty##s,                                                                                    \
+            [](BaseObject* pObject, Variant const& Value) {                                                     \
+                auto* pValue = Value.Get<PropertyType>();                                                       \
+                if (pValue)                                                                                     \
+                {                                                                                               \
+                    static_cast<ThisClass*>(pObject)->Setter(*pValue);                                          \
+                }                                                                                               \
+            },                                                                                                  \
+            [](BaseObject const* pObject) -> Variant {                                                          \
+                return static_cast<ThisClass const*>(pObject)->Getter();                                        \
+            },                                                                                                  \
+            [](BaseObject* Dst, BaseObject const* Src) {                                                        \
+                static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());             \
+            },                                                                                                  \
+            Range,                                                                                              \
+            Flags);                                                                                             \
     }
 
 /** Provides access to a property via a setter/getter. */
