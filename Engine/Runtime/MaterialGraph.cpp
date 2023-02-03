@@ -274,8 +274,8 @@ public:
 
 private:
     mutable int            m_VariableName{};
-    MATERIAL_STAGE         m_Stage;
     MGMaterialGraph const* m_Graph;
+    MATERIAL_STAGE         m_Stage;
 };
 
 static constexpr const char* VariableTypeStr[] = {

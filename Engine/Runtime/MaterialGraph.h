@@ -74,7 +74,7 @@ enum PARALLAX_TECHNIQUE
 class MGOutput
 {
 public:
-    String       Expression;
+    String        Expression;
     MG_VALUE_TYPE Type   = MG_VALUE_TYPE_UNDEFINED;
     int           Usages = 0;
 
@@ -1032,7 +1032,9 @@ public:
     template <typename T, typename... TArgs>
     T* Add(TArgs&&... Args)
     {
-        if (T::GetClassMeta().IsSubclassOf<MGSingleton>())
+        auto& classMeta = T::GetClassMeta();
+
+        if (classMeta.IsSubclassOf(MGSingleton::GetClassMeta()))
         {
             for (MGNode* node : m_Nodes)
             {
