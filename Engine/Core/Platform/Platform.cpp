@@ -762,124 +762,123 @@ ConsoleBuffer& GetConsoleBuffer()
 
 CPUInfo const* GetCPUInfo()
 {
-    static CPUInfo* pCPUInfo = nullptr;
-    static CPUInfo  info;
-
-    if (pCPUInfo)
+    struct CPUDetector
     {
-        return pCPUInfo;
-    }
+        CPUInfo Info;
 
-    pCPUInfo = &info;
+        CPUDetector()
+        {
+            int32_t cpuInfo[4];
+            char vendor[13];
 
-    int32_t cpuInfo[4];
-    char    vendor[13];
-
-    Platform::ZeroMem(&info, sizeof(info));
+            Platform::ZeroMem(&Info, sizeof(Info));
 
 #ifdef HK_OS_WIN32
 #    ifdef _M_X64
-    info.OS_64bit = true;
+            Info.OS_64bit = true;
 #    else
-    info.OS_64bit = IsWow64() != 0;
+            Info.OS_64bit = IsWow64() != 0;
 #    endif
 #else
-    info.OS_64bit = true;
+            Info.OS_64bit = true;
 #endif
 
-    CPUID(cpuInfo, 1);
+            CPUID(cpuInfo, 1);
 
-    bool osUsesXSAVE_XRSTORE = (cpuInfo[2] & (1 << 27)) != 0;
-    bool cpuAVXSuport        = (cpuInfo[2] & (1 << 28)) != 0;
+            bool osUsesXSAVE_XRSTORE = (cpuInfo[2] & (1 << 27)) != 0;
+            bool cpuAVXSuport = (cpuInfo[2] & (1 << 28)) != 0;
 
-    if (osUsesXSAVE_XRSTORE && cpuAVXSuport)
-    {
-        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-        info.OS_AVX             = (xcrFeatureMask & 0x6) == 0x6;
-    }
+            if (osUsesXSAVE_XRSTORE && cpuAVXSuport)
+            {
+                uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+                Info.OS_AVX = (xcrFeatureMask & 0x6) == 0x6;
+            }
 
-    if (info.OS_AVX)
-    {
-        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-        info.OS_AVX512          = (xcrFeatureMask & 0xe6) == 0xe6;
-    }
+            if (Info.OS_AVX)
+            {
+                uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+                Info.OS_AVX512 = (xcrFeatureMask & 0xe6) == 0xe6;
+            }
 
-    CPUID(cpuInfo, 0);
-    Platform::Memcpy(vendor + 0, &cpuInfo[1], 4);
-    Platform::Memcpy(vendor + 4, &cpuInfo[3], 4);
-    Platform::Memcpy(vendor + 8, &cpuInfo[2], 4);
-    vendor[12] = '\0';
+            CPUID(cpuInfo, 0);
+            Platform::Memcpy(vendor + 0, &cpuInfo[1], 4);
+            Platform::Memcpy(vendor + 4, &cpuInfo[3], 4);
+            Platform::Memcpy(vendor + 8, &cpuInfo[2], 4);
+            vendor[12] = '\0';
 
-    if (!strcmp(vendor, "GenuineIntel"))
-    {
-        info.Intel = true;
-    }
-    else if (!strcmp(vendor, "AuthenticAMD"))
-    {
-        info.AMD = true;
-    }
+            if (!strcmp(vendor, "GenuineIntel"))
+            {
+                Info.Intel = true;
+            }
+            else if (!strcmp(vendor, "AuthenticAMD"))
+            {
+                Info.AMD = true;
+            }
 
-    int nIds = cpuInfo[0];
+            int nIds = cpuInfo[0];
 
-    CPUID(cpuInfo, 0x80000000);
+            CPUID(cpuInfo, 0x80000000);
 
-    uint32_t nExIds = cpuInfo[0];
+            uint32_t nExIds = cpuInfo[0];
 
-    if (nIds >= 0x00000001)
-    {
-        CPUID(cpuInfo, 0x00000001);
+            if (nIds >= 0x00000001)
+            {
+                CPUID(cpuInfo, 0x00000001);
 
-        info.MMX  = (cpuInfo[3] & (1 << 23)) != 0;
-        info.SSE  = (cpuInfo[3] & (1 << 25)) != 0;
-        info.SSE2 = (cpuInfo[3] & (1 << 26)) != 0;
-        info.SSE3 = (cpuInfo[2] & (1 << 0)) != 0;
+                Info.MMX = (cpuInfo[3] & (1 << 23)) != 0;
+                Info.SSE = (cpuInfo[3] & (1 << 25)) != 0;
+                Info.SSE2 = (cpuInfo[3] & (1 << 26)) != 0;
+                Info.SSE3 = (cpuInfo[2] & (1 << 0)) != 0;
 
-        info.SSSE3 = (cpuInfo[2] & (1 << 9)) != 0;
-        info.SSE41 = (cpuInfo[2] & (1 << 19)) != 0;
-        info.SSE42 = (cpuInfo[2] & (1 << 20)) != 0;
-        info.AES   = (cpuInfo[2] & (1 << 25)) != 0;
+                Info.SSSE3 = (cpuInfo[2] & (1 << 9)) != 0;
+                Info.SSE41 = (cpuInfo[2] & (1 << 19)) != 0;
+                Info.SSE42 = (cpuInfo[2] & (1 << 20)) != 0;
+                Info.AES = (cpuInfo[2] & (1 << 25)) != 0;
 
-        info.AVX  = (cpuInfo[2] & (1 << 28)) != 0;
-        info.FMA3 = (cpuInfo[2] & (1 << 12)) != 0;
+                Info.AVX = (cpuInfo[2] & (1 << 28)) != 0;
+                Info.FMA3 = (cpuInfo[2] & (1 << 12)) != 0;
 
-        info.RDRAND = (cpuInfo[2] & (1 << 30)) != 0;
-    }
+                Info.RDRAND = (cpuInfo[2] & (1 << 30)) != 0;
+            }
 
-    if (nIds >= 0x00000007)
-    {
-        CPUID(cpuInfo, 0x00000007);
+            if (nIds >= 0x00000007)
+            {
+                CPUID(cpuInfo, 0x00000007);
 
-        info.AVX2 = (cpuInfo[1] & (1 << 5)) != 0;
+                Info.AVX2 = (cpuInfo[1] & (1 << 5)) != 0;
 
-        info.BMI1        = (cpuInfo[1] & (1 << 3)) != 0;
-        info.BMI2        = (cpuInfo[1] & (1 << 8)) != 0;
-        info.ADX         = (cpuInfo[1] & (1 << 19)) != 0;
-        info.MPX         = (cpuInfo[1] & (1 << 14)) != 0;
-        info.SHA         = (cpuInfo[1] & (1 << 29)) != 0;
-        info.PREFETCHWT1 = (cpuInfo[2] & (1 << 0)) != 0;
+                Info.BMI1 = (cpuInfo[1] & (1 << 3)) != 0;
+                Info.BMI2 = (cpuInfo[1] & (1 << 8)) != 0;
+                Info.ADX = (cpuInfo[1] & (1 << 19)) != 0;
+                Info.MPX = (cpuInfo[1] & (1 << 14)) != 0;
+                Info.SHA = (cpuInfo[1] & (1 << 29)) != 0;
+                Info.PREFETCHWT1 = (cpuInfo[2] & (1 << 0)) != 0;
 
-        info.AVX512_F    = (cpuInfo[1] & (1 << 16)) != 0;
-        info.AVX512_CD   = (cpuInfo[1] & (1 << 28)) != 0;
-        info.AVX512_PF   = (cpuInfo[1] & (1 << 26)) != 0;
-        info.AVX512_ER   = (cpuInfo[1] & (1 << 27)) != 0;
-        info.AVX512_VL   = (cpuInfo[1] & (1 << 31)) != 0;
-        info.AVX512_BW   = (cpuInfo[1] & (1 << 30)) != 0;
-        info.AVX512_DQ   = (cpuInfo[1] & (1 << 17)) != 0;
-        info.AVX512_IFMA = (cpuInfo[1] & (1 << 21)) != 0;
-        info.AVX512_VBMI = (cpuInfo[2] & (1 << 1)) != 0;
-    }
+                Info.AVX512_F = (cpuInfo[1] & (1 << 16)) != 0;
+                Info.AVX512_CD = (cpuInfo[1] & (1 << 28)) != 0;
+                Info.AVX512_PF = (cpuInfo[1] & (1 << 26)) != 0;
+                Info.AVX512_ER = (cpuInfo[1] & (1 << 27)) != 0;
+                Info.AVX512_VL = (cpuInfo[1] & (1 << 31)) != 0;
+                Info.AVX512_BW = (cpuInfo[1] & (1 << 30)) != 0;
+                Info.AVX512_DQ = (cpuInfo[1] & (1 << 17)) != 0;
+                Info.AVX512_IFMA = (cpuInfo[1] & (1 << 21)) != 0;
+                Info.AVX512_VBMI = (cpuInfo[2] & (1 << 1)) != 0;
+            }
 
-    if (nExIds >= 0x80000001)
-    {
-        CPUID(cpuInfo, 0x80000001);
-        info.x64   = (cpuInfo[3] & (1 << 29)) != 0;
-        info.ABM   = (cpuInfo[2] & (1 << 5)) != 0;
-        info.SSE4a = (cpuInfo[2] & (1 << 6)) != 0;
-        info.FMA4  = (cpuInfo[2] & (1 << 16)) != 0;
-        info.XOP   = (cpuInfo[2] & (1 << 11)) != 0;
-    }
+            if (nExIds >= 0x80000001)
+            {
+                CPUID(cpuInfo, 0x80000001);
+                Info.x64 = (cpuInfo[3] & (1 << 29)) != 0;
+                Info.ABM = (cpuInfo[2] & (1 << 5)) != 0;
+                Info.SSE4a = (cpuInfo[2] & (1 << 6)) != 0;
+                Info.FMA4 = (cpuInfo[2] & (1 << 16)) != 0;
+                Info.XOP = (cpuInfo[2] & (1 << 11)) != 0;
+            }
+        }
+    };
 
-    return pCPUInfo;
+    static CPUDetector cpuDetector;
+    return &cpuDetector.Info;
 }
 
 ProcessInfo const& GetProcessInfo()
