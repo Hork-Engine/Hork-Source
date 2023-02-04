@@ -98,15 +98,15 @@ public:
 
     bool IsTrigger() const { return bTrigger; }
 
-    void SetJointIndex(int _JointIndex) { JointIndex = _JointIndex; }
+    void SetJointIndex(int jointIndex) { JointIndex = jointIndex; }
 
     int GetJointIndex() const { return JointIndex; }
 
-    TPodVector<Actor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+    TVector<Actor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
-    void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
+    void CollisionContactQuery(TVector<HitProxy*>& _Result) const;
 
-    void CollisionContactQueryActor(TPodVector<Actor*>& _Result) const;
+    void CollisionContactQueryActor(TVector<Actor*>& _Result) const;
 
     btCollisionObject* GetCollisionObject() const { return CollisionObject; }
 
@@ -130,7 +130,7 @@ private:
 
     bool bInWorld = false;
 
-    TPodVector<Actor*> CollisionIgnoreActors;
+    TVector<Actor*> CollisionIgnoreActors;
 
     HitProxy* NextMarked = nullptr;
     HitProxy* PrevMarked = nullptr;

@@ -120,7 +120,7 @@ private:
     byte* PIT;
 
     // Used only by cache to update page LRU
-    TPodVector<uint32_t> PendingUpdateLRU;
+    TVector<uint32_t> PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
     THashMap<uint32_t, int64_t> StreamedPages;

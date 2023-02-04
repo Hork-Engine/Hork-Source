@@ -173,9 +173,9 @@ private:
     };
 
     TRef<RenderCore::IDevice> m_pDevice;
-    TPodVector<VertexHandle*> m_Handles;
-    TPodVector<VertexHandle*> m_HugeHandles;
-    TPodVector<Block> m_Blocks;
+    TVector<VertexHandle*> m_Handles;
+    TVector<VertexHandle*> m_HugeHandles;
+    TVector<Block> m_Blocks;
     TVector<TRef<RenderCore::IBuffer>> m_BufferHandles;
     TPoolAllocator<VertexHandle> m_HandlePool;
 

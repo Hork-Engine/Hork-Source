@@ -51,9 +51,9 @@ extern RenderCore::IDevice* GDevice;
 
 using namespace RenderCore;
 
-void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*> Sources, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, SourceList const& Sources, TRef<IShaderModule>& Module)
 {
-    TPodVector<const char*> sources;
+    SourceList sources;
 
     const char* predefine[] = {
         "#define VERTEX_SHADER\n",
@@ -135,7 +135,7 @@ void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*>
 
 void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, TRef<IShaderModule>& Module)
 {
-    TPodVector<const char*> sources;
+    SourceList sources;
     sources.Add(Source);
     CreateShader(ShaderType, sources, Module);
 }
@@ -152,7 +152,7 @@ void ShaderFactory::CreateVertexShader(StringView FileName, VertexAttribInfo con
     String vertexAttribsShaderString = ShaderStringForVertexAttribs<String>(VertexAttribs, NumVertexAttribs);
     String source                    = ShaderLoader{}.LoadShader(FileName);
 
-    TPodVector<const char*> sources;
+    SourceList sources;
 
     if (!vertexAttribsShaderString.IsEmpty())
         sources.Add(vertexAttribsShaderString.CStr());

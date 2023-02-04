@@ -302,7 +302,7 @@ Actor* World::_SpawnActor(ActorSpawnPrivate& SpawnInfo, Transform const& SpawnTr
     // Create components from actor definition
     if (pActorDef)
     {
-        TPodVector<ActorComponent*> components;
+        TSmallVector<ActorComponent*,32> components;
 
         // Create components and set properties
         int componentIndex = 0;
@@ -987,7 +987,7 @@ bool World::Raycast(WorldRaycastResult& Result, Float3 const& RayStart, Float3 c
     return VisibilitySystem.RaycastTriangles(Result, RayStart, RayEnd, Filter);
 }
 
-bool World::RaycastBounds(TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
+bool World::RaycastBounds(TVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastBounds(Result, RayStart, RayEnd, Filter);
 }
@@ -1002,34 +1002,34 @@ bool World::RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, F
     return VisibilitySystem.RaycastClosestBounds(Result, RayStart, RayEnd, Filter);
 }
 
-void World::QueryVisiblePrimitives(TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query)
+void World::QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query)
 {
     VisibilitySystem.QueryVisiblePrimitives(VisPrimitives, VisSurfs, VisPass, Query);
 }
 
-void World::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas)
+void World::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
-void World::QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas)
+void World::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
 void World::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter)
 {
-    TPodVector<Actor*> damagedActors;
     ActorDamage damage;
 
-    QueryActors(damagedActors, _Position, _Radius, _QueryFilter);
+    m_DamagedActors.Clear();
+    QueryActors(m_DamagedActors, _Position, _Radius, _QueryFilter);
 
     damage.Amount = _DamageAmount;
     damage.Position = _Position;
     damage.Radius = _Radius;
     damage.DamageCauser = nullptr;
 
-    for (Actor* damagedActor : damagedActors)
+    for (Actor* damagedActor : m_DamagedActors)
     {
         damagedActor->ApplyDamage(damage);
     }

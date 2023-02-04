@@ -104,7 +104,7 @@ void SkinnedComponent::UpdateMesh()
 
     m_Skeleton = newSkeleton;
 
-    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
+    TVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
     int numJoints = joints.Size();
 
@@ -120,42 +120,42 @@ void SkinnedComponent::UpdateMesh()
     m_bUpdateControllers = true;
 }
 
-void SkinnedComponent::AddAnimationController(AnimationController* _Controller)
+void SkinnedComponent::AddAnimationController(AnimationController* controller)
 {
-    if (!_Controller)
+    if (!controller)
     {
         return;
     }
-    if (_Controller->m_Owner)
+    if (controller->m_Owner)
     {
-        if (_Controller->m_Owner != this)
+        if (controller->m_Owner != this)
         {
             LOG("SkinnedComponent::AddAnimationController: animation controller already added to other component\n");
         }
         return;
     }
-    _Controller->m_Owner = this;
-    _Controller->AddRef();
-    m_AnimControllers.Add(_Controller);
+    controller->m_Owner = this;
+    controller->AddRef();
+    m_AnimControllers.Add(controller);
     m_bUpdateControllers = true;
 }
 
-void SkinnedComponent::RemoveAnimationController(AnimationController* _Controller)
+void SkinnedComponent::RemoveAnimationController(AnimationController* controller)
 {
-    if (!_Controller)
+    if (!controller)
     {
         return;
     }
-    if (_Controller->m_Owner != this)
+    if (controller->m_Owner != this)
     {
         return;
     }
     for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
-        if (m_AnimControllers[i]->Id == _Controller->Id)
+        if (m_AnimControllers[i]->Id == controller->Id)
         {
-            _Controller->m_Owner = nullptr;
-            _Controller->RemoveRef();
+            controller->m_Owner = nullptr;
+            controller->RemoveRef();
             m_AnimControllers.Remove(i);
             m_bUpdateControllers = true;
             return;
@@ -174,21 +174,21 @@ void SkinnedComponent::RemoveAnimationControllers()
     m_bUpdateControllers = true;
 }
 
-void SkinnedComponent::SetTimeBroadcast(float _Time)
+void SkinnedComponent::SetTimeBroadcast(float time)
 {
     for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
         AnimationController* controller = m_AnimControllers[i];
-        controller->SetTime(_Time);
+        controller->SetTime(time);
     }
 }
 
-void SkinnedComponent::AddTimeDeltaBroadcast(float _TimeDelta)
+void SkinnedComponent::AddTimeDeltaBroadcast(float timeDelta)
 {
     for (int i = 0, count = m_AnimControllers.Size(); i < count; i++)
     {
         AnimationController* controller = m_AnimControllers[i];
-        controller->AddTimeDelta(_TimeDelta);
+        controller->AddTimeDelta(timeDelta);
     }
 }
 
@@ -206,7 +206,7 @@ void SkinnedComponent::MergeJointAnimations()
         {
 
             //LOG("Update abs matrices\n");
-            TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
+            TVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
             for (int j = 0; j < joints.Size(); j++)
             {
                 // TODO: joint rotation from normal?
@@ -239,8 +239,9 @@ void SkinnedComponent::UpdateTransforms()
     SkeletonJoint const* joints = m_Skeleton->GetJoints().ToPtr();
     int jointsCount = m_Skeleton->GetJoints().Size();
 
-    TPodVector<Transform> tempTransforms;
-    TPodVector<float> weights;
+    // TODO: Move tempTransform and weights to globals to minimize allocations
+    TSmallVector<Transform, 32> tempTransforms;
+    TSmallVector<float, 32> weights;
 
     tempTransforms.Resize(m_AnimControllers.Size());
     weights.Resize(m_AnimControllers.Size());
@@ -272,11 +273,11 @@ void SkinnedComponent::UpdateTransforms()
                 continue;
             }
 
-            TPodVector<AnimationChannel> const& animJoints = animation->GetChannels();
+            TVector<AnimationChannel> const& animJoints = animation->GetChannels();
 
             AnimationChannel const& jointAnim = animJoints[channelIndex];
 
-            TPodVector<Transform> const& transforms = animation->GetTransforms();
+            TVector<Transform> const& transforms = animation->GetTransforms();
 
             Transform& transform = tempTransforms[n];
             weights[n] = controller->m_Weight;
@@ -335,7 +336,7 @@ void SkinnedComponent::UpdateAbsoluteTransformsIfDirty()
         return;
     }
 
-    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
+    TVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
     for (int j = 0; j < joints.Size(); j++)
     {
@@ -538,19 +539,19 @@ void SkinnedComponent::GetSkeletonHandle(size_t& skeletonOffset, size_t& skeleto
     skeletonSize = m_SkeletonSize;
 }
 
-void SkinnedComponent::OnPreRenderUpdate(RenderFrontendDef const* _Def)
+void SkinnedComponent::OnPreRenderUpdate(RenderFrontendDef const* def)
 {
-    Super::OnPreRenderUpdate(_Def);
+    Super::OnPreRenderUpdate(def);
 
     MergeJointAnimations();
 
     MeshSkin const& skin = GetMesh()->GetSkin();
-    TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
+    TVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
     m_SkeletonSize = joints.Size() * sizeof(Float3x4);
     if (m_SkeletonSize > 0)
     {
-        StreamedMemoryGPU* streamedMemory = _Def->StreamedMemory;
+        StreamedMemoryGPU* streamedMemory = def->StreamedMemory;
 
         // Write joints from previous frame
         m_SkeletonOffsetMB = streamedMemory->AllocateJoint(m_SkeletonSize, m_JointsBufferData);
@@ -570,16 +571,16 @@ void SkinnedComponent::OnPreRenderUpdate(RenderFrontendDef const* _Def)
     }
 }
 
-Float3x4 const& SkinnedComponent::GetJointTransform(int _JointIndex)
+Float3x4 const& SkinnedComponent::GetJointTransform(int jointIndex)
 {
-    if (_JointIndex < 0 || _JointIndex >= m_Skeleton->GetJoints().Size())
+    if (jointIndex < 0 || jointIndex >= m_Skeleton->GetJoints().Size())
     {
         return Float3x4::Identity();
     }
 
     MergeJointAnimations();
 
-    return m_AbsoluteTransforms[_JointIndex + 1];
+    return m_AbsoluteTransforms[jointIndex + 1];
 }
 
 void SkinnedComponent::DrawDebug(DebugRenderer* InRenderer)
@@ -591,7 +592,7 @@ void SkinnedComponent::DrawDebug(DebugRenderer* InRenderer)
     {
         InRenderer->SetColor(Color4(1, 0, 0, 1));
         InRenderer->SetDepthTest(false);
-        TPodVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
+        TVector<SkeletonJoint> const& joints = m_Skeleton->GetJoints();
 
         for (int i = 0; i < joints.Size(); i++)
         {

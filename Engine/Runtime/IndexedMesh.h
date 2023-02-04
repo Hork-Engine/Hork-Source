@@ -123,7 +123,7 @@ public:
     void SetBVH(std::unique_ptr<BvhTree> BVH);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
@@ -333,9 +333,9 @@ public:
     MeshRenderView* GetDefaultRenderView() const;
 
     /** Soft body collision model */
-    TPodVector<SoftbodyLink> /*const*/& GetSoftbodyLinks() /*const*/ { return m_SoftbodyLinks; }
+    TVector<SoftbodyLink> /*const*/& GetSoftbodyLinks() /*const*/ { return m_SoftbodyLinks; }
     /** Soft body collision model */
-    TPodVector<SoftbodyFace> /*const*/& GetSoftbodyFaces() /*const*/ { return m_SoftbodyFaces; }
+    TVector<SoftbodyFace> /*const*/& GetSoftbodyFaces() /*const*/ { return m_SoftbodyFaces; }
 
     /** Set subpart material */
     void SetMaterialInstance(int SubpartIndex, MaterialInstance* pMaterialInstance);
@@ -408,7 +408,7 @@ public:
     void GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3], int& SubpartIndex) const;
@@ -466,8 +466,8 @@ private:
     TVector<SocketDef*>      m_Sockets;
     TRef<Skeleton>           m_Skeleton;
     TRef<CollisionModel>     m_CollisionModel;
-    TPodVector<SoftbodyLink> m_SoftbodyLinks;
-    TPodVector<SoftbodyFace> m_SoftbodyFaces;
+    TVector<SoftbodyLink>    m_SoftbodyLinks;
+    TVector<SoftbodyFace>    m_SoftbodyFaces;
     MeshSkin                 m_Skin;
     BvAxisAlignedBox         m_BoundingBox;
     uint16_t                 m_RaycastPrimitivesPerLeaf = 16;
@@ -506,7 +506,7 @@ public:
     void GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;

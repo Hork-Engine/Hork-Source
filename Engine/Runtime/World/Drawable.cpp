@@ -182,9 +182,9 @@ void Drawable::ForceOverrideBounds(bool _OverrideBounds)
     UpdateWorldBounds();
 }
 
-void Drawable::SetBoundsOverride(BvAxisAlignedBox const& _Bounds)
+void Drawable::SetBoundsOverride(BvAxisAlignedBox const& bounds)
 {
-    m_OverrideBoundingBox = _Bounds;
+    m_OverrideBoundingBox = bounds;
 
     if (m_bOverrideBounds)
     {
@@ -314,7 +314,7 @@ void Drawable::PreRenderUpdate(RenderFrontendDef const* _Def)
     }
 }
 
-bool Drawable::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const
+bool Drawable::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits) const
 {
     if (!m_Primitive->RaycastCallback)
     {

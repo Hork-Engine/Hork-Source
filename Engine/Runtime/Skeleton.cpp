@@ -38,8 +38,6 @@ HK_NAMESPACE_BEGIN
 
 HK_CLASS_META(Skeleton)
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
 Skeleton::Skeleton()
 {
     m_BindposeBounds.Clear();
@@ -55,44 +53,44 @@ void Skeleton::Purge()
     m_Joints.Clear();
 }
 
-void Skeleton::Initialize(SkeletonJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds)
+void Skeleton::Initialize(SkeletonJoint* joints, int jointsCount, BvAxisAlignedBox const& bindposeBounds)
 {
     Purge();
 
-    if (_JointsCount < 0)
+    if (jointsCount < 0)
     {
         LOG("Skeleton::Initialize: joints count < 0\n");
-        _JointsCount = 0;
+        jointsCount = 0;
     }
 
     // Copy joints
-    m_Joints.ResizeInvalidate(_JointsCount);
-    if (_JointsCount > 0)
+    m_Joints.ResizeInvalidate(jointsCount);
+    if (jointsCount > 0)
     {
-        Platform::Memcpy(m_Joints.ToPtr(), _Joints, sizeof(*_Joints) * _JointsCount);
+        Platform::Memcpy(m_Joints.ToPtr(), joints, sizeof(*joints) * jointsCount);
     }
 
-    m_BindposeBounds = _BindposeBounds;
+    m_BindposeBounds = bindposeBounds;
 }
 
-void Skeleton::LoadInternalResource(StringView _Path)
+void Skeleton::LoadInternalResource(StringView path)
 {
     Purge();
 
-    if (!_Path.Icmp("/Default/Skeleton/Default"))
+    if (!path.Icmp("/Default/Skeleton/Default"))
     {
         Initialize(nullptr, 0, BvAxisAlignedBox::Empty());
         return;
     }
 
-    LOG("Unknown internal skeleton {}\n", _Path);
+    LOG("Unknown internal skeleton {}\n", path);
 
     LoadInternalResource("/Default/Skeleton/Default");
 }
 
-bool Skeleton::LoadResource(IBinaryStreamReadInterface& Stream)
+bool Skeleton::LoadResource(IBinaryStreamReadInterface& stream)
 {
-    uint32_t fileFormat = Stream.ReadUInt32();
+    uint32_t fileFormat = stream.ReadUInt32();
 
     if (fileFormat != ASSET_SKELETON)
     {
@@ -100,7 +98,7 @@ bool Skeleton::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    uint32_t fileVersion = Stream.ReadUInt32();
+    uint32_t fileVersion = stream.ReadUInt32();
 
     if (fileVersion != ASSET_VERSION_SKELETON)
     {
@@ -110,19 +108,19 @@ bool Skeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Purge();
 
-    String guid = Stream.ReadString();
+    String guid = stream.ReadString();
 
-    Stream.ReadArray(m_Joints);
-    Stream.ReadObject(m_BindposeBounds);
+    stream.ReadArray(m_Joints);
+    stream.ReadObject(m_BindposeBounds);
 
     return true;
 }
 
-int Skeleton::FindJoint(const char* _Name) const
+int Skeleton::FindJoint(const char* name) const
 {
     for (int j = 0; j < m_Joints.Size(); j++)
     {
-        if (!Platform::Stricmp(m_Joints[j].Name, _Name))
+        if (!Platform::Stricmp(m_Joints[j].Name, name))
         {
             return j;
         }

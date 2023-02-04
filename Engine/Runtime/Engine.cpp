@@ -252,7 +252,7 @@ void Engine::Run(EntryDecl const& entryDecl)
     {
         DisplayMode mode;
 
-        TPodVector<DisplayInfo> displays;
+        TVector<DisplayInfo> displays;
         Runtime::GetDisplays(displays);
         if (!displays.IsEmpty())
         {

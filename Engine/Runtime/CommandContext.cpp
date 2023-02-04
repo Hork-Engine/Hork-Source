@@ -195,8 +195,8 @@ int CommandContext::CompleteString(StringView Str, String& _Result)
 
 void CommandContext::Print(StringView Str)
 {
-    TPodVector<RuntimeCommand*>  cmds;
-    TPodVector<ConsoleVar*> vars;
+    TVector<RuntimeCommand*>  cmds;
+    TVector<ConsoleVar*> vars;
 
     if (!Str.IsEmpty())
     {

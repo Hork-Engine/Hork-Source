@@ -52,57 +52,57 @@ public:
     SkeletalAnimation();
     ~SkeletalAnimation();
 
-    static SkeletalAnimation* Create(int _FrameCount, float _FrameDelta, Transform const* _Transforms, int _TransformsCount, AnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
+    static SkeletalAnimation* Create(int frameCount, float frameDelta, Transform const* transforms, int transformsCount, AnimationChannel const* animatedJoints, int numAnimatedJoints, BvAxisAlignedBox const* bounds)
     {
         SkeletalAnimation* anim = NewObj<SkeletalAnimation>();
-        anim->Initialize(_FrameCount, _FrameDelta, _Transforms, _TransformsCount, _AnimatedJoints, _NumAnimatedJoints, _Bounds);
+        anim->Initialize(frameCount, frameDelta, transforms, transformsCount, animatedJoints, numAnimatedJoints, bounds);
         return anim;
     }
 
     void Purge();
 
-    TPodVector<AnimationChannel> const& GetChannels() const { return Channels; }
-    TPodVector<Transform> const&        GetTransforms() const { return Transforms; }
+    TVector<AnimationChannel> const& GetChannels() const { return m_Channels; }
+    TVector<Transform> const& GetTransforms() const { return m_Transforms; }
 
-    unsigned short GetChannelIndex(int _JointIndex) const;
+    unsigned short GetChannelIndex(int jointIndex) const;
 
-    int                                 GetFrameCount() const { return FrameCount; }
-    float                               GetFrameDelta() const { return FrameDelta; }
-    float                               GetFrameRate() const { return FrameRate; }
-    float                               GetDurationInSeconds() const { return DurationInSeconds; }
-    float                               GetDurationNormalizer() const { return DurationNormalizer; }
-    TPodVector<BvAxisAlignedBox> const& GetBoundingBoxes() const { return Bounds; }
-    bool                                IsValid() const { return bIsAnimationValid; }
+    int GetFrameCount() const { return m_FrameCount; }
+    float GetFrameDelta() const { return m_FrameDelta; }
+    float GetFrameRate() const { return m_FrameRate; }
+    float GetDurationInSeconds() const { return m_DurationInSeconds; }
+    float GetDurationNormalizer() const { return m_DurationNormalizer; }
+    TVector<BvAxisAlignedBox> const& GetBoundingBoxes() const { return m_Bounds; }
+    bool IsValid() const { return m_bIsAnimationValid; }
 
 protected:
-    void Initialize(int _FrameCount, float _FrameDelta, Transform const* _Transforms, int _TransformsCount, AnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
+    void Initialize(int frameCount, float frameDelta, Transform const* transforms, int transformsCount, AnimationChannel const* animatedJoints, int numAnimatedJoints, BvAxisAlignedBox const* bounds);
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(StringView _Path) override;
+    void LoadInternalResource(StringView path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
 
 private:
-    TPodVector<AnimationChannel> Channels;
-    TPodVector<Transform>        Transforms;
-    TPodVector<unsigned short>   ChannelsMap;
-    TPodVector<BvAxisAlignedBox> Bounds;
-    int                          MinNodeIndex       = 0;
-    int                          MaxNodeIndex       = 0;
-    int                          FrameCount         = 0;  // frames count
-    float                        FrameDelta         = 0;  // fixed time delta between frames
-    float                        FrameRate          = 60; // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
-    float                        DurationInSeconds  = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
-    float                        DurationNormalizer = 1;  // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
-    bool                         bIsAnimationValid  = false;
+    TVector<AnimationChannel> m_Channels;
+    TVector<Transform> m_Transforms;
+    TVector<unsigned short> m_ChannelsMap;
+    TVector<BvAxisAlignedBox> m_Bounds;
+    int m_MinNodeIndex = 0;
+    int m_MaxNodeIndex = 0;
+    int m_FrameCount = 0;                                 // frames count
+    float m_FrameDelta = 0;                               // fixed time delta between frames
+    float m_FrameRate = 60;                               // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
+    float m_DurationInSeconds = 0;                        // animation duration is FrameDelta * ( FrameCount - 1 )
+    float m_DurationNormalizer = 1;                       // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
+    bool m_bIsAnimationValid = false;
 };
 
-HK_FORCEINLINE unsigned short SkeletalAnimation::GetChannelIndex(int _JointIndex) const
+HK_FORCEINLINE unsigned short SkeletalAnimation::GetChannelIndex(int jointIndex) const
 {
-    return (_JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex) ? (unsigned short)-1 : ChannelsMap[_JointIndex - MinNodeIndex];
+    return (jointIndex < m_MinNodeIndex || jointIndex > m_MaxNodeIndex) ? (unsigned short)-1 : m_ChannelsMap[jointIndex - m_MinNodeIndex];
 }
 
 HK_NAMESPACE_END

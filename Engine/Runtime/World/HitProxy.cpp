@@ -152,7 +152,7 @@ void HitProxy::RemoveCollisionIgnoreActor(Actor* _Actor)
 
 struct ContactQueryCallback : public btCollisionWorld::ContactResultCallback
 {
-    ContactQueryCallback(TPodVector<HitProxy*>& _Result, int _CollisionGroup, int _CollisionMask, HitProxy const* _Self) :
+    ContactQueryCallback(TVector<HitProxy*>& _Result, int _CollisionGroup, int _CollisionMask, HitProxy const* _Self) :
         Result(_Result), Self(_Self)
     {
         m_collisionFilterGroup = _CollisionGroup;
@@ -185,13 +185,13 @@ struct ContactQueryCallback : public btCollisionWorld::ContactResultCallback
         Result.AddUnique(HitProxy);
     }
 
-    TPodVector<HitProxy*>& Result;
-    HitProxy const*        Self;
+    TVector<HitProxy*>& Result;
+    HitProxy const* Self;
 };
 
 struct ContactQueryActorCallback : public btCollisionWorld::ContactResultCallback
 {
-    ContactQueryActorCallback(TPodVector<Actor*>& _Result, int _CollisionGroup, int _CollisionMask, Actor const* _Self) :
+    ContactQueryActorCallback(TVector<Actor*>& _Result, int _CollisionGroup, int _CollisionMask, Actor const* _Self) :
         Result(_Result), Self(_Self)
     {
         m_collisionFilterGroup = _CollisionGroup;
@@ -224,11 +224,11 @@ struct ContactQueryActorCallback : public btCollisionWorld::ContactResultCallbac
         Result.AddUnique(Actor);
     }
 
-    TPodVector<Actor*>& Result;
-    Actor const*        Self;
+    TVector<Actor*>& Result;
+    Actor const* Self;
 };
 
-void HitProxy::CollisionContactQuery(TPodVector<HitProxy*>& _Result) const
+void HitProxy::CollisionContactQuery(TVector<HitProxy*>& _Result) const
 {
     ContactQueryCallback callback(_Result, CollisionGroup, CollisionMask, this);
 
@@ -247,7 +247,7 @@ void HitProxy::CollisionContactQuery(TPodVector<HitProxy*>& _Result) const
     GetWorld()->PhysicsSystem.GetInternal()->contactTest(CollisionObject, callback);
 }
 
-void HitProxy::CollisionContactQueryActor(TPodVector<Actor*>& _Result) const
+void HitProxy::CollisionContactQueryActor(TVector<Actor*>& _Result) const
 {
     ContactQueryActorCallback callback(_Result, CollisionGroup, CollisionMask, GetOwnerActor());
 

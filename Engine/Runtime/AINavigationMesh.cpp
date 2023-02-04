@@ -155,12 +155,12 @@ struct DetourLinearAllocator : public dtTileCacheAlloc
 struct DetourMeshProcess : public dtTileCacheMeshProcess
 {
     // NavMesh connections
-    TPodVector<Float3>         OffMeshConVerts;
-    TPodVector<float>          OffMeshConRads;
-    TPodVector<unsigned char>  OffMeshConDirs;
-    TPodVector<unsigned char>  OffMeshConAreas;
-    TPodVector<unsigned short> OffMeshConFlags;
-    TPodVector<unsigned int>   OffMeshConId;
+    TVector<Float3>         OffMeshConVerts;
+    TVector<float>          OffMeshConRads;
+    TVector<unsigned char>  OffMeshConDirs;
+    TVector<unsigned char>  OffMeshConAreas;
+    TVector<unsigned short> OffMeshConFlags;
+    TVector<unsigned int>   OffMeshConId;
     int                        OffMeshConCount;
     AINavigationMesh*          NavMesh;
 
@@ -1082,15 +1082,15 @@ bool AINavigationMesh::BuildTile(int _X, int _Z)
             }
         }
 
-        BvAxisAlignedBox           conBoundingBox;
-        const float                margin = 0.2f;
-        TPodVector<Float3>         offMeshConVerts;
-        TPodVector<float>          offMeshConRads;
-        TPodVector<unsigned char>  offMeshConDirs;
-        TPodVector<unsigned char>  offMeshConAreas;
-        TPodVector<unsigned short> offMeshConFlags;
-        TPodVector<unsigned int>   offMeshConId;
-        int                        offMeshConCount = 0;
+        BvAxisAlignedBox        conBoundingBox;
+        const float             margin = 0.2f;
+        TVector<Float3>         offMeshConVerts;
+        TVector<float>          offMeshConRads;
+        TVector<unsigned char>  offMeshConDirs;
+        TVector<unsigned char>  offMeshConAreas;
+        TVector<unsigned short> offMeshConFlags;
+        TVector<unsigned int>   offMeshConId;
+        int                     offMeshConCount = 0;
         for (int i = 0; i < NavMeshConnections.Size(); i++)
         {
             AINavMeshConnection const& con = NavMeshConnections[i];
@@ -1155,7 +1155,6 @@ bool AINavigationMesh::BuildTile(int _X, int _Z)
 
         if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
         {
-
             if (params.vertCount >= 0xffff)
             {
                 LOG("vertCount >= 0xffff\n");
@@ -1556,8 +1555,8 @@ void AINavigationMesh::DrawDebug(DebugRenderer* InRenderer)
     }
 
 #if 0
-    static TPodVector< Float3 > vertices;
-    static TPodVector< unsigned int > indices;
+    static TVector< Float3 > vertices;
+    static TVector< unsigned int > indices;
     static BvAxisAlignedBox dummyBoundingBox;
     static TBitMask<> walkableMask;
     static bool gen=false;
@@ -1932,7 +1931,7 @@ bool AINavigationMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const&
     return FindPath(_StartRef, _EndRef, QueryFilter, _Path, _PathCount, _MaxPath);
 }
 
-bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<AINavigationPathPoint>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<AINavigationPathPoint>& _PathPoints) const
 {
     NavPointRef StartRef;
     NavPointRef EndRef;
@@ -1980,12 +1979,12 @@ bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, 
     return true;
 }
 
-bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<AINavigationPathPoint>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<AINavigationPathPoint>& _PathPoints) const
 {
     return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
 }
 
-bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<Float3>& _PathPoints) const
 {
     NavPointRef StartRef;
     NavPointRef EndRef;
@@ -2029,7 +2028,7 @@ bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, 
     return true;
 }
 
-bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<Float3>& _PathPoints) const
+bool AINavigationMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<Float3>& _PathPoints) const
 {
     return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
 }

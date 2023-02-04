@@ -47,30 +47,30 @@ struct ConvexHullDesc
 namespace Geometry
 {
 
-void BakeCollisionMarginConvexHull(Float3 const* _InVertices, int _VertexCount, TPodVector<Float3>& _OutVertices, float _Margin = 0.01f);
+void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, TVector<Float3>& outVertices, float margin = 0.01f);
 
-bool PerformConvexDecomposition(Float3 const*                _Vertices,
-                                int                          _VerticesCount,
-                                int                          _VertexStride,
-                                unsigned int const*          _Indices,
-                                int                          _IndicesCount,
-                                TPodVector<Float3>&          _OutVertices,
-                                TPodVector<unsigned int>&    _OutIndices,
-                                TPodVector<ConvexHullDesc>& _OutHulls);
+bool PerformConvexDecomposition(Float3 const* vertices,
+                                int vertexCount,
+                                int vertexStride,
+                                unsigned int const* indices,
+                                int indexCount,
+                                TVector<Float3>& outVertices,
+                                TVector<unsigned int>& outIndices,
+                                TVector<ConvexHullDesc>& outHulls);
 
-bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
-                                     int                          _VerticesCount,
-                                     int                          _VertexStride,
-                                     unsigned int const*          _Indices,
-                                     int                          _IndicesCount,
-                                     TPodVector<Float3>&          _OutVertices,
-                                     TPodVector<unsigned int>&    _OutIndices,
-                                     TPodVector<ConvexHullDesc>& _OutHulls,
-                                     Float3&                      _CenterOfMass);
+bool PerformConvexDecompositionVHACD(Float3 const* vertices,
+                                     int vertexCount,
+                                     int vertexStride,
+                                     unsigned int const* indices,
+                                     int indexCount,
+                                     TVector<Float3>& outVertices,
+                                     TVector<unsigned int>& outIndices,
+                                     TVector<ConvexHullDesc>& outHulls,
+                                     Float3& centerOfMass);
 
-void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPodVector<PlaneF>& _Planes);
+void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVector<PlaneF>& planes);
 
-void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVector<Float3>& _Vertices);
+void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<Float3>& vertices);
 
 } // namespace Geometry
 

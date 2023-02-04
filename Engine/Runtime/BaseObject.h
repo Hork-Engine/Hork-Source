@@ -76,7 +76,7 @@ public:
 
     Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
 
-    void GetProperties(TPodVector<Property const*>& Properties, bool bRecursive = true) const;
+    void GetProperties(PropertyList& Properties, bool bRecursive = true) const;
 
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return m_TotalObjects; }

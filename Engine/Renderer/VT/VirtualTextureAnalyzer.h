@@ -102,7 +102,7 @@ private:
     int NumBindings;
 
     // Actually feedback data is from previous frame
-    TPodVector<VTFeedbackChain> Feedbacks;
+    TVector<VTFeedbackChain> Feedbacks;
 
     // Unique pages from feedback
     THashMap<uint32_t, uint32_t> PendingPageSet;

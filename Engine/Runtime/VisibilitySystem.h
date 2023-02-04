@@ -139,7 +139,7 @@ HK_FLAG_ENUM_OPERATORS(SURFACE_FLAGS)
 using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(PrimitiveDef const* Self,
                                             Float3 const& RayStart,
                                             Float3 const& RayEnd,
-                                            TPodVector<TriangleHitResult>& Hits);
+                                            TVector<TriangleHitResult>& Hits);
 
 using PRIMITIVE_RAYCAST_CLOSEST_CALLBACK = bool (*)(PrimitiveDef const* Self,
                                                     Float3 const& RayStart,
@@ -372,19 +372,19 @@ struct WorldRaycastPrimitive
 struct WorldRaycastResult
 {
     /** Array of hits */
-    TPodVector<TriangleHitResult> Hits;
+    TVector<TriangleHitResult> Hits;
 
     /** Array of primitives and surfaces */
-    TPodVector<WorldRaycastPrimitive> Primitives;
+    TVector<WorldRaycastPrimitive> Primitives;
 
     /** Sort raycast result by hit distance */
     void Sort()
     {
         struct SortPrimitives
         {
-            TPodVector<TriangleHitResult> const& Hits;
+            TVector<TriangleHitResult> const& Hits;
 
-            SortPrimitives(TPodVector<TriangleHitResult> const& _Hits) :
+            SortPrimitives(TVector<TriangleHitResult> const& _Hits) :
                 Hits(_Hits) {}
 
             bool operator()(WorldRaycastPrimitive const& _A, WorldRaycastPrimitive const& _B)
@@ -780,22 +780,22 @@ public:
     void DrawDebug(DebugRenderer* Renderer);
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas) const;
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas) const;
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas) const;
+    void QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& Areas) const;
 
-    void QueryVisiblePrimitives(TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query) const;
+    void QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query) const;
 
     bool RaycastTriangles(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
     bool RaycastClosest(WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    bool RaycastBounds(TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
+    bool RaycastBounds(TVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
     bool RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
-    TPodVector<VisibilityLevel*> const& GetLevels() const { return m_Levels; }
+    TVector<VisibilityLevel*> const& GetLevels() const { return m_Levels; }
 
     static TPoolAllocator<PrimitiveDef> PrimitivePool;
     static TPoolAllocator<PrimitiveLink> PrimitiveLinkPool;
@@ -807,7 +807,7 @@ private:
     /** Unlink primitive from the level areas */
     void UnlinkPrimitive(PrimitiveDef* Primitive);
 
-    TPodVector<VisibilityLevel*> m_Levels;
+    TVector<VisibilityLevel*> m_Levels;
 
     PrimitiveDef* m_PrimitiveList = nullptr;
     PrimitiveDef* m_PrimitiveListTail = nullptr;
@@ -818,8 +818,8 @@ private:
 class VisibilityLevel : public RefCounted
 {
 public:
-    using ArrayOfNodes = TPodVector<BinarySpaceNode>;
-    using ArrayOfLeafs = TPodVector<BinarySpaceLeaf>;
+    using ArrayOfNodes = TVector<BinarySpaceNode>;
+    using ArrayOfLeafs = TVector<BinarySpaceLeaf>;
 
     VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo);
     virtual ~VisibilityLevel();
@@ -828,7 +828,7 @@ public:
     BvAxisAlignedBox const& GetIndoorBounds() const { return m_IndoorBounds; }
 
     /** Get level areas */
-    TPodVector<VisArea> const& GetAreas() const { return m_Areas; }
+    TVector<VisArea> const& GetAreas() const { return m_Areas; }
 
     /** Get level outdoor area */
     VisArea const* GetOutdoorArea() const { return m_pOutdoorArea; }
@@ -846,25 +846,25 @@ public:
     ArrayOfLeafs const& GetLeafs() const { return m_Leafs; }
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas);
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<VisArea*>& Areas);
+    void QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& Areas);
 
     /** Add primitive to the level areas */
-    static void AddPrimitiveToLevelAreas(TPodVector<VisibilityLevel*> const& Levels, PrimitiveDef* Primitive);
+    static void AddPrimitiveToLevelAreas(TVector<VisibilityLevel*> const& Levels, PrimitiveDef* Primitive);
 
     void DrawDebug(DebugRenderer* Renderer);
 
-    static void QueryVisiblePrimitives(TPodVector<VisibilityLevel*> const& Levels, TPodVector<PrimitiveDef*>& VisPrimitives, TPodVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query);
+    static void QueryVisiblePrimitives(TVector<VisibilityLevel*> const& Levels, TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query);
 
-    static bool RaycastTriangles(TPodVector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool RaycastTriangles(TVector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosest(TPodVector<VisibilityLevel*> const& Levels, WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool RaycastClosest(TVector<VisibilityLevel*> const& Levels, WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastBounds(TPodVector<VisibilityLevel*> const& Levels, TPodVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool RaycastBounds(TVector<VisibilityLevel*> const& Levels, TVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosestBounds(TPodVector<VisibilityLevel*> const& Levels, BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool RaycastClosestBounds(TVector<VisibilityLevel*> const& Levels, BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
 private:
     void CreatePortals(PortalDef const* Portals, int PortalsCount, Float3 const* HullVertices);
@@ -873,8 +873,8 @@ private:
 
     byte const* DecompressVisdata(byte const* _Data);
 
-    void QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TPodVector<VisArea*>& Areas);
-    void QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TPodVector<VisArea*>& Areas);
+    void QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas);
+    void QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TVector<VisArea*>& Areas);
 
     void AddBoxRecursive(int NodeIndex, PrimitiveDef* Primitive);
     void AddSphereRecursive(int NodeIndex, PrimitiveDef* Primitive);
@@ -942,7 +942,7 @@ private:
     };
     void ProcessLevelRaycast(VisRaycast& Raycast, WorldRaycastResult& Result);
     void ProcessLevelRaycastClosest(VisRaycast& Raycast);
-    void ProcessLevelRaycastBounds(VisRaycast& Raycast, TPodVector<BoxHitResult>& Result);
+    void ProcessLevelRaycastBounds(VisRaycast& Raycast, TVector<BoxHitResult>& Result);
     void ProcessLevelRaycastClosestBounds(VisRaycast& Raycast);
     void RaycastSurface(SurfaceDef* Self);
     void RaycastPrimitive(PrimitiveDef* Self);
@@ -958,15 +958,15 @@ private:
     VisibilityLevel* m_PersistentLevel{};
 
     /** Level portals */
-    TPodVector<VisPortal> m_Portals;
+    TVector<VisPortal> m_Portals;
 
     TVector<ConvexHull> m_PortalHulls;
 
     /** Links between the portals and areas */
-    TPodVector<PortalLink> m_AreaLinks;
+    TVector<PortalLink> m_AreaLinks;
 
     /** Level indoor areas */
-    TPodVector<VisArea> m_Areas;
+    TVector<VisArea> m_Areas;
 
     /** Level outdoor area */
     VisArea m_OutdoorArea;
@@ -975,7 +975,7 @@ private:
     BvAxisAlignedBox m_IndoorBounds;
 
     /** Node split planes */
-    TPodVector<BinarySpacePlane> m_SplitPlanes;
+    TVector<BinarySpacePlane> m_SplitPlanes;
 
     /** BSP nodes */
     ArrayOfNodes m_Nodes;
@@ -1004,7 +1004,7 @@ private:
     int m_ViewCluster = -1;
 
     /** Surface to area attachments */
-    TPodVector<int> m_AreaSurfaces;
+    TVector<int> m_AreaSurfaces;
 
     /** Baked surface data */
     TRef<BrushModel> m_Model;
@@ -1021,7 +1021,7 @@ private:
     //Raycast temp vars
     VisRaycast* m_pRaycast;
     WorldRaycastResult* m_pRaycastResult;
-    TPodVector<BoxHitResult>* m_pBoundsRaycastResult;
+    TVector<BoxHitResult>* m_pBoundsRaycastResult;
 };
 
 HK_NAMESPACE_END

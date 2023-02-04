@@ -48,7 +48,7 @@ HK_CLASS_META(MeshComponent)
 namespace
 {
 
-bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits)
+bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits)
 {
     MeshComponent const* mesh = static_cast<MeshComponent const*>(Self->Owner);
     bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
@@ -447,102 +447,9 @@ void MeshComponent::DrawDebug(DebugRenderer* InRenderer)
     }
 }
 
-#if 0
-HK_CLASS_META( BrushComponent )
-
-static bool BrushRaycastCallback( PrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< TriangleHitResult > & Hits ) {
-    BrushComponent const * brush = static_cast< BrushComponent const * >(Self->Owner);
-
-#    if 0
-    Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
-
-    // transform ray to object space
-    Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal = transformInverse * InRayEnd;
-    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
-
-    float hitDistanceLocal = rayDirLocal.Length();
-    if ( hitDistanceLocal < 0.0001f ) {
-        return false;
-    }
-
-    rayDirLocal /= hitDistanceLocal;
-
-    IndexedMesh * resource = mesh->GetMesh();
-
-    return resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits );
-#    endif
-
-    HK_UNUSED( brush );
-
-    LOG( "BrushRaycastCallback: todo\n" );
-    return false;
-}
-
-static bool BrushRaycastClosestCallback( PrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, MeshVertex const ** pVertices, unsigned int Indices[3], TRef< MaterialInstance > & Material ) {
-    BrushComponent const * brush = static_cast< BrushComponent const * >(Self->Owner);
-
-#    if 0
-    Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
-
-    // transform ray to object space
-    Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal = transformInverse * HitLocation;
-    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
-
-    float hitDistanceLocal = rayDirLocal.Length();
-    if ( hitDistanceLocal < 0.0001f ) {
-        return false;
-    }
-
-    rayDirLocal /= hitDistanceLocal;
-
-    IndexedMesh * resource = mesh->GetMesh();
-
-    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices, Material ) ) {
-        return false;
-    }
-
-    *pVertices = resource->GetVertices();
-
-    return true;
-
-#    endif
-
-    HK_UNUSED( brush );
-
-    LOG( "BrushRaycastClosestCallback: todo\n" );
-    return false;
-}
-
-BrushComponent::BrushComponent() {
-    primitive->RaycastCallback = BrushRaycastCallback;
-    primitive->RaycastClosestCallback = BrushRaycastClosestCallback;
-}
-
-void BrushComponent::DrawDebug( DebugRenderer * InRenderer ) {
-    Super::DrawDebug( InRenderer );
-
-    if ( RVDrawBrushBounds )
-    {
-        if ( primitive->VisPass == InRenderer->GetVisPass() )
-        {
-            InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( Color4( 1, 0.5f, 0.5f, 1 ) );
-            InRenderer->DrawAABB( WorldBounds );
-        }
-    }
-}
-#endif
-
-
-
-
-
-
 HK_CLASS_META(ProceduralMeshComponent)
 
-static bool RaycastCallback_Procedural(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits)
+static bool RaycastCallback_Procedural(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits)
 {
     ProceduralMeshComponent const* mesh           = static_cast<ProceduralMeshComponent const*>(Self->Owner);
     bool                            bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);

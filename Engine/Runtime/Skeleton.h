@@ -52,35 +52,35 @@ public:
     Skeleton();
     ~Skeleton();
 
-    static Skeleton* Create(SkeletonJoint* Joints, int JointsCount, BvAxisAlignedBox const& BindposeBounds)
+    static Skeleton* Create(SkeletonJoint* joints, int jointsCount, BvAxisAlignedBox const& bindposeBounds)
     {
         Skeleton* skeleton = NewObj<Skeleton>();
-        skeleton->Initialize(Joints, JointsCount, BindposeBounds);
+        skeleton->Initialize(joints, jointsCount, bindposeBounds);
         return skeleton;
     }
 
     void Purge();
 
-    int FindJoint(const char* _Name) const;
+    int FindJoint(const char* name) const;
 
-    TPodVector<SkeletonJoint> const& GetJoints() const { return m_Joints; }
+    TVector<SkeletonJoint> const& GetJoints() const { return m_Joints; }
 
     BvAxisAlignedBox const& GetBindposeBounds() const { return m_BindposeBounds; }
 
 protected:
-    void Initialize(SkeletonJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
+    void Initialize(SkeletonJoint* joints, int jointsCount, BvAxisAlignedBox const& bindposeBounds);
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(StringView _Path) override;
+    void LoadInternalResource(StringView path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
 
 private:
-    TPodVector<SkeletonJoint> m_Joints;
-    BvAxisAlignedBox   m_BindposeBounds;
+    TVector<SkeletonJoint> m_Joints;
+    BvAxisAlignedBox m_BindposeBounds;
 };
 
 HK_NAMESPACE_END

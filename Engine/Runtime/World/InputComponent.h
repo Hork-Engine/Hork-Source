@@ -140,9 +140,9 @@ public:
 
     void UnmapAll();
 
-    THashMap<InputDeviceKey, TVector<Mapping>> const& GetMappings() const { return Mappings; }
+    THashMap<InputDeviceKey, TVector<Mapping>> const& GetMappings() const { return m_Mappings; }
 
-    TNameHash<TPodVector<AxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
+    TNameHash<TVector<AxisMapping>> const& GetAxisMappings() const { return m_AxisMappings; }
 
 protected:
     /** Load resource from file */
@@ -156,8 +156,8 @@ protected:
 private:
     void InitializeFromDocument(Document const& Document);
 
-    THashMap<InputDeviceKey, TVector<Mapping>> Mappings;
-    TNameHash<TPodVector<AxisMapping>>         AxisMappings;
+    THashMap<InputDeviceKey, TVector<Mapping>> m_Mappings;
+    TNameHash<TVector<AxisMapping>>            m_AxisMappings;
 };
 
 class InputComponent : public ActorComponent
@@ -241,8 +241,8 @@ public:
 
     void SetMouseAxisState(float X, float Y);
 
-    float GetMouseMoveX() const { return MouseAxisState[MouseIndex].X; }
-    float GetMouseMoveY() const { return MouseAxisState[MouseIndex].Y; }
+    float GetMouseMoveX() const { return m_MouseAxisState[m_MouseIndex].X; }
+    float GetMouseMoveY() const { return m_MouseAxisState[m_MouseIndex].Y; }
 
     float GetMouseAxisState(int Axis);
 
@@ -252,14 +252,14 @@ public:
 
     void NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp);
 
-    InputComponent* GetNext() { return Next; }
-    InputComponent* GetPrev() { return Prev; }
+    InputComponent* GetNext() { return m_Next; }
+    InputComponent* GetPrev() { return m_Prev; }
 
     static void SetJoystickAxisState(int Joystick, int Axis, float Value);
 
     static float GetJoystickAxisState(int Joystick, int Axis);
 
-    static InputComponent* GetInputComponents() { return InputComponents; }
+    static InputComponent* GetInputComponents() { return m_InputComponents; }
 
 protected:
     struct AxisBinding
@@ -326,34 +326,34 @@ protected:
 
     TRef<InputMappings> m_InputMappings;
 
-    int BindingVersion = 0;
+    int m_BindingVersion = 0;
 
-    TNameHash<AxisBinding>   AxisBindingsHash;
-    TNameHash<ActionBinding> ActionBindingsHash;
+    TNameHash<AxisBinding> m_AxisBindingsHash;
+    TNameHash<ActionBinding> m_ActionBindingsHash;
 
     /** Array of pressed keys */
-    TArray<PressedKey, MAX_PRESSED_KEYS> PressedKeys    = {};
-    int                                  NumPressedKeys = 0;
+    TArray<PressedKey, MAX_PRESSED_KEYS> m_PressedKeys = {};
+    int m_NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    TArray<int8_t*, MAX_INPUT_DEVICES>                                DeviceButtonDown;
-    TArray<int8_t, MAX_KEYBOARD_BUTTONS>                              KeyboardButtonDown;
-    TArray<int8_t, MAX_MOUSE_BUTTONS>                                 MouseButtonDown;
-    TArray<TArray<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonDown;
+    TArray<int8_t*, MAX_INPUT_DEVICES> m_DeviceButtonDown;
+    TArray<int8_t, MAX_KEYBOARD_BUTTONS> m_KeyboardButtonDown;
+    TArray<int8_t, MAX_MOUSE_BUTTONS> m_MouseButtonDown;
+    TArray<TArray<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonDown;
 
-    TArray<Float2, 2> MouseAxisState;
-    int               MouseIndex = 0;
+    TArray<Float2, 2> m_MouseAxisState;
+    int m_MouseIndex = 0;
 
     Float2 m_CursorPosition;
 
-    TCallback<void(WideChar, int, double)> CharacterCallback;
-    bool                                   bCharacterCallbackExecuteEvenWhenPaused = false;
+    TCallback<void(WideChar, int, double)> m_CharacterCallback;
+    bool m_bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components
-    InputComponent*        Next = nullptr;
-    InputComponent*        Prev = nullptr;
-    static InputComponent* InputComponents;
-    static InputComponent* InputComponentsTail;
+    InputComponent* m_Next = nullptr;
+    InputComponent* m_Prev = nullptr;
+    static InputComponent* m_InputComponents;
+    static InputComponent* m_InputComponentsTail;
 };
 
 class InputHelper final

@@ -43,7 +43,7 @@ ConsoleVar com_DrawTerrainBounds("com_DrawTerrainBounds"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(TerrainComponent)
 
-static bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits)
+static bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits)
 {
     TerrainComponent const* terrain        = static_cast<TerrainComponent const*>(Self->Owner);
     bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
@@ -411,7 +411,7 @@ void TerrainComponent::SetAllowRaycast(bool _AllowRaycast)
     bAllowRaycast = _AllowRaycast;
 }
 
-bool TerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const
+bool TerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits) const
 {
     if (!Primitive->RaycastCallback)
     {
@@ -613,7 +613,7 @@ void TerrainComponent::GatherNavigationGeometry(NavigationGeometry& Geometry) co
     Float3x4 const& worldTransform    = GetWorldTransformMatrix();
     Float3x4        worldTransformInv = worldTransform.Inversed();
 
-    TPodVector<BvAxisAlignedBox> const& areas = m_Terrain->NavigationAreas;
+    TVector<BvAxisAlignedBox> const& areas = m_Terrain->NavigationAreas;
 
     // Gather terrain geometry from navigation areas
     for (BvAxisAlignedBox const& areaBounds : areas)

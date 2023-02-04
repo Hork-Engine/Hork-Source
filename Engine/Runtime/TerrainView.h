@@ -183,8 +183,8 @@ private:
     /** Height above the terrain */
     float m_ViewHeight;
 
-    TPodVector<TerrainPatchInstance> m_InstanceBuffer;
-    TPodVector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
+    TVector<TerrainPatchInstance> m_InstanceBuffer;
+    TVector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
 
     TRef<RenderCore::ITexture> m_ClipmapArray;
     TRef<RenderCore::ITexture> m_NormalMapArray;
@@ -200,7 +200,7 @@ private:
     Float3 VertexShader(TerrainVertex const& v);
     DebugRenderer* m_TerrainRenderer;
     TerrainPatchInstance const* m_pDrawCallUniformData;
-    TPodVector<BvAxisAlignedBox> m_BoundingBoxes;
+    TVector<BvAxisAlignedBox> m_BoundingBoxes;
 };
 
 HK_NAMESPACE_END

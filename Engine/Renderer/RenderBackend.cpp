@@ -220,9 +220,9 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     {
     int numPageSizes = 0;
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, nullptr, nullptr, nullptr );
-    TPodVector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
-    TPodVector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
-    TPodVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
+    TVector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
+    TVector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
+    TVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
     for ( int i = 0 ; i < numPageSizes ; i++ ) {
         LOG( "Sparse page size {} {} {}\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );

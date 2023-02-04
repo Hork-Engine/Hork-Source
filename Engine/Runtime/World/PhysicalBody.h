@@ -321,7 +321,7 @@ public:
 
     void ApplyTorqueImpulse(Float3 const& torque);
 
-    void GetCollisionBodiesWorldBounds(TPodVector<BvAxisAlignedBox>& boundingBoxes) const;
+    void GetCollisionBodiesWorldBounds(TVector<BvAxisAlignedBox>& boundingBoxes) const;
 
     void GetCollisionWorldBounds(BvAxisAlignedBox& boundingBox) const;
 
@@ -336,9 +336,9 @@ public:
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
     void GatherCollisionGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices) const;
 
-    void CollisionContactQuery(TPodVector<HitProxy*>& _Result) const;
+    void CollisionContactQuery(TVector<HitProxy*>& _Result) const;
 
-    void CollisionContactQueryActor(TPodVector<Actor*>& _Result) const;
+    void CollisionContactQueryActor(TVector<Actor*>& _Result) const;
 
     void GatherNavigationGeometry(NavigationGeometry& Geometry) const override;
 
@@ -384,7 +384,7 @@ private:
     TRef<HitProxy>              m_HitProxy;
     TRef<CollisionModel>        m_CollisionModel;
     TRef<CollisionInstance>     m_CollisionInstance;
-    TPodVector<BoneCollisionInstance*> m_BoneCollisionInst;
+    TVector<BoneCollisionInstance*> m_BoneCollisionInst;
     btRigidBody*               m_RigidBody = nullptr;
     PhysicalBodyMotionState*   m_MotionState = nullptr;
     TUniqueRef<DebugDrawCache> m_DebugDrawCache;

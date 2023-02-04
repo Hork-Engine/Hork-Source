@@ -94,10 +94,10 @@ namespace Runtime
 {
 
 /** Get list of displays */
-void GetDisplays(TPodVector<DisplayInfo>& Displays);
+void GetDisplays(TVector<DisplayInfo>& Displays);
 
 /** Get list of display modes */
-void GetDisplayModes(DisplayInfo const& Display, TPodVector<DisplayMode>& Modes);
+void GetDisplayModes(DisplayInfo const& Display, TVector<DisplayMode>& Modes);
 
 /** Get information about the desktop display mode */
 void GetDesktopDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);

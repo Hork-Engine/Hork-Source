@@ -52,7 +52,7 @@ protected:
 private:
     void UpdateAmbientVolume(float _TimeStep);
 
-    TPodVector<SoundEmitter*> AmbientSound;
+    TVector<SoundEmitter*> AmbientSound;
 };
 
 HK_NAMESPACE_END

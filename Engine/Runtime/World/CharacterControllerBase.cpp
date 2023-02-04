@@ -616,7 +616,7 @@ bool CharacterControllerBase::_RecoverFromPenetration(float MaxPenetrationDepth)
     return penetration;
 }
 
-void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped, TPodVector<CharacterControllerContact>* pContacts)
+void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped, TVector<CharacterControllerContact>* pContacts)
 {
     Float3 linearVelocity = (TargetPos - StartPos) / TimeStep;
     Float3 finalVelocity;
@@ -670,7 +670,7 @@ bool CharacterControllerBase::ClipVelocityByContactNormals(Float3 const* Contact
     return true;
 }
 
-void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float _TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped, TPodVector<CharacterControllerContact>* pContacts)
+void CharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float _TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped, TVector<CharacterControllerContact>* pContacts)
 {
     const int                 MAX_CONTACTS = 5;
     Float3                    contactNormals[MAX_CONTACTS];

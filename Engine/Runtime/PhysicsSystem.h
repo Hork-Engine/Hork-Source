@@ -225,7 +225,7 @@ public:
     virtual ~PhysicsSystem();
 
     /** Trace collision bodies */
-    bool Trace(TPodVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool Trace(TVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
     bool TraceClosest(CollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
@@ -237,7 +237,7 @@ public:
     bool TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Experimental trace box with array of collisions */
-    bool TraceBox2(TPodVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    bool TraceBox2(TVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Trace collision bodies */
     bool TraceCylinder(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter = nullptr) const;
@@ -249,28 +249,28 @@ public:
     bool TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest const& _SweepTest) const;
 
     /** Query objects in sphere */
-    void QueryHitProxies_Sphere(TPodVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies_Sphere(TVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in box */
-    void QueryHitProxies_Box(TPodVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies_Box(TVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in AABB */
-    void QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryHitProxies(TVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in sphere */
-    void QueryActors_Sphere(TPodVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Sphere(TVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in box */
-    void QueryActors_Box(TPodVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors_Box(TVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
     /** Query objects in AABB */
-    void QueryActors(TPodVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
+    void QueryActors(TVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter = nullptr) const;
 
-    void QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision_Sphere(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const;
 
-    void QueryCollision_Box(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision_Box(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const;
 
-    void QueryCollision(TPodVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const;
+    void QueryCollision(TVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const;
 
     /** Simulate the physics */
     void Simulate(float _TimeStep);
@@ -319,7 +319,7 @@ private:
     btSoftBodyWorldInfo* m_SoftBodyWorldInfo;
     TVector<CollisionContact> m_CollisionContacts[2];
     THashSet<ContactKey> m_ContactHash[2];
-    TPodVector<ContactPoint> m_ContactPoints;
+    TVector<ContactPoint> m_ContactPoints;
     HitProxy* m_PendingAddToWorldHead = nullptr;
     HitProxy* m_PendingAddToWorldTail = nullptr;
     int m_FixedTickNumber = 0;

@@ -42,7 +42,9 @@ HK_NAMESPACE_BEGIN
 class ShaderFactory
 {
 public:
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, TPodVector<const char*> Sources, TRef<RenderCore::IShaderModule>& Module);
+    using SourceList = TSmallVector<const char*, 64>;
+
+    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, SourceList const& Sources, TRef<RenderCore::IShaderModule>& Module);
     static void CreateShader(RenderCore::SHADER_TYPE ShaderType, const char* Source, TRef<RenderCore::IShaderModule>& Module);
     static void CreateShader(RenderCore::SHADER_TYPE ShaderType, String const& Source, TRef<RenderCore::IShaderModule>& Module);
 

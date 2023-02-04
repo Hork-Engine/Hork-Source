@@ -148,10 +148,10 @@ private:
     };
 
     /** Physical page infos */
-    TPodVector<PhysPageInfo> m_PhysPageInfo;
+    TVector<PhysPageInfo> m_PhysPageInfo;
 
     /** Physical page infos sorted by time */
-    TPodVector<PhysPageInfoSorted> m_PhysPageInfoSorted;
+    TVector<PhysPageInfoSorted> m_PhysPageInfoSorted;
 
     uint32_t m_PageCacheCapacityX;
     uint32_t m_PageCacheCapacityY;
@@ -165,7 +165,7 @@ private:
 
     int64_t m_LRUTime;
 
-    TPodVector<PageTransfer*> m_Transfers;
+    TVector<PageTransfer*> m_Transfers;
     Mutex m_TransfersMutex;
 
     enum

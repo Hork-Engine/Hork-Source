@@ -1076,7 +1076,7 @@ void IndexedMesh::GenerateSoftbodyLinksFromFaces()
     }
 }
 
-bool IndexedMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
+bool IndexedMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
 {
     bool ret = false;
 
@@ -1223,12 +1223,12 @@ void IndexedMeshSubpart::SetBVH(std::unique_ptr<BvhTree> BVH)
     m_bAABBTreeDirty = false;
 }
 
-bool IndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
+bool IndexedMeshSubpart::Raycast(Float3 const& RayStart, Float3 const& RayDir, Float3 const& InvRayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
 {
     bool                ret = false;
     float               d, u, v;
     unsigned int const* indices  = m_OwnerMesh->GetIndices() + m_FirstIndex;
-    MeshVertex const*  vertices = m_OwnerMesh->GetVertices();
+    MeshVertex const*   vertices = m_OwnerMesh->GetVertices();
 
     if (Distance < 0.0001f)
     {
@@ -1589,7 +1589,7 @@ void ProceduralMesh::PreRenderUpdate(RenderFrontendDef const* pDef)
     }
 }
 
-bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
+bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
 {
     if (Distance < 0.0001f)
     {

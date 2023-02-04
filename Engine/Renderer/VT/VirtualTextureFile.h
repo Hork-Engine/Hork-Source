@@ -79,7 +79,7 @@ protected:
         int Offset; // Layers[i].Offset = Layers[ i - 1 ].Offset + Layers[ i - 1 ].SizeInBytes
     };
 
-    TPodVector<Layer> Layers;
+    TVector<Layer> Layers;
     size_t PageSizeInBytes; // PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[Layers.size()-1].SizeInBytes
 
     /** Resolution of virtual texture in pixels */

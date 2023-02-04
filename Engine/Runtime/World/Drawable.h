@@ -75,24 +75,24 @@ public:
     bool IsVisible() const;
 
     /** Set hidden during main render pass */
-    void SetHiddenInLightPass(bool _HiddenInLightPass);
+    void SetHiddenInLightPass(bool hiddenInLightPass);
 
     bool IsHiddenInLightPass() const;
 
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow(bool _CastShadow);
+    void SetCastShadow(bool castShadow);
 
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return m_bCastShadow; }
 
-    void SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup);
+    void SetQueryGroup(VSD_QUERY_MASK userQueryGroup);
 
-    void SetSurfaceFlags(SURFACE_FLAGS Flags);
+    void SetSurfaceFlags(SURFACE_FLAGS flags);
 
     SURFACE_FLAGS GetSurfaceFlags() const;
 
     /** Used for face culling */
-    void SetFacePlane(PlaneF const& _Plane);
+    void SetFacePlane(PlaneF const& plane);
 
     PlaneF const& GetFacePlane() const;
 
@@ -100,12 +100,12 @@ public:
     bool IsSkinnedMesh() const { return m_bSkinnedMesh; }
 
     /** Force using bounding box specified by SetBoundsOverride() */
-    void ForceOverrideBounds(bool _OverrideBounds);
+    void ForceOverrideBounds(bool overrideBounds);
 
     /** Set bounding box to override object bounds */
-    void SetBoundsOverride(BvAxisAlignedBox const& _Bounds);
+    void SetBoundsOverride(BvAxisAlignedBox const& bounds);
 
-    void ForceOutdoor(bool _OutdoorSurface);
+    void ForceOutdoor(bool outdoorSurface);
 
     bool IsOutdoor() const;
 
@@ -119,19 +119,19 @@ public:
     BvAxisAlignedBox const& GetWorldBounds() const;
 
     /** Allow raycasting */
-    virtual void SetAllowRaycast(bool _AllowRaycast) {}
+    virtual void SetAllowRaycast(bool allowRaycast) {}
 
     bool IsRaycastAllowed() const { return m_bAllowRaycast; }
 
     /** Raycast the drawable */
-    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const;
+    bool Raycast(Float3 const& rayStart, Float3 const& rayEnd, TVector<TriangleHitResult>& hits) const;
 
     /** Raycast the drawable */
-    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const;
+    bool RaycastClosest(Float3 const& rayStart, Float3 const& rayEnd, TriangleHitResult& hit) const;
 
-    void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
+    void SetVisibilityGroup(VISIBILITY_GROUP visibilityGroup)
     {
-        m_Primitive->SetVisibilityGroup(VisibilityGroup);
+        m_Primitive->SetVisibilityGroup(visibilityGroup);
     }
 
     VISIBILITY_GROUP GetVisibilityGroup() const

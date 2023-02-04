@@ -41,39 +41,29 @@ HK_NAMESPACE_BEGIN
 namespace
 {
 
-HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& _Point, PlaneF const* _Planes, int _NumPlanes, float _Margin)
+HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& p, PlaneF const* planes, int planeCount, float margin)
 {
-    for (int i = 0; i < _NumPlanes; i++)
-    {
-        if (Math::Dot(_Planes[i].Normal, _Point) + _Planes[i].D - _Margin > 0)
-        {
+    for (int i = 0; i < planeCount; i++)
+        if (Math::Dot(planes[i].Normal, p) + planes[i].D - margin > 0)
             return false;
-        }
-    }
     return true;
 }
 
-static int FindPlane(PlaneF const& _Plane, PlaneF const* _Planes, int _NumPlanes)
+static int FindPlane(PlaneF const& _Plane, PlaneF const* planes, int planeCount)
 {
-    for (int i = 0; i < _NumPlanes; i++)
-    {
-        if (Math::Dot(_Plane.Normal, _Planes[i].Normal) > 0.999f)
-        {
+    for (int i = 0; i < planeCount; i++)
+        if (Math::Dot(_Plane.Normal, planes[i].Normal) > 0.999f)
             return i;
-        }
-    }
     return -1;
 }
 
-static bool AreVerticesBehindPlane(PlaneF const& _Plane, Float3 const* _Vertices, int _NumVertices, float _Margin)
+static bool AreVerticesBehindPlane(PlaneF const& _Plane, Float3 const* vertices, int vertexCount, float margin)
 {
-    for (int i = 0; i < _NumVertices; i++)
+    for (int i = 0; i < vertexCount; i++)
     {
-        float dist = Math::Dot(_Plane.Normal, _Vertices[i]) + _Plane.D - _Margin;
+        float dist = Math::Dot(_Plane.Normal, vertices[i]) + _Plane.D - margin;
         if (dist > 0.0f)
-        {
             return false;
-        }
     }
     return true;
 }
@@ -83,28 +73,28 @@ static bool AreVerticesBehindPlane(PlaneF const& _Plane, Float3 const* _Vertices
 namespace Geometry
 {
 
-void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPodVector<PlaneF>& _Planes)
+void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVector<PlaneF>& planes)
 {
     PlaneF plane;
     Float3 edge0, edge1;
 
     const float margin = 0.01f;
 
-    _Planes.Clear();
+    planes.Clear();
 
-    for (int i = 0; i < _NumVertices; i++)
+    for (int i = 0; i < vertexCount; i++)
     {
-        Float3 const& normal1 = _Vertices[i];
+        Float3 const& normal1 = vertices[i];
 
-        for (int j = i + 1; j < _NumVertices; j++)
+        for (int j = i + 1; j < vertexCount; j++)
         {
-            Float3 const& normal2 = _Vertices[j];
+            Float3 const& normal2 = vertices[j];
 
             edge0 = normal2 - normal1;
 
-            for (int k = j + 1; k < _NumVertices; k++)
+            for (int k = j + 1; k < vertexCount; k++)
             {
-                Float3 const& normal3 = _Vertices[k];
+                Float3 const& normal3 = vertices[k];
 
                 edge1 = normal3 - normal1;
 
@@ -117,13 +107,13 @@ void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPo
                     {
                         plane.Normal.NormalizeSelf();
 
-                        if (FindPlane(plane, _Planes.ToPtr(), _Planes.Size()) == -1)
+                        if (FindPlane(plane, planes.ToPtr(), planes.Size()) == -1)
                         {
                             plane.D = -Math::Dot(plane.Normal, normal1);
 
-                            if (AreVerticesBehindPlane(plane, _Vertices, _NumVertices, margin))
+                            if (AreVerticesBehindPlane(plane, vertices, vertexCount, margin))
                             {
-                                _Planes.Add(plane);
+                                planes.Add(plane);
                             }
                         }
                     }
@@ -134,28 +124,28 @@ void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPo
     }
 }
 
-void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVector<Float3>& _Vertices)
+void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<Float3>& vertices)
 {
-    constexpr float tolerance         = 0.0001f;
+    constexpr float tolerance = 0.0001f;
     constexpr float quotientTolerance = 0.000001f;
 
-    _Vertices.Clear();
+    vertices.Clear();
 
-    for (int i = 0; i < _NumPlanes; i++)
+    for (int i = 0; i < planeCount; i++)
     {
-        Float3 const& normal1 = _Planes[i].Normal;
+        Float3 const& normal1 = planes[i].Normal;
 
-        for (int j = i + 1; j < _NumPlanes; j++)
+        for (int j = i + 1; j < planeCount; j++)
         {
-            Float3 const& normal2 = _Planes[j].Normal;
+            Float3 const& normal2 = planes[j].Normal;
 
             Float3 n1n2 = Math::Cross(normal1, normal2);
 
             if (n1n2.LengthSqr() > tolerance)
             {
-                for (int k = j + 1; k < _NumPlanes; k++)
+                for (int k = j + 1; k < planeCount; k++)
                 {
-                    Float3 const& normal3 = _Planes[k].Normal;
+                    Float3 const& normal3 = planes[k].Normal;
 
                     Float3 n2n3 = Math::Cross(normal2, normal3);
                     Float3 n3n1 = Math::Cross(normal3, normal1);
@@ -167,12 +157,12 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
                         {
                             quotient = -1 / quotient;
 
-                            Float3 potentialVertex = n2n3 * _Planes[i].D + n3n1 * _Planes[j].D + n1n2 * _Planes[k].D;
+                            Float3 potentialVertex = n2n3 * planes[i].D + n3n1 * planes[j].D + n1n2 * planes[k].D;
                             potentialVertex *= quotient;
 
-                            if (IsPointInsideConvexHull(potentialVertex, _Planes, _NumPlanes, 0.01f))
+                            if (IsPointInsideConvexHull(potentialVertex, planes, planeCount, 0.01f))
                             {
-                                _Vertices.Add(potentialVertex);
+                                vertices.Add(potentialVertex);
                             }
                         }
                     }
@@ -182,144 +172,61 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
     }
 }
 
-//struct ConvexDecompositionDesc {
-//    // options
-//    unsigned int  Depth;    // depth to split, a maximum of 10, generally not over 7.
-//    float         ConcavityThreshold; // the concavity threshold percentage.  0=20 is reasonable.
-//    float         VolumeConservationThreshold; // the percentage volume conservation threshold to collapse hulls. 0-30 is reasonable.
-
-//    // hull output limits.
-//    unsigned int  MaxHullVertices; // maximum number of vertices in the output hull. Recommended 32 or less.
-//    float         HullSkinWidth;   // a skin width to apply to the output hulls.
-//};
-
-//class MyConvexDecompInterface : public ConvexDecomposition::ConvexDecompInterface {
-//public:
-//    MyConvexDecompInterface() {
-
-//    }
-
-//    void ConvexDecompResult( ConvexDecomposition::ConvexResult & _Result ) override {
-
-//#if 0
-//        // the convex hull.
-//        unsigned int	    mHullVcount;
-//        float *			    mHullVertices;
-//        unsigned  int       mHullTcount;
-//        unsigned int	*   mHullIndices;
-
-//        float               mHullVolume;		    // the volume of the convex hull.
-
-//        float               mOBBSides[3];			  // the width, height and breadth of the best fit OBB
-//        float               mOBBCenter[3];      // the center of the OBB
-//        float               mOBBOrientation[4]; // the quaternion rotation of the OBB.
-//        float               mOBBTransform[16];  // the 4x4 transform of the OBB.
-//        float               mOBBVolume;         // the volume of the OBB
-
-//        float               mSphereRadius;      // radius and center of best fit sphere
-//        float               mSphereCenter[3];
-//        float               mSphereVolume;      // volume of the best fit sphere
-//#endif
-
-//        ConvexHullDesc & hull = Hulls.Add();
-
-//        hull.FirstVertex = Vertices.Length();
-//        hull.VertexCount = _Result.mHullVcount;
-//        hull.FirstIndex = Indices.Length();
-//        hull.IndexCount = _Result.mHullTcount;
-
-//        Vertices.Resize( Vertices.Length() + hull.VertexCount );
-//        Indices.Resize( Indices.Length() + hull.IndexCount );
-
-//        Platform::Memcpy( &Vertices[ hull.FirstVertex ], _Result.mHullVertices, hull.VertexCount * (sizeof( float ) * 3) );
-//        Platform::Memcpy( &Indices[ hull.FirstIndex ], _Result.mHullIndices, hull.IndexCount * sizeof( unsigned int ) );
-
-
-
-//    }
-
-//    struct ConvexHullDesc {
-//        int FirstVertex;
-//        int VertexCount;
-//        int FirstIndex;
-//        int IndexCount;
-
-//#if 0
-//        float   HullVolume;           // the volume of the convex hull.
-
-//        float   OBBSides[3];          // the width, height and breadth of the best fit OBB
-//        Float3  OBBCenter;         // the center of the OBB
-//        float   OBBOrientation[4];    // the quaternion rotation of the OBB.
-//        Float4x4 OBBTransform;     // the 4x4 transform of the OBB.
-//        float   OBBVolume;            // the volume of the OBB
-
-//        float   SphereRadius;         // radius and center of best fit sphere
-//        Float3  SphereCenter;
-//        float   SphereVolume;         // volume of the best fit sphere
-//#endif
-//    };
-
-//    TPodVector< Float3 > Vertices;
-//    TPodVector< unsigned int > Indices;
-//    TPodVector< ConvexHullDesc > Hulls;
-//};
-// TODO: try ConvexBuilder
-
-void BakeCollisionMarginConvexHull(Float3 const* _InVertices, int _VertexCount, TPodVector<Float3>& _OutVertices, float _Margin)
+void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, TVector<Float3>& outVertices, float margin)
 {
-    TPodVector<PlaneF> planes;
+    TVector<PlaneF> planes;
 
-    ConvexHullPlanesFromVertices(_InVertices, _VertexCount, planes);
+    ConvexHullPlanesFromVertices(vertices, vertexCount, planes);
 
     for (int i = 0; i < planes.Size(); i++)
     {
         PlaneF& plane = planes[i];
 
-        plane.D += _Margin;
+        plane.D += margin;
     }
 
-    ConvexHullVerticesFromPlanes(planes.ToPtr(), planes.Size(), _OutVertices);
+    ConvexHullVerticesFromPlanes(planes.ToPtr(), planes.Size(), outVertices);
 }
 
-bool PerformConvexDecomposition(Float3 const*                _Vertices,
-                                int                          _VerticesCount,
-                                int                          _VertexStride,
-                                unsigned int const*          _Indices,
-                                int                          _IndicesCount,
-                                TPodVector<Float3>&          _OutVertices,
-                                TPodVector<unsigned int>&    _OutIndices,
-                                TPodVector<ConvexHullDesc>& _OutHulls)
+bool PerformConvexDecomposition(Float3 const* vertices,
+                                int vertexCount,
+                                int vertexStride,
+                                unsigned int const* indices,
+                                int indexCount,
+                                TVector<Float3>& outVertices,
+                                TVector<unsigned int>& outIndices,
+                                TVector<ConvexHullDesc>& outHulls)
 {
-    _OutVertices.Clear();
-    _OutIndices.Clear();
-    _OutHulls.Clear();
+    outVertices.Clear();
+    outIndices.Clear();
+    outHulls.Clear();
 
-    HK_VERIFY_R(_IndicesCount % 3 == 0, "PerformConvexDecomposition: The number of indices must be a multiple of 3");
+    HK_VERIFY_R(indexCount % 3 == 0, "PerformConvexDecomposition: The number of indices must be a multiple of 3");
 
-    TVector<HACD::Vec3<HACD::Real>> points(_VerticesCount);
-    TVector<HACD::Vec3<long>>       triangles(_IndicesCount / 3);
+    TVector<HACD::Vec3<HACD::Real>> points(vertexCount);
+    TVector<HACD::Vec3<long>> triangles(indexCount / 3);
 
-    byte const* srcVertices = (byte const*)_Vertices;
-    for (int i = 0; i < _VerticesCount; i++)
+    byte const* srcVertices = (byte const*)vertices;
+    for (int i = 0; i < vertexCount; i++)
     {
         Float3 const* vertex = (Float3 const*)srcVertices;
 
         points[i] = HACD::Vec3<HACD::Real>(vertex->X, vertex->Y, vertex->Z);
 
-        srcVertices += _VertexStride;
+        srcVertices += vertexStride;
     }
 
     int triangleNum = 0;
-    for (int i = 0; i < _IndicesCount; i += 3, triangleNum++)
+    for (int i = 0; i < indexCount; i += 3, triangleNum++)
     {
-        triangles[triangleNum] = HACD::Vec3<long>(_Indices[i], _Indices[i + 1], _Indices[i + 2]);
+        triangles[triangleNum] = HACD::Vec3<long>(indices[i], indices[i + 1], indices[i + 2]);
     }
 
     HACD::HACD hacd;
     hacd.SetPoints(points.ToPtr());
-    hacd.SetNPoints(_VerticesCount);
+    hacd.SetNPoints(vertexCount);
     hacd.SetTriangles(triangles.ToPtr());
-    hacd.SetNTriangles(_IndicesCount / 3);
+    hacd.SetNTriangles(indexCount / 3);
     //    hacd.SetCompacityWeight( 0.1 );
     //    hacd.SetVolumeWeight( 0.0 );
     //    hacd.SetNClusters( 2 );                     // recommended 2
@@ -340,52 +247,52 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
 
     hacd.Compute();
 
-    int maxPointsPerCluster    = 0;
+    int maxPointsPerCluster = 0;
     int maxTrianglesPerCluster = 0;
-    int totalPoints            = 0;
-    int totalTriangles         = 0;
+    int totalPoints = 0;
+    int totalTriangles = 0;
 
     int numClusters = hacd.GetNClusters();
     for (int cluster = 0; cluster < numClusters; cluster++)
     {
-        int numPoints    = hacd.GetNPointsCH(cluster);
+        int numPoints = hacd.GetNPointsCH(cluster);
         int numTriangles = hacd.GetNTrianglesCH(cluster);
 
         totalPoints += numPoints;
         totalTriangles += numTriangles;
 
-        maxPointsPerCluster    = Math::Max(maxPointsPerCluster, numPoints);
+        maxPointsPerCluster = Math::Max(maxPointsPerCluster, numPoints);
         maxTrianglesPerCluster = Math::Max(maxTrianglesPerCluster, numTriangles);
     }
 
     TVector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
-    TVector<HACD::Vec3<long>>       hullTriangles(maxTrianglesPerCluster);
+    TVector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
 
-    _OutHulls.Resize(numClusters);
-    _OutVertices.Resize(totalPoints);
-    _OutIndices.Resize(totalTriangles * 3);
+    outHulls.Resize(numClusters);
+    outVertices.Resize(totalPoints);
+    outIndices.Resize(totalTriangles * 3);
 
-    totalPoints    = 0;
+    totalPoints = 0;
     totalTriangles = 0;
 
     for (int cluster = 0; cluster < numClusters; cluster++)
     {
-        int numPoints    = hacd.GetNPointsCH(cluster);
+        int numPoints = hacd.GetNPointsCH(cluster);
         int numTriangles = hacd.GetNTrianglesCH(cluster);
 
         hacd.GetCH(cluster, hullPoints.ToPtr(), hullTriangles.ToPtr());
 
-        ConvexHullDesc& hull = _OutHulls[cluster];
-        hull.FirstVertex      = totalPoints;
-        hull.VertexCount      = numPoints;
-        hull.FirstIndex       = totalTriangles * 3;
-        hull.IndexCount       = numTriangles * 3;
+        ConvexHullDesc& hull = outHulls[cluster];
+        hull.FirstVertex = totalPoints;
+        hull.VertexCount = numPoints;
+        hull.FirstIndex = totalTriangles * 3;
+        hull.IndexCount = numTriangles * 3;
         hull.Centroid.Clear();
 
         totalPoints += numPoints;
         totalTriangles += numTriangles;
 
-        Float3* pVertices = _OutVertices.ToPtr() + hull.FirstVertex;
+        Float3* pVertices = outVertices.ToPtr() + hull.FirstVertex;
         for (int i = 0; i < numPoints; i++, pVertices++)
         {
             pVertices->X = hullPoints[i].X();
@@ -398,14 +305,14 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
         hull.Centroid /= (float)numPoints;
 
         // Adjust vertices
-        pVertices = _OutVertices.ToPtr() + hull.FirstVertex;
+        pVertices = outVertices.ToPtr() + hull.FirstVertex;
         for (int i = 0; i < numPoints; i++, pVertices++)
         {
             *pVertices -= hull.Centroid;
         }
 
-        unsigned int* pIndices = _OutIndices.ToPtr() + hull.FirstIndex;
-        int           n        = 0;
+        unsigned int* pIndices = outIndices.ToPtr() + hull.FirstIndex;
+        int n = 0;
         for (int i = 0; i < hull.IndexCount; i += 3, n++)
         {
             *pIndices++ = hullTriangles[n].X();
@@ -414,26 +321,26 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
         }
     }
 
-    return !_OutHulls.IsEmpty();
+    return !outHulls.IsEmpty();
 }
 
-bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
-                                     int                          _VerticesCount,
-                                     int                          _VertexStride,
-                                     unsigned int const*          _Indices,
-                                     int                          _IndicesCount,
-                                     TPodVector<Float3>&          _OutVertices,
-                                     TPodVector<unsigned int>&    _OutIndices,
-                                     TPodVector<ConvexHullDesc>& _OutHulls,
-                                     Float3&                      _CenterOfMass)
+bool PerformConvexDecompositionVHACD(Float3 const* vertices,
+                                     int vertexCount,
+                                     int vertexStride,
+                                     unsigned int const* indices,
+                                     int indexCount,
+                                     TVector<Float3>& outVertices,
+                                     TVector<unsigned int>& outIndices,
+                                     TVector<ConvexHullDesc>& outHulls,
+                                     Float3& centerOfMass)
 {
     class Callback : public VHACD::IVHACD::IUserCallback
     {
     public:
-        void Update(const double      overallProgress,
-                    const double      stageProgress,
+        void Update(const double overallProgress,
+                    const double stageProgress,
                     const char* const stage,
-                    const char*       operation) override
+                    const char* operation) override
         {
             LOG("Overall progress {}, {} progress {}, operation: {}\n", overallProgress, stage, stageProgress, operation);
         }
@@ -448,66 +355,66 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     };
 
     Callback callback;
-    Logger   logger;
+    Logger logger;
 
     VHACD::IVHACD* vhacd = VHACD::CreateVHACD();
 
     VHACD::IVHACD::Parameters params;
-    params.m_callback                         = &callback;                   // Optional user provided callback interface for progress
-    params.m_logger                           = &logger;                     // Optional user provided callback interface for log messages
-    params.m_taskRunner                       = nullptr;                     // Optional user provided interface for creating tasks
-    params.m_maxConvexHulls                   = 64;                          // The maximum number of convex hulls to produce
-    params.m_resolution                       = 400000;                      // The voxel resolution to use
-    params.m_minimumVolumePercentErrorAllowed = 1;                           // if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
-    params.m_maxRecursionDepth                = 14;                          // The maximum recursion depth
-    params.m_shrinkWrap                       = true;                        // Whether or not to shrinkwrap the voxel positions to the source mesh on output
-    params.m_fillMode                         = VHACD::FillMode::FLOOD_FILL; // How to fill the interior of the voxelized mesh //FLOOD_FILL SURFACE_ONLY RAYCAST_FILL
-    params.m_maxNumVerticesPerCH              = 64;                          // The maximum number of vertices allowed in any output convex hull
-    params.m_asyncACD                         = true;                        // Whether or not to run asynchronously, taking advantage of additonal cores
-    params.m_minEdgeLength                    = 2;                           // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
-    params.m_findBestPlane                    = false;                       // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
+    params.m_callback = &callback;                   // Optional user provided callback interface for progress
+    params.m_logger = &logger;                       // Optional user provided callback interface for log messages
+    params.m_taskRunner = nullptr;                   // Optional user provided interface for creating tasks
+    params.m_maxConvexHulls = 64;                    // The maximum number of convex hulls to produce
+    params.m_resolution = 400000;                    // The voxel resolution to use
+    params.m_minimumVolumePercentErrorAllowed = 1;   // if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
+    params.m_maxRecursionDepth = 14;                 // The maximum recursion depth
+    params.m_shrinkWrap = true;                      // Whether or not to shrinkwrap the voxel positions to the source mesh on output
+    params.m_fillMode = VHACD::FillMode::FLOOD_FILL; // How to fill the interior of the voxelized mesh //FLOOD_FILL SURFACE_ONLY RAYCAST_FILL
+    params.m_maxNumVerticesPerCH = 64;               // The maximum number of vertices allowed in any output convex hull
+    params.m_asyncACD = true;                        // Whether or not to run asynchronously, taking advantage of additonal cores
+    params.m_minEdgeLength = 2;                      // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
+    params.m_findBestPlane = false;                  // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
 
-    _OutVertices.Clear();
-    _OutIndices.Clear();
-    _OutHulls.Clear();
+    outVertices.Clear();
+    outIndices.Clear();
+    outHulls.Clear();
 
-    HK_VERIFY_R(_IndicesCount % 3 == 0, "PerformConvexDecompositionVHACD: The number of indices must be a multiple of 3");
+    HK_VERIFY_R(indexCount % 3 == 0, "PerformConvexDecompositionVHACD: The number of indices must be a multiple of 3");
 
-    TVector<Double3> tempVertices(_VerticesCount);
-    byte const*      srcVertices = (byte const*)_Vertices;
-    for (int i = 0; i < _VerticesCount; i++)
+    TVector<Double3> tempVertices(vertexCount);
+    byte const* srcVertices = (byte const*)vertices;
+    for (int i = 0; i < vertexCount; i++)
     {
         tempVertices[i] = Double3(*(Float3 const*)srcVertices);
-        srcVertices += _VertexStride;
+        srcVertices += vertexStride;
     }
-    bool bResult = vhacd->Compute(&tempVertices[0][0], _VerticesCount, _Indices, _IndicesCount / 3, params);
+    bool bResult = vhacd->Compute(&tempVertices[0][0], vertexCount, indices, indexCount / 3, params);
 
     if (bResult)
     {
-        double centerOfMass[3];
-        if (!vhacd->ComputeCenterOfMass(centerOfMass))
+        double dcenterOfMass[3];
+        if (!vhacd->ComputeCenterOfMass(dcenterOfMass))
         {
-            centerOfMass[0] = centerOfMass[1] = centerOfMass[2] = 0;
+            dcenterOfMass[0] = dcenterOfMass[1] = dcenterOfMass[2] = 0;
         }
 
-        _CenterOfMass[0] = centerOfMass[0];
-        _CenterOfMass[1] = centerOfMass[1];
-        _CenterOfMass[2] = centerOfMass[2];
+        centerOfMass[0] = dcenterOfMass[0];
+        centerOfMass[1] = dcenterOfMass[1];
+        centerOfMass[2] = dcenterOfMass[2];
 
         VHACD::IVHACD::ConvexHull ch;
-        _OutHulls.Resize(vhacd->GetNConvexHulls());
+        outHulls.Resize(vhacd->GetNConvexHulls());
         int totalVertices = 0;
-        int totalIndices  = 0;
-        for (int i = 0; i < _OutHulls.Size(); i++)
+        int totalIndices = 0;
+        for (int i = 0; i < outHulls.Size(); i++)
         {
-            ConvexHullDesc& hull = _OutHulls[i];
+            ConvexHullDesc& hull = outHulls[i];
 
             vhacd->GetConvexHull(i, ch);
 
             hull.FirstVertex = totalVertices;
             hull.VertexCount = ch.m_nPoints;
-            hull.FirstIndex  = totalIndices;
-            hull.IndexCount  = ch.m_nTriangles * 3;
+            hull.FirstIndex = totalIndices;
+            hull.IndexCount = ch.m_nTriangles * 3;
             hull.Centroid[0] = ch.m_center[0];
             hull.Centroid[1] = ch.m_center[1];
             hull.Centroid[2] = ch.m_center[2];
@@ -516,16 +423,16 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
             totalIndices += hull.IndexCount;
         }
 
-        _OutVertices.Resize(totalVertices);
-        _OutIndices.Resize(totalIndices);
+        outVertices.Resize(totalVertices);
+        outIndices.Resize(totalIndices);
 
-        for (int i = 0; i < _OutHulls.Size(); i++)
+        for (int i = 0; i < outHulls.Size(); i++)
         {
-            ConvexHullDesc& hull = _OutHulls[i];
+            ConvexHullDesc& hull = outHulls[i];
 
             vhacd->GetConvexHull(i, ch);
 
-            Float3* pVertices = _OutVertices.ToPtr() + hull.FirstVertex;
+            Float3* pVertices = outVertices.ToPtr() + hull.FirstVertex;
             for (int v = 0; v < hull.VertexCount; v++, pVertices++)
             {
                 pVertices->X = ch.m_points[v * 3 + 0] - ch.m_center[0];
@@ -533,7 +440,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                 pVertices->Z = ch.m_points[v * 3 + 2] - ch.m_center[2];
             }
 
-            unsigned int* pIndices = _OutIndices.ToPtr() + hull.FirstIndex;
+            unsigned int* pIndices = outIndices.ToPtr() + hull.FirstIndex;
             for (int v = 0; v < hull.IndexCount; v += 3, pIndices += 3)
             {
                 pIndices[0] = ch.m_triangles[v + 0];
@@ -550,7 +457,7 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     vhacd->Clean();
     vhacd->Release();
 
-    return !_OutHulls.IsEmpty();
+    return !outHulls.IsEmpty();
 }
 
 } // namespace Geometry

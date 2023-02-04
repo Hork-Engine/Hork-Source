@@ -1121,7 +1121,4 @@ using TStaticVector = TFixedVector<T, MaxCapacity, false, Allocators::EASTLDummy
 template <typename T, size_t BaseCapacity, typename OverflowAllocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
 using TSmallVector = TFixedVector<T, BaseCapacity, true, OverflowAllocator>;
 
-template <typename T, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-using TPodVector = TFixedVector<T, 32, true, Allocator>; // TODO: Deprecated. Remove this
-
 HK_NAMESPACE_END

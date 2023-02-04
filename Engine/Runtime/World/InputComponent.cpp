@@ -369,8 +369,8 @@ struct InputComponentStatic
 
 static InputComponentStatic Static;
 
-InputComponent* InputComponent::InputComponents     = nullptr;
-InputComponent* InputComponent::InputComponentsTail = nullptr;
+InputComponent* InputComponent::m_InputComponents = nullptr;
+InputComponent* InputComponent::m_InputComponentsTail = nullptr;
 
 static bool ValidateDeviceKey(InputDeviceKey const& DeviceKey)
 {
@@ -549,20 +549,20 @@ int InputHelper::LookupController(StringView Controller)
 
 InputComponent::InputComponent()
 {
-    DeviceButtonDown[ID_KEYBOARD] = KeyboardButtonDown.ToPtr();
-    DeviceButtonDown[ID_MOUSE]    = MouseButtonDown.ToPtr();
+    m_DeviceButtonDown[ID_KEYBOARD] = m_KeyboardButtonDown.ToPtr();
+    m_DeviceButtonDown[ID_MOUSE] = m_MouseButtonDown.ToPtr();
     for (int i = 0; i < MAX_JOYSTICKS_COUNT; i++)
     {
-        DeviceButtonDown[ID_JOYSTICK_1 + i] = JoystickButtonDown[i].ToPtr();
+        m_DeviceButtonDown[ID_JOYSTICK_1 + i] = m_JoystickButtonDown[i].ToPtr();
 
-        Platform::Memset(JoystickButtonDown[i].ToPtr(), 0xff, sizeof(JoystickButtonDown[0]));
+        Platform::Memset(m_JoystickButtonDown[i].ToPtr(), 0xff, sizeof(m_JoystickButtonDown[0]));
     }
 
-    Platform::Memset(KeyboardButtonDown.ToPtr(), 0xff, sizeof(KeyboardButtonDown));
-    Platform::Memset(MouseButtonDown.ToPtr(), 0xff, sizeof(MouseButtonDown));
+    Platform::Memset(m_KeyboardButtonDown.ToPtr(), 0xff, sizeof(m_KeyboardButtonDown));
+    Platform::Memset(m_MouseButtonDown.ToPtr(), 0xff, sizeof(m_MouseButtonDown));
 
-    MouseAxisState[0].Clear();
-    MouseAxisState[1].Clear();
+    m_MouseAxisState[0].Clear();
+    m_MouseAxisState[1].Clear();
 }
 
 InputComponent::~InputComponent()
@@ -571,12 +571,12 @@ InputComponent::~InputComponent()
 
 void InputComponent::InitializeComponent()
 {
-    INTRUSIVE_ADD(this, Next, Prev, InputComponents, InputComponentsTail);
+    INTRUSIVE_ADD(this, m_Next, m_Prev, m_InputComponents, m_InputComponentsTail);
 }
 
 void InputComponent::DeinitializeComponent()
 {
-    INTRUSIVE_REMOVE(this, Next, Prev, InputComponents, InputComponentsTail);
+    INTRUSIVE_REMOVE(this, m_Next, m_Prev, m_InputComponents, m_InputComponentsTail);
 }
 
 void InputComponent::SetInputMappings(InputMappings* Mappings)
@@ -598,17 +598,17 @@ void InputComponent::UpdateAxes(float TimeStep)
 
     bool bPaused = GetWorld()->IsPaused();
 
-    for (auto& it : AxisBindingsHash)
+    for (auto& it : m_AxisBindingsHash)
     {
         it.second.AxisScale = 0.0f;
     }
 
-    for (PressedKey* key = PressedKeys.ToPtr(); key < &PressedKeys[NumPressedKeys]; key++)
+    for (PressedKey* key = m_PressedKeys.ToPtr(); key < &m_PressedKeys[m_NumPressedKeys]; key++)
     {
         if (key->BindingType == BINDING_TYPE::AXIS)
         {
-            auto it = AxisBindingsHash.Find(key->Binding);
-            if (it != AxisBindingsHash.End())
+            auto it = m_AxisBindingsHash.Find(key->Binding);
+            if (it != m_AxisBindingsHash.End())
                 it->second.AxisScale += key->AxisScale * TimeStep;
         }
     }
@@ -617,11 +617,11 @@ void InputComponent::UpdateAxes(float TimeStep)
 
     if (in_MouseFilter)
     {
-        mouseDelta = (MouseAxisState[0] + MouseAxisState[1]) * 0.5f;
+        mouseDelta = (m_MouseAxisState[0] + m_MouseAxisState[1]) * 0.5f;
     }
     else
     {
-        mouseDelta = MouseAxisState[MouseIndex];
+        mouseDelta = m_MouseAxisState[m_MouseIndex];
     }
 
     if (in_MouseInvertY)
@@ -637,10 +637,10 @@ void InputComponent::UpdateAxes(float TimeStep)
     // Keep pointer to InputMappings in case if someone call SetInputMappings during callback execution.
     TRef<InputMappings> lockedMappings(m_InputMappings);
 
-    int bindingVersion = BindingVersion;
+    int bindingVersion = m_BindingVersion;
 
     //for (AxisBinding& binding : AxisBindings)
-    for (auto& it : AxisBindingsHash)
+    for (auto& it : m_AxisBindingsHash)
     {
         AxisBinding& binding = it.second;
 
@@ -685,7 +685,7 @@ void InputComponent::UpdateAxes(float TimeStep)
 
         binding.Callback(binding.AxisScale);
 
-        if (bindingVersion != BindingVersion)
+        if (bindingVersion != m_BindingVersion)
         {
             // Someone called BindAxis/UnbindAxis/UnbindAll during a callback
             break;
@@ -693,8 +693,8 @@ void InputComponent::UpdateAxes(float TimeStep)
     }
 
     // Reset mouse axes
-    MouseIndex ^= 1;
-    MouseAxisState[MouseIndex].Clear();
+    m_MouseIndex ^= 1;
+    m_MouseAxisState[m_MouseIndex].Clear();
 }
 
 void InputComponent::SetButtonState(InputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp)
@@ -731,17 +731,17 @@ void InputComponent::SetButtonState(InputDeviceKey const& DeviceKey, int Action,
         return;
     }
 
-    int8_t* ButtonIndex = DeviceButtonDown[DeviceKey.DeviceId];
+    int8_t* buttonIndex = m_DeviceButtonDown[DeviceKey.DeviceId];
 
     TCallback<void()> callback;
 
     if (Action == IA_PRESS)
     {
-        if (ButtonIndex[DeviceKey.KeyId] == -1)
+        if (buttonIndex[DeviceKey.KeyId] == -1)
         {
-            if (NumPressedKeys < MAX_PRESSED_KEYS)
+            if (m_NumPressedKeys < MAX_PRESSED_KEYS)
             {
-                PressedKey& pressedKey  = PressedKeys[NumPressedKeys];
+                PressedKey& pressedKey = m_PressedKeys[m_NumPressedKeys];
                 pressedKey.DeviceId      = DeviceKey.DeviceId;
                 pressedKey.Key           = DeviceKey.KeyId;
                 pressedKey.Unbind();
@@ -824,14 +824,14 @@ void InputComponent::SetButtonState(InputDeviceKey const& DeviceKey, int Action,
                     }
                 }
 
-                ButtonIndex[DeviceKey.KeyId] = NumPressedKeys;
+                buttonIndex[DeviceKey.KeyId] = m_NumPressedKeys;
 
-                NumPressedKeys++;
+                m_NumPressedKeys++;
 
                 if (pressedKey.BindingType == BINDING_TYPE::ACTION)
                 {
-                    auto it = ActionBindingsHash.Find(pressedKey.Binding);
-                    if (it != ActionBindingsHash.End())
+                    auto it = m_ActionBindingsHash.Find(pressedKey.Binding);
+                    if (it != m_ActionBindingsHash.End())
                     {
                         ActionBinding& binding = it->second;
                         if (GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused)
@@ -859,34 +859,34 @@ void InputComponent::SetButtonState(InputDeviceKey const& DeviceKey, int Action,
     }
     else if (Action == IA_RELEASE)
     {
-        if (ButtonIndex[DeviceKey.KeyId] != -1)
+        if (buttonIndex[DeviceKey.KeyId] != -1)
         {
-            int index = ButtonIndex[DeviceKey.KeyId];
-            PressedKey& pressedKey = PressedKeys[index];
+            int index = buttonIndex[DeviceKey.KeyId];
+            PressedKey& pressedKey = m_PressedKeys[index];
 
             if (pressedKey.BindingType == BINDING_TYPE::ACTION)
             {
-                auto it = ActionBindingsHash.Find(pressedKey.Binding);
-                if (it != ActionBindingsHash.End())
+                auto it = m_ActionBindingsHash.Find(pressedKey.Binding);
+                if (it != m_ActionBindingsHash.End())
                 {
                     callback = it->second.Callback[IA_RELEASE];
                 }
             }
 
-            DeviceButtonDown[pressedKey.DeviceId][pressedKey.Key] = -1;
+            m_DeviceButtonDown[pressedKey.DeviceId][pressedKey.Key] = -1;
 
-            if (index != NumPressedKeys - 1)
+            if (index != m_NumPressedKeys - 1)
             {
                 // Move last array element to position "index"
-                PressedKeys[index] = PressedKeys[NumPressedKeys - 1];
+                m_PressedKeys[index] = m_PressedKeys[m_NumPressedKeys - 1];
 
                 // Refresh index of moved element
-                DeviceButtonDown[PressedKeys[index].DeviceId][PressedKeys[index].Key] = index;
+                m_DeviceButtonDown[m_PressedKeys[index].DeviceId][m_PressedKeys[index].Key] = index;
             }
 
             // Pop back
-            NumPressedKeys--;
-            HK_ASSERT(NumPressedKeys >= 0);
+            m_NumPressedKeys--;
+            HK_ASSERT(m_NumPressedKeys >= 0);
         }
     }
 
@@ -914,7 +914,7 @@ bool InputComponent::GetButtonState(InputDeviceKey const& DeviceKey) const
         return false;
     }
 
-    return DeviceButtonDown[DeviceKey.DeviceId][DeviceKey.KeyId] != -1;
+    return m_DeviceButtonDown[DeviceKey.DeviceId][DeviceKey.KeyId] != -1;
 }
 
 void InputComponent::UnpressButtons()
@@ -949,17 +949,17 @@ void InputComponent::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMa
         return;
     }
 
-    if (!CharacterCallback.IsValid())
+    if (!m_CharacterCallback.IsValid())
     {
         return;
     }
 
-    if (GetWorld()->IsPaused() && !bCharacterCallbackExecuteEvenWhenPaused)
+    if (GetWorld()->IsPaused() && !m_bCharacterCallbackExecuteEvenWhenPaused)
     {
         return;
     }
 
-    CharacterCallback(UnicodeCharacter, ModMask, TimeStamp);
+    m_CharacterCallback(UnicodeCharacter, ModMask, TimeStamp);
 }
 
 void InputComponent::SetMouseAxisState(float X, float Y)
@@ -969,8 +969,8 @@ void InputComponent::SetMouseAxisState(float X, float Y)
         return;
     }
 
-    MouseAxisState[MouseIndex].X += X;
-    MouseAxisState[MouseIndex].Y += Y;
+    m_MouseAxisState[m_MouseIndex].X += X;
+    m_MouseAxisState[m_MouseIndex].Y += Y;
 }
 
 float InputComponent::GetMouseAxisState(int Axis)
@@ -980,7 +980,7 @@ float InputComponent::GetMouseAxisState(int Axis)
         LOG("InputComponent::GetMouseAxisState: Invalid mouse axis num\n");
         return 0.0f;
     }
-    return MouseAxisState[MouseIndex][Axis];
+    return m_MouseAxisState[m_MouseIndex][Axis];
 }
 
 void InputComponent::SetJoystickAxisState(int Joystick, int Axis, float Value)
@@ -1015,22 +1015,22 @@ float InputComponent::GetJoystickAxisState(int Joystick, int Axis)
 
 void InputComponent::BindAxis(StringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused)
 {
-    AxisBinding& binding = AxisBindingsHash[Axis];
+    AxisBinding& binding = m_AxisBindingsHash[Axis];
 
     binding.Callback               = Callback;
     binding.AxisScale              = 0.0f;
     binding.bExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
 
-    BindingVersion++;
+    m_BindingVersion++;
 }
 
 void InputComponent::UnbindAxis(StringView Axis)
 {
-    auto it = AxisBindingsHash.Find(Axis);
-    if (it == AxisBindingsHash.End())
+    auto it = m_AxisBindingsHash.Find(Axis);
+    if (it == m_AxisBindingsHash.End())
         return;
 
-    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = m_PressedKeys.ToPtr(); pressedKey < &m_PressedKeys[m_NumPressedKeys]; pressedKey++)
     {
         if (pressedKey->BindingType == BINDING_TYPE::AXIS && !pressedKey->Binding.Icmp(Axis))
         {
@@ -1038,9 +1038,9 @@ void InputComponent::UnbindAxis(StringView Axis)
         }
     }
 
-    AxisBindingsHash.Erase(it);
+    m_AxisBindingsHash.Erase(it);
 
-    BindingVersion++;
+    m_BindingVersion++;
 }
 
 void InputComponent::BindAction(StringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused)
@@ -1051,7 +1051,7 @@ void InputComponent::BindAction(StringView Action, int Event, TCallback<void()> 
         return;
     }
 
-    ActionBinding& binding = ActionBindingsHash[Action];
+    ActionBinding& binding = m_ActionBindingsHash[Action];
 
     binding.Callback[Event]        = Callback;
     binding.bExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
@@ -1059,11 +1059,11 @@ void InputComponent::BindAction(StringView Action, int Event, TCallback<void()> 
 
 void InputComponent::UnbindAction(StringView Action)
 {
-    auto it = ActionBindingsHash.Find(Action);
-    if (it == ActionBindingsHash.End())
+    auto it = m_ActionBindingsHash.Find(Action);
+    if (it == m_ActionBindingsHash.End())
         return;
 
-    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = m_PressedKeys.ToPtr(); pressedKey < &m_PressedKeys[m_NumPressedKeys]; pressedKey++)
     {
         if (pressedKey->BindingType == BINDING_TYPE::ACTION && !pressedKey->Binding.Icmp(Action))
         {
@@ -1071,17 +1071,17 @@ void InputComponent::UnbindAction(StringView Action)
         }
     }
 
-    ActionBindingsHash.Erase(it);
+    m_ActionBindingsHash.Erase(it);
 }
 
 void InputComponent::UnbindAll()
 {
-    BindingVersion++;
+    m_BindingVersion++;
 
-    AxisBindingsHash.Clear();
-    ActionBindingsHash.Clear();
+    m_AxisBindingsHash.Clear();
+    m_ActionBindingsHash.Clear();
 
-    for (PressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
+    for (PressedKey* pressedKey = m_PressedKeys.ToPtr(); pressedKey < &m_PressedKeys[m_NumPressedKeys]; pressedKey++)
     {
         pressedKey->Unbind();
     }
@@ -1089,13 +1089,13 @@ void InputComponent::UnbindAll()
 
 void InputComponent::SetCharacterCallback(TCallback<void(WideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused)
 {
-    CharacterCallback                       = Callback;
-    bCharacterCallbackExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
+    m_CharacterCallback = Callback;
+    m_bCharacterCallbackExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
 }
 
 void InputComponent::UnsetCharacterCallback()
 {
-    CharacterCallback.Clear();
+    m_CharacterCallback.Clear();
 }
 
 void InputMappings::InitializeFromDocument(Document const& Document)
@@ -1237,14 +1237,14 @@ void InputMappings::MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey
     mapping.bAxis        = true;
     mapping.AxisScale    = AxisScale;
     mapping.ControllerId = ControllerId;
-    Mappings[DeviceKey].Add(std::move(mapping));
+    m_Mappings[DeviceKey].Add(std::move(mapping));
 
     AxisMapping axisMapping;
     axisMapping.DeviceId     = DeviceKey.DeviceId;
     axisMapping.KeyId        = DeviceKey.KeyId;
     axisMapping.ControllerId = ControllerId;
     axisMapping.AxisScale    = AxisScale;
-    AxisMappings[AxisName].Add(axisMapping);
+    m_AxisMappings[AxisName].Add(axisMapping);
 }
 
 void InputMappings::UnmapAxis(InputDeviceKey const& DeviceKey)
@@ -1252,7 +1252,7 @@ void InputMappings::UnmapAxis(InputDeviceKey const& DeviceKey)
     if (!ValidateDeviceKey(DeviceKey))
         return;
 
-    auto& keyMappings = Mappings[DeviceKey];
+    auto& keyMappings = m_Mappings[DeviceKey];
 
     for (auto it = keyMappings.begin(); it != keyMappings.end();)
     {
@@ -1260,8 +1260,8 @@ void InputMappings::UnmapAxis(InputDeviceKey const& DeviceKey)
 
         if (mapping.bAxis)
         {
-            auto map_it = AxisMappings.Find(mapping.Name);
-            HK_ASSERT(map_it != AxisMappings.End());
+            auto map_it = m_AxisMappings.Find(mapping.Name);
+            HK_ASSERT(map_it != m_AxisMappings.End());
 
             auto& axisMappingsVector = map_it->second;
             for (auto axis_it = axisMappingsVector.Begin(); axis_it != axisMappingsVector.End(); axis_it++)
@@ -1274,7 +1274,7 @@ void InputMappings::UnmapAxis(InputDeviceKey const& DeviceKey)
             }
             if (axisMappingsVector.IsEmpty())
             {
-                AxisMappings.Erase(map_it);
+                m_AxisMappings.Erase(map_it);
             }
             it = keyMappings.Erase(it);
         }
@@ -1311,7 +1311,7 @@ void InputMappings::MapAction(StringView ActionName, InputDeviceKey const& Devic
     mapping.AxisScale    = 0;
     mapping.ControllerId = ControllerId;
     mapping.ModMask      = ModMask & 0xff;
-    Mappings[DeviceKey].Add(std::move(mapping));
+    m_Mappings[DeviceKey].Add(std::move(mapping));
 }
 
 void InputMappings::UnmapAction(InputDeviceKey const& DeviceKey, int ModMask)
@@ -1319,7 +1319,7 @@ void InputMappings::UnmapAction(InputDeviceKey const& DeviceKey, int ModMask)
     if (!ValidateDeviceKey(DeviceKey))
         return;
 
-    auto& keyMappings = Mappings[DeviceKey];
+    auto& keyMappings = m_Mappings[DeviceKey];
 
     for (auto it = keyMappings.begin(); it != keyMappings.end();)
     {
@@ -1338,8 +1338,8 @@ void InputMappings::UnmapAction(InputDeviceKey const& DeviceKey, int ModMask)
 
 void InputMappings::UnmapAll()
 {
-    Mappings.Clear();
-    AxisMappings.Clear();
+    m_Mappings.Clear();
+    m_AxisMappings.Clear();
 }
 
 HK_NAMESPACE_END

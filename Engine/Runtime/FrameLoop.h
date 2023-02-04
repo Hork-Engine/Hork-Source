@@ -170,7 +170,7 @@ public:
     int SysFrameNumber() const;
 
     /** Begin a new frame */
-    void NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval);
+    void NewFrame(TVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval);
 
     /** Poll runtime events */
     void PollEvents(IEventListener* Listener);

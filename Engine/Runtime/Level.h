@@ -92,7 +92,7 @@ public:
     RenderCore::IBuffer* GetLightPortalsVB() { return LightPortalsVB; }
     RenderCore::IBuffer* GetLightPortalsIB() { return LightPortalsIB; }
 
-    TPodVector<LightPortalDef> const& GetLightPortals() const { return LightPortals; }
+    TVector<LightPortalDef> const& GetLightPortals() const { return LightPortals; }
 
     /** Lightmap pixel format */
     LIGHTMAP_FORMAT LightmapFormat = LIGHTMAP_GRAYSCALED16_FLOAT;
@@ -118,7 +118,7 @@ public:
     int ShadowCasterIndexCount{};
 
     /** Light portals */
-    TPodVector<LightPortalDef>  LightPortals;
+    TVector<LightPortalDef>  LightPortals;
     TVector<Float3>       LightPortalVertexBuffer;
     TVector<unsigned int> LightPortalIndexBuffer;
 };
@@ -148,7 +148,7 @@ public:
     LevelAudio(LevelAudioCreateInfo const& CreateInfo);
 
     /** Baked audio */
-    TPodVector<AudioArea> AudioAreas;
+    TVector<AudioArea> AudioAreas;
 
     /** Ambient sounds */
     TVector<TRef<SoundResource>> AmbientSounds;

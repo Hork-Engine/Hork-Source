@@ -1116,7 +1116,7 @@ static bool CullTriangle( btCollisionObject const * Object, btCollisionWorld::Lo
 
 struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
 {
-    TraceRayResultCallback(CollisionQueryFilter const* _QueryFilter, Float3 const& _RayStart, Float3 const& _RayDir, TPodVector<CollisionTraceResult>& _Result) :
+    TraceRayResultCallback(CollisionQueryFilter const* _QueryFilter, Float3 const& _RayStart, Float3 const& _RayDir, TVector<CollisionTraceResult>& _Result) :
         RayLength(_RayDir.Length()), RayStart(_RayStart), RayDir(_RayDir), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
     {
         m_collisionFilterGroup = CM_ALL;
@@ -1170,7 +1170,7 @@ struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
     Float3 RayStart;
     Float3 RayDir;
     CollisionQueryFilter const& QueryFilter;
-    TPodVector<CollisionTraceResult>& Result;
+    TVector<CollisionTraceResult>& Result;
 };
 
 struct TraceClosestRayResultCallback : btCollisionWorld::RayResultCallback
@@ -1268,7 +1268,7 @@ struct TraceClosestConvexResultCallback : btCollisionWorld::ConvexResultCallback
 
 struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 {
-    TraceConvexResultCallback(CollisionQueryFilter const* _QueryFilter, float _RayLength, TPodVector<CollisionTraceResult>& _Result) :
+    TraceConvexResultCallback(CollisionQueryFilter const* _QueryFilter, float _RayLength, TVector<CollisionTraceResult>& _Result) :
         RayLength(_RayLength), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
     {
         m_collisionFilterGroup = CM_ALL;
@@ -1302,10 +1302,10 @@ struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 
     float RayLength;
     CollisionQueryFilter const& QueryFilter;
-    TPodVector<CollisionTraceResult>& Result;
+    TVector<CollisionTraceResult>& Result;
 };
 
-bool PhysicsSystem::Trace(TPodVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
+bool PhysicsSystem::Trace(TVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
 {
     if (!_QueryFilter)
     {
@@ -1407,7 +1407,7 @@ bool PhysicsSystem::TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins,
 }
 
 // TODO: Check TraceBox2 and add TraceSphere2, TraceCylinder2 etc
-bool PhysicsSystem::TraceBox2(TPodVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
+bool PhysicsSystem::TraceBox2(TVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
@@ -1622,7 +1622,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
 
 struct QueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCallback
 {
-    QueryCollisionObjectsCallback(TPodVector<HitProxy*>& _Result, CollisionQueryFilter const* _QueryFilter) :
+    QueryCollisionObjectsCallback(TVector<HitProxy*>& _Result, CollisionQueryFilter const* _QueryFilter) :
         Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
     {
         _Result.Clear();
@@ -1667,13 +1667,13 @@ struct QueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCal
         Result.Add(hitProxy);
     }
 
-    TPodVector<HitProxy*>& Result;
+    TVector<HitProxy*>& Result;
     CollisionQueryFilter const& QueryFilter;
 };
 
 struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
 {
-    QueryCollisionCallback(TPodVector<CollisionQueryResult>& _Result, CollisionQueryFilter const* _QueryFilter) :
+    QueryCollisionCallback(TVector<CollisionQueryResult>& _Result, CollisionQueryFilter const* _QueryFilter) :
         Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
     {
         _Result.Clear();
@@ -1721,13 +1721,13 @@ struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
         //contact.Impulse = cp.m_appliedImpulse;
     }
 
-    TPodVector<CollisionQueryResult>& Result;
+    TVector<CollisionQueryResult>& Result;
     CollisionQueryFilter const& QueryFilter;
 };
 
 struct QueryActorsCallback : public btCollisionWorld::ContactResultCallback
 {
-    QueryActorsCallback(TPodVector<Actor*>& _Result, CollisionQueryFilter const* _QueryFilter) :
+    QueryActorsCallback(TVector<Actor*>& _Result, CollisionQueryFilter const* _QueryFilter) :
         Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
     {
         _Result.Clear();
@@ -1765,7 +1765,7 @@ struct QueryActorsCallback : public btCollisionWorld::ContactResultCallback
         Result.AddUnique(Actor);
     }
 
-    TPodVector<Actor*>& Result;
+    TVector<Actor*>& Result;
     CollisionQueryFilter const& QueryFilter;
 };
 
@@ -1778,7 +1778,7 @@ static void CollisionShapeContactTest(btDiscreteDynamicsWorld const* InWorld, Fl
     physWorld->contactTest(&tempBody, InCallback);
 }
 
-void PhysicsSystem::QueryHitProxies_Sphere(TPodVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryHitProxies_Sphere(TVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
@@ -1786,7 +1786,7 @@ void PhysicsSystem::QueryHitProxies_Sphere(TPodVector<HitProxy*>& _Result, Float
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryHitProxies_Box(TPodVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryHitProxies_Box(TVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
@@ -1794,12 +1794,12 @@ void PhysicsSystem::QueryHitProxies_Box(TPodVector<HitProxy*>& _Result, Float3 c
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryHitProxies(TPodVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryHitProxies(TVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryHitProxies_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
 
-void PhysicsSystem::QueryActors_Sphere(TPodVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors_Sphere(TVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActorsCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
@@ -1807,7 +1807,7 @@ void PhysicsSystem::QueryActors_Sphere(TPodVector<Actor*>& _Result, Float3 const
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryActors_Box(TPodVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors_Box(TVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActorsCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
@@ -1815,12 +1815,12 @@ void PhysicsSystem::QueryActors_Box(TPodVector<Actor*>& _Result, Float3 const& _
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryActors(TPodVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryActors(TVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryActors_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
 
-void PhysicsSystem::QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryCollision_Sphere(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
@@ -1828,7 +1828,7 @@ void PhysicsSystem::QueryCollision_Sphere(TPodVector<CollisionQueryResult>& _Res
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryCollision_Box(TPodVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryCollision_Box(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollisionCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
@@ -1836,7 +1836,7 @@ void PhysicsSystem::QueryCollision_Box(TPodVector<CollisionQueryResult>& _Result
     CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void PhysicsSystem::QueryCollision(TPodVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
+void PhysicsSystem::QueryCollision(TVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollision_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }

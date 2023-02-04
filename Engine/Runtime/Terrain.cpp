@@ -288,7 +288,7 @@ float Terrain::ReadHeight(int X, int Z, int Lod) const
     return m_Heightmap[Lod][sampleY * lodResoultion + sampleX];
 }
 
-bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const
+bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
 {
     class ATriangleRaycastCallback : public btTriangleCallback
     {
@@ -298,7 +298,7 @@ bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distan
         bool bCullBackFace;
         int IntersectionCount = 0;
 
-        TPodVector<TriangleHitResult>* Result;
+        TVector<TriangleHitResult>* Result;
 
         void processTriangle(btVector3* triangle, int partId, int triangleIndex) override
         {

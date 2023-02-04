@@ -88,7 +88,7 @@ private:
     void RenderView(int _Index);
 
     void QueryVisiblePrimitives(World* InWorld);
-    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<PrimitiveDef*>& Primitives, TPodVector<SurfaceDef*>& Surfaces);
+    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives, TVector<SurfaceDef*>& Surfaces);
     void AddRenderInstances(World* InWorld);
     void AddDrawable(Drawable* InComponent);
     void AddTerrain(TerrainComponent* InComponent);
@@ -114,22 +114,22 @@ private:
 
     RenderFrontendStat m_Stat;
 
-    TPodVector<PrimitiveDef*> m_VisPrimitives;
-    TPodVector<SurfaceDef*> m_VisSurfaces;
-    TPodVector<PunctualLightComponent*> m_VisLights;
-    TPodVector<EnvironmentProbe*> m_VisEnvProbes;
+    TVector<PrimitiveDef*> m_VisPrimitives;
+    TVector<SurfaceDef*> m_VisSurfaces;
+    TVector<PunctualLightComponent*> m_VisLights;
+    TVector<EnvironmentProbe*> m_VisEnvProbes;
 
     int m_VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    TPodVector<Drawable*> m_ShadowCasters;
-    TPodVector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
+    TVector<Drawable*> m_ShadowCasters;
+    TVector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
 
     struct alignas(16) CullResult
     {
         int32_t Result[4];
     };
-    TPodVector<CullResult> m_ShadowCasterCullResult;
+    TVector<CullResult> m_ShadowCasterCullResult;
 
     struct SurfaceStream
     {

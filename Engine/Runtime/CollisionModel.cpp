@@ -1645,9 +1645,9 @@ void CollisionModel::AddTriangleSoupGimpact(CollisionTriangleSoupGimpactDef cons
 
 void CollisionModel::AddConvexDecomposition(CollisionConvexDecompositionDef const* pShape, int& NumShapes)
 {
-    TPodVector<Float3>          hullVertices;
-    TPodVector<unsigned int>    hullIndices;
-    TPodVector<ConvexHullDesc> hulls;
+    TVector<Float3>         hullVertices;
+    TVector<unsigned int>   hullIndices;
+    TVector<ConvexHullDesc> hulls;
 
     if (pShape->VertexStride <= 0)
     {
@@ -1656,10 +1656,10 @@ void CollisionModel::AddConvexDecomposition(CollisionConvexDecompositionDef cons
     }
 
     Geometry::PerformConvexDecomposition(pShape->pVertices,
-                                         pShape->VerticesCount,
+                                         pShape->VertexCount,
                                          pShape->VertexStride,
                                          pShape->pIndices,
-                                         pShape->IndicesCount,
+                                         pShape->IndexCount,
                                          hullVertices,
                                          hullIndices,
                                          hulls);
@@ -1696,10 +1696,10 @@ void CollisionModel::AddConvexDecomposition(CollisionConvexDecompositionDef cons
 
 void CollisionModel::AddConvexDecompositionVHACD(CollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes)
 {
-    TPodVector<Float3>          hullVertices;
-    TPodVector<unsigned int>    hullIndices;
-    TPodVector<ConvexHullDesc> hulls;
-    Float3                      decompositionCenterOfMass;
+    TVector<Float3>         hullVertices;
+    TVector<unsigned int>   hullIndices;
+    TVector<ConvexHullDesc> hulls;
+    Float3                  decompositionCenterOfMass;
 
     if (pShape->VertexStride <= 0)
     {
@@ -1708,10 +1708,10 @@ void CollisionModel::AddConvexDecompositionVHACD(CollisionConvexDecompositionVHA
     }
 
     Geometry::PerformConvexDecompositionVHACD(pShape->pVertices,
-                                              pShape->VerticesCount,
+                                              pShape->VertexCount,
                                               pShape->VertexStride,
                                               pShape->pIndices,
-                                              pShape->IndicesCount,
+                                              pShape->IndexCount,
                                               hullVertices,
                                               hullIndices,
                                               hulls,
@@ -1817,7 +1817,7 @@ Float3 CollisionInstance::CalculateLocalInertia(float Mass) const
     return btVectorToFloat3(localInertia);
 }
 
-void CollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TPodVector<BvAxisAlignedBox>& BoundingBoxes) const
+void CollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TVector<BvAxisAlignedBox>& BoundingBoxes) const
 {
     btVector3 mins, maxs;
 

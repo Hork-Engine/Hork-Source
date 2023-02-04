@@ -81,7 +81,7 @@ void Level::DrawDebug(DebugRenderer* InRenderer)
     //hull->Destroy();
 
 #if 0
-    TPodVector< BvAxisAlignedBox > clusters;
+    TVector< BvAxisAlignedBox > clusters;
     clusters.Resize( PVSClustersCount );
     for ( BvAxisAlignedBox & box : clusters ) {
         box.Clear();

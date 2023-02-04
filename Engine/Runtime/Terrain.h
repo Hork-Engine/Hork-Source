@@ -78,7 +78,7 @@ public:
     NOTE: In the future, we can create a bit mask for each terrain quad to decide which triangles should be used for navigation.
     e.g. TBitMask<> WalkableMask
     */
-    TPodVector<BvAxisAlignedBox> NavigationAreas;
+    TVector<BvAxisAlignedBox> NavigationAreas;
 
     float GetMinHeight() const { return m_MinHeight; }
 
@@ -94,7 +94,7 @@ public:
     BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
 
     /** Find ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
     /** Find ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TriangleHitResult& HitResult) const;
 
@@ -128,7 +128,7 @@ private:
 
     int m_HeightmapResolution{};
     int m_HeightmapLods{};
-    TPodVector<float*> m_Heightmap;
+    TVector<float*> m_Heightmap;
     float m_MinHeight{};
     float m_MaxHeight{};
     btHeightfieldTerrainShape* m_HeightfieldShape{};

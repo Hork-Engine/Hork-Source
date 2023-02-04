@@ -1200,7 +1200,7 @@ void PhysicalBody::ApplyTorqueImpulse(Float3 const& _Torque)
     }
 }
 
-void PhysicalBody::GetCollisionBodiesWorldBounds(TPodVector<BvAxisAlignedBox>& _BoundingBoxes) const
+void PhysicalBody::GetCollisionBodiesWorldBounds(TVector<BvAxisAlignedBox>& _BoundingBoxes) const
 {
     if (!m_CollisionInstance)
     {
@@ -1360,12 +1360,12 @@ void PhysicalBody::RemoveCollisionIgnoreActor(Actor* _Actor)
     m_HitProxy->RemoveCollisionIgnoreActor(_Actor);
 }
 
-void PhysicalBody::CollisionContactQuery(TPodVector<HitProxy*>& _Result) const
+void PhysicalBody::CollisionContactQuery(TVector<HitProxy*>& _Result) const
 {
     m_HitProxy->CollisionContactQuery(_Result);
 }
 
-void PhysicalBody::CollisionContactQueryActor(TPodVector<Actor*>& _Result) const
+void PhysicalBody::CollisionContactQueryActor(TVector<Actor*>& _Result) const
 {
     m_HitProxy->CollisionContactQueryActor(_Result);
 }
@@ -1442,7 +1442,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
 
     if (m_HitProxy->IsTrigger() && com_DrawTriggerBounds)
     {
-        TPodVector<BvAxisAlignedBox> boundingBoxes;
+        TVector<BvAxisAlignedBox> boundingBoxes;
 
         GetCollisionBodiesWorldBounds(boundingBoxes);
 
@@ -1457,7 +1457,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
     {
         if (m_MotionBehavior == MB_STATIC && com_DrawStaticCollisionBounds)
         {
-            TPodVector<BvAxisAlignedBox> boundingBoxes;
+            TVector<BvAxisAlignedBox> boundingBoxes;
 
             GetCollisionBodiesWorldBounds(boundingBoxes);
 
@@ -1471,7 +1471,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
 
         if (m_MotionBehavior == MB_SIMULATED && com_DrawSimulatedCollisionBounds)
         {
-            TPodVector<BvAxisAlignedBox> boundingBoxes;
+            TVector<BvAxisAlignedBox> boundingBoxes;
 
             GetCollisionBodiesWorldBounds(boundingBoxes);
 
@@ -1485,7 +1485,7 @@ void PhysicalBody::DrawDebug(DebugRenderer* InRenderer)
 
         if (m_MotionBehavior == MB_KINEMATIC && com_DrawKinematicCollisionBounds)
         {
-            TPodVector<BvAxisAlignedBox> boundingBoxes;
+            TVector<BvAxisAlignedBox> boundingBoxes;
 
             GetCollisionBodiesWorldBounds(boundingBoxes);
 

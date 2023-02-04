@@ -515,7 +515,7 @@ public:
     bool MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Last visited polys from MoveAlongSurface */
-    TPodVector<NavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
+    TVector<NavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
 
     /** Finds a path from the start polygon to the end polygon. */
     bool FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavQueryFilter const& _Filter, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
@@ -524,16 +524,16 @@ public:
     bool FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<AINavigationPathPoint>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<AINavigationPathPoint>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<AINavigationPathPoint>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<AINavigationPathPoint>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TPodVector<Float3>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<Float3>& _PathPoints) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TPodVector<Float3>& _PathPoints) const;
+    bool FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<Float3>& _PathPoints) const;
 
     /** Finds the straight path from the start to the end position within the polygon corridor. */
     bool FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, NavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, NavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, AI_NAV_MESH_STRAIGHTPATH_CROSSING _StraightPathCrossing = AI_NAV_MESH_STRAIGHTPATH_DEFAULT) const;
@@ -592,7 +592,7 @@ private:
     //TVector<AINavigationArea> m_Areas;
 
     // Temp array to reduce memory allocations during MoveAlongSurface
-    mutable TPodVector<NavPolyRef> m_LastVisitedPolys;
+    mutable TVector<NavPolyRef> m_LastVisitedPolys;
 };
 
 HK_NAMESPACE_END

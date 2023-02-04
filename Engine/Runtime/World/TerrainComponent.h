@@ -119,7 +119,7 @@ public:
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the terrain */
-    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<TriangleHitResult>& Hits) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits) const;
 
     /** Raycast the terrain */
     bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const;

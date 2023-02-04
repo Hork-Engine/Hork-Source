@@ -416,7 +416,7 @@ void RenderFrontend::QueryVisiblePrimitives(World* InWorld)
     InWorld->QueryVisiblePrimitives(m_VisPrimitives, m_VisSurfaces, &m_VisPass, query);
 }
 
-void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<PrimitiveDef*>& Primitives, TPodVector<SurfaceDef*>& Surfaces)
+void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives, TVector<SurfaceDef*>& Surfaces)
 {
     VisibilityQuery query;
     BvFrustum frustum;
@@ -1564,7 +1564,7 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
                 if (!lighting)
                     continue;
 
-                TPodVector<LightPortalDef> const& lightPortals = lighting->GetLightPortals();
+                TVector<LightPortalDef> const& lightPortals = lighting->GetLightPortals();
 
                 if (lightPortals.IsEmpty())
                 {

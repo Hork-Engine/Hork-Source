@@ -38,7 +38,7 @@ HK_NAMESPACE_BEGIN
 namespace Runtime
 {
 
-void GetDisplays(TPodVector<DisplayInfo>& Displays)
+void GetDisplays(TVector<DisplayInfo>& Displays)
 {
     SDL_Rect rect;
     int      displayCount = SDL_GetNumVideoDisplays();
@@ -72,7 +72,7 @@ void GetDisplays(TPodVector<DisplayInfo>& Displays)
     }
 }
 
-void GetDisplayModes(DisplayInfo const& Display, TPodVector<DisplayMode>& Modes)
+void GetDisplayModes(DisplayInfo const& Display, TVector<DisplayMode>& Modes)
 {
     SDL_DisplayMode modeSDL;
 

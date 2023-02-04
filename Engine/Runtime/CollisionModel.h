@@ -248,10 +248,10 @@ struct CollisionConvexDecompositionDef
     COLLISION_SHAPE     Type{COLLISION_SHAPE_CONVEX_DECOMPOSITION};
     void*               pNext{};
     Float3 const*       pVertices{};
-    int                 VerticesCount{};
+    int                 VertexCount{};
     int                 VertexStride{};
     unsigned int const* pIndices{};
-    int                 IndicesCount{};
+    int                 IndexCount{};
 };
 
 struct CollisionConvexDecompositionVHACDDef
@@ -259,10 +259,10 @@ struct CollisionConvexDecompositionVHACDDef
     COLLISION_SHAPE     Type{COLLISION_SHAPE_CONVEX_DECOMPOSITION_VHACD};
     void*               pNext{};
     Float3 const*       pVertices{};
-    int                 VerticesCount{};
+    int                 VertexCount{};
     int                 VertexStride{};
     unsigned int const* pIndices{};
-    int                 IndicesCount{};
+    int                 IndexCount{};
 };
 
 struct CollisionBody
@@ -359,7 +359,7 @@ public:
 
     Float3 const& GetCenterOfMass() const { return m_CenterOfMass; }
 
-    void GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TPodVector<BvAxisAlignedBox>& BoundingBoxes) const;
+    void GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TVector<BvAxisAlignedBox>& BoundingBoxes) const;
 
     void GetCollisionWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const;
 

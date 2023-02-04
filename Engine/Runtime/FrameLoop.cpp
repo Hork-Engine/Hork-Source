@@ -108,7 +108,7 @@ int FrameLoop::SysFrameNumber() const
     return m_FrameNumber;
 }
 
-void FrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
+void FrameLoop::NewFrame(TVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
 {
     HK_PROFILER_EVENT("Setup new frame");
 

@@ -57,8 +57,8 @@ public:
     void              UnprepareContext(asIScriptContext* pContext);
 
 private:
-    asIScriptEngine*              m_pEngine;
-    TPodVector<asIScriptContext*> m_Contexts;
+    asIScriptEngine*           m_pEngine;
+    TVector<asIScriptContext*> m_Contexts;
 };
 
 class ActorScript

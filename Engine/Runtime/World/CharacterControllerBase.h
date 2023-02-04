@@ -189,9 +189,9 @@ public:
 
     void RecoverFromPenetration(float MaxPenetrationDepth, int MaxIterations);
 
-    void SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped = nullptr, TPodVector<CharacterControllerContact>* pContacts = nullptr);
+    void SlideMove(Float3 const& StartPos, Float3 const& TargetPos, float TimeStep, Float3& FinalPos, bool* bClipped = nullptr, TVector<CharacterControllerContact>* pContacts = nullptr);
 
-    void SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped = nullptr, TPodVector<CharacterControllerContact>* pContacts = nullptr);
+    void SlideMove(Float3 const& StartPos, Float3 const& LinearVelocity, float TimeStep, Float3& FinalPos, Float3& FinalVelocity, bool* bClipped = nullptr, TVector<CharacterControllerContact>* pContacts = nullptr);
 
 protected:
     CharacterControllerBase();

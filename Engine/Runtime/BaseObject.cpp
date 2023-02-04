@@ -125,7 +125,7 @@ Property const* BaseObject::FindProperty(StringView PropertyName, bool bRecursiv
     return FinalClassMeta().FindProperty(PropertyName, bRecursive);
 }
 
-void BaseObject::GetProperties(TPodVector<Property const*>& Properties, bool bRecursive) const
+void BaseObject::GetProperties(PropertyList& Properties, bool bRecursive) const
 {
     FinalClassMeta().GetProperties(Properties, bRecursive);
 }

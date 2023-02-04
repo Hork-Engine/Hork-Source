@@ -141,7 +141,7 @@ private:
         AnchorComponent* Anchor;
         int              VertexIndex;
     };
-    TPodVector<AnchorBinding> m_Anchors;
+    TVector<AnchorBinding> m_Anchors;
     bool m_bUpdateAnchors = false;
 };
 
