@@ -989,16 +989,10 @@ int Font::TextLineCount(FontStyle const& fontStyle, WideStringView text, float b
     FONSquad        q;
     int             nrows      = 0;
     float           rowStartX  = 0;
-    float           rowWidth   = 0;
-    float           rowMaxX    = 0;
     const WideChar* rowStart   = NULL;
-    const WideChar* rowEnd     = NULL;
     const WideChar* wordStart  = NULL;
     float           wordStartX = 0;
-    float           wordMinX   = 0;
     const WideChar* breakEnd   = NULL;
-    float           breakWidth = 0;
-    float           breakMaxX  = 0;
     int             type = NVG_SPACE, ptype = NVG_SPACE;
     unsigned int    pcodepoint = 0;
 
@@ -1110,13 +1104,8 @@ int Font::TextLineCount(FontStyle const& fontStyle, WideStringView text, float b
             nrows++;
             // Set null break point
             breakEnd   = rowStart;
-            breakWidth = 0.0;
-            breakMaxX  = 0.0;
             // Indicate to skip the white space at the beginning of the row.
             rowStart = NULL;
-            rowEnd   = NULL;
-            rowWidth = 0;
-            rowMaxX  = 0;
         }
         else
         {
@@ -1128,42 +1117,26 @@ int Font::TextLineCount(FontStyle const& fontStyle, WideStringView text, float b
                     // The current char is the row so far
                     rowStartX  = iter.x;
                     rowStart   = iter.wstr;
-                    rowEnd     = iter.wnext;
-                    rowWidth   = iter.nextx - rowStartX; // q.x1 - rowStartX;
-                    rowMaxX    = q.x1 - rowStartX;
                     wordStart  = iter.wstr;
                     wordStartX = iter.x;
-                    wordMinX   = q.x0 - rowStartX;
                     // Set null break point
                     breakEnd   = rowStart;
-                    breakWidth = 0.0;
-                    breakMaxX  = 0.0;
                 }
             }
             else
             {
                 float nextWidth = iter.nextx - rowStartX;
 
-                // track last non-white space character
-                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
-                {
-                    rowEnd   = iter.wnext;
-                    rowWidth = iter.nextx - rowStartX;
-                    rowMaxX  = q.x1 - rowStartX;
-                }
                 // track last end of a word
                 if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE) || type == NVG_CJK_CHAR)
                 {
                     breakEnd   = iter.wstr;
-                    breakWidth = rowWidth;
-                    breakMaxX  = rowMaxX;
                 }
                 // track last beginning of a word
                 if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR)
                 {
                     wordStart  = iter.wstr;
                     wordStartX = iter.x;
-                    wordMinX   = q.x0 - rowStartX;
                 }
 
                 // Break to new line when a character is beyond break width.
@@ -1177,27 +1150,18 @@ int Font::TextLineCount(FontStyle const& fontStyle, WideStringView text, float b
                         // The current word is longer than the row length, just break it from here.
                         rowStartX  = iter.x;
                         rowStart   = iter.wstr;
-                        rowEnd     = iter.wnext;
-                        rowWidth   = iter.nextx - rowStartX;
-                        rowMaxX    = q.x1 - rowStartX;
                         wordStart  = iter.wstr;
                         wordStartX = iter.x;
-                        wordMinX   = q.x0 - rowStartX;
                     }
                     else
                     {
                         // Break the line from the end of the last word, and start new line from the beginning of the new.
                         rowStartX = wordStartX;
                         rowStart  = wordStart;
-                        rowEnd    = iter.wnext;
-                        rowWidth  = iter.nextx - rowStartX;
-                        rowMaxX   = q.x1 - rowStartX;
                         // No change to the word start
                     }
                     // Set null break point
                     breakEnd   = rowStart;
-                    breakWidth = 0.0;
-                    breakMaxX  = 0.0;
                 }
             }
         }

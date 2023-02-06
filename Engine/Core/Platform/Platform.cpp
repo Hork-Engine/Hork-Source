@@ -637,7 +637,7 @@ void Initialize(PlatformInitialize const& CoreInitialize)
 
     InitializeProcess();
 
-    ProcessInfo const& processInfo = Platform::GetProcessInfo();
+    ProcessInfo const& processInfo = GetProcessInfo();
 
     if (!pCommandLine->HasArg("-bAllowMultipleInstances"))
     {
@@ -660,11 +660,11 @@ void Initialize(PlatformInitialize const& CoreInitialize)
     size_t ProcessWorkingSetSizeMin = 192ull << 20;
     size_t ProcessWorkingSetSizeMax = 1024ull << 20;
 
-    int n = Platform::CheckArg("-ProcessWorkingSetSize");
-    if (n != -1 && (n + 1) < Platform::GetArgc())
+    int n = CheckArg("-ProcessWorkingSetSize");
+    if (n != -1 && (n + 1) < GetArgc())
     {
-        ProcessWorkingSetSizeMin = std::max(0, atoi(Platform::GetArgv()[n]));
-        ProcessWorkingSetSizeMax = std::max(0, atoi(Platform::GetArgv()[n + 1]));
+        ProcessWorkingSetSizeMin = std::max(0, atoi(GetArgv()[n]));
+        ProcessWorkingSetSizeMax = std::max(0, atoi(GetArgv()[n + 1]));
     }
 
     if (ProcessWorkingSetSizeMin && ProcessWorkingSetSizeMax)
@@ -676,7 +676,7 @@ void Initialize(PlatformInitialize const& CoreInitialize)
     }
 #endif
 
-    MemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
+    MemoryInfo physMemoryInfo = GetPhysMemoryInfo();
     LOG("Memory page size: {} bytes\n", physMemoryInfo.PageSize);
     if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
     {
@@ -771,7 +771,7 @@ CPUInfo const* GetCPUInfo()
             int32_t cpuInfo[4];
             char vendor[13];
 
-            Platform::ZeroMem(&Info, sizeof(Info));
+            ZeroMem(&Info, sizeof(Info));
 
 #ifdef HK_OS_WIN32
 #    ifdef _M_X64
@@ -801,9 +801,9 @@ CPUInfo const* GetCPUInfo()
             }
 
             CPUID(cpuInfo, 0);
-            Platform::Memcpy(vendor + 0, &cpuInfo[1], 4);
-            Platform::Memcpy(vendor + 4, &cpuInfo[3], 4);
-            Platform::Memcpy(vendor + 8, &cpuInfo[2], 4);
+            Memcpy(vendor + 0, &cpuInfo[1], 4);
+            Memcpy(vendor + 4, &cpuInfo[3], 4);
+            Memcpy(vendor + 8, &cpuInfo[2], 4);
             vendor[12] = '\0';
 
             if (!strcmp(vendor, "GenuineIntel"))
@@ -933,7 +933,7 @@ double SysMicroseconds_d()
 
 void PrintCPUFeatures()
 {
-    CPUInfo const* pCPUInfo = Platform::GetCPUInfo();
+    CPUInfo const* pCPUInfo = GetCPUInfo();
 
     LOG("CPU: {}\n", pCPUInfo->Intel ? "Intel" : "AMD");
     LOG("CPU Features:");

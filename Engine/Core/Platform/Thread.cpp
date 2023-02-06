@@ -55,7 +55,6 @@ void Thread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadD
         &threadId);  // thread address
 #else
     pthread_create(&m_Internal, nullptr, ThreadProc, pThreadData);
-    HK_UNUSED(IdealProcessor);
 #endif
 }
 

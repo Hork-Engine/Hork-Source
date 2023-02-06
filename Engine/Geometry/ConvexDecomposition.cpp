@@ -49,19 +49,19 @@ HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& p, PlaneF const* plane
     return true;
 }
 
-static int FindPlane(PlaneF const& _Plane, PlaneF const* planes, int planeCount)
+static int FindPlane(PlaneF const& plane, PlaneF const* planes, int planeCount)
 {
     for (int i = 0; i < planeCount; i++)
-        if (Math::Dot(_Plane.Normal, planes[i].Normal) > 0.999f)
+        if (Math::Dot(plane.Normal, planes[i].Normal) > 0.999f)
             return i;
     return -1;
 }
 
-static bool AreVerticesBehindPlane(PlaneF const& _Plane, Float3 const* vertices, int vertexCount, float margin)
+static bool AreVerticesBehindPlane(PlaneF const& plane, Float3 const* vertices, int vertexCount, float margin)
 {
     for (int i = 0; i < vertexCount; i++)
     {
-        float dist = Math::Dot(_Plane.Normal, vertices[i]) + _Plane.D - margin;
+        float dist = Math::Dot(plane.Normal, vertices[i]) + plane.D - margin;
         if (dist > 0.0f)
             return false;
     }
