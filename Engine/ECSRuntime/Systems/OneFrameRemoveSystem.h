@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 HK_NAMESPACE_BEGIN
 
-class OneFrameRemoveSystem
+class OneFrameRemoveSystem : public EngineSystemECS
 {
 public:
     OneFrameRemoveSystem(ECS::World* world) :

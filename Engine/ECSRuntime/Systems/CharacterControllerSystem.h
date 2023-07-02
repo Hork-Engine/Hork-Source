@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../PhysicsInterface.h"
 
 #include "../Components/CharacterControllerComponent.h"
-#include "../Components/TransformComponent.h"
 
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Character/Character.h>
@@ -13,11 +12,12 @@
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
+class World_ECS;
 
-class CharacterControllerSystem : public JPH::CharacterContactListener
+class CharacterControllerSystem : public EngineSystemECS, public JPH::CharacterContactListener
 {
 public:
-    CharacterControllerSystem(ECS::World* world, PhysicsInterface& physicsInterface);
+    CharacterControllerSystem(World_ECS* world);
     ~CharacterControllerSystem();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<CharacterControllerComponent>& event);
@@ -25,7 +25,7 @@ public:
 
     void Update(struct GameFrame const& frame);
 
-    void DrawDebug(DebugRenderer& renderer);
+    void DrawDebug(DebugRenderer& renderer) override;
 
 private:
     void UpdateMovement(GameFrame const& frame);
@@ -39,7 +39,7 @@ private:
     TVector<ECS::EntityHandle> m_PendingAddCharacters;
     TVector<std::pair<ECS::EntityHandle, JPH::CharacterVirtual*>> m_PendingRemoveCharacters;
 
-    ECS::World* m_World;
+    World_ECS* m_World;
     PhysicsInterface& m_PhysicsInterface;
 
     friend class CharacterControllerImpl;

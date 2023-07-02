@@ -1,5 +1,6 @@
 #include "TeleportSystem.h"
 #include "../GameFrame.h"
+#include "../World.h"
 
 #include "../Components/CharacterControllerComponent.h"
 #include "../Components/RigidBodyComponent.h"
@@ -7,6 +8,11 @@
 #include "../Components/TeleportationComponent.h"
 
 HK_NAMESPACE_BEGIN
+
+TeleportSystem::TeleportSystem(World_ECS* world) :
+    m_World(world),
+    m_PhysicsInterface(world->GetPhysicsInterface())
+{}
 
 void TeleportSystem::Update(GameFrame const& frame)
 {

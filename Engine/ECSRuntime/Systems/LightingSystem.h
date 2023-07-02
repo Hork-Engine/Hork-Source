@@ -1,16 +1,14 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../Components/WorldTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
 #include "../SpatialTree.h"
 
-#include <Engine/Runtime/DebugRenderer.h>
-
 HK_NAMESPACE_BEGIN
 
-class LightingSystem_ECS
+class LightingSystem_ECS : public EngineSystemECS
 {
 public:
     LightingSystem_ECS(ECS::World* world);
@@ -27,7 +25,7 @@ public:
     // Call after transform update
     void UpdateBoundingBoxes(GameFrame const& frame);
 
-    void DrawDebug(DebugRenderer& renderer);
+    void DrawDebug(DebugRenderer& renderer) override;
 
 private:
     void UpdateLightBounding(PunctualLightComponent_ECS& light, Float3 const& worldPosition, Quat const& worldRotation);

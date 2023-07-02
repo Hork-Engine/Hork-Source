@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../SceneGraph.h"
 #include "../Components/NodeComponent.h"
@@ -10,7 +10,7 @@ HK_NAMESPACE_BEGIN
 
 struct GameFrame;
 
-class TransformSystem
+class TransformSystem : public EngineSystemECS
 {
 public:
     TransformSystem(ECS::World* world);

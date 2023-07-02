@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../Components/FinalTransformComponent.h"
 #include "../Components/MeshComponent.h"
@@ -14,7 +14,7 @@ HK_NAMESPACE_BEGIN
 class FrameLoop;
 struct GameFrame;
 
-class RenderSystem
+class RenderSystem : public EngineSystemECS
 {
 public:
     RenderSystem(ECS::World* world);
@@ -25,7 +25,7 @@ public:
 
     void UpdateBoundingBoxes(GameFrame const& frame);
 
-    void DrawDebug(DebugRenderer& renderer);
+    void DrawDebug(DebugRenderer& renderer) override;
 
     void AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData);
     void AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData);

@@ -19,11 +19,7 @@ HK_FORCEINLINE uint32_t Hash(JPH::BodyID Key)
 HK_NAMESPACE_END
 
 
-#include <Engine/ECS/ECS.h>
-#include <Engine/Runtime/DebugRenderer.h>
-
-
-
+#include "EngineSystem.h"
 
 #include "../PhysicsInterface.h"
 #include "../GameEvents.h"
@@ -32,10 +28,12 @@ HK_NAMESPACE_END
 
 HK_NAMESPACE_BEGIN
 
-class PhysicsSystem_ECS : public JPH::ContactListener, public JPH::BodyActivationListener
+class World_ECS;
+
+class PhysicsSystem_ECS : public EngineSystemECS, public JPH::ContactListener, public JPH::BodyActivationListener
 {
 public:
-    PhysicsSystem_ECS(ECS::World* world, PhysicsInterface& physicsInterface, GameEvents* gameEvents);
+    PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents);
     ~PhysicsSystem_ECS();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<StaticBodyComponent> const& event);
@@ -47,7 +45,7 @@ public:
     
     void Update(struct GameFrame const& frame);
 
-    void DrawDebug(DebugRenderer& renderer);
+    void DrawDebug(DebugRenderer& renderer) override;
 
 private:
     JPH::ValidateResult OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override;
@@ -73,7 +71,7 @@ private:
 
     void DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale);
 
-    ECS::World* m_World;
+    World_ECS* m_World;
     PhysicsInterface& m_PhysicsInterface;
     GameEvents* m_GameEvents;
     TVector<ECS::EntityHandle> m_PendingAddBodies;

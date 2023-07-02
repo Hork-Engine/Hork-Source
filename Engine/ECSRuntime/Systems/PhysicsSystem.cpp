@@ -2,6 +2,7 @@
 #include "../GameFrame.h"
 #include "../Utils.h"
 #include "../CollisionModel_ECS.h"
+#include "../World.h"
 
 #include "../Components/TransformComponent.h"
 #include "../Components/WorldTransformComponent.h"
@@ -36,6 +37,7 @@
 
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/PhysicsModule.h>
+#include <Engine/Runtime/DebugRenderer.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,9 +49,9 @@ ConsoleVar com_DrawStaticBodies("com_DrawStaticBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawDynamicBodies("com_DrawDynamicBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawKinematicBodies("com_DrawKinematicBodies"s, "0"s, CVAR_CHEAT);
 
-PhysicsSystem_ECS::PhysicsSystem_ECS(ECS::World* world, PhysicsInterface& physicsInterface, GameEvents* gameEvents) :
+PhysicsSystem_ECS::PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents) :
     m_World(world),
-    m_PhysicsInterface(physicsInterface),
+    m_PhysicsInterface(world->GetPhysicsInterface()),
     m_GameEvents(gameEvents)
 {
     // A body activation listener gets notified when bodies activate and go to sleep

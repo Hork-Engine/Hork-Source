@@ -1,7 +1,10 @@
 #include "CharacterControllerSystem.h"
+#include "../World.h"
 #include "../GameFrame.h"
 #include "../Components/WorldTransformComponent.h"
 #include "../Components/FinalTransformComponent.h"
+#include "../Components/TransformComponent.h"
+
 #include <Engine/Runtime/DebugRenderer.h>
 
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -43,9 +46,9 @@ public:
     }
 };
 
-CharacterControllerSystem::CharacterControllerSystem(ECS::World* world, PhysicsInterface& physicsInterface) :
+CharacterControllerSystem::CharacterControllerSystem(World_ECS* world) :
     m_World(world),
-    m_PhysicsInterface(physicsInterface)
+    m_PhysicsInterface(world->GetPhysicsInterface())
 {
     m_World->AddEventHandler<ECS::Event::OnComponentAdded<CharacterControllerComponent>>(this);
     m_World->AddEventHandler<ECS::Event::OnComponentRemoved<CharacterControllerComponent>>(this);

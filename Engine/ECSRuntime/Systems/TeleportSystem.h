@@ -1,23 +1,21 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../PhysicsInterface.h"
 
 HK_NAMESPACE_BEGIN
 
-class TeleportSystem
+class World_ECS;
+class TeleportSystem : public EngineSystemECS
 {
 public:
-    TeleportSystem(ECS::World* world, PhysicsInterface& physicsInterface) :
-        m_World(world),
-        m_PhysicsInterface(physicsInterface)
-    {}
+    TeleportSystem(World_ECS* world);
 
     void Update(struct GameFrame const& frame);
 
 private:
-    ECS::World* m_World;
+    World_ECS* m_World;
     PhysicsInterface& m_PhysicsInterface;
 };
 

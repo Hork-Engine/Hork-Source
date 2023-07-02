@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 HK_NAMESPACE_BEGIN
 
-class AnimationSystem
+class AnimationSystem : public EngineSystemECS
 {
 public:
     AnimationSystem(ECS::World* world);

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../Components/CameraComponent.h"
 
 HK_NAMESPACE_BEGIN
 
-class CameraSystem
+class CameraSystem : public EngineSystemECS
 {
 public:
     CameraSystem(ECS::World* world);

@@ -5,7 +5,9 @@
 #include "../Components/DynamicLightTag.h"
 #include "../Components/MovableTag.h"
 #include "../Resources/ResourceManager.h"
+
 #include <Engine/Core/ConsoleVar.h>
+#include <Engine/Runtime/DebugRenderer.h>
 
 HK_NAMESPACE_BEGIN
 

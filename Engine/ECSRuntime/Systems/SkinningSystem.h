@@ -1,21 +1,19 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+#include "EngineSystem.h"
 
 #include "../SkeletalAnimation.h"
 
-#include <Engine/Runtime/DebugRenderer.h>
-
 HK_NAMESPACE_BEGIN
 
-class SkinningSystem_ECS
+class SkinningSystem_ECS : public EngineSystemECS
 {
 public:
     SkinningSystem_ECS(ECS::World* world);
 
     void Update(struct GameFrame const& frame);
 
-    void DrawDebug(DebugRenderer& InRenderer);
+    void DrawDebug(DebugRenderer& InRenderer) override;
 
 private:
     void UpdatePoses(GameFrame const& frame);

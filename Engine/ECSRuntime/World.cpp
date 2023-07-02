@@ -13,17 +13,17 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     ECS::World(createInfo),
     m_PhysicsInterface(this)
 {
-    m_PhysicsSystem = std::make_unique<PhysicsSystem_ECS>(this, m_PhysicsInterface, & m_GameEvents);
-    m_CharacterControllerSystem = std::make_unique<CharacterControllerSystem>(this, m_PhysicsInterface);
-    m_NodeMotionSystem = std::make_unique<NodeMotionSystem>(this);
-    m_AnimationSystem = std::make_unique<AnimationSystem>(this);
-    m_TransformSystem = std::make_unique<TransformSystem>(this);
-    m_CameraSystem = std::make_unique<CameraSystem>(this);
-    m_RenderSystem = std::make_unique<RenderSystem>(this);
-    m_TeleportSystem = std::make_unique<TeleportSystem>(this, m_PhysicsInterface);
-    m_OneFrameRemoveSystem = std::make_unique<OneFrameRemoveSystem>(this);
-    m_SkinningSystem = std::make_unique<SkinningSystem_ECS>(this);
-    m_LightingSystem = std::make_unique<LightingSystem_ECS>(this);
+    m_PhysicsSystem = CreateSystem<PhysicsSystem_ECS>(&m_GameEvents);
+    m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
+    m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
+    m_AnimationSystem = CreateSystem<AnimationSystem>();
+    m_TransformSystem = CreateSystem<TransformSystem>();
+    m_CameraSystem = CreateSystem<CameraSystem>();
+    m_RenderSystem = CreateSystem<RenderSystem>();
+    m_TeleportSystem = CreateSystem<TeleportSystem>();
+    m_OneFrameRemoveSystem = CreateSystem<OneFrameRemoveSystem>();
+    m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
+    m_LightingSystem = CreateSystem<LightingSystem_ECS>();
 }
 
 World_ECS::~World_ECS()
@@ -173,11 +173,8 @@ void World_ECS::Tick(float timeStep)
 
 void World_ECS::DrawDebug(DebugRenderer& renderer)
 {
-    m_PhysicsSystem->DrawDebug(renderer);
-    m_CharacterControllerSystem->DrawDebug(renderer);
-    m_SkinningSystem->DrawDebug(renderer);
-    m_LightingSystem->DrawDebug(renderer);
-    m_RenderSystem->DrawDebug(renderer);
+    for (auto& system : m_EngineSystems)
+        system->DrawDebug(renderer);
 
     for (auto& system : m_GameplayVariableTimestepSystems)
         system->DrawDebug(renderer);
@@ -195,35 +192,5 @@ void World_ECS::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData)
 {
     m_RenderSystem->AddDrawables(rd, frameData);
 }
-
-#if 0
-#    define REGISTER_VISITOR(Type)                                                                    \
-        m_ComponentView[ECS::Component<Type>::Id] = [this](ECS::EntityHandle handle, uint8_t* data) { \
-            Visit(handle, *(Type*)data);                                                              \
-        }
-class EntityBrowser
-{
-public:
-    EntityBrowser(ECS::World& world, ECS::EntityHandle handle)
-    {
-        std::unordered_map<ECS::ComponentTypeId, std::function<void(ECS::EntityHandle, uint8_t*)>> m_ComponentView;
-
-        REGISTER_VISITOR(TestComponent);
-
-        for (ECS::World::ComponentIterator it(world, handle); it; it++)
-        {
-            uint8_t* data = it.GetData();
-            ECS::ComponentTypeId componentTID = it.GetTypeId();
-
-            m_ComponentView[componentTID](handle, data);
-        }
-    }
-    void Visit(ECS::EntityHandle handle, TestComponent& c)
-    {
-    }
-};
-
-#endif
-
 
 HK_NAMESPACE_END

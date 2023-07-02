@@ -48,6 +48,13 @@ public:
     GameFrame const& GetFrame() const { return m_Frame; }
 
 private:
+    template <typename T, typename... Args>
+    T* CreateSystem(Args&&... args)
+    {
+        m_EngineSystems.Add(std::make_unique<T>(this, std::forward<Args>(args)...));
+        return static_cast<T*>(m_EngineSystems.Last().get());
+    }
+
     void RunVariableTimeStepSystems(float timeStep);
 
     float m_Accumulator = 0.0f;
@@ -57,20 +64,21 @@ private:
 
     PhysicsInterface m_PhysicsInterface;
 
+    TVector<std::unique_ptr<EngineSystemECS>> m_EngineSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
 
-    std::unique_ptr<PhysicsSystem_ECS> m_PhysicsSystem;
-    std::unique_ptr<CharacterControllerSystem> m_CharacterControllerSystem;
-    std::unique_ptr<NodeMotionSystem> m_NodeMotionSystem;
-    std::unique_ptr<AnimationSystem> m_AnimationSystem;
-    std::unique_ptr<TransformSystem> m_TransformSystem;
-    std::unique_ptr<TeleportSystem> m_TeleportSystem;
-    std::unique_ptr<OneFrameRemoveSystem> m_OneFrameRemoveSystem;
-    std::unique_ptr<SkinningSystem_ECS> m_SkinningSystem;
-    std::unique_ptr<CameraSystem> m_CameraSystem;
-    std::unique_ptr<LightingSystem_ECS> m_LightingSystem;
-    std::unique_ptr<RenderSystem> m_RenderSystem;
+    PhysicsSystem_ECS* m_PhysicsSystem;
+    CharacterControllerSystem* m_CharacterControllerSystem;
+    NodeMotionSystem* m_NodeMotionSystem;
+    AnimationSystem* m_AnimationSystem;
+    TransformSystem* m_TransformSystem;
+    TeleportSystem* m_TeleportSystem;
+    OneFrameRemoveSystem* m_OneFrameRemoveSystem;
+    SkinningSystem_ECS* m_SkinningSystem;
+    CameraSystem* m_CameraSystem;
+    LightingSystem_ECS* m_LightingSystem;
+    RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
 };
 
