@@ -284,6 +284,11 @@ public:
 
     struct LayerData
     {
+        void SetDefaultTransitionTime(float transitionTime)
+        {
+            m_DefaultTransitionTime = transitionTime;
+        }
+
         void SetState(StringView name)
         {
             StateHandle state = m_Layer->FindState(name);
@@ -321,22 +326,28 @@ public:
                 return true;
 
             auto* tr = m_Layer->FindTransition(m_CurrentState, newState);
-            if (!tr)
+            if (tr)
             {
-                return false;
-            }
-
-            m_TransitionState = newState;
-            m_TransitionTime = tr->Time;
-            m_SyncFactor = tr->SyncFactor;
-            if (m_SyncFactor)
-            {
-                // Synchronize playback position
-                m_PlaybackPosition[1] = m_PlaybackPosition[0] * m_SyncFactor;
+                m_TransitionState = newState;
+                m_TransitionTime = tr->Time;
+                m_SyncFactor = tr->SyncFactor;
+                if (m_SyncFactor)
+                {
+                    // Synchronize playback position
+                    m_PlaybackPosition[1] = m_PlaybackPosition[0] * m_SyncFactor;
+                }
+                else
+                    m_PlaybackPosition[1] = 0;
+                m_CurTransitionTime = 0;
             }
             else
+            {
+                m_TransitionState = newState;
+                m_TransitionTime = m_DefaultTransitionTime; // default transition time
+                m_SyncFactor = 0;
                 m_PlaybackPosition[1] = 0;
-            m_CurTransitionTime = 0;
+                m_CurTransitionTime = 0;
+            }
             return true;
         }
 
@@ -407,6 +418,7 @@ public:
         float m_CurTransitionTime{};
         float m_PlaybackPosition[2]{0, 0};
         float m_SyncFactor{};
+        float m_DefaultTransitionTime{0.1f};
     };
 
     AnimationBlendMachine(SkeletonHandle skeleton) :
