@@ -21,7 +21,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_CameraSystem = std::make_unique<CameraSystem>(this);
     m_RenderSystem = std::make_unique<RenderSystem>(this);
     m_TeleportSystem = std::make_unique<TeleportSystem>(this, m_PhysicsInterface);
-    m_SpawnSystem = std::make_unique<SpawnSystem>(this);
     m_OneFrameRemoveSystem = std::make_unique<OneFrameRemoveSystem>(this);
     m_SkinningSystem = std::make_unique<SkinningSystem_ECS>(this);
     m_LightingSystem = std::make_unique<LightingSystem_ECS>(this);
@@ -81,8 +80,6 @@ void World_ECS::Tick(float timeStep)
         ExecuteCommands();
 
         m_OneFrameRemoveSystem->Update();
-
-        m_SpawnSystem->Update(m_Frame);
 
         m_TeleportSystem->Update(m_Frame);
 

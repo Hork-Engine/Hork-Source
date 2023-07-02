@@ -9,7 +9,6 @@
 #include "Systems/PhysicsSystem.h"
 #include "Systems/CharacterControllerSystem.h"
 #include "Systems/TeleportSystem.h"
-#include "Systems/SpawnSystem.h"
 #include "Systems/OneFrameRemoveSystem.h"
 #include "Systems/SkinningSystem.h"
 #include "Systems/LightingSystem.h"
@@ -26,6 +25,12 @@ public:
     ~World_ECS();
 
     bool bPaused = false;
+
+    template <typename T>
+    void RegisterGameplaySystem(GAMEPLAY_SYSTEM_EXECUTION execution)
+    {
+        RegisterGameplaySystem(MakeRef<T>(this), execution);
+    }
 
     void RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution);
 
@@ -57,7 +62,6 @@ private:
     std::unique_ptr<AnimationSystem> m_AnimationSystem;
     std::unique_ptr<TransformSystem> m_TransformSystem;
     std::unique_ptr<TeleportSystem> m_TeleportSystem;
-    std::unique_ptr<SpawnSystem> m_SpawnSystem;
     std::unique_ptr<OneFrameRemoveSystem> m_OneFrameRemoveSystem;
     std::unique_ptr<SkinningSystem_ECS> m_SkinningSystem;
     std::unique_ptr<CameraSystem> m_CameraSystem;

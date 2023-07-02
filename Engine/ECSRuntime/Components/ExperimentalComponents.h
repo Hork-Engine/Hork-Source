@@ -59,12 +59,6 @@ struct JumpadComponent
     Float3 ThrowVelocity;
 };
 
-struct SpawnerComponent
-{
-    float SpawnInterval = 0.5f;
-    float m_NextThink = 0;
-};
-
 struct OneFrameEntityTag
 {
 
