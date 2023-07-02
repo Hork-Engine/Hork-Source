@@ -1,16 +1,8 @@
 #pragma once
 
+#include "Systems/EngineSystem.h"
 #include "Systems/GameplaySystem.h"
-#include "Systems/NodeMotionSystem.h"
-#include "Systems/TransformSystem.h"
-#include "Systems/CameraSystem.h"
-#include "Systems/RenderSystem.h"
-#include "Systems/PhysicsSystem.h"
-#include "Systems/CharacterControllerSystem.h"
-#include "Systems/TeleportSystem.h"
-#include "Systems/OneFrameRemoveSystem.h"
-#include "Systems/SkinningSystem.h"
-#include "Systems/LightingSystem.h"
+
 #include "GameFrame.h"
 #include "GameEvents.h"
 #include "Utils.h"
@@ -41,8 +33,8 @@ public:
 
     void DrawDebug(DebugRenderer& renderer);
 
-    void AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData);
-    void AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData);
+    void AddDirectionalLight(struct RenderFrontendDef& rd, RenderFrameData& frameData);
+    void AddDrawables(struct RenderFrontendDef& rd, RenderFrameData& frameData);
 
     GameFrame const& GetFrame() const { return m_Frame; }
 
@@ -67,16 +59,16 @@ private:
     TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
 
-    PhysicsSystem_ECS* m_PhysicsSystem;
-    CharacterControllerSystem* m_CharacterControllerSystem;
-    NodeMotionSystem* m_NodeMotionSystem;
-    TransformSystem* m_TransformSystem;
-    TeleportSystem* m_TeleportSystem;
-    OneFrameRemoveSystem* m_OneFrameRemoveSystem;
-    SkinningSystem_ECS* m_SkinningSystem;
-    CameraSystem* m_CameraSystem;
-    LightingSystem_ECS* m_LightingSystem;
-    RenderSystem* m_RenderSystem;
+    class PhysicsSystem_ECS* m_PhysicsSystem;
+    class CharacterControllerSystem* m_CharacterControllerSystem;
+    class NodeMotionSystem* m_NodeMotionSystem;
+    class TransformSystem* m_TransformSystem;
+    class TeleportSystem* m_TeleportSystem;
+    class OneFrameRemoveSystem* m_OneFrameRemoveSystem;
+    class SkinningSystem_ECS* m_SkinningSystem;
+    class CameraSystem* m_CameraSystem;
+    class LightingSystem_ECS* m_LightingSystem;
+    class RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
 };
 

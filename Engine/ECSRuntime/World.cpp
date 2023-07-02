@@ -1,7 +1,16 @@
 #include "World.h"
 
-#include "Components/FinalTransformComponent.h"
-#include "Components/ExperimentalComponents.h"
+#include "Systems/GameplaySystem.h"
+#include "Systems/NodeMotionSystem.h"
+#include "Systems/TransformSystem.h"
+#include "Systems/CameraSystem.h"
+#include "Systems/RenderSystem.h"
+#include "Systems/PhysicsSystem.h"
+#include "Systems/CharacterControllerSystem.h"
+#include "Systems/TeleportSystem.h"
+#include "Systems/OneFrameRemoveSystem.h"
+#include "Systems/SkinningSystem.h"
+#include "Systems/LightingSystem.h"
 
 #include <Engine/Core/ConsoleVar.h>
 

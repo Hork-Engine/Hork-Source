@@ -16,27 +16,6 @@
 
 HK_NAMESPACE_BEGIN
 
-//
-//struct GameLevel
-//{
-//};
-//
-//struct GameLevelResource
-//{
-//    GameLevel* Instantiate()
-//    {
-//    }
-//};
-
-
-
-//ECS::EntityHandle MakePlayer(Float3 const& )
-//{
-//}
-
-
-
-
 ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc)
 {
     ECS::EntityHandle handle = commandBuffer.SpawnEntity();
