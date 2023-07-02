@@ -7,7 +7,6 @@
 #include "Components/RigidBodyComponent.h"
 #include "Components/CharacterControllerComponent.h"
 #include "Components/CameraComponent.h"
-#include "Components/RenderMeshComponent.h"
 #include "Components/MovableTag.h"
 #include "Components/TransformInterpolationTag.h"
 #include "Components/ExperimentalComponents.h"
