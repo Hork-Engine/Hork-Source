@@ -1,0 +1,190 @@
+/*
+
+Hork Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2023 Alexander Samusev.
+
+This file is part of the Hork Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+layout( triangles, TESSELLATION_SPACING, ccw ) in;
+
+#include "$COLOR_PASS_TES_OUTPUT_VARYINGS$"
+#include "$COLOR_PASS_TES_INPUT_VARYINGS$"
+
+#define B030 TCS_Patch.pack0.xyz
+#define B021 vec3( TCS_Patch.pack0.w, TCS_Patch.pack1.xy )
+#define B012 vec3( TCS_Patch.pack1.zw, TCS_Patch.pack2.x )
+#define B003 TCS_Patch.pack2.yzw
+#define B102 TCS_Patch.pack3.xyz
+#define B201 vec3( TCS_Patch.pack3.w, TCS_Patch.pack4.xy )
+#define B300 vec3( TCS_Patch.pack4.zw, TCS_Patch.pack5.x )
+#define B210 TCS_Patch.pack5.yzw
+#define B120 TCS_Patch.pack6.xyz
+#define B111 vec3( TCS_Patch.pack6.w, TCS_Patch.pack7.xy )
+
+#define N0 vec3( TCS_Patch.pack7.zw, TCS_Patch.pack8.x )
+#define N1 TCS_Patch.pack8.yzw
+#define N2 TCS_Patch.pack9.xyz
+
+struct SPatchVertices
+{
+    vec4 pack0;
+    vec4 pack1;
+    vec4 pack2;
+    vec4 pack3;
+    vec4 pack4;
+    vec4 pack5;
+    vec4 pack6;
+    vec4 pack7;
+    vec4 pack8;
+    vec4 pack9;
+/*
+    vec3 B030;
+    vec3 B021;
+    vec3 B012;
+    vec3 B003;
+    vec3 B102;
+    vec3 B201;
+    vec3 B300;
+    vec3 B210;
+    vec3 B120;
+    vec3 B111;
+    vec3 N[3];*/
+};
+
+struct SPatchAdd
+{
+    #ifdef USE_LIGHTMAP
+    vec2 LightmapTexCoord[3];
+    #endif
+    #ifdef USE_VERTEX_LIGHT
+    vec3 VertexLight[3];
+    #endif
+    #ifdef COMPUTE_TBN
+    vec3 T[3];
+    vec3 B[3];
+    #endif
+    #ifdef USE_VIRTUAL_TEXTURE
+    vec2 TexCoordVT[3];
+    #endif
+};
+
+#define COLOR_PASS_VARYING_PATCH 0
+
+layout( location = PATCH_LOCATION ) in patch SPatchVertices TCS_Patch;
+layout( location = PATCH_LOCATION + 10 ) in patch SPatchAdd TCS_PatchAdd;
+
+#ifdef USE_LIGHTMAP
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) out vec2 VS_LightmapTexCoord;
+#endif
+
+#ifdef USE_VERTEX_LIGHT
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) out vec3 VS_VertexLight;
+#endif
+
+#ifdef COMPUTE_TBN
+layout( location = COLOR_PASS_VARYING_TANGENT  ) out vec3 VS_T;
+layout( location = COLOR_PASS_VARYING_BINORMAL ) out vec3 VS_B;
+#endif
+
+#ifdef COMPUTE_TBN
+layout( location = COLOR_PASS_VARYING_NORMAL   ) out vec3 VS_N;
+layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
+#endif
+
+#ifdef USE_VIRTUAL_TEXTURE
+layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
+#endif
+
+out gl_PerVertex
+{
+    vec4 gl_Position;
+};
+
+#include "$COLOR_PASS_TES_SAMPLERS$"
+
+#define Interpolate( X ) \
+    ( gl_TessCoord.x * X[0] + gl_TessCoord.y * X[1] + gl_TessCoord.z * X[2] )
+    
+#define InterpolateNorm( X ) \
+    normalize( Interpolate( X ) )
+
+void main(){
+    #ifdef USE_LIGHTMAP
+    VS_LightmapTexCoord = Interpolate( TCS_PatchAdd.LightmapTexCoord );
+    #endif
+
+    #ifdef USE_VERTEX_LIGHT
+    VS_VertexLight = Interpolate( TCS_PatchAdd.VertexLight );
+    #endif
+
+    #ifdef COMPUTE_TBN
+    VS_T = InterpolateNorm( TCS_PatchAdd.T );
+    VS_B = InterpolateNorm( TCS_PatchAdd.B );
+    #endif
+    
+    #ifndef COMPUTE_TBN
+    vec3 VS_N, VS_Position;
+    #endif
+
+    //VS_N = InterpolateNorm( TCS_Patch.N );
+    VS_N = normalize( gl_TessCoord.x * N0 + gl_TessCoord.y * N1 + gl_TessCoord.z * N2 );
+
+    #ifdef USE_VIRTUAL_TEXTURE
+    VS_TexCoordVT = Interpolate( TCS_PatchAdd.TexCoordVT );
+    #endif
+
+    const float u = gl_TessCoord.x;
+    const float v = gl_TessCoord.y;
+    const float w = gl_TessCoord.z;
+
+    const float u2 = u * u;
+    const float v2 = v * v;
+    const float w2 = w * w;
+    const float u3 = u2 * u;
+    const float v3 = v2 * v;
+    const float w3 = w2 * w;
+
+    VS_Position = B300 * w3 + B030 * u3 + B003 * v3 +
+                  B210 * ( 3.0 * w2 * u ) +
+                  B120 * ( 3.0 * w * u2 ) +
+                  B201 * ( 3.0 * w2 * v ) +
+                  B021 * ( 3.0 * u2 * v ) +
+                  B102 * ( 3.0 * w * v2 ) +
+                  B012 * ( 3.0 * u * v2 ) +
+                  B111 * ( 6.0 * w * u * v );
+
+#   include "$COLOR_PASS_TES_INTERPOLATE$"
+#   include "$COLOR_PASS_TES_CODE$"
+    
+    VS_Position += VS_N * ( Displacement * 0.01 );
+    
+    gl_Position = ProjectionMatrix * vec4( VS_Position, 1.0 );
+#   if defined WEAPON_DEPTH_HACK
+        gl_Position.z += 0.1;
+#   elif defined SKYBOX_DEPTH_HACK // Sky box with tessellation? No problem :)
+        gl_Position.z = 0.0;
+#   endif
+}

@@ -1,0 +1,24 @@
+[submodule "ThirdParty/EASTL"]
+	path = ThirdParty/EASTL
+	url = https://github.com/0xc0de/EASTL.git
+[submodule "ThirdParty/fmt"]
+	path = ThirdParty/fmt
+	url = https://github.com/0xc0de/fmt.git
+[submodule "ThirdParty/mimalloc"]
+	path = ThirdParty/mimalloc
+	url = https://github.com/0xc0de/mimalloc.git
+[submodule "ThirdParty/bullet3"]
+	path = ThirdParty/bullet3
+	url = https://github.com/0xc0de/bullet3.git
+[submodule "ThirdParty/SDL2"]
+	path = ThirdParty/SDL2
+	url = https://github.com/0xc0de/SDL2.git
+[submodule "ThirdParty/bcdec"]
+	path = ThirdParty/bcdec
+	url = https://github.com/0xc0de/bcdec.git
+[submodule "ThirdParty/bc7enc_rdo"]
+	path = ThirdParty/bc7enc_rdo
+	url = https://github.com/0xc0de/bc7enc_rdo.git
+[submodule "ThirdParty/bc6h_enc"]
+	path = ThirdParty/bc6h_enc
+	url = https://github.com/0xc0de/bc6h_enc.git
