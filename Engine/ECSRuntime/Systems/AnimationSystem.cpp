@@ -83,66 +83,6 @@ void AnimationSystem::Update(GameFrame const& frame)
             r.NormalizeSelf();
         }
     }
-
-    using DoorQuery = ECS::Query<>
-        ::Required<DoorComponent>
-        ::Required<TransformComponent>;
-    for (DoorQuery::Iterator it(*m_World); it; it++)
-    {
-        auto* d = it.Get<DoorComponent>();
-        auto* t = it.Get<TransformComponent>();
-        
-        int count = it.Count();
-
-        for (int i = 0; i < count; ++i)
-        {
-            DoorComponent& door = d[i];
-            TransformComponent& transform = t[i];
-
-            if (door.m_bIsActive)
-            {
-                if (door.m_DoorState == DoorComponent::STATE_CLOSED)
-                    door.m_DoorState = DoorComponent::STATE_OPENING;
-                else if (door.m_DoorState == DoorComponent::STATE_OPENED)
-                    door.m_NextThinkTime = 2;
-            }
-
-            switch (door.m_DoorState)
-            {
-                case DoorComponent::STATE_CLOSED:
-                    break;
-                case DoorComponent::STATE_OPENED: {
-                    door.m_NextThinkTime -= timeStep;
-                    if (door.m_NextThinkTime <= 0)
-                    {
-                        door.m_DoorState = DoorComponent::STATE_CLOSING;
-                    }
-                    break;
-                }
-                case DoorComponent::STATE_OPENING: {
-                    door.m_OpenDist += timeStep * door.m_OpenSpeed;
-                    if (door.m_OpenDist >= door.m_MaxOpenDist)
-                    {
-                        door.m_OpenDist = door.m_MaxOpenDist;
-                        door.m_DoorState = DoorComponent::STATE_OPENED;
-                        door.m_NextThinkTime = 2;
-                    }
-                    transform.Position = door.Position + door.Direction * door.m_OpenDist;
-                    break;
-                }
-                case DoorComponent::STATE_CLOSING: {
-                    door.m_OpenDist -= timeStep * door.m_CloseSpeed;
-                    if (door.m_OpenDist <= 0)
-                    {
-                        door.m_OpenDist = 0;
-                        door.m_DoorState = DoorComponent::STATE_CLOSED;
-                    }
-                    transform.Position = door.Position + door.Direction * door.m_OpenDist;
-                    break;
-                }
-            }
-        }
-    }
 }
 
 HK_NAMESPACE_END
