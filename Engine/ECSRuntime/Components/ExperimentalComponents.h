@@ -426,18 +426,6 @@ struct EnvironmentProbeComponent
     uint32_t m_ProbeIndex; // Probe index inside level
 };
 
-struct PlayerControlComponent
-{
-    int PlayerNum = 0;
-    ECS::EntityHandle SkeletonControl;
-    ECS::EntityHandle Pivot;
-    ECS::EntityHandle SpringArm;
-    float CameraYaw = 0;
-    float TargetYaw = 1024;
-    float CameraPitch = 0;
-    Quat MeshRotation;
-};
-
 struct SpringArmComponent
 {
     static constexpr float SPRING_ARM_SPHERE_CAST_RADIUS = 0.3f;
