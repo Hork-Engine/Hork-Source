@@ -24,8 +24,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_OneFrameRemoveSystem = std::make_unique<OneFrameRemoveSystem>(this);
     m_SkinningSystem = std::make_unique<SkinningSystem_ECS>(this);
     m_LightingSystem = std::make_unique<LightingSystem_ECS>(this);
-
-    m_EventHandler = std::make_unique<EventHandler>(this, m_PhysicsInterface);
 }
 
 World_ECS::~World_ECS()
@@ -48,6 +46,11 @@ void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPL
 
     if (execution & GAMEPLAY_SYSTEM_FIXED_TIMESTEP)
         m_GameplayFixedTimestepSystems.EmplaceBack(gameplaySystem);
+}
+
+void World_ECS::SetEventHandler(IEventHandler* eventHandler)
+{
+    m_EventHandler = eventHandler;
 }
 
 void World_ECS::Tick(float timeStep)
@@ -103,7 +106,8 @@ void World_ECS::Tick(float timeStep)
         m_RenderSystem->UpdateBoundingBoxes(m_Frame);
 
         m_GameEvents.SwapReadWrite();
-        m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
+        if (m_EventHandler)
+            m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
 
         m_Frame.FixedFrameNum++;
         m_Frame.FixedTime = m_Frame.FixedFrameNum * fixedTimeStep;

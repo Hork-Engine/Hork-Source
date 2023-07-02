@@ -13,7 +13,7 @@
 #include "Systems/SkinningSystem.h"
 #include "Systems/LightingSystem.h"
 #include "GameFrame.h"
-#include "EventHandler.h"
+#include "GameEvents.h"
 #include "Utils.h"
 
 HK_NAMESPACE_BEGIN
@@ -33,6 +33,8 @@ public:
     }
 
     void RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution);
+
+    void SetEventHandler(IEventHandler* eventHandler);
 
     void Tick(float timeStep);
 
@@ -67,7 +69,7 @@ private:
     std::unique_ptr<CameraSystem> m_CameraSystem;
     std::unique_ptr<LightingSystem_ECS> m_LightingSystem;
     std::unique_ptr<RenderSystem> m_RenderSystem;
-    std::unique_ptr<EventHandler> m_EventHandler;
+    TRef<IEventHandler> m_EventHandler;
 };
 
 HK_NAMESPACE_END

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/ECS/ECS.h>
+#include <Engine/Core/Ref.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -41,6 +42,13 @@ private:
     SpinLock m_SpinLock[2];
     int m_ReadFrameIndex{0};
     int m_WriteFrameIndex{1};
+};
+
+class IEventHandler : public RefCounted
+{
+public:
+    virtual ~IEventHandler() = default;
+    virtual void ProcessEvents(TVector<EventBase*> const& events) = 0;
 };
 
 HK_NAMESPACE_END
