@@ -26,6 +26,8 @@ public:
 
     bool bPaused = false;
 
+    PhysicsInterface& GetPhysicsInterface() { return m_PhysicsInterface; }
+
     template <typename T>
     void RegisterGameplaySystem(GAMEPLAY_SYSTEM_EXECUTION execution)
     {
