@@ -42,7 +42,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
+ConsoleVar com_SyncGPU("com_SyncGPU"s, "0"s);
+ConsoleVar com_MaxFPS("com_MaxFPS"s, "120"s);
+ConsoleVar com_FrameSleep("com_FrameSleep"s, "0"s);
 
 FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
     m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
@@ -111,9 +113,6 @@ void FrameLoop::SetGenerateInputEvents(bool bShouldGenerateInputEvents)
 {
     m_bShouldGenerateInputEvents = bShouldGenerateInputEvents;
 }
-
-ConsoleVar com_MaxFPS("com_MaxFPS"s, "120"s);
-ConsoleVar com_FrameSleep("com_FrameSleep"s, "0"s);
 
 void FrameLoop::NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, ResourceManager* resourceManager)
 {
@@ -486,7 +485,7 @@ void FrameLoop::PollEvents(IEventListener* Listener)
     HK_PROFILER_EVENT("Frame Poll Events");
 
     // Sync with GPU to prevent "input lag"
-    if (rt_SyncGPU)
+    if (com_SyncGPU)
     {
         m_GPUSync->Wait();
     }

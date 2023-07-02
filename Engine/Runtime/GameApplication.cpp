@@ -246,9 +246,6 @@ GameApplication::~GameApplication()
 {
     m_UIManager.Reset();
 
-    //World::DestroyWorlds();
-    //World::KillWorlds();
-
     //SoundEmitter::ClearOneShotSounds();
 
     GarbageCollector::DeallocateObjects();

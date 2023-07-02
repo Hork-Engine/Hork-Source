@@ -4,9 +4,9 @@
 #include "ResourceBase.h"
 
 #include <Engine/Geometry/Skinning.h>
-#include <Engine/Core/Containers/ArrayView.h>
+#include <Engine/Geometry/IK/FABRIKSolver.h>
 
-#include "../IK/FABRIKSolver.h"
+#include <Engine/Core/Containers/ArrayView.h>
 
 HK_NAMESPACE_BEGIN
 
