@@ -71,8 +71,6 @@ void World_ECS::Tick(float timeStep)
         return;
     }
 
-    //ExecuteCommands();
-
     const float fixedTimeStep = 1.0f / 60.0f;
 
     m_Frame.VariableTimeStep = timeStep;

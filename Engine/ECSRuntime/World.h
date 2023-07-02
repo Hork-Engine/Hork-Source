@@ -42,8 +42,8 @@ private:
     template <typename T, typename... Args>
     T* CreateSystem(Args&&... args)
     {
-        m_EngineSystems.Add(std::make_unique<T>(this, std::forward<Args>(args)...));
-        return static_cast<T*>(m_EngineSystems.Last().get());
+        m_EngineSystems.Add(MakeUnique<T>(this, std::forward<Args>(args)...));
+        return static_cast<T*>(m_EngineSystems.Last().GetObject());
     }
 
     void RunVariableTimeStepSystems(float timeStep);
@@ -55,7 +55,7 @@ private:
 
     PhysicsInterface m_PhysicsInterface;
 
-    TVector<std::unique_ptr<EngineSystemECS>> m_EngineSystems;
+    TVector<TUniqueRef<EngineSystemECS>> m_EngineSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
 

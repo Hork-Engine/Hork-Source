@@ -7,7 +7,7 @@ HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
 
-class EngineSystemECS : public RefCounted
+class EngineSystemECS
 {
 public:
     virtual ~EngineSystemECS() = default;
