@@ -1,11 +1,11 @@
 #pragma once
 
+#include "Systems/GameplaySystem.h"
 #include "Systems/NodeMotionSystem.h"
 #include "Systems/AnimationSystem.h"
 #include "Systems/TransformSystem.h"
 #include "Systems/CameraSystem.h"
 #include "Systems/RenderSystem.h"
-#include "Systems/PlayerControlSystem.h"
 #include "Systems/PhysicsSystem.h"
 #include "Systems/CharacterControllerSystem.h"
 #include "Systems/TeleportSystem.h"
@@ -27,6 +27,8 @@ public:
 
     bool bPaused = false;
 
+    void RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution);
+
     void Tick(float timeStep);
 
     void DrawDebug(DebugRenderer& renderer);
@@ -37,6 +39,8 @@ public:
     GameFrame const& GetFrame() const { return m_Frame; }
 
 private:
+    void RunVariableTimeStepSystems(float timeStep);
+
     float m_Accumulator = 0.0f;
 
     GameFrame m_Frame;
@@ -44,7 +48,9 @@ private:
 
     PhysicsInterface m_PhysicsInterface;
 
-    std::unique_ptr<PlayerControlSystem> m_PlayerControlSystem;
+    TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
+    TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
+
     std::unique_ptr<PhysicsSystem_ECS> m_PhysicsSystem;
     std::unique_ptr<CharacterControllerSystem> m_CharacterControllerSystem;
     std::unique_ptr<NodeMotionSystem> m_NodeMotionSystem;

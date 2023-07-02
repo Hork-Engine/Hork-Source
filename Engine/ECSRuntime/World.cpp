@@ -13,7 +13,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     ECS::World(createInfo),
     m_PhysicsInterface(this)
 {
-    m_PlayerControlSystem = std::make_unique<PlayerControlSystem>(this);
     m_PhysicsSystem = std::make_unique<PhysicsSystem_ECS>(this, m_PhysicsInterface, & m_GameEvents);
     m_CharacterControllerSystem = std::make_unique<CharacterControllerSystem>(this, m_PhysicsInterface);
     m_NodeMotionSystem = std::make_unique<NodeMotionSystem>(this);
@@ -37,6 +36,21 @@ World_ECS::~World_ECS()
     ExecuteCommands();
 }
 
+void World_ECS::RunVariableTimeStepSystems(float timeStep)
+{
+    for (auto& system : m_GameplayVariableTimestepSystems)
+        system->VariableTimestepUpdate(timeStep);
+}
+
+void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
+{
+    if (execution & GAMEPLAY_SYSTEM_VARIABLE_TIMESTEP)
+        m_GameplayVariableTimestepSystems.EmplaceBack(gameplaySystem);
+
+    if (execution & GAMEPLAY_SYSTEM_FIXED_TIMESTEP)
+        m_GameplayFixedTimestepSystems.EmplaceBack(gameplaySystem);
+}
+
 void World_ECS::Tick(float timeStep)
 {
     if (bPaused)
@@ -52,7 +66,7 @@ void World_ECS::Tick(float timeStep)
     m_Frame.VariableTimeStep = timeStep;
     m_Frame.FixedTimeStep = fixedTimeStep;
 
-    m_PlayerControlSystem->Update(timeStep);
+    RunVariableTimeStepSystems(timeStep);
 
     m_Accumulator += timeStep;
 
@@ -71,6 +85,9 @@ void World_ECS::Tick(float timeStep)
         m_SpawnSystem->Update(m_Frame);
 
         m_TeleportSystem->Update(m_Frame);
+
+        for (auto& system : m_GameplayFixedTimestepSystems)
+            system->FixedTimestepUpdate(m_Frame);
 
         // Move / animate nodes
         m_NodeMotionSystem->Update(m_Frame);
