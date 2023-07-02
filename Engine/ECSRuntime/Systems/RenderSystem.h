@@ -31,8 +31,8 @@ public:
     void AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData);
 
 private:
-    void AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, bool bMovable);
-    void AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, bool bMovable);
+    void AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, Float3x4 const* transformHistory, SkeletonPose* pose, bool bMovable);
+    void AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, Float3x4 const* transformHistory, bool bMovable);
     void AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, ShadowCastComponent const& shadow, LightShadowmap* shadowmap);
     void AddProceduralMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, ShadowCastComponent const& shadow, LightShadowmap* shadowmap);
     void AddShadowmapCascades(DirectionalLightComponent_ECS const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);

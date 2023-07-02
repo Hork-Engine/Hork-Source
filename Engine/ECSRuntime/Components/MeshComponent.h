@@ -24,8 +24,6 @@ struct MeshComponent_ECS
 
     TRef<SkeletonPose> Pose;
 
-    Float3x4 TransformHistory;
-
     bool bOutline{};
 };
 
@@ -41,8 +39,6 @@ struct ProceduralMeshComponent_ECS
     int NumLayers{1};
 
     MaterialInstance* Materials[MAX_LAYERS] = {};
-
-    Float3x4 TransformHistory;
 
     bool bOutline{};
 };

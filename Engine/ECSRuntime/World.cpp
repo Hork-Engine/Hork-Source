@@ -3,6 +3,7 @@
 #include "Systems/GameplaySystem.h"
 #include "Systems/NodeMotionSystem.h"
 #include "Systems/TransformSystem.h"
+#include "Systems/TransformHistorySystem.h"
 #include "Systems/CameraSystem.h"
 #include "Systems/RenderSystem.h"
 #include "Systems/PhysicsSystem.h"
@@ -26,6 +27,7 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
     m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
     m_TransformSystem = CreateSystem<TransformSystem>();
+    m_TransformHistorySystem = CreateSystem<TransformHistorySystem>();
     m_CameraSystem = CreateSystem<CameraSystem>();
     m_RenderSystem = CreateSystem<RenderSystem>();
     m_TeleportSystem = CreateSystem<TeleportSystem>();
@@ -122,38 +124,7 @@ void World_ECS::Tick(float timeStep)
 
     m_Frame.Interpolate = m_Accumulator / fixedTimeStep;
 
-    {
-        using Query = ECS::Query<>
-            ::Required<MeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
-
-        for (Query::Iterator q(*this); q; q++)
-        {
-            MeshComponent_ECS* mesh = q.Get<MeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                mesh[i].TransformHistory = transform[i].ToMatrix();
-            }
-        }
-    }
-    {
-        using Query = ECS::Query<>
-            ::Required<ProceduralMeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
-
-        for (Query::Iterator q(*this); q; q++)
-        {
-            ProceduralMeshComponent_ECS* mesh = q.Get<ProceduralMeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                mesh[i].TransformHistory = transform[i].ToMatrix();
-            }
-        }
-    }
+    m_TransformHistorySystem->Update(m_Frame);
 
     if (com_InterpolateTransform)
     {

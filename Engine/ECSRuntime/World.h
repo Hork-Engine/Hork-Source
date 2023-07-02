@@ -63,6 +63,7 @@ private:
     class CharacterControllerSystem* m_CharacterControllerSystem;
     class NodeMotionSystem* m_NodeMotionSystem;
     class TransformSystem* m_TransformSystem;
+    class TransformHistorySystem* m_TransformHistorySystem;
     class TeleportSystem* m_TeleportSystem;
     class OneFrameRemoveSystem* m_OneFrameRemoveSystem;
     class SkinningSystem_ECS* m_SkinningSystem;

@@ -7,6 +7,7 @@
 #include "../Components/ShadowCastTag.h"
 #include "../Components/MovableTag.h"
 #include "../Components/WorldTransformComponent.h"
+#include "../Components/TransformHistoryComponent.h"
 
 #include "../Resources/ResourceManager.h"
 #include "../Resources/Resource_Mesh.h"
@@ -395,12 +396,14 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
         {
             MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
             FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
 
             bool bMovable = q.HasComponent<MovableTag>();
+            bool bHasTransformHistory = !!history;
 
             for (int i = 0; i < q.Count(); i++)
             {
-                AddMesh(rd, frameData, transform[i], mesh[i], mesh[i].Pose, bMovable);
+                AddMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, mesh[i].Pose, bMovable);
             }
         }
     }
@@ -414,12 +417,14 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
         {
             ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
             FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
 
             bool bMovable = q.HasComponent<MovableTag>();
+            bool bHasTransformHistory = !!history;
 
             for (int i = 0; i < q.Count(); i++)
             {
-                AddProceduralMesh(rd, frameData, transform[i], mesh[i], bMovable);
+                AddProceduralMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, bMovable);
             }
         }
     }
@@ -588,7 +593,7 @@ void RenderSystem::AddDirectionalLightShadows(RenderFrontendDef& rd, RenderFrame
     }
 }
 
-void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, bool bMovable)
+void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, Float3x4 const* transformHistory, SkeletonPose* pose, bool bMovable)
 {
     Float3x4 transformMatrix;
     Float3x3 worldRotation = transform.Rotation.ToMatrix3x3();
@@ -596,8 +601,8 @@ void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, Fi
 
     auto& frameLoop = GameApplication::GetFrameLoop();
 
-    Float3x4 const& componentWorldTransform = transformMatrix;        //InComponent->GetRenderTransformMatrix(rd.FrameNumber);
-    Float3x4 const& componentWorldTransformP = mesh.TransformHistory; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
+    Float3x4 const& componentWorldTransform = transformMatrix;   //InComponent->GetRenderTransformMatrix(rd.FrameNumber);
+    Float3x4 const& componentWorldTransformP = transformHistory ? *transformHistory : transformMatrix; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
 
     Float4x4 instanceMatrix = rd.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = rd.View->ViewProjectionP * componentWorldTransformP;
@@ -730,7 +735,7 @@ void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, Fi
     }
 }
 
-void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, bool bMovable)
+void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, Float3x4 const* transformHistory, bool bMovable)
 {
     Float3x4 transformMatrix;
     Float3x3 worldRotation = transform.Rotation.ToMatrix3x3();
@@ -739,7 +744,7 @@ void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& fra
     auto& frameLoop = GameApplication::GetFrameLoop();
 
     Float3x4 const& componentWorldTransform = transformMatrix;        //InComponent->GetRenderTransformMatrix(rd.FrameNumber);
-    Float3x4 const& componentWorldTransformP = mesh.TransformHistory; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
+    Float3x4 const& componentWorldTransformP = transformHistory ? *transformHistory : transformMatrix; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
 
     Float4x4 instanceMatrix = rd.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = rd.View->ViewProjectionP * componentWorldTransformP;
