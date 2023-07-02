@@ -1,7 +1,8 @@
 #include "SkinningSystem.h"
 #include "../GameFrame.h"
 #include "../Components/FinalTransformComponent.h"
-#include "../Components/ExperimentalComponents.h"
+#include "../Components/SkeletonControllerComponent.h"
+#include "../Components/SkeletonPoseComponent.h"
 #include "../Resources/ResourceManager.h"
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/GameApplication.h>

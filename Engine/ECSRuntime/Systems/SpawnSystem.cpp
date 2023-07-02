@@ -5,6 +5,8 @@
 
 #include "../Components/WorldTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
+#include "../Components/MeshComponent.h"
+#include "../Components/ShadowCastComponent.h"
 
 HK_NAMESPACE_BEGIN
 

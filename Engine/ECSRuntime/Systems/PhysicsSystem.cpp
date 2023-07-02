@@ -9,6 +9,7 @@
 #include "../Components/NodeComponent.h"
 #include "../Components/MovableTag.h"
 #include "../Components/ExperimentalComponents.h"
+#include "../Components/SpringArmComponent.h"
 
 #include <Jolt/Physics/Collision/ShapeCast.h>
 

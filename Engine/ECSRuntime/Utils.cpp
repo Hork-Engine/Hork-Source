@@ -10,6 +10,7 @@
 #include "Components/MovableTag.h"
 #include "Components/TransformInterpolationTag.h"
 #include "Components/ExperimentalComponents.h"
+#include "Components/MeshComponent.h"
 
 #include <Engine/Runtime/GameApplication.h>
 

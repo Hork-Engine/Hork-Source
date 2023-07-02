@@ -3,6 +3,7 @@
 #include "../Components/TransformComponent.h"
 #include "../Components/VelocityComponent.h"
 #include "../Components/ExperimentalComponents.h"
+#include "../Components/MeshComponent.h"
 
 HK_NAMESPACE_BEGIN
 

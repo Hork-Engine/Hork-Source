@@ -49,11 +49,6 @@ struct ActivatorComponent
     } TriggerEvent;
 };
 
-struct ActorComponent_ECS
-{
-    ECS::EntityHandle Root;
-};
-
 struct ActiveComponent
 {
     bool bIsActive = true;
@@ -102,59 +97,6 @@ struct DoorActivatorComponent
 {
     TStaticVector<ECS::EntityHandle, 2> Parts;
 };
-
-struct MeshComponent_ECS
-{
-    static constexpr size_t MAX_LAYERS = 4;
-
-    MeshHandle Mesh;
-
-    int SubmeshIndex{};
-
-    BvAxisAlignedBox BoundingBox;
-    BvAxisAlignedBox m_WorldBoundingBox;
-
-    int NumLayers{1};
-
-    MaterialInstance* Materials[MAX_LAYERS] = {};
-
-    TRef<SkeletonPose> Pose;
-
-    Float3x4 TransformHistory;
-
-    bool bOutline{};
-};
-struct SkeletonControllerComponent
-{
-    TRef<AnimationInstance> AnimInstance;
-};
-struct SkeletonPoseComponent
-{
-    TRef<SkeletonPose> Pose;
-    MeshHandle Mesh;
-};
-struct ShadowCastComponent
-{
-    uint32_t m_CascadeMask{0};
-};
-struct ProceduralMeshComponent_ECS
-{
-    static constexpr size_t MAX_LAYERS = 4;
-
-    TRef<ProceduralMesh_ECS> Mesh;
-
-    BvAxisAlignedBox BoundingBox;
-    BvAxisAlignedBox m_WorldBoundingBox;
-
-    int NumLayers{1};
-
-    MaterialInstance* Materials[MAX_LAYERS] = {};
-
-    Float3x4 TransformHistory;
-
-    bool bOutline{};
-};
-
 
 // If Dynamic tag attached, effective light color will be recaluclated on each frame
 struct DynamicLightTag
@@ -424,18 +366,6 @@ struct EnvironmentProbeComponent
     BvAxisAlignedBox BoundingBox; // FIXME: Or OBB?
     uint32_t m_PrimID;
     uint32_t m_ProbeIndex; // Probe index inside level
-};
-
-struct SpringArmComponent
-{
-    static constexpr float SPRING_ARM_SPHERE_CAST_RADIUS = 0.3f;
-
-    float DesiredDistance{};
-    float ActualDistance{};
-    float MinDistance{0.2f};
-    float Speed{2};
-    //float MaxVelocity{2};
-    //float MinVelocity{0.01f};
 };
 
 HK_NAMESPACE_END

@@ -3,6 +3,8 @@
 #include <Engine/ECS/ECS.h>
 
 #include "../Components/FinalTransformComponent.h"
+#include "../Components/MeshComponent.h"
+#include "../Components/ShadowCastComponent.h"
 #include "../Components/ExperimentalComponents.h"
 
 #include "../Resources/ResourceManager.h"
