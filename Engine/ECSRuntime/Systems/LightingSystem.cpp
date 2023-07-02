@@ -2,6 +2,7 @@
 #include "../GameFrame.h"
 #include "../Components/FinalTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
+#include "../Components/DynamicLightTag.h"
 #include "../Components/MovableTag.h"
 #include "../Resources/ResourceManager.h"
 #include <Engine/Core/ConsoleVar.h>

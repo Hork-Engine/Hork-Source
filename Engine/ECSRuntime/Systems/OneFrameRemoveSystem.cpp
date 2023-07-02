@@ -1,7 +1,7 @@
 #include "OneFrameRemoveSystem.h"
 #include "../Utils.h"
 
-#include "../Components/ExperimentalComponents.h"
+#include "../Components/OneFrameEntityTag.h"
 
 HK_NAMESPACE_BEGIN
 

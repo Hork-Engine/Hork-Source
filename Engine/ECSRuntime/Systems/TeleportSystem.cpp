@@ -4,7 +4,7 @@
 #include "../Components/CharacterControllerComponent.h"
 #include "../Components/RigidBodyComponent.h"
 #include "../Components/WorldTransformComponent.h"
-#include "../Components/ExperimentalComponents.h"
+#include "../Components/TeleportationComponent.h"
 
 HK_NAMESPACE_BEGIN
 

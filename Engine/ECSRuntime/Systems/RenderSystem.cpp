@@ -4,6 +4,7 @@
 
 #include "../Components/FinalTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
+#include "../Components/ShadowCastTag.h"
 #include "../Components/MovableTag.h"
 #include "../Components/WorldTransformComponent.h"
 

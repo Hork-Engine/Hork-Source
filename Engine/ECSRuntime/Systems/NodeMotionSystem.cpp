@@ -3,7 +3,7 @@
 #include "../GameFrame.h"
 #include "../Components/NodeMotionComponent.h"
 #include "../Components/TransformComponent.h"
-#include "../Components/ExperimentalComponents.h"
+#include "../Components/ActiveComponent.h"
 
 HK_NAMESPACE_BEGIN
 
