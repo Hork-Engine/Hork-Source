@@ -2,7 +2,6 @@
 
 #include "Systems/GameplaySystem.h"
 #include "Systems/NodeMotionSystem.h"
-#include "Systems/AnimationSystem.h"
 #include "Systems/TransformSystem.h"
 #include "Systems/CameraSystem.h"
 #include "Systems/RenderSystem.h"
@@ -71,7 +70,6 @@ private:
     PhysicsSystem_ECS* m_PhysicsSystem;
     CharacterControllerSystem* m_CharacterControllerSystem;
     NodeMotionSystem* m_NodeMotionSystem;
-    AnimationSystem* m_AnimationSystem;
     TransformSystem* m_TransformSystem;
     TeleportSystem* m_TeleportSystem;
     OneFrameRemoveSystem* m_OneFrameRemoveSystem;

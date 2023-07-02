@@ -16,7 +16,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_PhysicsSystem = CreateSystem<PhysicsSystem_ECS>(&m_GameEvents);
     m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
     m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
-    m_AnimationSystem = CreateSystem<AnimationSystem>();
     m_TransformSystem = CreateSystem<TransformSystem>();
     m_CameraSystem = CreateSystem<CameraSystem>();
     m_RenderSystem = CreateSystem<RenderSystem>();
@@ -91,7 +90,6 @@ void World_ECS::Tick(float timeStep)
 
         // Move / animate nodes
         m_NodeMotionSystem->Update(m_Frame);
-        m_AnimationSystem->Update(m_Frame);
 
         // Recalc world transform
         m_TransformSystem->Update(m_Frame);
