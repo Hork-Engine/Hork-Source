@@ -178,6 +178,12 @@ void World_ECS::DrawDebug(DebugRenderer& renderer)
     m_SkinningSystem->DrawDebug(renderer);
     m_LightingSystem->DrawDebug(renderer);
     m_RenderSystem->DrawDebug(renderer);
+
+    for (auto& system : m_GameplayVariableTimestepSystems)
+        system->DrawDebug(renderer);
+
+    for (auto& system : m_GameplayFixedTimestepSystems)
+        system->DrawDebug(renderer);
 }
 
 void World_ECS::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData)

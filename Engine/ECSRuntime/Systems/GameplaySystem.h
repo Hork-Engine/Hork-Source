@@ -13,12 +13,15 @@ enum GAMEPLAY_SYSTEM_EXECUTION
 };
 HK_FLAG_ENUM_OPERATORS(GAMEPLAY_SYSTEM_EXECUTION)
 
+class DebugRenderer;
+
 class GameplaySystemECS : public RefCounted
 {
 public:
     virtual ~GameplaySystemECS() = default;
     virtual void VariableTimestepUpdate(float timeStep) {}
     virtual void FixedTimestepUpdate(GameFrame const& frame) {}
+    virtual void DrawDebug(DebugRenderer& renderer) {}
 };
 
 HK_NAMESPACE_END
