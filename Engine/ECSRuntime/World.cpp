@@ -1,6 +1,6 @@
 #include "World.h"
 
-#include "Systems/GameplaySystem.h"
+#include "Systems/BehaviorTreeSystem.h"
 #include "Systems/NodeMotionSystem.h"
 #include "Systems/TransformSystem.h"
 #include "Systems/TransformHistorySystem.h"
@@ -25,6 +25,7 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
 {
     m_PhysicsSystem = CreateSystem<PhysicsSystem_ECS>(&m_GameEvents);
     m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
+    m_BehaviorTreeSystem = CreateSystem<BehaviorTreeSystem>();
     m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
     m_TransformSystem = CreateSystem<TransformSystem>();
     m_TransformHistorySystem = CreateSystem<TransformHistorySystem>();
@@ -96,6 +97,8 @@ void World_ECS::Tick(float timeStep)
 
         for (auto& system : m_GameplayFixedTimestepSystems)
             system->FixedTimestepUpdate(m_Frame);
+
+        m_BehaviorTreeSystem->Update(m_Frame);
 
         // Move / animate nodes
         m_NodeMotionSystem->Update(m_Frame);

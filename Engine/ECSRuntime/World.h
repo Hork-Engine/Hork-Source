@@ -61,6 +61,7 @@ private:
 
     class PhysicsSystem_ECS* m_PhysicsSystem;
     class CharacterControllerSystem* m_CharacterControllerSystem;
+    class BehaviorTreeSystem* m_BehaviorTreeSystem;
     class NodeMotionSystem* m_NodeMotionSystem;
     class TransformSystem* m_TransformSystem;
     class TransformHistorySystem* m_TransformHistorySystem;
