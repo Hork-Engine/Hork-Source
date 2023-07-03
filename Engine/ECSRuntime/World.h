@@ -58,6 +58,7 @@ private:
     TVector<TUniqueRef<EngineSystemECS>> m_EngineSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
     TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
+    TVector<TRef<GameplaySystemECS>> m_GameplayPostPhysicsSystems;
 
     class PhysicsSystem_ECS* m_PhysicsSystem;
     class CharacterControllerSystem* m_CharacterControllerSystem;

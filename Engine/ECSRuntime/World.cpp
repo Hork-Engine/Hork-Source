@@ -57,6 +57,9 @@ void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPL
 
     if (execution & GAMEPLAY_SYSTEM_FIXED_TIMESTEP)
         m_GameplayFixedTimestepSystems.EmplaceBack(gameplaySystem);
+
+    if (execution & GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE)
+        m_GameplayPostPhysicsSystems.EmplaceBack(gameplaySystem);
 }
 
 void World_ECS::SetEventHandler(IEventHandler* eventHandler)
@@ -111,6 +114,9 @@ void World_ECS::Tick(float timeStep)
 
         // Update physics
         m_PhysicsSystem->Update(m_Frame);
+
+        for (auto& system : m_GameplayPostPhysicsSystems)
+            system->PostPhysicsUpdate(m_Frame);
 
         m_LightingSystem->UpdateBoundingBoxes(m_Frame);
         m_RenderSystem->UpdateBoundingBoxes(m_Frame);
