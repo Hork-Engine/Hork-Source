@@ -59,7 +59,8 @@ private:
 
     void AddAndRemoveBodies(GameFrame const& frame);
 
-    void PrePhysicsUpdate(GameFrame const& frame);
+    void UpdateKinematicBodies(GameFrame const& frame);
+    void UpdateWaterBodies(GameFrame const& frame);
 
     void StoreDynamicBodiesSnapshot();
 

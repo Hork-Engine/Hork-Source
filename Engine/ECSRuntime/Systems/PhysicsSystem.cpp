@@ -416,90 +416,87 @@ void PhysicsSystem_ECS::AddAndRemoveBodies(GameFrame const& frame)
     }
 }
 
-void PhysicsSystem_ECS::PrePhysicsUpdate(GameFrame const& frame)
+void PhysicsSystem_ECS::UpdateKinematicBodies(GameFrame const& frame)
 {
     int frameNum = frame.StateIndex;
 
     JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
-    // Update kinematic bodies
+    using Query = ECS::Query<>
+        ::Required<KinematicBodyComponent>
+        ::ReadOnly<WorldTransformComponent>        
+        ::ReadOnly<MovableTag>;
+
+    for (Query::Iterator q(*m_World); q; q++)
     {
-        using Query = ECS::Query<>
-            ::ReadOnly<WorldTransformComponent>
-            ::Required<KinematicBodyComponent>
-            ::ReadOnly<MovableTag>;
+        WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
+        KinematicBodyComponent* bodies = q.Get<KinematicBodyComponent>();
 
-        for (Query::Iterator q(*m_World); q; q++)
+        for (int i = 0; i < q.Count(); i++)
         {
-            WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-            KinematicBodyComponent* bodies = q.Get<KinematicBodyComponent>();
+            JPH::Vec3 position = ConvertVector(t[i].Position[frameNum]);
+            JPH::Quat rotation = ConvertQuaternion(t[i].Rotation[frameNum]);
 
-            for (int i = 0; i < q.Count(); i++)
-            {
-                JPH::Vec3 position = ConvertVector(t[i].Position[frameNum]);
-                JPH::Quat rotation = ConvertQuaternion(t[i].Rotation[frameNum]);
-
-                body_interface.MoveKinematic(bodies[i].m_BodyId, position, rotation, frame.FixedTimeStep);
-            }
+            body_interface.MoveKinematic(bodies[i].m_BodyId, position, rotation, frame.FixedTimeStep);
         }
     }
+}
 
-    // Update water
+void PhysicsSystem_ECS::UpdateWaterBodies(GameFrame const& frame)
+{
+    JPH::BroadPhaseQuery const& broadPhaseQuery = m_PhysicsInterface.GetImpl().GetBroadPhaseQuery();
+
+    // Broadphase results, will apply buoyancy to any body that intersects with the water volume
+    class Collector : public JPH::CollideShapeBodyCollector
     {
-        using Query = ECS::Query<>
-            ::ReadOnly<WaterVolumeComponent>;
+    public:
+        Collector(JPH::PhysicsSystem& inSystem, JPH::Vec3Arg inSurfaceNormal, float inDeltaTime) :
+            mSystem(inSystem), mSurfacePosition(JPH::RVec3::sZero()), mSurfaceNormal(inSurfaceNormal), mDeltaTime(inDeltaTime) {}
 
-        JPH::BroadPhaseQuery const& broadPhaseQuery = m_PhysicsInterface.GetImpl().GetBroadPhaseQuery();
-
-        // Broadphase results, will apply buoyancy to any body that intersects with the water volume
-        class Collector : public JPH::CollideShapeBodyCollector
+        void SetSurfacePosition(Float3 const& surfacePosition)
         {
-        public:
-            Collector(JPH::PhysicsSystem& inSystem, JPH::Vec3Arg inSurfaceNormal, float inDeltaTime) :
-                mSystem(inSystem), mSurfacePosition(JPH::RVec3::sZero()), mSurfaceNormal(inSurfaceNormal), mDeltaTime(inDeltaTime) {}
+            mSurfacePosition = ConvertVector(surfacePosition);
+        }
 
-            void SetSurfacePosition(Float3 const& surfacePosition)
-            {
-                mSurfacePosition = ConvertVector(surfacePosition);
-            }
-
-            virtual void AddHit(const JPH::BodyID& inBodyID) override
-            {
-                JPH::BodyLockWrite lock(mSystem.GetBodyLockInterface(), inBodyID);
-                JPH::Body& body = lock.GetBody();
-                if (body.IsActive() && body.GetMotionType() == JPH::EMotionType::Dynamic)
-                    body.ApplyBuoyancyImpulse(mSurfacePosition, mSurfaceNormal, 1.1f, 0.3f, 0.05f, JPH::Vec3::sZero(), mSystem.GetGravity(), mDeltaTime);
-
-                if (body.GetMotionType() != JPH::EMotionType::Dynamic)
-                    LOG("Motion type {}\n", body.GetMotionType() == JPH::EMotionType::Static ? "Static" : "Kinematic");
-            }
-
-        private:
-            JPH::PhysicsSystem& mSystem;
-            JPH::RVec3 mSurfacePosition;
-            JPH::Vec3 mSurfaceNormal;
-            float mDeltaTime;
-        };
-
-        Collector collector(m_PhysicsInterface.GetImpl(), JPH::Vec3::sAxisY(), frame.FixedTimeStep);
-
-        for (Query::Iterator q(*m_World); q; q++)
+        virtual void AddHit(const JPH::BodyID& inBodyID) override
         {
-            WaterVolumeComponent const* waterVolume = q.Get<WaterVolumeComponent>();
+            JPH::BodyLockWrite lock(mSystem.GetBodyLockInterface(), inBodyID);
+            JPH::Body& body = lock.GetBody();
+            if (body.IsActive() && body.GetMotionType() == JPH::EMotionType::Dynamic)
+                body.ApplyBuoyancyImpulse(mSurfacePosition, mSurfaceNormal, 1.1f, 0.3f, 0.05f, JPH::Vec3::sZero(), mSystem.GetGravity(), mDeltaTime);
 
-            for (int i = 0; i < q.Count(); i++)
-            {
-                JPH::AABox water_box(ConvertVector(waterVolume[i].BoundingBox.Mins), ConvertVector(waterVolume[i].BoundingBox.Maxs));
+            if (body.GetMotionType() != JPH::EMotionType::Dynamic)
+                LOG("Motion type {}\n", body.GetMotionType() == JPH::EMotionType::Static ? "Static" : "Kinematic");
+        }
 
-                Float3 surfacePosition = waterVolume[i].BoundingBox.Center();
-                surfacePosition.Y = waterVolume[i].BoundingBox.Maxs.Y;
+    private:
+        JPH::PhysicsSystem& mSystem;
+        JPH::RVec3 mSurfacePosition;
+        JPH::Vec3 mSurfaceNormal;
+        float mDeltaTime;
+    };
 
-                collector.SetSurfacePosition(surfacePosition);
+    Collector collector(m_PhysicsInterface.GetImpl(), JPH::Vec3::sAxisY(), frame.FixedTimeStep);
 
-                ObjectLayerFilter layerFilter(m_PhysicsInterface.GetCollisionFilter(), waterVolume[i].CollisionGroup);
+    using Query = ECS::Query<>
+        ::ReadOnly<WaterVolumeComponent>;
 
-                broadPhaseQuery.CollideAABox(water_box, collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(BroadphaseLayer::MOVING)), layerFilter);
-            }
+    for (Query::Iterator q(*m_World); q; q++)
+    {
+        WaterVolumeComponent const* waterVolume = q.Get<WaterVolumeComponent>();
+
+        for (int i = 0; i < q.Count(); i++)
+        {
+            JPH::AABox water_box(ConvertVector(waterVolume[i].BoundingBox.Mins), ConvertVector(waterVolume[i].BoundingBox.Maxs));
+
+            Float3 surfacePosition = waterVolume[i].BoundingBox.Center();
+            surfacePosition.Y = waterVolume[i].BoundingBox.Maxs.Y;
+
+            collector.SetSurfacePosition(surfacePosition);
+
+            ObjectLayerFilter layerFilter(m_PhysicsInterface.GetCollisionFilter(), waterVolume[i].CollisionGroup);
+
+            broadPhaseQuery.CollideAABox(water_box, collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(BroadphaseLayer::MOVING)), layerFilter);
         }
     }
 }
@@ -545,7 +542,8 @@ void PhysicsSystem_ECS::Update(GameFrame const& frame)
 
     AddAndRemoveBodies(frame);
 
-    PrePhysicsUpdate(frame);
+    UpdateKinematicBodies(frame);
+    UpdateWaterBodies(frame);
 
     m_PhysicsInterface.GetImpl().Update(frame.FixedTimeStep, collisionSteps, integrationSubSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
 
