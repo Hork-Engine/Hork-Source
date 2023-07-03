@@ -9,8 +9,6 @@
 #include "../Components/FinalTransformComponent.h"
 #include "../Components/NodeComponent.h"
 #include "../Components/MovableTag.h"
-#include "../Components/ExperimentalComponents.h"
-#include "../Components/SpringArmComponent.h"
 
 //#include <Jolt/Physics/Collision/ShapeCast.h>
 
@@ -562,51 +560,6 @@ void PhysicsSystem_ECS::Update(GameFrame const& frame)
     }
 
     StoreDynamicBodiesSnapshot();
-
-    // Update spring arms
-    {
-        using Query = ECS::Query<>
-            ::Required<TransformComponent>
-            ::ReadOnly<WorldTransformComponent>
-            ::Required<SpringArmComponent>;
-
-        int frameNum = frame.StateIndex;
-
-        SphereCastResult result;
-
-        for (Query::Iterator q(*m_World); q; q++)
-        {
-            TransformComponent* transform = q.Get<TransformComponent>();
-            WorldTransformComponent const* worldTransform = q.Get<WorldTransformComponent>();
-            SpringArmComponent* springArm = q.Get<SpringArmComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                Float3 dir = worldTransform[i].Rotation[frameNum].ZAxis();
-                Float3 worldPos = worldTransform[i].Position[frameNum] - dir * springArm[i].ActualDistance;
-                
-                if (m_PhysicsInterface.CastSphere(worldPos, dir * springArm[i].DesiredDistance, SpringArmComponent::SPRING_ARM_SPHERE_CAST_RADIUS, result))
-                {
-                    float distance = springArm[i].DesiredDistance * result.HitFraction;
-
-                    //if (springArm[i].ActualDistance > distance)
-                    //    springArm[i].ActualDistance = distance;
-                    //else
-                        //springArm[i].ActualDistance = Math::Lerp(springArm[i].ActualDistance, distance, springArm[i].Speed * frame.FixedTimeStep);
-                        springArm[i].ActualDistance = Math::Lerp(springArm[i].ActualDistance, distance, 0.5f);
-
-                    if (springArm[i].ActualDistance < springArm[i].MinDistance)
-                        springArm[i].ActualDistance = springArm[i].MinDistance;
-                }
-                else
-                {
-                    springArm[i].ActualDistance = Math::Lerp(springArm[i].ActualDistance, springArm[i].DesiredDistance, springArm[i].Speed * frame.FixedTimeStep);
-                }
-
-                transform[i].Position.Z = springArm[i].ActualDistance;
-            }
-        }
-    }
 }
 
 void PhysicsSystem_ECS::DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale)
