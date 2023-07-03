@@ -3,6 +3,9 @@
 #include "Components/RigidBodyComponent.h"
 #include "Components/CharacterControllerComponent.h"
 
+#include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+
 HK_NAMESPACE_BEGIN
 
 CollisionFilter::CollisionFilter()
@@ -84,6 +87,55 @@ PhysicsInterface::PhysicsInterface(ECS::World* world) :
 
     // Now we can create the actual physics system.
     m_PhysicsSystem.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, m_BroadPhaseLayerInterface, m_ObjectVsBroadPhaseLayerFilter, m_ObjectVsObjectLayerFilter);
+}
+
+bool PhysicsInterface::CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, SphereCastResult& result)
+{
+    JPH::SphereShape sphereShape(sphereRadius);
+
+    JPH::Vec3 pos = ConvertVector(start);
+    JPH::Vec3 direction = ConvertVector(dir);
+
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+
+    JPH::ShapeCastSettings settings;
+    //settings.mUseShrunkenShapeAndConvexRadius = mUseShrunkenShapeAndConvexRadius;
+    //settings.mActiveEdgeMode = mActiveEdgeMode;
+    settings.mBackFaceModeTriangles = JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceModeConvex = JPH::EBackFaceMode::CollideWithBackFaces;
+    //settings.mReturnDeepestPoint = mReturnDeepestPoint;
+    //settings.mCollectFacesMode = mCollectFacesMode;
+    settings.mReturnDeepestPoint = true;
+
+    // Define a base offset that is halfway the probe to test getting the collision results relative to some offset.
+    // Note that this is not necessarily the best choice for a base offset, but we want something that's not zero
+    // and not the start of the collision test either to ensure that we'll see errors in the algorithm.
+    JPH::RVec3 baseOffset = pos + 0.5f * direction;
+
+    class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
+    {
+    public:
+        BroadphaseLayerFilter(uint32_t collisionMask) :
+            m_CollisionMask(collisionMask)
+        {}
+
+        uint32_t m_CollisionMask;
+
+        bool ShouldCollide(JPH::BroadPhaseLayer inLayer) const override
+        {
+            return (HK_BIT(static_cast<uint8_t>(inLayer)) & m_CollisionMask) != 0;
+        }
+    };
+    BroadphaseLayerFilter broadphaseFilter(HK_BIT(BroadphaseLayer::MOVING) | HK_BIT(BroadphaseLayer::NON_MOVING) /* | HK_BIT(BroadphaseLayer::CHARACTER_PROXY)*/);
+
+    JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> collector;
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, broadphaseFilter);
+
+    if (collector.HadHit())
+        result.HitFraction = collector.mHit.mFraction;
+
+    return collector.HadHit();
 }
 
 void PhysicsInterface::SetLinearVelocity(ECS::EntityHandle handle, Float3 const& velocity)

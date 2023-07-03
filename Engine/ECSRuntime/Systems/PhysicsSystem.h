@@ -63,12 +63,6 @@ private:
 
     void StoreDynamicBodiesSnapshot();
 
-    struct SphereCastResult
-    {
-        float HitFraction;
-    };
-    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, SphereCastResult& result);
-
     void DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale);
 
     World_ECS* m_World;

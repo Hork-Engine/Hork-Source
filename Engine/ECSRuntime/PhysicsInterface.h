@@ -242,10 +242,17 @@ HK_INLINE Quat ConvertQuaternion(JPH::Quat const& q)
     return Quat(q.GetW(), q.GetX(), q.GetY(), q.GetZ());
 }
 
+struct SphereCastResult
+{
+    float HitFraction;
+};
+
 class PhysicsInterface
 {
 public:
     PhysicsInterface(ECS::World* world);
+
+    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, SphereCastResult& result);
 
     void SetLinearVelocity(ECS::EntityHandle handle, Float3 const& velocity);
 
