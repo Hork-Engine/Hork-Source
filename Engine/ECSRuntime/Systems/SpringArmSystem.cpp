@@ -22,7 +22,14 @@ void SpringArmSystem::PostPhysicsUpdate(GameFrame const& frame)
 
     int frameNum = frame.StateIndex;
 
-    SphereCastResult result;
+    ShapeCastResult result;
+    ShapeCastFilter castFilter;
+
+    castFilter.bIgonreBackFaces = false;
+    castFilter.BroadphaseLayerMask
+        .Clear()
+        .AddLayer(BroadphaseLayer::MOVING)
+        .AddLayer(BroadphaseLayer::NON_MOVING);
 
     for (Query::Iterator q(*m_World); q; q++)
     {
@@ -35,7 +42,7 @@ void SpringArmSystem::PostPhysicsUpdate(GameFrame const& frame)
             Float3 dir = worldTransform[i].Rotation[frameNum].ZAxis();
             Float3 worldPos = worldTransform[i].Position[frameNum] - dir * springArm[i].ActualDistance;
 
-            if (m_PhysicsInterface.CastSphere(worldPos, dir * springArm[i].DesiredDistance, SpringArmComponent::SPRING_ARM_SPHERE_CAST_RADIUS, result))
+            if (m_PhysicsInterface.CastSphere(worldPos, dir * springArm[i].DesiredDistance, SpringArmComponent::SPRING_ARM_SPHERE_CAST_RADIUS, result, &castFilter))
             {
                 float distance = springArm[i].DesiredDistance * result.HitFraction;
 

@@ -76,6 +76,35 @@ static constexpr JPH::uint8 CHARACTER_PROXY(3);
 
 static constexpr JPH::uint NUM_LAYERS(4);
 
+struct Mask
+{
+    Mask& Clear()
+    {
+        m_Bits = 0;
+        return *this;
+    }
+
+    Mask& All()
+    {
+        for (JPH::uint i = 0; i < NUM_LAYERS; ++i)
+            m_Bits |= HK_BIT(i);
+        return *this;
+    }
+
+    Mask& AddLayer(JPH::uint8 layer)
+    {
+        m_Bits |= HK_BIT(layer);
+        return *this;
+    }
+
+    uint32_t Get() const
+    {
+        return m_Bits;
+    }
+
+    uint32_t m_Bits{};
+};
+
 }; // namespace BroadphaseLayer
 
 
@@ -242,9 +271,28 @@ HK_INLINE Quat ConvertQuaternion(JPH::Quat const& q)
     return Quat(q.GetW(), q.GetX(), q.GetY(), q.GetZ());
 }
 
-struct SphereCastResult
+struct ShapeCastResult
 {
+    // TODO: Add entityHandle, subshapeId
+
     float HitFraction;
+};
+
+struct ShapeCastFilter
+{
+    // TODO: Add list of entities to ignore
+
+    BroadphaseLayer::Mask BroadphaseLayerMask;
+
+    bool bIgonreBackFaces : 1;
+    bool bSortByDistance : 1;
+
+    ShapeCastFilter() :
+        bIgonreBackFaces(true),
+        bSortByDistance(true)
+    {
+        BroadphaseLayerMask.All();        
+    }
 };
 
 class PhysicsInterface
@@ -252,7 +300,41 @@ class PhysicsInterface
 public:
     PhysicsInterface(ECS::World* world);
 
-    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, SphereCastResult& result);
+    bool CastRay(Float3 const& start, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastRayAll(Float3 const& start, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastBoxAll(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastBoxMinMaxAll(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastSphereAll(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastCapsuleAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
+    bool CastCylinderAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+
+    bool CollidePoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs);
+
+    // TODO: replace TVector<JPH::BodyID> with TVector<ECS::EntityHandle>
+    bool CollidePointAll(Float3 const& point, TVector<JPH::BodyID>& bodies, BroadphaseLayer::Mask broadphaseLayrs);
+
+    bool CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const* filter = nullptr);
+    bool CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const* filter = nullptr);
+    bool CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const* filter = nullptr);
+    bool CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const* filter = nullptr);
+    bool CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const* filter = nullptr);
+
+    // TODO: replace TVector<JPH::BodyID> with TVector<ECS::EntityHandle>
+    void OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter = nullptr);
+    void OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter = nullptr);
+    void OverlapSphere(Float3 const& position, float sphereRadius, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter = nullptr);
+    void OverlapCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter = nullptr);
+    void OverlapCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter = nullptr);
 
     void SetLinearVelocity(ECS::EntityHandle handle, Float3 const& velocity);
 
@@ -267,6 +349,9 @@ public:
     }
 
 private:
+    bool CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const* filter);
+    bool CastShapeAll(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter);
+
     ECS::World* m_World;
     JPH::PhysicsSystem m_PhysicsSystem;
 
