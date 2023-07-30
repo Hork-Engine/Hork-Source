@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/ECS/ECS.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 #include "SceneGraph.h"
 
 #include "JoltPhysics.h"
@@ -441,7 +441,6 @@ public:
     bool CastCylinderAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
 
     bool CollidePoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs);
-
     bool CollidePointAll(Float3 const& point, TVector<PhysBodyID>& bodies, BroadphaseLayer::Mask broadphaseLayrs);
 
     bool CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const* filter = nullptr);

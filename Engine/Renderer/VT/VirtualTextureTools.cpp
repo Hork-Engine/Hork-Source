@@ -33,7 +33,7 @@ SOFTWARE.
 
 #include <Engine/Core/Logger.h>
 #include <Engine/Core/WindowsDefs.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 #include <Engine/Image/Image.h>
 

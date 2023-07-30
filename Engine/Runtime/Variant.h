@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Core/String.h>
 #include <Engine/Core/Parse.h>
-#include <Engine/Geometry/VectorMath.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/VectorMath.h>
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 

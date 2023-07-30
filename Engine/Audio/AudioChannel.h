@@ -33,7 +33,7 @@ SOFTWARE.
 #include "AudioBuffer.h"
 #include "AudioStream.h"
 
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include <Engine/Core/Allocators/PoolAllocator.h>
 
 HK_NAMESPACE_BEGIN

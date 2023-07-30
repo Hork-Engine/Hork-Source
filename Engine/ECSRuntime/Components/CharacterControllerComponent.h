@@ -4,7 +4,7 @@
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Character/Character.h>
 
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 #include "../PhysicsInterface.h"
 

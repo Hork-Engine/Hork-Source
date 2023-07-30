@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 #include <Engine/Geometry/VertexFormat.h>
-#include <Engine/Geometry/Transform.h>
+#include <Engine/Math/Transform.h>
 
 HK_NAMESPACE_BEGIN
 

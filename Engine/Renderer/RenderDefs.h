@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Image/Image.h>
 #include <Engine/Core/Color.h>
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
 

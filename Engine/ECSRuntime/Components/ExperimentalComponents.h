@@ -7,8 +7,8 @@
 #include "../ProceduralMesh.h"
 #include "../SkeletalAnimation.h"
 
-#include <Engine/Geometry/VectorMath.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/VectorMath.h>
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 

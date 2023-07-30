@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
-#include <Engine/Geometry/Complex.h>
+#include <Engine/Math/VectorMath.h>
+#include <Engine/Math/Complex.h>
 #include <Engine/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN

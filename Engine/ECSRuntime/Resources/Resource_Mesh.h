@@ -5,7 +5,7 @@
 
 #include <Engine/RenderCore/VertexMemoryGPU.h>
 
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/Skinning.h>
 #include <Engine/Geometry/BV/BvhTree.h>

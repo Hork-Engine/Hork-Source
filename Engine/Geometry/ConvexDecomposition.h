@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Geometry/Plane.h>
+#include <Engine/Math/Plane.h>
 
 HK_NAMESPACE_BEGIN
 

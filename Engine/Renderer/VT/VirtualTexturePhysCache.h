@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include <Engine/RenderCore/FrameGraph.h>
 
 #include "VT.h"

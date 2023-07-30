@@ -30,7 +30,7 @@ SOFTWARE.
 #if 0
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include "Event.h"
 
 HK_NAMESPACE_BEGIN

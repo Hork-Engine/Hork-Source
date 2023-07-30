@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Engine/Core/Logger.h>
 #include <Engine/Core/Allocators/LinearAllocator.h>
 #include <Engine/Core/Containers/Hash.h>
-#include <Engine/Geometry/Transform.h>
+#include <Engine/Math/Transform.h>
 #include <Engine/Geometry/Skinning.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>

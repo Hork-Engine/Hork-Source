@@ -34,7 +34,7 @@ SOFTWARE.
 #include "BvOrientedBox.h"
 #include "BvSphere.h"
 
-#include "../Plane.h"
+#include <Engine/Math/Plane.h>
 
 #include <xmmintrin.h>
 #include <emmintrin.h>

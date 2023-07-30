@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Color.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 

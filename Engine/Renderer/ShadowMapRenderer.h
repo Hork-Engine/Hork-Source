@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/RenderCore/FrameGraph.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include "RenderDefs.h"
 #include "OmnidirectionalShadowMapPool.h"
 

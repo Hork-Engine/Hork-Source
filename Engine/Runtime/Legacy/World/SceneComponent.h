@@ -33,7 +33,7 @@ SOFTWARE.
 
 #include "ActorComponent.h"
 
-#include <Engine/Geometry/Transform.h>
+#include <Engine/Math/Transform.h>
 
 HK_NAMESPACE_BEGIN
 

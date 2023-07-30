@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
 
 HK_NAMESPACE_BEGIN

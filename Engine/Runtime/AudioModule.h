@@ -33,7 +33,7 @@ SOFTWARE.
 #include "BaseModule.h"
 
 #include <Engine/Core/Allocators/PoolAllocator.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 

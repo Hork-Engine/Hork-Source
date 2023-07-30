@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/VectorMath.h>
+#include <Engine/Math/Quat.h>
 #include <Engine/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN

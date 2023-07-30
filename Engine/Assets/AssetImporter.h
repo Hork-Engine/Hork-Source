@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Image/Image.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 

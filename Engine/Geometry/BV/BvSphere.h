@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/Plane.h>
+#include <Engine/Math/Plane.h>
 #include "BvAxisAlignedBox.h"
 
 HK_NAMESPACE_BEGIN
