@@ -42,11 +42,11 @@ World_ECS::~World_ECS()
 
 void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
 {
-    if (execution & GAMEPLAY_SYSTEM_VARIABLE_TIMESTEP)
-        m_GameplayVariableTimestepSystems.Add(gameplaySystem);
+    if (execution & GAMEPLAY_SYSTEM_VARIABLE_UPDATE)
+        m_GameplayVariableUpdateSystems.Add(gameplaySystem);
 
-    if (execution & GAMEPLAY_SYSTEM_FIXED_TIMESTEP)
-        m_GameplayFixedTimestepSystems.Add(gameplaySystem);
+    if (execution & GAMEPLAY_SYSTEM_FIXED_UPDATE)
+        m_GameplayFixedUpdateSystems.Add(gameplaySystem);
 
     if (execution & GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE)
         m_GameplayPostPhysicsSystems.Add(gameplaySystem);
@@ -75,8 +75,8 @@ void World_ECS::Tick(float timeStep)
     m_Frame.VariableTimeStep = timeStep;
     m_Frame.FixedTimeStep = fixedTimeStep;
 
-    for (auto& system : m_GameplayVariableTimestepSystems)
-        system->VariableTimestepUpdate(timeStep);
+    for (auto& system : m_GameplayVariableUpdateSystems)
+        system->VariableUpdate(timeStep);
 
     m_Accumulator += timeStep;
 
@@ -92,8 +92,8 @@ void World_ECS::Tick(float timeStep)
 
         m_TeleportSystem->Update(m_Frame);
 
-        for (auto& system : m_GameplayFixedTimestepSystems)
-            system->FixedTimestepUpdate(m_Frame);
+        for (auto& system : m_GameplayFixedUpdateSystems)
+            system->FixedUpdate(m_Frame);
 
         m_BehaviorTreeSystem->Update(m_Frame);
 

@@ -54,8 +54,8 @@ private:
     PhysicsInterface m_PhysicsInterface;
 
     TVector<TUniqueRef<EngineSystemECS>> m_EngineSystems;
-    TVector<GameplaySystemECS*> m_GameplayVariableTimestepSystems;
-    TVector<GameplaySystemECS*> m_GameplayFixedTimestepSystems;
+    TVector<GameplaySystemECS*> m_GameplayVariableUpdateSystems;
+    TVector<GameplaySystemECS*> m_GameplayFixedUpdateSystems;
     TVector<GameplaySystemECS*> m_GameplayPostPhysicsSystems;
     TVector<GameplaySystemECS*> m_GameplayLateUpdateSystems;
     TVector<TRef<GameplaySystemECS>> m_AllGameplaySystems;
