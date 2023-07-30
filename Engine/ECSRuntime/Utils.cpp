@@ -1,92 +1,12 @@
 #include "Utils.h"
 
-#include "Components/TransformComponent.h"
-#include "Components/WorldTransformComponent.h"
-#include "Components/FinalTransformComponent.h"
-#include "Components/NodeComponent.h"
-#include "Components/RigidBodyComponent.h"
-#include "Components/CharacterControllerComponent.h"
-#include "Components/CameraComponent.h"
-#include "Components/MovableTag.h"
-#include "Components/TransformInterpolationTag.h"
-#include "Components/ExperimentalComponents.h"
+#include "SceneGraph.h"
+
 #include "Components/MeshComponent.h"
 
 #include <Engine/Runtime/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
-
-ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc)
-{
-    ECS::EntityHandle handle = commandBuffer.SpawnEntity();
-    commandBuffer.AddComponent<NodeComponent>(handle, desc.Parent, desc.NodeFlags);
-    commandBuffer.AddComponent<TransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
-    commandBuffer.AddComponent<WorldTransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
-    commandBuffer.AddComponent<FinalTransformComponent>(handle);
-
-    if (desc.bMovable)
-    {
-        commandBuffer.AddComponent<MovableTag>(handle);
-
-        if (desc.bTransformInterpolation)
-            commandBuffer.AddComponent<TransformInterpolationTag>(handle);
-    }
-
-    return handle;
-}
-
-ECS::EntityHandle CreateRigidBody(ECS::CommandBuffer& commandBuffer, RigidBodyDesc const& desc)
-{
-    SceneNodeDesc nodeDesc;
-
-    nodeDesc.Parent = desc.Parent;
-    nodeDesc.Position = desc.Position;
-    nodeDesc.Rotation = desc.Rotation;
-    nodeDesc.Scale = desc.Scale;
-    nodeDesc.NodeFlags = desc.MotionBehavior != MB_SIMULATED ? desc.NodeFlags : SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
-    nodeDesc.bMovable = desc.MotionBehavior != MB_STATIC;
-    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
-
-    ECS::EntityHandle handle = CreateSceneNode(commandBuffer, nodeDesc);
-
-    switch (desc.MotionBehavior)
-    {
-        case MB_STATIC:
-            commandBuffer.AddComponent<StaticBodyComponent>(handle, desc.Model, desc.CollisionGroup);
-            break;
-        case MB_SIMULATED:
-            commandBuffer.AddComponent<DynamicBodyComponent>(handle, desc.Model, desc.CollisionGroup);
-            break;
-        case MB_KINEMATIC:
-            commandBuffer.AddComponent<KinematicBodyComponent>(handle, desc.Model, desc.CollisionGroup);
-            break;
-    }
-
-    if (desc.bIsTrigger)
-    {
-        TriggerComponent& trigger = commandBuffer.AddComponent<TriggerComponent>(handle);
-        trigger.TriggerClass = desc.TriggerClass;
-    }
-
-    return handle;
-}
-
-ECS::EntityHandle CreateCharacterController(ECS::CommandBuffer& commandBuffer, CharacterControllerDesc const& desc)
-{
-    SceneNodeDesc nodeDesc;
-
-    nodeDesc.Position = desc.Position;
-    nodeDesc.Rotation = desc.Rotation;
-    nodeDesc.NodeFlags = SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
-    nodeDesc.bMovable = true;
-    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
-
-    ECS::EntityHandle handle = CreateSceneNode(commandBuffer, nodeDesc);
-
-    commandBuffer.AddComponent<CharacterControllerComponent>(handle);
-
-    return handle;
-}
 
 ECS::EntityHandle CreateSkybox(ECS::CommandBuffer& commandBuffer, ECS::EntityHandle parent)
 {
@@ -107,7 +27,7 @@ ECS::EntityHandle CreateSkybox(ECS::CommandBuffer& commandBuffer, ECS::EntityHan
 
     return handle;
 }
-
+#if 0
 Transform CalculateWorldTransform(ECS::World* world, ECS::EntityHandle entity)
 {
     ECS::EntityView entityView = world->GetEntityView(entity);
@@ -191,5 +111,7 @@ void DestroyEntityWithChildren(ECS::World* world, ECS::CommandBuffer& commandBuf
 //        commandBuffer.DestroyEntity(entity);
 //    actor.Entities.Clear();
 //}
+
+#endif
 
 HK_NAMESPACE_END

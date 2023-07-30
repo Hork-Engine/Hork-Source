@@ -10,7 +10,7 @@
 #include "../Components/NodeComponent.h"
 #include "../Components/MovableTag.h"
 
-//#include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
 
 // TODO: remove unused includes:
 #include <Jolt/Physics/Collision/CastResult.h>
@@ -64,17 +64,8 @@ PhysicsSystem_ECS::PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents) :
 
     m_PhysicsInterface.GetImpl().SetContactListener(this);
 
-    // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-    // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-    // Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-    m_PhysicsInterface.GetImpl().OptimizeBroadPhase();
-
-    world->AddEventHandler<ECS::Event::OnComponentAdded<StaticBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentAdded<DynamicBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentAdded<KinematicBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentRemoved<StaticBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentRemoved<DynamicBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentRemoved<KinematicBodyComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<PhysBodyComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentRemoved<PhysBodyComponent>>(this);
 }
 
 PhysicsSystem_ECS::~PhysicsSystem_ECS()
@@ -88,49 +79,43 @@ PhysicsSystem_ECS::~PhysicsSystem_ECS()
 
         m_PendingDestroyBodies.Clear();
     }
+    
+    HK_ASSERT(m_PhysicsInterface.m_PendingBodies.IsEmpty());
 
     m_World->RemoveHandler(this);
 }
 
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<StaticBodyComponent> const& event)
+void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
 {
     m_PendingAddBodies.Add(event.GetEntity());
 }
 
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DynamicBodyComponent> const& event)
+void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
 {
-    m_PendingAddBodies.Add(event.GetEntity());
-}
-
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<KinematicBodyComponent> const& event)
-{
-    m_PendingAddBodies.Add(event.GetEntity());
-}
-
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<StaticBodyComponent> const& event)
-{
-    PendingDestroyBody(event.GetEntity(), event.Component().m_BodyId);
-}
-
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<DynamicBodyComponent> const& event)
-{
-    PendingDestroyBody(event.GetEntity(), event.Component().m_BodyId);
-}
-
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<KinematicBodyComponent> const& event)
-{
-    PendingDestroyBody(event.GetEntity(), event.Component().m_BodyId);
-}
-
-void PhysicsSystem_ECS::PendingDestroyBody(ECS::EntityHandle handle, JPH::BodyID bodyID)
-{
-    auto i = m_PendingAddBodies.IndexOf(handle);
+    auto i = m_PendingAddBodies.IndexOf(event.GetEntity());
     if (i != Core::NPOS)
-        m_PendingAddBodies.Remove(i);
-
-    if (!bodyID.IsInvalid())
     {
-        m_PendingDestroyBodies.Add(bodyID);        
+        {
+            //SpinLockGuard lock(m_PhysicsInterface.m_PendingBodiesMutex);
+            auto it = m_PhysicsInterface.m_PendingBodies.Find(event.GetEntity());
+            if (it != m_PhysicsInterface.m_PendingBodies.end())
+            {
+                auto& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
+                body_interface.DestroyBody(it->second);
+                m_PhysicsInterface.m_PendingBodies.Erase(it);
+            }
+        }
+
+        m_PendingAddBodies.Remove(i);
+    }
+    else
+    {
+        auto bodyID = event.Component().m_BodyId;
+
+        if (!bodyID.IsInvalid())
+        {
+            m_PendingDestroyBodies.Add(bodyID);
+        }
     }
 }
 
@@ -310,109 +295,93 @@ void PhysicsSystem_ECS::AddAndRemoveBodies(GameFrame const& frame)
 
             WorldTransformComponent* worldTransform = entityView.GetComponent<WorldTransformComponent>();
             TriggerComponent* trigger = entityView.GetComponent<TriggerComponent>();
-            StaticBodyComponent* staticBody = entityView.GetComponent<StaticBodyComponent>();
-            DynamicBodyComponent* dynamicBody = entityView.GetComponent<DynamicBodyComponent>();
-            KinematicBodyComponent* kinematicBody = entityView.GetComponent<KinematicBodyComponent>();
+            PhysBodyComponent* physBody = entityView.GetComponent<PhysBodyComponent>();
 
-            JPH::BodyID* pBody{};
-            JPH::uint8 group{};
-            JPH::uint8 broadphase{};
-            JPH::EActivation activation{JPH::EActivation::DontActivate};
-            JPH::EMotionType motionType{JPH::EMotionType::Static};
-            int checksum = 0;
+            auto scale = worldTransform ? worldTransform->Scale[frame.StateIndex] : Float3(1.0f);
+            auto position = worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero();
+            auto rotation = worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity();
 
-            CollisionModel* collisionModel{};
-
-            if (staticBody)
+            if (scale != Float3(1.0f))
             {
-                pBody = &staticBody->m_BodyId;
-                checksum++;
+                auto scaledModel = physBody->m_Model->Instatiate(scale);
 
-                activation = JPH::EActivation::DontActivate;
-                motionType = JPH::EMotionType::Static;
+                bool bUpdateMassProperties = true; // FIXME
 
-                collisionModel = staticBody->m_Model;
-                group = staticBody->m_CollisionGroup;
-            }
-            if (dynamicBody)
-            {
-                pBody = &dynamicBody->m_BodyId;
-                checksum++;
-
-                activation = JPH::EActivation::Activate;
-                motionType = JPH::EMotionType::Dynamic;
-
-                collisionModel = dynamicBody->m_Model;
-                group = dynamicBody->m_CollisionGroup;
-            }
-            if (kinematicBody)
-            {
-                pBody = &kinematicBody->m_BodyId;
-                checksum++;
-
-                activation = JPH::EActivation::Activate;
-                motionType = JPH::EMotionType::Kinematic;
-
-                collisionModel = kinematicBody->m_Model;
-                group = kinematicBody->m_CollisionGroup;
-            }
-            HK_ASSERT(checksum == 1);
-
-            if (checksum != 1)
-                continue;
-
-            if (trigger)
-            {
-                broadphase = BroadphaseLayer::SENSOR;
-
-                if (dynamicBody)
-                {
-                    LOG("WARNING: Triggers can only have STATIC or KINEMATIC motion behavior but set to SIMULATED.\n");
-
-                    activation = JPH::EActivation::DontActivate;
-                    motionType = JPH::EMotionType::Static;
-                }
-            }
-            else
-            {
-                broadphase = staticBody ? BroadphaseLayer::NON_MOVING : BroadphaseLayer::MOVING;
+                body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
             }
 
-            JPH::ObjectLayer layer = MakeObjectLayer(group, broadphase);
+            body_interface.SetPositionAndRotation(physBody->m_BodyId, position, rotation, JPH::EActivation::DontActivate);            
 
-            Float3 scale = worldTransform ? worldTransform->Scale[frame.StateIndex] : Float3(1.0f);
+            auto motionType = body_interface.GetMotionType(physBody->m_BodyId);
+            auto activation = (motionType == JPH::EMotionType::Static) ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
 
-            JPH::BodyCreationSettings settings(collisionModel->Instatiate(scale),
-                                               worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero(),
-                                               worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity(),
-                                               motionType,
-                                               layer);
+            m_BodyAddList[int(activation)].Add(physBody->m_BodyId);
 
-            if (motionType == JPH::EMotionType::Dynamic)
             {
-                settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-                settings.mMassPropertiesOverride.mMass = 10.0f;
+                //SpinLockGuard lock(m_PhysicsInterface.m_PendingBodiesMutex);
+                m_PhysicsInterface.m_PendingBodies.Erase(entity);
             }
 
             if (trigger)
             {
-                settings.mIsSensor = true;
-            }
-
-            settings.mUserData = entity;
-
-            *pBody = body_interface.CreateAndAddBody(settings, activation);
-
-            if (trigger)
-            {
-                Trigger& t = m_Triggers[*pBody];
-                t.mBodyID = *pBody;
+                Trigger& t = m_Triggers[physBody->m_BodyId];
+                t.mBodyID = physBody->m_BodyId;
                 t.mEntity = entity;
                 t.TriggerClass = trigger->TriggerClass;
                 HK_ASSERT(t.mBodiesInSensor.empty());
             }
         }
+        for (int i = 0; i < 2; i++)
+        {
+            if (!m_BodyAddList[i].IsEmpty())
+            {
+                auto addState = body_interface.AddBodiesPrepare(m_BodyAddList[i].ToPtr(), m_BodyAddList[i].Size());
+                body_interface.AddBodiesFinalize(m_BodyAddList[i].ToPtr(), m_BodyAddList[i].Size(), addState, JPH::EActivation(i));
+
+                m_BodyAddList[i].Clear();
+            }
+        }
+
+        HK_ASSERT(m_PhysicsInterface.m_PendingBodies.IsEmpty());
+
+        // TODO: optimize broadphase when too many entities are added?
+        //m_PhysicsInterface.GetImpl().OptimizeBroadPhase();
+
         m_PendingAddBodies.Clear();
+    }
+}
+
+void PhysicsSystem_ECS::UpdateScaling(GameFrame const& frame)
+{
+    int frameNum = frame.StateIndex;
+
+    JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
+
+    using Query = ECS::Query<>
+        ::Required<PhysBodyComponent>
+        ::Required<RigidBodyDynamicScaling>
+        ::ReadOnly<WorldTransformComponent>;
+
+    for (Query::Iterator q(*m_World); q; q++)
+    {
+        WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
+        PhysBodyComponent* bodies = q.Get<PhysBodyComponent>();
+        RigidBodyDynamicScaling* cache = q.Get<RigidBodyDynamicScaling>();
+
+        for (int i = 0; i < q.Count(); i++)
+        {
+            Float3 const& scale = t[i].Scale[frameNum];
+            if (scale != cache[i].CachedScale)
+            {
+                cache[i].CachedScale = scale;
+
+                const bool bUpdateMassProperties = true;
+                body_interface.SetShape(bodies[i].m_BodyId,
+                                        bodies[i].m_Model->Instatiate(scale),
+                                        bUpdateMassProperties,
+                                        JPH::EActivation::Activate);
+            }
+        }
     }
 }
 
@@ -423,14 +392,15 @@ void PhysicsSystem_ECS::UpdateKinematicBodies(GameFrame const& frame)
     JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
     using Query = ECS::Query<>
-        ::Required<KinematicBodyComponent>
+        ::Required<PhysBodyComponent>
+        ::ReadOnly<KinematicBodyComponent>
         ::ReadOnly<WorldTransformComponent>        
         ::ReadOnly<MovableTag>;
 
     for (Query::Iterator q(*m_World); q; q++)
     {
         WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-        KinematicBodyComponent* bodies = q.Get<KinematicBodyComponent>();
+        PhysBodyComponent* bodies = q.Get<PhysBodyComponent>();
 
         for (int i = 0; i < q.Count(); i++)
         {
@@ -507,6 +477,7 @@ void PhysicsSystem_ECS::StoreDynamicBodiesSnapshot()
     {
         using Query = ECS::Query<>
             ::Required<TransformComponent>
+            ::ReadOnly<PhysBodyComponent>
             ::ReadOnly<DynamicBodyComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
@@ -517,7 +488,7 @@ void PhysicsSystem_ECS::StoreDynamicBodiesSnapshot()
         for (Query::Iterator q(*m_World); q; q++)
         {
             TransformComponent* t = q.Get<TransformComponent>();
-            DynamicBodyComponent const* bodies = q.Get<DynamicBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
@@ -541,6 +512,9 @@ void PhysicsSystem_ECS::Update(GameFrame const& frame)
     auto& physicsModule = PhysicsModule::Get();
 
     AddAndRemoveBodies(frame);
+
+    // NOTE: We can update scale at lower framerate to save performance
+    UpdateScaling(frame);
 
     UpdateKinematicBodies(frame);
     UpdateWaterBodies(frame);
@@ -576,47 +550,13 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
         renderer.SetRandomColors(true);
 
         {
-            using Query = ECS::Query<>::ReadOnly<StaticBodyComponent>::ReadOnly<FinalTransformComponent>;
+            using Query = ECS::Query<>
+                ::ReadOnly<PhysBodyComponent>
+                ::ReadOnly<FinalTransformComponent>;
 
             for (Query::Iterator q(*m_World); q; q++)
             {
-                StaticBodyComponent const* bodies = q.Get<StaticBodyComponent>();
-                FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
-
-                // Exclude triggers
-                if (q.HasComponent<TriggerComponent>())
-                    continue;
-
-                for (int i = 0; i < q.Count(); i++)
-                {
-                    DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
-                }
-            }
-        }
-        {
-            using Query = ECS::Query<>::ReadOnly<KinematicBodyComponent>::ReadOnly<FinalTransformComponent>;
-
-            for (Query::Iterator q(*m_World); q; q++)
-            {
-                KinematicBodyComponent const* bodies = q.Get<KinematicBodyComponent>();
-                FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
-
-                // Exclude triggers
-                if (q.HasComponent<TriggerComponent>())
-                    continue;
-
-                for (int i = 0; i < q.Count(); i++)
-                {
-                    DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
-                }
-            }
-        }
-        {
-            using Query = ECS::Query<>::ReadOnly<DynamicBodyComponent>::ReadOnly<FinalTransformComponent>;
-
-            for (Query::Iterator q(*m_World); q; q++)
-            {
-                DynamicBodyComponent const* bodies = q.Get<DynamicBodyComponent>();
+                PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
                 FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
                 // Exclude triggers
@@ -636,7 +576,8 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
     // Draw water
     if (com_DrawWaterVolume)
     {
-        using Query = ECS::Query<>::ReadOnly<WaterVolumeComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<WaterVolumeComponent>;
 
         renderer.SetDepthTest(true);
         renderer.SetColor(Color4(0, 0, 1, 0.5f));
@@ -654,14 +595,17 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
     if (com_DrawTriggers)
     {
-        using Query = ECS::Query<>::ReadOnly<StaticBodyComponent>::ReadOnly<FinalTransformComponent>::ReadOnly<TriggerComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<FinalTransformComponent>
+            ::ReadOnly<TriggerComponent>;
 
         renderer.SetDepthTest(true);
         renderer.SetColor(Color4(0, 1, 0, 0.5f));
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            StaticBodyComponent const* bodies = q.Get<StaticBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
             FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
@@ -671,17 +615,19 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
         }
     }
 
-    // Draw static bodies
     if (com_DrawStaticBodies)
     {
-        using Query = ECS::Query<>::ReadOnly<StaticBodyComponent>::ReadOnly<FinalTransformComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<StaticBodyComponent>
+            ::ReadOnly<FinalTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0.6f, 0.6f, 0.6f, 1));
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            StaticBodyComponent const* bodies = q.Get<StaticBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
             FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
@@ -693,14 +639,17 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
     if (com_DrawKinematicBodies)
     {
-        using Query = ECS::Query<>::ReadOnly<KinematicBodyComponent>::ReadOnly<FinalTransformComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<KinematicBodyComponent>
+            ::ReadOnly<FinalTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0, 1, 1, 1));
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            KinematicBodyComponent const* bodies = q.Get<KinematicBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
             FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
@@ -710,10 +659,12 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
         }
     }
 
-    // Draw dynamic bodies
     if (com_DrawDynamicBodies)
     {
-        using Query = ECS::Query<>::ReadOnly<DynamicBodyComponent>::ReadOnly<FinalTransformComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<DynamicBodyComponent>
+            ::ReadOnly<FinalTransformComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -721,7 +672,7 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            DynamicBodyComponent const* bodies = q.Get<DynamicBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
             FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
@@ -749,7 +700,10 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
     if (com_DrawCenterOfMass)
     {
-        using Query = ECS::Query<>::ReadOnly<DynamicBodyComponent>::ReadOnly<FinalTransformComponent>;
+        using Query = ECS::Query<>
+            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<DynamicBodyComponent>
+            ::ReadOnly<FinalTransformComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -757,7 +711,7 @@ void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            DynamicBodyComponent const* bodies = q.Get<DynamicBodyComponent>();
+            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
             FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)

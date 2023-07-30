@@ -3,14 +3,18 @@
 #include "Components/RigidBodyComponent.h"
 #include "Components/CharacterControllerComponent.h"
 
+#include <Engine/Core/Logger.h>
+
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
-#include <Jolt/Physics/Collision/Shape/Shape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -793,13 +797,359 @@ void PhysicsInterface::OverlapCylinder(Float3 const& position, float halfHeightO
     }
 }
 
-void PhysicsInterface::SetLinearVelocity(ECS::EntityHandle handle, Float3 const& velocity)
+auto PhysicsInterface::GetEntity(PhysBodyID const& bodyID) -> ECS::EntityHandle
 {
-    ECS::EntityView entityView = m_World->GetEntityView(handle);
+    return ECS::EntityHandle(m_PhysicsSystem.GetBodyInterface().GetUserData(bodyID));
+}
 
-    if (auto dynamicBody = entityView.GetComponent<DynamicBodyComponent>())
+auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBodyID
+{
+    ECS::EntityView entityView = m_World->GetEntityView(entityHandle);
+
+    if (auto body = entityView.GetComponent<PhysBodyComponent>())
     {
-        m_PhysicsSystem.GetBodyInterface().SetLinearVelocity(dynamicBody->GetBodyId(), ConvertVector(velocity));
+        return body->GetBodyId();
+    }
+    if (auto character = entityView.GetComponent<CharacterControllerComponent>())
+    {
+        return character->GetBodyId();
+    }
+    return {};
+}
+
+ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer, RigidBodyDesc const& desc)
+{
+    JPH::EMotionType motionType{JPH::EMotionType::Static};
+    switch (desc.MotionBehavior)
+    {
+        case MB_STATIC:
+            motionType = JPH::EMotionType::Static;
+            break;
+        case MB_SIMULATED:
+            motionType = JPH::EMotionType::Dynamic;
+            break;
+        case MB_KINEMATIC:
+            motionType = JPH::EMotionType::Kinematic;
+            break;
+    }
+
+    JPH::uint8 broadphase = motionType == JPH::EMotionType::Static ? BroadphaseLayer::NON_MOVING : BroadphaseLayer::MOVING;
+
+    if (desc.bIsTrigger)
+    {
+        broadphase = BroadphaseLayer::SENSOR;
+
+        if (motionType == JPH::EMotionType::Dynamic)
+        {
+            LOG("WARNING: Triggers can only have STATIC or KINEMATIC motion behavior but set to DYNAMIC.\n");
+            motionType = JPH::EMotionType::Static;
+        }
+    }
+
+    SceneNodeDesc nodeDesc;
+
+    nodeDesc.Parent = desc.Parent;
+    nodeDesc.Position = desc.Position;
+    nodeDesc.Rotation = desc.Rotation;
+    nodeDesc.Scale = desc.Scale;
+    nodeDesc.NodeFlags = motionType != JPH::EMotionType::Dynamic ? desc.NodeFlags : SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
+    nodeDesc.bMovable = motionType != JPH::EMotionType::Static;
+    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
+
+    ECS::EntityHandle entityHandle = CreateSceneNode(commandBuffer, nodeDesc);
+
+    CollisionModel* collisionModel = desc.Model;
+
+    JPH::BodyCreationSettings settings(collisionModel->Instatiate(Float3(1)), JPH::Vec3::sZero(), JPH::Quat::sIdentity(), motionType, MakeObjectLayer(desc.CollisionGroup, broadphase));
+
+    settings.mLinearVelocity = ConvertVector(desc.LinearVelocity);
+    settings.mAngularVelocity = ConvertVector(desc.AngularVelocity);
+    settings.mUserData = entityHandle;
+    settings.mIsSensor = desc.bIsTrigger;
+    settings.mMotionQuality = desc.MotionQuality == MQ_DISCRETE ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast;
+    settings.mAllowSleeping = desc.bAllowSleeping;
+    settings.mFriction = desc.Friction;
+    settings.mRestitution = desc.Restitution;
+    settings.mLinearDamping = desc.LinearDamping;
+    settings.mAngularDamping = desc.AngularDamping;
+    settings.mMaxLinearVelocity = desc.MaxLinearVelocity;
+    settings.mMaxAngularVelocity = desc.MaxAngularVelocity;
+    settings.mGravityFactor = desc.GravityFactor;
+
+    switch (desc.OverrideMassProperties)
+    {
+        case OVERRIDE_MASS_PROPERTIES_CALCULATE_MASS_AND_INERTIA:
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
+            break;
+        case OVERRIDE_MASS_PROPERTIES_CALCULATE_INERTIA:
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+            break;
+        case OVERRIDE_MASS_PROPERTIES_MASS_AND_INERTIA_PROVIDED:
+        default:
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+            break;
+    }
+
+    settings.mInertiaMultiplier = desc.InertiaMultiplier;
+    settings.mMassPropertiesOverride.mMass = desc.MassPropertiesOverride.Mass;
+    settings.mMassPropertiesOverride.mInertia = ConvertMatrix(desc.MassPropertiesOverride.Inertia);
+
+    JPH::Body* body = m_PhysicsSystem.GetBodyInterface().CreateBody(settings);
+    if (body)
+    {
+        {
+            SpinLockGuard lock(m_PendingBodiesMutex);
+
+            HK_ASSERT(m_PendingBodies.Count(entityHandle) == 0);
+            m_PendingBodies[entityHandle] = body->GetID();
+        }
+
+        switch (motionType)
+        {
+            case JPH::EMotionType::Static:
+                commandBuffer.AddComponent<StaticBodyComponent>(entityHandle);
+                break;
+            case JPH::EMotionType::Dynamic:
+                commandBuffer.AddComponent<DynamicBodyComponent>(entityHandle);
+                break;
+            case JPH::EMotionType::Kinematic:
+                commandBuffer.AddComponent<KinematicBodyComponent>(entityHandle);
+                break;
+        }
+
+        if (desc.bIsTrigger)
+            commandBuffer.AddComponent<TriggerComponent>(entityHandle, desc.TriggerClass);
+
+        commandBuffer.AddComponent<PhysBodyComponent>(entityHandle, desc.Model, body->GetID());
+
+        if (desc.bAllowRigidBodyScaling)
+        {
+            auto& scaling = commandBuffer.AddComponent<RigidBodyDynamicScaling>(entityHandle);
+            scaling.CachedScale = desc.Scale;
+        }
+    }
+    else
+    {
+        LOG("Couldn't create rigid body for the entity\n");
+    }
+
+    return entityHandle;
+}
+
+ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer& commandBuffer, CharacterControllerDesc const& desc)
+{
+    SceneNodeDesc nodeDesc;
+
+    nodeDesc.Position = desc.Position;
+    nodeDesc.Rotation = desc.Rotation;
+    nodeDesc.NodeFlags = SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
+    nodeDesc.bMovable = true;
+    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
+
+    ECS::EntityHandle handle = CreateSceneNode(commandBuffer, nodeDesc);
+
+    commandBuffer.AddComponent<CharacterControllerComponent>(handle);
+
+    return handle;
+}
+
+void PhysicsInterface::ActivateBody(PhysBodyID const& inBodyID)
+{
+    m_PhysicsSystem.GetBodyInterface().ActivateBody(inBodyID);
+}
+void PhysicsInterface::ActivateBodies(TArrayView<PhysBodyID> inBodyIDs)
+{
+    m_PhysicsSystem.GetBodyInterface().ActivateBodies(inBodyIDs.ToPtr(), inBodyIDs.Size());
+}
+void PhysicsInterface::DeactivateBody(PhysBodyID const& inBodyID)
+{
+    m_PhysicsSystem.GetBodyInterface().DeactivateBody(inBodyID);
+}
+void PhysicsInterface::DeactivateBodies(TArrayView<PhysBodyID> inBodyIDs)
+{
+    m_PhysicsSystem.GetBodyInterface().DeactivateBodies(inBodyIDs.ToPtr(), inBodyIDs.Size());
+}
+bool PhysicsInterface::IsActive(PhysBodyID const& inBodyID) const
+{
+    return m_PhysicsSystem.GetBodyInterface().IsActive(inBodyID);
+}
+//void PhysicsInterface::SetPositionAndRotation(PhysBodyID const& inBodyID, Float3 const& inPosition, Quat const& inRotation, JPH::EActivation inActivationMode)
+//{
+//    m_PhysicsSystem.GetBodyInterface().SetPositionAndRotation(inBodyID, ConvertVector(inPosition), ConvertQuaternion(inRotation), inActivationMode);
+//}
+//void PhysicsInterface::SetPositionAndRotationWhenChanged(PhysBodyID const& inBodyID, Float3 const& inPosition, Quat const& inRotation, JPH::EActivation inActivationMode)
+//{
+//    m_PhysicsSystem.GetBodyInterface().SetPositionAndRotationWhenChanged(inBodyID, ConvertVector(inPosition), ConvertQuaternion(inRotation), inActivationMode);
+//}
+//void PhysicsInterface::GetPositionAndRotation(PhysBodyID const& inBodyID, Float3& outPosition, Quat& outRotation) const
+//{
+//    JPH::RVec3 position;
+//    JPH::Quat rotation;
+//    m_PhysicsSystem.GetBodyInterface().GetPositionAndRotation(inBodyID, position, rotation);
+//    outPosition = ConvertVector(position);
+//    outRotation = ConvertQuaternion(rotation);
+//}
+//void PhysicsInterface::SetPosition(PhysBodyID const& inBodyID, Float3 const& inPosition, JPH::EActivation inActivationMode)
+//{
+//    m_PhysicsSystem.GetBodyInterface().SetPosition(inBodyID, ConvertVector(inPosition), inActivationMode);
+//}
+//auto PhysicsInterface::GetPosition(PhysBodyID const& inBodyID) const -> Float3
+//{
+//    return ConvertVector(m_PhysicsSystem.GetBodyInterface().GetPosition(inBodyID));
+//}
+auto PhysicsInterface::GetCenterOfMassPosition(PhysBodyID const& inBodyID) const -> Float3
+{
+    return ConvertVector(m_PhysicsSystem.GetBodyInterface().GetCenterOfMassPosition(inBodyID));
+}
+//void PhysicsInterface::SetRotation(PhysBodyID const& inBodyID, Quat const& inRotation, JPH::EActivation inActivationMode)
+//{
+//    m_PhysicsSystem.GetBodyInterface().SetRotation(inBodyID, ConvertQuaternion(inRotation), inActivationMode);
+//}
+//auto PhysicsInterface::GetRotation(PhysBodyID const& inBodyID) const -> Quat
+//{
+//    return ConvertQuaternion(m_PhysicsSystem.GetBodyInterface().GetRotation(inBodyID));
+//}
+//auto PhysicsInterface::GetWorldTransform(PhysBodyID const& inBodyID) const -> Float4x4
+//{
+//    return ConvertMatrix(m_PhysicsSystem.GetBodyInterface().GetWorldTransform(inBodyID));
+//}
+auto PhysicsInterface::GetCenterOfMassTransform(PhysBodyID const& inBodyID) const -> Float4x4
+{
+    return ConvertMatrix(m_PhysicsSystem.GetBodyInterface().GetCenterOfMassTransform(inBodyID));
+}
+//void PhysicsInterface::MoveKinematic(PhysBodyID const& inBodyID, Float3 const& inTargetPosition, Quat const& inTargetRotation, float inDeltaTime)
+//{
+//    m_PhysicsSystem.GetBodyInterface().MoveKinematic(inBodyID, ConvertVector(inTargetPosition), ConvertQuaternion(inTargetRotation), inDeltaTime);
+//}
+void PhysicsInterface::SetLinearAndAngularVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity, Float3 const& inAngularVelocity)
+{
+    m_PhysicsSystem.GetBodyInterface().SetLinearAndAngularVelocity(inBodyID, ConvertVector(inLinearVelocity), ConvertVector(inAngularVelocity));
+}
+void PhysicsInterface::GetLinearAndAngularVelocity(PhysBodyID const& inBodyID, Float3& outLinearVelocity, Float3& outAngularVelocity) const
+{
+    JPH::Vec3 linearVel;
+    JPH::Vec3 angularVel;
+    m_PhysicsSystem.GetBodyInterface().GetLinearAndAngularVelocity(inBodyID, linearVel, angularVel);
+    outLinearVelocity = ConvertVector(linearVel);
+    outAngularVelocity = ConvertVector(angularVel);
+}
+void PhysicsInterface::SetLinearVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity)
+{
+    m_PhysicsSystem.GetBodyInterface().SetLinearVelocity(inBodyID, ConvertVector(inLinearVelocity));
+}
+auto PhysicsInterface::GetLinearVelocity(PhysBodyID const& inBodyID) const -> Float3
+{
+    return ConvertVector(m_PhysicsSystem.GetBodyInterface().GetLinearVelocity(inBodyID));
+}
+void PhysicsInterface::AddLinearVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity)
+{
+    m_PhysicsSystem.GetBodyInterface().AddLinearVelocity(inBodyID, ConvertVector(inLinearVelocity));
+}
+void PhysicsInterface::AddLinearAndAngularVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity, Float3 const& inAngularVelocity)
+{
+    m_PhysicsSystem.GetBodyInterface().AddLinearAndAngularVelocity(inBodyID, ConvertVector(inLinearVelocity), ConvertVector(inAngularVelocity));
+}
+void PhysicsInterface::SetAngularVelocity(PhysBodyID const& inBodyID, Float3 const& inAngularVelocity)
+{
+    m_PhysicsSystem.GetBodyInterface().SetAngularVelocity(inBodyID, ConvertVector(inAngularVelocity));
+}
+auto PhysicsInterface::GetAngularVelocity(PhysBodyID const& inBodyID) const -> Float3
+{
+    return ConvertVector(m_PhysicsSystem.GetBodyInterface().GetAngularVelocity(inBodyID));
+}
+auto PhysicsInterface::GetPointVelocity(PhysBodyID const& inBodyID, Float3 const& inPoint) const -> Float3
+{
+    return ConvertVector(m_PhysicsSystem.GetBodyInterface().GetPointVelocity(inBodyID, ConvertVector(inPoint)));
+}
+//void PhysicsInterface::SetPositionRotationAndVelocity(PhysBodyID const& inBodyID, Float3 const& inPosition, Quat const& inRotation, Float3 const& inLinearVelocity, Float3 const& inAngularVelocity)
+//{
+//    m_PhysicsSystem.GetBodyInterface().SetPositionRotationAndVelocity(inBodyID, ConvertVector(inPosition), ConvertQuaternion(inRotation), ConvertVector(inLinearVelocity), ConvertVector(inAngularVelocity));
+//}
+void PhysicsInterface::AddForce(PhysBodyID const& inBodyID, Float3 const& inForce)
+{
+    m_PhysicsSystem.GetBodyInterface().AddForce(inBodyID, ConvertVector(inForce));
+}
+void PhysicsInterface::AddForce(PhysBodyID const& inBodyID, Float3 const& inForce, Float3 const& inPoint)
+{
+    m_PhysicsSystem.GetBodyInterface().AddForce(inBodyID, ConvertVector(inForce), ConvertVector(inPoint));
+}
+void PhysicsInterface::AddTorque(PhysBodyID const& inBodyID, Float3 const& inTorque)
+{
+    m_PhysicsSystem.GetBodyInterface().AddTorque(inBodyID, ConvertVector(inTorque));
+}
+void PhysicsInterface::AddForceAndTorque(PhysBodyID const& inBodyID, Float3 const& inForce, Float3 const& inTorque)
+{
+    m_PhysicsSystem.GetBodyInterface().AddForceAndTorque(inBodyID, ConvertVector(inForce), ConvertVector(inTorque));
+}
+void PhysicsInterface::AddImpulse(PhysBodyID const& inBodyID, Float3 const& inImpulse)
+{
+    m_PhysicsSystem.GetBodyInterface().AddImpulse(inBodyID, ConvertVector(inImpulse));
+}
+void PhysicsInterface::AddImpulse(PhysBodyID const& inBodyID, Float3 const& inImpulse, Float3 const& inPoint)
+{
+    m_PhysicsSystem.GetBodyInterface().AddImpulse(inBodyID, ConvertVector(inImpulse), ConvertVector(inPoint));
+}
+void PhysicsInterface::AddAngularImpulse(PhysBodyID const& inBodyID, Float3 const& inAngularImpulse)
+{
+    m_PhysicsSystem.GetBodyInterface().AddAngularImpulse(inBodyID, ConvertVector(inAngularImpulse));
+}
+auto PhysicsInterface::GetMotionBehavior(PhysBodyID const& inBodyID) const -> MOTION_BEHAVIOR
+{
+    switch (m_PhysicsSystem.GetBodyInterface().GetMotionType(inBodyID))
+    {
+        case JPH::EMotionType::Static:
+            return MB_STATIC;
+        case JPH::EMotionType::Kinematic:
+            return MB_KINEMATIC;
+        case JPH::EMotionType::Dynamic:
+        default:
+            return MB_SIMULATED;
+    }
+}
+void PhysicsInterface::SetMotionQuality(PhysBodyID const& inBodyID, MOTION_QUALITY inMotionQuality)
+{
+    m_PhysicsSystem.GetBodyInterface().SetMotionQuality(inBodyID, JPH::EMotionQuality(inMotionQuality));
+}
+auto PhysicsInterface::GetMotionQuality(PhysBodyID const& inBodyID) const -> MOTION_QUALITY
+{
+    return MOTION_QUALITY(m_PhysicsSystem.GetBodyInterface().GetMotionQuality(inBodyID));
+}
+auto PhysicsInterface::GetInverseInertia(PhysBodyID const& inBodyID) const -> Float4x4
+{
+    return ConvertMatrix(m_PhysicsSystem.GetBodyInterface().GetInverseInertia(inBodyID));
+}
+void PhysicsInterface::SetRestitution(PhysBodyID const& inBodyID, float inRestitution)
+{
+    m_PhysicsSystem.GetBodyInterface().SetRestitution(inBodyID, inRestitution);
+}
+auto PhysicsInterface::GetRestitution(PhysBodyID const& inBodyID) const -> float
+{
+    return m_PhysicsSystem.GetBodyInterface().GetRestitution(inBodyID);
+}
+void PhysicsInterface::SetFriction(PhysBodyID const& inBodyID, float inFriction)
+{
+    m_PhysicsSystem.GetBodyInterface().SetFriction(inBodyID, inFriction);
+}
+auto PhysicsInterface::GetFriction(PhysBodyID const& inBodyID) const -> float
+{
+    return m_PhysicsSystem.GetBodyInterface().GetFriction(inBodyID);
+}
+void PhysicsInterface::SetGravityFactor(PhysBodyID const& inBodyID, float inGravityFactor)
+{
+    m_PhysicsSystem.GetBodyInterface().SetGravityFactor(inBodyID, inGravityFactor);
+}
+auto PhysicsInterface::GetGravityFactor(PhysBodyID const& inBodyID) const -> float
+{
+    return m_PhysicsSystem.GetBodyInterface().GetGravityFactor(inBodyID);
+}
+
+void PhysicsInterface::SetLinearVelocity(ECS::EntityHandle entityHandle, Float3 const& velocity)
+{
+    ECS::EntityView entityView = m_World->GetEntityView(entityHandle);
+
+    if (auto body = entityView.GetComponent<PhysBodyComponent>())
+    {
+        m_PhysicsSystem.GetBodyInterface().SetLinearVelocity(body->GetBodyId(), ConvertVector(velocity));
     }
     else if (auto character = entityView.GetComponent<CharacterControllerComponent>())
     {

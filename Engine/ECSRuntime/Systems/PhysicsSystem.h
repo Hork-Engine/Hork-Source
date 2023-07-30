@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Engine/Core/BaseTypes.h>
-#include <Jolt/Jolt.h>
+#include "../JoltPhysics.h"
 #include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/Body/BodyActivationListener.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -36,12 +37,8 @@ public:
     PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents);
     ~PhysicsSystem_ECS();
 
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<StaticBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DynamicBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<KinematicBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<StaticBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<DynamicBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<KinematicBodyComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event);
     
     void Update(struct GameFrame const& frame);
 
@@ -55,10 +52,9 @@ private:
     void OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override;
     void OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override;
 
-    void PendingDestroyBody(ECS::EntityHandle handle, JPH::BodyID bodyID);
-
     void AddAndRemoveBodies(GameFrame const& frame);
 
+    void UpdateScaling(GameFrame const& frame);
     void UpdateKinematicBodies(GameFrame const& frame);
     void UpdateWaterBodies(GameFrame const& frame);
 
@@ -71,6 +67,7 @@ private:
     GameEvents* m_GameEvents;
     TVector<ECS::EntityHandle> m_PendingAddBodies;
     TVector<JPH::BodyID> m_PendingDestroyBodies;
+    TVector<JPH::BodyID> m_BodyAddList[2];
 
     // Structure that keeps track of how many contact point each body has with the sensor
     struct BodyReference

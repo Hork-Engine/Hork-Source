@@ -5,7 +5,7 @@
 
 #include "GameFrame.h"
 #include "GameEvents.h"
-#include "Utils.h"
+#include "PhysicsInterface.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -33,8 +33,8 @@ public:
 
     void DrawDebug(DebugRenderer& renderer);
 
-    void AddDirectionalLight(struct RenderFrontendDef& rd, RenderFrameData& frameData);
-    void AddDrawables(struct RenderFrontendDef& rd, RenderFrameData& frameData);
+    void AddDirectionalLight(struct RenderFrontendDef& rd, struct RenderFrameData& frameData);
+    void AddDrawables(struct RenderFrontendDef& rd, struct RenderFrameData& frameData);
 
     GameFrame const& GetFrame() const { return m_Frame; }
 
@@ -67,7 +67,6 @@ private:
     class TransformSystem* m_TransformSystem;
     class TransformHistorySystem* m_TransformHistorySystem;
     class TeleportSystem* m_TeleportSystem;
-    class OneFrameRemoveSystem* m_OneFrameRemoveSystem;
     class SkinningSystem_ECS* m_SkinningSystem;
     class CameraSystem* m_CameraSystem;
     class LightingSystem_ECS* m_LightingSystem;

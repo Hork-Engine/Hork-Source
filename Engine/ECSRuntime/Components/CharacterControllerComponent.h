@@ -14,7 +14,7 @@ struct CharacterControllerComponent
 {
     CharacterControllerComponent() = default;
 
-    JPH::BodyID const& GetBodyId() const
+    PhysBodyID const& GetBodyId() const
     {
         return m_BodyId;
     }
@@ -42,7 +42,7 @@ struct CharacterControllerComponent
     JPH::RefConst<JPH::Shape> m_StandingShape;
     JPH::RefConst<JPH::Shape> m_CrouchingShape;
 
-    JPH::BodyID m_BodyId;
+    PhysBodyID m_BodyId;
 };
 
 HK_NAMESPACE_END

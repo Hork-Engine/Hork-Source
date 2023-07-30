@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
 
 #include <Engine/Core/ConsoleVar.h>
 

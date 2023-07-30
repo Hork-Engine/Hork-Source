@@ -7,76 +7,53 @@
 #include <Jolt/Physics/Body/MotionType.h>
 
 #include "../CollisionModel_ECS.h"
+#include "../PhysicsInterface.h"
 
 HK_NAMESPACE_BEGIN
 
 class CollisionModel;
 
-struct StaticBodyComponent
+struct PhysBodyComponent
 {
-    friend class PhysicsSystem_ECS;
-
-    //StaticBodyComponent() = default;
-    StaticBodyComponent(CollisionModel* cmodel, uint8_t collisionGroup) :
-        m_Model(cmodel),
-        m_CollisionGroup(collisionGroup)
+    PhysBodyComponent(CollisionModel* cmodel, PhysBodyID id) :
+        m_BodyId(id),
+        m_Model(cmodel)
     {}
 
-    JPH::BodyID const& GetBodyId() const
+    PhysBodyID const& GetBodyId() const
     {
         return m_BodyId;
     }
 
-private:
-    JPH::BodyID m_BodyId;
-    TRef<CollisionModel> m_Model; // TODO: refcounted
-    uint8_t m_CollisionGroup;
+    PhysBodyID m_BodyId;
+    TRef<CollisionModel> m_Model;
+    //uint8_t m_CollisionGroup;
+};
+
+struct StaticBodyComponent
+{
 };
 
 struct DynamicBodyComponent
 {
-    friend class PhysicsSystem_ECS;
-
-    //DynamicBodyComponent() = default;
-    DynamicBodyComponent(CollisionModel* cmodel, uint8_t collisionGroup) :
-        m_Model(cmodel),
-        m_CollisionGroup(collisionGroup)
-    {}
-
-    JPH::BodyID const& GetBodyId() const
-    {
-        return m_BodyId;
-    }
-
-private:
-    JPH::BodyID m_BodyId;
-    TRef<CollisionModel> m_Model; // TODO: refcounted
-    uint8_t m_CollisionGroup;
 };
 
 struct KinematicBodyComponent
 {
-    friend class PhysicsSystem_ECS;
+};
 
-    //KinematicBodyComponent() = default;
-    KinematicBodyComponent(CollisionModel* cmodel, uint8_t collisionGroup) :
-        m_Model(cmodel),
-        m_CollisionGroup(collisionGroup)
-    {}
-
-    JPH::BodyID const& GetBodyId() const
-    {
-        return m_BodyId;
-    }
-
-private:
-    JPH::BodyID m_BodyId;
-    TRef<CollisionModel> m_Model; // TODO: refcounted
-    uint8_t m_CollisionGroup;
+struct RigidBodyDynamicScaling
+{
+    Float3 CachedScale;
 };
 
 struct TriggerComponent
 {
+    TriggerComponent() = default;
+    TriggerComponent(ECS::ComponentTypeId triggerClass) :
+        TriggerClass(triggerClass)
+    {}
+
     ECS::ComponentTypeId TriggerClass = ECS::ComponentTypeId(-1);
 };
 

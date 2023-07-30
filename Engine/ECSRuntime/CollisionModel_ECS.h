@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
 #include <Engine/Runtime/GarbageCollector.h>
 
-#include "PhysicsInterface.h"
+#include "JoltPhysics.h"
+#include <Jolt/Physics/Collision/Shape/Shape.h>
 
 HK_NAMESPACE_BEGIN
 

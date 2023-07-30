@@ -17,6 +17,7 @@ TeleportSystem::TeleportSystem(World_ECS* world) :
 void TeleportSystem::Update(GameFrame const& frame)
 {
     auto& commandBuffer = m_World->GetCommandBuffer(0);
+    auto& bodyInterface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
     // Teleport characters
     {
@@ -38,10 +39,7 @@ void TeleportSystem::Update(GameFrame const& frame)
                 characterController[i].m_pCharacter->SetPosition(position);
                 characterController[i].m_pCharacter->SetRotation(rotation);
 
-                m_PhysicsInterface.GetImpl().GetBodyInterface().SetPositionAndRotation(characterController[i].m_BodyId,
-                                                                                       position,
-                                                                                       rotation,
-                                                                                       JPH::EActivation::Activate);
+                bodyInterface.SetPositionAndRotation(characterController[i].m_BodyId, position, rotation, JPH::EActivation::Activate);
 
                 // This will disable interpolation between frames while teleporting.
                 worldTransform[i].Position[frame.PrevStateIndex] = teleport[i].DestPosition;
@@ -55,21 +53,19 @@ void TeleportSystem::Update(GameFrame const& frame)
     // Teleport dynamic bodies
     {
         using Query = ECS::Query<>
-            ::Required<DynamicBodyComponent>
+            ::ReadOnly<DynamicBodyComponent>
             ::Required<WorldTransformComponent>
-            ::ReadOnly<TeleportationComponent>;
+            ::ReadOnly<TeleportationComponent>
+            ::Required<PhysBodyComponent>;
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            DynamicBodyComponent* dynamicBody = it.Get<DynamicBodyComponent>();
+            PhysBodyComponent* dynamicBody = it.Get<PhysBodyComponent>();
             WorldTransformComponent* worldTransform = it.Get<WorldTransformComponent>();
             TeleportationComponent const* teleport = it.Get<TeleportationComponent>();
             for (int i = 0; i < it.Count(); i++)
             {
-                m_PhysicsInterface.GetImpl().GetBodyInterface().SetPositionAndRotation(dynamicBody[i].GetBodyId(),
-                                                                                       ConvertVector(teleport[i].DestPosition),
-                                                                                       ConvertQuaternion(teleport[i].DestRotation),
-                                                                                       JPH::EActivation::Activate);
+                bodyInterface.SetPositionAndRotation(dynamicBody[i].GetBodyId(), ConvertVector(teleport[i].DestPosition), ConvertQuaternion(teleport[i].DestRotation), JPH::EActivation::Activate);
 
                 // This will disable interpolation between frames while teleporting.
                 worldTransform[i].Position[frame.PrevStateIndex] = teleport[i].DestPosition;

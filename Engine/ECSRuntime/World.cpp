@@ -9,7 +9,6 @@
 #include "Systems/PhysicsSystem.h"
 #include "Systems/CharacterControllerSystem.h"
 #include "Systems/TeleportSystem.h"
-#include "Systems/OneFrameRemoveSystem.h"
 #include "Systems/SkinningSystem.h"
 #include "Systems/LightingSystem.h"
 
@@ -32,7 +31,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_CameraSystem = CreateSystem<CameraSystem>();
     m_RenderSystem = CreateSystem<RenderSystem>();
     m_TeleportSystem = CreateSystem<TeleportSystem>();
-    m_OneFrameRemoveSystem = CreateSystem<OneFrameRemoveSystem>();
     m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
     m_LightingSystem = CreateSystem<LightingSystem_ECS>();
 }
@@ -93,8 +91,6 @@ void World_ECS::Tick(float timeStep)
 
         // FIXME: Call ExecuteCommands here?
         ExecuteCommands();
-
-        m_OneFrameRemoveSystem->Update();
 
         m_TeleportSystem->Update(m_Frame);
 
