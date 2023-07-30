@@ -10,7 +10,8 @@ enum GAMEPLAY_SYSTEM_EXECUTION
 {
     GAMEPLAY_SYSTEM_VARIABLE_TIMESTEP = 1,
     GAMEPLAY_SYSTEM_FIXED_TIMESTEP = 2,
-    GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE = 4
+    GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE = 4,
+    GAMEPLAY_SYSTEM_LATE_UPDATE = 8
 };
 HK_FLAG_ENUM_OPERATORS(GAMEPLAY_SYSTEM_EXECUTION)
 
@@ -23,6 +24,7 @@ public:
     virtual void VariableTimestepUpdate(float timeStep) {}
     virtual void FixedTimestepUpdate(GameFrame const& frame) {}
     virtual void PostPhysicsUpdate(GameFrame const& frame) {}
+    virtual void LateUpdate(float timeStep) {}
     virtual void DrawDebug(DebugRenderer& renderer) {}
 };
 

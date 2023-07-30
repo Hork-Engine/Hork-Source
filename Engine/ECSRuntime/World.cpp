@@ -4,7 +4,6 @@
 #include "Systems/NodeMotionSystem.h"
 #include "Systems/TransformSystem.h"
 #include "Systems/TransformHistorySystem.h"
-#include "Systems/CameraSystem.h"
 #include "Systems/RenderSystem.h"
 #include "Systems/PhysicsSystem.h"
 #include "Systems/CharacterControllerSystem.h"
@@ -28,7 +27,6 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
     m_TransformSystem = CreateSystem<TransformSystem>();
     m_TransformHistorySystem = CreateSystem<TransformHistorySystem>();
-    m_CameraSystem = CreateSystem<CameraSystem>();
     m_RenderSystem = CreateSystem<RenderSystem>();
     m_TeleportSystem = CreateSystem<TeleportSystem>();
     m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
@@ -42,22 +40,21 @@ World_ECS::~World_ECS()
     ExecuteCommands();
 }
 
-void World_ECS::RunVariableTimeStepSystems(float timeStep)
-{
-    for (auto& system : m_GameplayVariableTimestepSystems)
-        system->VariableTimestepUpdate(timeStep);
-}
-
 void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
 {
     if (execution & GAMEPLAY_SYSTEM_VARIABLE_TIMESTEP)
-        m_GameplayVariableTimestepSystems.EmplaceBack(gameplaySystem);
+        m_GameplayVariableTimestepSystems.Add(gameplaySystem);
 
     if (execution & GAMEPLAY_SYSTEM_FIXED_TIMESTEP)
-        m_GameplayFixedTimestepSystems.EmplaceBack(gameplaySystem);
+        m_GameplayFixedTimestepSystems.Add(gameplaySystem);
 
     if (execution & GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE)
-        m_GameplayPostPhysicsSystems.EmplaceBack(gameplaySystem);
+        m_GameplayPostPhysicsSystems.Add(gameplaySystem);
+
+    if (execution & GAMEPLAY_SYSTEM_LATE_UPDATE)
+        m_GameplayLateUpdateSystems.Add(gameplaySystem);
+
+    m_AllGameplaySystems.EmplaceBack(gameplaySystem);
 }
 
 void World_ECS::SetEventHandler(IEventHandler* eventHandler)
@@ -78,7 +75,8 @@ void World_ECS::Tick(float timeStep)
     m_Frame.VariableTimeStep = timeStep;
     m_Frame.FixedTimeStep = fixedTimeStep;
 
-    RunVariableTimeStepSystems(timeStep);
+    for (auto& system : m_GameplayVariableTimestepSystems)
+        system->VariableTimestepUpdate(timeStep);
 
     m_Accumulator += timeStep;
 
@@ -141,7 +139,9 @@ void World_ECS::Tick(float timeStep)
     m_LightingSystem->Update(m_Frame);
 
     m_SkinningSystem->Update(m_Frame);
-    m_CameraSystem->Update();
+
+    for (auto& system : m_GameplayLateUpdateSystems)
+        system->LateUpdate(timeStep);
 
     m_Frame.VariableTime += timeStep;
     m_Frame.FrameNum++;
@@ -157,10 +157,7 @@ void World_ECS::DrawDebug(DebugRenderer& renderer)
     for (auto& system : m_EngineSystems)
         system->DrawDebug(renderer);
 
-    for (auto& system : m_GameplayVariableTimestepSystems)
-        system->DrawDebug(renderer);
-
-    for (auto& system : m_GameplayFixedTimestepSystems)
+    for (auto& system : m_AllGameplaySystems)
         system->DrawDebug(renderer);
 }
 

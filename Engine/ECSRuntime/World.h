@@ -46,8 +46,6 @@ private:
         return static_cast<T*>(m_EngineSystems.Last().GetObject());
     }
 
-    void RunVariableTimeStepSystems(float timeStep);
-
     float m_Accumulator = 0.0f;
 
     GameFrame m_Frame;
@@ -56,9 +54,11 @@ private:
     PhysicsInterface m_PhysicsInterface;
 
     TVector<TUniqueRef<EngineSystemECS>> m_EngineSystems;
-    TVector<TRef<GameplaySystemECS>> m_GameplayVariableTimestepSystems;
-    TVector<TRef<GameplaySystemECS>> m_GameplayFixedTimestepSystems;
-    TVector<TRef<GameplaySystemECS>> m_GameplayPostPhysicsSystems;
+    TVector<GameplaySystemECS*> m_GameplayVariableTimestepSystems;
+    TVector<GameplaySystemECS*> m_GameplayFixedTimestepSystems;
+    TVector<GameplaySystemECS*> m_GameplayPostPhysicsSystems;
+    TVector<GameplaySystemECS*> m_GameplayLateUpdateSystems;
+    TVector<TRef<GameplaySystemECS>> m_AllGameplaySystems;
 
     class PhysicsSystem_ECS* m_PhysicsSystem;
     class CharacterControllerSystem* m_CharacterControllerSystem;
@@ -68,7 +68,6 @@ private:
     class TransformHistorySystem* m_TransformHistorySystem;
     class TeleportSystem* m_TeleportSystem;
     class SkinningSystem_ECS* m_SkinningSystem;
-    class CameraSystem* m_CameraSystem;
     class LightingSystem_ECS* m_LightingSystem;
     class RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
