@@ -17,7 +17,7 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_InterpolateTransform("com_InterpolateTransform"s, "1"s);
 
-World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
+World::World(ECS::WorldCreateInfo const& createInfo) :
     ECS::World(createInfo),
     m_PhysicsInterface(this)
 {
@@ -33,14 +33,14 @@ World_ECS::World_ECS(ECS::WorldCreateInfo const& createInfo) :
     m_LightingSystem = CreateSystem<LightingSystem_ECS>();
 }
 
-World_ECS::~World_ECS()
+World::~World()
 {
     GetCommandBuffer(0).DestroyEntities();
 
     ExecuteCommands();
 }
 
-void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
+void World::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
 {
     if (execution & GAMEPLAY_SYSTEM_VARIABLE_UPDATE)
         m_GameplayVariableUpdateSystems.Add(gameplaySystem);
@@ -57,12 +57,12 @@ void World_ECS::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPL
     m_AllGameplaySystems.EmplaceBack(gameplaySystem);
 }
 
-void World_ECS::SetEventHandler(IEventHandler* eventHandler)
+void World::SetEventHandler(IEventHandler* eventHandler)
 {
     m_EventHandler = eventHandler;
 }
 
-void World_ECS::Tick(float timeStep)
+void World::Tick(float timeStep)
 {
     if (bPaused)
     {
@@ -152,7 +152,7 @@ void World_ECS::Tick(float timeStep)
     //LOG("TIME: Diff {} ms\n", (m_Frame.VariableTime - m_Frame.FixedTime) * 1000);
 }
 
-void World_ECS::DrawDebug(DebugRenderer& renderer)
+void World::DrawDebug(DebugRenderer& renderer)
 {
     for (auto& system : m_EngineSystems)
         system->DrawDebug(renderer);
@@ -161,12 +161,12 @@ void World_ECS::DrawDebug(DebugRenderer& renderer)
         system->DrawDebug(renderer);
 }
 
-void World_ECS::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData)
+void World::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData)
 {
     m_RenderSystem->AddDirectionalLight(rd, frameData);
 }
 
-void World_ECS::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData)
+void World::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData)
 {
     m_RenderSystem->AddDrawables(rd, frameData);
 }

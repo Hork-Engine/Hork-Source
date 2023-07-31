@@ -8,7 +8,7 @@
 
 HK_NAMESPACE_BEGIN
 
-SpringArmSystem::SpringArmSystem(World_ECS* world) :
+SpringArmSystem::SpringArmSystem(World* world) :
     m_World(world),
     m_PhysicsInterface(world->GetPhysicsInterface())
 {}

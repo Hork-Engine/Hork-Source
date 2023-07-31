@@ -29,12 +29,12 @@ HK_NAMESPACE_END
 
 HK_NAMESPACE_BEGIN
 
-class World_ECS;
+class World;
 
 class PhysicsSystem_ECS : public EngineSystemECS, public JPH::ContactListener, public JPH::BodyActivationListener
 {
 public:
-    PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents);
+    PhysicsSystem_ECS(World* world, GameEvents* gameEvents);
     ~PhysicsSystem_ECS();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event);
@@ -62,7 +62,7 @@ private:
 
     void DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale);
 
-    World_ECS* m_World;
+    World* m_World;
     PhysicsInterface& m_PhysicsInterface;
     GameEvents* m_GameEvents;
     TVector<ECS::EntityHandle> m_PendingAddBodies;

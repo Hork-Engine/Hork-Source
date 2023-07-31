@@ -6,16 +6,16 @@
 
 HK_NAMESPACE_BEGIN
 
-class World_ECS;
+class World;
 class TeleportSystem : public EngineSystemECS
 {
 public:
-    TeleportSystem(World_ECS* world);
+    TeleportSystem(World* world);
 
     void Update(struct GameFrame const& frame);
 
 private:
-    World_ECS* m_World;
+    World* m_World;
     PhysicsInterface& m_PhysicsInterface;
 };
 

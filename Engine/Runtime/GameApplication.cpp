@@ -674,17 +674,17 @@ void GameApplication::TakeScreenshot()
     WriteImage(m_Screenshot, cfg);
 }
 
-World_ECS* GameApplication::CreateWorld()
+World* GameApplication::CreateWorld()
 {
     ECS::WorldCreateInfo worldInfo;
     worldInfo.NumThreads = 1;
 
-    World_ECS* world = new World_ECS(worldInfo);
+    World* world = new World(worldInfo);
     m_Worlds.Add(world);
     return world;
 }
 
-void GameApplication::DestroyWorld(World_ECS* world)
+void GameApplication::DestroyWorld(World* world)
 {
     auto index = m_Worlds.IndexOf(world);
     if (index != Core::NPOS)

@@ -85,9 +85,9 @@ private:
     void SortRenderInstances();
     void SortShadowInstances(LightShadowmap const* shadowMap);
 
-    void QueryVisiblePrimitives(World_ECS* world);
+    void QueryVisiblePrimitives(World* world);
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives, TVector<SurfaceDef*>& Surfaces);
-    void AddRenderInstances(World_ECS* world);
+    void AddRenderInstances(World* world);
     //void AddTerrain(TerrainComponent* InComponent);
     //void AddStaticMesh(MeshComponent* InComponent);
 

@@ -200,7 +200,7 @@ void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
     //}
 }
 
-void WorldRenderView::SetWorld(World_ECS* world)
+void WorldRenderView::SetWorld(World* world)
 {
     m_World = world;
 }

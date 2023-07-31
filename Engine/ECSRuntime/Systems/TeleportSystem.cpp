@@ -9,7 +9,7 @@
 
 HK_NAMESPACE_BEGIN
 
-TeleportSystem::TeleportSystem(World_ECS* world) :
+TeleportSystem::TeleportSystem(World* world) :
     m_World(world),
     m_PhysicsInterface(world->GetPhysicsInterface())
 {}

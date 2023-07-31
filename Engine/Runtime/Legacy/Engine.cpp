@@ -387,17 +387,17 @@ void Engine::LoadConfigFile()
     }
 }
 
-World_ECS* Engine::CreateWorldECS()
+World* Engine::CreateWorldECS()
 {
     ECS::WorldCreateInfo worldInfo;
     worldInfo.NumThreads = 1;
 
-    World_ECS* world = new World_ECS(worldInfo);
+    World* world = new World(worldInfo);
     m_WorldsECS.Add(world);
     return world;
 }
 
-void Engine::DestroyWorldECS(World_ECS* world)
+void Engine::DestroyWorldECS(World* world)
 {
     auto index = m_WorldsECS.IndexOf(world);
     if (index != Core::NPOS)

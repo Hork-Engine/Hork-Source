@@ -6,7 +6,7 @@
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Body/MotionType.h>
 
-#include "../CollisionModel_ECS.h"
+#include "../CollisionModel.h"
 #include "../PhysicsInterface.h"
 
 HK_NAMESPACE_BEGIN

@@ -1,7 +1,7 @@
 ﻿#include "PhysicsSystem.h"
 #include "../GameFrame.h"
 #include "../Utils.h"
-#include "../CollisionModel_ECS.h"
+#include "../CollisionModel.h"
 #include "../World.h"
 
 #include "../Components/TransformComponent.h"
@@ -47,7 +47,7 @@ ConsoleVar com_DrawStaticBodies("com_DrawStaticBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawDynamicBodies("com_DrawDynamicBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawKinematicBodies("com_DrawKinematicBodies"s, "0"s, CVAR_CHEAT);
 
-PhysicsSystem_ECS::PhysicsSystem_ECS(World_ECS* world, GameEvents* gameEvents) :
+PhysicsSystem_ECS::PhysicsSystem_ECS(World* world, GameEvents* gameEvents) :
     m_World(world),
     m_PhysicsInterface(world->GetPhysicsInterface()),
     m_GameEvents(gameEvents)

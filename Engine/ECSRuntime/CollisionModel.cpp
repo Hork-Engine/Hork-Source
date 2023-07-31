@@ -1,4 +1,4 @@
-#include "CollisionModel_ECS.h"
+#include "CollisionModel.h"
 
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>

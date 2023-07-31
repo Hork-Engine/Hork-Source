@@ -143,7 +143,7 @@ void UIViewport::Draw(Canvas& canvas)
     {
         m_WorldRenderView->SetViewport(size.X, size.Y);
 
-        World_ECS* world = m_WorldRenderView->GetWorld();
+        World* world = m_WorldRenderView->GetWorld();
         ECS::EntityView cameraEntityView = world->GetEntityView(m_WorldRenderView->GetCamera());
 
         auto* cameraComponent = cameraEntityView.GetComponent<CameraComponent_ECS>();

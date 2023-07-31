@@ -47,7 +47,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class World_ECS;
+class World;
 class AsyncJobManager;
 class AsyncJobList;
 
@@ -57,9 +57,9 @@ public:
     GameApplication(ArgumentPack const& args, StringView title);
     ~GameApplication();
 
-    World_ECS* CreateWorld();
+    World* CreateWorld();
 
-    void DestroyWorld(World_ECS* world);
+    void DestroyWorld(World* world);
 
     /** Set main window video mode. */
     void PostChangeVideoMode(DisplayVideoMode const& mode);
@@ -221,7 +221,7 @@ private:
     CommandProcessor                 m_CommandProcessor;
     CommandContext                   m_CommandContext;
     StateMachine                     m_StateMachine;
-    TVector<World_ECS*>              m_Worlds;
+    TVector<World*>              m_Worlds;
     DisplayVideoMode                 m_DesiredMode;
     MersenneTwisterRand              m_Random;
     String                           m_Screenshot;

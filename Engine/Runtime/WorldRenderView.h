@@ -40,7 +40,7 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class CameraComponent;
-class World_ECS;
+class World;
 
 class ColorGradingParameters : public GCObject
 {
@@ -149,8 +149,8 @@ public:
     uint32_t GetWidth() const { return m_Width; }
     uint32_t GetHeight() const { return m_Height; }
 
-    void SetWorld(World_ECS* world);
-    World_ECS* GetWorld() { return m_World; }
+    void SetWorld(World* world);
+    World* GetWorld() { return m_World; }
 
     void SetCamera(ECS::EntityHandle camera);
 
@@ -236,7 +236,7 @@ private:
 
     ECS::EntityHandle m_pCamera;
     ECS::EntityHandle m_pCullingCamera;
-    World_ECS* m_World{};
+    World* m_World{};
 
     //TWeakRef<TextureViewImpl>              m_WorldViewTex;
     uint32_t                               m_Width{};

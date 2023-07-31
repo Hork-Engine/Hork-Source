@@ -9,11 +9,11 @@
 
 HK_NAMESPACE_BEGIN
 
-class World_ECS : public ECS::World
+class World : public ECS::World
 {
 public:
-    World_ECS(ECS::WorldCreateInfo const& createInfo);
-    ~World_ECS();
+    World(ECS::WorldCreateInfo const& createInfo);
+    ~World();
 
     bool bPaused = false;
 

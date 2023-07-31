@@ -88,9 +88,9 @@ public:
     /** Helper. Destroy all existing worlds */
     void DestroyWorlds() { return World::DestroyWorlds(); }
 
-    World_ECS* CreateWorldECS();
+    World* CreateWorldECS();
 
-    void DestroyWorldECS(World_ECS* world);
+    void DestroyWorldECS(World* world);
 
     /** Helper. Get all existing worlds */
     TVector<World*> const& GetWorlds() { return World::GetWorlds(); }
@@ -210,7 +210,7 @@ private:
     bool m_bAllowInputEvents = false;
 
 
-    TVector<World_ECS*> m_WorldsECS;
+    TVector<World*> m_WorldsECS;
 
     StateMachine m_StateMachine;
 };

@@ -47,7 +47,7 @@ public:
     }
 };
 
-CharacterControllerSystem::CharacterControllerSystem(World_ECS* world) :
+CharacterControllerSystem::CharacterControllerSystem(World* world) :
     m_World(world),
     m_PhysicsInterface(world->GetPhysicsInterface())
 {

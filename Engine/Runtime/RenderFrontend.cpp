@@ -139,7 +139,7 @@ void RenderFrontend::ClearRenderView(RenderViewData* view)
 void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-    World_ECS* world = worldRenderView->GetWorld();
+    World* world = worldRenderView->GetWorld();
 
     ECS::EntityView cameraEntityView = world->GetEntityView(worldRenderView->GetCamera());
 
@@ -423,7 +423,7 @@ void RenderFrontend::SortShadowInstances(LightShadowmap const* shadowMap)
               shadowInstanceSortFunction);
 }
 
-void RenderFrontend::QueryVisiblePrimitives(World_ECS* world)
+void RenderFrontend::QueryVisiblePrimitives(World* world)
 {
     VisibilityQuery query;
 
@@ -536,7 +536,7 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
     //InWorld->QueryVisiblePrimitives(Primitives, Surfaces, nullptr, query);
 }
 
-void RenderFrontend::AddRenderInstances(World_ECS* world)
+void RenderFrontend::AddRenderInstances(World* world)
 {
     HK_PROFILER_EVENT("Add Render Instances");
 

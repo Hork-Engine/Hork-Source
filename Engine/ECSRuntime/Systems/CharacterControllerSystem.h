@@ -12,12 +12,12 @@
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
-class World_ECS;
+class World;
 
 class CharacterControllerSystem : public EngineSystemECS, public JPH::CharacterContactListener
 {
 public:
-    CharacterControllerSystem(World_ECS* world);
+    CharacterControllerSystem(World* world);
     ~CharacterControllerSystem();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<CharacterControllerComponent>& event);
@@ -39,7 +39,7 @@ private:
     TVector<ECS::EntityHandle> m_PendingAddCharacters;
     TVector<std::pair<ECS::EntityHandle, JPH::CharacterVirtual*>> m_PendingRemoveCharacters;
 
-    World_ECS* m_World;
+    World* m_World;
     PhysicsInterface& m_PhysicsInterface;
 
     friend class CharacterControllerImpl;
