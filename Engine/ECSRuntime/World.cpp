@@ -30,7 +30,7 @@ World::World(ECS::WorldCreateInfo const& createInfo) :
     m_RenderSystem = CreateSystem<RenderSystem>();
     m_TeleportSystem = CreateSystem<TeleportSystem>();
     m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
-    m_LightingSystem = CreateSystem<LightingSystem_ECS>();
+    m_LightingSystem = CreateSystem<LightingSystem>();
 }
 
 World::~World()

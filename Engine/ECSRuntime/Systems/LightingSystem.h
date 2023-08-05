@@ -8,11 +8,11 @@
 
 HK_NAMESPACE_BEGIN
 
-class LightingSystem_ECS : public EngineSystemECS
+class LightingSystem : public EngineSystemECS
 {
 public:
-    LightingSystem_ECS(ECS::World* world);
-    ~LightingSystem_ECS();
+    LightingSystem(ECS::World* world);
+    ~LightingSystem();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent_ECS> const& event);

@@ -68,7 +68,7 @@ private:
     class TransformHistorySystem* m_TransformHistorySystem;
     class TeleportSystem* m_TeleportSystem;
     class SkinningSystem_ECS* m_SkinningSystem;
-    class LightingSystem_ECS* m_LightingSystem;
+    class LightingSystem* m_LightingSystem;
     class RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
 };

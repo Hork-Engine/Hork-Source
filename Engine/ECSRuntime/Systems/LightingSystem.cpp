@@ -106,7 +106,7 @@ public:
 };
 #endif
 
-LightingSystem_ECS::LightingSystem_ECS(ECS::World* world) :
+LightingSystem::LightingSystem(ECS::World* world) :
     m_World(world)
 {
     world->AddEventHandler<ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS>>(this);
@@ -115,7 +115,7 @@ LightingSystem_ECS::LightingSystem_ECS(ECS::World* world) :
     world->AddEventHandler<ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS>>(this);
 }
 
-void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS> const& event)
 {
     auto& light = event.Component();
 
@@ -130,7 +130,7 @@ void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentA
     light.m_EffectiveColor[2] = light.m_Color[2] * temperatureColor[2] * energy;
 }
 
-void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent_ECS> const& event)
 {
     auto& light = event.Component();
 
@@ -171,7 +171,7 @@ void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentA
     //m_SpatialTree.AssignEntity(light.m_PrimID, event.GetEntity());
 }
 
-void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS> const& event)
 {
     //auto& light = event.Component();
 
@@ -180,7 +180,7 @@ void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentR
     //PendingDestroyLight(event.GetEntity(), light.m_PrimID);
 }
 
-void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<EnvironmentProbeComponent> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<EnvironmentProbeComponent> const& event)
 {
     //auto& probe = event.Component();
 
@@ -188,19 +188,19 @@ void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentA
     //m_SpatialTree.AssignEntity(probe.m_PrimID, event.GetEntity());
 }
 
-void LightingSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<EnvironmentProbeComponent> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<EnvironmentProbeComponent> const& event)
 {
     //auto& probe = event.Component();
 
     //m_SpatialTree.RemovePrimitive(probe.m_PrimID);
 }
 
-LightingSystem_ECS::~LightingSystem_ECS()
+LightingSystem::~LightingSystem()
 {
     m_World->RemoveHandler(this);
 }
 
-void LightingSystem_ECS::Update(struct GameFrame const& frame)
+void LightingSystem::Update(struct GameFrame const& frame)
 {
     {
         using Query = ECS::Query<>
@@ -279,7 +279,7 @@ void LightingSystem_ECS::Update(struct GameFrame const& frame)
     }
 }
 
-void LightingSystem_ECS::UpdateLightBounding(PunctualLightComponent_ECS& light, Float3 const& worldPosition, Quat const& worldRotation)
+void LightingSystem::UpdateLightBounding(PunctualLightComponent_ECS& light, Float3 const& worldPosition, Quat const& worldRotation)
 {
     if (light.m_InnerConeAngle < PunctualLightComponent_ECS::MaxConeAngle)
     {
@@ -341,7 +341,7 @@ void LightingSystem_ECS::UpdateLightBounding(PunctualLightComponent_ECS& light, 
     }
 }
 
-void LightingSystem_ECS::UpdateBoundingBoxes(GameFrame const& frame)
+void LightingSystem::UpdateBoundingBoxes(GameFrame const& frame)
 {
     using Query = ECS::Query<>
         ::Required<PunctualLightComponent_ECS>
@@ -362,7 +362,7 @@ void LightingSystem_ECS::UpdateBoundingBoxes(GameFrame const& frame)
     }
 }
 
-void LightingSystem_ECS::DrawDebug(DebugRenderer& renderer)
+void LightingSystem::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawDirectionalLights)
     {
