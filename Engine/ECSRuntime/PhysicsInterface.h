@@ -271,9 +271,9 @@ enum MOTION_BEHAVIOR
     MB_STATIC,
 
     /// Responds to forces as a normal physics object
-    MB_SIMULATED,
+    MB_DYNAMIC,
 
-    /// Movable using velocities only, does not respond to forces
+    /// Movable, does not respond to forces, velocities are calculated from node position and rotation.
     MB_KINEMATIC
 };
 
@@ -301,19 +301,6 @@ enum MOTION_QUALITY
 
 class CollisionModel;
 
-/// Enum used in RigidBodyDesc to indicate how mass and inertia should be calculated
-enum OVERRIDE_MASS_PROPERTIES
-{
-    /// Tells the system to calculate the mass and inertia based on density
-    OVERRIDE_MASS_PROPERTIES_CALCULATE_MASS_AND_INERTIA,
-
-    /// Tells the system to take the mass from MassPropertiesOverride and to calculate the inertia based on density of the shapes and to scale it to the provided mass
-    OVERRIDE_MASS_PROPERTIES_CALCULATE_INERTIA,
-
-    /// Tells the system to take the mass and inertia from MassPropertiesOverride
-    OVERRIDE_MASS_PROPERTIES_MASS_AND_INERTIA_PROVIDED
-};
-
 /// Rigid body scene node
 struct RigidBodyDesc
 {
@@ -329,6 +316,7 @@ struct RigidBodyDesc
     /// Scale of the body
     Float3              Scale = Float3(1);
 
+    /// For dynamic bodies node flags are forced to SCENE_NODE_ABSOLUTE_*.
     SCENE_NODE_FLAGS    NodeFlags = SCENE_NODE_FLAGS_DEFAULT;
 
     /// Collision model of the body
@@ -343,11 +331,44 @@ struct RigidBodyDesc
     /// The collision group this body belongs to (determines if two objects can collide)
     uint8_t             CollisionGroup = CollisionGroup::DEFAULT; 
 
-    /// World space linear velocity of the center of mass (m/s)
-    Float3              LinearVelocity;
+    struct DynamicSettings
+    {
+        /// World space linear velocity of the center of mass (m/s)
+        Float3              LinearVelocity;
 
-    /// World space angular velocity (rad/s)
-    Float3              AngularVelocity;
+        /// World space angular velocity (rad/s)
+        Float3              AngularVelocity;
+
+        /// Linear damping: dv/dt = -c * v. c must be between 0 and 1 but is usually close to 0.
+        float               LinearDamping = 0.05f;
+
+        /// Angular damping: dw/dt = -c * w. c must be between 0 and 1 but is usually close to 0.
+        float               AngularDamping = 0.05f;
+
+        /// Maximum linear velocity that this body can reach (m/s)
+        float               MaxLinearVelocity = 500;
+
+        /// Maximum angular velocity that this body can reach (rad/s)
+        float               MaxAngularVelocity = 0.25f * Math::_PI * 60;
+
+        /// Value to multiply gravity with for this body
+        float               GravityFactor = 1.0f;
+
+        // Mass of the body (kg)
+        float               Mass = 100.0f;
+
+        /// Tells the system to calculate the inertia based on density of the shapes and to scale it to the provided mass
+        bool                bCalculateInertia = true;
+
+        /// When calculating the inertia (not when it is provided) the calculated inertia will be multiplied by this value
+        float               InertiaMultiplier = 1.0f;
+
+        // Inertia tensor of the body (kg m^2). Used if bCalculateInertiaTensor is false.
+        Float4x4            Inertia = Float4x4(0);
+    };
+
+    /// Dynamic settings are applied only to body with motion type MB_DYNAMIC
+    DynamicSettings     Dynamic;
 
     /// Friction of the body (dimensionless number, usually between 0 and 1, 0 = no friction, 1 = friction force equals force that presses the two bodies together)
     float               Friction = 0.2f;
@@ -355,40 +376,7 @@ struct RigidBodyDesc
     /// Restitution of body (dimensionless number, usually between 0 and 1, 0 = completely inelastic collision response, 1 = completely elastic collision response)
     float               Restitution = 0.0f;
 
-    /// Linear damping: dv/dt = -c * v. c must be between 0 and 1 but is usually close to 0.
-    float               LinearDamping = 0.05f;
-
-    /// Angular damping: dw/dt = -c * w. c must be between 0 and 1 but is usually close to 0.
-    float               AngularDamping = 0.05f;
-
-    /// Maximum linear velocity that this body can reach (m/s)
-    float               MaxLinearVelocity = 500;
-
-    /// Maximum angular velocity that this body can reach (rad/s)
-    float               MaxAngularVelocity = 0.25f * Math::_PI * 60;
-
-    /// Value to multiply gravity with for this body
-    float               GravityFactor = 1.0f;
-
-    /// Determines how MassPropertiesOverride will be used
-    OVERRIDE_MASS_PROPERTIES OverrideMassProperties = OVERRIDE_MASS_PROPERTIES_CALCULATE_MASS_AND_INERTIA;
-
-    /// When calculating the inertia (not when it is provided) the calculated inertia will be multiplied by this value
-    float               InertiaMultiplier = 1.0f;
-
-    /// Mass properties of the body (by default calculated by the shape)
-    struct MassProperties
-    {
-        // Mass of the shape (kg)
-        float Mass = 0.0f;
-        // Inertia tensor of the shape (kg m^2)
-        Float4x4 Inertia = Float4x4(0);
-    };
-
-    /// Contains replacement mass settings which override the automatically calculated values
-    MassProperties      MassPropertiesOverride;
-
-    // This flag will enable dynamic rescaling of a rigid body. Disabled for performance.
+    /// This flag will enable dynamic rescaling of a rigid body. Disabled for performance.
     bool                bAllowRigidBodyScaling = false;
 
     /// If this body can go to sleep or not
@@ -482,9 +470,6 @@ public:
     //auto GetWorldTransform(PhysBodyID const& inBodyID) const -> Float4x4;
     auto GetCenterOfMassTransform(PhysBodyID const& inBodyID) const -> Float4x4;
 
-    // Set velocity of body such that it will be positioned at inTargetPosition/Rotation in inDeltaTime seconds (will activate body if needed)
-    //void MoveKinematic(PhysBodyID const& inBodyID, Float3 const& inTargetPosition, Quat const& inTargetRotation, float inDeltaTime);
-
     // Linear or angular velocity (functions will activate body if needed).
     // Note that the linear velocity is the velocity of the center of mass, which may not coincide with the position of your object, to correct for this: \f$VelocityCOM = Velocity - AngularVelocity \times ShapeCOM\f$
     void SetLinearAndAngularVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity, Float3 const& inAngularVelocity);
@@ -535,7 +520,7 @@ public:
     void SetGravityFactor(PhysBodyID const& inBodyID, float inGravityFactor);
     auto GetGravityFactor(PhysBodyID const& inBodyID) const -> float;
 
-    void SetLinearVelocity(ECS::EntityHandle entityHandle, Float3 const& velocity);
+    //void SetLinearVelocity(ECS::EntityHandle entityHandle, Float3 const& velocity);
 
     auto GetImpl() -> JPH::PhysicsSystem&
     {

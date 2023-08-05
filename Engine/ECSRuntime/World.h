@@ -60,7 +60,7 @@ private:
     TVector<GameplaySystemECS*> m_GameplayLateUpdateSystems;
     TVector<TRef<GameplaySystemECS>> m_AllGameplaySystems;
 
-    class PhysicsSystem_ECS* m_PhysicsSystem;
+    class PhysicsSystem* m_PhysicsSystem;
     class CharacterControllerSystem* m_CharacterControllerSystem;
     class BehaviorTreeSystem* m_BehaviorTreeSystem;
     class NodeMotionSystem* m_NodeMotionSystem;

@@ -78,36 +78,6 @@ void TransformSystem::Update(GameFrame const& frame)
         }
     }
 
-    //{
-    //    using Query = ECS::Query<>
-    //        ::Required<NodeComponent>
-    //        ::ReadOnly<TransformComponent>
-    //        ::ReadOnly<RigidBodyComponent>
-    //        
-    //        //::ReadOnly<MovableTag>
-    //        ;
-
-    //    for (Query::Iterator q(*m_World); q; q++)
-    //    {
-    //        NodeComponent* node = q.Get<NodeComponent>();
-    //        TransformComponent const* t = q.Get<TransformComponent>();
-    //        RigidBodyComponent const* rigidBodies = q.Get<RigidBodyComponent>();
-
-    //        for (int i = 0; i < q.Count(); i++)
-    //        {
-    //            switch (rigidBodies[i].GetMotionBehavior())
-    //            {
-    //                case MB_SIMULATED:
-    //                    node[i].m_Node->SetTransform(t[i].Position, t[i].Rotation, t[i].Scale, SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE);
-    //                    break;
-    //                default: //case MB_KINEMATIC:
-    //                    node[i].m_Node->SetTransform(t[i].Position, t[i].Rotation, t[i].Scale, node[i].Flags);
-    //                    break;
-    //            }                
-    //        }
-    //    }
-    //}
-
     m_SceneGraph.UpdateWorldTransforms();
 
     // Update world transform

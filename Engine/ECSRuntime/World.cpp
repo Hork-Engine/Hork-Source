@@ -21,7 +21,7 @@ World::World(ECS::WorldCreateInfo const& createInfo) :
     ECS::World(createInfo),
     m_PhysicsInterface(this)
 {
-    m_PhysicsSystem = CreateSystem<PhysicsSystem_ECS>(&m_GameEvents);
+    m_PhysicsSystem = CreateSystem<PhysicsSystem>(&m_GameEvents);
     m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
     m_BehaviorTreeSystem = CreateSystem<BehaviorTreeSystem>();
     m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();

@@ -31,11 +31,11 @@ HK_NAMESPACE_BEGIN
 
 class World;
 
-class PhysicsSystem_ECS : public EngineSystemECS, public JPH::ContactListener, public JPH::BodyActivationListener
+class PhysicsSystem : public EngineSystemECS, public JPH::ContactListener, public JPH::BodyActivationListener
 {
 public:
-    PhysicsSystem_ECS(World* world, GameEvents* gameEvents);
-    ~PhysicsSystem_ECS();
+    PhysicsSystem(World* world, GameEvents* gameEvents);
+    ~PhysicsSystem();
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event);

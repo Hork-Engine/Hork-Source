@@ -47,7 +47,7 @@ ConsoleVar com_DrawStaticBodies("com_DrawStaticBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawDynamicBodies("com_DrawDynamicBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawKinematicBodies("com_DrawKinematicBodies"s, "0"s, CVAR_CHEAT);
 
-PhysicsSystem_ECS::PhysicsSystem_ECS(World* world, GameEvents* gameEvents) :
+PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
     m_World(world),
     m_PhysicsInterface(world->GetPhysicsInterface()),
     m_GameEvents(gameEvents)
@@ -68,7 +68,7 @@ PhysicsSystem_ECS::PhysicsSystem_ECS(World* world, GameEvents* gameEvents) :
     world->AddEventHandler<ECS::Event::OnComponentRemoved<PhysBodyComponent>>(this);
 }
 
-PhysicsSystem_ECS::~PhysicsSystem_ECS()
+PhysicsSystem::~PhysicsSystem()
 {
     auto& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -79,18 +79,22 @@ PhysicsSystem_ECS::~PhysicsSystem_ECS()
 
         m_PendingDestroyBodies.Clear();
     }
-    
-    HK_ASSERT(m_PhysicsInterface.m_PendingBodies.IsEmpty());
 
+    {
+        for (auto it : m_PhysicsInterface.m_PendingBodies)
+            body_interface.DestroyBody(it.second);
+        m_PhysicsInterface.m_PendingBodies.Clear();
+    }
+    
     m_World->RemoveHandler(this);
 }
 
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
 {
     m_PendingAddBodies.Add(event.GetEntity());
 }
 
-void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
 {
     auto i = m_PendingAddBodies.IndexOf(event.GetEntity());
     if (i != Core::NPOS)
@@ -119,7 +123,7 @@ void PhysicsSystem_ECS::HandleEvent(ECS::World* world, ECS::Event::OnComponentRe
     }
 }
 
-JPH::ValidateResult PhysicsSystem_ECS::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
+JPH::ValidateResult PhysicsSystem::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
 {
     //LOG("Contact validate callback\n");
 
@@ -127,7 +131,7 @@ JPH::ValidateResult PhysicsSystem_ECS::OnContactValidate(const JPH::Body& inBody
     return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
 }
 
-PhysicsSystem_ECS::Trigger* PhysicsSystem_ECS::GetTriggerBody(const JPH::BodyID& inBody1, const JPH::BodyID& inBody2)
+PhysicsSystem::Trigger* PhysicsSystem::GetTriggerBody(const JPH::BodyID& inBody1, const JPH::BodyID& inBody2)
 {
     auto it = m_Triggers.Find(inBody1);
     if (it != m_Triggers.End())
@@ -140,7 +144,7 @@ PhysicsSystem_ECS::Trigger* PhysicsSystem_ECS::GetTriggerBody(const JPH::BodyID&
     return nullptr;
 }
 
-void PhysicsSystem_ECS::AddBodyReference(JPH::BodyID const& bodyId)
+void PhysicsSystem::AddBodyReference(JPH::BodyID const& bodyId)
 {
     // Add to list and make sure that the list remains sorted for determinism (contacts can be added from multiple threads)
     BodyReference bodyRef{bodyId, 1};
@@ -154,7 +158,7 @@ void PhysicsSystem_ECS::AddBodyReference(JPH::BodyID const& bodyId)
     m_BodiesInSensors.Insert(b, bodyRef);
 }
 
-void PhysicsSystem_ECS::RemoveBodyReference(JPH::BodyID const& bodyId)
+void PhysicsSystem::RemoveBodyReference(JPH::BodyID const& bodyId)
 {
     BodyReference bodyRef{bodyId, 1};
     auto b = std::lower_bound(m_BodiesInSensors.begin(), m_BodiesInSensors.end(), bodyRef);
@@ -173,7 +177,7 @@ void PhysicsSystem_ECS::RemoveBodyReference(JPH::BodyID const& bodyId)
     }
 }
 
-void PhysicsSystem_ECS::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+void PhysicsSystem::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
 {
     Trigger* trigger = GetTriggerBody(inBody1.GetID(), inBody2.GetID());
     if (!trigger)
@@ -208,12 +212,12 @@ void PhysicsSystem_ECS::OnContactAdded(const JPH::Body& inBody1, const JPH::Body
     event.NumEntitiesInTrigger = bodies_in_sensor.size();
 }
 
-void PhysicsSystem_ECS::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+void PhysicsSystem::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
 {
     //LOG("A contact was persisted\n");
 }
 
-void PhysicsSystem_ECS::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
+void PhysicsSystem::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
 {
     Trigger* trigger = GetTriggerBody(inSubShapePair.GetBody1ID(), inSubShapePair.GetBody2ID());
     if (!trigger)
@@ -258,17 +262,17 @@ void PhysicsSystem_ECS::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePa
     HK_ASSERT_(false, "Body pair not found");
 }
 
-void PhysicsSystem_ECS::OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData)
+void PhysicsSystem::OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData)
 {
     //LOG("A body got activated\n");
 }
 
-void PhysicsSystem_ECS::OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData)
+void PhysicsSystem::OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData)
 {
     //LOG("A body went to sleep\n");
 }
 
-void PhysicsSystem_ECS::AddAndRemoveBodies(GameFrame const& frame)
+void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
 {
     auto& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -305,8 +309,7 @@ void PhysicsSystem_ECS::AddAndRemoveBodies(GameFrame const& frame)
             {
                 auto scaledModel = physBody->m_Model->Instatiate(scale);
 
-                bool bUpdateMassProperties = true; // FIXME
-
+                bool bUpdateMassProperties = false;
                 body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
             }
 
@@ -351,7 +354,7 @@ void PhysicsSystem_ECS::AddAndRemoveBodies(GameFrame const& frame)
     }
 }
 
-void PhysicsSystem_ECS::UpdateScaling(GameFrame const& frame)
+void PhysicsSystem::UpdateScaling(GameFrame const& frame)
 {
     int frameNum = frame.StateIndex;
 
@@ -375,7 +378,7 @@ void PhysicsSystem_ECS::UpdateScaling(GameFrame const& frame)
             {
                 cache[i].CachedScale = scale;
 
-                const bool bUpdateMassProperties = true;
+                const bool bUpdateMassProperties = false;
                 body_interface.SetShape(bodies[i].m_BodyId,
                                         bodies[i].m_Model->Instatiate(scale),
                                         bUpdateMassProperties,
@@ -385,7 +388,7 @@ void PhysicsSystem_ECS::UpdateScaling(GameFrame const& frame)
     }
 }
 
-void PhysicsSystem_ECS::UpdateKinematicBodies(GameFrame const& frame)
+void PhysicsSystem::UpdateKinematicBodies(GameFrame const& frame)
 {
     int frameNum = frame.StateIndex;
 
@@ -412,7 +415,7 @@ void PhysicsSystem_ECS::UpdateKinematicBodies(GameFrame const& frame)
     }
 }
 
-void PhysicsSystem_ECS::UpdateWaterBodies(GameFrame const& frame)
+void PhysicsSystem::UpdateWaterBodies(GameFrame const& frame)
 {
     JPH::BroadPhaseQuery const& broadPhaseQuery = m_PhysicsInterface.GetImpl().GetBroadPhaseQuery();
 
@@ -471,7 +474,7 @@ void PhysicsSystem_ECS::UpdateWaterBodies(GameFrame const& frame)
     }
 }
 
-void PhysicsSystem_ECS::StoreDynamicBodiesSnapshot()
+void PhysicsSystem::StoreDynamicBodiesSnapshot()
 {
     // Copy dynamic bodies snapshot to TransformComponent
     {
@@ -501,7 +504,7 @@ void PhysicsSystem_ECS::StoreDynamicBodiesSnapshot()
     }
 }
 
-void PhysicsSystem_ECS::Update(GameFrame const& frame)
+void PhysicsSystem::Update(GameFrame const& frame)
 {
     // If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
     const int collisionSteps = 1;
@@ -534,7 +537,7 @@ void PhysicsSystem_ECS::Update(GameFrame const& frame)
     StoreDynamicBodiesSnapshot();
 }
 
-void PhysicsSystem_ECS::DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale)
+void PhysicsSystem::DrawCollisionGeometry(DebugRenderer& renderer, CollisionModel* collisionModel, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale)
 {
     m_DebugDrawVertices.Clear();
     m_DebugDrawIndices.Clear();
@@ -542,7 +545,7 @@ void PhysicsSystem_ECS::DrawCollisionGeometry(DebugRenderer& renderer, Collision
     renderer.DrawTriangleSoup(m_DebugDrawVertices, m_DebugDrawIndices);
 }
 
-void PhysicsSystem_ECS::DrawDebug(DebugRenderer& renderer)
+void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawCollisionModel)
     {

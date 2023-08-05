@@ -810,10 +810,10 @@ auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBody
     {
         return body->GetBodyId();
     }
-    if (auto character = entityView.GetComponent<CharacterControllerComponent>())
-    {
-        return character->GetBodyId();
-    }
+    //if (auto character = entityView.GetComponent<CharacterControllerComponent>())
+    //{
+    //    return character->GetBodyId();
+    //}
     return {};
 }
 
@@ -825,7 +825,7 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
         case MB_STATIC:
             motionType = JPH::EMotionType::Static;
             break;
-        case MB_SIMULATED:
+        case MB_DYNAMIC:
             motionType = JPH::EMotionType::Dynamic;
             break;
         case MB_KINEMATIC:
@@ -833,18 +833,19 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
             break;
     }
 
-    JPH::uint8 broadphase = motionType == JPH::EMotionType::Static ? BroadphaseLayer::NON_MOVING : BroadphaseLayer::MOVING;
-
-    if (desc.bIsTrigger)
+    if (desc.bIsTrigger && motionType == JPH::EMotionType::Dynamic)
     {
-        broadphase = BroadphaseLayer::SENSOR;
-
-        if (motionType == JPH::EMotionType::Dynamic)
-        {
-            LOG("WARNING: Triggers can only have STATIC or KINEMATIC motion behavior but set to DYNAMIC.\n");
-            motionType = JPH::EMotionType::Static;
-        }
+        LOG("WARNING: Triggers can only have STATIC or KINEMATIC motion behavior but set to DYNAMIC.\n");
+        motionType = JPH::EMotionType::Static;
     }
+
+    JPH::uint8 broadphase;
+    if (desc.bIsTrigger)
+        broadphase = BroadphaseLayer::SENSOR;
+    else if (motionType == JPH::EMotionType::Static)
+        broadphase = BroadphaseLayer::NON_MOVING;
+    else
+        broadphase = BroadphaseLayer::MOVING;    
 
     SceneNodeDesc nodeDesc;
 
@@ -862,37 +863,31 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
 
     JPH::BodyCreationSettings settings(collisionModel->Instatiate(Float3(1)), JPH::Vec3::sZero(), JPH::Quat::sIdentity(), motionType, MakeObjectLayer(desc.CollisionGroup, broadphase));
 
-    settings.mLinearVelocity = ConvertVector(desc.LinearVelocity);
-    settings.mAngularVelocity = ConvertVector(desc.AngularVelocity);
+    settings.mLinearVelocity = ConvertVector(desc.Dynamic.LinearVelocity);
+    settings.mAngularVelocity = ConvertVector(desc.Dynamic.AngularVelocity);
     settings.mUserData = entityHandle;
     settings.mIsSensor = desc.bIsTrigger;
     settings.mMotionQuality = desc.MotionQuality == MQ_DISCRETE ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast;
     settings.mAllowSleeping = desc.bAllowSleeping;
     settings.mFriction = desc.Friction;
     settings.mRestitution = desc.Restitution;
-    settings.mLinearDamping = desc.LinearDamping;
-    settings.mAngularDamping = desc.AngularDamping;
-    settings.mMaxLinearVelocity = desc.MaxLinearVelocity;
-    settings.mMaxAngularVelocity = desc.MaxAngularVelocity;
-    settings.mGravityFactor = desc.GravityFactor;
+    settings.mLinearDamping = desc.Dynamic.LinearDamping;
+    settings.mAngularDamping = desc.Dynamic.AngularDamping;
+    settings.mMaxLinearVelocity = desc.Dynamic.MaxLinearVelocity;
+    settings.mMaxAngularVelocity = desc.Dynamic.MaxAngularVelocity;
+    settings.mGravityFactor = desc.Dynamic.GravityFactor;
 
-    switch (desc.OverrideMassProperties)
+    if (desc.Dynamic.bCalculateInertia)
     {
-        case OVERRIDE_MASS_PROPERTIES_CALCULATE_MASS_AND_INERTIA:
-            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
-            break;
-        case OVERRIDE_MASS_PROPERTIES_CALCULATE_INERTIA:
-            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-            break;
-        case OVERRIDE_MASS_PROPERTIES_MASS_AND_INERTIA_PROVIDED:
-        default:
-            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
-            break;
+        settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+        settings.mInertiaMultiplier = desc.Dynamic.InertiaMultiplier;
     }
-
-    settings.mInertiaMultiplier = desc.InertiaMultiplier;
-    settings.mMassPropertiesOverride.mMass = desc.MassPropertiesOverride.Mass;
-    settings.mMassPropertiesOverride.mInertia = ConvertMatrix(desc.MassPropertiesOverride.Inertia);
+    else
+    {
+        settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+        settings.mMassPropertiesOverride.mInertia = ConvertMatrix(desc.Dynamic.Inertia);
+    }
+    settings.mMassPropertiesOverride.mMass = desc.Dynamic.Mass;
 
     JPH::Body* body = m_PhysicsSystem.GetBodyInterface().CreateBody(settings);
     if (body)
@@ -1103,7 +1098,7 @@ auto PhysicsInterface::GetMotionBehavior(PhysBodyID const& inBodyID) const -> MO
             return MB_KINEMATIC;
         case JPH::EMotionType::Dynamic:
         default:
-            return MB_SIMULATED;
+            return MB_DYNAMIC;
     }
 }
 void PhysicsInterface::SetMotionQuality(PhysBodyID const& inBodyID, MOTION_QUALITY inMotionQuality)
@@ -1141,20 +1136,6 @@ void PhysicsInterface::SetGravityFactor(PhysBodyID const& inBodyID, float inGrav
 auto PhysicsInterface::GetGravityFactor(PhysBodyID const& inBodyID) const -> float
 {
     return m_PhysicsSystem.GetBodyInterface().GetGravityFactor(inBodyID);
-}
-
-void PhysicsInterface::SetLinearVelocity(ECS::EntityHandle entityHandle, Float3 const& velocity)
-{
-    ECS::EntityView entityView = m_World->GetEntityView(entityHandle);
-
-    if (auto body = entityView.GetComponent<PhysBodyComponent>())
-    {
-        m_PhysicsSystem.GetBodyInterface().SetLinearVelocity(body->GetBodyId(), ConvertVector(velocity));
-    }
-    else if (auto character = entityView.GetComponent<CharacterControllerComponent>())
-    {
-        character->m_pCharacter->SetLinearVelocity(ConvertVector(velocity));
-    }
 }
 
 HK_NAMESPACE_END

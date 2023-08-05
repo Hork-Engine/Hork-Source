@@ -2,10 +2,6 @@
 
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/Body/BodyID.h>
-#include <Jolt/Physics/Body/MotionType.h>
-
 #include "../CollisionModel.h"
 #include "../PhysicsInterface.h"
 
@@ -27,20 +23,13 @@ struct PhysBodyComponent
 
     PhysBodyID m_BodyId;
     TRef<CollisionModel> m_Model;
-    //uint8_t m_CollisionGroup;
 };
 
-struct StaticBodyComponent
-{
-};
+struct StaticBodyComponent{};
 
-struct DynamicBodyComponent
-{
-};
+struct DynamicBodyComponent{};
 
-struct KinematicBodyComponent
-{
-};
+struct KinematicBodyComponent{};
 
 struct RigidBodyDynamicScaling
 {
