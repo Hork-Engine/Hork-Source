@@ -37,13 +37,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class Actor;
-class World;
 class Level;
-class Texture;
 class SceneComponent;
 class ConvexHull;
-class IndexedMesh;
 class DebugRenderer;
 struct VisArea;
 struct PrimitiveDef;
@@ -111,12 +107,6 @@ enum VISIBILITY_GROUP : uint32_t
 };
 
 HK_FLAG_ENUM_OPERATORS(VISIBILITY_GROUP)
-
-enum LEVEL_VISIBILITY_METHOD
-{
-    LEVEL_VISIBILITY_PVS,
-    LEVEL_VISIBILITY_PORTAL
-};
 
 enum SURFACE_FLAGS : uint8_t
 {
@@ -494,12 +484,6 @@ struct BinarySpaceNode : NodeBase
 
 struct BinarySpaceLeaf : NodeBase
 {
-    /** Leaf PVS cluster */
-    int PVSCluster;
-
-    /** Leaf PVS */
-    byte const* Visdata;
-
     /** Baked audio */
     int AudioArea;
 
@@ -553,12 +537,6 @@ struct BinarySpaceNodeDef : NodeBaseDef
 
 struct BinarySpaceLeafDef : NodeBaseDef
 {
-    /** Leaf PVS cluster */
-    int PVSCluster;
-
-    /** Leaf PVS */
-    size_t VisdataOffset;
-
     /** Baked audio */
     int AudioArea;
 
@@ -570,14 +548,6 @@ struct VisibilityAreaDef
 {
     /** Area bounding box */
     BvAxisAlignedBox Bounds;
-};
-
-struct VisibilitySystemPVS
-{
-    byte const* Visdata;
-    size_t VisdataSize;
-    int ClustersCount;
-    bool bCompressedVisData;
 };
 
 class VisibilityLevel;
@@ -599,8 +569,6 @@ struct VisibilitySystemCreateInfo
 
     BinarySpaceLeafDef const* Leafs{};
     int NumLeafs{};
-
-    VisibilitySystemPVS const* PVS{};
 
     VisibilityLevel* PersistentLevel{};
 };
@@ -719,9 +687,6 @@ public:
     /** Find level area */
     VisArea* FindArea(Float3 const& _Position);
 
-    /** Mark potentially visible leafs. Uses PVS */
-    int MarkLeafs(int _ViewLeaf);
-
     /** BSP leafs */
     ArrayOfLeafs const& GetLeafs() const { return m_Leafs; }
 
@@ -749,10 +714,6 @@ public:
 private:
     void CreatePortals(PortalDef const* Portals, int PortalsCount, Float3 const* HullVertices);
 
-    byte const* LeafPVS(BinarySpaceLeaf const* _Leaf);
-
-    byte const* DecompressVisdata(byte const* _Data);
-
     void QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas);
     void QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TVector<VisArea*>& Areas);
 
@@ -762,10 +723,6 @@ private:
     void AddPrimitiveToArea(VisArea* Area, PrimitiveDef* Primitive);
 
     void ProcessLevelVisibility(struct VisibilityQueryContext& QueryContext, struct VisibilityQueryResult& QueryResult);
-
-    void LevelTraverse_r(int NodeIndex, int CullBits);
-
-    bool CullNode(PlaneF const Frustum[PortalStack::MAX_CULL_PLANES], BvAxisAlignedBox const& Bounds, int& CullBits);
 
     void FlowThroughPortals_r(VisArea const* Area);
 
@@ -814,10 +771,6 @@ private:
     void RaycastPrimitive(PrimitiveDef* Self);
     void RaycastArea(VisArea* Area);
     void RaycastPrimitiveBounds(VisArea* Area);
-    void LevelRaycast_r(int NodeIndex);
-    bool LevelRaycast2_r(int NodeIndex, Float3 const& RayStart, Float3 const& RayEnd);
-    void LevelRaycastBounds_r(int NodeIndex);
-    bool LevelRaycastBounds2_r(int NodeIndex, Float3 const& RayStart, Float3 const& RayEnd);
     void LevelRaycastPortals_r(VisArea* Area);
     void LevelRaycastBoundsPortals_r(VisArea* Area);
 
@@ -849,32 +802,8 @@ private:
     /** BSP leafs */
     ArrayOfLeafs m_Leafs;
 
-    /** PVS data */
-    byte* m_Visdata = nullptr;
-
-    byte* m_DecompressedVisData = nullptr;
-
-    /** Is PVS data compressed or not (ZRLE) */
-    bool m_bCompressedVisData = false;
-
-    /** Count of a clusters in PVS data */
-    int m_PVSClustersCount = 0;
-
-    /** Visibility method */
-    LEVEL_VISIBILITY_METHOD m_VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
-
-    /** Node visitor mark */
-    int m_ViewMark = 0;
-
-    /** Cluster index for view origin */
-    int m_ViewCluster = -1;
-
     // Visibility query temp vars:
     static int m_VisQueryMarker;
-    int m_CachedSignBits[PortalStack::MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
-    PlaneF* m_ViewFrustum;
-    int m_ViewFrustumPlanes;
-    int m_NodeViewMark;
     VisibilityQueryContext* m_pQueryContext;
     VisibilityQueryResult* m_pQueryResult;
 

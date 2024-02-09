@@ -135,55 +135,18 @@ VisibilityLevel::VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo)
         dst.Parent = src.Parent != -1 ? (m_Nodes.ToPtr() + src.Parent) : nullptr;
         dst.ViewMark = 0;
         dst.Bounds = src.Bounds;
-        dst.PVSCluster = src.PVSCluster;
-        dst.Visdata = nullptr;
         dst.AudioArea = src.AudioArea;
         dst.Area = m_Areas.ToPtr() + src.AreaNum;
     }
 
     if (CreateInfo.PortalsCount > 0)
     {
-        m_VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
-
         CreatePortals(CreateInfo.Portals, CreateInfo.PortalsCount, CreateInfo.HullVertices);
-    }
-    else if (CreateInfo.PVS)
-    {
-        m_VisibilityMethod = LEVEL_VISIBILITY_PVS;
-
-        m_Visdata = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(CreateInfo.PVS->VisdataSize);
-        Core::Memcpy(m_Visdata, CreateInfo.PVS->Visdata, CreateInfo.PVS->VisdataSize);
-
-        m_bCompressedVisData = CreateInfo.PVS->bCompressedVisData;
-        m_PVSClustersCount = CreateInfo.PVS->ClustersCount;
-
-        for (int i = 0; i < CreateInfo.NumLeafs; i++)
-        {
-            BinarySpaceLeaf& dst = m_Leafs[i];
-            BinarySpaceLeafDef const& src = CreateInfo.Leafs[i];
-
-            if (src.VisdataOffset < CreateInfo.PVS->VisdataSize)
-            {
-                dst.Visdata = m_Visdata + src.VisdataOffset;
-            }
-            else
-            {
-                dst.Visdata = nullptr;
-            }
-        }
-    }
-
-    if (m_bCompressedVisData && m_Visdata && m_PVSClustersCount > 0)
-    {
-        // Allocate decompressed vis data
-        m_DecompressedVisData = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc((m_PVSClustersCount + 7) >> 3);
     }
 }
 
 VisibilityLevel::~VisibilityLevel()
 {
-    Core::GetHeapAllocator<HEAP_MISC>().Free(m_Visdata);
-    Core::GetHeapAllocator<HEAP_MISC>().Free(m_DecompressedVisData);
 }
 
 void VisibilityLevel::CreatePortals(PortalDef const* InPortals, int InPortalsCount, Float3 const* InHullVertices)
@@ -319,124 +282,6 @@ VisArea* VisibilityLevel::FindArea(Float3 const& InPosition)
     }
 
     return m_pOutdoorArea;
-}
-
-byte const* VisibilityLevel::DecompressVisdata(byte const* InCompressedData)
-{
-    int count;
-
-    int row = (m_PVSClustersCount + 7) >> 3;
-    byte* pDecompressed = m_DecompressedVisData;
-
-    do {
-        // Copy raw data
-        if (*InCompressedData)
-        {
-            *pDecompressed++ = *InCompressedData++;
-            continue;
-        }
-
-        // Zeros count
-        count = InCompressedData[1];
-
-        // Clamp zeros count if invalid. This can be moved to preprocess stage.
-        if (pDecompressed - m_DecompressedVisData + count > row)
-        {
-            count = row - (pDecompressed - m_DecompressedVisData);
-        }
-
-        // Move to the next sequence
-        InCompressedData += 2;
-
-        while (count--)
-        {
-            *pDecompressed++ = 0;
-        }
-    } while (pDecompressed - m_DecompressedVisData < row);
-
-    return m_DecompressedVisData;
-}
-
-byte const* VisibilityLevel::LeafPVS(BinarySpaceLeaf const* InLeaf)
-{
-    if (m_bCompressedVisData)
-    {
-        return InLeaf->Visdata ? DecompressVisdata(InLeaf->Visdata) : nullptr;
-    }
-    else
-    {
-        return InLeaf->Visdata;
-    }
-}
-
-int VisibilityLevel::MarkLeafs(int InViewLeaf)
-{
-    if (m_VisibilityMethod != LEVEL_VISIBILITY_PVS)
-    {
-        LOG("Level::MarkLeafs: expect LEVEL_VISIBILITY_PVS\n");
-        return m_ViewMark;
-    }
-
-    if (InViewLeaf < 0)
-    {
-        return m_ViewMark;
-    }
-
-    BinarySpaceLeaf* pLeaf = &m_Leafs[InViewLeaf];
-
-    if (m_ViewCluster == pLeaf->PVSCluster)
-    {
-        return m_ViewMark;
-    }
-
-    m_ViewMark++;
-    m_ViewCluster = pLeaf->PVSCluster;
-
-    byte const* pVisibility = LeafPVS(pLeaf);
-    if (pVisibility)
-    {
-        int cluster;
-        for (BinarySpaceLeaf& leaf : m_Leafs)
-        {
-
-            cluster = leaf.PVSCluster;
-
-            if (cluster < 0 || cluster >= m_PVSClustersCount || !(pVisibility[cluster >> 3] & (1 << (cluster & 7))))
-            {
-                continue;
-            }
-
-            // TODO: check doors here
-
-            NodeBase* parent = &leaf;
-            do {
-                if (parent->ViewMark == m_ViewMark)
-                {
-                    break;
-                }
-                parent->ViewMark = m_ViewMark;
-                parent = parent->Parent;
-            } while (parent);
-        }
-    }
-    else
-    {
-        // Mark all
-        for (BinarySpaceLeaf& leaf : m_Leafs)
-        {
-            NodeBase* parent = &leaf;
-            do {
-                if (parent->ViewMark == m_ViewMark)
-                {
-                    break;
-                }
-                parent->ViewMark = m_ViewMark;
-                parent = parent->Parent;
-            } while (parent);
-        }
-    }
-
-    return m_ViewMark;
 }
 
 void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TVector<VisArea*>& OverlappedAreas)
@@ -849,172 +694,8 @@ void VisibilityLevel::ProcessLevelVisibility(VisibilityQueryContext& QueryContex
     m_pQueryContext = &QueryContext;
     m_pQueryResult = &QueryResult;
 
-    m_ViewFrustum = QueryContext.PStack[0].AreaFrustum;
-    m_ViewFrustumPlanes = QueryContext.PStack[0].PlanesCount; // Can be 4 or 5
-
-    int cullBits = 0;
-
-    for (int i = 0; i < m_ViewFrustumPlanes; i++)
-    {
-        m_CachedSignBits[i] = m_ViewFrustum[i].SignBits();
-
-        cullBits |= 1 << i;
-    }
-
-    if (m_VisibilityMethod == LEVEL_VISIBILITY_PVS)
-    {
-        // Level has PVS
-
-        int leaf = FindLeaf(QueryContext.ViewPosition);
-
-        m_NodeViewMark = MarkLeafs(leaf);
-
-        //DEBUG( "m_NodeViewMark {}\n", m_NodeViewMark );
-
-        //HK_ASSERT( m_NodeViewMark != 0 );
-
-        LevelTraverse_r(0, cullBits);
-    }
-    else if (m_VisibilityMethod == LEVEL_VISIBILITY_PORTAL)
-    {
-        VisArea* area = FindArea(QueryContext.ViewPosition);
-
-        FlowThroughPortals_r(area);
-    }
-}
-
-static constexpr int CullIndices[8][6] = {
-    {0, 4, 5, 3, 1, 2},
-    {3, 4, 5, 0, 1, 2},
-    {0, 1, 5, 3, 4, 2},
-    {3, 1, 5, 0, 4, 2},
-    {0, 4, 2, 3, 1, 5},
-    {3, 4, 2, 0, 1, 5},
-    {0, 1, 2, 3, 4, 5},
-    {3, 1, 2, 0, 4, 5}};
-
-bool VisibilityLevel::CullNode(PlaneF const InFrustum[PortalStack::MAX_CULL_PLANES], BvAxisAlignedBox const& Bounds, int& InCullBits)
-{
-    Float3 p;
-
-    float const* pBounds = Bounds.ToPtr();
-    int const* pIndices;
-    if (InCullBits & 1)
-    {
-        pIndices = CullIndices[m_CachedSignBits[0]];
-
-        p[0] = pBounds[pIndices[0]];
-        p[1] = pBounds[pIndices[1]];
-        p[2] = pBounds[pIndices[2]];
-
-        if (Math::Dot(p, InFrustum[0].Normal) <= -InFrustum[0].D)
-        {
-            return true;
-        }
-
-        p[0] = pBounds[pIndices[3]];
-        p[1] = pBounds[pIndices[4]];
-        p[2] = pBounds[pIndices[5]];
-
-        if (Math::Dot(p, InFrustum[0].Normal) >= -InFrustum[0].D)
-        {
-            InCullBits &= ~1;
-        }
-    }
-
-    if (InCullBits & 2)
-    {
-        pIndices = CullIndices[m_CachedSignBits[1]];
-
-        p[0] = pBounds[pIndices[0]];
-        p[1] = pBounds[pIndices[1]];
-        p[2] = pBounds[pIndices[2]];
-
-        if (Math::Dot(p, InFrustum[1].Normal) <= -InFrustum[1].D)
-        {
-            return true;
-        }
-
-        p[0] = pBounds[pIndices[3]];
-        p[1] = pBounds[pIndices[4]];
-        p[2] = pBounds[pIndices[5]];
-
-        if (Math::Dot(p, InFrustum[1].Normal) >= -InFrustum[1].D)
-        {
-            InCullBits &= ~2;
-        }
-    }
-
-    if (InCullBits & 4)
-    {
-        pIndices = CullIndices[m_CachedSignBits[2]];
-
-        p[0] = pBounds[pIndices[0]];
-        p[1] = pBounds[pIndices[1]];
-        p[2] = pBounds[pIndices[2]];
-
-        if (Math::Dot(p, InFrustum[2].Normal) <= -InFrustum[2].D)
-        {
-            return true;
-        }
-
-        p[0] = pBounds[pIndices[3]];
-        p[1] = pBounds[pIndices[4]];
-        p[2] = pBounds[pIndices[5]];
-
-        if (Math::Dot(p, InFrustum[2].Normal) >= -InFrustum[2].D)
-        {
-            InCullBits &= ~4;
-        }
-    }
-
-    if (InCullBits & 8)
-    {
-        pIndices = CullIndices[m_CachedSignBits[3]];
-
-        p[0] = pBounds[pIndices[0]];
-        p[1] = pBounds[pIndices[1]];
-        p[2] = pBounds[pIndices[2]];
-
-        if (Math::Dot(p, InFrustum[3].Normal) <= -InFrustum[3].D)
-        {
-            return true;
-        }
-
-        p[0] = pBounds[pIndices[3]];
-        p[1] = pBounds[pIndices[4]];
-        p[2] = pBounds[pIndices[5]];
-
-        if (Math::Dot(p, InFrustum[3].Normal) >= -InFrustum[3].D)
-        {
-            InCullBits &= ~8;
-        }
-    }
-
-    if (InCullBits & 16)
-    {
-        pIndices = CullIndices[m_CachedSignBits[4]];
-
-        p[0] = pBounds[pIndices[0]];
-        p[1] = pBounds[pIndices[1]];
-        p[2] = pBounds[pIndices[2]];
-
-        if (Math::Dot(p, InFrustum[4].Normal) <= -InFrustum[4].D)
-        {
-            return true;
-        }
-
-        p[0] = pBounds[pIndices[3]];
-        p[1] = pBounds[pIndices[4]];
-        p[2] = pBounds[pIndices[5]];
-
-        if (Math::Dot(p, InFrustum[4].Normal) >= -InFrustum[4].D)
-        {
-            InCullBits &= ~16;
-        }
-    }
-
-    return false;
+    VisArea* area = FindArea(QueryContext.ViewPosition);
+    FlowThroughPortals_r(area);
 }
 
 HK_INLINE bool VSD_CullBoxSingle(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const& Bounds)
@@ -1023,7 +704,6 @@ HK_INLINE bool VSD_CullBoxSingle(PlaneF const* InCullPlanes, const int InCullPla
 
     for (int i = 0; i < InCullPlanesCount; i++)
     {
-
         PlaneF const* p = &InCullPlanes[i];
 
         inside &= (Math::Max(Bounds.Mins.X * p->Normal.X, Bounds.Maxs.X * p->Normal.X) + Math::Max(Bounds.Mins.Y * p->Normal.Y, Bounds.Maxs.Y * p->Normal.Y) + Math::Max(Bounds.Mins.Z * p->Normal.Z, Bounds.Maxs.Z * p->Normal.Z) + p->D) > 0.0f;
@@ -1050,58 +730,11 @@ HK_INLINE bool VSD_CullSphereSingle(PlaneF const* InCullPlanes, const int InCull
     bool inside = true;
     for (int i = 0; i < InCullPlanesCount; i++)
     {
-
         PlaneF const* p = &InCullPlanes[i];
 
         inside &= (Math::Dot(p->Normal, Bounds.Center) + p->D > -Bounds.Radius);
     }
     return !inside;
-}
-
-void VisibilityLevel::LevelTraverse_r(int NodeIndex, int InCullBits)
-{
-    NodeBase const* node;
-
-    while (1)
-    {
-        if (NodeIndex < 0)
-        {
-            node = &m_Leafs[-1 - NodeIndex];
-        }
-        else
-        {
-            node = m_Nodes.ToPtr() + NodeIndex;
-        }
-
-        if (node->ViewMark != m_NodeViewMark)
-            return;
-
-        if (CullNode(m_ViewFrustum, node->Bounds, InCullBits))
-        {
-            //TotalCulled++;
-            return;
-        }
-
-#if 0
-        if ( VSD_CullBoxSingle( m_ViewFrustum, m_ViewFrustumPlanes, node->Bounds ) ) {
-            Dbg_CullMiss++;
-        }
-#endif
-
-        if (NodeIndex < 0)
-        {
-            // leaf
-            break;
-        }
-
-        LevelTraverse_r(static_cast<BinarySpaceNode const*>(node)->ChildrenIdx[0], InCullBits);
-
-        NodeIndex = static_cast<BinarySpaceNode const*>(node)->ChildrenIdx[1];
-    }
-
-    BinarySpaceLeaf const* pleaf = static_cast<BinarySpaceLeaf const*>(node);
-
-    CullPrimitives(pleaf->Area, m_ViewFrustum, m_ViewFrustumPlanes);
 }
 
 void VisibilityLevel::FlowThroughPortals_r(VisArea const* InArea)
@@ -1125,7 +758,6 @@ void VisibilityLevel::FlowThroughPortals_r(VisArea const* InArea)
 
     for (PortalLink const* portal = InArea->PortalList; portal; portal = portal->Next)
     {
-
         //if ( portal->Portal->VisFrame == m_VisQueryMarker ) {
         //    #ifdef DEBUG_TRAVERSING_COUNTERS
         //    Dbg_SkippedByVisFrame++;
@@ -1177,7 +809,6 @@ bool VisibilityLevel::CalcPortalStack(PortalStack* OutStack, PortalStack const* 
     }
     else
     {
-
         //for ( int i = 0 ; i < PortalStackPos ; i++ ) {
         //    if ( PortalStack[ i ].Portal == InPortal ) {
         //        LOG( "Recursive!\n" );
@@ -1508,7 +1139,6 @@ void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCull
 #ifdef DEBUG_TRAVERSING_COUNTERS
                 Dbg_CulledByDotProduct++;
 #endif
-
                 continue;
             }
         }
@@ -1783,46 +1413,6 @@ void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_
     //DEBUG( "Frustum culling time {} microsec. Culled {} from {} primitives. Submits {}\n", Dbg_FrustumCullingTime, Dbg_CulledByPrimitiveBounds, Dbg_TotalPrimitiveBounds, CullSubmits.Size() );
 }
 
-HK_INLINE bool RayIntersectTriangleFast(Float3 const& _RayStart, Float3 const& _RayDir, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, float& _U, float& _V)
-{
-    const Float3 e1 = _P1 - _P0;
-    const Float3 e2 = _P2 - _P0;
-    const Float3 h = Math::Cross(_RayDir, e2);
-
-    // calc determinant
-    const float det = Math::Dot(e1, h);
-
-    if (det > -0.00001 && det < 0.00001)
-    {
-        return false;
-    }
-
-    // calc inverse determinant to minimalize math divisions in next calculations
-    const float invDet = 1 / det;
-
-    // calc vector from ray origin to P0
-    const Float3 s = _RayStart - _P0;
-
-    // calc U
-    _U = invDet * Math::Dot(s, h);
-    if (_U < 0.0f || _U > 1.0f)
-    {
-        return false;
-    }
-
-    // calc perpendicular to compute V
-    const Float3 q = Math::Cross(s, e1);
-
-    // calc V
-    _V = invDet * Math::Dot(_RayDir, q);
-    if (_V < 0.0f || _U + _V > 1.0f)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 void VisibilityLevel::RaycastPrimitive(PrimitiveDef* Self)
 {
     // FIXME: What about two sided primitives? Use TwoSided flag directly from material or from primitive?
@@ -2085,305 +1675,12 @@ void VisibilityLevel::RaycastPrimitiveBounds(VisArea* InArea)
     }
 }
 
-#if 0
-void VisibilitySystem::LevelRaycast_r( int NodeIndex ) {
-    NodeBase const * node;
-    float boxMin, boxMax;
-
-    while ( 1 ) {
-        if ( NodeIndex < 0 ) {
-            node = &m_Leafs[-1 - NodeIndex];
-        } else {
-            node = m_Nodes.ToPtr() + NodeIndex;
-        }
-
-        if ( node->ViewMark != m_NodeViewMark )
-            return;
-
-        if ( !BvRayIntersectBox( m_pRaycast->RayStart, m_pRaycast->InvRayDir, node->Bounds, boxMin, boxMax ) ) {
-            return;
-        }
-
-        if ( boxMin >= m_pRaycast->HitDistanceMin ) {
-            // Ray intersects the box, but box is too far
-            return;
-        }
-
-        if ( NodeIndex < 0 ) {
-            // leaf
-            break;
-        }
-
-        BinarySpaceNode const * n = static_cast< BinarySpaceNode const * >( node );
-
-        LevelRaycast_r( n->ChildrenIdx[0] );
-
-#    ifdef CLOSE_ENOUGH_EARLY_OUT
-        // hit is close enough to stop ray casting?
-        if ( m_pRaycast->HitDistanceMin < 0.0001f ) {
-            return;
-        }
-#    endif
-
-        NodeIndex = n->ChildrenIdx[1];
-    }
-
-    BinarySpaceLeaf const * pleaf = static_cast< BinarySpaceLeaf const * >( node );
-
-    RaycastArea( pleaf->Area );
-}
-#else
-bool VisibilityLevel::LevelRaycast2_r(int NodeIndex, Float3 const& InRayStart, Float3 const& InRayEnd)
-{
-    if (NodeIndex < 0)
-    {
-
-        BinarySpaceLeaf const* leaf = &m_Leafs[-1 - NodeIndex];
-
-#    if 0
-        // FIXME: Add this additional checks?
-        float boxMin, boxMax;
-        if ( !BvRayIntersectBox( m_pRaycast->RayStart, m_pRaycast->InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
-            return false;
-        }
-        if ( boxMin >= m_pRaycast->HitDistanceMin ) {
-            // Ray intersects the box, but box is too far
-            return false;
-        }
-#    endif
-
-        RaycastArea(leaf->Area);
-
-#    if 0
-        if ( m_pRaycast->RayLength > m_pRaycast->HitDistanceMin ) {
-        //if ( d >= m_pRaycast->HitDistanceMin ) {
-            // stop raycasting
-            return true;
-        }
-#    endif
-
-        // continue raycasting
-        return false;
-    }
-
-    BinarySpaceNode const* node = m_Nodes.ToPtr() + NodeIndex;
-
-    float d1, d2;
-
-    if (node->Plane->Type < 3)
-    {
-        // Calc front distance
-        d1 = InRayStart[node->Plane->Type] + node->Plane->D;
-
-        // Calc back distance
-        d2 = InRayEnd[node->Plane->Type] + node->Plane->D;
-    }
-    else
-    {
-        // Calc front distance
-        d1 = node->Plane->DistanceToPoint(InRayStart);
-
-        // Calc back distance
-        d2 = node->Plane->DistanceToPoint(InRayEnd);
-    }
-
-    int side = d1 < 0;
-
-    int front = node->ChildrenIdx[side];
-
-    if ((d2 < 0) == side) // raystart & rayend on the same side of plane
-    {
-        if (front == 0)
-        {
-            // Solid
-            return false;
-        }
-
-        return LevelRaycast2_r(front, InRayStart, InRayEnd);
-    }
-
-    // Calc intersection point
-    float hitFraction;
-#    if 0
-#        define DIST_EPSILON 0.03125f
-    if ( d1 < 0 ) {
-        hitFraction = ( d1 + DIST_EPSILON ) / ( d1 - d2 );
-    } else {
-        hitFraction = ( d1 - DIST_EPSILON ) / ( d1 - d2 );
-    }
-#    else
-    hitFraction = d1 / (d1 - d2);
-#    endif
-    hitFraction = Math::Clamp(hitFraction, 0.0f, 1.0f);
-
-    Float3 mid = InRayStart + (InRayEnd - InRayStart) * hitFraction;
-
-    // Traverse front side first
-    if (front != 0 && LevelRaycast2_r(front, InRayStart, mid))
-    {
-        // Found closest ray intersection
-        return true;
-    }
-
-    // Traverse back side
-    int back = node->ChildrenIdx[side ^ 1];
-    return back != 0 && LevelRaycast2_r(back, mid, InRayEnd);
-}
-#endif
-
-#if 0
-void VisibilitySystem::LevelRaycastBounds_r( int NodeIndex ) {
-    NodeBase const * node;
-    float boxMin, boxMax;
-
-    while ( 1 ) {
-        if ( NodeIndex < 0 ) {
-            node = &m_Leafs[-1 - NodeIndex];
-        } else {
-            node = m_Nodes.ToPtr() + NodeIndex;
-        }
-
-        if ( node->ViewMark != m_NodeViewMark )
-            return;
-
-        if ( !BvRayIntersectBox( m_pRaycast->RayStart, m_pRaycast->InvRayDir, node->Bounds, boxMin, boxMax ) ) {
-            return;
-        }
-
-        if ( boxMin >= m_pRaycast->HitDistanceMin ) {
-            // Ray intersects the box, but box is too far
-            return;
-        }
-
-        if ( NodeIndex < 0 ) {
-            // leaf
-            break;
-        }
-
-        BinarySpaceNode const * n = static_cast< BinarySpaceNode const * >( node );
-
-        LevelRaycastBounds_r( n->ChildrenIdx[0] );
-
-#    ifdef CLOSE_ENOUGH_EARLY_OUT
-        // hit is close enough to stop ray casting?
-        if ( m_pRaycast->HitDistanceMin < 0.0001f ) {
-            return;
-        }
-#    endif
-
-        NodeIndex = n->ChildrenIdx[1];
-    }
-
-    BinarySpaceLeaf const * pleaf = static_cast< BinarySpaceLeaf const * >( node );
-
-    RaycastPrimitiveBounds( pleaf->Area );
-}
-#else
-bool VisibilityLevel::LevelRaycastBounds2_r(int NodeIndex, Float3 const& InRayStart, Float3 const& InRayEnd)
-{
-
-    if (NodeIndex < 0)
-    {
-
-        BinarySpaceLeaf const* leaf = &m_Leafs[-1 - NodeIndex];
-
-#    if 0
-        float boxMin, boxMax;
-        if ( !BvRayIntersectBox( InRayStart, m_pRaycast->InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
-            return false;
-        }
-
-        if ( boxMin >= m_pRaycast->HitDistanceMin ) {
-            // Ray intersects the box, but box is too far
-            return false;
-        }
-#    endif
-
-        RaycastPrimitiveBounds(leaf->Area);
-
-        if (m_pRaycast->RayLength > m_pRaycast->HitDistanceMin)
-        {
-            //if ( d >= m_pRaycast->HitDistanceMin ) {
-            // stop raycasting
-            return true;
-        }
-
-        // continue raycasting
-        return false;
-    }
-
-    BinarySpaceNode const* node = m_Nodes.ToPtr() + NodeIndex;
-
-    float d1, d2;
-
-    if (node->Plane->Type < 3)
-    {
-        // Calc front distance
-        d1 = InRayStart[node->Plane->Type] + node->Plane->D;
-
-        // Calc back distance
-        d2 = InRayEnd[node->Plane->Type] + node->Plane->D;
-    }
-    else
-    {
-        // Calc front distance
-        d1 = node->Plane->DistanceToPoint(InRayStart);
-
-        // Calc back distance
-        d2 = node->Plane->DistanceToPoint(InRayEnd);
-    }
-
-    int side = d1 < 0;
-
-    int front = node->ChildrenIdx[side];
-
-    if ((d2 < 0) == side) // raystart & rayend on the same side of plane
-    {
-        if (front == 0)
-        {
-            // Solid
-            return false;
-        }
-
-        return LevelRaycastBounds2_r(front, InRayStart, InRayEnd);
-    }
-
-    // Calc intersection point
-    float hitFraction;
-#    if 0
-#        define DIST_EPSILON 0.03125f
-    if ( d1 < 0 ) {
-        hitFraction = ( d1 + DIST_EPSILON ) / ( d1 - d2 );
-    } else {
-        hitFraction = ( d1 - DIST_EPSILON ) / ( d1 - d2 );
-    }
-#    else
-    hitFraction = d1 / (d1 - d2);
-#    endif
-    hitFraction = Math::Clamp(hitFraction, 0.0f, 1.0f);
-
-    Float3 mid = InRayStart + (InRayEnd - InRayStart) * hitFraction;
-
-    // Traverse front side first
-    if (front != 0 && LevelRaycastBounds2_r(front, InRayStart, mid))
-    {
-        // Found closest ray intersection
-        return true;
-    }
-
-    // Traverse back side
-    int back = node->ChildrenIdx[side ^ 1];
-    return back != 0 && LevelRaycastBounds2_r(back, mid, InRayEnd);
-}
-#endif
-
 void VisibilityLevel::LevelRaycastPortals_r(VisArea* InArea)
 {
     RaycastArea(InArea);
 
     for (PortalLink const* portal = InArea->PortalList; portal; portal = portal->Next)
     {
-
         if (portal->Portal->VisMark == m_VisQueryMarker)
         {
             // Already visited
@@ -2450,12 +1747,10 @@ void VisibilityLevel::LevelRaycastPortals_r(VisArea* InArea)
 
 void VisibilityLevel::LevelRaycastBoundsPortals_r(VisArea* InArea)
 {
-
     RaycastPrimitiveBounds(InArea);
 
     for (PortalLink const* portal = InArea->PortalList; portal; portal = portal->Next)
     {
-
         if (portal->Portal->VisMark == m_VisQueryMarker)
         {
             // Already visited
@@ -2528,26 +1823,8 @@ void VisibilityLevel::ProcessLevelRaycast(VisRaycast& Raycast, WorldRaycastResul
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if (m_VisibilityMethod == LEVEL_VISIBILITY_PVS)
-    {
-        // Level has precomputed visibility
-
-#if 0
-        int leaf = FindLeaf( m_pRaycast->RayStart );
-
-        m_NodeViewMark = MarkLeafs( leaf );
-
-        LevelRaycast_r( 0 );
-#else
-        LevelRaycast2_r(0, Raycast.RayStart, Raycast.RayEnd);
-#endif
-    }
-    else if (m_VisibilityMethod == LEVEL_VISIBILITY_PORTAL)
-    {
-        VisArea* area = FindArea(Raycast.RayStart);
-
-        LevelRaycastPortals_r(area);
-    }
+    VisArea* area = FindArea(Raycast.RayStart);
+    LevelRaycastPortals_r(area);
 }
 
 void VisibilityLevel::ProcessLevelRaycastClosest(VisRaycast& Raycast)
@@ -2557,26 +1834,8 @@ void VisibilityLevel::ProcessLevelRaycastClosest(VisRaycast& Raycast)
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if (m_VisibilityMethod == LEVEL_VISIBILITY_PVS)
-    {
-        // Level has precomputed visibility
-
-#if 0
-        int leaf = FindLeaf( m_pRaycast->RayStart );
-
-        m_NodeViewMark = MarkLeafs( leaf );
-
-        LevelRaycast_r( 0 );
-#else
-        LevelRaycast2_r(0, Raycast.RayStart, Raycast.RayEnd);
-#endif
-    }
-    else if (m_VisibilityMethod == LEVEL_VISIBILITY_PORTAL)
-    {
-        VisArea* area = FindArea(Raycast.RayStart);
-
-        LevelRaycastPortals_r(area);
-    }
+    VisArea* area = FindArea(Raycast.RayStart);
+    LevelRaycastPortals_r(area);
 }
 
 void VisibilityLevel::ProcessLevelRaycastBounds(VisRaycast& Raycast, TVector<BoxHitResult>& Result)
@@ -2586,26 +1845,8 @@ void VisibilityLevel::ProcessLevelRaycastBounds(VisRaycast& Raycast, TVector<Box
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if (m_VisibilityMethod == LEVEL_VISIBILITY_PVS)
-    {
-        // Level has precomputed visibility
-
-#if 0
-        int leaf = FindLeaf( Raycast.RayStart );
-
-        m_NodeViewMark = MarkLeafs( leaf );
-
-        LevelRaycastBounds_r( 0 );
-#else
-        LevelRaycastBounds2_r(0, Raycast.RayStart, Raycast.RayEnd);
-#endif
-    }
-    else if (m_VisibilityMethod == LEVEL_VISIBILITY_PORTAL)
-    {
-        VisArea* area = FindArea(Raycast.RayStart);
-
-        LevelRaycastBoundsPortals_r(area);
-    }
+    VisArea* area = FindArea(Raycast.RayStart);
+    LevelRaycastBoundsPortals_r(area);
 }
 
 void VisibilityLevel::ProcessLevelRaycastClosestBounds(VisRaycast& Raycast)
@@ -2615,26 +1856,8 @@ void VisibilityLevel::ProcessLevelRaycastClosestBounds(VisRaycast& Raycast)
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if (m_VisibilityMethod == LEVEL_VISIBILITY_PVS)
-    {
-        // Level has precomputed visibility
-
-#if 0
-        int leaf = FindLeaf( Raycast.RayStart );
-
-        m_NodeViewMark = MarkLeafs( leaf );
-
-        LevelRaycastBounds_r( 0 );
-#else
-        LevelRaycastBounds2_r(0, Raycast.RayStart, Raycast.RayEnd);
-#endif
-    }
-    else if (m_VisibilityMethod == LEVEL_VISIBILITY_PORTAL)
-    {
-        VisArea* area = FindArea(Raycast.RayStart);
-
-        LevelRaycastBoundsPortals_r(area);
-    }
+    VisArea* area = FindArea(Raycast.RayStart);
+    LevelRaycastBoundsPortals_r(area);
 }
 
 bool VisibilityLevel::RaycastTriangles(TVector<VisibilityLevel*> const& levels, WorldRaycastResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
