@@ -647,6 +647,12 @@ void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, Fi
         //if (!layers[layerNum].IsEnabled())
         //    continue;
 
+        if (mesh.SubmeshIndex >= meshResource->m_Subparts.Size())
+        {
+            LOG("Invalid mesh subpart index\n");
+            continue;
+        }
+
         auto& subpart = meshResource->m_Subparts[mesh.SubmeshIndex];
 
         MaterialInstance* materialInstance = mesh.Materials[layerNum];
@@ -872,6 +878,12 @@ void RenderSystem::AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameDa
     {
         //if (!layers[layerNum].IsEnabled())
         //    continue;
+
+        if (mesh.SubmeshIndex >= meshResource->m_Subparts.Size())
+        {
+            LOG("Invalid mesh subpart index\n");
+            continue;
+        }
 
         auto& subpart = meshResource->m_Subparts[mesh.SubmeshIndex];
 

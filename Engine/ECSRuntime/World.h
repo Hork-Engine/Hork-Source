@@ -16,16 +16,17 @@ public:
     ~World();
 
     bool bPaused = false;
+    bool bTick = true;
 
     PhysicsInterface& GetPhysicsInterface() { return m_PhysicsInterface; }
 
     template <typename T>
-    void RegisterGameplaySystem(GAMEPLAY_SYSTEM_EXECUTION execution)
+    T* RegisterGameplaySystem(GAMEPLAY_SYSTEM_EXECUTION execution)
     {
-        RegisterGameplaySystem(MakeRef<T>(this), execution);
+        return static_cast<T*>(RegisterGameplaySystem(MakeRef<T>(this), execution));
     }
 
-    void RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution);
+    GameplaySystemECS* RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution);
 
     void SetEventHandler(IEventHandler* eventHandler);
 

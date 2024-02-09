@@ -59,11 +59,7 @@ CharacterControllerSystem::~CharacterControllerSystem()
 {
     m_World->RemoveHandler(this);
 
-    for (auto& pair : m_PendingRemoveCharacters)
-    {
-        JPH::CharacterVirtual* character = pair.second;
-        delete character;
-    }
+    DestroyCharacters();
 }
 
 void CharacterControllerSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<CharacterControllerComponent>& event)
@@ -79,7 +75,10 @@ void CharacterControllerSystem::HandleEvent(ECS::World* world, ECS::Event::OnCom
 
     if (event.Component().m_pCharacter)
     {
-        m_PendingRemoveCharacters.Add({event.GetEntity(), event.Component().m_pCharacter});
+        CharacterData ch;
+        ch.pCharacter = event.Component().m_pCharacter;
+        ch.BodyID = event.Component().m_BodyId;
+        m_PendingRemoveCharacters.Add(ch);
     }
 }
 
@@ -132,14 +131,22 @@ static float sPredictiveContactDistance = 0.1f;
 static bool sEnableWalkStairs = true;
 static bool sEnableStickToFloor = true;
 
-void CharacterControllerSystem::Update(GameFrame const& frame)
+void CharacterControllerSystem::DestroyCharacters()
 {
-    for (auto& pair : m_PendingRemoveCharacters)
+    auto& bodyInterface = m_PhysicsInterface.GetImpl().GetBodyInterface();
+
+    for (auto& ch : m_PendingRemoveCharacters)
     {
-        JPH::CharacterVirtual* character = pair.second;
-        delete character;
+        bodyInterface.RemoveBody(ch.BodyID);
+        bodyInterface.DestroyBody(ch.BodyID);
+        delete ch.pCharacter;
     }
     m_PendingRemoveCharacters.Clear();
+}
+
+void CharacterControllerSystem::Update(GameFrame const& frame)
+{
+    DestroyCharacters();
 
     for (auto entity : m_PendingAddCharacters)
     {

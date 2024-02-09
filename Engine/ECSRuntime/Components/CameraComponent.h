@@ -102,7 +102,7 @@ struct CameraComponent_ECS
     Float2 m_OrthoMins{-1, -1};
     Float2 m_OrthoMaxs{1, 1};
     float m_OrthoZoom{30};
-    mutable Float4x4 m_ViewMatrix;
+    //mutable Float4x4 m_ViewMatrix;
     mutable Float3x3 m_BillboardMatrix;
     mutable Float4x4 m_ProjectionMatrix;
     mutable BvFrustum m_Frustum;

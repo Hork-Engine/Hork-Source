@@ -52,8 +52,8 @@ struct CollisionConvexHullDef
     Quat                Rotation;
     Float3 const*       pVertices{};
     int                 VertexCount{};
-    unsigned int const* pIndices{};
-    int                 IndexCount{};
+    //unsigned int const* pIndices{};
+    //int                 IndexCount{};
 };
 
 struct CollisionTriangleSoupDef

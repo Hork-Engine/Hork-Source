@@ -108,6 +108,7 @@ public:
 
     /** Write vertices at location and send them to GPU */
     bool WriteVertexData(MeshVertex const* vertices, int vertexCount, int startVertexLocation);
+    bool SendVertexDataToGPU(int vertexCount, int startVertexLocation);
 
     /** Write joint weights at location and send them to GPU */
     bool WriteJointWeights(MeshVertexSkin const* vertices, int vertexCount, int startVertexLocation);

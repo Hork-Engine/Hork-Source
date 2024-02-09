@@ -148,9 +148,12 @@ void SceneGraph::DestroyNode(SceneNode* node)
         child->Parent = &m_Root;
     }
 
-    auto index = node->Parent->Children.IndexOf(node);
-    if (index != Core::NPOS)
-        node->Parent->Children.Remove(index);
+    if (node->Parent)
+    {
+        auto index = node->Parent->Children.IndexOf(node);
+        if (index != Core::NPOS)
+            node->Parent->Children.Remove(index);
+    }
 
     node->~SceneNode();
     m_Allocator.Deallocate(node);

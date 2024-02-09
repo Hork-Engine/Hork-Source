@@ -334,9 +334,10 @@ public:
         return *this;
     }
 
-    void SetName(StringView name)
+    UIWidget& SetName(StringView name)
     {
         m_Name = name;
+        return *this;
     }
 
     String const& GetName() const

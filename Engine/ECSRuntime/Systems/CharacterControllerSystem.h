@@ -36,8 +36,16 @@ private:
 	// Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
     void OnContactSolve(ECS::EntityHandle entityHandle, const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity);
 
+    void DestroyCharacters();
+
+    struct CharacterData
+    {
+        JPH::CharacterVirtual* pCharacter;
+        JPH::BodyID BodyID;
+    };
+
     TVector<ECS::EntityHandle> m_PendingAddCharacters;
-    TVector<std::pair<ECS::EntityHandle, JPH::CharacterVirtual*>> m_PendingRemoveCharacters;
+    TVector<CharacterData> m_PendingRemoveCharacters;
 
     World* m_World;
     PhysicsInterface& m_PhysicsInterface;

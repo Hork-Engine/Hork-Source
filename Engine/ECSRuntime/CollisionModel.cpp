@@ -915,8 +915,8 @@ CollisionModel* CreateConvexDecomposition(Float3 const* vertices,
         hulldef.Position = hull.Centroid;
         hulldef.pVertices = hullVertices.ToPtr() + hull.FirstVertex;
         hulldef.VertexCount = hull.VertexCount;
-        hulldef.pIndices = hullIndices.ToPtr() + hull.FirstIndex;
-        hulldef.IndexCount = hull.IndexCount;
+        //hulldef.pIndices = hullIndices.ToPtr() + hull.FirstIndex;
+        //hulldef.IndexCount = hull.IndexCount;
     }
 
     CollisionModelCreateInfo createInfo;
@@ -969,8 +969,8 @@ CollisionModel* CreateConvexDecompositionVHACD(Float3 const* vertices,
         hulldef.Position = hull.Centroid;
         hulldef.pVertices = hullVertices.ToPtr() + hull.FirstVertex;
         hulldef.VertexCount = hull.VertexCount;
-        hulldef.pIndices = hullIndices.ToPtr() + hull.FirstIndex;
-        hulldef.IndexCount = hull.IndexCount;
+        //hulldef.pIndices = hullIndices.ToPtr() + hull.FirstIndex;
+        //hulldef.IndexCount = hull.IndexCount;
     }
 
     CollisionModelCreateInfo createInfo;

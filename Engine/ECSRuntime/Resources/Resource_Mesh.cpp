@@ -168,6 +168,7 @@ void MeshResource::Allocate(int vertexCount, int indexCount, int subpartCount, b
     vertexMemory->Deallocate(m_IndexHandle);
 
     m_Vertices.Resize(vertexCount);
+    m_Indices.Resize(indexCount);
 
     if (bSkinned)
         m_Weights.Resize(vertexCount);
@@ -230,6 +231,25 @@ bool MeshResource::WriteVertexData(MeshVertex const* vertices, int vertexCount, 
 
     vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
 
+    return true;
+}
+
+bool MeshResource::SendVertexDataToGPU(int vertexCount, int startVertexLocation)
+{
+    if (!vertexCount)
+    {
+        return true;
+    }
+
+    if (startVertexLocation + vertexCount > m_Vertices.Size())
+    {
+        LOG("MeshResource::SendVertexDataToGPU: Referencing outside of buffer\n");
+        return false;
+    }
+
+    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+
+    vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
     return true;
 }
 

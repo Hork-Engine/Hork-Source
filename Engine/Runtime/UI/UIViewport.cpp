@@ -90,7 +90,8 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
     Float2 const& pos  = m_Geometry.Mins;
     Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
 
-    GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
+    //GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
+    GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
 }
 
 void UIViewport::OnJoystickButtonEvent(JoystickButtonEvent const& event)

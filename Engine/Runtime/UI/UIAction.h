@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "UIBrush.h"
+#include <Engine/Core/Delegate.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -44,11 +45,13 @@ public:
 
     bool bDisabled{};
 
-    TEvent<UIAction*> E_OnActivate;
-    TEvent<UIAction*> E_OnDeactivate;
+    Delegate<void(UIAction*)> E_OnActivate;
+    Delegate<void(UIAction*)> E_OnDeactivate;
+    //TEvent<UIAction*> E_OnActivate;
+    //TEvent<UIAction*> E_OnDeactivate;
 
     UIAction() = default;
-
+    #if 0
     UIAction(TEvent<UIAction*> OnActivate) :
         E_OnActivate(std::move(OnActivate))
     {}
@@ -57,18 +60,28 @@ public:
         E_OnActivate(std::move(OnActivate)),
         E_OnDeactivate(std::move(OnDeactivate))
     {}
+    #else
+    UIAction(Delegate<void(UIAction*)> OnActivate) :
+        E_OnActivate(std::move(OnActivate))
+    {}
+
+    UIAction(Delegate<void(UIAction*)> OnActivate, Delegate<void(UIAction*)> OnDeactivate) :
+        E_OnActivate(std::move(OnActivate)),
+        E_OnDeactivate(std::move(OnDeactivate))
+    {}
+    #endif
 
     template <typename T>
     UIAction(T* object, void (T::*OnActivate)(UIAction*))
     {
-        E_OnActivate.Add(object, OnActivate);
+        E_OnActivate.Bind(object, OnActivate);
     }
 
     template <typename T>
     UIAction(T* object, void (T::* OnActivate)(UIAction*), void (T::* OnDeactivate)(UIAction*))
     {
-        E_OnActivate.Add(object, OnActivate);
-        E_OnDeactivate.Add(object, OnDeactivate);
+        E_OnActivate.Bind(object, OnActivate);
+        E_OnDeactivate.Bind(object, OnDeactivate);
     }
 
     void Activate()
@@ -76,7 +89,7 @@ public:
         if (bDisabled)
             return;
 
-        E_OnActivate.Dispatch(this);
+        E_OnActivate(this);
 
         if (bStick)
             m_bActive = true;
@@ -88,7 +101,7 @@ public:
             return;
 
         m_bActive = false;
-        E_OnDeactivate.Dispatch(this);
+        E_OnDeactivate(this);
     }
 
     bool IsActive() const

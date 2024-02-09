@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Allocators/LinearAllocator.h>
 #include <Engine/Core/Containers/Vector.h>
-#include "VectorMath.h"
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/Core/Ref.h>
-#include "VectorMath.h"
+#include <Engine/Math/VectorMath.h>
 
 namespace ClipperLib
 {

@@ -40,7 +40,7 @@ World::~World()
     ExecuteCommands();
 }
 
-void World::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
+GameplaySystemECS* World::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
 {
     if (execution & GAMEPLAY_SYSTEM_VARIABLE_UPDATE)
         m_GameplayVariableUpdateSystems.Add(gameplaySystem);
@@ -55,6 +55,8 @@ void World::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_S
         m_GameplayLateUpdateSystems.Add(gameplaySystem);
 
     m_AllGameplaySystems.EmplaceBack(gameplaySystem);
+
+    return gameplaySystem;
 }
 
 void World::SetEventHandler(IEventHandler* eventHandler)
@@ -64,6 +66,9 @@ void World::SetEventHandler(IEventHandler* eventHandler)
 
 void World::Tick(float timeStep)
 {
+    if (!bTick)
+        return;
+
     if (bPaused)
     {
         m_Frame.RunningTime += timeStep;
