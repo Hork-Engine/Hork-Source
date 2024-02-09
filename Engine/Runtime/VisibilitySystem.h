@@ -42,7 +42,6 @@ class World;
 class Level;
 class Texture;
 class SceneComponent;
-class BrushModel;
 class ConvexHull;
 class IndexedMesh;
 class DebugRenderer;
@@ -303,12 +302,6 @@ struct VisArea
     /** AABB tree for non-movable primitives */
     //BvhTree * AABBTree;
 
-    /** Baked surfaces attached to the area */
-    int FirstSurface;
-
-    /** Count of the baked surfaces attached to the area */
-    int NumSurfaces;
-
     /** Visibility/raycast processed marker. Used by VSD. */
     int VisMark;
 };
@@ -337,7 +330,7 @@ struct VisibilityQuery
 /** Box hit result */
 struct BoxHitResult
 {
-    /** Box owner. Null for the surfaces. */
+    /** Box owner. */
     SceneComponent* Object;
 
     Float3 LocationMin;
@@ -354,7 +347,7 @@ struct BoxHitResult
 /** Raycast primitive */
 struct WorldRaycastPrimitive
 {
-    /** Primitive owner. Null for surfaces. */
+    /** Primitive owner. */
     SceneComponent* Object;
 
     /** First hit in array of hits */
@@ -373,7 +366,7 @@ struct WorldRaycastResult
     /** Array of hits */
     TVector<TriangleHitResult> Hits;
 
-    /** Array of primitives and surfaces */
+    /** Array of primitives */
     TVector<WorldRaycastPrimitive> Primitives;
 
     /** Sort raycast result by hit distance */
@@ -425,7 +418,7 @@ struct WorldRaycastResult
 /** Closest hit result */
 struct WorldRaycastClosestResult
 {
-    /** Primitive owner. Null for surfaces. */
+    /** Primitive owner. */
     SceneComponent* Object;
 
     /** Hit */
@@ -464,82 +457,6 @@ struct WorldRaycastFilter
         VisibilityMask = VISIBILITY_GROUP_ALL;
         QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         bSortByDistance = true;
-    }
-};
-
-struct SurfaceDef
-{
-    /** Parent brush model */
-    BrushModel* Model;
-
-    /** Bounding box of the surface */
-    BvAxisAlignedBox Bounds;
-
-    /** Vertex offset */
-    int FirstVertex;
-
-    /** Vertex count */
-    int NumVertices;
-
-    /** Index offset */
-    int FirstIndex;
-
-    /** Index count */
-    int NumIndices;
-#if 0
-    /** Patch size for the bezier surfaces */
-    int PatchWidth;
-    int PatchHeight;
-#endif
-    /** Index in array of materials */
-    uint32_t MaterialIndex;
-
-    /** Sort key. Used for surface batching. */
-    uint32_t SortKey;
-
-    /** Surface flags (SURFACE_FLAGS) */
-    SURFACE_FLAGS Flags;
-
-    /** Plane for planar surface */
-    PlaneF Face;
-
-    /** Lightmap atlas index */
-    int LightmapBlock;
-
-    /** Size of the lightmap */
-    int LightmapWidth;
-
-    /** Size of the lightmap */
-    int LightmapHeight;
-
-    /** Offset in the lightmap */
-    int LightmapOffsetX;
-
-    /** Offset in the lightmap */
-    int LightmapOffsetY;
-
-    /** Visibility query group. See VSD_QUERY_MASK enum. */
-    int QueryGroup;
-
-    /** Visibility group. See VISIBILITY_GROUP enum. */
-    int VisGroup;
-
-    /** Visibility/raycast processed marker. Used by VSD. */
-    int VisMark;
-
-    /** Surface marked as visible. Used by VSD. */
-    int VisPass;
-
-    /** Drawable rendering order */
-    //uint8_t RenderingOrder;
-
-    /** Generate sort key. Call this after RenderingOrder/Model/MaterialIndex/LightmapBlock have changed. */
-    void RegenerateSortKey()
-    {
-        // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = 0
-            //| ((uint64_t)(RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(HashTraits::Murmur3Hash32((uint64_t)Model) & 0xffffu) << 40u) | ((uint64_t)(HashTraits::Murmur3Hash32(MaterialIndex) & 0xffffu) << 24u) | ((uint64_t)(HashTraits::Murmur3Hash32(LightmapBlock) & 0xffffu) << 8u);
     }
 };
 
@@ -610,31 +527,6 @@ struct LightPortalDef
     int NumIndices;
 };
 
-class BrushModel : public GCObject
-{
-public:
-    /** Baked surface definitions */
-    TVector<SurfaceDef> Surfaces;
-
-    /** Baked surface vertex data */
-    TVector<MeshVertex> Vertices;
-
-    /** Baked surface vertex data */
-    TVector<MeshVertexUV> LightmapVerts;
-
-    /** Baked surface vertex data */
-    TVector<MeshVertexLight> VertexLight;
-
-    /** Baked surface triangle index data */
-    TVector<unsigned int> Indices;
-
-    /** Surface materials */
-    //TVector<TRef<MaterialInstance>> SurfaceMaterials;
-
-    /** Lighting data will be used from that level. */
-    TWeakRef<Level> ParentLevel;
-};
-
 enum LIGHTMAP_FORMAT
 {
     LIGHTMAP_GRAYSCALED16_FLOAT,
@@ -678,12 +570,6 @@ struct VisibilityAreaDef
 {
     /** Area bounding box */
     BvAxisAlignedBox Bounds;
-
-    /** Baked surfaces attached to the area */
-    int FirstSurface;
-
-    /** Count of the baked surfaces attached to the area */
-    int NumSurfaces;
 };
 
 struct VisibilitySystemPVS
@@ -701,9 +587,6 @@ struct VisibilitySystemCreateInfo
     VisibilityAreaDef* Areas{};
     int NumAreas{};
 
-    int const* AreaSurfaces{};
-    int NumAreaSurfaces{};
-
     PortalDef const* Portals{};
     int PortalsCount{};
     Float3 const* HullVertices{};
@@ -718,8 +601,6 @@ struct VisibilitySystemCreateInfo
     int NumLeafs{};
 
     VisibilitySystemPVS const* PVS{};
-
-    BrushModel* Model{};
 
     VisibilityLevel* PersistentLevel{};
 };
@@ -784,7 +665,7 @@ public:
     /** Query vis areas by bounding sphere */
     void QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& Areas) const;
 
-    void QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query) const;
+    void QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const;
 
     bool RaycastTriangles(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const;
 
@@ -855,7 +736,7 @@ public:
 
     void DrawDebug(DebugRenderer* Renderer);
 
-    static void QueryVisiblePrimitives(TVector<VisibilityLevel*> const& Levels, TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query);
+    static void QueryVisiblePrimitives(TVector<VisibilityLevel*> const& Levels, TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query);
 
     static bool RaycastTriangles(TVector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
@@ -897,14 +778,6 @@ private:
     void CullPrimitives(VisArea const* Area, PlaneF const* CullPlanes, const int CullPlanesCount);
 
     bool FaceCull(PrimitiveDef const* Primitive);
-    bool FaceCull(SurfaceDef const* Surface);
-
-    enum HIT_PROXY_TYPE
-    {
-        HIT_PROXY_UNKNOWN,
-        HIT_PROXY_PRIMITIVE,
-        HIT_PROXY_SURFACE
-    };
 
     struct VisRaycast
     {
@@ -917,12 +790,7 @@ private:
         float HitDistanceMax; // only for bounds test
 
         // For closest raycast
-        HIT_PROXY_TYPE HitProxyType;
-        union
-        {
-            PrimitiveDef* HitPrimitive;
-            SurfaceDef* HitSurface;
-        };
+        PrimitiveDef* HitPrimitive;
         Float3 HitLocation;
         Float2 HitUV;
         Float3 HitNormal;
@@ -943,7 +811,6 @@ private:
     void ProcessLevelRaycastClosest(VisRaycast& Raycast);
     void ProcessLevelRaycastBounds(VisRaycast& Raycast, TVector<BoxHitResult>& Result);
     void ProcessLevelRaycastClosestBounds(VisRaycast& Raycast);
-    void RaycastSurface(SurfaceDef* Self);
     void RaycastPrimitive(PrimitiveDef* Self);
     void RaycastArea(VisArea* Area);
     void RaycastPrimitiveBounds(VisArea* Area);
@@ -1001,12 +868,6 @@ private:
 
     /** Cluster index for view origin */
     int m_ViewCluster = -1;
-
-    /** Surface to area attachments */
-    TVector<int> m_AreaSurfaces;
-
-    /** Baked surface data */
-    TRef<BrushModel> m_Model;
 
     // Visibility query temp vars:
     static int m_VisQueryMarker;

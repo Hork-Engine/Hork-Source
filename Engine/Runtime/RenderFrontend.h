@@ -86,16 +86,10 @@ private:
     void SortShadowInstances(LightShadowmap const* shadowMap);
 
     void QueryVisiblePrimitives(World* world);
-    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives, TVector<SurfaceDef*>& Surfaces);
+    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
     //void AddTerrain(TerrainComponent* InComponent);
     //void AddStaticMesh(MeshComponent* InComponent);
-
-    void AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount);
-    //void AddSurface(Level* Level, MaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
-
-    void AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef* const* Surfaces, int SurfaceCount);
-    //void AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
 
     bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
@@ -106,7 +100,6 @@ private:
     RenderFrontendStat m_Stat;
 
     TVector<PrimitiveDef*> m_VisPrimitives;
-    TVector<SurfaceDef*> m_VisSurfaces;
     TVector<PunctualLightComponent*> m_VisLights;
     TVector<EnvironmentProbe*> m_VisEnvProbes;
 
@@ -122,15 +115,15 @@ private:
     };
     TVector<CullResult> m_ShadowCasterCullResult;
 
-    struct SurfaceStream
-    {
-        size_t VertexAddr;
-        size_t VertexLightAddr;
-        size_t VertexUVAddr;
-        size_t IndexAddr;
-    };
+    //struct SurfaceStream
+    //{
+    //    size_t VertexAddr;
+    //    size_t VertexLightAddr;
+    //    size_t VertexUVAddr;
+    //    size_t IndexAddr;
+    //};
 
-    SurfaceStream SurfaceStream;
+    //SurfaceStream SurfaceStream;
 
     RenderFrontendDef m_RenderDef;
     WorldRenderView* m_WorldRenderView;

@@ -42,7 +42,6 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
-ConsoleVar r_RenderSurfaces("r_RenderSurfaces"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
 ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
@@ -437,10 +436,10 @@ void RenderFrontend::QueryVisiblePrimitives(World* world)
     query.VisibilityMask = m_RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS; // | VSD_QUERY_MASK_SHADOW_CAST;
 
-    //world->QueryVisiblePrimitives(m_VisPrimitives, m_VisSurfaces, &m_VisPass, query);
+    //world->QueryVisiblePrimitives(m_VisPrimitives, &m_VisPass, query);
 }
 
-void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives, TVector<SurfaceDef*>& Surfaces)
+void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives)
 {
     VisibilityQuery query;
     BvFrustum frustum;
@@ -533,7 +532,7 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
     m_DebugDraw.DrawConvexPoly( v, 4, false );
 #    endif
 #endif
-    //InWorld->QueryVisiblePrimitives(Primitives, Surfaces, nullptr, query);
+    //InWorld->QueryVisiblePrimitives(Primitives, nullptr, query);
 }
 
 void RenderFrontend::AddRenderInstances(World* world)
@@ -606,21 +605,6 @@ void RenderFrontend::AddRenderInstances(World* world)
 
         //LOG("Unhandled primitive\n");
     //}
-
-    if (r_RenderSurfaces && !m_VisSurfaces.IsEmpty())
-    {
-        struct SortFunction
-        {
-            bool operator()(SurfaceDef const* _A, SurfaceDef const* _B)
-            {
-                return (_A->SortKey < _B->SortKey);
-            }
-        } SortFunction;
-
-        std::sort(m_VisSurfaces.ToPtr(), m_VisSurfaces.ToPtr() + m_VisSurfaces.Size(), SortFunction);
-
-        AddSurfaces(m_VisSurfaces.ToPtr(), m_VisSurfaces.Size());
-    }
 
     // Add directional lights
     view->NumShadowMapCascades = 0;
@@ -1129,342 +1113,6 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
 }
 #endif
 
-HK_FORCEINLINE bool CanMergeSurfaces(SurfaceDef const* InFirst, SurfaceDef const* InSecond)
-{
-    return (InFirst->Model == InSecond->Model && InFirst->LightmapBlock == InSecond->LightmapBlock && InFirst->MaterialIndex == InSecond->MaterialIndex
-            /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
-}
-
-HK_FORCEINLINE bool CanMergeSurfacesShadowmap(SurfaceDef const* InFirst, SurfaceDef const* InSecond)
-{
-    return (InFirst->Model == InSecond->Model && InFirst->MaterialIndex == InSecond->MaterialIndex
-            /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
-}
-
-void RenderFrontend::AddSurfaces(SurfaceDef* const* Surfaces, int SurfaceCount)
-{
-    #if 0 // todo
-    if (!SurfaceCount)
-    {
-        return;
-    }
-
-    int totalVerts = 0;
-    int totalIndices = 0;
-    for (int i = 0; i < SurfaceCount; i++)
-    {
-        SurfaceDef const* surfDef = Surfaces[i];
-
-        totalVerts += surfDef->NumVertices;
-        totalIndices += surfDef->NumIndices;
-    }
-
-    if (totalVerts == 0 || totalIndices < 3)
-    {
-        // Degenerate surfaces
-        return;
-    }
-
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-
-    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
-    SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexLight), nullptr);
-    SurfaceStream.VertexUVAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertexUV), nullptr);
-    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
-
-    MeshVertex* vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
-    MeshVertexLight* vertexLight = (MeshVertexLight*)streamedMemory->Map(SurfaceStream.VertexLightAddr);
-    MeshVertexUV* vertexUV = (MeshVertexUV*)streamedMemory->Map(SurfaceStream.VertexUVAddr);
-    unsigned int* indices = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
-
-    int numVerts = 0;
-    int numIndices = 0;
-    int firstIndex = 0;
-
-    SurfaceDef const* merge = Surfaces[0];
-    BrushModel const* model = merge->Model;
-
-    for (int i = 0; i < SurfaceCount; i++)
-    {
-        SurfaceDef const* surfDef = Surfaces[i];
-
-        if (!CanMergeSurfaces(merge, surfDef))
-        {
-            // Flush merged surfaces
-            AddSurface(model->ParentLevel,
-                       model->SurfaceMaterials[merge->MaterialIndex],
-                       merge->LightmapBlock,
-                       numIndices - firstIndex,
-                       firstIndex /*,
-                        merge->RenderingOrder*/
-            );
-
-            merge = surfDef;
-            model = merge->Model;
-            firstIndex = numIndices;
-        }
-
-        MeshVertex const* srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
-        MeshVertexUV const* srcLM = model->LightmapVerts.ToPtr() + surfDef->FirstVertex;
-        MeshVertexLight const* srcVL = model->VertexLight.ToPtr() + surfDef->FirstVertex;
-        unsigned int const* srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
-
-        // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
-
-        HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size());
-        HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
-
-        Core::Memcpy(vertices + numVerts, srcVerts, sizeof(MeshVertex) * surfDef->NumVertices);
-        Core::Memcpy(vertexUV + numVerts, srcLM, sizeof(MeshVertexUV) * surfDef->NumVertices);
-        Core::Memcpy(vertexLight + numVerts, srcVL, sizeof(MeshVertexLight) * surfDef->NumVertices);
-
-        for (int ind = 0; ind < surfDef->NumIndices; ind++)
-        {
-            *indices++ = numVerts + srcIndices[ind];
-        }
-
-        numVerts += surfDef->NumVertices;
-        numIndices += surfDef->NumIndices;
-    }
-
-    // Flush merged surfaces
-    AddSurface(model->ParentLevel,
-               model->SurfaceMaterials[merge->MaterialIndex],
-               merge->LightmapBlock,
-               numIndices - firstIndex,
-               firstIndex /*,
-                merge->RenderingOrder*/
-    );
-
-    HK_ASSERT(numVerts == totalVerts);
-    HK_ASSERT(numIndices == totalIndices);
-    #endif
-}
-
-void RenderFrontend::AddShadowmapSurfaces(LightShadowmap* ShadowMap, SurfaceDef* const* Surfaces, int SurfaceCount)
-{
-#if 0 // todo
-    if (!SurfaceCount)
-    {
-        return;
-    }
-
-    int totalVerts = 0;
-    int totalIndices = 0;
-    for (int i = 0; i < SurfaceCount; i++)
-    {
-        SurfaceDef const* surfDef = Surfaces[i];
-
-        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
-        {
-            continue;
-        }
-
-        totalVerts += surfDef->NumVertices;
-        totalIndices += surfDef->NumIndices;
-    }
-
-    if (totalVerts == 0 || totalIndices < 3)
-    {
-        // Degenerate surfaces
-        return;
-    }
-
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-
-    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex(totalVerts * sizeof(MeshVertex), nullptr);
-    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex(totalIndices * sizeof(unsigned int), nullptr);
-
-    MeshVertex* vertices = (MeshVertex*)streamedMemory->Map(SurfaceStream.VertexAddr);
-    unsigned int* indices = (unsigned int*)streamedMemory->Map(SurfaceStream.IndexAddr);
-
-    int numVerts = 0;
-    int numIndices = 0;
-    int firstIndex = 0;
-
-    SurfaceDef const* merge = Surfaces[0];
-    BrushModel const* model = merge->Model;
-
-    for (int i = 0; i < SurfaceCount; i++)
-    {
-        SurfaceDef const* surfDef = Surfaces[i];
-
-        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
-        {
-            continue;
-        }
-
-        if (!CanMergeSurfacesShadowmap(merge, surfDef))
-        {
-
-            // Flush merged surfaces
-            AddShadowmapSurface(ShadowMap,
-                                model->SurfaceMaterials[merge->MaterialIndex],
-                                numIndices - firstIndex,
-                                firstIndex /*,
-                                 merge->RenderingOrder*/
-            );
-
-            merge = surfDef;
-            model = merge->Model;
-            firstIndex = numIndices;
-        }
-
-        MeshVertex const* srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
-        unsigned int const* srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
-
-#if 0
-        m_DebugDraw.SetDepthTest( false );
-        m_DebugDraw.SetColor( Color4( 1, 1, 0, 1 ) );
-        m_DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( MeshVertex ),
-                                             srcIndices, surfDef->NumIndices );
-        //m_DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
-        //m_DebugDraw.DrawAABB( surfDef->Bounds );
-#endif
-
-        // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
-
-        HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size());
-        HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
-
-        Core::Memcpy(vertices + numVerts, srcVerts, sizeof(MeshVertex) * surfDef->NumVertices);
-
-        for (int ind = 0; ind < surfDef->NumIndices; ind++)
-        {
-            *indices++ = numVerts + srcIndices[ind];
-        }
-
-        numVerts += surfDef->NumVertices;
-        numIndices += surfDef->NumIndices;
-    }
-
-    // Flush merged surfaces
-    AddShadowmapSurface(ShadowMap,
-                        model->SurfaceMaterials[merge->MaterialIndex],
-                        numIndices - firstIndex,
-                        firstIndex /*,
-                         merge->RenderingOrder*/
-    );
-
-    HK_ASSERT(numVerts == totalVerts);
-    HK_ASSERT(numIndices == totalIndices);
-    #endif
-}
-#if 0 // todo
-void RenderFrontend::AddSurface(Level* Level, MaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
-{
-    Material* material = MaterialInstance->GetMaterial();
-    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
-
-    if (!materialInstanceFrameData)
-        return;
-
-    // Add render instance
-    RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
-
-    if (material->IsTranslucent())
-    {
-        m_FrameData.TranslucentInstances.Add(instance);
-        m_RenderDef.View->TranslucentInstanceCount++;
-    }
-    else
-    {
-        m_FrameData.Instances.Add(instance);
-        m_RenderDef.View->InstanceCount++;
-    }
-
-    //if ( bOutline ) {
-    //    m_FrameData.OutlineInstances.Add( instance );
-    //    m_RenderDef.View->OutlineInstanceCount++;
-    //}
-
-    instance->Material = material->GetGPUResource();
-    instance->MaterialInstance = materialInstanceFrameData;
-
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-
-    streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset);
-    streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset);
-
-    instance->WeightsBuffer = nullptr;
-
-    instance->LightmapOffset.X = 0;
-    instance->LightmapOffset.Y = 0;
-    instance->LightmapOffset.Z = 1;
-    instance->LightmapOffset.W = 1;
-
-    LevelLighting* lighting = Level->Lighting;
-    if (lighting && _LightmapBlock >= 0 && _LightmapBlock < lighting->Lightmaps.Size() && !r_VertexLight)
-    {
-        instance->Lightmap = lighting->Lightmaps[_LightmapBlock];
-
-        streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexUVAddr, &instance->LightmapUVChannel, &instance->LightmapUVOffset);
-    }
-    else
-    {
-        instance->Lightmap = nullptr;
-        instance->LightmapUVChannel = nullptr;
-    }
-
-    streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexLightAddr, &instance->VertexLightChannel, &instance->VertexLightOffset);
-
-    instance->IndexCount = _NumIndices;
-    instance->StartIndexLocation = _FirstIndex;
-    instance->BaseVertexLocation = 0;
-    instance->SkeletonOffset = 0;
-    instance->SkeletonOffsetMB = 0;
-    instance->SkeletonSize = 0;
-    instance->Matrix = m_RenderDef.View->ViewProjection;
-    instance->MatrixP = m_RenderDef.View->ViewProjectionP;
-    instance->ModelNormalToViewSpace = m_RenderDef.View->NormalToViewMatrix;
-
-    uint8_t priority = material->GetRenderingPriority();
-
-    instance->GenerateSortKey(priority, SurfaceStream.VertexAddr);
-
-    m_RenderDef.PolyCount += instance->IndexCount / 3;
-}
-
-void RenderFrontend::AddShadowmapSurface(LightShadowmap* ShadowMap, MaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)
-{
-    Material* material = MaterialInstance->GetMaterial();
-    MaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(m_FrameLoop, m_FrameNumber);
-
-    if (!materialInstanceFrameData)
-        return;
-
-    // Add render instance
-    ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
-
-    m_FrameData.ShadowInstances.Add(instance);
-
-    instance->Material = material->GetGPUResource();
-    instance->MaterialInstance = materialInstanceFrameData;
-
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-
-    streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset);
-    streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset);
-
-    instance->WeightsBuffer = nullptr;
-    instance->WeightsBufferOffset = 0;
-    instance->WorldTransformMatrix.SetIdentity();
-    instance->IndexCount = _NumIndices;
-    instance->StartIndexLocation = _FirstIndex;
-    instance->BaseVertexLocation = 0;
-    instance->SkeletonOffset = 0;
-    instance->SkeletonSize = 0;
-    instance->CascadeMask = 0xffff; // TODO?
-
-    uint8_t priority = material->GetRenderingPriority();
-
-    instance->GenerateSortKey(priority, SurfaceStream.VertexAddr);
-
-    ShadowMap->ShadowInstanceCount++;
-
-    m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
-}
-#endif
 bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radius)
 {
     #if 0
@@ -1486,7 +1134,6 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
     Drawable* drawable;
 
     int totalInstances = 0;
-    int totalSurfaces = 0;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
@@ -1504,7 +1151,7 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
         lightViewProjection = projMat * lightViewMatrix;
 
         // TODO: VSD не учитывает FarPlane для кулинга - исправить это
-        QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), m_VisPrimitives, m_VisSurfaces);
+        QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), m_VisPrimitives);
 
         LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
 
@@ -1543,29 +1190,12 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
             }
         }
 
-        if (r_RenderSurfaces && !m_VisSurfaces.IsEmpty())
-        {
-            struct SortFunction
-            {
-                bool operator()(SurfaceDef const* _A, SurfaceDef const* _B)
-                {
-                    return (_A->SortKey < _B->SortKey);
-                }
-            } SortFunction;
-
-            std::sort(m_VisSurfaces.ToPtr(), m_VisSurfaces.ToPtr() + m_VisSurfaces.Size(), SortFunction);
-
-            AddShadowmapSurfaces(shadowMap, m_VisSurfaces.ToPtr(), m_VisSurfaces.Size());
-
-            totalSurfaces += m_VisSurfaces.Size();
-        }
-
         SortShadowInstances(shadowMap);
 
         totalInstances += shadowMap->ShadowInstanceCount;
     }
 
-    if (totalInstances == 0 && totalSurfaces == 0)
+    if (totalInstances == 0)
     {
         m_FrameData.LightShadowmaps.Resize(m_FrameData.LightShadowmaps.Size() - 6);
         return false;

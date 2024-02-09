@@ -80,7 +80,6 @@ struct VisibilityQueryContext
 struct VisibilityQueryResult
 {
     TVector<PrimitiveDef*>* pVisPrimitives;
-    TVector<SurfaceDef*>* pVisSurfs;
 };
 
 VisibilityLevel::VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo)
@@ -106,8 +105,6 @@ VisibilityLevel::VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo)
         VisibilityAreaDef& src = CreateInfo.Areas[i];
 
         area.Bounds = src.Bounds;
-        area.FirstSurface = src.FirstSurface;
-        area.NumSurfaces = src.NumSurfaces;
 
         m_IndoorBounds.AddAABB(area.Bounds);
     }
@@ -181,11 +178,6 @@ VisibilityLevel::VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo)
         // Allocate decompressed vis data
         m_DecompressedVisData = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc((m_PVSClustersCount + 7) >> 3);
     }
-
-    m_AreaSurfaces.Resize(CreateInfo.NumAreaSurfaces);
-    Core::Memcpy(m_AreaSurfaces.ToPtr(), CreateInfo.AreaSurfaces, sizeof(m_AreaSurfaces[0]) * CreateInfo.NumAreaSurfaces);
-
-    m_Model = CreateInfo.Model;
 }
 
 VisibilityLevel::~VisibilityLevel()
@@ -1462,11 +1454,6 @@ HK_FORCEINLINE bool VisibilityLevel::FaceCull(PrimitiveDef const* InPrimitive)
     return InPrimitive->Face.DistanceToPoint(m_pQueryContext->ViewPosition) < 0.0f;
 }
 
-HK_FORCEINLINE bool VisibilityLevel::FaceCull(SurfaceDef const* InSurface)
-{
-    return InSurface->Face.DistanceToPoint(m_pQueryContext->ViewPosition) < 0.0f;
-}
-
 void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCullPlanes, const int InCullPlanesCount)
 {
     /*!!!
@@ -1480,60 +1467,6 @@ void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCull
     int numBoxes          = 0;
     int firstBoxPrimitive = BoxPrimitives.Size();
 */
-
-    if (InArea->NumSurfaces > 0)
-    {
-        BrushModel* model = m_Model;
-
-        int const* pSurfaceIndex = &m_AreaSurfaces[InArea->FirstSurface];
-
-        for (int i = 0; i < InArea->NumSurfaces; i++, pSurfaceIndex++)
-        {
-            SurfaceDef* surf = &model->Surfaces[*pSurfaceIndex];
-
-            if (surf->VisMark == m_VisQueryMarker)
-            {
-                // Surface visibility already processed
-                continue;
-            }
-
-            // Mark surface visibility processed
-            surf->VisMark = m_VisQueryMarker;
-
-            // Filter query group
-            if ((surf->QueryGroup & m_pQueryContext->VisQueryMask) != m_pQueryContext->VisQueryMask)
-            {
-                continue;
-            }
-
-            // Check surface visibility group is not visible
-            if ((surf->VisGroup & m_pQueryContext->VisibilityMask) == 0)
-            {
-                continue;
-            }
-
-            // Perform face culling
-            if ((surf->Flags & SURF_PLANAR_TWOSIDED_MASK) == SURF_PLANAR && FaceCull(surf))
-            {
-                continue;
-            }
-
-            if (VSD_CullBoxSingle(InCullPlanes, InCullPlanesCount, surf->Bounds))
-            {
-
-#ifdef DEBUG_TRAVERSING_COUNTERS
-                Dbg_CulledBySurfaceBounds++;
-#endif
-
-                continue;
-            }
-
-            // Mark as visible
-            surf->VisPass = m_VisQueryMarker;
-
-            m_pQueryResult->pVisSurfs->Add(surf);
-        }
-    }
 
     for (PrimitiveLink* link = InArea->Links; link; link = link->NextInArea)
     {
@@ -1697,7 +1630,7 @@ void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCull
 */
 }
 
-void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_Levels, TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& InQuery)
+void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_Levels, TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& InQuery)
 {
     //int QueryVisiblePrimitivesTime = SysMicroseconds();
     VisibilityQueryContext QueryContext;
@@ -1716,9 +1649,6 @@ void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_
     QueryResult.pVisPrimitives = &VisPrimitives;
     QueryResult.pVisPrimitives->Clear();
 
-    QueryResult.pVisSurfs = &VisSurfs;
-    QueryResult.pVisSurfs->Clear();
-
     /*!!!
     BoxPrimitives.Clear();
     BoundingBoxesSSE.Clear();
@@ -1736,7 +1666,6 @@ void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_
     Dbg_StackDeep                = 0;
     Dbg_CullMiss                 = 0;
 #endif
-    Dbg_CulledBySurfaceBounds   = 0;
     Dbg_CulledByPrimitiveBounds = 0;
     Dbg_TotalPrimitiveBounds    = 0;
 
@@ -1894,258 +1823,6 @@ HK_INLINE bool RayIntersectTriangleFast(Float3 const& _RayStart, Float3 const& _
     return true;
 }
 
-void VisibilityLevel::RaycastSurface(SurfaceDef* Self)
-{
-    float d, u, v;
-    float boxMin, boxMax;
-
-    if (Self->Flags & SURF_PLANAR)
-    {
-        // Calculate distance from ray origin to plane
-        const float d1 = Math::Dot(m_pRaycast->RayStart, Self->Face.Normal) + Self->Face.D;
-        float d2;
-
-        if (Self->Flags & SURF_TWOSIDED)
-        {
-            // Check ray direction
-            d2 = Math::Dot(Self->Face.Normal, m_pRaycast->RayDir);
-            if (Math::Abs(d2) < 0.0001f)
-            {
-                // ray is parallel
-                return;
-            }
-        }
-        else
-        {
-
-            // Perform face culling
-            if (d1 <= 0.0f) return;
-
-            // Check ray direction
-            d2 = Math::Dot(Self->Face.Normal, m_pRaycast->RayDir);
-            if (d2 >= 0.0f)
-            {
-                // ray is parallel or has wrong direction
-                return;
-            }
-
-#if 0
-            // Code for back face culling
-
-            // Perform face culling
-            if ( d1 >= 0.0f ) return;
-
-            // Check ray direction
-            d2 = Math::Dot( Self->Face.Normal, m_pRaycast->RayDir );
-            if ( d2 <= 0.0f ) {
-                // ray is parallel or has wrong direction
-                return;
-            }
-#endif
-        }
-
-        // Calculate distance from ray origin to plane intersection
-        d = -(d1 / d2);
-
-        if (d <= 0.0f)
-        {
-            return;
-        }
-
-        if (d >= m_pRaycast->HitDistanceMin)
-        {
-            // distance is too far
-            return;
-        }
-
-        BrushModel const* brushModel = Self->Model;
-
-        MeshVertex const* pVertices = brushModel->Vertices.ToPtr() + Self->FirstVertex;
-        unsigned int const* pIndices = brushModel->Indices.ToPtr() + Self->FirstIndex;
-
-        if (m_pRaycast->bClosest)
-        {
-            for (int i = 0; i < Self->NumIndices; i += 3)
-            {
-                unsigned int const* triangleIndices = pIndices + i;
-
-                Float3 const& v0 = pVertices[triangleIndices[0]].Position;
-                Float3 const& v1 = pVertices[triangleIndices[1]].Position;
-                Float3 const& v2 = pVertices[triangleIndices[2]].Position;
-
-                if (RayIntersectTriangleFast(m_pRaycast->RayStart, m_pRaycast->RayDir, v0, v1, v2, u, v))
-                {
-                    m_pRaycast->HitProxyType = HIT_PROXY_SURFACE;
-                    m_pRaycast->HitSurface = Self;
-                    m_pRaycast->HitLocation = m_pRaycast->RayStart + m_pRaycast->RayDir * d;
-                    m_pRaycast->HitDistanceMin = d;
-                    m_pRaycast->HitUV.X = u;
-                    m_pRaycast->HitUV.Y = v;
-                    m_pRaycast->pVertices = brushModel->Vertices.ToPtr();
-                    m_pRaycast->pLightmapVerts = brushModel->LightmapVerts.ToPtr();
-                    m_pRaycast->LightmapBlock = Self->LightmapBlock;
-                    m_pRaycast->LightingLevel = brushModel->ParentLevel.GetObject();
-                    m_pRaycast->Indices[0] = Self->FirstVertex + triangleIndices[0];
-                    m_pRaycast->Indices[1] = Self->FirstVertex + triangleIndices[1];
-                    m_pRaycast->Indices[2] = Self->FirstVertex + triangleIndices[2];
-                    //m_pRaycast->Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
-                    m_pRaycast->NumHits++;
-
-                    // Mark as visible
-                    Self->VisPass = m_VisQueryMarker;
-
-                    break;
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < Self->NumIndices; i += 3)
-            {
-
-                unsigned int const* triangleIndices = pIndices + i;
-
-                Float3 const& v0 = pVertices[triangleIndices[0]].Position;
-                Float3 const& v1 = pVertices[triangleIndices[1]].Position;
-                Float3 const& v2 = pVertices[triangleIndices[2]].Position;
-
-                if (RayIntersectTriangleFast(m_pRaycast->RayStart, m_pRaycast->RayDir, v0, v1, v2, u, v))
-                {
-
-                    TriangleHitResult& hitResult = m_pRaycastResult->Hits.Add();
-                    hitResult.Location = m_pRaycast->RayStart + m_pRaycast->RayDir * d;
-                    hitResult.Normal = Self->Face.Normal;
-                    hitResult.Distance = d;
-                    hitResult.UV.X = u;
-                    hitResult.UV.Y = v;
-                    hitResult.Indices[0] = Self->FirstVertex + triangleIndices[0];
-                    hitResult.Indices[1] = Self->FirstVertex + triangleIndices[1];
-                    hitResult.Indices[2] = Self->FirstVertex + triangleIndices[2];
-                    //hitResult.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
-
-                    WorldRaycastPrimitive& rcPrimitive = m_pRaycastResult->Primitives.Add();
-                    rcPrimitive.Object = nullptr;
-                    rcPrimitive.FirstHit = rcPrimitive.ClosestHit = m_pRaycastResult->Hits.Size() - 1;
-                    rcPrimitive.NumHits = 1;
-
-                    // Mark as visible
-                    Self->VisPass = m_VisQueryMarker;
-
-                    break;
-                }
-            }
-        }
-    }
-    else
-    {
-        bool cullBackFaces = !(Self->Flags & SURF_TWOSIDED);
-
-        // Perform AABB raycast
-        if (!BvRayIntersectBox(m_pRaycast->RayStart, m_pRaycast->InvRayDir, Self->Bounds, boxMin, boxMax))
-        {
-            return;
-        }
-
-        if (boxMin >= m_pRaycast->HitDistanceMin)
-        {
-            // Ray intersects the box, but box is too far
-            return;
-        }
-
-        BrushModel const* brushModel = Self->Model;
-
-        MeshVertex const* pVertices = brushModel->Vertices.ToPtr() + Self->FirstVertex;
-        unsigned int const* pIndices = brushModel->Indices.ToPtr() + Self->FirstIndex;
-
-        if (m_pRaycast->bClosest)
-        {
-            for (int i = 0; i < Self->NumIndices; i += 3)
-            {
-                unsigned int const* triangleIndices = pIndices + i;
-
-                Float3 const& v0 = pVertices[triangleIndices[0]].Position;
-                Float3 const& v1 = pVertices[triangleIndices[1]].Position;
-                Float3 const& v2 = pVertices[triangleIndices[2]].Position;
-
-                if (BvRayIntersectTriangle(m_pRaycast->RayStart, m_pRaycast->RayDir, v0, v1, v2, d, u, v, cullBackFaces))
-                {
-                    if (m_pRaycast->HitDistanceMin > d)
-                    {
-
-                        m_pRaycast->HitProxyType = HIT_PROXY_SURFACE;
-                        m_pRaycast->HitSurface = Self;
-                        m_pRaycast->HitLocation = m_pRaycast->RayStart + m_pRaycast->RayDir * d;
-                        m_pRaycast->HitDistanceMin = d;
-                        m_pRaycast->HitUV.X = u;
-                        m_pRaycast->HitUV.Y = v;
-                        m_pRaycast->pVertices = brushModel->Vertices.ToPtr();
-                        m_pRaycast->pLightmapVerts = brushModel->LightmapVerts.ToPtr();
-                        m_pRaycast->LightmapBlock = Self->LightmapBlock;
-                        m_pRaycast->LightingLevel = brushModel->ParentLevel.GetObject();
-                        m_pRaycast->Indices[0] = Self->FirstVertex + triangleIndices[0];
-                        m_pRaycast->Indices[1] = Self->FirstVertex + triangleIndices[1];
-                        m_pRaycast->Indices[2] = Self->FirstVertex + triangleIndices[2];
-                        //m_pRaycast->Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
-
-                        // Mark as visible
-                        Self->VisPass = m_VisQueryMarker;
-                    }
-                }
-            }
-        }
-        else
-        {
-            int firstHit = m_pRaycastResult->Hits.Size();
-            int closestHit = firstHit;
-
-            for (int i = 0; i < Self->NumIndices; i += 3)
-            {
-
-                unsigned int const* triangleIndices = pIndices + i;
-
-                Float3 const& v0 = pVertices[triangleIndices[0]].Position;
-                Float3 const& v1 = pVertices[triangleIndices[1]].Position;
-                Float3 const& v2 = pVertices[triangleIndices[2]].Position;
-
-                if (BvRayIntersectTriangle(m_pRaycast->RayStart, m_pRaycast->RayDir, v0, v1, v2, d, u, v, cullBackFaces))
-                {
-                    if (m_pRaycast->RayLength > d)
-                    {
-                        TriangleHitResult& hitResult = m_pRaycastResult->Hits.Add();
-                        hitResult.Location = m_pRaycast->RayStart + m_pRaycast->RayDir * d;
-                        hitResult.Normal = Math::Cross(v1 - v0, v2 - v0).Normalized();
-                        hitResult.Distance = d;
-                        hitResult.UV.X = u;
-                        hitResult.UV.Y = v;
-                        hitResult.Indices[0] = Self->FirstVertex + triangleIndices[0];
-                        hitResult.Indices[1] = Self->FirstVertex + triangleIndices[1];
-                        hitResult.Indices[2] = Self->FirstVertex + triangleIndices[2];
-                        //hitResult.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
-
-                        // Mark as visible
-                        Self->VisPass = m_VisQueryMarker;
-
-                        // Find closest hit
-                        if (d < m_pRaycastResult->Hits[closestHit].Distance)
-                        {
-                            closestHit = m_pRaycastResult->Hits.Size() - 1;
-                        }
-                    }
-                }
-            }
-
-            if (Self->VisPass == m_VisQueryMarker)
-            {
-                WorldRaycastPrimitive& rcPrimitive = m_pRaycastResult->Primitives.Add();
-                rcPrimitive.Object = nullptr;
-                rcPrimitive.FirstHit = firstHit;
-                rcPrimitive.NumHits = m_pRaycastResult->Hits.Size() - firstHit;
-                rcPrimitive.ClosestHit = closestHit;
-            }
-        }
-    }
-}
-
 void VisibilityLevel::RaycastPrimitive(PrimitiveDef* Self)
 {
     // FIXME: What about two sided primitives? Use TwoSided flag directly from material or from primitive?
@@ -2156,7 +1833,6 @@ void VisibilityLevel::RaycastPrimitive(PrimitiveDef* Self)
 
         if (Self->RaycastClosestCallback && Self->RaycastClosestCallback(Self, m_pRaycast->RayStart, m_pRaycast->HitLocation, hit, &m_pRaycast->pVertices))
         {
-            m_pRaycast->HitProxyType = HIT_PROXY_PRIMITIVE;
             m_pRaycast->HitPrimitive = Self;
             m_pRaycast->HitLocation = hit.Location;
             m_pRaycast->HitNormal = hit.Normal;
@@ -2223,50 +1899,6 @@ void VisibilityLevel::RaycastArea(VisArea* InArea)
 
     // Mark area raycast processed
     InArea->VisMark = m_VisQueryMarker;
-
-    if (InArea->NumSurfaces > 0)
-    {
-        BrushModel* model = m_Model;
-
-        int const* pSurfaceIndex = &m_AreaSurfaces[InArea->FirstSurface];
-
-        for (int i = 0; i < InArea->NumSurfaces; i++, pSurfaceIndex++)
-        {
-
-            SurfaceDef* surf = &model->Surfaces[*pSurfaceIndex];
-
-            if (surf->VisMark == m_VisQueryMarker)
-            {
-                // Surface raycast already processed
-                continue;
-            }
-
-            // Mark surface raycast processed
-            surf->VisMark = m_VisQueryMarker;
-
-            // Filter query group
-            if ((surf->QueryGroup & m_pRaycast->VisQueryMask) != m_pRaycast->VisQueryMask)
-            {
-                continue;
-            }
-
-            // Check surface visibility group is not visible
-            if ((surf->VisGroup & m_pRaycast->VisibilityMask) == 0)
-            {
-                continue;
-            }
-
-            RaycastSurface(surf);
-
-#ifdef CLOSE_ENOUGH_EARLY_OUT
-            // hit is close enough to stop ray casting?
-            if (m_pRaycast->HitDistanceMin < 0.0001f)
-            {
-                return;
-            }
-#endif
-        }
-    }
 
     for (PrimitiveLink* link = InArea->Links; link; link = link->NextInArea)
     {
@@ -2364,86 +1996,6 @@ void VisibilityLevel::RaycastPrimitiveBounds(VisArea* InArea)
     // Mark area raycast processed
     InArea->VisMark = m_VisQueryMarker;
 
-    if (InArea->NumSurfaces > 0)
-    {
-        BrushModel* model = m_Model;
-
-        int const* pSurfaceIndex = &m_AreaSurfaces[InArea->FirstSurface];
-
-        for (int i = 0; i < InArea->NumSurfaces; i++, pSurfaceIndex++)
-        {
-
-            SurfaceDef* surf = &model->Surfaces[*pSurfaceIndex];
-
-            if (surf->VisMark == m_VisQueryMarker)
-            {
-                // Surface raycast already processed
-                continue;
-            }
-
-            // Mark surface raycast processed
-            surf->VisMark = m_VisQueryMarker;
-
-            // Filter query group
-            if ((surf->QueryGroup & m_pRaycast->VisQueryMask) != m_pRaycast->VisQueryMask)
-            {
-                continue;
-            }
-
-            // Check surface visibility group is not visible
-            if ((surf->VisGroup & m_pRaycast->VisibilityMask) == 0)
-            {
-                continue;
-            }
-
-            if (surf->Flags & SURF_PLANAR)
-            {
-                // FIXME: planar surface has no bounds?
-                continue;
-            }
-
-            // Perform AABB raycast
-            if (!BvRayIntersectBox(m_pRaycast->RayStart, m_pRaycast->InvRayDir, surf->Bounds, boxMin, boxMax))
-            {
-                continue;
-            }
-            if (boxMin >= m_pRaycast->HitDistanceMin)
-            {
-                // Ray intersects the box, but box is too far
-                continue;
-            }
-
-            // Mark as visible
-            surf->VisPass = m_VisQueryMarker;
-
-            if (m_pRaycast->bClosest)
-            {
-                m_pRaycast->HitProxyType = HIT_PROXY_SURFACE;
-                m_pRaycast->HitSurface = surf;
-                m_pRaycast->HitDistanceMin = boxMin;
-                m_pRaycast->HitDistanceMax = boxMax;
-
-#ifdef CLOSE_ENOUGH_EARLY_OUT
-                // hit is close enough to stop ray casting?
-                if (m_pRaycast->HitDistanceMin < 0.0001f)
-                {
-                    break;
-                }
-#endif
-            }
-            else
-            {
-                BoxHitResult& hitResult = m_pBoundsRaycastResult->Add();
-
-                hitResult.Object = nullptr;
-                hitResult.LocationMin = m_pRaycast->RayStart + m_pRaycast->RayDir * boxMin;
-                hitResult.LocationMax = m_pRaycast->RayStart + m_pRaycast->RayDir * boxMax;
-                hitResult.DistanceMin = boxMin;
-                hitResult.DistanceMax = boxMax;
-            }
-        }
-    }
-
     for (PrimitiveLink* link = InArea->Links; link; link = link->NextInArea)
     {
         PrimitiveDef* primitive = link->Primitive;
@@ -2508,7 +2060,6 @@ void VisibilityLevel::RaycastPrimitiveBounds(VisArea* InArea)
 
         if (m_pRaycast->bClosest)
         {
-            m_pRaycast->HitProxyType = HIT_PROXY_PRIMITIVE;
             m_pRaycast->HitPrimitive = primitive;
             m_pRaycast->HitDistanceMin = boxMin;
             m_pRaycast->HitDistanceMax = boxMax;
@@ -3165,7 +2716,7 @@ bool VisibilityLevel::RaycastClosest(TVector<VisibilityLevel*> const& levels, Wo
     Raycast.InvRayDir.X = 1.0f / Raycast.RayDir.X;
     Raycast.InvRayDir.Y = 1.0f / Raycast.RayDir.Y;
     Raycast.InvRayDir.Z = 1.0f / Raycast.RayDir.Z;
-    Raycast.HitProxyType = HIT_PROXY_UNKNOWN;
+    Raycast.HitPrimitive = nullptr;
     Raycast.HitLocation = InRayEnd;
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.bClosest = true;
@@ -3188,7 +2739,7 @@ bool VisibilityLevel::RaycastClosest(TVector<VisibilityLevel*> const& levels, Wo
 
     //DEBUG( "NumHits %d\n", Raycast.NumHits );
 
-    if (Raycast.HitProxyType == HIT_PROXY_PRIMITIVE)
+    if (Raycast.HitPrimitive)
     {
         Raycast.HitPrimitive->EvaluateRaycastResult(Raycast.HitPrimitive,
                                                     Raycast.LightingLevel,
@@ -3203,42 +2754,6 @@ bool VisibilityLevel::RaycastClosest(TVector<VisibilityLevel*> const& levels, Wo
                                                     Result.LightmapSample_Experimental);
 
         Result.Object = Raycast.HitPrimitive->Owner;
-    }
-    else if (Raycast.HitProxyType == HIT_PROXY_SURFACE)
-    {
-        MeshVertex const* vertices = Raycast.pVertices;
-
-        Float3 const& v0 = vertices[Raycast.Indices[0]].Position;
-        Float3 const& v1 = vertices[Raycast.Indices[1]].Position;
-        Float3 const& v2 = vertices[Raycast.Indices[2]].Position;
-
-        // surface vertices already in world space, so there is no need to transform them
-        Result.Vertices[0] = v0;
-        Result.Vertices[1] = v1;
-        Result.Vertices[2] = v2;
-
-        Result.Object = nullptr; // surfaces has no parent objects
-
-        Raycast.HitNormal = Math::Cross(Result.Vertices[1] - Result.Vertices[0], Result.Vertices[2] - Result.Vertices[0]);
-        Raycast.HitNormal.NormalizeSelf();
-
-        const float hitW = 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1];
-
-        Float2 uv0 = vertices[Raycast.Indices[0]].GetTexCoord();
-        Float2 uv1 = vertices[Raycast.Indices[1]].GetTexCoord();
-        Float2 uv2 = vertices[Raycast.Indices[2]].GetTexCoord();
-        Result.Texcoord = uv0 * hitW + uv1 * Raycast.HitUV[0] + uv2 * Raycast.HitUV[1];
-
-        if (Raycast.pLightmapVerts && Raycast.LightingLevel && Raycast.LightmapBlock >= 0)
-        {
-            Float2 const& lm0 = Raycast.pLightmapVerts[Raycast.Indices[0]].TexCoord;
-            Float2 const& lm1 = Raycast.pLightmapVerts[Raycast.Indices[1]].TexCoord;
-            Float2 const& lm2 = Raycast.pLightmapVerts[Raycast.Indices[2]].TexCoord;
-            Float2 lighmapTexcoord = lm0 * hitW + lm1 * Raycast.HitUV[0] + lm2 * Raycast.HitUV[1];
-
-            //Level const* level = Raycast.LightingLevel;
-            //Result.LightmapSample_Experimental = level->SampleLight(Raycast.LightmapBlock, lighmapTexcoord); // todo
-        }
     }
     else
     {
@@ -3348,7 +2863,7 @@ bool VisibilityLevel::RaycastClosestBounds(TVector<VisibilityLevel*> const& leve
     Raycast.InvRayDir.X = 1.0f / Raycast.RayDir.X;
     Raycast.InvRayDir.Y = 1.0f / Raycast.RayDir.Y;
     Raycast.InvRayDir.Z = 1.0f / Raycast.RayDir.Z;
-    Raycast.HitProxyType = HIT_PROXY_UNKNOWN;
+    Raycast.HitPrimitive = nullptr;
     //Raycast.HitLocation is unused
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.HitDistanceMax = Raycast.RayLength;
@@ -3367,13 +2882,9 @@ bool VisibilityLevel::RaycastClosestBounds(TVector<VisibilityLevel*> const& leve
 #endif
     }
 
-    if (Raycast.HitProxyType == HIT_PROXY_PRIMITIVE)
+    if (Raycast.HitPrimitive)
     {
         Result.Object = Raycast.HitPrimitive->Owner;
-    }
-    else if (Raycast.HitProxyType == HIT_PROXY_SURFACE)
-    {
-        Result.Object = nullptr;
     }
     else
     {
@@ -3594,9 +3105,9 @@ void VisibilitySystem::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisAre
     }
 }
 
-void VisibilitySystem::QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query) const
+void VisibilitySystem::QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const
 {
-    VisibilityLevel::QueryVisiblePrimitives(m_Levels, VisPrimitives, VisSurfs, VisPass, Query);
+    VisibilityLevel::QueryVisiblePrimitives(m_Levels, VisPrimitives, VisPass, Query);
 }
 
 bool VisibilitySystem::RaycastTriangles(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
