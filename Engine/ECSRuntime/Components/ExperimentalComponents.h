@@ -46,16 +46,6 @@ struct DirectionalLightComponent_ECS
         return m_IlluminanceInLux;
     }
 
-    void SetDirection(Float3 const& direction)
-    {
-        m_Direction = direction.Normalized();
-    }
-
-    Float3 const& GetDirection() const
-    {
-        return m_Direction;
-    }
-
     void SetShadowMaxDistance(float maxDistance)
     {
         m_ShadowMaxDistance = maxDistance;
@@ -112,7 +102,6 @@ struct DirectionalLightComponent_ECS
     float          m_Temperature = 6590.0f;
     float          m_IlluminanceInLux = 110000.0f;
     Float4         m_EffectiveColor;
-    Float3         m_Direction = Float3(0,-1,0);
 
     // TODO: move to CascadeShadowComponent?
     float          m_ShadowMaxDistance = 128;

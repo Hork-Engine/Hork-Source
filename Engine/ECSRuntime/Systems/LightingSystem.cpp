@@ -367,9 +367,8 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
     if (com_DrawDirectionalLights)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<DirectionalLightComponent_ECS>;
-
-        const Float3 pos(0, 10, 0);
+            ::ReadOnly<DirectionalLightComponent_ECS>
+            ::ReadOnly<FinalTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(1, 1, 1, 1));
@@ -377,10 +376,16 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator it(*m_World); it; it++)
         {
             DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
+            FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
-                renderer.DrawLine(pos, pos + lights[i].m_Direction * 10.0f);
+                renderer.SetColor(Color4(lights[i].m_EffectiveColor[0],
+                                         lights[i].m_EffectiveColor[1],
+                                         lights[i].m_EffectiveColor[2]));
+
+                Float3 dir = -transform[i].Rotation.ZAxis();
+                renderer.DrawLine(transform[i].Position, transform[i].Position + dir * 10.0f);
             }
         }
     }

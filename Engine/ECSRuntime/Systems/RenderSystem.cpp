@@ -294,6 +294,11 @@ Float3x3 DirectionToMatrix(Float3 const& direction)
     }
 }
 
+HK_FORCEINLINE Float3x3 FixupLightRotation(Quat const& rotation)
+{
+    return DirectionToMatrix(-rotation.ZAxis());
+}
+
 void RenderSystem::SortShadowInstances(RenderFrameData& frameData, LightShadowmap const* shadowMap)
 {
     struct ShadowInstanceSortFunction
@@ -313,11 +318,14 @@ void RenderSystem::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& f
 {
     auto& frameLoop = GameApplication::GetFrameLoop();
 
-    using Query = ECS::Query<>::ReadOnly<DirectionalLightComponent_ECS>;
+    using Query = ECS::Query<>
+        ::ReadOnly<DirectionalLightComponent_ECS>
+        ::ReadOnly<FinalTransformComponent>;
 
     for (Query::Iterator it(*m_World); it; it++)
     {
         DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
+        FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
 
         bool bCastShadow = it.HasComponent<ShadowCastTag>();
 
@@ -331,7 +339,7 @@ void RenderSystem::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& f
 
                 auto& light = lights[i];
 
-                Float3x3 rotationMat = DirectionToMatrix(light.m_Direction);
+                Float3x3 rotationMat = FixupLightRotation(transform[i].Rotation);
 
                 if (bCastShadow)
                 {
