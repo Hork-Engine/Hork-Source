@@ -4027,10 +4027,10 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
     deserializeInfo.pDocumentData = documentData.CStr();
     deserializeInfo.bInsitu       = true;
 
-    Document document;
-    document.DeserializeFromString(deserializeInfo);
+    DocumentParser parser;
+    auto document = parser.DeserializeFromString(deserializeInfo);
 
-    if (document.GetInt32("version") != 1)
+    if (document->GetInt32("version") != 1)
     {
         LOG("MGMaterialGraph::LoadFromFile: unknown version\n");
         return nullptr;
@@ -4039,7 +4039,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
     MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
    
-    auto mTextureSlots = document.FindMember("textures");
+    auto mTextureSlots = document->FindMember("textures");
 
     TStringHashMap<uint32_t> textureSlots;
 
@@ -4077,9 +4077,9 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
     TStringHashMap<NodeInfo> nodes;
 
     nodes["__root__"].Node   = graph;
-    nodes["__root__"].Object = &document;
+    nodes["__root__"].Object = document;
 
-    auto mNodes = document.FindMember("nodes");
+    auto mNodes = document->FindMember("nodes");
     for (auto object = mNodes->GetArrayValues(); object; object = object->GetNext())
     {
         auto id = object->GetString("id");

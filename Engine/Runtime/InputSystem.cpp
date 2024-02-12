@@ -1019,7 +1019,7 @@ int InputHelper::LookupController(StringView Controller)
 
 
 
-void InputMappings::InitializeFromDocument(Document const& Document)
+void InputMappings::InitializeFromDocument(DocumentValue const& Document)
 {
     UnmapAll();
 

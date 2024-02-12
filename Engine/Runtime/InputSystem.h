@@ -153,7 +153,7 @@ protected:
     //const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
 
 private:
-    void InitializeFromDocument(Document const& Document);
+    void InitializeFromDocument(DocumentValue const& Document);
 
     THashMap<InputDeviceKey, TVector<Mapping>> m_Mappings;
     TNameHash<TVector<AxisMapping>> m_AxisMappings;

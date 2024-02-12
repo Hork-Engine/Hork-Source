@@ -53,10 +53,10 @@ void MaterialLibrary::Read(IBinaryStreamReadInterface& stream, ResourceManager* 
     deserializeInfo.pDocumentData = text.CStr();
     deserializeInfo.bInsitu = true;
 
-    Document doc;
-    doc.DeserializeFromString(deserializeInfo);
+    DocumentParser parser;
+    auto doc = parser.DeserializeFromString(deserializeInfo);
 
-    for (auto* dinstance = doc.GetListOfMembers(); dinstance; dinstance = dinstance->GetNext())
+    for (auto* dinstance = doc->GetListOfMembers(); dinstance; dinstance = dinstance->GetNext())
     {
         if (dinstance->IsObject())
         {

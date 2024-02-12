@@ -234,7 +234,7 @@ private:
     DocumentValue* m_Next{};
     DocumentValue* m_Prev{};
 
-    friend class Document;
+    friend class DocumentParser;
     friend class DocumentMember;
 };
 
@@ -333,21 +333,21 @@ private:
     DocumentMember* m_Next{};
     DocumentMember* m_Prev{};
 
-    friend class Document;
+    friend class DocumentParser;
     friend class DocumentValue;
 };
 
-class Document : public DocumentValue
+class DocumentParser : public DocumentValue
 {
 public:
-    Document();
+    DocumentParser();
 
-    void DeserializeFromString(DocumentDeserializeInfo const& DeserializeInfo);
+    TRef<DocumentValue> DeserializeFromString(DocumentDeserializeInfo const& DeserializeInfo);
 
 private:
-    TRef<DocumentValue>  ParseObject();
+    TRef<DocumentValue> ParseObject();
     TRef<DocumentMember> ParseMember(DocumentToken const& MemberToken);
-    void                 ParseArray(DocumentValue** ppArrayHead, DocumentValue** ppArrayTail);
+    void ParseArray(DocumentValue** ppArrayHead, DocumentValue** ppArrayTail);
 
     DocumentTokenizer m_Tokenizer;
 };
