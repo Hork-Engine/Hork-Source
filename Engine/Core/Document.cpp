@@ -720,8 +720,7 @@ void DocumentMember::Print() const
     }
 }
 
-DocumentParser::DocumentParser() :
-    DocumentValue(TYPE_OBJECT)
+DocumentParser::DocumentParser()
 {}
 
 void DocumentParser::ParseArray(DocumentValue** ppArrayHead, DocumentValue** ppArrayTail)
@@ -783,7 +782,7 @@ void DocumentParser::ParseArray(DocumentValue** ppArrayHead, DocumentValue** ppA
         {
             // array element is string
 
-            TRef<DocumentValue> value = MakeRef<DocumentValue>(TYPE_STRING);
+            TRef<DocumentValue> value = MakeRef<DocumentValue>(DocumentValue::TYPE_STRING);
             if (m_Tokenizer.InSitu())
                 value->SetStringInsitu({token.Begin, token.End});
             else
@@ -837,7 +836,7 @@ static bool Expect(DOCUMENT_TOKEN_TYPE Type, DocumentToken const& Token)
 
 TRef<DocumentValue> DocumentParser::ParseObject()
 {
-    TRef<DocumentValue> value = MakeRef<DocumentValue>(TYPE_OBJECT);
+    TRef<DocumentValue> value = MakeRef<DocumentValue>(DocumentValue::TYPE_OBJECT);
 
     while (1)
     {
@@ -939,7 +938,7 @@ TRef<DocumentMember> DocumentParser::ParseMember(DocumentToken const& MemberToke
         m_Tokenizer.NextToken();
 
         // value is string
-        TRef<DocumentValue> value = MakeRef<DocumentValue>(TYPE_STRING);
+        TRef<DocumentValue> value = MakeRef<DocumentValue>(DocumentValue::TYPE_STRING);
         if (m_Tokenizer.InSitu())
             value->SetStringInsitu({token.Begin, token.End});
         else
@@ -968,7 +967,7 @@ TRef<DocumentMember> DocumentParser::ParseMember(DocumentToken const& MemberToke
 
 TRef<DocumentValue> DocumentParser::DeserializeFromString(DocumentDeserializeInfo const& DeserializeInfo)
 {
-    TRef<DocumentValue> doc = MakeRef<DocumentValue>(TYPE_OBJECT);
+    TRef<DocumentValue> doc = MakeRef<DocumentValue>(DocumentValue::TYPE_OBJECT);
 
     m_Tokenizer.Reset(DeserializeInfo.pDocumentData, DeserializeInfo.bInsitu);
 

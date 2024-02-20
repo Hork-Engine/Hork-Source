@@ -337,7 +337,7 @@ private:
     friend class DocumentValue;
 };
 
-class DocumentParser : public DocumentValue
+class DocumentParser
 {
 public:
     DocumentParser();
