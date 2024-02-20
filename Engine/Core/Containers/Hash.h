@@ -486,9 +486,10 @@ template <typename Val, typename Hash, typename Predicate, typename Allocator>
 StringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringView str)
 {
     size_t len    = str.Size();
-    char*  result = (char*)EASTLAlloc(Super::Super::get_allocator(), len);
+    char*  result = (char*)EASTLAlloc(Super::Super::get_allocator(), len + 1);
     memcpy(result, str.ToPtr(), len);
-    return StringView(result, len);
+    result[len] = 0;
+    return StringView(result, len, true);
 }
 
 /** Case insensitive string hash map. */
