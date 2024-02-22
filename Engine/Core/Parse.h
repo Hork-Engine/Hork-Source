@@ -127,70 +127,70 @@ HK_FORCEINLINE int64_t ParseInt64(StringView Str)
 }
 
 template <typename T>
-T ParseNumber(StringView);
+T Parse(StringView);
 
 template <>
-HK_FORCEINLINE float ParseNumber<float>(StringView Str)
+HK_FORCEINLINE float Parse<float>(StringView Str)
 {
     return ParseFloat(Str);
 }
 
 template <>
-HK_FORCEINLINE double ParseNumber<double>(StringView Str)
+HK_FORCEINLINE double Parse<double>(StringView Str)
 {
     return ParseDouble(Str);
 }
 
 template <>
-HK_FORCEINLINE uint8_t ParseNumber<uint8_t>(StringView Str)
+HK_FORCEINLINE uint8_t Parse<uint8_t>(StringView Str)
 {
     return ParseUInt8(Str);
 }
 
 template <>
-HK_FORCEINLINE uint16_t ParseNumber<uint16_t>(StringView Str)
+HK_FORCEINLINE uint16_t Parse<uint16_t>(StringView Str)
 {
     return ParseUInt16(Str);
 }
 
 template <>
-HK_FORCEINLINE uint32_t ParseNumber<uint32_t>(StringView Str)
+HK_FORCEINLINE uint32_t Parse<uint32_t>(StringView Str)
 {
     return ParseUInt32(Str);
 }
 
 template <>
-HK_FORCEINLINE uint64_t ParseNumber<uint64_t>(StringView Str)
+HK_FORCEINLINE uint64_t Parse<uint64_t>(StringView Str)
 {
     return ParseUInt64(Str);
 }
 
 template <>
-HK_FORCEINLINE int8_t ParseNumber<int8_t>(StringView Str)
+HK_FORCEINLINE int8_t Parse<int8_t>(StringView Str)
 {
     return ParseInt8(Str);
 }
 
 template <>
-HK_FORCEINLINE int16_t ParseNumber<int16_t>(StringView Str)
+HK_FORCEINLINE int16_t Parse<int16_t>(StringView Str)
 {
     return ParseInt16(Str);
 }
 
 template <>
-HK_FORCEINLINE int32_t ParseNumber<int32_t>(StringView Str)
+HK_FORCEINLINE int32_t Parse<int32_t>(StringView Str)
 {
     return ParseInt32(Str);
 }
 
 template <>
-HK_FORCEINLINE int64_t ParseNumber<int64_t>(StringView Str)
+HK_FORCEINLINE int64_t Parse<int64_t>(StringView Str)
 {
     return ParseInt64(Str);
 }
 
 template <>
-HK_FORCEINLINE bool ParseNumber<bool>(StringView Str)
+HK_FORCEINLINE bool Parse<bool>(StringView Str)
 {
     return ParseBool(Str);
 }

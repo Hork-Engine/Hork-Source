@@ -655,7 +655,7 @@ HK_INLINE VectorType ParseVector(StringView string, StringView* newString = null
 
         using ElementType = std::remove_reference_t<decltype(v[i])>;
 
-        v[i] = Core::ParseNumber<ElementType>(token);
+        v[i] = Core::Parse<ElementType>(token);
     }
 
     s = GetToken(token, s);
