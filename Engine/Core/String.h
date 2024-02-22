@@ -139,7 +139,7 @@ struct TGlobalStringView
 };
 
 using GlobalStringView = TGlobalStringView<char>;
-using AGlobalStringViewW = TGlobalStringView<WideChar>;
+using GlobalStringViewW = TGlobalStringView<WideChar>;
 
 HK_NAMESPACE_END
 
@@ -1466,7 +1466,7 @@ HK_INLINE String GetString(WideStringView wideStr)
     return str;
 }
 
-HK_INLINE String GetString(AGlobalStringViewW wideStr)
+HK_INLINE String GetString(GlobalStringViewW wideStr)
 {
     const WideChar* s = wideStr.CStr();
     const WideChar* e = s + StringLength(wideStr);
