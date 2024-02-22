@@ -144,7 +144,7 @@ struct BlobRef
         m_HeapPtr(pData),
         m_HeapSize(Size)
     {
-        assert(m_HeapSize == 0 || m_HeapPtr);
+        HK_ASSERT(m_HeapSize == 0 || m_HeapPtr);
     }
 
     bool operator==(BlobRef const& Rhs) const

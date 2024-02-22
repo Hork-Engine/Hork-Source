@@ -14,7 +14,7 @@ void BehaviorTreeNode::Start(BehaviorTreeContext& context)
 
 void BehaviorTreeNode::Update(BehaviorTreeContext& context)
 {
-    assert(m_Status == RUNNING);
+    HK_ASSERT(m_Status == RUNNING);
 }
 
 void BehaviorTreeNode::SetStatus(STATUS status)
@@ -115,7 +115,7 @@ void Sequence::Update(BehaviorTreeContext& context)
             SetStatus(FAILURE);
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
@@ -152,7 +152,7 @@ void ParallelSequence::Update(BehaviorTreeContext& context)
                     numFailure++;
                     break;
                 case UNDEFINED:
-                    assert(0);
+                    HK_ASSERT(0);
                     break;
             }
         }
@@ -205,7 +205,7 @@ void Selector::Update(BehaviorTreeContext& context)
             }
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
@@ -260,7 +260,7 @@ void Inverter::Update(BehaviorTreeContext& context)
             SetStatus(SUCCESS);
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
@@ -292,7 +292,7 @@ void Succeeder::Update(BehaviorTreeContext& context)
             SetStatus(SUCCESS);
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
@@ -335,7 +335,7 @@ void Repeater::Update(BehaviorTreeContext& context)
                 m_Children->Start(context);
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
@@ -369,7 +369,7 @@ void RepeatUntilFail::Update(BehaviorTreeContext& context)
             SetStatus(SUCCESS);
             break;
         case UNDEFINED:
-            assert(0);
+            HK_ASSERT(0);
             break;
     }
 }
