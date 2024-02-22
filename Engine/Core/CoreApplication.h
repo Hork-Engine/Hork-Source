@@ -116,6 +116,7 @@ public:
     }
 
     static void SetClipboard(StringView text);
+    static void SetClipboard(String const& text);
 
     static const char* GetClipboard();
 

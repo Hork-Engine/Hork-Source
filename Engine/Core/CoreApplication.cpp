@@ -677,9 +677,21 @@ void CoreApplication::_WriteMessage(const char* message)
 
 void CoreApplication::SetClipboard(StringView text)
 {
-    String str(text);
+    if (text.IsNullTerminated())
+    {
+        SDL_SetClipboardText(text.ToPtr());
+    }
+    else
+    {
+        // Create null-terminated copy of string
+        String str(text);
+        SDL_SetClipboardText(str.CStr());
+    }
+}
 
-    SDL_SetClipboardText(str.CStr());
+void CoreApplication::SetClipboard(String const& text)
+{
+    SDL_SetClipboardText(text.CStr());
 }
 
 const char* CoreApplication::GetClipboard()
