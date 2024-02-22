@@ -84,7 +84,7 @@ WideChar STB_TEXTEDIT_GETCHAR(UITextEdit* obj, int pos)
     return obj->GetText()[pos];
 }
 
-static inline int STB_TEXTEDIT_KEYTOTEXT(int key)
+static HK_INLINE int STB_TEXTEDIT_KEYTOTEXT(int key)
 {
     return key >= 0x10000 ? 0 : key;
 }
