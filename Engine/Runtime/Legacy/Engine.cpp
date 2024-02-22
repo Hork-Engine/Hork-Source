@@ -138,7 +138,7 @@ Engine::Engine(int argc, char** argv)
 
     CreateLogicalDevice("OpenGL 4.5", &m_RenderDevice);
 
-    Global::GRenderDevice = m_RenderDevice.GetObject();
+    Global::GRenderDevice = m_RenderDevice.RawPtr();
 
     if (rt_VidWidth.GetInteger() <= 0 || rt_VidHeight.GetInteger() <= 0)
     {
@@ -177,7 +177,7 @@ Engine::Engine(int argc, char** argv)
     Global::GRetinaScale = Float2(1.0f);
 
     m_VertexMemoryGPU = MakeRef<VertexMemoryGPU>(m_RenderDevice);
-    Global::GVertexMemoryGPU = m_VertexMemoryGPU.GetObject();
+    Global::GVertexMemoryGPU = m_VertexMemoryGPU.RawPtr();
 
     AINavigationModule::Initialize();
     PhysicsModule::Initialize();
@@ -204,7 +204,7 @@ Engine::Engine(int argc, char** argv)
     Global::GInputSystem = &m_InputSystem;
 
     m_FrameLoop = MakeRef<FrameLoop>(m_RenderDevice);
-    Global::GFrameLoop = m_FrameLoop.GetObject();
+    Global::GFrameLoop = m_FrameLoop.RawPtr();
 
     // Process initial events
     m_FrameLoop->PollEvents(this);
@@ -334,7 +334,7 @@ void Engine::RunMainLoop()
         DrawCanvas();
 
         // Build frame data for rendering
-        m_Renderer->Render(m_FrameLoop, m_Canvas.GetObject());
+        m_Renderer->Render(m_FrameLoop, m_Canvas.RawPtr());
 
         // Generate GPU commands
         m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_pSwapChain->GetBackBuffer(), m_Renderer->GetFrameData());

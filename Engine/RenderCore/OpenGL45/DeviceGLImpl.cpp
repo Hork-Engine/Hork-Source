@@ -165,7 +165,7 @@ DeviceGLImpl::DeviceGLImpl()
     MainWindowHandle = WindowPool.NewWindow();
 
     SDL_Window*   pWindow   = MainWindowHandle.Handle; //pMainWindow->GetNativeHandle();
-    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.GetObject())->GetGLContext();
+    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.RawPtr())->GetGLContext();
 
     SDL_GL_MakeCurrent(pWindow, windowCtx);
 

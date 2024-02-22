@@ -326,7 +326,7 @@ VertexHandle* VertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _Da
     m_pDevice->CreateBuffer(bufferCI, _Data, &buffer);
     buffer->SetDebugName("Vertex memory HUGE buffer");
 
-    RenderCore::IBuffer* pBuffer = buffer.GetObject();
+    RenderCore::IBuffer* pBuffer = buffer.RawPtr();
     pBuffer->AddRef();
 
     handle->Address = (size_t)pBuffer;

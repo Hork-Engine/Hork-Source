@@ -44,7 +44,7 @@ private:
     T* CreateSystem(Args&&... args)
     {
         m_EngineSystems.Add(MakeUnique<T>(this, std::forward<Args>(args)...));
-        return static_cast<T*>(m_EngineSystems.Last().GetObject());
+        return static_cast<T*>(m_EngineSystems.Last().RawPtr());
     }
 
     float m_Accumulator = 0.0f;

@@ -680,7 +680,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
             for (int i = 0; i < q.Count(); i++)
             {
-                auto* collisionModel = bodies[i].m_Model.GetObject();
+                auto* collisionModel = bodies[i].m_Model.RawPtr();
 
                 if (body_interface.IsActive(bodies[i].m_BodyId))
                 {
@@ -719,7 +719,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
             for (int i = 0; i < q.Count(); i++)
             {
-                auto* collisionModel = bodies[i].m_Model.GetObject();
+                auto* collisionModel = bodies[i].m_Model.RawPtr();
 
                 Float3 centerOfMassPos = collisionModel->GetCenterOfMassWorldPosition(transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
                 Float3 centerOfMassPos2 = ConvertVector(body_interface.GetCenterOfMassPosition(bodies[i].m_BodyId));

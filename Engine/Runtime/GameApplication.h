@@ -118,12 +118,12 @@ public:
 
     static FrameLoop& GetFrameLoop()
     {
-        return *static_cast<GameApplication*>(Instance())->m_FrameLoop.GetObject();
+        return *static_cast<GameApplication*>(Instance())->m_FrameLoop.RawPtr();
     }
 
     static UIManager& GetUIManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_UIManager.GetObject();
+        return *static_cast<GameApplication*>(Instance())->m_UIManager.RawPtr();
     }
 
     static MersenneTwisterRand& GetRandom()
@@ -153,7 +153,7 @@ public:
 
     static RenderBackend& GetRenderBackend()
     {
-        return *static_cast<GameApplication*>(Instance())->m_RenderBackend.GetObject();
+        return *static_cast<GameApplication*>(Instance())->m_RenderBackend.RawPtr();
     }
 
     static AsyncJobList* GetRenderFrontendJobList()
@@ -226,7 +226,7 @@ private:
     CommandProcessor                 m_CommandProcessor;
     CommandContext                   m_CommandContext;
     StateMachine                     m_StateMachine;
-    TVector<World*>              m_Worlds;
+    TVector<World*>                  m_Worlds;
     DisplayVideoMode                 m_DesiredMode;
     MersenneTwisterRand              m_Random;
     String                           m_Screenshot;

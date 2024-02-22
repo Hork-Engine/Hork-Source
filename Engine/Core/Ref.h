@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 struct WeakRefCounter
 {
-    void* Object;
+    void* RawPtr;
     int   RefCount;
 
     void* operator new(size_t SizeInBytes)
@@ -63,7 +63,7 @@ public:
     {
         if (m_WeakRefCounter)
         {
-            m_WeakRefCounter->Object = nullptr;
+            m_WeakRefCounter->RawPtr = nullptr;
         }
     }
 
@@ -170,136 +170,136 @@ public:
     TRef() = default;
 
     TRef(TRef<T> const& rhs) :
-        m_Object(rhs.m_Object)
+        m_RawPtr(rhs.m_RawPtr)
     {
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->AddRef();
+            m_RawPtr->AddRef();
         }
     }
 
     explicit TRef(T* rhs) :
-        m_Object(rhs)
+        m_RawPtr(rhs)
     {
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->AddRef();
+            m_RawPtr->AddRef();
         }
     }
 
     TRef(TRef&& rhs) :
-        m_Object(rhs.m_Object)
+        m_RawPtr(rhs.m_RawPtr)
     {
-        rhs.m_Object = nullptr;
+        rhs.m_RawPtr = nullptr;
     }
 
     ~TRef()
     {
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->RemoveRef();
+            m_RawPtr->RemoveRef();
         }
     }
 
-    T* GetObject()
+    T* RawPtr()
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
-    T const* GetObject() const
+    T const* RawPtr() const
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
     //    operator bool() const
     //    {
-    //        return m_Object != nullptr;
+    //        return m_RawPtr != nullptr;
     //    }
 
     operator T*() const
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
     T& operator*() const
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return *m_Object;
+        HK_ASSERT_(m_RawPtr, "TRef");
+        return *m_RawPtr;
     }
 
     T* operator->()
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return m_Object;
+        HK_ASSERT_(m_RawPtr, "TRef");
+        return m_RawPtr;
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return m_Object;
+        HK_ASSERT_(m_RawPtr, "TRef");
+        return m_RawPtr;
     }
 
     void Reset()
     {
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->RemoveRef();
-            m_Object = nullptr;
+            m_RawPtr->RemoveRef();
+            m_RawPtr = nullptr;
         }
     }
 
     TRef<T>& operator=(TRef<T> const& rhs)
     {
-        this->operator=(rhs.m_Object);
+        this->operator=(rhs.m_RawPtr);
         return *this;
     }
 
     TRef<T>& operator=(T* rhs)
     {
-        if (m_Object == rhs)
+        if (m_RawPtr == rhs)
         {
             return *this;
         }
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->RemoveRef();
+            m_RawPtr->RemoveRef();
         }
-        m_Object = rhs;
-        if (m_Object)
+        m_RawPtr = rhs;
+        if (m_RawPtr)
         {
-            m_Object->AddRef();
+            m_RawPtr->AddRef();
         }
         return *this;
     }
 
     TRef<T>& operator=(TRef&& rhs)
     {
-        if (m_Object == rhs.m_Object)
+        if (m_RawPtr == rhs.m_RawPtr)
         {
             return *this;
         }
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->RemoveRef();
+            m_RawPtr->RemoveRef();
         }
-        m_Object     = rhs.m_Object;
-        rhs.m_Object = nullptr;
+        m_RawPtr = rhs.m_RawPtr;
+        rhs.m_RawPtr = nullptr;
         return *this;
     }
 
     void Attach(T* rhs)
     {
-        if (m_Object == rhs)
+        if (m_RawPtr == rhs)
             return;
-        if (m_Object)
-            m_Object->RemoveRef();
-        m_Object = rhs;
+        if (m_RawPtr)
+            m_RawPtr->RemoveRef();
+        m_RawPtr = rhs;
     }
 
     T* Detach()
     {
-        T* ptr = m_Object;
-        m_Object = nullptr;
+        T* ptr = m_RawPtr;
+        m_RawPtr = nullptr;
         return ptr;
     }
 
@@ -311,7 +311,7 @@ public:
     }
 
 private:
-    T* m_Object{};
+    T* m_RawPtr{};
 };
 
 
@@ -321,29 +321,29 @@ protected:
     WeakReference() = default;
 
     template <typename T>
-    void ResetWeakRef(T* pObject)
+    void ResetWeakRef(T* RawPtr)
     {
-        T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->Object : nullptr;
+        T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->RawPtr : nullptr;
 
-        if (Cur == pObject)
+        if (Cur == RawPtr)
         {
             return;
         }
 
         RemoveWeakRef<T>();
 
-        if (!pObject)
+        if (!RawPtr)
         {
             return;
         }
 
-        m_WeakRefCounter = pObject->GetWeakRefCounter();
+        m_WeakRefCounter = RawPtr->GetWeakRefCounter();
         if (!m_WeakRefCounter)
         {
-            m_WeakRefCounter           = AllocateWeakRefCounter();
-            m_WeakRefCounter->Object   = pObject;
+            m_WeakRefCounter = AllocateWeakRefCounter();
+            m_WeakRefCounter->RawPtr = RawPtr;
             m_WeakRefCounter->RefCount = 1;
-            pObject->SetWeakRefCounter(m_WeakRefCounter);
+            RawPtr->SetWeakRefCounter(m_WeakRefCounter);
         }
         else
         {
@@ -358,9 +358,9 @@ protected:
         {
             if (--m_WeakRefCounter->RefCount == 0)
             {
-                if (m_WeakRefCounter->Object)
+                if (m_WeakRefCounter->RawPtr)
                 {
-                    ((T*)m_WeakRefCounter->Object)->SetWeakRefCounter(nullptr);
+                    ((T*)m_WeakRefCounter->RawPtr)->SetWeakRefCounter(nullptr);
                 }
                 DeallocateWeakRefCounter(m_WeakRefCounter);
             }
@@ -391,12 +391,12 @@ public:
 
     TWeakRef(TWeakRef<T> const& rhs)
     {
-        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.RawPtr()));
     }
 
     TWeakRef(TRef<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.RawPtr()));
     }
 
     explicit TWeakRef(T* rhs)
@@ -417,17 +417,17 @@ public:
 
     TRef<T> ToStrongRef() const
     {
-        return TRef<T>(const_cast<T*>(GetObject()));
+        return TRef<T>(const_cast<T*>(RawPtr()));
     }
 
-    T* GetObject()
+    T* RawPtr()
     {
-        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->RawPtr) : nullptr;
     }
 
-    T const* GetObject() const
+    T const* RawPtr() const
     {
-        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->RawPtr) : nullptr;
     }
 
     //    operator bool() const
@@ -437,30 +437,30 @@ public:
 
     operator T*() const
     {
-        return const_cast<T*>(GetObject());
+        return const_cast<T*>(RawPtr());
     }
 
     T& operator*() const
     {
         HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return *GetObject();
+        return *RawPtr();
     }
 
     T* operator->()
     {
         HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return GetObject();
+        return RawPtr();
     }
 
     T const* operator->() const
     {
         HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return GetObject();
+        return RawPtr();
     }
 
     bool IsExpired() const
     {
-        return !m_WeakRefCounter || static_cast<T*>(m_WeakRefCounter->Object) == nullptr;
+        return !m_WeakRefCounter || static_cast<T*>(m_WeakRefCounter->RawPtr) == nullptr;
     }
 
     void Reset()
@@ -475,12 +475,12 @@ public:
 
     void operator=(TRef<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.RawPtr()));
     }
 
     void operator=(TWeakRef<T> const& rhs)
     {
-        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.RawPtr()));
     }
 
     TWeakRef<T>& operator=(TWeakRef<T>&& rhs)
@@ -501,34 +501,34 @@ public:
 
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(T const* lhs, TWeakRef<U> const& rhs) { return lhs == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(T const* lhs, TWeakRef<U> const& rhs) { return lhs == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(T const* lhs, TWeakRef<U> const& rhs) { return lhs != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(T const* lhs, TWeakRef<U> const& rhs) { return lhs != rhs.RawPtr(); }
 
 
 template <typename T, typename... Args>
@@ -552,7 +552,7 @@ public:
     TUniqueRef() = default;
 
     explicit TUniqueRef(T* InPtr) :
-        m_Object(InPtr)
+        m_RawPtr(InPtr)
     {}
 
     TUniqueRef(TUniqueRef<T> const&) = delete;
@@ -560,7 +560,7 @@ public:
 
     template <typename T2>
     TUniqueRef(TUniqueRef<T2>&& rhs) :
-        m_Object(rhs.Detach())
+        m_RawPtr(rhs.Detach())
     {}
 
     ~TUniqueRef()
@@ -577,53 +577,53 @@ public:
 
     T* operator->() const
     {
-        HK_ASSERT(m_Object);
-        return m_Object;
+        HK_ASSERT(m_RawPtr);
+        return m_RawPtr;
     }
 
     T& operator*() const
     {
-        HK_ASSERT(m_Object);
-        return *m_Object;
+        HK_ASSERT(m_RawPtr);
+        return *m_RawPtr;
     }
 
     template <typename U>
     bool operator==(TUniqueRef<U> const& rhs)
     {
-        return m_Object == rhs.m_Object;
+        return m_RawPtr == rhs.m_RawPtr;
     }
 
     template <typename U>
     bool operator!=(TUniqueRef<U> const& rhs)
     {
-        return m_Object != rhs.m_Object;
+        return m_RawPtr != rhs.m_RawPtr;
     }
 
     operator bool() const
     {
-        return m_Object != nullptr;
+        return m_RawPtr != nullptr;
     }
 
     T* Detach()
     {
-        T* ptr = m_Object;
-        m_Object = nullptr;
+        T* ptr = m_RawPtr;
+        m_RawPtr = nullptr;
         return ptr;
     }
 
-    T* GetObject() const
+    T* RawPtr() const
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
     void Reset(T* InPtr = nullptr)
     {
-        CheckedDelete(m_Object);
-        m_Object = InPtr;
+        CheckedDelete(m_RawPtr);
+        m_RawPtr = InPtr;
     }
 
 private:
-    T* m_Object{};
+    T* m_RawPtr{};
 };
 
 template <typename T, typename... Args>

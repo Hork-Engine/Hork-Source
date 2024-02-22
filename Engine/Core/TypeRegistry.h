@@ -231,7 +231,7 @@ HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
 {
     TUniqueRef<Structure<T>> structure = MakeUnique<Structure<T>>();
 
-    auto ptr = structure.GetObject();
+    auto ptr = structure.RawPtr();
 
     uint32_t id = TypeID<T>::GetID();
 

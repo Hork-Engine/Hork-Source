@@ -191,7 +191,7 @@ bool VirtualTextureCache::CreateTexture(const char* FileName, TRef<VirtualTextur
 
     pTexture->AddRef();
 
-    m_VirtualTextures.Add(pTexture.GetObject());
+    m_VirtualTextures.Add(pTexture.RawPtr());
 
     return true;
 }

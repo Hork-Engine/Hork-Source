@@ -368,7 +368,7 @@ T* ResourceManager::TryGet(ResourceID resource)
     if (!proxy.IsReady())
         return nullptr;
 
-    return static_cast<T*>(proxy.m_Resource.GetObject());
+    return static_cast<T*>(proxy.m_Resource.RawPtr());
 }
 
 template <typename T>

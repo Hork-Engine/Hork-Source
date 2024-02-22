@@ -120,7 +120,7 @@ void UIButton::OnMouseButtonEvent(MouseButtonEvent const& event)
     }
     else if (event.Action == IA_RELEASE)
     {
-        if (GUIManager->HoveredWidget.GetObject() == this && m_bTryPress && !m_bTriggerOnPress)
+        if (GUIManager->HoveredWidget.RawPtr() == this && m_bTryPress && !m_bTriggerOnPress)
         {
             m_Action->Triggered();
         }
@@ -137,9 +137,9 @@ UIButton::DRAW UIButton::GetDrawType() const
         return DRAW_INACTIVE;
 
     if (m_Action->IsActive())
-        return m_bTryPress ? (GUIManager->HoveredWidget.GetObject() == this ? DRAW_HOVERED : DRAW_INACTIVE) : DRAW_ACTIVE;
+        return m_bTryPress ? (GUIManager->HoveredWidget.RawPtr() == this ? DRAW_HOVERED : DRAW_INACTIVE) : DRAW_ACTIVE;
     else
-        return m_bTryPress ? DRAW_ACTIVE : (GUIManager->HoveredWidget.GetObject() == this ? DRAW_HOVERED : DRAW_INACTIVE);
+        return m_bTryPress ? DRAW_ACTIVE : (GUIManager->HoveredWidget.RawPtr() == this ? DRAW_HOVERED : DRAW_INACTIVE);
 }
 
 HK_NAMESPACE_END

@@ -218,16 +218,16 @@ PhysicsSystem::PhysicsSystem()
 
     //m_CollisionConfiguration = MakeUnique< btDefaultCollisionConfiguration >();
     m_CollisionConfiguration = MakeUnique<btSoftBodyRigidBodyCollisionConfiguration>();
-    m_CollisionDispatcher = MakeUnique<btCollisionDispatcher>(m_CollisionConfiguration.GetObject());
+    m_CollisionDispatcher = MakeUnique<btCollisionDispatcher>(m_CollisionConfiguration.RawPtr());
     // TODO: remove this if we don't use gimpact
-    btGImpactCollisionAlgorithm::registerAlgorithm(m_CollisionDispatcher.GetObject());
+    btGImpactCollisionAlgorithm::registerAlgorithm(m_CollisionDispatcher.RawPtr());
     m_ConstraintSolver = MakeUnique<btSequentialImpulseConstraintSolver>();
 
 #ifdef SOFT_BODY_WORLD
-    m_DynamicsWorld = MakeUnique<btSoftRigidDynamicsWorld>(m_CollisionDispatcher.GetObject(),
-                                                           m_BroadphaseInterface.GetObject(),
-                                                           m_ConstraintSolver.GetObject(),
-                                                           m_CollisionConfiguration.GetObject(),
+    m_DynamicsWorld = MakeUnique<btSoftRigidDynamicsWorld>(m_CollisionDispatcher.RawPtr(),
+                                                           m_BroadphaseInterface.RawPtr(),
+                                                           m_ConstraintSolver.RawPtr(),
+                                                           m_CollisionConfiguration.RawPtr(),
                                                            /* SoftBodySolver */ nullptr);
 #else
     m_DynamicsWorld = MakeUnique<btDiscreteDynamicsWorld>(m_CollisionDispatcher, m_BroadphaseInterface, m_ConstraintSolver, m_CollisionConfiguration);
@@ -243,12 +243,12 @@ PhysicsSystem::PhysicsSystem()
     //m_DynamicsWorld->setSynchronizeAllMotionStates( true ); // TODO: check how it works
 
     m_GhostPairCallback = MakeUnique<btGhostPairCallback>();
-    m_BroadphaseInterface->getOverlappingPairCache()->setInternalGhostPairCallback(m_GhostPairCallback.GetObject());
+    m_BroadphaseInterface->getOverlappingPairCache()->setInternalGhostPairCallback(m_GhostPairCallback.RawPtr());
 
 #ifdef SOFT_BODY_WORLD
     m_SoftBodyWorldInfo = &m_DynamicsWorld->getWorldInfo();
-    m_SoftBodyWorldInfo->m_dispatcher = m_CollisionDispatcher.GetObject();
-    m_SoftBodyWorldInfo->m_broadphase = m_BroadphaseInterface.GetObject();
+    m_SoftBodyWorldInfo->m_dispatcher = m_CollisionDispatcher.RawPtr();
+    m_SoftBodyWorldInfo->m_broadphase = m_BroadphaseInterface.RawPtr();
     m_SoftBodyWorldInfo->m_gravity = btVectorToFloat3(GravityVector);
     m_SoftBodyWorldInfo->air_density = (btScalar)1.2;
     m_SoftBodyWorldInfo->water_density = 0;
@@ -1605,7 +1605,7 @@ bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest c
 
     TraceClosestConvexResultCallback hitResult(&_SweepTest.QueryFilter);
 
-    m_DynamicsWorld->convexSweepTest(shape.GetObject(),
+    m_DynamicsWorld->convexSweepTest(shape.RawPtr(),
                                      btTransform(btQuaternionToQuat(startRot), btVectorToFloat3(startPos)),
                                      btTransform(btQuaternionToQuat(endRot), btVectorToFloat3(endPos)), hitResult);
 
@@ -1785,7 +1785,7 @@ void PhysicsSystem::QueryHitProxies_Sphere(TVector<HitProxy*>& _Result, Float3 c
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryHitProxies_Box(TVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
@@ -1793,7 +1793,7 @@ void PhysicsSystem::QueryHitProxies_Box(TVector<HitProxy*>& _Result, Float3 cons
     QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryHitProxies(TVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
@@ -1806,7 +1806,7 @@ void PhysicsSystem::QueryActors_Sphere(TVector<Actor*>& _Result, Float3 const& _
     QueryActorsCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryActors_Box(TVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
@@ -1814,7 +1814,7 @@ void PhysicsSystem::QueryActors_Box(TVector<Actor*>& _Result, Float3 const& _Pos
     QueryActorsCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryActors(TVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
@@ -1827,7 +1827,7 @@ void PhysicsSystem::QueryCollision_Sphere(TVector<CollisionQueryResult>& _Result
     QueryCollisionCallback callback(_Result, _QueryFilter);
     btSphereShape shape(_Radius);
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryCollision_Box(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
@@ -1835,7 +1835,7 @@ void PhysicsSystem::QueryCollision_Box(TVector<CollisionQueryResult>& _Result, F
     QueryCollisionCallback callback(_Result, _QueryFilter);
     btBoxShape shape(btVectorToFloat3(_HalfExtents));
     shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.GetObject(), _Position, &shape, callback);
+    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
 }
 
 void PhysicsSystem::QueryCollision(TVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const

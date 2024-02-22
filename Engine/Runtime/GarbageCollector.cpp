@@ -47,7 +47,7 @@ GCObject::~GCObject()
 {
     if (m_WeakRefCounter)
     {
-        m_WeakRefCounter->Object = nullptr;
+        m_WeakRefCounter->RawPtr = nullptr;
     }
 }
 

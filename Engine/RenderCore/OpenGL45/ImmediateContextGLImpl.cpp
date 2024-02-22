@@ -497,7 +497,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     RootResourceTable = MakeRef<ResourceTableGLImpl>(pDevice, true);
     RootResourceTable->SetDebugName("Root");
 
-    CurrentResourceTable = static_cast<ResourceTableGLImpl*>(RootResourceTable.GetObject());
+    CurrentResourceTable = static_cast<ResourceTableGLImpl*>(RootResourceTable.RawPtr());
 
     pFramebufferCache = MakeRef<FramebufferCacheGL>();
 }
@@ -1356,7 +1356,7 @@ IResourceTable* ImmediateContextGLImpl::GetRootResourceTable()
 
 void ImmediateContextGLImpl::BindResourceTable(IResourceTable* _ResourceTable)
 {
-    IResourceTable* tbl = _ResourceTable ? _ResourceTable : RootResourceTable.GetObject();
+    IResourceTable* tbl = _ResourceTable ? _ResourceTable : RootResourceTable.RawPtr();
 
     CurrentResourceTable = static_cast<ResourceTableGLImpl*>(tbl);
 }

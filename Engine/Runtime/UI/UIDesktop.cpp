@@ -205,7 +205,7 @@ void UIDesktop::UpdateGeometry(float w, float h)
 
 void UIDesktop::SetFocusWidget(UIWidget* widget)
 {
-    if (widget == m_FocusWidget.GetObject())
+    if (widget == m_FocusWidget.RawPtr())
     {
         return;
     }
@@ -379,7 +379,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
         {
             // Stop dragging
 
-            UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DraggingWidget.GetObject());
+            UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DraggingWidget.RawPtr());
             if (dockWidget)
             {
                 UIDockContainer* dockContainer = dockWidget->GetContainer();
@@ -681,7 +681,7 @@ bool UIDesktop::HandleDraggingWidget()
         maxs = parent->m_Geometry.PaddedMaxs;
     }
 
-    UIWindow* window = dynamic_cast<UIWindow*>(m_DraggingWidget.GetObject());
+    UIWindow* window = dynamic_cast<UIWindow*>(m_DraggingWidget.RawPtr());
     if (window && window->bResizable && !window->GetParent())
     {
         if (window->IsMaximized())
@@ -789,7 +789,7 @@ void UIDesktop::StartDragging(UIWidget* widget)
 //{
 //    if (m_BeginDragWidget)
 //    {
-//        UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DragWidget.GetObject());
+//        UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DragWidget.RawPtr());
 //        if (dockWidget)
 //        {
 //            UIDockContainer* dockContainer = dockWidget->GetContainer();

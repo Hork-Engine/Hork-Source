@@ -360,7 +360,7 @@ void GameApplication::RunMainLoop()
         DrawCanvas();
 
         // Build frame data for rendering
-        m_Renderer->Render(m_FrameLoop, m_Canvas.GetObject());
+        m_Renderer->Render(m_FrameLoop, m_Canvas.RawPtr());
 
         // Generate GPU commands
         m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_pSwapChain->GetBackBuffer(), m_Renderer->GetFrameData());

@@ -116,10 +116,10 @@ public:
     String const& GetFileName() const { return m_FileName; }
 
     /** Audio buffer. Null for streamed audio */
-    AudioBuffer* GetAudioBuffer() { return m_pBuffer.GetObject(); }
+    AudioBuffer* GetAudioBuffer() { return m_pBuffer.RawPtr(); }
 
     /** File data for streaming */
-    FileInMemory* GetFileInMemory() { return m_pFileInMemory.GetObject(); }
+    FileInMemory* GetFileInMemory() { return m_pFileInMemory.RawPtr(); }
 
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return m_Revision; }

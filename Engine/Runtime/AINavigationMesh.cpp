@@ -424,7 +424,7 @@ bool AINavigationMesh::Initialize(AINavigationConfig const& _NavigationConfig)
         m_MeshProcess          = MakeUnique<DetourMeshProcess>();
         m_MeshProcess->NavMesh = this;
 
-        status = m_TileCache->init(&tileCacheParams, m_LinearAllocator.GetObject(), &TileCompressorCallback, m_MeshProcess.GetObject());
+        status = m_TileCache->init(&tileCacheParams, m_LinearAllocator.RawPtr(), &TileCompressorCallback, m_MeshProcess.RawPtr());
         if (dtStatusFailed(status))
         {
             Purge();
@@ -1646,7 +1646,7 @@ bool AINavigationMesh::Trace(AINavigationTraceResult& _Result, Float3 const& _Ra
 
     _Result.HitFraction = Math::MaxValue<float>();
 
-    m_NavQuery->raycast(StartRef, (const float*)_RayStart.ToPtr(), (const float*)_RayEnd.ToPtr(), _Filter.m_Filter.GetObject(), &_Result.HitFraction, (float*)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS);
+    m_NavQuery->raycast(StartRef, (const float*)_RayStart.ToPtr(), (const float*)_RayEnd.ToPtr(), _Filter.m_Filter.RawPtr(), &_Result.HitFraction, (float*)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS);
 
     bool bHasHit = _Result.HitFraction != Math::MaxValue<float>();
     if (!bHasHit)
@@ -1687,7 +1687,7 @@ bool AINavigationMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.GetObject(), _NearestPolyRef, NULL);
+    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.RawPtr(), _NearestPolyRef, NULL);
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1711,7 +1711,7 @@ bool AINavigationMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& 
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.GetObject(), &_NearestPointRef->PolyRef, (float*)_NearestPointRef->Position.ToPtr());
+    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.RawPtr(), &_NearestPointRef->PolyRef, (float*)_NearestPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1756,7 +1756,7 @@ bool AINavigationMesh::QueryRandomPoint(NavQueryFilter const& _Filter, NavPointR
     else
         pRandomGenerator = nullptr;
 
-    dtStatus Status = m_NavQuery->findRandomPoint(_Filter.m_Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
+    dtStatus Status = m_NavQuery->findRandomPoint(_Filter.m_Filter.RawPtr(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1805,7 +1805,7 @@ bool AINavigationMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef
     else
         pRandomGenerator = nullptr;
 
-    dtStatus Status = m_NavQuery->findRandomPointAroundCircle(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
+    dtStatus Status = m_NavQuery->findRandomPointAroundCircle(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.RawPtr(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1860,7 +1860,7 @@ bool AINavigationMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 con
 
     _MaxVisitedSize = Math::Max(_MaxVisitedSize, 0);
 
-    dtStatus Status = m_NavQuery->moveAlongSurface(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_Destination.ToPtr(), _Filter.m_Filter.GetObject(), (float*)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize);
+    dtStatus Status = m_NavQuery->moveAlongSurface(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_Destination.ToPtr(), _Filter.m_Filter.RawPtr(), (float*)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize);
     if (dtStatusFailed(Status))
     {
         return false;
@@ -1916,7 +1916,7 @@ bool AINavigationMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const&
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findPath(_StartRef.PolyRef, _EndRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_EndRef.Position.ToPtr(), _Filter.m_Filter.GetObject(), _Path, _PathCount, _MaxPath);
+    dtStatus Status = m_NavQuery->findPath(_StartRef.PolyRef, _EndRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_EndRef.Position.ToPtr(), _Filter.m_Filter.RawPtr(), _Path, _PathCount, _MaxPath);
     if (dtStatusFailed(Status))
     {
         *_PathCount = 0;
@@ -2051,7 +2051,7 @@ bool AINavigationMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& _
 
 bool AINavigationMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, AINavigationHitResult& _HitResult) const
 {
-    dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.GetObject(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
+    dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.RawPtr(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
     if (dtStatusFailed(Status))
     {
         return false;

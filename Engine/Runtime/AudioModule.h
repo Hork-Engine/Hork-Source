@@ -74,7 +74,7 @@ public:
 
     AudioMixer* GetMixer() const
     {
-        return m_pMixer.GetObject();
+        return m_pMixer.RawPtr();
     }
 
     //TPoolAllocator<SoundOneShot, 128>& GetOneShotPool()

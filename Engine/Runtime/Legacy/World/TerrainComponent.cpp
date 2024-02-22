@@ -303,7 +303,7 @@ void TerrainComponent::AddTerrainPhysics()
 
     m_RigidBody = new btRigidBody(contructInfo);
     m_RigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/);
-    m_RigidBody->setUserPointer(m_HitProxy.GetObject());
+    m_RigidBody->setUserPointer(m_HitProxy.RawPtr());
 
     m_HitProxy->Initialize(this, m_RigidBody);
 }

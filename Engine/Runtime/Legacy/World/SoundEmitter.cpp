@@ -299,7 +299,7 @@ bool SoundEmitter::RestartSound()
 
     m_Resource.Reset();
 
-    return StartPlay(newSound.GetObject(), 0, loopStart);
+    return StartPlay(newSound.RawPtr(), 0, loopStart);
 }
 
 void SoundEmitter::ClearSound()
@@ -725,7 +725,7 @@ bool SoundEmitter::IsMuted() const
 
 bool SoundEmitter::IsSilent() const
 {
-    return !m_Resource.GetObject();
+    return !m_Resource.RawPtr();
 }
 
 void SoundEmitter::SpawnSound(SoundResource* SoundResource, Float3 const& SpawnPosition, World* World, SceneComponent* Instigator, SoundSpawnInfo const* SpawnInfo)
@@ -854,7 +854,7 @@ void SoundEmitter::SpawnSound(SoundResource* SoundResource, Float3 const& SpawnP
                                        -1,
                                        0,
                                        SoundResource->GetAudioBuffer(),
-                                       streamInterface.GetObject(),
+                                       streamInterface.RawPtr(),
                                        sound->bVirtualizeWhenSilent,
                                        sound->ChanVolume,
                                        sound->LocalDir,

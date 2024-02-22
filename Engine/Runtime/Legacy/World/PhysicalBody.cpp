@@ -425,7 +425,7 @@ void PhysicalBody::CreateBoneCollisions()
         btRigidBody* rigidBody = new btRigidBody(constructInfo);
         rigidBody->setCollisionFlags(collisionFlags);
         rigidBody->forceActivationState(DISABLE_DEACTIVATION);
-        rigidBody->setUserPointer(boneCollision->pObject.GetObject());
+        rigidBody->setUserPointer(boneCollision->pObject.RawPtr());
 
         boneCollision->pObject->Initialize(this, rigidBody);
     }
@@ -570,7 +570,7 @@ void PhysicalBody::CreateRigidBody()
     constructInfo.m_angularSleepingThreshold = m_AngularSleepingThreshold;
 
     m_RigidBody = new btRigidBody(constructInfo);
-    m_RigidBody->setUserPointer(m_HitProxy.GetObject());
+    m_RigidBody->setUserPointer(m_HitProxy.RawPtr());
 
     SetCollisionFlags();
     SetRigidBodyGravity();

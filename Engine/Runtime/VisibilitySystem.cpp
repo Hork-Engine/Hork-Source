@@ -1436,7 +1436,7 @@ void VisibilityLevel::RaycastPrimitive(PrimitiveDef* Self)
             // TODO:
             //m_pRaycast->pLightmapVerts = Self->Owner->LightmapUVChannel->GetVertices();
             //m_pRaycast->LightmapBlock = Self->Owner->LightmapBlock;
-            //m_pRaycast->LightingLevel = Self->Owner->ParentLevel.GetObject();
+            //m_pRaycast->LightingLevel = Self->Owner->ParentLevel.RawPtr();
 
             // Mark primitive visible
             Self->VisPass = m_VisQueryMarker;
