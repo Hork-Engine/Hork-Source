@@ -418,7 +418,7 @@ template <typename Val, typename Hash, typename Predicate, typename Allocator>
 typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
 TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key, const Val& value)
 {
-    EASTL_ASSERT(key);
+    //EASTL_ASSERT(key);
     Iterator i = Super::Super::find(key);
     if (i != Super::Super::end())
     {
@@ -475,7 +475,7 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](StringView key)
 {
     using base_value_type = typename Super::Super::value_type;
 
-    EASTL_ASSERT(!key.IsEmpty());
+    //EASTL_ASSERT(!key.IsEmpty());
     Iterator i = Super::Super::find(key);
     if (i != Super::Super::end())
         return i->second;
