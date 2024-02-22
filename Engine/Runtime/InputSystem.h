@@ -31,12 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Runtime/InputDefs.h>
-//#include <Engine/Runtime/Resource.h>
 #include <Engine/Runtime/Event.h>
 #include <Engine/Core/Containers/Array.h>
 #include <Engine/Core/Containers/Hash.h>
 #include <Engine/Core/ConsoleVar.h>
-#include <Engine/Core/Document.h>
 #include "BaseObject.h"
 
 HK_NAMESPACE_BEGIN
@@ -153,7 +151,7 @@ protected:
     //const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
 
 private:
-    void InitializeFromDocument(DocumentValue const& Document);
+    //void InitializeFromDocument(DocumentValue const& Document);
 
     THashMap<InputDeviceKey, TVector<Mapping>> m_Mappings;
     TNameHash<TVector<AxisMapping>> m_AxisMappings;

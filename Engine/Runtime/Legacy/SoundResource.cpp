@@ -36,7 +36,6 @@ SOFTWARE.
 #include <Engine/Core/Platform/Memory.h>
 #include <Engine/Core/Application/Logger.h>
 #include <Engine/Core/Parse.h>
-#include <Engine/Core/Document.h>
 
 #include <Engine/Runtime/AudioModule.h>
 #include <Engine/Audio/AudioDevice.h>

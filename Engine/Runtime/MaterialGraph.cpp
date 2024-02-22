@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "MaterialGraph.h"
 #include <Engine/Core/Logger.h>
-#include <Engine/Core/Parse.h>
+#include <Engine/Core/DOM.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -674,7 +674,7 @@ MGNode::MGNode(StringView Name) :
     m_Name(Name)
 {}
 
-void MGNode::ParseProperties(DocumentValue const* document)
+void MGNode::ParseProperties(DOM::ObjectView dobject)
 {
     PropertyList properties;
 
@@ -682,7 +682,7 @@ void MGNode::ParseProperties(DocumentValue const* document)
 
     for (Property const* prop : properties)
     {
-        StringView value = document->GetString(prop->GetName());
+        StringView value = dobject[prop->GetName()].AsString();
         if (!value)
             continue;
 
@@ -4021,16 +4021,10 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
     if (!Stream.IsValid())
         return nullptr;
 
-    String documentData = Stream.AsString();
+    DOM::Object document = DOM::Parser().Parse(Stream.AsString());
+    DOM::ObjectView documentView = document;
 
-    DocumentDeserializeInfo deserializeInfo;
-    deserializeInfo.pDocumentData = documentData.CStr();
-    deserializeInfo.bInsitu       = true;
-
-    DocumentParser parser;
-    auto document = parser.DeserializeFromString(deserializeInfo);
-
-    if (document->GetInt32("version") != 1)
+    if (documentView["version"].As<int32_t>() != 1)
     {
         LOG("MGMaterialGraph::LoadFromFile: unknown version\n");
         return nullptr;
@@ -4038,51 +4032,46 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
     MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
+    auto dtextureSlots = documentView["textures"];
    
-    auto mTextureSlots = document->FindMember("textures");
-
     TStringHashMap<uint32_t> textureSlots;
 
-    if (mTextureSlots)
+    for (uint32_t slot = 0; slot < dtextureSlots.GetArraySize(); slot++)
     {
-        uint32_t slot = 0;
-        for (auto object = mTextureSlots->GetArrayValues(); object; object = object->GetNext())
+        auto dtextureSlot = dtextureSlots.At(slot);
+        auto* textureSlot = graph->GetTexture(slot);
+
+        textureSlot->ParseProperties(dtextureSlot);
+
+        StringView id = dtextureSlot["id"].AsString();
+        if (id)
         {
-            auto* textureSlot = graph->GetTexture(slot);
-
-            textureSlot->ParseProperties(object);
-
-            slot++;
-
-            StringView id = object->GetString("id");
-            if (id)
+            if (textureSlots.Contains(id))
             {
-                if (textureSlots.Contains(id))
-                {
-                    LOG("Texture redefinition {}\n", id);
-                    continue;
-                }
-
-                textureSlots[id] = slot - 1;
+                LOG("Texture redefinition {}\n", id);
+                continue;
             }
+            textureSlots[id] = slot;
         }
     }
 
     struct NodeInfo
     {
-        DocumentValue const* Object;
-        MGNode*          Node;
+        DOM::ObjectView ObjectView;
+        MGNode*         Node;
     };
 
     TStringHashMap<NodeInfo> nodes;
 
-    nodes["__root__"].Node   = graph;
-    nodes["__root__"].Object = document;
+    nodes["__root__"].Node = graph;
+    nodes["__root__"].ObjectView = documentView;
 
-    auto mNodes = document->FindMember("nodes");
-    for (auto object = mNodes->GetArrayValues(); object; object = object->GetNext())
+    auto dnodes = documentView["nodes"];
+    for (int i = 0; i < dnodes.GetArraySize(); i++)
     {
-        auto id = object->GetString("id");
+        auto dnode = dnodes.At(i);
+
+        auto id = dnode["id"].AsString();
         if (!id)
         {
             LOG("Invalid node id\n");
@@ -4095,7 +4084,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
             continue;
         }
 
-        StringView nodeType = object->GetString("type");
+        StringView nodeType = dnode["type"].AsString();
 
         MGNode* node = graph->Add(nodeType);
         if (!node)
@@ -4106,8 +4095,8 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
         NodeInfo& info = nodes[id];
 
-        info.Object = object;
-        info.Node   = node;        
+        info.ObjectView = dnode;
+        info.Node = node;   
     }
 
     TVector<StringView> vector;
@@ -4119,13 +4108,13 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
         NodeInfo& info = it.second;
         MGNode*   node = info.Node;
 
-        node->ParseProperties(info.Object);
+        node->ParseProperties(info.ObjectView);
         
         TVector<MGInput*> const& inputs = node->GetInputs();
 
         for (MGInput* input : inputs)
         {
-            StringView connection = info.Object->GetString("$" + input->GetName());
+            StringView connection = info.ObjectView["$" + input->GetName()].AsString();
 
             if (!connection)
             {

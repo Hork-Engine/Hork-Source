@@ -1,8 +1,7 @@
 #include "MaterialManager.h"
 #include "ResourceManager.h"
 
-#include <Engine/Core/Document.h>
-#include <Engine/Core/Parse.h>
+#include <Engine/Core/DOM.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,48 +46,36 @@ void MaterialLibrary::DestroyMaterial(MaterialInstance* material)
 
 void MaterialLibrary::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
 {
-    String text = stream.AsString();
+    DOM::Object document = DOM::Parser().Parse(stream.AsString());
+    DOM::ObjectView documentView = document;
 
-    DocumentDeserializeInfo deserializeInfo;
-    deserializeInfo.pDocumentData = text.CStr();
-    deserializeInfo.bInsitu = true;
-
-    DocumentParser parser;
-    auto doc = parser.DeserializeFromString(deserializeInfo);
-
-    for (auto* dinstance = doc->GetListOfMembers(); dinstance; dinstance = dinstance->GetNext())
+    for (auto dmember : DOM::MemberConstIterator(documentView))
     {
-        if (dinstance->IsObject())
+        auto materialName = dmember->GetName();
+
+        DOM::ObjectView dinstance = dmember->GetObject();
+        if (!dinstance.IsStructure())
+            continue;
+
+        MaterialInstance* instance = CreateMaterial(materialName.GetStringView());
+        if (!instance)
+            continue;
+
+        auto material = dinstance["Material"].AsString();
+        instance->m_Material = resManager->GetResource<MaterialResource>(!material.IsEmpty() ? material : "/Default/Materials/Unlit");
+
+        auto dtextures = dinstance["Textures"];
+        int textureCount = Math::Min<int>(MAX_MATERIAL_TEXTURES, dtextures.GetArraySize());
+        for (int i = 0; i < textureCount; i++)
         {
-            auto* dobject = dinstance->GetArrayValues();
+            instance->m_Textures[i] = resManager->GetResource<TextureResource>(dtextures.At(i).AsString());
+        }
 
-            MaterialInstance* instance = CreateMaterial(dinstance->GetName());
-            if (instance)
-            {
-                auto* dmaterial = dobject->FindMember("Material");
-
-                instance->m_Material = resManager->GetResource<MaterialResource>(dmaterial ? dmaterial->GetStringView() : "/Default/Materials/Unlit");
-
-                auto* dtextures = dobject->FindMember("Textures");
-                if (dtextures)
-                {
-                    int texSlot = 0;
-                    for (DocumentValue* v = dtextures->GetArrayValues(); v && texSlot < MAX_MATERIAL_TEXTURES; v = v->GetNext())
-                    {
-                        instance->m_Textures[texSlot++] = resManager->GetResource<TextureResource>(v->GetStringView());
-                    }
-                }
-
-                auto* dconstants = dobject->FindMember("Constants");
-                if (dconstants)
-                {
-                    int constantNum = 0;
-                    for (DocumentValue* v = dconstants->GetArrayValues(); v && constantNum < MAX_MATERIAL_UNIFORMS; v = v->GetNext())
-                    {
-                        instance->m_Constants[constantNum++] = Core::ParseFloat(v->GetStringView());
-                    }
-                }
-            }
+        auto dconstants = dinstance["Constants"];
+        int constantCount = Math::Min<int>(MAX_MATERIAL_UNIFORMS, dconstants.GetArraySize());
+        for (int i = 0; i < constantCount; i++)
+        {
+            instance->m_Constants[i] = dconstants.At(i).As<float>();
         }
     }
 }

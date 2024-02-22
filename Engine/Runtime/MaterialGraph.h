@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseObject.h"
 #include <Engine/Core/Guid.h>
-#include <Engine/Core/Document.h>
+#include <Engine/Core/DOM.h>
 #include <Engine/Image/Image.h>
 #include <Engine/Renderer/RenderDefs.h>
 
@@ -159,7 +159,7 @@ public:
     TVector<MGInput*> const&  GetInputs() const { return m_Inputs; }
     TVector<MGOutput*> const& GetOutputs() const { return m_Outputs; }
 
-    void ParseProperties(DocumentValue const* document);
+    void ParseProperties(DOM::ObjectView dobject);
 
 protected:
     void SetInputs(std::initializer_list<MGInput*> Inputs);

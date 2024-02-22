@@ -386,51 +386,31 @@ public:
 
 namespace Traits
 {
-template <>
-struct Convert<bool>
-{
-    static Object Encode(bool const& rhs)
-    {
-        // TODO
-        return {};
-    }
-
-    static bool Decode(Object const& object, bool& rhs)
-    {
-        rhs = Core::Parse<bool>(object.AsString());
-        return true;
-    }
+#define HK_DOM_TRAITS_CONVERT(type) \
+template <> \
+struct Convert<type> \
+{ \
+    static Object Encode(type const& rhs) \
+    { \
+        return Core::ToString(rhs); \
+    } \
+    static bool Decode(Object const& object, type& rhs) \
+    { \
+        rhs = Core::Parse<type>(object.AsString()); \
+        return true; \
+    } \
 };
-template <>
-struct Convert<uint32_t>
-{
-    static Object Encode(uint32_t const& rhs)
-    {
-        // TODO
-        return {};
-    }
-
-    static bool Decode(Object const& object, uint32_t& rhs)
-    {
-        rhs = Core::Parse<uint32_t>(object.AsString());
-        return true;
-    }
-};
-template <>
-struct Convert<uint64_t>
-{
-    static Object Encode(uint64_t const& rhs)
-    {
-        // TODO
-        return {};
-    }
-
-    static bool Decode(Object const& object, uint64_t& rhs)
-    {
-        rhs = Core::Parse<uint64_t>(object.AsString());
-        return true;
-    }
-};
+HK_DOM_TRAITS_CONVERT(bool)
+HK_DOM_TRAITS_CONVERT(int8_t)
+HK_DOM_TRAITS_CONVERT(int16_t)
+HK_DOM_TRAITS_CONVERT(int32_t)
+HK_DOM_TRAITS_CONVERT(int64_t)
+HK_DOM_TRAITS_CONVERT(uint8_t)
+HK_DOM_TRAITS_CONVERT(uint16_t)
+HK_DOM_TRAITS_CONVERT(uint32_t)
+HK_DOM_TRAITS_CONVERT(uint64_t)
+HK_DOM_TRAITS_CONVERT(float)
+HK_DOM_TRAITS_CONVERT(double)
 }
 
 template <typename Impl>

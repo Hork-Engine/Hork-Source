@@ -1018,7 +1018,7 @@ int InputHelper::LookupController(StringView Controller)
 }
 
 
-
+#if 0
 void InputMappings::InitializeFromDocument(DocumentValue const& Document)
 {
     UnmapAll();
@@ -1121,7 +1121,7 @@ void InputMappings::InitializeFromDocument(DocumentValue const& Document)
         }
     }
 }
-
+#endif
 //bool InputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
 //{
 //    String script = Stream.AsString();
