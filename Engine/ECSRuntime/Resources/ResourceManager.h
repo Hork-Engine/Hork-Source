@@ -2,6 +2,7 @@
 
 #include <Engine/Core/IO.h>
 #include <Engine/Core/Containers/ArrayView.h>
+#include <Engine/Core/Containers/PagedVector.h>
 #include <Engine/Core/Containers/Hash.h>
 
 #include "ResourceHandle.h"
@@ -28,117 +29,6 @@ public:
 
     ThreadSafeQueue<ResourceID> m_Queue;
 };
-
-constexpr uint32_t ConstexprLog2(uint32_t v)
-{
-    uint32_t r = (v > 0xffff) << 4;
-    v >>= r;
-    uint32_t shift = (v > 0xff) << 3;
-    v >>= shift;
-    r |= shift;
-    shift = (v > 0xf) << 2;
-    v >>= shift;
-    r |= shift;
-    shift = (v > 0x3) << 1;
-    v >>= shift;
-    r |= shift;
-    r |= (v >> 1);
-    return r;
-}
-
-//constexpr size_t constexpr_log2(size_t x)
-//{
-//# ifdef __GNUC__
-//    return __builtin_ffs( x ) - 1; // GCC
-//#endif
-//#ifdef _MSC_VER
-//    return CHAR_BIT * sizeof(x) - __lzcnt( x ); // Visual studio
-//#endif
-//}
-
-namespace Internal
-{
-
-template <typename T, size_t BlockSize>
-class ResourceList : Noncopyable
-{
-public:
-    static constexpr size_t ElementSize = sizeof(T);
-    static constexpr size_t BlockSizeLog2 = ConstexprLog2(BlockSize);
-
-    ResourceList()
-    {
-        static_assert(IsPowerOfTwo(BlockSize), "Block size must be power of two");
-        memset(m_Blocks, 0, sizeof(m_Blocks));
-    }
-
-    ~ResourceList()
-    {
-        for (size_t i = 0; i < m_Size; i++)
-        {
-            uint32_t blockNum = i >> BlockSizeLog2;
-            uint32_t localIndex = i & (BlockSize - 1);
-
-            reinterpret_cast<T*>(m_Blocks[blockNum]->Data[localIndex])->~T();
-        }
-
-        for (size_t i = 0; i < MAX_BLOCKS && m_Blocks[i]; i++)
-        {
-            delete m_Blocks[i];
-        }
-    }
-
-    uint32_t Add()
-    {
-        uint32_t i = m_Size++;
-
-        uint32_t blockNum = i >> BlockSizeLog2;
-        uint32_t localIndex = i & (BlockSize - 1);
-
-        HK_ASSERT(blockNum < MAX_BLOCKS);
-        if (blockNum >= MAX_BLOCKS)
-        {
-            // Critical error
-        }
-
-        if (localIndex == 0)
-        {
-            m_Blocks[blockNum] = new Block;
-        }
-
-        new (m_Blocks[blockNum]->Data[localIndex]) T();
-
-        return i;
-    }
-
-    T& Get(uint32_t index)
-    {
-        HK_ASSERT(index < m_Size);
-
-        uint32_t blockNum = index >> BlockSizeLog2;
-        uint32_t localIndex = index & (BlockSize - 1);
-
-        return *reinterpret_cast<T*>(m_Blocks[blockNum]->Data[localIndex]);
-    }
-
-    uint32_t GetNumBlocks() const
-    {
-        return (m_Size >> BlockSizeLog2) + 1;
-    }
-
-private:
-    struct Block
-    {
-        uint8_t Data[BlockSize][ElementSize];
-    };
-
-    static constexpr size_t MAX_BLOCKS = 1024;
-
-    Block* m_Blocks[MAX_BLOCKS];
-    size_t m_Size{};
-};
-
-} // namespace Internal
 
 using ResourceAreaID = uint32_t;
 
@@ -253,7 +143,8 @@ private:
     void IncrementAreas(ResourceProxy& proxy);
     void DecrementAreas(ResourceProxy& proxy);
 
-    Internal::ResourceList<ResourceProxy, 1024> m_ResourceList;
+    using ResourceList = TPagedVector<ResourceProxy, 1024, 1024>;
+    ResourceList m_ResourceList;
     TStringHashMap<ResourceID> m_ResourceHash;
     Mutex m_ResourceHashMutex;
 

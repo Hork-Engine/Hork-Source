@@ -46,7 +46,7 @@ StringId::Pool::Pool()
 
 StringId::ID StringId::Pool::Insert(StringView str)
 {
-    TLockGuard<Mutex> guard(m_Mutex);
+    MutexGuard guard(m_Mutex);
 
     auto it = m_Storage.Find(str);
     if (it != m_Storage.End())
@@ -60,21 +60,20 @@ StringId::ID StringId::Pool::Insert(StringView str)
     }
 
     ID id = ID(numStrings);
-    m_Storage[str] = id;
-    m_Strings.Add(m_Storage.Find(str)->first);
+
+    auto result = m_Storage.Insert(str, id);
+    m_Strings.Add(result.first.get_node()->mValue.first);
     return id;
 }
 
 StringView StringId::Pool::GetString(ID id)
 {
-    TLockGuard<Mutex> guard(m_Mutex);
-    return m_Strings[id];
+    return m_Strings.Get(id);
 }
 
 const char* StringId::Pool::GetRawString(ID id)
 {
-    TLockGuard<Mutex> guard(m_Mutex);
-    return m_Strings[id].ToPtr();
+    return m_Strings.Get(id).ToPtr();
 }
 
 HK_NAMESPACE_END

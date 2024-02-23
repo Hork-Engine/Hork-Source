@@ -33,6 +33,7 @@ SOFTWARE.
 #include "StringId.h"
 #include "Parse.h"
 #include "Ref.h"
+#include "Containers/Vector.h"
 
 HK_NAMESPACE_BEGIN
 

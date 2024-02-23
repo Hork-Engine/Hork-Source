@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Containers/Hash.h"
-#include "Containers/Vector.h"
+#include "Containers/PagedVector.h"
 #include "Thread.h"
 
 HK_NAMESPACE_BEGIN
@@ -95,7 +95,7 @@ private:
 
     private:
         TStringHashMap<ID> m_Storage;
-        TVector<StringView> m_Strings;
+        TPagedVector<StringView, 1024, 64> m_Strings;
         Mutex m_Mutex;
     };
 
