@@ -32,7 +32,7 @@ void SkinningSystem_ECS::UpdatePoses(GameFrame const& frame)
             SkeletonPose* pose = poseComponent[i].Pose;
             SkeletonControllerComponent& controller = controllerComponent[i];
 
-            controller.AnimInstance->Update(frame.VariableTimeStep, pose);
+            controller.AnimInstance->Update(frame.FixedTimeStep, pose);
             #if 0
             SkeletonResource* skeleton = GameApplication::GetResourceManager().TryGet(pose->Skeleton);
             if (skeleton)
@@ -87,6 +87,8 @@ void SkinningSystem_ECS::UpdatePoses(GameFrame const& frame)
 
 void SkinningSystem_ECS::UpdateSkins()
 {
+    // TODO: Update skins only if object visible? Update only bounding box?
+
     using Query = ECS::Query<>
         ::Required<SkeletonPoseComponent>
         ;
@@ -132,14 +134,6 @@ void SkinningSystem_ECS::UpdateSkins()
             }
         }
     }
-}
-
-void SkinningSystem_ECS::Update(GameFrame const& frame)
-{
-    // TODO: Update poses only if object visible? Update only bounding box?
-    UpdatePoses(frame);
-
-    UpdateSkins();
 }
 
 void SkinningSystem_ECS::DrawDebug(DebugRenderer& renderer)

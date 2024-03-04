@@ -66,14 +66,14 @@ void World::SetEventHandler(IEventHandler* eventHandler)
 
 void World::Tick(float timeStep)
 {
-    if (!bTick)
-        return;
+    //if (!bTick)
+    //    return;
 
-    if (bPaused)
-    {
-        m_Frame.RunningTime += timeStep;
-        return;
-    }
+    //if (bPaused)
+    //{
+    //    m_Frame.RunningTime += timeStep;
+    //    return;
+    //}
 
     const float fixedTimeStep = 1.0f / 60.0f;
 
@@ -104,6 +104,9 @@ void World::Tick(float timeStep)
 
         // Move / animate nodes
         m_NodeMotionSystem->Update(m_Frame);
+
+        // Update skeleton poses and sockets
+        m_SkinningSystem->UpdatePoses(m_Frame);
 
         // Recalc world transform
         m_TransformSystem->Update(m_Frame);
@@ -143,7 +146,9 @@ void World::Tick(float timeStep)
 
     m_LightingSystem->Update(m_Frame);
 
-    m_SkinningSystem->Update(m_Frame);
+    // TODO:
+    //m_SkinningSystem->InterpolatePoses(m_Frame);
+    m_SkinningSystem->UpdateSkins();
 
     for (auto& system : m_GameplayLateUpdateSystems)
         system->LateUpdate(timeStep);

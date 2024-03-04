@@ -11,14 +11,12 @@ class SkinningSystem_ECS : public EngineSystemECS
 public:
     SkinningSystem_ECS(ECS::World* world);
 
-    void Update(struct GameFrame const& frame);
+    void UpdatePoses(struct GameFrame const& frame);
+    void UpdateSkins();
 
     void DrawDebug(DebugRenderer& InRenderer) override;
 
 private:
-    void UpdatePoses(GameFrame const& frame);
-    void UpdateSkins();
-
     ECS::World* m_World;
 };
 

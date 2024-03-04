@@ -7,7 +7,6 @@
 #include "../Components/TransformComponent.h"
 #include "../Components/WorldTransformComponent.h"
 #include "../Components/FinalTransformComponent.h"
-#include "../Components/NodeComponent.h"
 #include "../Components/MovableTag.h"
 
 #include <Jolt/Core/JobSystemThreadPool.h>
