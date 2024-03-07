@@ -10,6 +10,7 @@
 #include "Systems/TeleportSystem.h"
 #include "Systems/SkinningSystem.h"
 #include "Systems/LightingSystem.h"
+#include "Systems/EntityDestroySystem.h"
 
 #include <Engine/Core/ConsoleVar.h>
 
@@ -31,6 +32,7 @@ World::World(ECS::WorldCreateInfo const& createInfo) :
     m_TeleportSystem = CreateSystem<TeleportSystem>();
     m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
     m_LightingSystem = CreateSystem<LightingSystem>();
+    m_EntityDestroySystem = CreateSystem<EntityDestroySystem>();
 }
 
 World::~World()
@@ -94,6 +96,8 @@ void World::Tick(float timeStep)
 
         // FIXME: Call ExecuteCommands here?
         ExecuteCommands();
+
+        m_EntityDestroySystem->Update();
 
         m_TeleportSystem->Update(m_Frame);
 

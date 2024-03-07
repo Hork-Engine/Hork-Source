@@ -70,6 +70,7 @@ private:
     class TeleportSystem* m_TeleportSystem;
     class SkinningSystem_ECS* m_SkinningSystem;
     class LightingSystem* m_LightingSystem;
+    class EntityDestroySystem* m_EntityDestroySystem;
     class RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
 };
