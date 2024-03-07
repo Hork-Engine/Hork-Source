@@ -6,7 +6,6 @@
 
 #include "../Components/TransformComponent.h"
 #include "../Components/WorldTransformComponent.h"
-#include "../Components/FinalTransformComponent.h"
 #include "../Components/MovableTag.h"
 
 #include <Jolt/Core/JobSystemThreadPool.h>
@@ -513,6 +512,8 @@ void PhysicsSystem::Update(GameFrame const& frame)
 
     auto& physicsModule = PhysicsModule::Get();
 
+    m_FrameIndex = frame.StateIndex;
+
     AddAndRemoveBodies(frame);
 
     // NOTE: We can update scale at lower framerate to save performance
@@ -554,12 +555,12 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         {
             using Query = ECS::Query<>
                 ::ReadOnly<PhysBodyComponent>
-                ::ReadOnly<FinalTransformComponent>;
+                ::ReadOnly<WorldTransformComponent>;
 
             for (Query::Iterator q(*m_World); q; q++)
             {
                 PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-                FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+                WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
                 // Exclude triggers
                 if (q.HasComponent<TriggerComponent>())
@@ -567,7 +568,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
                 for (int i = 0; i < q.Count(); i++)
                 {
-                    DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                    DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
                 }
             }
         }
@@ -599,7 +600,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
     {
         using Query = ECS::Query<>
             ::ReadOnly<PhysBodyComponent>
-            ::ReadOnly<FinalTransformComponent>
+            ::ReadOnly<WorldTransformComponent>
             ::ReadOnly<TriggerComponent>;
 
         renderer.SetDepthTest(true);
@@ -608,11 +609,11 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
             }
         }
     }
@@ -622,7 +623,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         using Query = ECS::Query<>
             ::ReadOnly<PhysBodyComponent>
             ::ReadOnly<StaticBodyComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0.6f, 0.6f, 0.6f, 1));
@@ -630,11 +631,11 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
             }
         }
     }
@@ -644,7 +645,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         using Query = ECS::Query<>
             ::ReadOnly<PhysBodyComponent>
             ::ReadOnly<KinematicBodyComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0, 1, 1, 1));
@@ -652,11 +653,11 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
             }
         }
     }
@@ -666,7 +667,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         using Query = ECS::Query<>
             ::ReadOnly<PhysBodyComponent>
             ::ReadOnly<DynamicBodyComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -675,7 +676,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
@@ -690,12 +691,12 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
                     renderer.SetColor(Color4(1, 1, 1, 1));
                 }
 
-                collisionModel->DrawDebug(renderer, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                collisionModel->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
 
-                Float3x3 r = transforms[i].Rotation.ToMatrix3x3();
+                Float3x3 r = transforms[i].Rotation[m_FrameIndex].ToMatrix3x3();
 
                 renderer.SetColor(Color4(1, 1, 1, 1));
-                renderer.DrawAxis(transforms[i].Position, r[0], r[1], r[2], Float3(0.25f));
+                renderer.DrawAxis(transforms[i].Position[m_FrameIndex], r[0], r[1], r[2], Float3(0.25f));
             }
         }
     }
@@ -705,7 +706,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         using Query = ECS::Query<>
             ::ReadOnly<PhysBodyComponent>
             ::ReadOnly<DynamicBodyComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
@@ -714,13 +715,13 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            FinalTransformComponent const* transforms = q.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
                 auto* collisionModel = bodies[i].m_Model.RawPtr();
 
-                Float3 centerOfMassPos = collisionModel->GetCenterOfMassWorldPosition(transforms[i].Position, transforms[i].Rotation, transforms[i].Scale);
+                Float3 centerOfMassPos = collisionModel->GetCenterOfMassWorldPosition(transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
                 Float3 centerOfMassPos2 = ConvertVector(body_interface.GetCenterOfMassPosition(bodies[i].m_BodyId));
 
                 renderer.SetColor(Color4(1, 1, 1, 1));

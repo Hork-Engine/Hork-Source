@@ -701,25 +701,32 @@ void MeshResource::DrawDebug(DebugRenderer& renderer) const
 
     renderer.DrawAABB(m_BoundingBox);
 
-    for (MeshSubpart const& subpart : m_Subparts)
+    // TODO: Draw sockets
+}
+
+void MeshResource::DrawDebugSubpart(DebugRenderer& renderer, int subpartIndex) const
+{
+    if (subpartIndex >= m_Subparts.Size())
+        return;
+
+    MeshSubpart const& subpart = m_Subparts[subpartIndex];
+
+    renderer.SetDepthTest(false);
+    renderer.SetColor(Color4::White());
+    renderer.DrawAABB(subpart.BoundingBox);
+
+    if (!subpart.Bvh.GetNodes().IsEmpty())
     {
-        renderer.DrawAABB(subpart.BoundingBox);
+        BvOrientedBox orientedBox;
 
-        if (!subpart.Bvh.GetNodes().IsEmpty())
+        for (BvhNode const& node : subpart.Bvh.GetNodes())
         {
-            BvOrientedBox orientedBox;
-
-            for (BvhNode const& node : subpart.Bvh.GetNodes())
+            if (node.IsLeaf())
             {
-                if (node.IsLeaf())
-                {
-                    renderer.DrawAABB(node.Bounds);
-                }
+                renderer.DrawAABB(node.Bounds);
             }
         }
     }
-
-    // TODO: Draw sockets
 }
 
 //void MeshResourceInterface::Raycast(ResourceID resource, Float3 const& rayStart, Float3 const& rayDir)

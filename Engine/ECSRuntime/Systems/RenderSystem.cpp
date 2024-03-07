@@ -2,7 +2,7 @@
 
 #include "../GameFrame.h"
 
-#include "../Components/FinalTransformComponent.h"
+#include "../Components/RenderTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
 #include "../Components/ShadowCastTag.h"
 #include "../Components/MovableTag.h"
@@ -320,12 +320,12 @@ void RenderSystem::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& f
 
     using Query = ECS::Query<>
         ::ReadOnly<DirectionalLightComponent_ECS>
-        ::ReadOnly<FinalTransformComponent>;
+        ::ReadOnly<RenderTransformComponent>;
 
     for (Query::Iterator it(*m_World); it; it++)
     {
         DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
-        FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
+        RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
         bool bCastShadow = it.HasComponent<ShadowCastTag>();
 
@@ -398,12 +398,12 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
     {
         using Query = ECS::Query<>
             ::ReadOnly<MeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<RenderTransformComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
             MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
             TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
 
             bool bMovable = q.HasComponent<MovableTag>();
@@ -419,12 +419,12 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
     {
         using Query = ECS::Query<>
             ::ReadOnly<ProceduralMeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<RenderTransformComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
             ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
             TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
 
             bool bMovable = q.HasComponent<MovableTag>();
@@ -459,13 +459,13 @@ void RenderSystem::AddDirectionalLightShadows(RenderFrontendDef& rd, RenderFrame
     {
         using Query = ECS::Query<>
             ::ReadOnly<MeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>
+            ::ReadOnly<RenderTransformComponent>
             ::Required<ShadowCastComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
             MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
             ShadowCastComponent* shadowCast = q.Get<ShadowCastComponent>();
 
             int numChunks = q.Count() / 4;
@@ -531,13 +531,13 @@ void RenderSystem::AddDirectionalLightShadows(RenderFrontendDef& rd, RenderFrame
     {
         using Query = ECS::Query<>
             ::ReadOnly<ProceduralMeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>
+            ::ReadOnly<RenderTransformComponent>
             ::Required<ShadowCastComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
             ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
             ShadowCastComponent* shadowCast = q.Get<ShadowCastComponent>();
 
             int numChunks = q.Count() / 4;
@@ -601,7 +601,7 @@ void RenderSystem::AddDirectionalLightShadows(RenderFrontendDef& rd, RenderFrame
     }
 }
 
-void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, Float3x4 const* transformHistory, SkeletonPose* pose, bool bMovable)
+void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, MeshComponent_ECS const& mesh, Float3x4 const* transformHistory, SkeletonPose* pose, bool bMovable)
 {
     Float3x4 transformMatrix;
     Float3x3 worldRotation = transform.Rotation.ToMatrix3x3();
@@ -749,7 +749,7 @@ void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, Fi
     }
 }
 
-void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, Float3x4 const* transformHistory, bool bMovable)
+void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, Float3x4 const* transformHistory, bool bMovable)
 {
     Float3x4 transformMatrix;
     Float3x3 worldRotation = transform.Rotation.ToMatrix3x3();
@@ -860,7 +860,7 @@ void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& fra
     }
 }
 
-void RenderSystem::AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, ShadowCastComponent const& shadow, LightShadowmap* shadowmap)
+void RenderSystem::AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, ShadowCastComponent const& shadow, LightShadowmap* shadowmap)
 {
     auto& frameLoop = GameApplication::GetFrameLoop();
 
@@ -943,7 +943,7 @@ void RenderSystem::AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameDa
     }
 }
 
-void RenderSystem::AddProceduralMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, FinalTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, ShadowCastComponent const& shadow, LightShadowmap* shadowmap)
+void RenderSystem::AddProceduralMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, ProceduralMeshComponent_ECS const& mesh, ShadowCastComponent const& shadow, LightShadowmap* shadowmap)
 {
     auto& frameLoop = GameApplication::GetFrameLoop();
 
@@ -1063,13 +1063,13 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
     {
         using Query = ECS::Query<>
             ::ReadOnly<MeshComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<RenderTransformComponent>;
 
         Float3x4 matrix;
         for (Query::Iterator q(*m_World); q; q++)
         {
             MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
-            FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
@@ -1081,6 +1081,7 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
 
                     renderer.PushTransform(matrix);
                     meshRes->DrawDebug(renderer);
+                    meshRes->DrawDebugSubpart(renderer, mesh[i].SubmeshIndex);
                     renderer.PopTransform();
                 }
             }
@@ -1092,7 +1093,8 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
         renderer.SetDepthTest(false);
         
         {
-            using Query = ECS::Query<>::ReadOnly<MeshComponent_ECS>;
+            using Query = ECS::Query<>
+                ::ReadOnly<MeshComponent_ECS>;
 
             for (Query::Iterator q(*m_World); q; q++)
             {
@@ -1107,7 +1109,8 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
         }
 
         {
-            using Query = ECS::Query<>::ReadOnly<ProceduralMeshComponent_ECS>;
+            using Query = ECS::Query<>
+                ::ReadOnly<ProceduralMeshComponent_ECS>;
 
             renderer.SetColor(Color4(0.5f, 1, 0.5f, 1));
 

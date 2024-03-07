@@ -194,6 +194,7 @@ public:
     bool RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& subpartIndex) const;
 
     void DrawDebug(DebugRenderer& renderer) const;
+    void DrawDebugSubpart(DebugRenderer& renderer, int subpartIndex) const;
 
 //private:
     static void* GetVertexMemory(void* _This);

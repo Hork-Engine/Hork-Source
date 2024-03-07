@@ -2,7 +2,6 @@
 #include "Components/NodeComponent.h"
 #include "Components/TransformComponent.h"
 #include "Components/WorldTransformComponent.h"
-#include "Components/FinalTransformComponent.h"
 #include "Components/MovableTag.h"
 #include "Components/TransformInterpolationTag.h"
 
@@ -175,7 +174,6 @@ ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDe
     commandBuffer.AddComponent<NodeComponent>(handle, desc.Parent, desc.NodeFlags);
     commandBuffer.AddComponent<TransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
     commandBuffer.AddComponent<WorldTransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
-    commandBuffer.AddComponent<FinalTransformComponent>(handle);
 
     if (desc.bMovable)
     {

@@ -1,10 +1,11 @@
 #include "SkinningSystem.h"
 #include "../GameFrame.h"
-#include "../Components/FinalTransformComponent.h"
+#include "../Components/RenderTransformComponent.h"
 #include "../Components/SkeletonControllerComponent.h"
 #include "../Components/SkeletonPoseComponent.h"
 #include "../Components/SocketComponent.h"
 #include "../Components/TransformComponent.h"
+#include "../Components/WorldTransformComponent.h"
 #include "../Resources/ResourceManager.h"
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/GameApplication.h>
@@ -19,6 +20,8 @@ SkinningSystem_ECS::SkinningSystem_ECS(ECS::World* world) :
 
 void SkinningSystem_ECS::UpdatePoses(GameFrame const& frame)
 {
+    m_FrameIndex = frame.StateIndex;
+
     using Query = ECS::Query<>
         ::Required<SkeletonPoseComponent>
         ::Required<SkeletonControllerComponent>
@@ -181,12 +184,14 @@ void SkinningSystem_ECS::DrawDebug(DebugRenderer& renderer)
 
         using Query = ECS::Query<>
             ::ReadOnly<SkeletonPoseComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
+
+        Float3x4 tranformMat;
 
         for (Query::Iterator it(*m_World); it; it++)
         {
             SkeletonPoseComponent const* poseComponent = it.Get<SkeletonPoseComponent>();
-            FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transform = it.Get<WorldTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
@@ -197,7 +202,7 @@ void SkinningSystem_ECS::DrawDebug(DebugRenderer& renderer)
                 {
                     TVector<SkeletonJoint> const& joints = skeleton->GetJoints();
 
-                    Float3x4 tranformMat = transform[i].ToMatrix();
+                    tranformMat.Compose(transform[i].Position[m_FrameIndex], transform[i].Rotation[m_FrameIndex].ToMatrix3x3(), transform[i].Scale[m_FrameIndex]);
 
                     for (int jointIndex = 0, count = joints.Size(); jointIndex < count; ++jointIndex)
                     {

@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Engine/Core/Platform.h>
 
 #include <Engine/ECSRuntime/Components/CameraComponent.h>
-#include <Engine/ECSRuntime/Components/FinalTransformComponent.h>
+#include <Engine/ECSRuntime/Components/RenderTransformComponent.h>
 #include <Engine/ECSRuntime/World.h>
 
 HK_NAMESPACE_BEGIN
@@ -143,7 +143,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     ECS::EntityView cameraEntityView = world->GetEntityView(worldRenderView->GetCamera());
 
     auto* camera = cameraEntityView.GetComponent<CameraComponent_ECS>();
-    auto* cameraTransform = cameraEntityView.GetComponent<FinalTransformComponent>();
+    auto* cameraTransform = cameraEntityView.GetComponent<RenderTransformComponent>();
 
     if (!r_RenderView || !camera || !cameraTransform)
     {

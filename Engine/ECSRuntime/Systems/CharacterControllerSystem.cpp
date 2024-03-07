@@ -2,7 +2,6 @@
 #include "../World.h"
 #include "../GameFrame.h"
 #include "../Components/WorldTransformComponent.h"
-#include "../Components/FinalTransformComponent.h"
 #include "../Components/TransformComponent.h"
 
 #include <Engine/Runtime/DebugRenderer.h>
@@ -146,6 +145,8 @@ void CharacterControllerSystem::DestroyCharacters()
 
 void CharacterControllerSystem::Update(GameFrame const& frame)
 {
+    m_FrameIndex = frame.StateIndex;
+
     DestroyCharacters();
 
     for (auto entity : m_PendingAddCharacters)
@@ -190,8 +191,8 @@ void CharacterControllerSystem::Update(GameFrame const& frame)
             JPH::CharacterVirtual* character = new CharacterControllerImpl(entity,
                                                                            this,
                                                                            settings,
-                                                                           worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero(),
-                                                                           worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity(),
+                                                                           worldTransform ? ConvertVector(worldTransform->Position[m_FrameIndex]) : JPH::Vec3::sZero(),
+                                                                           worldTransform ? ConvertQuaternion(worldTransform->Rotation[m_FrameIndex]) : JPH::Quat::sIdentity(),
                                                                            &m_PhysicsInterface.GetImpl());
             character->SetListener(this);
 
@@ -367,21 +368,21 @@ void CharacterControllerSystem::DrawDebug(DebugRenderer& renderer)
     {
         using Query = ECS::Query<>
             ::ReadOnly<CharacterControllerComponent>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<WorldTransformComponent>;
 
         renderer.SetColor(Color4(1, 1, 0, 1));
 
         for (Query::Iterator it(*m_World); it; it++)
         {
             CharacterControllerComponent const* characterController = it.Get<CharacterControllerComponent>();
-            FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
+            WorldTransformComponent const* transform = it.Get<WorldTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
                 float r = characterController[i].cCharacterRadiusStanding;
                 float h = characterController[i].cCharacterHeightStanding;
 
-                renderer.DrawCapsule(transform[i].Position + Float3(0, h * 0.5f + r, 0), transform[i].Rotation.ToMatrix3x3(), r, h, 1);
+                renderer.DrawCapsule(transform[i].Position[m_FrameIndex] + Float3(0, h * 0.5f + r, 0), transform[i].Rotation[m_FrameIndex].ToMatrix3x3(), r, h, 1);
             }
         }
     }

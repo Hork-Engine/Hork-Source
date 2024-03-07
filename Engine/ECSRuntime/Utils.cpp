@@ -3,6 +3,7 @@
 #include "SceneGraph.h"
 
 #include "Components/MeshComponent.h"
+#include "Components/RenderTransformComponent.h"
 
 #include <Engine/Runtime/GameApplication.h>
 
@@ -18,6 +19,8 @@ ECS::EntityHandle CreateSkybox(ECS::CommandBuffer& commandBuffer, ECS::EntityHan
     nodeDesc.bTransformInterpolation = true;
 
     ECS::EntityHandle handle = CreateSceneNode(commandBuffer, nodeDesc);
+
+    commandBuffer.AddComponent<RenderTransformComponent>(handle);
 
     MeshComponent_ECS& mesh = commandBuffer.AddComponent<MeshComponent_ECS>(handle);
     mesh.Mesh = GameApplication::GetResourceManager().GetResource<MeshResource>("/Root/default/skybox.mesh");

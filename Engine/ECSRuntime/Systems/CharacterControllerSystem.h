@@ -50,6 +50,8 @@ private:
     World* m_World;
     PhysicsInterface& m_PhysicsInterface;
 
+    int m_FrameIndex{};
+
     friend class CharacterControllerImpl;
 };
 

@@ -5,13 +5,13 @@
 
 HK_NAMESPACE_BEGIN
 
-struct FinalTransformComponent
+struct RenderTransformComponent
 {
     Float3 Position;
     Quat Rotation;
     Float3 Scale = Float3(1);
 
-    FinalTransformComponent() = default;
+    RenderTransformComponent() = default;
 
     Float3x4 ToMatrix() const
     {

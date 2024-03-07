@@ -3,7 +3,7 @@
 
 #include "../Components/TransformComponent.h"
 #include "../Components/WorldTransformComponent.h"
-#include "../Components/FinalTransformComponent.h"
+#include "../Components/RenderTransformComponent.h"
 #include "../Components/TransformInterpolationTag.h"
 #include "../Components/RigidBodyComponent.h"
 #include "../Components/NodeComponent.h"
@@ -26,7 +26,7 @@ void TransformSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdde
 {
     ECS::EntityView view = world->GetEntityView(event.GetEntity());
 
-    if (!view.HasComponent<MovableTag>() && view.HasComponent<FinalTransformComponent>())
+    if (!view.HasComponent<MovableTag>() && view.HasComponent<RenderTransformComponent>())
     {
         m_StaticObjects.Add(view.GetHandle());
     }
@@ -102,7 +102,7 @@ void TransformSystem::Update(GameFrame const& frame)
         ECS::EntityView view = m_World->GetEntityView(static_object);
 
         WorldTransformComponent* world_transforms = view.GetComponent<WorldTransformComponent>();
-        FinalTransformComponent* final_transforms = view.GetComponent<FinalTransformComponent>();
+        RenderTransformComponent* final_transforms = view.GetComponent<RenderTransformComponent>();
 
         if (world_transforms && final_transforms)
         {
@@ -123,16 +123,16 @@ void TransformSystem::InterpolateTransformState(GameFrame const& frame)
     using Query = ECS::Query<>
         ::ReadOnly<WorldTransformComponent>
         ::ReadOnly<MovableTag>
-        ::Required<FinalTransformComponent>;
+        ::Required<RenderTransformComponent>;
 
-    // TODO: For non-movable objects set FinalTransformComponent once (when it spawned)
+    // TODO: For non-movable objects set RenderTransformComponent once (when it spawned)
 
     // TODO: If object was teleported, do not interpolate! HACK: if object was teleported just set worldtransfom[prev] = worldtransfom[next]
 
     for (Query::Iterator q(*m_World); q; q++)
     {
         WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-        FinalTransformComponent* interpolated = q.Get<FinalTransformComponent>();
+        RenderTransformComponent* interpolated = q.Get<RenderTransformComponent>();
 
         if (q.HasComponent<TransformInterpolationTag>())
         {
@@ -160,12 +160,12 @@ void TransformSystem::CopyTransformState(GameFrame const& frame)
     using Query = ECS::Query<>
         ::ReadOnly<WorldTransformComponent>
         ::ReadOnly<MovableTag>
-        ::Required<FinalTransformComponent>;
+        ::Required<RenderTransformComponent>;
 
     for (Query::Iterator q(*m_World); q; q++)
     {
         WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-        FinalTransformComponent* interpolated = q.Get<FinalTransformComponent>();
+        RenderTransformComponent* interpolated = q.Get<RenderTransformComponent>();
 
         for (int i = 0; i < q.Count(); i++)
         {

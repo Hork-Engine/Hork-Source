@@ -19,6 +19,7 @@ public:
 
 private:
     ECS::World* m_World;
+    int m_FrameIndex{};
 };
 
 HK_NAMESPACE_END

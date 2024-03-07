@@ -65,6 +65,7 @@ private:
     World* m_World;
     PhysicsInterface& m_PhysicsInterface;
     GameEvents* m_GameEvents;
+    int m_FrameIndex{};
     TVector<ECS::EntityHandle> m_PendingAddBodies;
     TVector<JPH::BodyID> m_PendingDestroyBodies;
     TVector<JPH::BodyID> m_BodyAddList[2];

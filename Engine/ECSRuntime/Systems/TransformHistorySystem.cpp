@@ -1,6 +1,6 @@
 #include "TransformHistorySystem.h"
 
-#include "../Components/FinalTransformComponent.h"
+#include "../Components/RenderTransformComponent.h"
 #include "../Components/TransformHistoryComponent.h"
 
 HK_NAMESPACE_BEGIN
@@ -13,12 +13,12 @@ void TransformHistorySystem::Update(GameFrame const& frame)
 {
     using Query = ECS::Query<>
         ::Required<TransformHistoryComponent>
-        ::ReadOnly<FinalTransformComponent>;
+        ::ReadOnly<RenderTransformComponent>;
 
     for (Query::Iterator q(*m_World); q; q++)
     {
         TransformHistoryComponent* history = q.Get<TransformHistoryComponent>();
-        FinalTransformComponent const* transform = q.Get<FinalTransformComponent>();
+        RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
 
         for (int i = 0; i < q.Count(); i++)
         {

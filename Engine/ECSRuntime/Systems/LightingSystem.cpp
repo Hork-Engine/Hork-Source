@@ -1,6 +1,6 @@
 #include "LightingSystem.h"
 #include "../GameFrame.h"
-#include "../Components/FinalTransformComponent.h"
+#include "../Components/RenderTransformComponent.h"
 #include "../Components/ExperimentalComponents.h"
 #include "../Components/DynamicLightTag.h"
 #include "../Components/MovableTag.h"
@@ -368,7 +368,7 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
     {
         using Query = ECS::Query<>
             ::ReadOnly<DirectionalLightComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<RenderTransformComponent>;
 
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(1, 1, 1, 1));
@@ -376,7 +376,7 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
         for (Query::Iterator it(*m_World); it; it++)
         {
             DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
-            FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
@@ -394,14 +394,14 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
     {
         using Query = ECS::Query<>
             ::ReadOnly<PunctualLightComponent_ECS>
-            ::ReadOnly<FinalTransformComponent>;
+            ::ReadOnly<RenderTransformComponent>;
 
         renderer.SetDepthTest(false);
 
         for (Query::Iterator it(*m_World); it; it++)
         {
             PunctualLightComponent_ECS const* lights = it.Get<PunctualLightComponent_ECS>();
-            FinalTransformComponent const* transform = it.Get<FinalTransformComponent>();
+            RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
