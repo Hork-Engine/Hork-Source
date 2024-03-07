@@ -112,6 +112,9 @@ void World::Tick(float timeStep)
         // Update skeleton poses and sockets
         m_SkinningSystem->UpdatePoses(m_Frame);
 
+        // Copy socket transform to transform component
+        m_SkinningSystem->UpdateSockets();
+
         // Recalc world transform
         m_TransformSystem->Update(m_Frame);
 

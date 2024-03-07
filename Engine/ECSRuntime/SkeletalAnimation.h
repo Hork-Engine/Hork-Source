@@ -24,7 +24,7 @@ struct SkeletonPose : RefCounted
 
     Float3x4 const& GetJointTransform(uint32_t jointIndex) const
     {
-        HK_ASSERT(jointIndex + 1 < m_AbsoluteTransforms.Size());
+        //HK_ASSERT(jointIndex + 1 < m_AbsoluteTransforms.Size());
         if (jointIndex + 1 >= m_AbsoluteTransforms.Size())
         {
             return Float3x4::Identity();

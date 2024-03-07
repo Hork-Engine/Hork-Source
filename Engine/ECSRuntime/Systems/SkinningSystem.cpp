@@ -3,6 +3,8 @@
 #include "../Components/FinalTransformComponent.h"
 #include "../Components/SkeletonControllerComponent.h"
 #include "../Components/SkeletonPoseComponent.h"
+#include "../Components/SocketComponent.h"
+#include "../Components/TransformComponent.h"
 #include "../Resources/ResourceManager.h"
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/GameApplication.h>
@@ -85,12 +87,45 @@ void SkinningSystem_ECS::UpdatePoses(GameFrame const& frame)
     }
 }
 
+void SkinningSystem_ECS::UpdateSockets()
+{
+    using Query = ECS::Query<>
+        ::ReadOnly<SocketComponent>
+        ::Required<TransformComponent>
+        ;
+
+    Float3x3 rotation;
+
+    for (Query::Iterator it(*m_World); it; it++)
+    {
+        SocketComponent const* sockets = it.Get<SocketComponent>();
+        TransformComponent* transforms = it.Get<TransformComponent>();
+
+        for (int i = 0; i < it.Count(); i++)
+        {
+            auto& socket = sockets[i];
+            auto& transform = transforms[i];
+
+            if (socket.Pose)
+            {
+                // TODO: Сейчас мы считаем, что SocketIndex == JointIndex. Скорее всего, правильно было бы сокеты хранить
+                // отдельно от костей.
+                auto& socket_transform = socket.Pose->GetJointTransform(socket.SocketIndex);
+
+                // TODO: Убрать декомпозицию, хранить в позе не матрицы, а по отдельности: позицию, ориентацию, масштаб.
+                socket_transform.DecomposeAll(transform.Position, rotation, transform.Scale);
+                transform.Rotation.FromMatrix(rotation);
+            }
+        }
+    }
+}
+
 void SkinningSystem_ECS::UpdateSkins()
 {
     // TODO: Update skins only if object visible? Update only bounding box?
 
     using Query = ECS::Query<>
-        ::Required<SkeletonPoseComponent>
+        ::ReadOnly<SkeletonPoseComponent>
         ;
 
     StreamedMemoryGPU* streamedMemory = GameApplication::GetFrameLoop().GetStreamedMemoryGPU();

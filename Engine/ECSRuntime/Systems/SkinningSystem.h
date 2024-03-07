@@ -12,6 +12,7 @@ public:
     SkinningSystem_ECS(ECS::World* world);
 
     void UpdatePoses(struct GameFrame const& frame);
+    void UpdateSockets();
     void UpdateSkins();
 
     void DrawDebug(DebugRenderer& InRenderer) override;
