@@ -2,12 +2,12 @@
 
 #include <Engine/ECS/ECS.h>
 
-#include <Engine/Core/Allocators/PoolAllocator.h>
-
 #include <Engine/Math/VectorMath.h>
 #include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
+
+using SceneNodeID = size_t;
 
 enum SCENE_NODE_FLAGS : uint8_t
 {
@@ -41,22 +41,18 @@ struct SceneNodeDesc
     bool bTransformInterpolation = true;
 };
 
-class SceneNode
+class SceneGraphInterface
 {
-public:
-    void SetTransform(Float3 const& position, Quat const& rotation, Float3 const& scale, SCENE_NODE_FLAGS flags);
+    struct Node
+    {
+        ECS::EntityHandle key;
+        Node* next;
 
-    int Index{};
-    ECS::EntityHandle Entity;
-    ECS::EntityHandle ParentEntity;
-    SceneNode* Parent{};
-    TVector<SceneNode*> Children;
-    class SceneGraph* Graph;
-};
+        Node* Children;
+        Node* NextSibling;
+        int Index;
+    };
 
-class SceneGraph
-{
-public:
     struct NodeTransform
     {
         Float3 Position;
@@ -64,39 +60,78 @@ public:
         Float3 Scale;
     };
 
-    NodeTransform* LocalTransform{};
-    NodeTransform* WorldTransform{};
+public:
+    void Clear();
 
-    Float3x4* WorldTransformMatrix{};
-    TVector<SCENE_NODE_FLAGS> Flags;
+    SceneNodeID Attach(ECS::EntityHandle entity, ECS::EntityHandle parent);
 
-    size_t GetHierarchySize() const;
+    void FinalizeGraph();
 
-    SceneGraph(ECS::World* world);
+    void CalcWorldTransform();
 
-    ~SceneGraph();
-
-    void UpdateHierarchy();
-
-    void UpdateWorldTransforms();
-
-    SceneNode* CreateNode(ECS::EntityHandle entity, ECS::EntityHandle parent);
-    void DestroyNode(SceneNode* node);
-
-    void DetachNode(SceneNode* node);
+    void SetLocalTransform(SceneNodeID nodeId, Float3 const& position, Quat const& rotation, Float3 const& scale, SCENE_NODE_FLAGS flags);
+    void GetWorldTransform(SceneNodeID nodeId, Float3& position, Quat& rotation, Float3& scale) const;
 
 private:
-    void UpdateHierarchy_r(SceneNode* node, int parent);
+    class NodePool
+    {
+        struct Page
+        {
+            Node Nodes[1024];
+        };
 
-    TPoolAllocator<SceneNode, 1024> m_Allocator;
-    ECS::World* m_World;
-    SceneNode m_Root;
-    TVector<uint16_t> m_Hierarchy;
-    size_t m_NumTransforms{};
-    TVector<SceneNode*> m_UnlinkedNodes;
-    size_t m_NumRootNodes{};
-    bool m_HierarchyDirty{true};
+        TVector<Page*> m_Pages;
+
+        int m_Address{};
+
+    public:
+        void Clear();
+        Node* Allocate();
+        ~NodePool();
+    };
+
+    class NodeHash
+    {
+        NodePool m_NodeAllocator;
+        Node* m_HashTable[1024];
+
+    public:
+        void Clear();
+        Node* Insert(ECS::EntityHandle key);
+    };
+
+    void UpdateIndex();
+    void UpdateIndex_r(Node* node, int index);
+
+    TVector<NodeTransform> m_LocalTransforms;
+    TVector<NodeTransform> m_WorldTransforms;
+    TVector<Float3x4> m_WorldTransformMatrix;
+    TVector<SCENE_NODE_FLAGS> m_Flags;
+    Node* m_Roots{};
+    int m_NumRootNodes{};
+    TVector<int> m_Hierarchy;
+    NodeHash m_NodeHash;
 };
+
+HK_FORCEINLINE void SceneGraphInterface::SetLocalTransform(SceneNodeID nodeId, Float3 const& position, Quat const& rotation, Float3 const& scale, SCENE_NODE_FLAGS flags)
+{
+    auto index = ((Node*)nodeId)->Index;
+
+    m_LocalTransforms[index].Position = position;
+    m_LocalTransforms[index].Rotation = rotation;
+    m_LocalTransforms[index].Scale = scale;
+
+    m_Flags[index] = flags;
+}
+
+HK_FORCEINLINE void SceneGraphInterface::GetWorldTransform(SceneNodeID nodeId, Float3& position, Quat& rotation, Float3& scale) const
+{
+    auto index = ((Node*)nodeId)->Index;
+
+    position = m_WorldTransforms[index].Position;
+    rotation = m_WorldTransforms[index].Rotation;
+    scale    = m_WorldTransforms[index].Scale;
+}
 
 ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc);
 

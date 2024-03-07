@@ -8,182 +8,170 @@
 
 HK_NAMESPACE_BEGIN
 
-SceneGraph::SceneGraph(ECS::World* world) :
-    m_World(world)
-{}
-
-SceneGraph::~SceneGraph()
+void SceneGraphInterface::Clear()
 {
-    Core::GetHeapAllocator<HEAP_MISC>().Free(LocalTransform);
-    Core::GetHeapAllocator<HEAP_MISC>().Free(WorldTransform);
-    Core::GetHeapAllocator<HEAP_MISC>().Free(WorldTransformMatrix);
-}
-
-size_t SceneGraph::GetHierarchySize() const
-{
-    return m_Hierarchy.Size();
-}
-
-void SceneGraph::UpdateHierarchy()
-{
-    if (!m_HierarchyDirty)
-        return;
-
-    for (SceneNode* node : m_UnlinkedNodes)
-    {
-        ECS::EntityView parent = m_World->GetEntityView(node->ParentEntity);
-
-        NodeComponent* h = parent.GetComponent<NodeComponent>();
-        if (h)
-        {
-            h->m_Node->Children.Add(node);
-            node->Parent = h->m_Node;
-        }
-        else
-        {
-            m_Root.Children.Add(node);
-            node->Parent = &m_Root;
-        }
-    }
-    m_UnlinkedNodes.Clear();
-
+    m_LocalTransforms.Clear();
+    m_WorldTransforms.Clear();
+    m_WorldTransformMatrix.Clear();
+    m_Flags.Clear();
+    m_Roots = nullptr;
+    m_NumRootNodes = 0;
     m_Hierarchy.Clear();
+    m_NodeHash.Clear();
+}
 
-    // Root stub
+SceneNodeID SceneGraphInterface::Attach(ECS::EntityHandle entity, ECS::EntityHandle parent)
+{
+    assert(entity != parent);
+
+    Node* entity_node = m_NodeHash.Insert(entity);
+
+    if (parent)
+    {
+        Node* parent_node = m_NodeHash.Insert(parent);
+
+        entity_node->NextSibling = parent_node->Children;
+        parent_node->Children = entity_node;
+    }
+    else
+    {
+        entity_node->NextSibling = m_Roots;
+        m_Roots = entity_node;
+    }
+
+    return SceneNodeID(entity_node);
+}
+
+void SceneGraphInterface::FinalizeGraph()
+{
+    UpdateIndex();
+
+    // TODO: Вектор вызывает ненужные конструкторы/деструкторы.
+
+    m_LocalTransforms.Resize(m_Hierarchy.Size());
+    m_WorldTransforms.Resize(m_Hierarchy.Size());
+
+    m_WorldTransforms[0].Position = Float3(0);
+    m_WorldTransforms[0].Rotation = Quat::Identity();
+    m_WorldTransforms[0].Scale = Float3(1);
+
+    m_WorldTransformMatrix.Resize(m_Hierarchy.Size());
+    m_WorldTransformMatrix[0] = Float3x4::Identity();
+
+    m_Flags.Resize(m_Hierarchy.Size());
+}
+
+void SceneGraphInterface::UpdateIndex()
+{
+    m_Hierarchy.Clear();
     m_Hierarchy.Add(0);
 
-    UpdateHierarchy_r(&m_Root, 0);
-
-    m_NumRootNodes = m_Root.Children.Size() + 1;
-
-    if (m_NumTransforms < m_Hierarchy.Size())
+    for (Node* node = m_Roots; node; node = node->NextSibling)
     {
-        m_NumTransforms = m_Hierarchy.Size();
-
-        Core::GetHeapAllocator<HEAP_MISC>().Free(LocalTransform);
-        Core::GetHeapAllocator<HEAP_MISC>().Free(WorldTransform);
-        Core::GetHeapAllocator<HEAP_MISC>().Free(WorldTransformMatrix);
-
-        LocalTransform = (NodeTransform*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(m_NumTransforms * sizeof(NodeTransform));
-        WorldTransform = (NodeTransform*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(m_NumTransforms * sizeof(NodeTransform));
-        WorldTransform[0].Position = Float3(0);
-        WorldTransform[0].Rotation = Quat::Identity();
-        WorldTransform[0].Scale = Float3(1);
-
-        WorldTransformMatrix = (Float3x4*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(m_NumTransforms * sizeof(*WorldTransformMatrix));
-        WorldTransformMatrix[0] = Float3x4::Identity();
-
-        Flags.Resize(m_NumTransforms);
+        m_Hierarchy.Add(0);
+        node->Index = m_Hierarchy.Size() - 1;
     }
 
-    m_HierarchyDirty = false;
+    m_NumRootNodes = m_Hierarchy.Size();
+
+    for (Node* node = m_Roots; node; node = node->NextSibling)
+        UpdateIndex_r(node, node->Index);
 }
 
-void SceneGraph::UpdateWorldTransforms()
+void SceneGraphInterface::UpdateIndex_r(Node* node, int index)
 {
-    Core::Memcpy(WorldTransform + 1, LocalTransform + 1, sizeof(WorldTransform[0]) * (m_NumRootNodes - 1));
+    for (Node* child = node->Children; child; child = child->NextSibling)
+    {
+        assert(child->Index == 0);
+        if (child->Index)
+            return; // cyclic dependency
 
+        m_Hierarchy.Add(index);
+        child->Index = m_Hierarchy.Size() - 1;
+    }
+    for (Node* child = node->Children; child; child = child->NextSibling)
+        UpdateIndex_r(child, child->Index);
+}
+
+void SceneGraphInterface::CalcWorldTransform()
+{
+    // Copy local transform to world transform for all root nodes
+    Core::Memcpy(m_WorldTransforms.ToPtr() + 1, m_LocalTransforms.ToPtr() + 1, sizeof(NodeTransform) * (m_NumRootNodes - 1));
+
+    // Compose world transform matrix for all root nodes
     for (size_t i = 1; i < m_NumRootNodes; ++i)
     {
-        WorldTransformMatrix[i].Compose(WorldTransform[i].Position, WorldTransform[i].Rotation.ToMatrix3x3(), WorldTransform[i].Scale);
+        m_WorldTransformMatrix[i].Compose(m_WorldTransforms[i].Position, m_WorldTransforms[i].Rotation.ToMatrix3x3(), m_WorldTransforms[i].Scale);
     }
 
     for (size_t i = m_NumRootNodes; i < m_Hierarchy.Size(); ++i)
     {
         auto parent = m_Hierarchy[i];
 
-        WorldTransform[i].Position = Flags[i] & SCENE_NODE_ABSOLUTE_POSITION ? LocalTransform[i].Position : WorldTransformMatrix[parent]    * LocalTransform[i].Position;
-        WorldTransform[i].Rotation = Flags[i] & SCENE_NODE_ABSOLUTE_ROTATION ? LocalTransform[i].Rotation : WorldTransform[parent].Rotation * LocalTransform[i].Rotation;
-        WorldTransform[i].Scale    = Flags[i] & SCENE_NODE_ABSOLUTE_SCALE    ? LocalTransform[i].Scale    : WorldTransform[parent].Scale    * LocalTransform[i].Scale;
+        m_WorldTransforms[i].Position = m_Flags[i] & SCENE_NODE_ABSOLUTE_POSITION ? m_LocalTransforms[i].Position : m_WorldTransformMatrix[parent]     * m_LocalTransforms[i].Position;
+        m_WorldTransforms[i].Rotation = m_Flags[i] & SCENE_NODE_ABSOLUTE_ROTATION ? m_LocalTransforms[i].Rotation : m_WorldTransforms[parent].Rotation * m_LocalTransforms[i].Rotation;
+        m_WorldTransforms[i].Scale    = m_Flags[i] & SCENE_NODE_ABSOLUTE_SCALE    ? m_LocalTransforms[i].Scale    : m_WorldTransforms[parent].Scale    * m_LocalTransforms[i].Scale;
 
-        WorldTransformMatrix[i].Compose(WorldTransform[i].Position, WorldTransform[i].Rotation.ToMatrix3x3(), WorldTransform[i].Scale);
+        m_WorldTransformMatrix[i].Compose(m_WorldTransforms[i].Position, m_WorldTransforms[i].Rotation.ToMatrix3x3(), m_WorldTransforms[i].Scale);
     }
 }
 
-SceneNode* SceneGraph::CreateNode(ECS::EntityHandle entity, ECS::EntityHandle parent)
+void SceneGraphInterface::NodePool::Clear()
 {
-    SceneNode* node = new (m_Allocator.Allocate()) SceneNode;
-    node->Entity = entity;
-    node->ParentEntity = parent;
-    node->Graph = this;
+    m_Address = 0;
+}
 
-    m_UnlinkedNodes.Add(node);
-    m_HierarchyDirty = true;
+SceneGraphInterface::Node* SceneGraphInterface::NodePool::Allocate()
+{
+    int page_num = m_Address >> 10;
+    int page_offset = m_Address & 1023;
 
-    // FIXME: Update world transform here?
+    m_Address++;
+
+    if (page_num == m_Pages.Size())
+        m_Pages.Add(new Page);
+
+    return &m_Pages[page_num]->Nodes[page_offset];
+}
+
+SceneGraphInterface::NodePool::~NodePool()
+{
+    for (Page* page : m_Pages)
+        delete page;
+}
+
+void SceneGraphInterface::NodeHash::Clear()
+{
+    m_NodeAllocator.Clear();
+    memset(m_HashTable, 0, sizeof(m_HashTable));
+}
+
+SceneGraphInterface::Node* SceneGraphInterface::NodeHash::Insert(ECS::EntityHandle key)
+{
+    uint32_t hash = key.Hash() & 1023;
+
+    for (Node* node = m_HashTable[hash]; node; node = node->next)
+    {
+        if (node->key == key)
+            return node;
+    }
+
+    Node* node = m_NodeAllocator.Allocate();
+    node->key = key;
+    node->next = m_HashTable[hash];
+    m_HashTable[hash] = node;
+
+    node->Children = nullptr;
+    node->NextSibling = nullptr;
+    node->Index = 0;
 
     return node;
-}
-
-void SceneGraph::DetachNode(SceneNode* node)
-{
-    HK_ASSERT(node);
-
-    auto index = node->Parent->Children.IndexOf(node);
-    if (index != Core::NPOS)
-        node->Parent->Children.Remove(index);
-
-    node->ParentEntity = 0;
-    node->Parent = &m_Root;
-
-    m_HierarchyDirty = true;
-
-    // FIXME: Update world transforms here?
-}
-
-void SceneGraph::DestroyNode(SceneNode* node)
-{
-    HK_ASSERT(node);
-
-    auto it = m_UnlinkedNodes.Find(node);
-    if (it != m_UnlinkedNodes.End())
-    {
-        m_UnlinkedNodes.Erase(it);
-    }
-
-    for (auto* child : node->Children)
-    {
-        m_Root.Children.Add(child);
-        child->ParentEntity = 0;
-        child->Parent = &m_Root;
-    }
-
-    if (node->Parent)
-    {
-        auto index = node->Parent->Children.IndexOf(node);
-        if (index != Core::NPOS)
-            node->Parent->Children.Remove(index);
-    }
-
-    node->~SceneNode();
-    m_Allocator.Deallocate(node);
-
-    m_HierarchyDirty = true;
-}
-
-void SceneGraph::UpdateHierarchy_r(SceneNode* node, int parent)
-{
-    for (auto* child : node->Children)
-    {
-        m_Hierarchy.Add(parent);
-        child->Index = m_Hierarchy.Size() - 1;
-    }
-    for (auto* child : node->Children)
-        UpdateHierarchy_r(child, child->Index);
-}
-
-void SceneNode::SetTransform(Float3 const& position, Quat const& rotation, Float3 const& scale, SCENE_NODE_FLAGS flags)
-{
-    HK_ASSERT(Index && Index < Graph->GetHierarchySize());
-    Graph->LocalTransform[Index].Position = position;
-    Graph->LocalTransform[Index].Rotation = rotation;
-    Graph->LocalTransform[Index].Scale    = scale;
-    Graph->Flags[Index] = flags;
 }
 
 ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc)
 {
     ECS::EntityHandle handle = commandBuffer.SpawnEntity();
+
     commandBuffer.AddComponent<NodeComponent>(handle, desc.Parent, desc.NodeFlags);
     commandBuffer.AddComponent<TransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
     commandBuffer.AddComponent<WorldTransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);

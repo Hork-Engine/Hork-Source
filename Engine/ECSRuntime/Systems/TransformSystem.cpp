@@ -12,27 +12,14 @@
 HK_NAMESPACE_BEGIN
 
 TransformSystem::TransformSystem(ECS::World* world) :
-    m_World(world),
-    m_SceneGraph(world)
+    m_World(world)
 {
-    m_World->AddEventHandler<ECS::Event::OnComponentAdded<NodeComponent>>(this);
-    m_World->AddEventHandler<ECS::Event::OnComponentRemoved<NodeComponent>>(this);
     m_World->AddEventHandler<ECS::Event::OnComponentAdded<WorldTransformComponent>>(this);
 }
 
 TransformSystem::~TransformSystem()
 {
     m_World->RemoveHandler(this);
-}
-
-void TransformSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<NodeComponent> const& event)
-{
-    event.Component().m_Node = m_SceneGraph.CreateNode(event.GetEntity(), event.Component().GetParent());
-}
-
-void TransformSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<NodeComponent> const& event)
-{
-    m_SceneGraph.DestroyNode(event.Component().m_Node);
 }
 
 void TransformSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<WorldTransformComponent> const& event)
@@ -49,70 +36,79 @@ void TransformSystem::Update(GameFrame const& frame)
 {
     int frameNum = frame.StateIndex;
 
-    m_SceneGraph.UpdateHierarchy();
+    auto& scene_graph_interface = m_SceneGraphInterface;
 
-    // TODO: Catch event DESTROY_SCENE_NODE. Get all children entities and call commandBuffer->Destroy(entity) for each entity
+    scene_graph_interface.Clear();
 
-
-    // Update scene graph
+    // Build scene graph
     {
         using Query = ECS::Query<>
-            ::Required<NodeComponent>
-            ::ReadOnly<TransformComponent>
-            
-            //::ReadOnly<MovableTag>
-            ;
+            ::Required<NodeComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            //if (!q.HasComponent<RigidBodyComponent>())
+            NodeComponent* nodes = q.Get<NodeComponent>();
+            for (int i = 0; i < q.Count(); i++)
             {
-                NodeComponent* node = q.Get<NodeComponent>();
-                TransformComponent const* t = q.Get<TransformComponent>();
-
-                for (int i = 0; i < q.Count(); i++)
-                {
-                    node[i].m_Node->SetTransform(t[i].Position, t[i].Rotation, t[i].Scale, node[i].Flags);
-                }
+                nodes[i]._ID = scene_graph_interface.Attach(q.GetEntity(i), nodes[i].Parent);
             }
         }
     }
 
-    m_SceneGraph.UpdateWorldTransforms();
+    // Reorder nodes from parent to children
+    scene_graph_interface.FinalizeGraph();
 
-    // Update world transform
+    // Set local transform for all nodes
+    {
+        using Query = ECS::Query<>
+            ::ReadOnly<NodeComponent>
+            ::Required<TransformComponent>;
+
+        for (Query::Iterator q(*m_World); q; q++)
+        {
+            NodeComponent const* nodes = q.Get<NodeComponent>();
+            TransformComponent* transforms = q.Get<TransformComponent>();
+
+            for (int i = 0; i < q.Count(); i++)
+            {
+                scene_graph_interface.SetLocalTransform(nodes[i]._ID, transforms[i].Position, transforms[i].Rotation, transforms[i].Scale, nodes[i].Flags);
+            }
+        }
+    }
+
+    // Calculate world transform for all nodes
+    scene_graph_interface.CalcWorldTransform();
+
+    // Get world transform from scene graph
     {
         using Query = ECS::Query<>
             ::ReadOnly<NodeComponent>
             ::Required<WorldTransformComponent>;
-
-        auto* worldTransforms = m_SceneGraph.WorldTransform;
-
         for (Query::Iterator q(*m_World); q; q++)
         {
-            NodeComponent const* node = q.Get<NodeComponent>();
-            WorldTransformComponent* t = q.Get<WorldTransformComponent>();
+            NodeComponent const* nodes = q.Get<NodeComponent>();
+            WorldTransformComponent* transforms = q.Get<WorldTransformComponent>();
+
             for (int i = 0; i < q.Count(); i++)
             {
-                t[i].Position[frameNum] = worldTransforms[node[i].m_Node->Index].Position;
-                t[i].Rotation[frameNum] = worldTransforms[node[i].m_Node->Index].Rotation;
-                t[i].Scale[frameNum]    = worldTransforms[node[i].m_Node->Index].Scale;
+                scene_graph_interface.GetWorldTransform(nodes[i]._ID, transforms[i].Position[frameNum], transforms[i].Rotation[frameNum], transforms[i].Scale[frameNum]);
             }
         }
     }
 
-    for (ECS::EntityHandle staticObject : m_StaticObjects)
+    // Copy world transform to final transform for all static objects
+    for (ECS::EntityHandle static_object : m_StaticObjects)
     {
-        ECS::EntityView view = m_World->GetEntityView(staticObject);
+        ECS::EntityView view = m_World->GetEntityView(static_object);
 
-        WorldTransformComponent* worldTransform = view.GetComponent<WorldTransformComponent>();
-        FinalTransformComponent* transform = view.GetComponent<FinalTransformComponent>();
+        WorldTransformComponent* world_transforms = view.GetComponent<WorldTransformComponent>();
+        FinalTransformComponent* final_transforms = view.GetComponent<FinalTransformComponent>();
 
-        if (worldTransform && transform)
+        if (world_transforms && final_transforms)
         {
-            transform->Position = worldTransform->Position[frameNum];
-            transform->Rotation = worldTransform->Rotation[frameNum];
-            transform->Scale    = worldTransform->Scale[frameNum];
+            final_transforms->Position = world_transforms->Position[frameNum];
+            final_transforms->Rotation = world_transforms->Rotation[frameNum];
+            final_transforms->Scale    = world_transforms->Scale[frameNum];
         }
     }
     m_StaticObjects.Clear();

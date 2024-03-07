@@ -21,13 +21,11 @@ public:
     void InterpolateTransformState(GameFrame const& frame);
     void CopyTransformState(GameFrame const& frame);
 
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<NodeComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<NodeComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<WorldTransformComponent> const& event);
 
 private:
     ECS::World* m_World;
-    SceneGraph m_SceneGraph;
+    SceneGraphInterface m_SceneGraphInterface;
     TVector<ECS::EntityHandle> m_StaticObjects;
 };
 
