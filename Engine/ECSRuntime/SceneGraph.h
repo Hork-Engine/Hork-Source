@@ -133,6 +133,4 @@ HK_FORCEINLINE void SceneGraphInterface::GetWorldTransform(SceneNodeID nodeId, F
     scale    = m_WorldTransforms[index].Scale;
 }
 
-ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc);
-
 HK_NAMESPACE_END

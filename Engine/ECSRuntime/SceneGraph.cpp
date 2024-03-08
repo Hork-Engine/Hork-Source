@@ -45,19 +45,24 @@ void SceneGraphInterface::FinalizeGraph()
 {
     UpdateIndex();
 
-    // TODO: Вектор вызывает ненужные конструкторы/деструкторы.
+    // Вектор вызывает ненужные конструкторы/деструкторы.
+    // Чтобы уменьшить оверхед, изменяем размер вектора
+    // только в случае если его размер меньше.
 
-    m_LocalTransforms.Resize(m_Hierarchy.Size());
-    m_WorldTransforms.Resize(m_Hierarchy.Size());
+    if (m_LocalTransforms.Size() < m_Hierarchy.Size())
+    {
+        m_LocalTransforms.Resize(m_Hierarchy.Size());
+        m_WorldTransforms.Resize(m_Hierarchy.Size());
 
-    m_WorldTransforms[0].Position = Float3(0);
-    m_WorldTransforms[0].Rotation = Quat::Identity();
-    m_WorldTransforms[0].Scale = Float3(1);
+        m_WorldTransforms[0].Position = Float3(0);
+        m_WorldTransforms[0].Rotation = Quat::Identity();
+        m_WorldTransforms[0].Scale = Float3(1);
 
-    m_WorldTransformMatrix.Resize(m_Hierarchy.Size());
-    m_WorldTransformMatrix[0] = Float3x4::Identity();
+        m_WorldTransformMatrix.Resize(m_Hierarchy.Size());
+        m_WorldTransformMatrix[0] = Float3x4::Identity();
 
-    m_Flags.Resize(m_Hierarchy.Size());
+        m_Flags.Resize(m_Hierarchy.Size());
+    }
 }
 
 void SceneGraphInterface::UpdateIndex()
@@ -103,6 +108,8 @@ void SceneGraphInterface::CalcWorldTransform()
         m_WorldTransformMatrix[i].Compose(m_WorldTransforms[i].Position, m_WorldTransforms[i].Rotation.ToMatrix3x3(), m_WorldTransforms[i].Scale);
     }
 
+    // TODO: Векторизовать, использовать SSE. Можно распараллелить - иерархию от каждого рутового объекта можно
+    // вычислять параллельно.
     for (size_t i = m_NumRootNodes; i < m_Hierarchy.Size(); ++i)
     {
         auto parent = m_Hierarchy[i];
@@ -165,25 +172,6 @@ SceneGraphInterface::Node* SceneGraphInterface::NodeHash::Insert(ECS::EntityHand
     node->Index = 0;
 
     return node;
-}
-
-ECS::EntityHandle CreateSceneNode(ECS::CommandBuffer& commandBuffer, SceneNodeDesc const& desc)
-{
-    ECS::EntityHandle handle = commandBuffer.SpawnEntity();
-
-    commandBuffer.AddComponent<NodeComponent>(handle, desc.Parent, desc.NodeFlags);
-    commandBuffer.AddComponent<TransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
-    commandBuffer.AddComponent<WorldTransformComponent>(handle, desc.Position, desc.Rotation, desc.Scale);
-
-    if (desc.bMovable)
-    {
-        commandBuffer.AddComponent<MovableTag>(handle);
-
-        if (desc.bTransformInterpolation)
-            commandBuffer.AddComponent<TransformInterpolationTag>(handle);
-    }
-
-    return handle;
 }
 
 HK_NAMESPACE_END
