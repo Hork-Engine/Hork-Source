@@ -281,6 +281,9 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
             auto it = m_Triggers.Find(body);
             if (it != m_Triggers.End())
                 m_Triggers.Erase(it);
+
+            // TODO: find if body in sensors, remove it from m_BodiesInSensors
+            //m_BodiesInSensors.Find()
         }
 
         body_interface.RemoveBodies(m_PendingDestroyBodies.ToPtr(), m_PendingDestroyBodies.Size());

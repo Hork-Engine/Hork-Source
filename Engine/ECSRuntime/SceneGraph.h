@@ -18,29 +18,6 @@ enum SCENE_NODE_FLAGS : uint8_t
 };
 HK_FLAG_ENUM_OPERATORS(SCENE_NODE_FLAGS);
 
-/// Regular scene node
-struct SceneNodeDesc
-{
-    /// Scene node parent
-    ECS::EntityHandle Parent;
-
-    /// Position of the node
-    Float3 Position;
-
-    /// Rotation of the node
-    Quat Rotation;
-
-    /// Scale of the node
-    Float3 Scale = Float3(1);
-
-    SCENE_NODE_FLAGS NodeFlags = SCENE_NODE_FLAGS_DEFAULT;
-
-    bool bMovable = false;
-
-    /// Perform node transform interpolation between fixed time steps
-    bool bTransformInterpolation = true;
-};
-
 class SceneGraphInterface
 {
     struct Node

@@ -621,6 +621,9 @@ void RenderSystem::AddMesh(RenderFrontendDef& rd, RenderFrameData& frameData, Re
 
     if (pose)
     {
+        if (!pose->IsValid())
+            return;
+
         skeletonOffset = pose->m_SkeletonOffset;
         skeletonOffsetMB = pose->m_SkeletonOffsetMB;
         skeletonSize = pose->m_SkeletonSize;

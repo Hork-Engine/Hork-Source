@@ -32,6 +32,11 @@ struct SkeletonPose : RefCounted
 
         return m_AbsoluteTransforms[jointIndex + 1];
     }
+
+    bool IsValid() const
+    {
+        return !m_AbsoluteTransforms.IsEmpty();
+    }
 };
 
 struct SkeletalAnimationTrack : RefCounted

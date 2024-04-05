@@ -141,6 +141,9 @@ void SkinningSystem_ECS::UpdateSkins()
         {
             SkeletonPose* pose = poseComponent[i].Pose;
 
+            if (!pose->IsValid())
+                continue;
+
             SkeletonResource const* skeleton = GameApplication::GetResourceManager().TryGet(pose->Skeleton);
             if (!skeleton)
                 continue;

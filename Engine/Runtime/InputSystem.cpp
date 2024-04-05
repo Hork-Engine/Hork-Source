@@ -557,7 +557,7 @@ void InputSystem::SetButtonState(InputDeviceKey const& DeviceKey, int Action, in
 
     int8_t* buttonIndex = m_DeviceButtonDown[DeviceKey.DeviceId];
 
-    TCallback<void()> callback;
+    //TCallback<void()> callback;
 
     if (Action == IA_PRESS)
     {
@@ -724,7 +724,7 @@ void InputSystem::SetButtonState(InputDeviceKey const& DeviceKey, int Action, in
         }
     }
 
-    callback();
+    //callback();
 }
 
 bool InputSystem::GetButtonState(InputDeviceKey const& DeviceKey) const
