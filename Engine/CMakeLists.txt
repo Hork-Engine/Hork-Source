@@ -45,10 +45,10 @@ target_link_libraries(${PROJECT_NAME}
 	lunasvg
 	webp
 	OptickCore
-    BulletSoftBody
-    BulletDynamics
-    BulletCollision
-    LinearMath
+#    BulletSoftBody
+#    BulletDynamics
+#    BulletCollision
+#    LinearMath
 #    Bullet2FileLoader
 #    BulletFileLoader
 #    Bullet3Collision
@@ -56,7 +56,7 @@ target_link_libraries(${PROJECT_NAME}
 #    Bullet3Dynamics
 #    Bullet3Geometry
 #    Bullet3OpenCL_clew
-    BulletInverseDynamics
+#    BulletInverseDynamics
 #    BulletInverseDynamicsUtils
 #    BulletWorldImporter
 #    BulletXmlWorldImporter
@@ -67,8 +67,8 @@ target_link_libraries(${PROJECT_NAME}
     Recast
     muFFT
     miniaudio
-    ${ANGELSCRIPT_LIBRARY_NAME}
-    angelscript_addon
+#    ${ANGELSCRIPT_LIBRARY_NAME}
+#    angelscript_addon
 )
 
 if(WIN32)
