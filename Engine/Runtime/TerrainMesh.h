@@ -41,15 +41,10 @@ struct TerrainPatch
     int StartIndex;
 };
 
-class TerrainMesh : public RefCounted
+class TerrainMesh
 {
 public:
-    TerrainMesh(int TextureSize);
-
-    int GetTextureSize() const
-    {
-        return m_TextureSize;
-    }
+    TerrainMesh();
 
     /** Get vertex buffer in GPU */
     RenderCore::IBuffer* GetVertexBufferGPU() const { return m_VertexBufferGPU; }
@@ -75,9 +70,6 @@ public:
     TerrainPatch const& GetCrackPatch() const { return m_CrackPatch; }
 
 private:
-    /** Initial texture size */
-    int m_TextureSize;
-
     TerrainPatch m_BlockPatch;
     TerrainPatch m_HorGapPatch;
     TerrainPatch m_VertGapPatch;

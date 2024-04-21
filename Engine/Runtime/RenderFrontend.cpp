@@ -42,7 +42,6 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
-ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
 ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
 ConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
@@ -54,12 +53,8 @@ extern ConsoleVar r_HBAODeinterleaved;
 
 ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
-static constexpr int TerrainTileSize = 256; //32;//256;
-
 RenderFrontend::RenderFrontend()
 {
-    m_TerrainMesh = MakeRef<TerrainMesh>(TerrainTileSize);
-
     GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
                                                   .SetResolution(RenderCore::TextureResolution1DArray(256, 256))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
@@ -318,6 +313,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     BvFrustum frustum;
     frustum.FromMatrix(view->ViewProjection, true);
 
+    m_RenderDef.WorldRV = worldRenderView;
     m_RenderDef.FrameNumber = m_FrameNumber;
     m_RenderDef.View = view;
     m_RenderDef.Frustum = &frustum;
@@ -325,8 +321,6 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     m_RenderDef.PolyCount = 0;
     m_RenderDef.ShadowMapPolyCount = 0;
     m_RenderDef.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-
-    m_WorldRenderView = worldRenderView;
 
     // Update local frame number
     worldRenderView->m_FrameNum++;
@@ -378,7 +372,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         //TODO
         //for (auto& it : worldRenderView->m_TerrainViews)
         //{
-        //    it.second->DrawDebug(&m_DebugDraw, m_TerrainMesh);
+        //    it.second->DrawDebug(&m_DebugDraw);
         //}
 
         m_DebugDraw.EndRenderView();
@@ -707,95 +701,6 @@ void RenderFrontend::AddRenderInstances(World* world)
     }
 }
 #if 0
-void RenderFrontend::AddTerrain(TerrainComponent* InComponent)
-{
-    RenderViewData* view = m_RenderDef.View;
-
-    if (!r_RenderTerrain)
-    {
-        return;
-    }
-
-    Terrain* terrainResource = InComponent->GetTerrain();
-    if (!terrainResource)
-    {
-        return;
-    }
-
-    TerrainView* terrainView;
-
-    auto it = m_WorldRenderView->m_TerrainViews.find(terrainResource->Id);
-    if (it == m_WorldRenderView->m_TerrainViews.end())
-    {
-        terrainView = new TerrainView(TerrainTileSize);
-        m_WorldRenderView->m_TerrainViews[terrainResource->Id] = terrainView;
-    }
-    else
-    {
-        terrainView = it->second;
-    }
-
-    // Terrain world rotation
-    Float3x3 rotation;
-    rotation = InComponent->GetWorldRotation().ToMatrix3x3();
-
-    // Terrain inversed transform
-    Float3x4 const& terrainWorldTransformInv = InComponent->GetTerrainWorldTransformInversed();
-
-    // Camera position in terrain space
-    Float3 localViewPosition = terrainWorldTransformInv * view->ViewPosition;
-
-    // Camera rotation in terrain space
-    Float3x3 localRotation = rotation.Transposed() * view->ViewRotation.ToMatrix3x3();
-
-    Float3x3 basis = localRotation.Transposed();
-    Float3 origin = basis * (-localViewPosition);
-
-    Float4x4 localViewMatrix;
-    localViewMatrix[0] = Float4(basis[0], 0.0f);
-    localViewMatrix[1] = Float4(basis[1], 0.0f);
-    localViewMatrix[2] = Float4(basis[2], 0.0f);
-    localViewMatrix[3] = Float4(origin, 1.0f);
-
-    Float4x4 localMVP = view->ProjectionMatrix * localViewMatrix;
-
-    BvFrustum localFrustum;
-    localFrustum.FromMatrix(localMVP, true);
-
-    // Update resource
-    terrainView->SetTerrain(terrainResource);
-    // Update view
-    terrainView->Update(m_FrameLoop->GetStreamedMemoryGPU(), m_TerrainMesh, localViewPosition, localFrustum);
-
-    if (terrainView->GetIndirectBufferDrawCount() == 0)
-    {
-        // Everything was culled
-        return;
-    }
-
-    TerrainRenderInstance* instance = (TerrainRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(TerrainRenderInstance));
-
-    m_FrameData.TerrainInstances.Add(instance);
-
-    instance->VertexBuffer = m_TerrainMesh->GetVertexBufferGPU();
-    instance->IndexBuffer = m_TerrainMesh->GetIndexBufferGPU();
-    instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
-    instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
-    instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
-    instance->Clipmaps = terrainView->GetClipmapArray();
-    instance->Normals = terrainView->GetNormalMapArray();
-    instance->ViewPositionAndHeight.X = localViewPosition.X;
-    instance->ViewPositionAndHeight.Y = localViewPosition.Y;
-    instance->ViewPositionAndHeight.Z = localViewPosition.Z;
-    instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
-    instance->LocalViewProjection = localMVP;
-    instance->ModelNormalToViewSpace = view->NormalToViewMatrix * rotation;
-    instance->ClipMin = terrainResource->GetClipMin();
-    instance->ClipMax = terrainResource->GetClipMax();
-
-    view->TerrainInstanceCount++;
-}
-
 void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
 {
     if (!r_RenderMeshes)

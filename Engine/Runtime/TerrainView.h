@@ -30,9 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#if 0
-
-#include "Terrain.h"
+#include <Engine/ECSRuntime/Resources/Resource_Terrain.h>
 #include "TerrainMesh.h"
 
 #include <Engine/Renderer/RenderDefs.h>
@@ -72,20 +70,13 @@ enum
     MAX_TERRAIN_LODS = 10
 };
 
-class TerrainView : public RefCounted
+class TerrainView
 {
 public:
-    TerrainView(int TextureSize);
+    TerrainView(TerrainHandle resource);
     virtual ~TerrainView();
 
-    void SetTerrain(Terrain* Mesh);
-
-    void Update(class StreamedMemoryGPU* StreamedMemory, class TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
-
-    int GetTextureSize() const
-    {
-        return m_TextureSize;
-    }
+    void Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
 
     size_t GetInstanceBufferStreamHandle() const
     {
@@ -112,16 +103,21 @@ public:
         return m_NormalMapArray;
     }
 
+    /** Get vertex buffer in GPU */
+    RenderCore::IBuffer* GetVertexBufferGPU() const { return s_TerrainMesh->GetVertexBufferGPU(); }
+    /** Get index buffer in GPU */
+    RenderCore::IBuffer* GetIndexBufferGPU() const { return s_TerrainMesh->GetIndexBufferGPU(); }
+
     float GetViewHeight() const
     {
         return m_ViewHeight;
     }
 
-    void DrawDebug(DebugRenderer* InRenderer, TerrainMesh* TerrainMesh);
+    void DrawDebug(DebugRenderer* InRenderer);
 
 private:
-    void MakeView(TerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
-    void AddPatches(TerrainMesh* TerrainMesh, BvFrustum const& ViewFrustum);
+    void MakeView(Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
+    void AddPatches(BvFrustum const& ViewFrustum);
     void AddBlock(TerrainLodInfo const& Lod, Int2 const& Offset);
     void AddGapV(TerrainLodInfo const& Lod, Int2 const& Offset);
     void AddGapH(TerrainLodInfo const& Lod, Int2 const& Offset);
@@ -166,24 +162,20 @@ private:
         INTERIOR_BOTTOM_RIGHT
     };
 
-    const int m_TextureSize;
-    const int m_TextureWrapMask;
-    const int m_GapWidth;
-    const int m_BlockWidth;
-    const int m_LodGridSize;
-    const int m_HalfGridSize;
-
-    TRef<Terrain> m_Terrain;
+    TerrainHandle m_Terrain;
 
     /** Current lod state */
     TerrainLodInfo m_LodInfo[MAX_TERRAIN_LODS];
 
     /** Min viewable lod */
-    int m_MinViewLod;
+    int m_MinViewLod{};
     /** Max viewable lod */
-    int m_MaxViewLod;
+    int m_MaxViewLod{};
     /** Height above the terrain */
-    float m_ViewHeight;
+    float m_ViewHeight{};
+
+    static TUniqueRef<TerrainMesh> s_TerrainMesh;
+    static uint32_t s_InstanceCount;
 
     TVector<TerrainPatchInstance> m_InstanceBuffer;
     TVector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
@@ -196,6 +188,8 @@ private:
 
     int m_StartInstanceLocation;
 
+    BvAxisAlignedBox m_TerrainBoundingBox;
+
     // Debug draw
     void DrawIndexedTriStrip(TerrainVertex const* Vertices, unsigned short const* Indices, int IndexCount);
     void DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex const& b, TerrainVertex const& c);
@@ -206,4 +200,3 @@ private:
 };
 
 HK_NAMESPACE_END
-#endif

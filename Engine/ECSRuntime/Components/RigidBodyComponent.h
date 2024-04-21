@@ -25,6 +25,22 @@ struct PhysBodyComponent
     TRef<CollisionModel> m_Model;
 };
 
+struct HeightFieldComponent
+{
+    HeightFieldComponent(TerrainCollision* cmodel, PhysBodyID id) :
+        m_BodyId(id),
+        m_Model(cmodel)
+    {}
+
+    PhysBodyID const& GetBodyId() const
+    {
+        return m_BodyId;
+    }
+
+    PhysBodyID m_BodyId;
+    TRef<TerrainCollision> m_Model;
+};
+
 struct StaticBodyComponent{};
 
 struct DynamicBodyComponent{};

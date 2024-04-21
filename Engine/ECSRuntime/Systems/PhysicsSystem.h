@@ -39,6 +39,9 @@ public:
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event);
+
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<HeightFieldComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<HeightFieldComponent> const& event);
     
     void Update(struct GameFrame const& frame);
 
@@ -51,6 +54,9 @@ private:
     void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
     void OnBodyActivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override;
     void OnBodyDeactivated(const JPH::BodyID& inBodyID, JPH::uint64 inBodyUserData) override;
+
+    void AddBody(ECS::EntityHandle entity);
+    void RemoveBody(ECS::EntityHandle entity, PhysBodyID bodyID);
 
     void AddAndRemoveBodies(GameFrame const& frame);
 

@@ -56,6 +56,7 @@ struct RenderFrontendStat
 
 struct RenderFrontendDef
 {
+    WorldRenderView* WorldRV;
     RenderViewData* View;
     BvFrustum const* Frustum;
     VISIBILITY_GROUP VisibilityMask;
@@ -88,8 +89,6 @@ private:
     void QueryVisiblePrimitives(World* world);
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
-    //void AddTerrain(TerrainComponent* InComponent);
-    //void AddStaticMesh(MeshComponent* InComponent);
 
     bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
@@ -115,23 +114,10 @@ private:
     };
     TVector<CullResult> m_ShadowCasterCullResult;
 
-    //struct SurfaceStream
-    //{
-    //    size_t VertexAddr;
-    //    size_t VertexLightAddr;
-    //    size_t VertexUVAddr;
-    //    size_t IndexAddr;
-    //};
-
-    //SurfaceStream SurfaceStream;
-
     RenderFrontendDef m_RenderDef;
-    WorldRenderView* m_WorldRenderView;
 
     TRef<RenderCore::ITexture> m_PhotometricProfiles;
     //TRef<EnvironmentMap> m_DummyEnvironmentMap;
-
-    TRef<TerrainMesh> m_TerrainMesh;
 
     LightVoxelizer m_LightVoxelizer;
 

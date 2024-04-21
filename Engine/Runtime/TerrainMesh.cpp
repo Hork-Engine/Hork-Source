@@ -97,7 +97,7 @@ HK_FORCEINLINE TerrainVertex MakeVertex(short X, short Y)
     return v;
 }
 
-TerrainMesh::TerrainMesh(int InTextureSize)
+TerrainMesh::TerrainMesh()
 {
     TVector<TerrainVertex> blockVerts;
     TVector<unsigned short> blockIndices;
@@ -118,13 +118,11 @@ TerrainMesh::TerrainMesh(int InTextureSize)
     TVector<TerrainVertex> crackVertices;
     TVector<unsigned short> crackIndices;
 
-    HK_ASSERT(IsPowerOfTwo(InTextureSize));
+    HK_ASSERT(IsPowerOfTwo(TERRAIN_CLIPMAP_SIZE));
 
-    const int BlockWidth = InTextureSize / 4 - 1;
+    const int BlockWidth = TERRAIN_CLIPMAP_SIZE / 4 - 1;
     const int GapWidth = 2;
     const int CrackTrianglesCount = (BlockWidth * 4 + GapWidth) / 2;
-
-    m_TextureSize = InTextureSize;
 
     // Blocks
     CreateTriangleStripPatch(BlockWidth, BlockWidth, blockVerts, blockIndices);

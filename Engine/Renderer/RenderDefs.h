@@ -121,6 +121,7 @@ constexpr int MAX_PROBES = 256;
 /** Total max items per view. */
 constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
+constexpr int TERRAIN_CLIPMAP_SIZE = 256;
 
 struct TerrainVertex
 {

@@ -1739,6 +1739,7 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
     ShaderFactory::CreateVertexShader("terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderFactory::CreateFragmentShader("terrain_depth.frag", pipelineCI.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;

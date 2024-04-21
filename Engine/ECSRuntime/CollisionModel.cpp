@@ -229,11 +229,6 @@ Float3 const& CollisionModel::GetCenterOfMass() const
     return m_CenterOfMass;//m_CenterOfMassWithOffset;
 }
 
-Float3 CollisionModel::GetCenterOfMassWorldPosition(Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale) const
-{
-    return worldPosition + worldRotation * (GetCenterOfMass() * GetValidScale(worldScale));
-}
-
 Float3 CollisionModel::GetValidScale(Float3 const& scale) const
 {
     if (scale.X != 1 || scale.Y != 1 || scale.Z != 1)
@@ -309,7 +304,7 @@ T CheckedStaticCast(U u)
 namespace
 {
 
-void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Float3x4 const& transform)
+void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
@@ -342,7 +337,7 @@ void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TV
             float phi = slice * Math::_2PI / numSlices;
             Math::SinCos(phi, sinPhi, cosPhi);
 
-            *pVertices++ = transform * (Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * radius + position);
+            *pVertices++ = Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * radius;
         }
     }
 
@@ -364,7 +359,7 @@ void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TV
     }
 }
 
-void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     unsigned int const faceIndices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
@@ -379,14 +374,14 @@ void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVect
 
     Float3 halfExtents = ConvertVector(shape->GetHalfExtent());
 
-    *pVertices++ = transform * (rotation * Float3(-halfExtents.X, halfExtents.Y, -halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(halfExtents.X, halfExtents.Y, -halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(halfExtents.X, halfExtents.Y, halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(-halfExtents.X, halfExtents.Y, halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(-halfExtents.X, -halfExtents.Y, -halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(halfExtents.X, -halfExtents.Y, -halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(halfExtents.X, -halfExtents.Y, halfExtents.Z) + position);
-    *pVertices++ = transform * (rotation * Float3(-halfExtents.X, -halfExtents.Y, halfExtents.Z) + position);
+    *pVertices++ = Float3(-halfExtents.X, halfExtents.Y, -halfExtents.Z);
+    *pVertices++ = Float3(halfExtents.X, halfExtents.Y, -halfExtents.Z);
+    *pVertices++ = Float3(halfExtents.X, halfExtents.Y, halfExtents.Z);
+    *pVertices++ = Float3(-halfExtents.X, halfExtents.Y, halfExtents.Z);
+    *pVertices++ = Float3(-halfExtents.X, -halfExtents.Y, -halfExtents.Z);
+    *pVertices++ = Float3(halfExtents.X, -halfExtents.Y, -halfExtents.Z);
+    *pVertices++ = Float3(halfExtents.X, -halfExtents.Y, halfExtents.Z);
+    *pVertices++ = Float3(-halfExtents.X, -halfExtents.Y, halfExtents.Z);
 
     for (int i = 0; i < 36; i++)
     {
@@ -394,7 +389,7 @@ void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVect
     }
 }
     
-void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     float sinPhi, cosPhi;
 
@@ -428,11 +423,11 @@ void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, 
         vert[2] = sinPhi * radius;
         vert[1] = halfHeight;
 
-        *pVertices = transform * (rotation * vert + position);
+        *pVertices = vert;
 
         vert[1] = -vert[1];
 
-        *(pVertices + numSlices) = transform * (rotation * vert + position);
+        *(pVertices + numSlices) = vert;
     }
 
     int offset = firstVertex;
@@ -466,7 +461,7 @@ void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, 
     }
 }
     
-void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     float radius = shape->GetRadius();
 
@@ -513,7 +508,6 @@ void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, T
             v[0] = r * c;
             v[2] = r * s;
             v[1] = h;
-            v = transform * (rotation * v + position);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
@@ -533,7 +527,6 @@ void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, T
             v[0] = r * c;
             v[2] = r * s;
             v[1] = h;
-            v = transform * (rotation * v + position);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
@@ -559,7 +552,7 @@ void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, T
     }
 }
 
-void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     int vertexCount = shape->mPoints.size();
 
@@ -580,7 +573,7 @@ void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices
 
     for (int i = 0; i < vertexCount; i++)
     {
-        pVertices[i] = transform * (rotation * ConvertVector(shape->mPoints[i].mPosition) + position);
+        pVertices[i] = ConvertVector(shape->mPoints[i].mPosition);
     }
 
     for (const auto& f : shape->mFaces)
@@ -597,7 +590,7 @@ void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices
     }
 }
 
-void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     using TriangleCodec = JPH::TriangleCodecIndexed8BitPackSOA4Flags;
     using NodeCodec = JPH::NodeCodecQuadTreeHalfFloat<1>;
@@ -631,9 +624,9 @@ void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVec
 
             for (const JPH::Vec3 *v = vertices, *v_end = vertices + inNumTriangles * 3; v < v_end; v += 3)
             {
-                m_Vertices.Add(m_Transform * (m_Rotation * ConvertVector(v[0]) + m_Position));
-                m_Vertices.Add(m_Transform * (m_Rotation * ConvertVector(v[1]) + m_Position));
-                m_Vertices.Add(m_Transform * (m_Rotation * ConvertVector(v[2]) + m_Position));
+                m_Vertices.Add(ConvertVector(v[0]));
+                m_Vertices.Add(ConvertVector(v[1]));
+                m_Vertices.Add(ConvertVector(v[2]));
 
                 m_Indices.Add(firstVertex + 0);
                 m_Indices.Add(firstVertex + 1);
@@ -645,12 +638,9 @@ void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVec
 
         TVector<Float3>& m_Vertices;
         TVector<unsigned int>& m_Indices;
-        Float3 const& m_Position;
-        Quat const& m_Rotation;
-        Float3x4 const& m_Transform;
     };
 
-    Visitor visitor{vertices, indices, position, rotation, transform};
+    Visitor visitor{vertices, indices};
 
     const NodeCodec::Header* header = shape->mTree.Get<NodeCodec::Header>(0);
     NodeCodec::DecodingContext node_ctx(header);
@@ -660,27 +650,27 @@ void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVec
     node_ctx.WalkTree(buffer_start, triangle_ctx, visitor);
 }
 
-void GatherGeometrySimpleShape(JPH::Shape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void GatherGeometrySimpleShape(JPH::Shape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
 {
     switch (shape->GetSubType())
     {
         case JPH::EShapeSubType::Sphere:
-            GatherGeometry(CheckedStaticCast<JPH::SphereShape const*>(shape), vertices, indices, position, transform);
+            GatherGeometry(CheckedStaticCast<JPH::SphereShape const*>(shape), vertices, indices);
             break;
         case JPH::EShapeSubType::Box:
-            GatherGeometry(CheckedStaticCast<JPH::BoxShape const*>(shape), vertices, indices, position, rotation, transform);
+            GatherGeometry(CheckedStaticCast<JPH::BoxShape const*>(shape), vertices, indices);
             break;
         case JPH::EShapeSubType::Cylinder:
-            GatherGeometry(CheckedStaticCast<JPH::CylinderShape const*>(shape), vertices, indices, position, rotation, transform);
+            GatherGeometry(CheckedStaticCast<JPH::CylinderShape const*>(shape), vertices, indices);
             break;
         case JPH::EShapeSubType::Capsule:
-            GatherGeometry(CheckedStaticCast<JPH::CapsuleShape const*>(shape), vertices, indices, position, rotation, transform);
+            GatherGeometry(CheckedStaticCast<JPH::CapsuleShape const*>(shape), vertices, indices);
             break;
         case JPH::EShapeSubType::ConvexHull:
-            GatherGeometry(CheckedStaticCast<JPH::ConvexHullShape const*>(shape), vertices, indices, position, rotation, transform);
+            GatherGeometry(CheckedStaticCast<JPH::ConvexHullShape const*>(shape), vertices, indices);
             break;
         case JPH::EShapeSubType::Mesh:
-            GatherGeometry(CheckedStaticCast<JPH::MeshShape const*>(shape), vertices, indices, position, rotation, transform);
+            GatherGeometry(CheckedStaticCast<JPH::MeshShape const*>(shape), vertices, indices);
             break;
         default:
             HK_ASSERT(0);
@@ -689,32 +679,24 @@ void GatherGeometrySimpleShape(JPH::Shape const* shape, TVector<Float3>& vertice
 }
 
 } // namespace
- //mPosition - mRotation * mShape->GetCenterOfMass()
-//worldPosition + worldRotation*(m_CenterOfMassWithOffset* GetValidScale(worldScale));
-void CollisionModel::GatherGeometry(TVector<Float3>& vertices, TVector<unsigned int>& indices, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale) const
-{
-    Float3 validScale = GetValidScale(worldScale);
-    Float3x4 transform;
 
+void CollisionModel::GatherGeometry(TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const
+{
     JPH::Shape const* shape = m_Shape.GetPtr();
 
-    auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+    auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
 
     //if (shape->GetSubType() == JPH::EShapeSubType::OffsetCenterOfMass)
     //{
     //    JPH::OffsetCenterOfMassShape const* offsetShape = CheckedStaticCast<JPH::OffsetCenterOfMassShape const*>(shape);
-
     //    shape = offsetShape->GetInnerShape();
     //}
 
-    
-    //HK_UNUSED(centerOfMass);
+    Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
 
-    Float3 centerOfMassWorldPos = worldPosition + worldRotation * (centerOfMass * validScale);
+    auto first_vert = outVertices.Size();
 
-    //Float3 centerOfMassWorldPos = worldPosition + worldRotation * (m_CenterOfMassWithOffset * validScale);
-
-    transform.Compose(centerOfMassWorldPos, worldRotation.ToMatrix3x3(), validScale);
+    Float3x4 local_transform;
 
     if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
     {
@@ -723,25 +705,30 @@ void CollisionModel::GatherGeometry(TVector<Float3>& vertices, TVector<unsigned 
         JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
         for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
         {
-            auto position = ConvertVector(subShape.GetPositionCOM()); // FIXME: Is it correct?
+            auto position = ConvertVector(subShape.GetPositionCOM());
             auto rotation = ConvertQuaternion(subShape.GetRotation());
 
-            JPH::Shape const* innerShape = subShape.mShape;
+            local_transform.Compose(position, rotation.ToMatrix3x3());
 
-            GatherGeometrySimpleShape(innerShape, vertices, indices, position, rotation, transform);
+            first_vert = outVertices.Size();
+
+            GatherGeometrySimpleShape(subShape.mShape, outVertices, outIndices);
+            TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix * local_transform);
         }
     }
     else if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
     {
         JPH::RotatedTranslatedShape const* transformedShape = CheckedStaticCast<JPH::RotatedTranslatedShape const*>(shape);
 
-        JPH::Shape const* innerShape = transformedShape->GetInnerShape();
+        local_transform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
 
-        GatherGeometrySimpleShape(innerShape, vertices, indices, ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()), transform);
+        GatherGeometrySimpleShape(transformedShape->GetInnerShape(), outVertices, outIndices);
+        TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix * local_transform);
     }
     else
     {
-        GatherGeometrySimpleShape(shape, vertices, indices, Float3::Zero(), Quat::Identity(), transform);
+        GatherGeometrySimpleShape(shape, outVertices, outIndices);
+        TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix);
     }
 }
 
@@ -793,14 +780,9 @@ void DrawMesh(DebugRenderer& renderer, JPH::MeshShape const* shape)
     // TODO
 }
 
-void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3 const& position, Quat const& rotation, Float3x4 const& transform)
+void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
 {
-    Float3x4 t;
-    t.Compose(position, rotation.ToMatrix3x3());
-
-    t = transform * t;
-
-    renderer.PushTransform(t);
+    renderer.PushTransform(transform);
 
     switch (shape->GetSubType())
     {
@@ -832,18 +814,14 @@ void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3 const& p
 
 } // namespace
 
-void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3 const& worldPosition, Quat const& worldRotation, Float3 const& worldScale) const
+void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transform) const
 {
-    Float3 validScale = GetValidScale(worldScale);
-    Float3x4 transform;
-
     JPH::Shape const* shape = m_Shape.GetPtr();
 
-    auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+    auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
 
-    Float3 centerOfMassWorldPos = worldPosition + worldRotation * (centerOfMass * validScale);
-
-    transform.Compose(centerOfMassWorldPos, worldRotation.ToMatrix3x3(), validScale);
+    Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
+    Float3x4 final_transform = transform * center_of_mass_offset_matrix;
 
     if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
     {
@@ -852,25 +830,27 @@ void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3 const& worldPosit
         JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
         for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
         {
-            auto position = ConvertVector(subShape.GetPositionCOM()); // FIXME: Is it correct?
+            auto position = ConvertVector(subShape.GetPositionCOM());
             auto rotation = ConvertQuaternion(subShape.GetRotation());
 
-            JPH::Shape const* innerShape = subShape.mShape;
+            Float3x4 local_tranform;
+            local_tranform.Compose(position, rotation.ToMatrix3x3());
 
-            DrawShape(renderer, innerShape, position, rotation, transform);
+            DrawShape(renderer, subShape.mShape, final_transform * local_tranform);
         }
     }
     else if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
     {
         JPH::RotatedTranslatedShape const* transformedShape = CheckedStaticCast<JPH::RotatedTranslatedShape const*>(shape);
 
-        JPH::Shape const* innerShape = transformedShape->GetInnerShape();
+        Float3x4 local_tranform;
+        local_tranform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
 
-        DrawShape(renderer, innerShape, ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()), transform);
+        DrawShape(renderer, transformedShape->GetInnerShape(), final_transform * local_tranform);
     }
     else
     {
-        DrawShape(renderer, shape, Float3::Zero(), Quat::Identity(), transform);
+        DrawShape(renderer, shape, final_transform);
     }
 }
 
@@ -978,6 +958,104 @@ CollisionModel* CreateConvexDecompositionVHACD(Float3 const* vertices,
     createInfo.ConvexHullCount = hullDefs.Size();
 
     return CollisionModel::Create(createInfo);
+}
+
+TerrainCollision* TerrainCollision::Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList)
+{
+    const int BLOCK_SIZE_SHIFT = 2;
+    const int BITS_PER_SAMPLE = 8;
+
+    HK_ASSERT(IsPowerOfTwo(inSampleCount) && (inSampleCount % (1 << BLOCK_SIZE_SHIFT)) == 0);
+
+    const float CELL_SIZE = 1;
+
+    JPH::Vec3 terrain_offset = JPH::Vec3(-0.5f * CELL_SIZE * inSampleCount, 0, -0.5f * CELL_SIZE * inSampleCount);
+    JPH::Vec3 terrain_scale = JPH::Vec3(CELL_SIZE, 1.0f, CELL_SIZE);
+
+    JPH::HeightFieldShapeSettings settings(inSamples, terrain_offset, terrain_scale, inSampleCount, inMaterialIndices, inMaterialList);
+    settings.mBlockSize = 1 << BLOCK_SIZE_SHIFT;
+    settings.mBitsPerSample = BITS_PER_SAMPLE;
+
+    TerrainCollision* model = new TerrainCollision;
+    model->m_Shape = static_cast<JPH::HeightFieldShape*>(settings.Create().Get().GetPtr());
+
+    LOG("TerrainCollision memory usage {} bytes\n", model->GetMemoryUsage());
+
+    return model;
+}
+
+CollisionInstanceRef TerrainCollision::Instatiate()
+{
+    return static_cast<CollisionInstanceRef>(m_Shape);
+}
+
+Float3 TerrainCollision::GetPosition(uint32_t inX, uint32_t inY) const
+{
+    return ConvertVector(m_Shape->GetPosition(inX, inY));
+}
+
+bool TerrainCollision::IsNoCollision(uint32_t inX, uint32_t inY) const
+{
+    return m_Shape->IsNoCollision(inX, inY);
+}
+
+bool TerrainCollision::ProjectOntoSurface(Float3 const& inLocalPosition, Float3& outSurfacePosition, Float3& outSurfaceNormal) const
+{
+    JPH::Vec3 local_position = ConvertVector(inLocalPosition);
+    JPH::Vec3 surface_position;
+    JPH::SubShapeID sub_shape_id;
+
+    bool result = m_Shape->ProjectOntoSurface(ConvertVector(inLocalPosition), surface_position, sub_shape_id);
+    if (!result)
+        return false;
+
+    outSurfacePosition = ConvertVector(surface_position);
+    outSurfaceNormal = ConvertVector(m_Shape->GetSurfaceNormal(sub_shape_id, surface_position));
+
+    return true;
+}
+
+size_t TerrainCollision::GetMemoryUsage() const
+{
+    return m_Shape->GetStats().mSizeBytes;
+}
+
+void TerrainCollision::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const
+{
+    int first_vertex = outVertices.Size();
+
+    JPH::AABox box;
+    box.mMin = ConvertVector(inLocalBounds.Mins);
+    box.mMax = ConvertVector(inLocalBounds.Maxs);
+
+    // Start iterating all triangles of the shape
+    JPH::Shape::GetTrianglesContext context;
+    m_Shape->GetTrianglesStart(context, box, JPH::Vec3::sZero(), JPH::Quat::sIdentity(), JPH::Vec3::sReplicate(1.0f));
+    for (;;)
+    {
+        // Get the next batch of vertices
+        constexpr int cMaxTriangles = 1000;
+        JPH::Float3 vertices[3 * cMaxTriangles];
+        int triangle_count = m_Shape->GetTrianglesNext(context, cMaxTriangles, vertices);
+        if (triangle_count == 0)
+            break;
+
+        // Allocate space for triangles
+        size_t output_index = outIndices.Size();
+        outIndices.Resize(output_index + triangle_count * 3);
+        unsigned int* indices = &outIndices[output_index];
+
+        for (int vertex = 0, vertex_max = 3 * triangle_count; vertex < vertex_max; vertex += 3, indices += 3, first_vertex += 3)
+        {
+            outVertices.EmplaceBack(vertices[vertex    ].x, vertices[vertex    ].y, vertices[vertex    ].z);
+            outVertices.EmplaceBack(vertices[vertex + 1].x, vertices[vertex + 1].y, vertices[vertex + 1].z);
+            outVertices.EmplaceBack(vertices[vertex + 2].x, vertices[vertex + 2].y, vertices[vertex + 2].z);
+
+            indices[0] = first_vertex;
+            indices[1] = first_vertex + 1;
+            indices[2] = first_vertex + 2;
+        }
+    }
 }
 
 HK_NAMESPACE_END

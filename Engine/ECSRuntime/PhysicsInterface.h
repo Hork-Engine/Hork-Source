@@ -405,6 +405,26 @@ struct CharacterControllerDesc
     bool       bTransformInterpolation = true;
 };
 
+class TerrainCollision;
+
+struct HeightFieldDesc
+{
+    /// Scene node parent
+    ECS::EntityHandle Parent;
+
+    /// Position of the terrain
+    Float3 Position;
+
+    /// Rotation of the terrain
+    Quat Rotation;
+
+    /// Collision model of the terrain
+    TRef<TerrainCollision> Model;
+
+    /// The collision group this body belongs to (determines if two objects can collide)
+    uint8_t CollisionGroup = CollisionGroup::DEFAULT;
+};
+
 class PhysicsInterface
 {
 public:
@@ -447,6 +467,7 @@ public:
     auto GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBodyID;
 
     ECS::EntityHandle CreateBody(ECS::CommandBuffer& commandBuffer, RigidBodyDesc const& desc);
+    ECS::EntityHandle CreateHeightField(ECS::CommandBuffer& commandBuffer, HeightFieldDesc const& desc);
     ECS::EntityHandle CreateCharacterController(ECS::CommandBuffer& commandBuffer, CharacterControllerDesc const& desc);
 
     void ActivateBody(PhysBodyID const& inBodyID);

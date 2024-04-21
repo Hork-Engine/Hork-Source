@@ -31,7 +31,9 @@ SOFTWARE.
 #include "base/viewuniforms.glsl"
 #include "terrain_common.glsl"
 
-layout( binding = 0 ) uniform sampler2DArray ClipmapArray;
+layout(location = 0) out float VS_Hole;
+
+layout(binding = 0) uniform sampler2DArray ClipmapArray;
 
 vec2 CalcHeight( ivec2 uv )
 {
@@ -46,7 +48,7 @@ void CalcVertex( out ivec2 VertexOffset, out ivec2 TexelOffset )
 //    VertexOffset = clamp( VertexOffset, TerrainClip.xy, TerrainClip.zw );
 //#endif
 
-    TexelOffset = (( VertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x) & ivec2(TILE_SIZE-1);
+    TexelOffset = (( VertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x) & ivec2(TERRAIN_CLIPMAP_SIZE-1);
     //TexelOffset = InPosition + (VertexScaleAndTranslate.zw + TexcoordOffset) / VertexScaleAndTranslate.x
     //                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ prebake into one variable TexcoordOffset
 }
@@ -72,4 +74,6 @@ void main()
 #endif
 
     gl_Position = LocalViewProjection * vec4( position, 1.0 );
+
+    VS_Hole = float(hf == 32768);
 }

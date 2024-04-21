@@ -44,6 +44,7 @@ ConsoleVar com_DrawWaterVolume("com_DrawWaterVolume"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawStaticBodies("com_DrawStaticBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawDynamicBodies("com_DrawDynamicBodies"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawKinematicBodies("com_DrawKinematicBodies"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawTerrainCollision("com_DrawTerrainCollision"s, "1"s, CVAR_CHEAT);
 
 PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
     m_World(world),
@@ -64,6 +65,8 @@ PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
 
     world->AddEventHandler<ECS::Event::OnComponentAdded<PhysBodyComponent>>(this);
     world->AddEventHandler<ECS::Event::OnComponentRemoved<PhysBodyComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<HeightFieldComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentRemoved<HeightFieldComponent>>(this);
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -87,19 +90,19 @@ PhysicsSystem::~PhysicsSystem()
     m_World->RemoveHandler(this);
 }
 
-void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
+void PhysicsSystem::AddBody(ECS::EntityHandle entity)
 {
-    m_PendingAddBodies.Add(event.GetEntity());
+    m_PendingAddBodies.Add(entity);
 }
 
-void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
+void PhysicsSystem::RemoveBody(ECS::EntityHandle entity, PhysBodyID bodyID)
 {
-    auto i = m_PendingAddBodies.IndexOf(event.GetEntity());
+    auto i = m_PendingAddBodies.IndexOf(entity);
     if (i != Core::NPOS)
     {
         {
             //SpinLockGuard lock(m_PhysicsInterface.m_PendingBodiesMutex);
-            auto it = m_PhysicsInterface.m_PendingBodies.Find(event.GetEntity());
+            auto it = m_PhysicsInterface.m_PendingBodies.Find(entity);
             if (it != m_PhysicsInterface.m_PendingBodies.end())
             {
                 auto& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
@@ -112,13 +115,31 @@ void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemove
     }
     else
     {
-        auto bodyID = event.Component().m_BodyId;
-
         if (!bodyID.IsInvalid())
         {
             m_PendingDestroyBodies.Add(bodyID);
         }
     }
+}
+
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
+{
+    AddBody(event.GetEntity());
+}
+
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
+{
+    RemoveBody(event.GetEntity(), event.Component().m_BodyId);
+}
+
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<HeightFieldComponent> const& event)
+{
+    AddBody(event.GetEntity());
+}
+
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<HeightFieldComponent> const& event)
+{
+    RemoveBody(event.GetEntity(), event.Component().m_BodyId);
 }
 
 JPH::ValidateResult PhysicsSystem::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
@@ -299,40 +320,59 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
             ECS::EntityView entityView = m_World->GetEntityView(entity);
 
             WorldTransformComponent* worldTransform = entityView.GetComponent<WorldTransformComponent>();
-            TriggerComponent* trigger = entityView.GetComponent<TriggerComponent>();
-            PhysBodyComponent* physBody = entityView.GetComponent<PhysBodyComponent>();
 
             auto scale = worldTransform ? worldTransform->Scale[frame.StateIndex] : Float3(1.0f);
             auto position = worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero();
             auto rotation = worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity();
 
-            if (scale != Float3(1.0f))
+            if (PhysBodyComponent* physBody = entityView.GetComponent<PhysBodyComponent>())
             {
-                auto scaledModel = physBody->m_Model->Instatiate(scale);
+                if (scale != Float3(1.0f))
+                {
+                    auto scaledModel = physBody->m_Model->Instatiate(scale);
 
-                bool bUpdateMassProperties = false;
-                body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                    bool bUpdateMassProperties = false;
+                    body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                }
+
+                body_interface.SetPositionAndRotation(physBody->m_BodyId, position, rotation, JPH::EActivation::DontActivate);
+
+                auto motionType = body_interface.GetMotionType(physBody->m_BodyId);
+                auto activation = (motionType == JPH::EMotionType::Static) ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
+
+                m_BodyAddList[int(activation)].Add(physBody->m_BodyId);
+
+                if (TriggerComponent* trigger = entityView.GetComponent<TriggerComponent>())
+                {
+                    Trigger& t = m_Triggers[physBody->m_BodyId];
+                    t.mBodyID = physBody->m_BodyId;
+                    t.mEntity = entity;
+                    t.TriggerClass = trigger->TriggerClass;
+                    HK_ASSERT(t.mBodiesInSensor.empty());
+                }
             }
+            else if (HeightFieldComponent* heightfield = entityView.GetComponent<HeightFieldComponent>())
+            {
+                // TODO: scaling?
+                //if (scale != Float3(1.0f))
+                //{
+                //    auto scaledModel = physBody->m_Model->Instatiate(scale);
+                //    bool bUpdateMassProperties = false;
+                //    body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                //}
 
-            body_interface.SetPositionAndRotation(physBody->m_BodyId, position, rotation, JPH::EActivation::DontActivate);            
+                body_interface.SetPositionAndRotation(heightfield->m_BodyId, position, rotation, JPH::EActivation::DontActivate);
 
-            auto motionType = body_interface.GetMotionType(physBody->m_BodyId);
-            auto activation = (motionType == JPH::EMotionType::Static) ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
+                auto activation = JPH::EActivation::DontActivate;
 
-            m_BodyAddList[int(activation)].Add(physBody->m_BodyId);
+                m_BodyAddList[int(activation)].Add(heightfield->m_BodyId);
+            }
+            else
+                HK_ASSERT(0);
 
             {
                 //SpinLockGuard lock(m_PhysicsInterface.m_PendingBodiesMutex);
                 m_PhysicsInterface.m_PendingBodies.Erase(entity);
-            }
-
-            if (trigger)
-            {
-                Trigger& t = m_Triggers[physBody->m_BodyId];
-                t.mBodyID = physBody->m_BodyId;
-                t.mEntity = entity;
-                t.TriggerClass = trigger->TriggerClass;
-                HK_ASSERT(t.mBodiesInSensor.empty());
             }
         }
         for (int i = 0; i < 2; i++)
@@ -544,8 +584,15 @@ void PhysicsSystem::DrawCollisionGeometry(DebugRenderer& renderer, CollisionMode
 {
     m_DebugDrawVertices.Clear();
     m_DebugDrawIndices.Clear();
-    collisionModel->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices, worldPosition, worldRotation, worldScale);
+
+    collisionModel->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices);
+    
+    Float3x4 transform;
+    transform.Compose(worldPosition, worldRotation.ToMatrix3x3(), collisionModel->GetValidScale(worldScale));
+    
+    renderer.PushTransform(transform);
     renderer.DrawTriangleSoup(m_DebugDrawVertices, m_DebugDrawIndices);
+    renderer.PopTransform();
 }
 
 void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
@@ -621,6 +668,45 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         }
     }
 
+    if (com_DrawTerrainCollision)
+    {
+        using Query = ECS::Query<>
+            ::ReadOnly<HeightFieldComponent>
+            ::ReadOnly<WorldTransformComponent>;
+
+        renderer.SetDepthTest(false);
+        renderer.SetColor(Color4(0, 1, 0, 0.5f));
+
+        for (Query::Iterator q(*m_World); q; q++)
+        {
+            HeightFieldComponent const* bodies = q.Get<HeightFieldComponent>();
+            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
+
+            for (int i = 0; i < q.Count(); i++)
+            {
+                m_DebugDrawVertices.Clear();
+                m_DebugDrawIndices.Clear();
+
+                Float3x4 transform_matrix;
+                transform_matrix.Compose(transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex].ToMatrix3x3());
+
+                Float3x4 transform_matrix_inv = transform_matrix.Inversed();
+                Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
+
+                BvAxisAlignedBox local_bounds(local_view_position - 4, local_view_position + 4);
+
+                local_bounds.Mins.Y = -FLT_MAX;
+                local_bounds.Maxs.Y = FLT_MAX;
+
+                bodies[i].m_Model->GatherGeometry(local_bounds, m_DebugDrawVertices, m_DebugDrawIndices);
+
+                renderer.PushTransform(transform_matrix);
+                renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
+                renderer.PopTransform();
+            }
+        }
+    }
+
     if (com_DrawStaticBodies)
     {
         using Query = ECS::Query<>
@@ -631,6 +717,8 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0.6f, 0.6f, 0.6f, 1));
 
+        Float3x4 transform;
+
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
@@ -638,7 +726,11 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
             for (int i = 0; i < q.Count(); i++)
             {
-                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
+                transform.Compose(transforms[i].Position[m_FrameIndex],
+                                  transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
+                                  bodies[i].m_Model->GetValidScale(transforms[i].Scale[m_FrameIndex]));
+
+                bodies[i].m_Model->DrawDebug(renderer, transform);
             }
         }
     }
@@ -653,6 +745,8 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         renderer.SetDepthTest(false);
         renderer.SetColor(Color4(0, 1, 1, 1));
 
+        Float3x4 transform;
+
         for (Query::Iterator q(*m_World); q; q++)
         {
             PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
@@ -660,7 +754,11 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
             for (int i = 0; i < q.Count(); i++)
             {
-                bodies[i].m_Model->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
+                transform.Compose(transforms[i].Position[m_FrameIndex],
+                                  transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
+                                  bodies[i].m_Model->GetValidScale(transforms[i].Scale[m_FrameIndex]));
+
+                bodies[i].m_Model->DrawDebug(renderer, transform);
             }
         }
     }
@@ -675,6 +773,8 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
         renderer.SetDepthTest(false);
+
+        Float3x4 transform;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
@@ -694,12 +794,16 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
                     renderer.SetColor(Color4(1, 1, 1, 1));
                 }
 
-                collisionModel->DrawDebug(renderer, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
+                Float3x3 rotation = transforms[i].Rotation[m_FrameIndex].ToMatrix3x3();
 
-                Float3x3 r = transforms[i].Rotation[m_FrameIndex].ToMatrix3x3();
+                transform.Compose(transforms[i].Position[m_FrameIndex],
+                                  rotation,
+                                  collisionModel->GetValidScale(transforms[i].Scale[m_FrameIndex]));
+
+                collisionModel->DrawDebug(renderer, transform);
 
                 renderer.SetColor(Color4(1, 1, 1, 1));
-                renderer.DrawAxis(transforms[i].Position[m_FrameIndex], r[0], r[1], r[2], Float3(0.25f));
+                renderer.DrawAxis(transforms[i].Position[m_FrameIndex], rotation[0], rotation[1], rotation[2], Float3(0.25f));
             }
         }
     }
@@ -724,7 +828,12 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
             {
                 auto* collisionModel = bodies[i].m_Model.RawPtr();
 
-                Float3 centerOfMassPos = collisionModel->GetCenterOfMassWorldPosition(transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
+                Float3x4 transform;
+                transform.Compose(transforms[i].Position[m_FrameIndex],
+                                  transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
+                                  collisionModel->GetValidScale(transforms[i].Scale[m_FrameIndex]));
+
+                Float3 centerOfMassPos = transform * collisionModel->GetCenterOfMass();
                 Float3 centerOfMassPos2 = ConvertVector(body_interface.GetCenterOfMassPosition(bodies[i].m_BodyId));
 
                 renderer.SetColor(Color4(1, 1, 1, 1));

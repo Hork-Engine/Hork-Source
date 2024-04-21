@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "WorldRenderView.h"
+#include "TerrainView.h"
 #include "GameApplication.h"
 
 #include <Engine/Core/Guid.h>
@@ -183,10 +184,11 @@ WorldRenderView::~WorldRenderView()
 {
     GameApplication::GetResourceManager().UnloadResource(m_HandleRT);
 
-    //for (auto& it : m_TerrainViews)
-    //{
-    //    it.second->RemoveRef();
-    //}
+    for (auto& it : m_TerrainViews)
+    {
+        TerrainView* terrainView = it.second;
+        delete terrainView;
+    }
 }
 
 void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
@@ -345,6 +347,14 @@ RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
 void WorldRenderView::ReleaseHBAOMaps()
 {
     m_HBAOMaps.Reset();
+}
+
+TerrainView* WorldRenderView::GetTerrainView(TerrainHandle resource)
+{
+    auto& terrainView = m_TerrainViews[resource.ID];
+    if (!terrainView)
+        terrainView = new TerrainView(resource);
+    return terrainView;
 }
 
 HK_NAMESPACE_END

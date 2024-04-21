@@ -13,6 +13,7 @@
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
@@ -70,8 +71,7 @@ PhysicsInterface::PhysicsInterface(ECS::World* world) :
     m_ObjectVsObjectLayerFilter(m_CollisionFilter)
 {
     // This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
-    // Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
-    const JPH::uint cMaxBodies = 1024;
+    const JPH::uint cMaxBodies = 65536;
 
     // This determines how many mutexes to allocate to protect rigid bodies from concurrent access. Set it to 0 for the default settings.
     const JPH::uint cNumBodyMutexes = 0;
@@ -79,13 +79,11 @@ PhysicsInterface::PhysicsInterface(ECS::World* world) :
     // This is the max amount of body pairs that can be queued at any time (the broad phase will detect overlapping
     // body pairs based on their bounding boxes and will insert them into a queue for the narrowphase). If you make this buffer
     // too small the queue will fill up and the broad phase jobs will start to do narrow phase work. This is slightly less efficient.
-    // Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
-    const JPH::uint cMaxBodyPairs = 1024;
+    const JPH::uint cMaxBodyPairs = 65536;
 
     // This is the maximum size of the contact constraint buffer. If more contacts (collisions between bodies) are detected than this
     // number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
-    // Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
-    const JPH::uint cMaxContactConstraints = 1024;
+    const JPH::uint cMaxContactConstraints = 10240;
 
     // TODO: Move to game setup/config/resource
     m_CollisionFilter.SetShouldCollide(CollisionGroup::CHARACTER, CollisionGroup::CHARACTER, true);
@@ -811,6 +809,10 @@ auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBody
     {
         return body->GetBodyId();
     }
+    if (auto heightfield = entityView.GetComponent<HeightFieldComponent>())
+    {
+        return heightfield->GetBodyId();
+    }
     //if (auto character = entityView.GetComponent<CharacterControllerComponent>())
     //{
     //    return character->GetBodyId();
@@ -931,6 +933,49 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
 
     return entityHandle;
 }
+
+ECS::EntityHandle PhysicsInterface::CreateHeightField(ECS::CommandBuffer& commandBuffer, HeightFieldDesc const& desc)
+{
+    auto& body_interface = m_PhysicsSystem.GetBodyInterface();
+
+    SceneNodeDesc node_desc;
+    node_desc.Parent = desc.Parent;
+    node_desc.Position = desc.Position;
+    node_desc.Rotation = desc.Rotation;
+    node_desc.bMovable = false;
+    node_desc.bTransformInterpolation = false;
+
+    ECS::EntityHandle entity = CreateSceneNode(commandBuffer, node_desc);
+
+    TerrainCollision* cm = desc.Model;
+
+    auto settings = JPH::BodyCreationSettings(cm->Instatiate(),
+                                              JPH::Vec3::sZero(),
+                                              JPH::Quat::sIdentity(),
+                                              JPH::EMotionType::Static,
+                                              MakeObjectLayer(desc.CollisionGroup, BroadphaseLayer::NON_MOVING));
+    settings.mUserData = entity;
+    
+    JPH::Body* body = body_interface.CreateBody(settings);
+    if (body)
+    {
+        {
+            SpinLockGuard lock(m_PendingBodiesMutex);
+
+            HK_ASSERT(m_PendingBodies.Count(entity) == 0);
+            m_PendingBodies[entity] = body->GetID();
+        }
+
+        commandBuffer.AddComponent<HeightFieldComponent>(entity, desc.Model, body->GetID());
+    }
+    else
+    {
+        LOG("Couldn't create height field for the entity\n");
+    }
+
+    return entity;
+}
+
 
 ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer& commandBuffer, CharacterControllerDesc const& desc)
 {

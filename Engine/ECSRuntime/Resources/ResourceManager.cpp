@@ -5,6 +5,7 @@
 #include "Resource_MaterialInstance.h"
 #include "Resource_Texture.h"
 #include "Resource_Font.h"
+#include "Resource_Terrain.h"
 
 #include <Engine/Geometry/BV/BvhTree.h>
 #include <Engine/Runtime/MaterialGraph.h>
@@ -423,6 +424,8 @@ TUniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, 
             return MakeUnique<MaterialResource>(f, this);
         case RESOURCE_FONT:
             return MakeUnique<FontResource>(f, this);
+        case RESOURCE_TERRAIN:
+            return MakeUnique<TerrainResource>(f, this);
 #if 0
         case RESOURCE_SOUND:
             return LoadSound(name);

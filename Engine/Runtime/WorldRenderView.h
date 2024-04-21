@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Engine/Renderer/VT/VirtualTextureFeedback.h>
 #include <Engine/ECSRuntime/Resources/ResourceManager.h>
 #include <Engine/ECSRuntime/Resources/Resource_Texture.h>
+#include <Engine/ECSRuntime/Resources/Resource_Terrain.h>
 #include <Engine/ECS/ECS.h>
 
 HK_NAMESPACE_BEGIN
@@ -168,6 +169,8 @@ public:
 
     //TextureView* GetTextureView();
 
+    class TerrainView* GetTerrainView(TerrainHandle resource);
+
     /*
     TODO    
     enum CUSTOM_DEPTH_STENCIL_BUFFER
@@ -245,7 +248,7 @@ private:
     TRef<RenderCore::ITexture>             m_DepthTexture;
     //TRef<RenderCore::ITexture>             m_RenderTarget;
     TRef<RenderCore::ITexture>             m_HBAOMaps;
-    //THashMap<uint64_t, class TerrainView*> m_TerrainViews;     // TODO: Needs to be cleaned from time to time
+    THashMap<ResourceID, TerrainView*>     m_TerrainViews;     // TODO: Needs to be cleaned from time to time
     Float4x4                               m_ProjectionMatrix; // last rendered projection
     Float4x4                               m_ViewMatrix;       // last rendered view
     float                                  m_ScaledWidth{};

@@ -15,13 +15,16 @@
 
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/GameApplication.h>
+#include <Engine/Runtime/TerrainView.h>
 
 HK_NAMESPACE_BEGIN
 
 ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
 
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
+ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"s, "1"s);
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -392,38 +395,61 @@ void RenderSystem::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& f
 
 void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData)
 {
-    if (!r_RenderMeshes)
-        return;
-
+    if (r_RenderMeshes)
     {
-        using Query = ECS::Query<>
-            ::ReadOnly<MeshComponent_ECS>
-            ::ReadOnly<RenderTransformComponent>;
-
-        for (Query::Iterator q(*m_World); q; q++)
         {
-            MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
-            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
-            TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
+            using Query = ECS::Query<>
+                ::ReadOnly<MeshComponent_ECS>
+                ::ReadOnly<RenderTransformComponent>;
 
-            bool bMovable = q.HasComponent<MovableTag>();
-            bool bHasTransformHistory = !!history;
-
-            for (int i = 0; i < q.Count(); i++)
+            for (Query::Iterator q(*m_World); q; q++)
             {
-                AddMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, mesh[i].Pose, bMovable);
+                MeshComponent_ECS const* mesh = q.Get<MeshComponent_ECS>();
+                RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
+                TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
+
+                bool bMovable = q.HasComponent<MovableTag>();
+                bool bHasTransformHistory = !!history;
+
+                for (int i = 0; i < q.Count(); i++)
+                {
+                    AddMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, mesh[i].Pose, bMovable);
+                }
+            }
+        }
+
+        {
+            using Query = ECS::Query<>
+                ::ReadOnly<ProceduralMeshComponent_ECS>
+                ::ReadOnly<RenderTransformComponent>;
+
+            for (Query::Iterator q(*m_World); q; q++)
+            {
+                ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
+                RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
+                TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
+
+                bool bMovable = q.HasComponent<MovableTag>();
+                bool bHasTransformHistory = !!history;
+
+                for (int i = 0; i < q.Count(); i++)
+                {
+                    AddProceduralMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, bMovable);
+                }
             }
         }
     }
 
+
+    if (r_RenderTerrain)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<ProceduralMeshComponent_ECS>
+            ::ReadOnly<TerrainComponent_ECS>
             ::ReadOnly<RenderTransformComponent>;
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
+            TerrainComponent_ECS const* terrain = q.Get<TerrainComponent_ECS>();
             RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
             TransformHistoryComponent const* history = q.TryGet<TransformHistoryComponent>();
 
@@ -432,7 +458,7 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
 
             for (int i = 0; i < q.Count(); i++)
             {
-                AddProceduralMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, bMovable);
+                AddTerrain(rd, frameData, transform[i], terrain[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, bMovable);
             }
         }
     }
@@ -863,6 +889,86 @@ void RenderSystem::AddProceduralMesh(RenderFrontendDef& rd, RenderFrameData& fra
     }
 }
 
+void RenderSystem::AddTerrain(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, TerrainComponent_ECS const& terrainComponent, Float3x4 const* transformHistory, bool bMovable)
+{
+    TerrainResource* terrainResource = GameApplication::GetResourceManager().TryGet(terrainComponent.Resource);
+
+    if (!terrainResource)
+        return;
+
+    // Terrain world rotation
+    Float3x3 worldRotation = transform.Rotation.ToMatrix3x3();
+    Float3x3 worldRotationInv = worldRotation.Transposed();
+
+    // Terrain transform without scale
+    //Float3x4 transformMatrix;
+    //transformMatrix.Compose(transform.Position, worldRotation);
+
+    // Terrain inversed transform
+    //Float3x4 terrainWorldTransformInv = transformMatrix.Inversed();
+
+    // Camera position in terrain space
+    //Float3 localViewPosition = terrainWorldTransformInv * rd.View->ViewPosition;
+    Float3 localViewPosition = worldRotationInv * (rd.View->ViewPosition - transform.Position);
+
+    // Camera rotation in terrain space
+    Float3x3 localRotation = worldRotationInv * rd.View->ViewRotation.ToMatrix3x3();
+
+    Float3x3 basis = localRotation.Transposed();
+    Float3 origin = basis * (-localViewPosition);
+
+    Float4x4 localViewMatrix;
+    localViewMatrix[0] = Float4(basis[0], 0.0f);
+    localViewMatrix[1] = Float4(basis[1], 0.0f);
+    localViewMatrix[2] = Float4(basis[2], 0.0f);
+    localViewMatrix[3] = Float4(origin, 1.0f);
+
+    Float4x4 localMVP = rd.View->ProjectionMatrix * localViewMatrix;
+
+    BvFrustum localFrustum;
+    localFrustum.FromMatrix(localMVP, true);
+
+    // Update view
+    auto terrainView = rd.WorldRV->GetTerrainView(terrainComponent.Resource);
+
+    terrainView->Update(localViewPosition, localFrustum);
+    if (terrainView->GetIndirectBufferDrawCount() == 0)
+    {
+        // Everything was culled
+        return;
+    }
+
+    // TODO: transform history
+    //Float3x4 const& componentWorldTransform = transformMatrix;
+    //Float3x4 const& componentWorldTransformP = transformHistory ? *transformHistory : transformMatrix;
+    //Float4x4 instanceMatrix = rd.View->ViewProjection * componentWorldTransform;
+    //Float4x4 instanceMatrixP = rd.View->ViewProjectionP * componentWorldTransformP;
+
+    auto& frameLoop = GameApplication::GetFrameLoop();
+
+    TerrainRenderInstance* instance = (TerrainRenderInstance*)frameLoop.AllocFrameMem(sizeof(TerrainRenderInstance));
+
+    frameData.TerrainInstances.Add(instance);
+
+    instance->VertexBuffer = terrainView->GetVertexBufferGPU();
+    instance->IndexBuffer = terrainView->GetIndexBufferGPU();
+    instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
+    instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
+    instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
+    instance->Clipmaps = terrainView->GetClipmapArray();
+    instance->Normals = terrainView->GetNormalMapArray();
+    instance->ViewPositionAndHeight.X = localViewPosition.X;
+    instance->ViewPositionAndHeight.Y = localViewPosition.Y;
+    instance->ViewPositionAndHeight.Z = localViewPosition.Z;
+    instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
+    instance->LocalViewProjection = localMVP;
+    instance->ModelNormalToViewSpace = rd.View->NormalToViewMatrix * worldRotation;
+    instance->ClipMin = terrainResource->GetClipMin();
+    instance->ClipMax = terrainResource->GetClipMax();
+
+    rd.View->TerrainInstanceCount++;
+}
+
 void RenderSystem::AddMeshShadow(RenderFrontendDef& rd, RenderFrameData& frameData, RenderTransformComponent const& transform, MeshComponent_ECS const& mesh, SkeletonPose* pose, ShadowCastComponent const& shadow, LightShadowmap* shadowmap)
 {
     auto& frameLoop = GameApplication::GetFrameLoop();
@@ -1076,8 +1182,7 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
 
             for (int i = 0; i < q.Count(); i++)
             {
-                MeshResource* meshRes = GameApplication::GetResourceManager().TryGet(mesh[i].Mesh);
-                if (meshRes)
+                if (MeshResource* meshRes = GameApplication::GetResourceManager().TryGet(mesh[i].Mesh))
                 {
                     Float3x3 worldRotation = transform[i].Rotation.ToMatrix3x3();
                     matrix.Compose(transform[i].Position, worldRotation, transform[i].Scale);
@@ -1123,6 +1228,50 @@ void RenderSystem::DrawDebug(DebugRenderer& renderer)
 
                 for (int i = 0; i < q.Count(); i++)
                     renderer.DrawAABB(mesh[i].m_WorldBoundingBox);
+            }
+        }
+    }
+
+    if (com_DrawTerrainMesh)
+    {
+        using Query = ECS::Query<>
+            ::ReadOnly<TerrainComponent_ECS>
+            ::ReadOnly<RenderTransformComponent>;
+
+        renderer.SetDepthTest(false);
+        renderer.SetColor(Color4(0, 0, 1, 0.5f));
+
+        TVector<Float3> vertices;
+        TVector<unsigned int> indices;
+
+        for (Query::Iterator q(*m_World); q; q++)
+        {
+            TerrainComponent_ECS const* terrains = q.Get<TerrainComponent_ECS>();
+            RenderTransformComponent const* transforms = q.Get<RenderTransformComponent>();
+
+            for (int i = 0; i < q.Count(); i++)
+            {
+                if (TerrainResource* resource = GameApplication::GetResourceManager().TryGet(terrains[i].Resource))
+                {
+                    Float3x4 transform_matrix;
+                    transform_matrix.Compose(transforms[i].Position, transforms[i].Rotation.ToMatrix3x3());
+
+                    Float3x4 transform_matrix_inv = transform_matrix.Inversed();
+                    Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
+
+                    BvAxisAlignedBox local_bounds(local_view_position - 4, local_view_position + 4);
+
+                    local_bounds.Mins.Y = -FLT_MAX;
+                    local_bounds.Maxs.Y = FLT_MAX;
+
+                    vertices.Clear();
+                    indices.Clear();
+                    resource->GatherGeometry(local_bounds, vertices, indices);
+
+                    renderer.PushTransform(transform_matrix);
+                    renderer.DrawTriangleSoupWireframe(vertices, indices);
+                    renderer.PopTransform();
+                }
             }
         }
     }

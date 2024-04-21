@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#define TILE_SIZE 256
+#define TERRAIN_CLIPMAP_SIZE 256
 #define TERRAIN_CLIP_BOUNDS
 #define TERRAIN_LIGHT_MODEL_UNLIT 0
 #define TERRAIN_LIGHT_MODEL_BASELIGHT 1
@@ -59,7 +59,7 @@ layout( binding = 1, std140 ) uniform DrawCall
 
 float CalcTransitionAlpha( vec2 VertexPos, float VertexScale )
 {
-    const float gridsize = TILE_SIZE-2;
+    const float gridsize = TERRAIN_CLIPMAP_SIZE-2;
     const float transitionWidth = gridsize * 0.1;
     const vec2 alpha = clamp( (abs(VertexPos - ViewPositionAndHeight.xz) / VertexScale - (gridsize*0.5-transitionWidth))/(transitionWidth-1), vec2(0.0), vec2(1.0) );
     return max( alpha.x, alpha.y );
@@ -67,7 +67,7 @@ float CalcTransitionAlpha( vec2 VertexPos, float VertexScale )
 
 float CalcTransitionAlpha3D( vec3 VertexPos, float VertexScale )
 {
-    const float gridsize = TILE_SIZE-2;
+    const float gridsize = TERRAIN_CLIPMAP_SIZE-2;
     const float transitionWidth = gridsize * 0.1;
     #if 1
     const float gridExtent = gridsize * VertexScale;
