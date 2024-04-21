@@ -593,6 +593,9 @@ struct TVector2
         static constexpr TVector2<T> ZeroVec(T(0));
         return ZeroVec;
     }
+
+    static HK_FORCEINLINE TVector2 AxisX() { return TVector2(1, 0); }
+    static HK_FORCEINLINE TVector2 AxisY() { return TVector2(0, 1); }
 };
 
 template <typename T>
@@ -1211,6 +1214,10 @@ struct TVector3
         static constexpr TVector3 ZeroVec(T(0));
         return ZeroVec;
     }
+
+    static HK_FORCEINLINE TVector3 AxisX() { return TVector3(1, 0, 0); }
+    static HK_FORCEINLINE TVector3 AxisY() { return TVector3(0, 1, 0); }
+    static HK_FORCEINLINE TVector3 AxisZ() { return TVector3(0, 0, 1); }
 };
 
 template <typename T>
@@ -1702,6 +1709,11 @@ struct TVector4
         static constexpr TVector4 ZeroVec(T(0));
         return ZeroVec;
     }
+
+    static HK_FORCEINLINE TVector4 AxisX() { return TVector4(1, 0, 0, 0); }
+    static HK_FORCEINLINE TVector4 AxisY() { return TVector4(0, 1, 0, 0); }
+    static HK_FORCEINLINE TVector4 AxisZ() { return TVector4(0, 0, 1, 0); }
+    static HK_FORCEINLINE TVector4 AxisW() { return TVector4(0, 0, 0, 1); }
 };
 
 namespace Math
@@ -2164,7 +2176,7 @@ struct Float2x2
         Col1.X     = Temp;
     }
 
-    Float2x2 Transposed() const
+    constexpr Float2x2 Transposed() const
     {
         return Float2x2(Col0.X, Col1.X, Col0.Y, Col1.Y);
     }
@@ -2199,12 +2211,12 @@ struct Float2x2
         Col0.X = Col1.Y = 1;
     }
 
-    static Float2x2 Scale(Float2 const& scale)
+    static constexpr Float2x2 Scale(Float2 const& scale)
     {
         return Float2x2(scale);
     }
 
-    Float2x2 Scaled(Float2 const& scale) const
+    constexpr Float2x2 Scaled(Float2 const& scale) const
     {
         return Float2x2(Col0 * scale[0], Col1 * scale[1]);
     }
@@ -2218,7 +2230,7 @@ struct Float2x2
                         -s, c);
     }
 
-    Float2x2 operator*(float v) const
+    constexpr Float2x2 operator*(float v) const
     {
         return Float2x2(Col0 * v,
                         Col1 * v);
@@ -2247,7 +2259,7 @@ struct Float2x2
     }
 
     template <typename T>
-    TVector2<T> operator*(TVector2<T> const& vec) const
+    constexpr TVector2<T> operator*(TVector2<T> const& vec) const
     {
         return TVector2<T>(Col0[0] * vec.X + Col1[0] * vec.Y,
                            Col0[1] * vec.X + Col1[1] * vec.Y);
@@ -2404,7 +2416,7 @@ struct Float3x3
         Col2.Y     = Temp;
     }
 
-    Float3x3 Transposed() const
+    constexpr Float3x3 Transposed() const
     {
         return Float3x3(Col0.X, Col1.X, Col2.X, Col0.Y, Col1.Y, Col2.Y, Col0.Z, Col1.Z, Col2.Z);
     }
@@ -2452,12 +2464,12 @@ struct Float3x3
         *this = Identity();
     }
 
-    static Float3x3 Scale(Float3 const& scale)
+    static constexpr Float3x3 Scale(Float3 const& scale)
     {
         return Float3x3(scale);
     }
 
-    Float3x3 Scaled(Float3 const& scale) const
+    constexpr Float3x3 Scaled(Float3 const& scale) const
     {
         return Float3x3(Col0 * scale[0], Col1 * scale[1], Col2 * scale[2]);
     }
@@ -2528,7 +2540,7 @@ struct Float3x3
                         0, 0, 1);
     }
 
-    Float3x3 operator*(float v) const
+    constexpr Float3x3 operator*(float v) const
     {
         return Float3x3(Col0 * v,
                         Col1 * v,
@@ -2769,7 +2781,7 @@ struct Float4x4
         Col3.Z = Temp;
     }
 
-    Float4x4 Transposed() const
+    constexpr Float4x4 Transposed() const
     {
         return Float4x4(Col0.X, Col1.X, Col2.X, Col3.X,
                         Col0.Y, Col1.Y, Col2.Y, Col3.Y,
@@ -2870,7 +2882,7 @@ struct Float4x4
         *this = Identity();
     }
 
-    static Float4x4 Translation(Float3 const& vec)
+    static constexpr Float4x4 Translation(Float3 const& vec)
     {
         return Float4x4(Float4(1, 0, 0, 0),
                         Float4(0, 1, 0, 0),
@@ -2878,12 +2890,12 @@ struct Float4x4
                         Float4(vec[0], vec[1], vec[2], 1));
     }
 
-    Float4x4 Translated(Float3 const& vec) const
+    constexpr Float4x4 Translated(Float3 const& vec) const
     {
         return Float4x4(Col0, Col1, Col2, Col0 * vec[0] + Col1 * vec[1] + Col2 * vec[2] + Col3);
     }
 
-    static Float4x4 Scale(Float3 const& scale)
+    static constexpr Float4x4 Scale(Float3 const& scale)
     {
         return Float4x4(Float4(scale[0], 0, 0, 0),
                         Float4(0, scale[1], 0, 0),
@@ -2891,7 +2903,7 @@ struct Float4x4
                         Float4(0, 0, 0, 1));
     }
 
-    Float4x4 Scaled(Float3 const& scale) const
+    constexpr Float4x4 Scaled(Float3 const& scale) const
     {
         return Float4x4(Col0 * scale[0], Col1 * scale[1], Col2 * scale[2], Col3);
     }
@@ -2969,7 +2981,7 @@ struct Float4x4
     }
 
     template <typename T>
-    TVector4<T> operator*(TVector4<T> const& vec) const
+    constexpr TVector4<T> operator*(TVector4<T> const& vec) const
     {
         return TVector4<T>(Col0[0] * vec.X + Col1[0] * vec.Y + Col2[0] * vec.Z + Col3[0] * vec.W,
                            Col0[1] * vec.X + Col1[1] * vec.Y + Col2[1] * vec.Z + Col3[1] * vec.W,
@@ -2979,7 +2991,7 @@ struct Float4x4
 
     // Assume vec.W = 1
     template <typename T>
-    TVector4<T> operator*(TVector3<T> const& vec) const
+    constexpr TVector4<T> operator*(TVector3<T> const& vec) const
     {
         return TVector4<T>(Col0[0] * vec.X + Col1[0] * vec.Y + Col2[0] * vec.Z + Col3[0],
                            Col0[1] * vec.X + Col1[1] * vec.Y + Col2[1] * vec.Z + Col3[1],
@@ -2989,7 +3001,7 @@ struct Float4x4
 
     // Same as Float3x3(*this)*vec
     template <typename T>
-    TVector3<T> TransformAsFloat3x3(TVector3<T> const& vec) const
+    constexpr TVector3<T> TransformAsFloat3x3(TVector3<T> const& vec) const
     {
         return TVector3<T>(Col0[0] * vec.X + Col1[0] * vec.Y + Col2[0] * vec.Z,
                            Col0[1] * vec.X + Col1[1] * vec.Y + Col2[1] * vec.Z,
@@ -3028,7 +3040,7 @@ struct Float4x4
                         L02 * R20 + L12 * R21 + L22 * R22);
     }
 
-    Float4x4 operator*(float v) const
+    constexpr Float4x4 operator*(float v) const
     {
         return Float4x4(Col0 * v,
                         Col1 * v,
@@ -3687,7 +3699,7 @@ struct Float3x4
         rotation[2][2]  = Col2[2] * sz;
     }
 
-    Float3 DecomposeTranslation() const
+    constexpr Float3 DecomposeTranslation() const
     {
         return Float3(Col0[3], Col1[3], Col2[3]);
     }
@@ -3812,14 +3824,14 @@ struct Float3x4
         *this = Identity();
     }
 
-    static Float3x4 Translation(Float3 const& vec)
+    static constexpr Float3x4 Translation(Float3 const& vec)
     {
         return Float3x4(Float4(1, 0, 0, vec[0]),
                         Float4(0, 1, 0, vec[1]),
                         Float4(0, 0, 1, vec[2]));
     }
 
-    static Float3x4 Scale(Float3 const& scale)
+    static constexpr Float3x4 Scale(Float3 const& scale)
     {
         return Float3x4(Float4(scale[0], 0, 0, 0),
                         Float4(0, scale[1], 0, 0),
@@ -3876,7 +3888,7 @@ struct Float3x4
 
     // Assume vec.W = 1
     template <typename T>
-    TVector3<T> operator*(TVector3<T> const& vec) const
+    constexpr TVector3<T> operator*(TVector3<T> const& vec) const
     {
         return TVector3<T>(Col0[0] * vec.X + Col0[1] * vec.Y + Col0[2] * vec.Z + Col0[3],
                            Col1[0] * vec.X + Col1[1] * vec.Y + Col1[2] * vec.Z + Col1[3],
@@ -3885,7 +3897,7 @@ struct Float3x4
 
     // Assume vec.Z = 0, vec.W = 1
     template <typename T>
-    TVector3<T> operator*(TVector2<T> const& vec) const
+    constexpr TVector3<T> operator*(TVector2<T> const& vec) const
     {
         return TVector3<T>(Col0[0] * vec.X + Col0[1] * vec.Y + Col0[3],
                            Col1[0] * vec.X + Col1[1] * vec.Y + Col1[3],
@@ -3893,13 +3905,13 @@ struct Float3x4
     }
 
     template <typename T>
-    TVector2<T> Mult_Float2_IgnoreZ(TVector2<T> const& vec) const
+    constexpr TVector2<T> Mult_Float2_IgnoreZ(TVector2<T> const& vec) const
     {
         return TVector2<T>(Col0[0] * vec.X + Col0[1] * vec.Y + Col0[3],
                            Col1[0] * vec.X + Col1[1] * vec.Y + Col1[3]);
     }
 
-    Float3x4 operator*(float v) const
+    constexpr Float3x4 operator*(float v) const
     {
         return Float3x4(Col0 * v,
                         Col1 * v,
@@ -3931,7 +3943,7 @@ struct Float3x4
         return *this;
     }
 
-    Float3x4 operator*(Float3x4 const& matrix) const
+    constexpr Float3x4 operator*(Float3x4 const& matrix) const
     {
         return Float3x4(Col0[0] * matrix[0][0] + Col0[1] * matrix[1][0] + Col0[2] * matrix[2][0],
                         Col0[0] * matrix[0][1] + Col0[1] * matrix[1][1] + Col0[2] * matrix[2][1],
