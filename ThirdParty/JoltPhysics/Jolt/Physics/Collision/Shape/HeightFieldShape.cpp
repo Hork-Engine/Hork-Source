@@ -1277,8 +1277,14 @@ public:
 							const Vec3 *start_vertex = vertices + offset;
 							const bool *start_no_collision = no_collision + offset;
 
+							#define HORK_TRIANGLE_TOPOLOGY
+
+							#ifdef HORK_TRIANGLE_TOPOLOGY
 							// Check if vertices shared by both triangles have collision
-							if (!start_no_collision[0] && !start_no_collision[block_size_plus_1 + 1])
+							if (!start_no_collision[1] && !start_no_collision[block_size_plus_1])
+							#else
+                            if (!start_no_collision[0] && !start_no_collision[block_size_plus_1 + 1])
+							#endif
 							{
 								// Loop 2 triangles
 								for (uint t = 0; t < 2; ++t)
@@ -1287,25 +1293,47 @@ public:
 									Vec3 v0, v1, v2;
 									if (t == 0)
 									{
-										// Check third vertex
-										if (start_no_collision[block_size_plus_1])
-											continue;
+										#ifdef HORK_TRIANGLE_TOPOLOGY
+                                        // Check third vertex
+                                        if (start_no_collision[0])
+                                            continue;
 
-										// Get vertices for triangle
-										v0 = start_vertex[0];
-										v1 = start_vertex[block_size_plus_1];
-										v2 = start_vertex[block_size_plus_1 + 1];
+                                        // Get vertices for triangle
+                                        v0 = start_vertex[0];
+                                        v1 = start_vertex[block_size_plus_1];
+                                        v2 = start_vertex[1];
+										#else
+                                        // Check third vertex
+                                        if (start_no_collision[block_size_plus_1])
+                                            continue;
+
+                                        // Get vertices for triangle
+                                        v0 = start_vertex[0];
+                                        v1 = start_vertex[block_size_plus_1];
+                                        v2 = start_vertex[block_size_plus_1 + 1];
+										#endif
 									}
 									else
 									{
+										#ifdef HORK_TRIANGLE_TOPOLOGY
 										// Check third vertex
-										if (start_no_collision[1])
+                                        if (start_no_collision[block_size_plus_1 + 1])
 											continue;
 
 										// Get vertices for triangle
-										v0 = start_vertex[0];
-										v1 = start_vertex[block_size_plus_1 + 1];
-										v2 = start_vertex[1];
+										v0 = start_vertex[1];
+                                        v1 = start_vertex[block_size_plus_1];
+										v2 = start_vertex[block_size_plus_1 + 1];
+										#else
+                                        // Check third vertex
+                                        if (start_no_collision[1])
+                                            continue;
+
+                                        // Get vertices for triangle
+                                        v0 = start_vertex[0];
+                                        v1 = start_vertex[block_size_plus_1 + 1];
+                                        v2 = start_vertex[1];
+										#endif
 									}
 
 								#ifdef JPH_DEBUG_HEIGHT_FIELD
