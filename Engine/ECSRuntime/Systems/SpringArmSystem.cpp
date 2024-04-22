@@ -27,7 +27,6 @@ void SpringArmSystem::PostPhysicsUpdate(GameFrame const& frame)
 
     castFilter.bIgonreBackFaces = false;
     castFilter.BroadphaseLayerMask
-        .Clear()
         .AddLayer(BroadphaseLayer::MOVING)
         .AddLayer(BroadphaseLayer::NON_MOVING);
 
@@ -42,9 +41,9 @@ void SpringArmSystem::PostPhysicsUpdate(GameFrame const& frame)
             Float3 dir = worldTransform[i].Rotation[frameNum].ZAxis();
             Float3 worldPos = worldTransform[i].Position[frameNum] - dir * springArm[i].ActualDistance;
 
-            if (m_PhysicsInterface.CastSphere(worldPos, dir * springArm[i].DesiredDistance, SpringArmComponent::SPRING_ARM_SPHERE_CAST_RADIUS, result, &castFilter))
+            if (m_PhysicsInterface.CastSphereClosest(worldPos, dir * springArm[i].DesiredDistance, SpringArmComponent::SPRING_ARM_SPHERE_CAST_RADIUS, result, castFilter))
             {
-                float distance = springArm[i].DesiredDistance * result.HitFraction;
+                float distance = springArm[i].DesiredDistance * result.Fraction;
 
                 springArm[i].ActualDistance = Math::Lerp(springArm[i].ActualDistance, distance, 0.5f);
 

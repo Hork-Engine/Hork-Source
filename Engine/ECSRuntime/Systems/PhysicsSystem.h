@@ -37,8 +37,8 @@ public:
     PhysicsSystem(World* world, GameEvents* gameEvents);
     ~PhysicsSystem();
 
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<RigidBodyComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<RigidBodyComponent> const& event);
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<HeightFieldComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<HeightFieldComponent> const& event);

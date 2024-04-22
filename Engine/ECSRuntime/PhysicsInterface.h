@@ -66,19 +66,6 @@ static constexpr JPH::uint NUM_LAYERS(4);
 
 struct Mask
 {
-    Mask& Clear()
-    {
-        m_Bits = 0;
-        return *this;
-    }
-
-    Mask& All()
-    {
-        for (JPH::uint i = 0; i < NUM_LAYERS; ++i)
-            m_Bits |= HK_BIT(i);
-        return *this;
-    }
-
     Mask& AddLayer(JPH::uint8 layer)
     {
         m_Bits |= HK_BIT(layer);
@@ -87,9 +74,10 @@ struct Mask
 
     uint32_t Get() const
     {
-        return m_Bits;
+        return m_Bits ? m_Bits : ~0u;
     }
 
+private:
     uint32_t m_Bits{};
 };
 
@@ -239,11 +227,32 @@ HK_INLINE JPH::ObjectLayer MakeObjectLayer(uint32_t group, uint32_t broadphase)
     return ((broadphase & 0xff) << 8) | (group & 0xff);
 }
 
-struct ShapeCastResult
-{
-    // TODO: Add entityHandle, subshapeId
+using PhysBodyID = JPH::BodyID;
 
-    float HitFraction;
+struct RayCastFilter
+{
+    // TODO: Add list of entities to ignore
+
+    BroadphaseLayer::Mask BroadphaseLayerMask;
+
+    bool bIgonreBackFaces : 1;
+    bool bSortByDistance : 1;
+    bool bCalcSurfcaceNormal : 1;
+
+    RayCastFilter() :
+        bIgonreBackFaces(true),
+        bSortByDistance(true),
+        bCalcSurfcaceNormal(false)
+    {}
+};
+
+struct RayCastResult
+{
+    PhysBodyID BodyID;
+    /// Hit fraction
+    float Fraction;
+    /// World space surface normal
+    Float3 Normal;
 };
 
 struct ShapeCastFilter
@@ -258,12 +267,44 @@ struct ShapeCastFilter
     ShapeCastFilter() :
         bIgonreBackFaces(true),
         bSortByDistance(true)
-    {
-        BroadphaseLayerMask.All();        
-    }
+    {}
 };
 
-using PhysBodyID = JPH::BodyID;
+struct ShapeCastResult
+{
+    PhysBodyID BodyID;
+    /// Contact point on the surface of shape 1 (in world space or relative to base offset)
+    Float3 ContactPointOn1;
+    /// Contact point on the surface of shape 2 (in world space or relative to base offset). If the penetration depth is 0, this will be the same as ContactPointOn1.
+    Float3 ContactPointOn2;
+    /// Direction to move shape 2 out of collision along the shortest path (magnitude is meaningless, in world space). You can use -PenetrationAxis.Normalized() as contact normal.
+    Float3 PenetrationAxis;
+    /// Penetration depth (move shape 2 by this distance to resolve the collision)
+    float PenetrationDepth;
+    /// This is the fraction where the shape hit the other shape: CenterOfMassOnHit = Start + value * (End - Start)
+    float Fraction;
+    /// True if the shape was hit from the back side
+    bool IsBackFaceHit;
+};
+
+struct ShapeCollideResult
+{
+    PhysBodyID BodyID;
+    /// Contact point on the surface of shape 1 (in world space or relative to base offset)
+    Float3 ContactPointOn1;
+    /// Contact point on the surface of shape 2 (in world space or relative to base offset). If the penetration depth is 0, this will be the same as ContactPointOn1.
+    Float3 ContactPointOn2;
+    /// Direction to move shape 2 out of collision along the shortest path (magnitude is meaningless, in world space). You can use -PenetrationAxis.Normalized() as contact normal.
+    Float3 PenetrationAxis;
+    /// Penetration depth (move shape 2 by this distance to resolve the collision)
+    float PenetrationDepth;
+};
+
+struct ShapeOverlapFilter
+{
+    BroadphaseLayer::Mask BroadphaseLayerMask;
+};
+
 
 enum MOTION_BEHAVIOR
 {
@@ -396,10 +437,10 @@ struct RigidBodyDesc
 struct CharacterControllerDesc
 {
     /// Position of the character
-    Hk::Float3 Position;
+    Float3     Position;
 
     /// Rotation of the character
-    Hk::Quat   Rotation;
+    Quat       Rotation;
 
     /// Perform node transform interpolation between fixed time steps
     bool       bTransformInterpolation = true;
@@ -410,19 +451,19 @@ class TerrainCollision;
 struct HeightFieldDesc
 {
     /// Scene node parent
-    ECS::EntityHandle Parent;
+    ECS::EntityHandle      Parent;
 
     /// Position of the terrain
-    Float3 Position;
+    Float3                 Position;
 
     /// Rotation of the terrain
-    Quat Rotation;
+    Quat                   Rotation;
 
     /// Collision model of the terrain
     TRef<TerrainCollision> Model;
 
     /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t CollisionGroup = CollisionGroup::DEFAULT;
+    uint8_t                CollisionGroup = CollisionGroup::DEFAULT;
 };
 
 class PhysicsInterface
@@ -430,38 +471,42 @@ class PhysicsInterface
 public:
     PhysicsInterface(ECS::World* world);
 
-    bool CastRay(Float3 const& start, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastRayAll(Float3 const& start, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastRayClosest(Float3 const& start, Float3 const& dir, RayCastResult& result, RayCastFilter const& filter = {});
+    bool CastRay(Float3 const& start, Float3 const& dir, TVector<RayCastResult>& result, RayCastFilter const& filter = {});
 
-    bool CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastBoxAll(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastBoxClosest(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const& filter = {});
+    bool CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter = {});
 
-    bool CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastBoxMinMaxAll(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastBoxMinMaxClosest(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const& filter = {});
+    bool CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter = {});
 
-    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastSphereAll(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastSphereClosest(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const& filter = {});
+    bool CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter = {});
 
-    bool CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastCapsuleAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastCapsuleClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const& filter = {});
+    bool CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter = {});
 
-    bool CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const* filter = nullptr);
-    bool CastCylinderAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter = nullptr);
+    bool CastCylinderClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const& filter = {});
+    bool CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter = {});
 
-    bool CollidePoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs);
-    bool CollidePointAll(Float3 const& point, TVector<PhysBodyID>& bodies, BroadphaseLayer::Mask broadphaseLayrs);
+    void OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter = {});
+    void OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter = {});
+    void OverlapSphere(Float3 const& position, float sphereRadius, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter = {});
+    void OverlapPoint(Float3 const& position, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter = {});
 
-    bool CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const* filter = nullptr);
-    bool CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const* filter = nullptr);
-    bool CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const* filter = nullptr);
-    bool CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const* filter = nullptr);
-    bool CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const* filter = nullptr);
+    bool CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const& filter = {});
+    bool CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const& filter = {});
+    bool CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const& filter = {});
+    bool CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const& filter = {});
+    bool CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const& filter = {});
+    bool CheckPoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs = {});
 
-    void OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<PhysBodyID>& result, ShapeCastFilter const* filter = nullptr);
-    void OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<PhysBodyID>& result, ShapeCastFilter const* filter = nullptr);
-    void OverlapSphere(Float3 const& position, float sphereRadius, TVector<PhysBodyID>& result, ShapeCastFilter const* filter = nullptr);
-    void OverlapCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<PhysBodyID>& result, ShapeCastFilter const* filter = nullptr);
-    void OverlapCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<PhysBodyID>& result, ShapeCastFilter const* filter = nullptr);
+    void CollideBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter = {});
+    void CollideBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter = {});
+    void CollideSphere(Float3 const& position, float sphereRadius, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter = {});
+    void CollideCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter = {});
+    void CollideCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter = {});
+    void CollidePoint(Float3 const& point, TVector<PhysBodyID>& result, BroadphaseLayer::Mask broadphaseLayrs = {});
 
     auto GetEntity(PhysBodyID const& bodyID) -> ECS::EntityHandle;
     auto GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBodyID;
@@ -554,8 +599,8 @@ public:
     }
 
 private:
-    bool CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const* filter);
-    bool CastShapeAll(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter);
+    bool CastShapeClosest(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const& filter);
+    bool CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter);
 
     ECS::World* m_World;
     JPH::PhysicsSystem m_PhysicsSystem;

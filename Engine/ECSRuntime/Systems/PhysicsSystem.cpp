@@ -15,18 +15,6 @@
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Collision/AABoxCast.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
-#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
-#include <Jolt/Physics/Collision/Shape/MeshShape.h>
-#include <Jolt/Physics/Collision/Shape/SphereShape.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
-#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
-#include <Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h>
-#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
-#include <Jolt/Physics/Collision/Shape/TriangleShape.h>
-#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
-#include <Jolt/Physics/Collision/Shape/MutableCompoundShape.h>
-#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/NarrowPhaseStats.h>
 #include <Jolt/Physics/Constraints/DistanceConstraint.h>
 #include <Jolt/Physics/Constraints/PulleyConstraint.h>
@@ -38,13 +26,10 @@
 HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawCollisionModel("com_DrawCollisionModel"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawCollisionShape("com_DrawCollisionShape"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawTriggers("com_DrawTriggers"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawCenterOfMass("com_DrawCenterOfMass"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_DrawWaterVolume("com_DrawWaterVolume"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawStaticBodies("com_DrawStaticBodies"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawDynamicBodies("com_DrawDynamicBodies"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawKinematicBodies("com_DrawKinematicBodies"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawTerrainCollision("com_DrawTerrainCollision"s, "1"s, CVAR_CHEAT);
 
 PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
     m_World(world),
@@ -63,8 +48,8 @@ PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
 
     m_PhysicsInterface.GetImpl().SetContactListener(this);
 
-    world->AddEventHandler<ECS::Event::OnComponentAdded<PhysBodyComponent>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentRemoved<PhysBodyComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<RigidBodyComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentRemoved<RigidBodyComponent>>(this);
     world->AddEventHandler<ECS::Event::OnComponentAdded<HeightFieldComponent>>(this);
     world->AddEventHandler<ECS::Event::OnComponentRemoved<HeightFieldComponent>>(this);
 }
@@ -122,14 +107,14 @@ void PhysicsSystem::RemoveBody(ECS::EntityHandle entity, PhysBodyID bodyID)
     }
 }
 
-void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PhysBodyComponent> const& event)
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<RigidBodyComponent> const& event)
 {
     AddBody(event.GetEntity());
 }
 
-void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PhysBodyComponent> const& event)
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<RigidBodyComponent> const& event)
 {
-    RemoveBody(event.GetEntity(), event.Component().m_BodyId);
+    RemoveBody(event.GetEntity(), event.Component().GetBodyId());
 }
 
 void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<HeightFieldComponent> const& event)
@@ -139,7 +124,7 @@ void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<
 
 void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<HeightFieldComponent> const& event)
 {
-    RemoveBody(event.GetEntity(), event.Component().m_BodyId);
+    RemoveBody(event.GetEntity(), event.Component().GetBodyId());
 }
 
 JPH::ValidateResult PhysicsSystem::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
@@ -325,27 +310,27 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
             auto position = worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero();
             auto rotation = worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity();
 
-            if (PhysBodyComponent* physBody = entityView.GetComponent<PhysBodyComponent>())
+            if (RigidBodyComponent* physBody = entityView.GetComponent<RigidBodyComponent>())
             {
                 if (scale != Float3(1.0f))
                 {
-                    auto scaledModel = physBody->m_Model->Instatiate(scale);
+                    auto scaledModel = physBody->GetModel()->Instatiate(scale);
 
                     bool bUpdateMassProperties = false;
-                    body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                    body_interface.SetShape(physBody->GetBodyId(), scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
                 }
 
-                body_interface.SetPositionAndRotation(physBody->m_BodyId, position, rotation, JPH::EActivation::DontActivate);
+                body_interface.SetPositionAndRotation(physBody->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
 
-                auto motionType = body_interface.GetMotionType(physBody->m_BodyId);
+                auto motionType = body_interface.GetMotionType(physBody->GetBodyId());
                 auto activation = (motionType == JPH::EMotionType::Static) ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
 
-                m_BodyAddList[int(activation)].Add(physBody->m_BodyId);
+                m_BodyAddList[int(activation)].Add(physBody->GetBodyId());
 
                 if (TriggerComponent* trigger = entityView.GetComponent<TriggerComponent>())
                 {
-                    Trigger& t = m_Triggers[physBody->m_BodyId];
-                    t.mBodyID = physBody->m_BodyId;
+                    Trigger& t = m_Triggers[physBody->GetBodyId()];
+                    t.mBodyID = physBody->GetBodyId();
                     t.mEntity = entity;
                     t.TriggerClass = trigger->TriggerClass;
                     HK_ASSERT(t.mBodiesInSensor.empty());
@@ -356,16 +341,16 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
                 // TODO: scaling?
                 //if (scale != Float3(1.0f))
                 //{
-                //    auto scaledModel = physBody->m_Model->Instatiate(scale);
+                //    auto scaledModel = physBody->GetModel()->Instatiate(scale);
                 //    bool bUpdateMassProperties = false;
-                //    body_interface.SetShape(physBody->m_BodyId, scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                //    body_interface.SetShape(physBody->GetBodyId(), scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
                 //}
 
-                body_interface.SetPositionAndRotation(heightfield->m_BodyId, position, rotation, JPH::EActivation::DontActivate);
+                body_interface.SetPositionAndRotation(heightfield->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
 
                 auto activation = JPH::EActivation::DontActivate;
 
-                m_BodyAddList[int(activation)].Add(heightfield->m_BodyId);
+                m_BodyAddList[int(activation)].Add(heightfield->GetBodyId());
             }
             else
                 HK_ASSERT(0);
@@ -402,14 +387,14 @@ void PhysicsSystem::UpdateScaling(GameFrame const& frame)
     JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
     using Query = ECS::Query<>
-        ::Required<PhysBodyComponent>
+        ::Required<RigidBodyComponent>
         ::Required<RigidBodyDynamicScaling>
         ::ReadOnly<WorldTransformComponent>;
 
     for (Query::Iterator q(*m_World); q; q++)
     {
         WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-        PhysBodyComponent* bodies = q.Get<PhysBodyComponent>();
+        RigidBodyComponent* bodies = q.Get<RigidBodyComponent>();
         RigidBodyDynamicScaling* cache = q.Get<RigidBodyDynamicScaling>();
 
         for (int i = 0; i < q.Count(); i++)
@@ -420,8 +405,8 @@ void PhysicsSystem::UpdateScaling(GameFrame const& frame)
                 cache[i].CachedScale = scale;
 
                 const bool bUpdateMassProperties = false;
-                body_interface.SetShape(bodies[i].m_BodyId,
-                                        bodies[i].m_Model->Instatiate(scale),
+                body_interface.SetShape(bodies[i].GetBodyId(),
+                                        bodies[i].GetModel()->Instatiate(scale),
                                         bUpdateMassProperties,
                                         JPH::EActivation::Activate);
             }
@@ -436,7 +421,7 @@ void PhysicsSystem::UpdateKinematicBodies(GameFrame const& frame)
     JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
 
     using Query = ECS::Query<>
-        ::Required<PhysBodyComponent>
+        ::Required<RigidBodyComponent>
         ::ReadOnly<KinematicBodyComponent>
         ::ReadOnly<WorldTransformComponent>        
         ::ReadOnly<MovableTag>;
@@ -444,21 +429,21 @@ void PhysicsSystem::UpdateKinematicBodies(GameFrame const& frame)
     for (Query::Iterator q(*m_World); q; q++)
     {
         WorldTransformComponent const* t = q.Get<WorldTransformComponent>();
-        PhysBodyComponent* bodies = q.Get<PhysBodyComponent>();
+        RigidBodyComponent* bodies = q.Get<RigidBodyComponent>();
 
         for (int i = 0; i < q.Count(); i++)
         {
             JPH::Vec3 position = ConvertVector(t[i].Position[frameNum]);
             JPH::Quat rotation = ConvertQuaternion(t[i].Rotation[frameNum]);
 
-            body_interface.MoveKinematic(bodies[i].m_BodyId, position, rotation, frame.FixedTimeStep);
+            body_interface.MoveKinematic(bodies[i].GetBodyId(), position, rotation, frame.FixedTimeStep);
         }
     }
 }
 
 void PhysicsSystem::UpdateWaterBodies(GameFrame const& frame)
 {
-    JPH::BroadPhaseQuery const& broadPhaseQuery = m_PhysicsInterface.GetImpl().GetBroadPhaseQuery();
+    JPH::BroadPhaseQuery const& broadphase_query = m_PhysicsInterface.GetImpl().GetBroadPhaseQuery();
 
     // Broadphase results, will apply buoyancy to any body that intersects with the water volume
     class Collector : public JPH::CollideShapeBodyCollector
@@ -467,12 +452,12 @@ void PhysicsSystem::UpdateWaterBodies(GameFrame const& frame)
         Collector(JPH::PhysicsSystem& inSystem, JPH::Vec3Arg inSurfaceNormal, float inDeltaTime) :
             mSystem(inSystem), mSurfacePosition(JPH::RVec3::sZero()), mSurfaceNormal(inSurfaceNormal), mDeltaTime(inDeltaTime) {}
 
-        void SetSurfacePosition(Float3 const& surfacePosition)
+        void SetSurfacePosition(Float3 const& inSurfacePosition)
         {
-            mSurfacePosition = ConvertVector(surfacePosition);
+            mSurfacePosition = ConvertVector(inSurfacePosition);
         }
 
-        virtual void AddHit(const JPH::BodyID& inBodyID) override
+        void AddHit(const JPH::BodyID& inBodyID) override
         {
             JPH::BodyLockWrite lock(mSystem.GetBodyLockInterface(), inBodyID);
             JPH::Body& body = lock.GetBody();
@@ -497,20 +482,20 @@ void PhysicsSystem::UpdateWaterBodies(GameFrame const& frame)
 
     for (Query::Iterator q(*m_World); q; q++)
     {
-        WaterVolumeComponent const* waterVolume = q.Get<WaterVolumeComponent>();
+        WaterVolumeComponent const* volume = q.Get<WaterVolumeComponent>();
 
         for (int i = 0; i < q.Count(); i++)
         {
-            JPH::AABox water_box(ConvertVector(waterVolume[i].BoundingBox.Mins), ConvertVector(waterVolume[i].BoundingBox.Maxs));
+            JPH::AABox water_box(ConvertVector(volume[i].BoundingBox.Mins), ConvertVector(volume[i].BoundingBox.Maxs));
 
-            Float3 surfacePosition = waterVolume[i].BoundingBox.Center();
-            surfacePosition.Y = waterVolume[i].BoundingBox.Maxs.Y;
+            Float3 surface_position = volume[i].BoundingBox.Center();
+            surface_position.Y = volume[i].BoundingBox.Maxs.Y;
 
-            collector.SetSurfacePosition(surfacePosition);
+            collector.SetSurfacePosition(surface_position);
 
-            ObjectLayerFilter layerFilter(m_PhysicsInterface.GetCollisionFilter(), waterVolume[i].CollisionGroup);
+            ObjectLayerFilter layer_filter(m_PhysicsInterface.GetCollisionFilter(), volume[i].CollisionGroup);
 
-            broadPhaseQuery.CollideAABox(water_box, collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(BroadphaseLayer::MOVING)), layerFilter);
+            broadphase_query.CollideAABox(water_box, collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(BroadphaseLayer::MOVING)), layer_filter);
         }
     }
 }
@@ -521,7 +506,7 @@ void PhysicsSystem::StoreDynamicBodiesSnapshot()
     {
         using Query = ECS::Query<>
             ::Required<TransformComponent>
-            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<RigidBodyComponent>
             ::ReadOnly<DynamicBodyComponent>;
 
         JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
@@ -532,11 +517,11 @@ void PhysicsSystem::StoreDynamicBodiesSnapshot()
         for (Query::Iterator q(*m_World); q; q++)
         {
             TransformComponent* t = q.Get<TransformComponent>();
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
+            RigidBodyComponent const* bodies = q.Get<RigidBodyComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                body_interface.GetPositionAndRotation(bodies[i].m_BodyId, position, rotation);
+                body_interface.GetPositionAndRotation(bodies[i].GetBodyId(), position, rotation);
 
                 t[i].Position = ConvertVector(position);
                 t[i].Rotation = ConvertQuaternion(rotation);
@@ -599,49 +584,136 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawCollisionModel)
     {
-        renderer.SetDepthTest(true);
-        renderer.SetRandomColors(true);
+        ShapeOverlapFilter filter;
+        filter.BroadphaseLayerMask
+            .AddLayer(BroadphaseLayer::NON_MOVING)
+            .AddLayer(BroadphaseLayer::MOVING)
+            .AddLayer(BroadphaseLayer::SENSOR);
 
+        TVector<PhysBodyID> result;
+        m_PhysicsInterface.OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(5), Quat::Identity(), result, filter);
+
+        renderer.SetDepthTest(false);
+        for (PhysBodyID body_id : result)
         {
-            using Query = ECS::Query<>
-                ::ReadOnly<PhysBodyComponent>
-                ::ReadOnly<WorldTransformComponent>;
+            ECS::EntityHandle entity = m_PhysicsInterface.GetEntity(body_id);
+            ECS::EntityView entity_view = m_World->GetEntityView(entity);
 
-            for (Query::Iterator q(*m_World); q; q++)
+            if (WorldTransformComponent* transform = entity_view.GetComponent<WorldTransformComponent>())
             {
-                PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-                WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
-
-                // Exclude triggers
-                if (q.HasComponent<TriggerComponent>())
-                    continue;
-
-                for (int i = 0; i < q.Count(); i++)
+                if (RigidBodyComponent* rigid_body = entity_view.GetComponent<RigidBodyComponent>())
                 {
-                    DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
+                    m_DebugDrawVertices.Clear();
+                    m_DebugDrawIndices.Clear();
+
+                    rigid_body->GetModel()->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices);
+
+                    Float3x4 transform_matrix;
+                    transform_matrix.Compose(transform->Position[m_FrameIndex],
+                                             transform->Rotation[m_FrameIndex].ToMatrix3x3(),
+                                             rigid_body->GetModel()->GetValidScale(transform->Scale[m_FrameIndex]));
+
+                    renderer.PushTransform(transform_matrix);
+                    renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
+                    renderer.PopTransform();
+                }
+                else if (HeightFieldComponent* heightfield = entity_view.GetComponent<HeightFieldComponent>())
+                {
+                    m_DebugDrawVertices.Clear();
+                    m_DebugDrawIndices.Clear();
+
+                    Float3x4 transform_matrix;
+                    transform_matrix.Compose(transform->Position[m_FrameIndex], transform->Rotation[m_FrameIndex].ToMatrix3x3());
+
+                    Float3x4 transform_matrix_inv = transform_matrix.Inversed();
+                    Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
+
+                    BvAxisAlignedBox local_bounds(local_view_position - 5, local_view_position + 5);
+
+                    local_bounds.Mins.Y = -FLT_MAX;
+                    local_bounds.Maxs.Y = FLT_MAX;
+
+                    heightfield->GetModel()->GatherGeometry(local_bounds, m_DebugDrawVertices, m_DebugDrawIndices);
+
+                    renderer.PushTransform(transform_matrix);
+                    renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
+                    renderer.PopTransform();
                 }
             }
         }
-
-        renderer.SetRandomColors(false);
     }
 
-    // Draw water
+    if (com_DrawCollisionShape)
+    {
+        ShapeOverlapFilter filter;
+        filter.BroadphaseLayerMask
+            .AddLayer(BroadphaseLayer::NON_MOVING)
+            .AddLayer(BroadphaseLayer::MOVING)
+            .AddLayer(BroadphaseLayer::SENSOR);
+
+        TVector<PhysBodyID> result;
+        m_PhysicsInterface.OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(5), Quat::Identity(), result, filter);
+
+        renderer.SetDepthTest(false);
+        for (PhysBodyID body_id : result)
+        {
+            ECS::EntityHandle entity = m_PhysicsInterface.GetEntity(body_id);
+            ECS::EntityView entity_view = m_World->GetEntityView(entity);
+
+            if (WorldTransformComponent* transform = entity_view.GetComponent<WorldTransformComponent>())
+            {
+                if (RigidBodyComponent* rigid_body = entity_view.GetComponent<RigidBodyComponent>())
+                {
+                    auto motion_behavior = m_PhysicsInterface.GetMotionBehavior(body_id);
+                    switch (motion_behavior)
+                    {
+                        case MB_STATIC:
+                            renderer.SetColor({0.6f, 0.6f, 0.6f, 1});
+                            break;
+
+                        case MB_KINEMATIC:
+                            renderer.SetColor({0, 1, 1, 1});
+                            break;
+
+                        case MB_DYNAMIC:
+                            renderer.SetColor(m_PhysicsInterface.IsActive(body_id) ? Color4(1, 0, 1, 1) : Color4(1, 1, 1, 1));
+                            break;
+                    }
+
+                    Float3x3 rotation_matrix = transform->Rotation[m_FrameIndex].ToMatrix3x3();
+
+                    Float3x4 transform_matrix;
+                    transform_matrix.Compose(transform->Position[m_FrameIndex],
+                                             rotation_matrix,
+                                             rigid_body->GetModel()->GetValidScale(transform->Scale[m_FrameIndex]));
+
+                    rigid_body->GetModel()->DrawDebug(renderer, transform_matrix);
+
+                    if (motion_behavior == MB_DYNAMIC)
+                    {
+                        renderer.SetColor({1, 1, 1, 1});
+                        renderer.DrawAxis(transform->Position[m_FrameIndex], rotation_matrix[0], rotation_matrix[1], rotation_matrix[2], Float3(0.25f));
+                    }
+                }
+            }
+        }
+    }
+
     if (com_DrawWaterVolume)
     {
         using Query = ECS::Query<>
             ::ReadOnly<WaterVolumeComponent>;
 
         renderer.SetDepthTest(true);
-        renderer.SetColor(Color4(0, 0, 1, 0.5f));
+        renderer.SetColor({0, 0, 1, 0.5f});
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            WaterVolumeComponent const* waterVolume = q.Get<WaterVolumeComponent>();
+            WaterVolumeComponent const* volume = q.Get<WaterVolumeComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                renderer.DrawBoxFilled(waterVolume[i].BoundingBox.Center(), waterVolume[i].BoundingBox.HalfSize(), true);
+                renderer.DrawBoxFilled(volume[i].BoundingBox.Center(), volume[i].BoundingBox.HalfSize(), true);
             }
         }
     }
@@ -649,161 +721,21 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
     if (com_DrawTriggers)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<RigidBodyComponent>
             ::ReadOnly<WorldTransformComponent>
             ::ReadOnly<TriggerComponent>;
 
         renderer.SetDepthTest(true);
-        renderer.SetColor(Color4(0, 1, 0, 0.5f));
+        renderer.SetColor({0, 1, 0, 0.5f});
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
+            RigidBodyComponent const* bodies = q.Get<RigidBodyComponent>();
             WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                DrawCollisionGeometry(renderer, bodies[i].m_Model, transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
-            }
-        }
-    }
-
-    if (com_DrawTerrainCollision)
-    {
-        using Query = ECS::Query<>
-            ::ReadOnly<HeightFieldComponent>
-            ::ReadOnly<WorldTransformComponent>;
-
-        renderer.SetDepthTest(false);
-        renderer.SetColor(Color4(0, 1, 0, 0.5f));
-
-        for (Query::Iterator q(*m_World); q; q++)
-        {
-            HeightFieldComponent const* bodies = q.Get<HeightFieldComponent>();
-            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                m_DebugDrawVertices.Clear();
-                m_DebugDrawIndices.Clear();
-
-                Float3x4 transform_matrix;
-                transform_matrix.Compose(transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex].ToMatrix3x3());
-
-                Float3x4 transform_matrix_inv = transform_matrix.Inversed();
-                Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
-
-                BvAxisAlignedBox local_bounds(local_view_position - 4, local_view_position + 4);
-
-                local_bounds.Mins.Y = -FLT_MAX;
-                local_bounds.Maxs.Y = FLT_MAX;
-
-                bodies[i].m_Model->GatherGeometry(local_bounds, m_DebugDrawVertices, m_DebugDrawIndices);
-
-                renderer.PushTransform(transform_matrix);
-                renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
-                renderer.PopTransform();
-            }
-        }
-    }
-
-    if (com_DrawStaticBodies)
-    {
-        using Query = ECS::Query<>
-            ::ReadOnly<PhysBodyComponent>
-            ::ReadOnly<StaticBodyComponent>
-            ::ReadOnly<WorldTransformComponent>;
-
-        renderer.SetDepthTest(false);
-        renderer.SetColor(Color4(0.6f, 0.6f, 0.6f, 1));
-
-        Float3x4 transform;
-
-        for (Query::Iterator q(*m_World); q; q++)
-        {
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                transform.Compose(transforms[i].Position[m_FrameIndex],
-                                  transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
-                                  bodies[i].m_Model->GetValidScale(transforms[i].Scale[m_FrameIndex]));
-
-                bodies[i].m_Model->DrawDebug(renderer, transform);
-            }
-        }
-    }
-
-    if (com_DrawKinematicBodies)
-    {
-        using Query = ECS::Query<>
-            ::ReadOnly<PhysBodyComponent>
-            ::ReadOnly<KinematicBodyComponent>
-            ::ReadOnly<WorldTransformComponent>;
-
-        renderer.SetDepthTest(false);
-        renderer.SetColor(Color4(0, 1, 1, 1));
-
-        Float3x4 transform;
-
-        for (Query::Iterator q(*m_World); q; q++)
-        {
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                transform.Compose(transforms[i].Position[m_FrameIndex],
-                                  transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
-                                  bodies[i].m_Model->GetValidScale(transforms[i].Scale[m_FrameIndex]));
-
-                bodies[i].m_Model->DrawDebug(renderer, transform);
-            }
-        }
-    }
-
-    if (com_DrawDynamicBodies)
-    {
-        using Query = ECS::Query<>
-            ::ReadOnly<PhysBodyComponent>
-            ::ReadOnly<DynamicBodyComponent>
-            ::ReadOnly<WorldTransformComponent>;
-
-        JPH::BodyInterface& body_interface = m_PhysicsInterface.GetImpl().GetBodyInterface();
-
-        renderer.SetDepthTest(false);
-
-        Float3x4 transform;
-
-        for (Query::Iterator q(*m_World); q; q++)
-        {
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
-            WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
-
-            for (int i = 0; i < q.Count(); i++)
-            {
-                auto* collisionModel = bodies[i].m_Model.RawPtr();
-
-                if (body_interface.IsActive(bodies[i].m_BodyId))
-                {
-                    renderer.SetColor(Color4(1, 0, 1, 1));
-                }
-                else
-                {
-                    renderer.SetColor(Color4(1, 1, 1, 1));
-                }
-
-                Float3x3 rotation = transforms[i].Rotation[m_FrameIndex].ToMatrix3x3();
-
-                transform.Compose(transforms[i].Position[m_FrameIndex],
-                                  rotation,
-                                  collisionModel->GetValidScale(transforms[i].Scale[m_FrameIndex]));
-
-                collisionModel->DrawDebug(renderer, transform);
-
-                renderer.SetColor(Color4(1, 1, 1, 1));
-                renderer.DrawAxis(transforms[i].Position[m_FrameIndex], rotation[0], rotation[1], rotation[2], Float3(0.25f));
+                DrawCollisionGeometry(renderer, bodies[i].GetModel(), transforms[i].Position[m_FrameIndex], transforms[i].Rotation[m_FrameIndex], transforms[i].Scale[m_FrameIndex]);
             }
         }
     }
@@ -811,7 +743,7 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
     if (com_DrawCenterOfMass)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<PhysBodyComponent>
+            ::ReadOnly<RigidBodyComponent>
             ::ReadOnly<DynamicBodyComponent>
             ::ReadOnly<WorldTransformComponent>;
 
@@ -821,26 +753,26 @@ void PhysicsSystem::DrawDebug(DebugRenderer& renderer)
 
         for (Query::Iterator q(*m_World); q; q++)
         {
-            PhysBodyComponent const* bodies = q.Get<PhysBodyComponent>();
+            RigidBodyComponent const* bodies = q.Get<RigidBodyComponent>();
             WorldTransformComponent const* transforms = q.Get<WorldTransformComponent>();
 
             for (int i = 0; i < q.Count(); i++)
             {
-                auto* collisionModel = bodies[i].m_Model.RawPtr();
+                auto* model = bodies[i].GetModel();
 
                 Float3x4 transform;
                 transform.Compose(transforms[i].Position[m_FrameIndex],
                                   transforms[i].Rotation[m_FrameIndex].ToMatrix3x3(),
-                                  collisionModel->GetValidScale(transforms[i].Scale[m_FrameIndex]));
+                                  model->GetValidScale(transforms[i].Scale[m_FrameIndex]));
 
-                Float3 centerOfMassPos = transform * collisionModel->GetCenterOfMass();
-                Float3 centerOfMassPos2 = ConvertVector(body_interface.GetCenterOfMassPosition(bodies[i].m_BodyId));
+                Float3 center_of_mass_pos = transform * model->GetCenterOfMass();
+                Float3 center_of_mass_pos2 = ConvertVector(body_interface.GetCenterOfMassPosition(bodies[i].GetBodyId()));
 
-                renderer.SetColor(Color4(1, 1, 1, 1));
-                renderer.DrawBoxFilled(centerOfMassPos, Float3(0.05f));
+                renderer.SetColor({1, 1, 1, 1});
+                renderer.DrawBoxFilled(center_of_mass_pos, Float3(0.05f));
 
-                renderer.SetColor(Color4(1, 0, 0, 1));
-                renderer.DrawBoxFilled(centerOfMassPos2, Float3(0.05f));
+                renderer.SetColor({1, 0, 0, 1});
+                renderer.DrawBoxFilled(center_of_mass_pos2, Float3(0.05f));
             }
         }
     }

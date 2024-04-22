@@ -56,11 +56,11 @@ void TeleportSystem::Update(GameFrame const& frame)
             ::ReadOnly<DynamicBodyComponent>
             ::Required<WorldTransformComponent>
             ::ReadOnly<TeleportationComponent>
-            ::Required<PhysBodyComponent>;
+            ::Required<RigidBodyComponent>;
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            PhysBodyComponent* dynamicBody = it.Get<PhysBodyComponent>();
+            RigidBodyComponent* dynamicBody = it.Get<RigidBodyComponent>();
             WorldTransformComponent* worldTransform = it.Get<WorldTransformComponent>();
             TeleportationComponent const* teleport = it.Get<TeleportationComponent>();
             for (int i = 0; i < it.Count(); i++)

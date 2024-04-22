@@ -17,6 +17,7 @@
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Geometry/OrientedBox.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -101,14 +102,6 @@ PhysicsInterface::PhysicsInterface(ECS::World* world) :
 namespace
 {
 
-JPH::RVec3 CalcBaseOffset(JPH::Vec3 const& pos, JPH::Vec3 const& direction)
-{
-    // Define a base offset that is halfway the probe to test getting the collision results relative to some offset.
-    // Note that this is not necessarily the best choice for a base offset, but we want something that's not zero
-    // and not the start of the collision test either to ensure that we'll see errors in the algorithm.
-    return pos + 0.5f * direction;
-}
-
 class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
 {
 public:
@@ -124,34 +117,116 @@ public:
     }
 };
 
-ShapeCastFilter ShapeCastFilterDefault;
+class BroadphaseBodyCollector : public JPH::CollideShapeBodyCollector
+{
+public:
+    BroadphaseBodyCollector(TVector<PhysBodyID>& result) :
+        m_Hits(result)
+    {
+        m_Hits.Clear();
+    }
+
+    void AddHit(const JPH::BodyID& inBodyID) override
+    {
+        m_Hits.Add(inBodyID);
+    }
+
+    TVector<PhysBodyID>& m_Hits;
+};
+
+JPH::RVec3 CalcBaseOffset(JPH::Vec3 const& pos, JPH::Vec3 const& direction)
+{
+    // Define a base offset that is halfway the probe to test getting the collision results relative to some offset.
+    // Note that this is not necessarily the best choice for a base offset, but we want something that's not zero
+    // and not the start of the collision test either to ensure that we'll see errors in the algorithm.
+    return pos + 0.5f * direction;
+}
+
+void CopyShapeCastResult(ShapeCastResult& out, JPH::ShapeCastResult const& in)
+{
+    out.BodyID = in.mBodyID2;
+    out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
+    out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
+    out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
+    out.PenetrationDepth = in.mPenetrationDepth;
+    out.Fraction = in.mFraction;
+    out.IsBackFaceHit = in.mIsBackFaceHit;
+}
+
+void CopyShapeCastResult(TVector<ShapeCastResult>& out, JPH::Array<JPH::ShapeCastResult> const& in)
+{
+    out.Resize(in.size());
+    for (int i = 0; i < in.size(); i++)
+        CopyShapeCastResult(out[i], in[i]);
+}
+
+void CopyShapeCollideResult(ShapeCollideResult& out, JPH::CollideShapeResult const& in)
+{
+    out.BodyID = in.mBodyID2;
+    out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
+    out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
+    out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
+    out.PenetrationDepth = in.mPenetrationDepth;
+}
+
+void CopyShapeCollideResult(TVector<ShapeCollideResult>& out, JPH::Array<JPH::CollideShapeResult> const& in)
+{
+    out.Resize(in.size());
+    for (int i = 0; i < in.size(); i++)
+        CopyShapeCollideResult(out[i], in[i]);
+}
 
 } // namespace
 
-bool PhysicsInterface::CastRay(Float3 const& start, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastRayClosest(Float3 const& start, Float3 const& dir, RayCastResult& result, RayCastFilter const& filter)
 {
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-    
     JPH::RRayCast rayCast;
     rayCast.mOrigin = ConvertVector(start);
     rayCast.mDirection = ConvertVector(dir);
 
     JPH::RayCastResult hit;
+    if (filter.bIgonreBackFaces)
+    {
+        JPH::RayCastSettings settings;
 
-    bool bHadHit = m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, hit, BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
+        // How backfacing triangles should be treated
+        //settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+        settings.mBackFaceMode = JPH::EBackFaceMode::IgnoreBackFaces;
 
-    if (bHadHit)
-        result.HitFraction = hit.mFraction;
+        // If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
+        settings.mTreatConvexAsSolid = true;
 
-    return bHadHit;
+        JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> collector;
+        m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, settings, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+        if (!collector.HadHit())
+            return false;
+
+        hit = collector.mHit;
+    }
+    else
+    {
+        if (!m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, hit, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())))
+            return false;
+    }
+
+    result.BodyID = hit.mBodyID;
+    result.Fraction = hit.mFraction;
+
+    if (filter.bCalcSurfcaceNormal)
+    {
+        JPH::BodyLockRead lock(m_PhysicsSystem.GetBodyLockInterface(), result.BodyID);
+        JPH::Body const& body = lock.GetBody();
+
+        auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, rayCast.GetPointOnRay(result.Fraction));
+        result.Normal = ConvertVector(normal);
+    }
+
+    return true;
 }
 
-bool PhysicsInterface::CastRayAll(Float3 const& start, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastRay(Float3 const& start, Float3 const& dir, TVector<RayCastResult>& result, RayCastFilter const& filter)
 {
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
     JPH::RRayCast rayCast;
     rayCast.mOrigin = ConvertVector(start);
     rayCast.mDirection = ConvertVector(dir);
@@ -159,33 +234,56 @@ bool PhysicsInterface::CastRayAll(Float3 const& start, Float3 const& dir, TVecto
     JPH::RayCastSettings settings;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     // If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
     settings.mTreatConvexAsSolid = true;
 
     JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, settings, collector, BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, settings, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
 
     result.Clear();
     if (collector.HadHit())
     {
         // Order hits on closest first
-        if (filter->bSortByDistance)
+        if (filter.bSortByDistance)
             collector.Sort();
 
         result.Reserve(collector.mHits.size());
         for (auto& hit : collector.mHits)
         {
-            ShapeCastResult& r = result.Add();
-            r.HitFraction = hit.mFraction;
+            RayCastResult& r = result.Add();
+            r.BodyID = hit.mBodyID;
+            r.Fraction = hit.mFraction;
+
+            if (filter.bCalcSurfcaceNormal)
+            {
+                JPH::BodyLockRead lock(m_PhysicsSystem.GetBodyLockInterface(), hit.mBodyID);
+                JPH::Body const& body = lock.GetBody();
+
+                auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, rayCast.GetPointOnRay(hit.mFraction));
+                r.Normal = ConvertVector(normal);
+            }
         }
     }
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastBoxClosest(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
+{
+    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+
+    JPH::Vec3 pos = ConvertVector(start);
+    JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+
+    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+}
+
+bool PhysicsInterface::CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
     JPH::BoxShape boxShape(ConvertVector(halfExtent));
 
@@ -198,20 +296,19 @@ bool PhysicsInterface::CastBox(Float3 const& start, Float3 const& dir, Float3 co
     return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastBoxAll(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const& filter)
 {
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
 
-    JPH::Vec3 pos = ConvertVector(start);
+    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
     JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return CastShapeAll(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
     JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
 
@@ -223,19 +320,19 @@ bool PhysicsInterface::CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Flo
     return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastBoxMinMaxAll(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastSphereClosest(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const& filter)
 {
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+    JPH::SphereShape sphereShape(sphereRadius);
 
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
+    JPH::Vec3 pos = ConvertVector(start);
     JPH::Vec3 direction = ConvertVector(dir);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return CastShapeAll(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
     JPH::SphereShape sphereShape(sphereRadius);
 
@@ -247,19 +344,20 @@ bool PhysicsInterface::CastSphere(Float3 const& start, Float3 const& dir, float 
     return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastSphereAll(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastCapsuleClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
 {
-    JPH::SphereShape sphereShape(sphereRadius);
+    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
 
     JPH::Vec3 pos = ConvertVector(start);
     JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&capsuleShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShapeAll(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
     JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
 
@@ -272,20 +370,20 @@ bool PhysicsInterface::CastCapsule(Float3 const& start, Float3 const& dir, float
     return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastCapsuleAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastCylinderClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
 {
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
 
     JPH::Vec3 pos = ConvertVector(start);
     JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&capsuleShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&cylinderShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShapeAll(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
     JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
 
@@ -298,501 +396,475 @@ bool PhysicsInterface::CastCylinder(Float3 const& start, Float3 const& dir, floa
     return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
 }
 
-bool PhysicsInterface::CastCylinderAll(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastShapeClosest(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const& filter)
 {
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
-
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
-
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&cylinderShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
-
-    return CastShapeAll(shapeCast, CalcBaseOffset(pos, direction), result, filter);
-}
-
-bool PhysicsInterface::CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
     JPH::ShapeCastSettings settings;
-    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = true;
 
     JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
 
     if (collector.HadHit())
-        result.HitFraction = collector.mHit.mFraction;
+        CopyShapeCastResult(result, collector.mHit);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CastShapeAll(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const* filter)
+bool PhysicsInterface::CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
 {
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
     JPH::ShapeCastSettings settings;
-    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = false;
 
     JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
 
     result.Clear();
     if (collector.HadHit())
     {
         // Order hits on closest first
-        if (filter->bSortByDistance)
+        if (filter.bSortByDistance)
             collector.Sort();
 
-        result.Reserve(collector.mHits.size());
-        for (auto& hit : collector.mHits)
-        {
-            ShapeCastResult& r = result.Add();
-            r.HitFraction = hit.mFraction;
-        }
+        CopyShapeCastResult(result, collector.mHits);
     }
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CollidePoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs)
+void PhysicsInterface::OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+{
+    BroadphaseBodyCollector collector(result);
+    if (boxRotation == Quat::Identity())
+    {
+        m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(position - halfExtent), ConvertVector(position + halfExtent)),
+                                                          collector,
+                                                          BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+    }
+    else
+    {
+        JPH::OrientedBox oriented_box;
+        oriented_box.mOrientation.SetTranslation(ConvertVector(position));
+        oriented_box.mOrientation.SetRotation(ConvertMatrix(boxRotation.ToMatrix4x4()));
+        oriented_box.mHalfExtents = ConvertVector(halfExtent);
+
+        m_PhysicsSystem.GetBroadPhaseQuery().CollideOrientedBox(oriented_box, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+    }
+}
+
+void PhysicsInterface::OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+{
+    BroadphaseBodyCollector collector(result);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(mins), ConvertVector(maxs)),
+                                                      collector,
+                                                      BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+}
+
+void PhysicsInterface::OverlapSphere(Float3 const& position, float sphereRadius, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+{
+    BroadphaseBodyCollector collector(result);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollideSphere(ConvertVector(position),
+                                                       sphereRadius,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+}
+
+void PhysicsInterface::OverlapPoint(Float3 const& position, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+{
+    BroadphaseBodyCollector collector(result);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollidePoint(ConvertVector(position),
+                                                      collector,
+                                                      BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                      /* TODO: objectLayerFilter */);
+}
+
+bool PhysicsInterface::CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const& filter)
+{
+    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+
+    return collector.HadHit();
+}
+
+bool PhysicsInterface::CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const& filter)
+{
+    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+
+    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sTranslation(pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+
+    return collector.HadHit();
+}
+
+bool PhysicsInterface::CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const& filter)
+{
+    JPH::SphereShape sphereShape(sphereRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sTranslation(pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+
+    return collector.HadHit();
+}
+
+bool PhysicsInterface::CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const& filter)
+{
+    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+
+    return collector.HadHit();
+}
+
+bool PhysicsInterface::CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const& filter)
+{
+    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+
+    return collector.HadHit();
+}
+
+bool PhysicsInterface::CheckPoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs)
 {
     JPH::AnyHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CollidePointAll(Float3 const& point, TVector<JPH::BodyID>& bodies, BroadphaseLayer::Mask broadphaseLayrs)
+void PhysicsInterface::CollideBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+{
+    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = pos;
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+    result.Clear();
+    if (collector.HadHit())
+    {
+        if (filter.bSortByDistance)
+            collector.Sort();
+
+        CopyShapeCollideResult(result, collector.mHits);
+    }
+}
+
+void PhysicsInterface::CollideBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+{
+    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+
+    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sTranslation(pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+    result.Clear();
+    if (collector.HadHit())
+    {
+        if (filter.bSortByDistance)
+            collector.Sort();
+
+        CopyShapeCollideResult(result, collector.mHits);
+    }
+}
+
+void PhysicsInterface::CollideSphere(Float3 const& position, float sphereRadius, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+{
+    JPH::SphereShape sphereShape(sphereRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = pos;
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sTranslation(pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+    result.Clear();
+    if (collector.HadHit())
+    {
+        if (filter.bSortByDistance)
+            collector.Sort();
+
+        CopyShapeCollideResult(result, collector.mHits);
+    }
+}
+
+void PhysicsInterface::CollideCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+{
+    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = pos;
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+    result.Clear();
+    if (collector.HadHit())
+    {
+        if (filter.bSortByDistance)
+            collector.Sort();
+
+        CopyShapeCollideResult(result, collector.mHits);
+    }
+}
+
+void PhysicsInterface::CollideCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+{
+    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+
+    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+
+    JPH::CollideShapeSettings settings;
+
+    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
+    settings.mMaxSeparationDistance = 0.0f;
+
+    // How backfacing triangles should be treated
+    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+
+    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
+    // since floats are most accurate near the origin
+    JPH::RVec3 baseOffset = pos;
+
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
+                                                       JPH::Vec3::sReplicate(1.0f),
+                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
+                                                       settings,
+                                                       baseOffset,
+                                                       collector,
+                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+
+    result.Clear();
+    if (collector.HadHit())
+    {
+        if (filter.bSortByDistance)
+            collector.Sort();
+
+        CopyShapeCollideResult(result, collector.mHits);
+    }
+}
+
+void PhysicsInterface::CollidePoint(Float3 const& point, TVector<PhysBodyID>& result, BroadphaseLayer::Mask broadphaseLayrs)
 {
     JPH::AllHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get())
+                                                       /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
-    bodies.Clear();
+    result.Clear();
     if (collector.HadHit())
     {
-        bodies.Reserve(collector.mHits.size());
+        result.Reserve(collector.mHits.size());
         for (JPH::CollidePointResult const& hit : collector.mHits)
-        {
-            auto& b = bodies.Add();
-            b = hit.mBodyID;
-        }
-        return true;
-    }
-    return false;
-}
-
-bool PhysicsInterface::CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    return collector.HadHit();
-}
-
-bool PhysicsInterface::CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
-
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sTranslation(pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    return collector.HadHit();
-}
-
-bool PhysicsInterface::CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::SphereShape sphereShape(sphereRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sTranslation(pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    return collector.HadHit();
-}
-
-bool PhysicsInterface::CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    return collector.HadHit();
-}
-
-bool PhysicsInterface::CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    return collector.HadHit();
-}
-
-void PhysicsInterface::OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    result.Clear();
-    if (collector.HadHit())
-    {
-        if (filter->bSortByDistance)
-            collector.Sort();
-
-        result.Reserve(collector.mHits.size());
-        for (auto const& hit : collector.mHits)
-        {
-            result.Add(hit.mBodyID2);
-        }
-    }
-}
-
-void PhysicsInterface::OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
-
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sTranslation(pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    result.Clear();
-    if (collector.HadHit())
-    {
-        if (filter->bSortByDistance)
-            collector.Sort();
-
-        result.Reserve(collector.mHits.size());
-        for (auto const& hit : collector.mHits)
-        {
-            result.Add(hit.mBodyID2);
-        }
-    }
-}
-
-void PhysicsInterface::OverlapSphere(Float3 const& position, float sphereRadius, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::SphereShape sphereShape(sphereRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sTranslation(pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    result.Clear();
-    if (collector.HadHit())
-    {
-        if (filter->bSortByDistance)
-            collector.Sort();
-
-        result.Reserve(collector.mHits.size());
-        for (auto const& hit : collector.mHits)
-        {
-            result.Add(hit.mBodyID2);
-        }
-    }
-}
-
-void PhysicsInterface::OverlapCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    result.Clear();
-    if (collector.HadHit())
-    {
-        if (filter->bSortByDistance)
-            collector.Sort();
-
-        result.Reserve(collector.mHits.size());
-        for (auto const& hit : collector.mHits)
-        {
-            result.Add(hit.mBodyID2);
-        }
-    }
-}
-
-void PhysicsInterface::OverlapCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<JPH::BodyID>& result, ShapeCastFilter const* filter)
-{
-    if (!filter)
-        filter = &ShapeCastFilterDefault;
-
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
-
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
-
-    JPH::CollideShapeSettings settings;
-
-    // When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (uint: meter)
-    settings.mMaxSeparationDistance = 0.0f;
-
-    // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter->bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
-
-    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
-
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
-    // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
-    // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
-
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
-                                                       JPH::Vec3::sReplicate(1.0f),
-                                                       JPH::RMat44::sRotationTranslation(rotation, pos),
-                                                       settings,
-                                                       baseOffset,
-                                                       collector,
-                                                       BroadphaseLayerFilter(filter->BroadphaseLayerMask.Get()));
-
-    result.Clear();
-    if (collector.HadHit())
-    {
-        if (filter->bSortByDistance)
-            collector.Sort();
-
-        result.Reserve(collector.mHits.size());
-        for (auto const& hit : collector.mHits)
-        {
-            result.Add(hit.mBodyID2);
-        }
+            result.Add(hit.mBodyID);
     }
 }
 
@@ -805,7 +877,7 @@ auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBody
 {
     ECS::EntityView entityView = m_World->GetEntityView(entityHandle);
 
-    if (auto body = entityView.GetComponent<PhysBodyComponent>())
+    if (auto body = entityView.GetComponent<RigidBodyComponent>())
     {
         return body->GetBodyId();
     }
@@ -918,7 +990,7 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
         if (desc.bIsTrigger)
             commandBuffer.AddComponent<TriggerComponent>(entityHandle, desc.TriggerClass);
 
-        commandBuffer.AddComponent<PhysBodyComponent>(entityHandle, desc.Model, body->GetID());
+        commandBuffer.AddComponent<RigidBodyComponent>(entityHandle, desc.Model, body->GetID());
 
         if (desc.bAllowRigidBodyScaling)
         {

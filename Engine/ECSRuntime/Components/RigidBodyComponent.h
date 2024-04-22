@@ -9,11 +9,11 @@ HK_NAMESPACE_BEGIN
 
 class CollisionModel;
 
-struct PhysBodyComponent
+struct RigidBodyComponent
 {
-    PhysBodyComponent(CollisionModel* cmodel, PhysBodyID id) :
+    RigidBodyComponent(CollisionModel* model, PhysBodyID id) :
         m_BodyId(id),
-        m_Model(cmodel)
+        m_Model(model)
     {}
 
     PhysBodyID const& GetBodyId() const
@@ -21,15 +21,21 @@ struct PhysBodyComponent
         return m_BodyId;
     }
 
+    CollisionModel* GetModel() const
+    {
+        return m_Model;
+    }
+
+private:
     PhysBodyID m_BodyId;
     TRef<CollisionModel> m_Model;
 };
 
 struct HeightFieldComponent
 {
-    HeightFieldComponent(TerrainCollision* cmodel, PhysBodyID id) :
+    HeightFieldComponent(TerrainCollision* model, PhysBodyID id) :
         m_BodyId(id),
-        m_Model(cmodel)
+        m_Model(model)
     {}
 
     PhysBodyID const& GetBodyId() const
@@ -37,6 +43,12 @@ struct HeightFieldComponent
         return m_BodyId;
     }
 
+    TerrainCollision* GetModel() const
+    {
+        return m_Model;
+    }
+   
+private:
     PhysBodyID m_BodyId;
     TRef<TerrainCollision> m_Model;
 };
