@@ -147,7 +147,7 @@ void UIViewport::Draw(Canvas& canvas)
         World* world = m_WorldRenderView->GetWorld();
         ECS::EntityView cameraEntityView = world->GetEntityView(m_WorldRenderView->GetCamera());
 
-        auto* cameraComponent = cameraEntityView.GetComponent<CameraComponent_ECS>();
+        auto* cameraComponent = cameraEntityView.GetComponent<CameraComponent>();
         if (cameraComponent)
         {
             float aspectRatio;

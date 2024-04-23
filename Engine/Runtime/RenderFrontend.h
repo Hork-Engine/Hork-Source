@@ -40,12 +40,10 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class World;
-class PunctualLightComponent;
 class EnvironmentProbe;
 class Drawable;
 class MeshComponent;
 class SkinnedComponent;
-class TerrainComponent;
 
 struct RenderFrontendStat
 {
@@ -90,7 +88,7 @@ private:
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
 
-    bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
+    //bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
     DebugRenderer m_DebugDraw;
@@ -99,7 +97,7 @@ private:
     RenderFrontendStat m_Stat;
 
     TVector<PrimitiveDef*> m_VisPrimitives;
-    TVector<PunctualLightComponent*> m_VisLights;
+    //TVector<PunctualLightComponent*> m_VisLights;
     TVector<EnvironmentProbe*> m_VisEnvProbes;
 
     int m_VisPass = 0;

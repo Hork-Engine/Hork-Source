@@ -40,7 +40,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class CameraComponent;
 class World;
 
 class ColorGradingParameters : public GCObject

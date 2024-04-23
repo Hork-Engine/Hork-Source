@@ -30,105 +30,422 @@ SOFTWARE.
 
 #if 0
 
-#include "PhysicsSystem.h"
-#include "World/PhysicalBody.h"
-#include "DebugRenderer.h"
-#include <Engine/Core/ConsoleVar.h>
-#include <Engine/Core/IntrusiveLinkedListMacro.h>
-#include <Engine/Core/Application/Logger.h>
+class HitProxy : public GCObject
+{
+    friend class PhysicsSystem;
 
-#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
-#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
-#include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include <btBulletDynamicsCommon.h>
+public:
+    const uint64_t Id;
 
-#include "BulletCompatibility.h"
+    // Component events
+    ContactDelegate E_OnBeginContact;
+    ContactDelegate E_OnEndContact;
+    ContactDelegate E_OnUpdateContact;
+    OverlapDelegate E_OnBeginOverlap;
+    OverlapDelegate E_OnEndOverlap;
+    OverlapDelegate E_OnUpdateOverlap;
 
-#ifdef HK_COMPILER_MSVC
-#    pragma warning(push)
-#    pragma warning(disable : 4456 4828)
-#endif
-#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
-#ifdef HK_COMPILER_MSVC
-#    pragma warning(pop)
-#endif
+    /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
+    bool bDispatchContactEvents = false;
 
-#define SOFT_BODY_WORLD
+    /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
+    bool bDispatchOverlapEvents = false;
 
-extern ContactAddedCallback gContactAddedCallback;
+    /** Generate contact points for contact events. Use with bDispatchContactEvents. */
+    bool bGenerateContactPoints = false;
+
+    void Initialize(SceneComponent* _OwnerComponent, btCollisionObject* _CollisionObject);
+    void Deinitialize();
+
+    SceneComponent* GetOwnerComponent() const { return OwnerComponent; }
+
+    Actor* GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
+
+    //World* GetWorld() const { return OwnerComponent->GetWorld(); }
+
+    /** Set collision group/layer. See COLLISION_MASK. */
+    void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
+
+    /** Get collision group. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionGroup() const { return CollisionGroup; }
+
+    /** Set collision mask. See COLLISION_MASK. */
+    void SetCollisionMask(COLLISION_MASK _CollisionMask);
+
+    /** Get collision mask. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionMask() const { return CollisionMask; }
+
+    /** Set collision group and mask. See COLLISION_MASK. */
+    void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
+
+    /** Set actor to ignore collisions with this component */
+    void AddCollisionIgnoreActor(Actor* _Actor);
+
+    /** Unset actor to ignore collisions with this component */
+    void RemoveCollisionIgnoreActor(Actor* _Actor);
+
+    void SetTrigger(bool _Trigger) { bTrigger = _Trigger; }
+
+    bool IsTrigger() const { return bTrigger; }
+
+    void SetJointIndex(int jointIndex) { JointIndex = jointIndex; }
+
+    int GetJointIndex() const { return JointIndex; }
+
+    TVector<Actor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+
+    void CollisionContactQuery(TVector<HitProxy*>& _Result) const;
+
+    void CollisionContactQueryActor(TVector<Actor*>& _Result) const;
+
+    btCollisionObject* GetCollisionObject() const { return CollisionObject; }
+
+    void DrawCollisionShape(DebugRenderer* InRenderer);
+
+    void UpdateBroadphase();
+
+    HitProxy();
+    ~HitProxy();
+
+private:
+    SceneComponent* OwnerComponent  = nullptr;
+    btCollisionObject* CollisionObject = nullptr;
+
+    COLLISION_MASK CollisionGroup = CM_WORLD_STATIC;
+    COLLISION_MASK CollisionMask  = CM_ALL;
+
+    int JointIndex = 0;
+
+    bool bTrigger = false;
+
+    bool bInWorld = false;
+
+    TVector<Actor*> CollisionIgnoreActors;
+
+    HitProxy* NextMarked = nullptr;
+    HitProxy* PrevMarked = nullptr;
+};
+
+#    include "World.h"
+
+#    include <Engine/Runtime/BulletCompatibility.h>
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawContactPoints("com_DrawContactPoints"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawConstraints("com_DrawConstraints"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawConstraintLimits("com_DrawConstraintLimits"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_NoPhysicsSimulation("com_NoPhysicsSimulation"s, "0"s, CVAR_CHEAT);
+static uint64_t GUniqueIdGenerator = 0;
 
-static CollisionQueryFilter DefaultCollisionQueryFilter;
+HitProxy::HitProxy() :
+    Id(++GUniqueIdGenerator)
+{}
 
-struct CollisionFilterCallback : public btOverlapFilterCallback
+HitProxy::~HitProxy()
 {
-    // Return true when pairs need collision
-    bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override
+    for (Actor* actor : CollisionIgnoreActors)
     {
-        if ((proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask) && (proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask))
+        actor->RemoveRef();
+    }
+}
+
+void HitProxy::Initialize(SceneComponent* _OwnerComponent, btCollisionObject* _CollisionObject)
+{
+    HK_ASSERT(!OwnerComponent);
+
+    OwnerComponent  = _OwnerComponent;
+    CollisionObject = _CollisionObject;
+
+    World* world = OwnerComponent->GetWorld();
+    world->PhysicsSystem.AddHitProxy(this);
+}
+
+void HitProxy::Deinitialize()
+{
+    if (OwnerComponent)
+    {
+        World* world = OwnerComponent->GetWorld();
+        world->PhysicsSystem.RemoveHitProxy(this);
+
+        OwnerComponent  = nullptr;
+        CollisionObject = nullptr;
+    }
+}
+
+void HitProxy::UpdateBroadphase()
+{
+    // Re-add collision object to physics world
+    if (bInWorld)
+    {
+        GetWorld()->PhysicsSystem.AddHitProxy(this);
+    }
+}
+
+void HitProxy::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
+{
+    if (CollisionGroup == _CollisionGroup)
+    {
+        return;
+    }
+
+    CollisionGroup = _CollisionGroup;
+
+    UpdateBroadphase();
+}
+
+void HitProxy::SetCollisionMask(COLLISION_MASK _CollisionMask)
+{
+    if (CollisionMask == _CollisionMask)
+    {
+        return;
+    }
+
+    CollisionMask = _CollisionMask;
+
+    UpdateBroadphase();
+}
+
+void HitProxy::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
+{
+    if (CollisionGroup == _CollisionGroup && CollisionMask == _CollisionMask)
+    {
+        return;
+    }
+
+    CollisionGroup = _CollisionGroup;
+    CollisionMask  = _CollisionMask;
+
+    UpdateBroadphase();
+}
+
+void HitProxy::AddCollisionIgnoreActor(Actor* _Actor)
+{
+    if (!_Actor)
+    {
+        return;
+    }
+    if (!CollisionIgnoreActors.Contains(_Actor))
+    {
+        CollisionIgnoreActors.Add(_Actor);
+        _Actor->AddRef();
+
+        UpdateBroadphase();
+    }
+}
+
+void HitProxy::RemoveCollisionIgnoreActor(Actor* _Actor)
+{
+    if (!_Actor)
+    {
+        return;
+    }
+    auto index = CollisionIgnoreActors.IndexOf(_Actor);
+    if (index != Core::NPOS)
+    {
+        _Actor->RemoveRef();
+
+        CollisionIgnoreActors.RemoveUnsorted(index);
+
+        UpdateBroadphase();
+    }
+}
+
+struct ContactQueryCallback : public btCollisionWorld::ContactResultCallback
+{
+    ContactQueryCallback(TVector<HitProxy*>& _Result, int _CollisionGroup, int _CollisionMask, HitProxy const* _Self) :
+        Result(_Result), Self(_Self)
+    {
+        m_collisionFilterGroup = _CollisionGroup;
+        m_collisionFilterMask  = _CollisionMask;
+
+        Result.Clear();
+    }
+
+    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
+    {
+        HitProxy* hitProxy;
+
+        hitProxy = static_cast<HitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
         {
-            // FIXME: can we safe cast m_clientObject to btCollisionObject?
-            btCollisionObject const* colObj0 = static_cast<btCollisionObject const*>(proxy0->m_clientObject);
-            btCollisionObject const* colObj1 = static_cast<btCollisionObject const*>(proxy1->m_clientObject);
-
-            HitProxy const* hitProxy0 = static_cast<HitProxy const*>(colObj0->getUserPointer());
-            HitProxy const* hitProxy1 = static_cast<HitProxy const*>(colObj1->getUserPointer());
-
-            if (!hitProxy0 || !hitProxy1)
-            {
-                return true;
-            }
-
-            Actor* actor0 = hitProxy0->GetOwnerActor();
-            Actor* actor1 = hitProxy1->GetOwnerActor();
-
-            if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
-            {
-                return false;
-            }
-
-            if (hitProxy1->GetCollisionIgnoreActors().Contains(actor0))
-            {
-                return false;
-            }
-
-            return true;
+            AddUnique(hitProxy);
         }
 
-        return false;
+        hitProxy = static_cast<HitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy);
+        }
+
+        return 0.0f;
     }
+
+    void AddUnique(HitProxy* HitProxy)
+    {
+        Result.AddUnique(HitProxy);
+    }
+
+    TVector<HitProxy*>& Result;
+    HitProxy const* Self;
 };
 
-static CollisionFilterCallback CollisionFilterCallback;
-
-static bool CustomMaterialCombinerCallback(btManifoldPoint& cp,
-                                           const btCollisionObjectWrapper* colObj0Wrap,
-                                           int partId0,
-                                           int index0,
-                                           const btCollisionObjectWrapper* colObj1Wrap,
-                                           int partId1,
-                                           int index1)
+struct ContactQueryActorCallback : public btCollisionWorld::ContactResultCallback
 {
-    const int normalAdjustFlags = 0
-        //| BT_TRIANGLE_CONVEX_BACKFACE_MODE
-        //| BT_TRIANGLE_CONCAVE_DOUBLE_SIDED //double sided options are experimental, single sided is recommended
-        //| BT_TRIANGLE_CONVEX_DOUBLE_SIDED
-        ;
+    ContactQueryActorCallback(TVector<Actor*>& _Result, int _CollisionGroup, int _CollisionMask, Actor const* _Self) :
+        Result(_Result), Self(_Self)
+    {
+        m_collisionFilterGroup = _CollisionGroup;
+        m_collisionFilterMask  = _CollisionMask;
 
-    btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, partId1, index1, normalAdjustFlags);
+        Result.Clear();
+    }
 
-    cp.m_combinedFriction = btManifoldResult::calculateCombinedFriction(colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
-    cp.m_combinedRestitution = btManifoldResult::calculateCombinedRestitution(colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject());
+    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
+    {
+        HitProxy* hitProxy;
 
-    return true;
+        hitProxy = static_cast<HitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy->GetOwnerActor());
+        }
+
+        hitProxy = static_cast<HitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy->GetOwnerActor());
+        }
+
+        return 0.0f;
+    }
+
+    void AddUnique(Actor* Actor)
+    {
+        Result.AddUnique(Actor);
+    }
+
+    TVector<Actor*>& Result;
+    Actor const* Self;
+};
+
+void HitProxy::CollisionContactQuery(TVector<HitProxy*>& _Result) const
+{
+    ContactQueryCallback callback(_Result, CollisionGroup, CollisionMask, this);
+
+    if (!CollisionObject)
+    {
+        LOG("HitProxy::CollisionContactQuery: No collision object\n");
+        return;
+    }
+
+    if (!bInWorld)
+    {
+        LOG("HitProxy::CollisionContactQuery: The body is not in world\n");
+        return;
+    }
+
+    GetWorld()->PhysicsSystem.GetInternal()->contactTest(CollisionObject, callback);
 }
+
+void HitProxy::CollisionContactQueryActor(TVector<Actor*>& _Result) const
+{
+    ContactQueryActorCallback callback(_Result, CollisionGroup, CollisionMask, GetOwnerActor());
+
+    if (!CollisionObject)
+    {
+        LOG("HitProxy::CollisionContactQueryActor: No collision object\n");
+        return;
+    }
+
+    if (!bInWorld)
+    {
+        LOG("HitProxy::CollisionContactQueryActor: The body is not in world\n");
+        return;
+    }
+
+    GetWorld()->PhysicsSystem.GetInternal()->contactTest(CollisionObject, callback);
+}
+
+void HitProxy::DrawCollisionShape(DebugRenderer* InRenderer)
+{
+    if (CollisionObject)
+    {
+        btDrawCollisionShape(InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape());
+    }
+}
+
+struct OverlapEvent
+{
+    Actor*    SelfActor;
+    HitProxy* SelfBody;
+    Actor*    OtherActor;
+    HitProxy* OtherBody;
+};
+
+struct ContactPoint
+{
+    Float3 Position;
+    Float3 Normal;
+    float  Distance;
+    float  Impulse;
+};
+
+struct ContactEvent
+{
+    Actor*              SelfActor;
+    HitProxy*           SelfBody;
+    Actor*              OtherActor;
+    HitProxy*           OtherBody;
+    ContactPoint const* Points;
+    int                 NumPoints;
+};
+
+using OverlapDelegate = TEvent<OverlapEvent const&>;
+using ContactDelegate = TEvent<ContactEvent const&>;
+
+
+/** Collision contact */
+struct CollisionContact
+{
+    btPersistentManifold* Manifold;
+
+    TRef<Actor>   ActorA;
+    TRef<Actor>   ActorB;
+    TRef<HitProxy> ComponentA;
+    TRef<HitProxy> ComponentB;
+
+    bool bActorADispatchContactEvents;
+    bool bActorBDispatchContactEvents;
+    bool bActorADispatchOverlapEvents;
+    bool bActorBDispatchOverlapEvents;
+
+    bool bComponentADispatchContactEvents;
+    bool bComponentBDispatchContactEvents;
+    bool bComponentADispatchOverlapEvents;
+    bool bComponentBDispatchOverlapEvents;
+};
+
+struct ContactKey
+{
+    uint64_t Id[2];
+
+    //ContactKey() = default;
+
+    explicit ContactKey(CollisionContact const& Contact)
+    {
+        Id[0] = Contact.ComponentA->Id;
+        Id[1] = Contact.ComponentB->Id;
+    }
+
+    bool operator==(ContactKey const& Rhs) const
+    {
+        return Id[0] == Rhs.Id[0] && Id[1] == Rhs.Id[1];
+    }
+
+    uint32_t Hash() const
+    {
+        uint32_t hash = HashTraits::Murmur3Hash64(Id[0]);
+        hash          = HashTraits::Murmur3Hash64(Id[1], hash);
+        return hash;
+    }
+};
 
 void PhysicsSystem::GenerateContactPoints(int _ContactIndex, CollisionContact& _Contact)
 {
@@ -204,72 +521,6 @@ void PhysicsSystem::GenerateContactPoints(int _ContactIndex, CollisionContact& _
     }
 }
 
-PhysicsSystem::PhysicsSystem()
-{
-    GravityVector = Float3(0.0f, -9.81f, 0.0f);
-
-    gContactAddedCallback = CustomMaterialCombinerCallback;
-
-#if 1
-    m_BroadphaseInterface = MakeUnique<btDbvtBroadphase>();
-#else
-    m_BroadphaseInterface = MakeUnique<btAxisSweep3>(btVector3(-10000, -10000, -10000), btVector3(10000, 10000, 10000));
-#endif
-
-    //m_CollisionConfiguration = MakeUnique< btDefaultCollisionConfiguration >();
-    m_CollisionConfiguration = MakeUnique<btSoftBodyRigidBodyCollisionConfiguration>();
-    m_CollisionDispatcher = MakeUnique<btCollisionDispatcher>(m_CollisionConfiguration.RawPtr());
-    // TODO: remove this if we don't use gimpact
-    btGImpactCollisionAlgorithm::registerAlgorithm(m_CollisionDispatcher.RawPtr());
-    m_ConstraintSolver = MakeUnique<btSequentialImpulseConstraintSolver>();
-
-#ifdef SOFT_BODY_WORLD
-    m_DynamicsWorld = MakeUnique<btSoftRigidDynamicsWorld>(m_CollisionDispatcher.RawPtr(),
-                                                           m_BroadphaseInterface.RawPtr(),
-                                                           m_ConstraintSolver.RawPtr(),
-                                                           m_CollisionConfiguration.RawPtr(),
-                                                           /* SoftBodySolver */ nullptr);
-#else
-    m_DynamicsWorld = MakeUnique<btDiscreteDynamicsWorld>(m_CollisionDispatcher, m_BroadphaseInterface, m_ConstraintSolver, m_CollisionConfiguration);
-#endif
-
-    m_DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
-    m_DynamicsWorld->getDispatchInfo().m_useContinuous = true;
-    //m_DynamicsWorld->getSolverInfo().m_splitImpulse = pOwnerWorld->bContactSolverSplitImpulse;
-    //m_DynamicsWorld->getSolverInfo().m_numIterations = pOwnerWorld->NumContactSolverIterations;
-    m_DynamicsWorld->getPairCache()->setOverlapFilterCallback(&CollisionFilterCallback);
-    m_DynamicsWorld->setInternalTickCallback(OnPrePhysics, static_cast<void*>(this), true);
-    m_DynamicsWorld->setInternalTickCallback(OnPostPhysics, static_cast<void*>(this), false);
-    //m_DynamicsWorld->setSynchronizeAllMotionStates( true ); // TODO: check how it works
-
-    m_GhostPairCallback = MakeUnique<btGhostPairCallback>();
-    m_BroadphaseInterface->getOverlappingPairCache()->setInternalGhostPairCallback(m_GhostPairCallback.RawPtr());
-
-#ifdef SOFT_BODY_WORLD
-    m_SoftBodyWorldInfo = &m_DynamicsWorld->getWorldInfo();
-    m_SoftBodyWorldInfo->m_dispatcher = m_CollisionDispatcher.RawPtr();
-    m_SoftBodyWorldInfo->m_broadphase = m_BroadphaseInterface.RawPtr();
-    m_SoftBodyWorldInfo->m_gravity = btVectorToFloat3(GravityVector);
-    m_SoftBodyWorldInfo->air_density = (btScalar)1.2;
-    m_SoftBodyWorldInfo->water_density = 0;
-    m_SoftBodyWorldInfo->water_offset = 0;
-    m_SoftBodyWorldInfo->water_normal = btVector3(0, 0, 0);
-    m_SoftBodyWorldInfo->m_sparsesdf.Initialize();
-#endif
-}
-
-PhysicsSystem::~PhysicsSystem()
-{
-    RemoveCollisionContacts();
-
-    m_DynamicsWorld.Reset();
-    m_ConstraintSolver.Reset();
-    m_CollisionDispatcher.Reset();
-    m_CollisionConfiguration.Reset();
-    m_BroadphaseInterface.Reset();
-    m_GhostPairCallback.Reset();
-}
-
 void PhysicsSystem::RemoveCollisionContacts()
 {
     for (int i = 0; i < 2; i++)
@@ -280,91 +531,6 @@ void PhysicsSystem::RemoveCollisionContacts()
         currentContacts.Clear();
         contactHash.Clear();
     }
-}
-
-void PhysicsSystem::AddPendingBody(HitProxy* pObject)
-{
-    INTRUSIVE_ADD_UNIQUE(pObject, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
-}
-
-void PhysicsSystem::RemovePendingBody(HitProxy* pObject)
-{
-    INTRUSIVE_REMOVE(pObject, NextMarked, PrevMarked, m_PendingAddToWorldHead, m_PendingAddToWorldTail);
-}
-
-void PhysicsSystem::AddHitProxy(HitProxy* pObject)
-{
-    if (!pObject)
-    {
-        // Passed a null pointer
-        return;
-    }
-
-    if (pObject->bInWorld)
-    {
-        // Physical body is already in world, so remove it from the world
-        if (pObject->GetCollisionObject())
-        {
-            m_DynamicsWorld->removeCollisionObject(pObject->GetCollisionObject());
-        }
-        pObject->bInWorld = false;
-    }
-
-    if (pObject->GetCollisionObject())
-    {
-        // Add physical body to pending list
-        AddPendingBody(pObject);
-    }
-}
-
-void PhysicsSystem::RemoveHitProxy(HitProxy* pObject)
-{
-    if (!pObject)
-    {
-        // Passed a null pointer
-        return;
-    }
-
-    // Remove physical body from pending list
-    RemovePendingBody(pObject);
-
-    if (!pObject->bInWorld)
-    {
-        // Physical body is not in world
-        return;
-    }
-
-    m_DynamicsWorld->removeCollisionObject(pObject->GetCollisionObject());
-
-    pObject->bInWorld = false;
-}
-
-void PhysicsSystem::AddPendingBodies()
-{
-    HitProxy* next;
-    for (HitProxy* hitProxy = m_PendingAddToWorldHead; hitProxy; hitProxy = next)
-    {
-        next = hitProxy->NextMarked;
-
-        hitProxy->NextMarked = hitProxy->PrevMarked = nullptr;
-
-        if (hitProxy->GetCollisionObject())
-        {
-            HK_ASSERT(!hitProxy->bInWorld);
-
-            btRigidBody* rigidBody = btRigidBody::upcast(hitProxy->GetCollisionObject());
-            if (rigidBody)
-            {
-                m_DynamicsWorld->addRigidBody(rigidBody, hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
-            }
-            else
-            {
-                m_DynamicsWorld->addCollisionObject(hitProxy->GetCollisionObject(), hitProxy->GetCollisionGroup(), hitProxy->GetCollisionMask());
-            }
-            hitProxy->bInWorld = true;
-        }
-    }
-    m_PendingAddToWorldHead = m_PendingAddToWorldTail = nullptr;
 }
 
 void PhysicsSystem::DispatchContactAndOverlapEvents()
@@ -866,15 +1032,6 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
     }
 }
 
-void PhysicsSystem::OnPrePhysics(btDynamicsWorld* _World, float _TimeStep)
-{
-    PhysicsSystem* self = static_cast<PhysicsSystem*>(_World->getWorldUserInfo());
-
-    //self->AddPendingBodies();
-
-    self->PrePhysicsCallback(_TimeStep);
-}
-
 void PhysicsSystem::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
 {
     PhysicsSystem* self = static_cast<PhysicsSystem*>(_World->getWorldUserInfo());
@@ -884,964 +1041,4 @@ void PhysicsSystem::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
     self->PostPhysicsCallback(_TimeStep);
     self->m_FixedTickNumber++;
 }
-
-void PhysicsSystem::Simulate(float _TimeStep)
-{
-    AddPendingBodies();
-
-    if (com_NoPhysicsSimulation)
-    {
-        return;
-    }
-
-    const float FixedTimeStep = 1.0f / PhysicsHertz;
-
-    int maxSubSteps = Math::ToIntFast(Math::Floor(_TimeStep * PhysicsHertz)) + 1;
-    //maxSubSteps = Math::Min( maxSubSteps, MAX_SIMULATION_SUB_STEPS );
-
-    btContactSolverInfo& contactSolverInfo = m_DynamicsWorld->getSolverInfo();
-    contactSolverInfo.m_numIterations = Math::Clamp(NumContactSolverIterations, 1, 256);
-    contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
-
-    // Update world gravity
-    if (bGravityDirty)
-    {
-        m_DynamicsWorld->setGravity(btVectorToFloat3(GravityVector));
-        bGravityDirty = false;
-    }
-
-    // Simulation
-    bDuringPhysicsUpdate = true;
-    m_DynamicsWorld->stepSimulation(_TimeStep, maxSubSteps, FixedTimeStep);
-    bDuringPhysicsUpdate = false;
-
-#ifdef SOFT_BODY_WORLD
-    m_SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
-#endif
-}
-
-void PhysicsSystem::DrawDebug(DebugRenderer* InRenderer)
-{
-    int mode = 0;
-    if (com_DrawContactPoints)
-    {
-        mode |= btIDebugDraw::DBG_DrawContactPoints;
-    }
-    if (com_DrawConstraints)
-    {
-        mode |= btIDebugDraw::DBG_DrawConstraints;
-    }
-    if (com_DrawConstraintLimits)
-    {
-        mode |= btIDebugDraw::DBG_DrawConstraintLimits;
-    }
-    if (mode)
-    {
-        class ABulletDebugDraw : public btIDebugDraw
-        {
-        public:
-            DebugRenderer* Renderer;
-            int DebugMode;
-
-            void drawLine(btVector3 const& from, btVector3 const& to, btVector3 const& color) override
-            {
-                Renderer->SetColor(Color4(color.x(), color.y(), color.z(), 1.0f));
-                Renderer->DrawLine(btVectorToFloat3(from), btVectorToFloat3(to));
-            }
-
-            void drawContactPoint(btVector3 const& pointOnB, btVector3 const& normalOnB, btScalar distance, int lifeTime, btVector3 const& color) override
-            {
-                Renderer->SetColor(Color4(color.x(), color.y(), color.z(), 1.0f));
-                Renderer->DrawPoint(btVectorToFloat3(pointOnB));
-                Renderer->DrawPoint(btVectorToFloat3(normalOnB));
-            }
-
-            void reportErrorWarning(const char* warningString) override
-            {
-            }
-
-            void draw3dText(btVector3 const& location, const char* textString) override
-            {
-            }
-
-            void setDebugMode(int debugMode) override
-            {
-                DebugMode = debugMode;
-            }
-
-            int getDebugMode() const override
-            {
-                return DebugMode;
-            }
-
-            void flushLines() override
-            {
-            }
-        };
-        static ABulletDebugDraw debugDrawer;
-
-        InRenderer->SetDepthTest(false);
-        debugDrawer.Renderer = InRenderer;
-        debugDrawer.setDebugMode(mode);
-        m_DynamicsWorld->setDebugDrawer(&debugDrawer);
-        m_DynamicsWorld->debugDrawWorld();
-    }
-}
-
-static bool CompareDistance(CollisionTraceResult const& A, CollisionTraceResult const& B)
-{
-    return A.Distance < B.Distance;
-}
-
-static bool FindCollisionActor(CollisionQueryFilter const& _QueryFilter, Actor* _Actor)
-{
-    for (int i = 0; i < _QueryFilter.ActorsCount; i++)
-    {
-        if (_Actor == _QueryFilter.IgnoreActors[i])
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool FindCollisionBody(CollisionQueryFilter const& _QueryFilter, SceneComponent* _Body)
-{
-    //for (int i = 0; i < _QueryFilter.BodiesCount; i++)
-    //{
-    //    if (_Body->Id == _QueryFilter.IgnoreBodies[i]->Id)
-    //    {
-    //        return true;
-    //    }
-    //}
-    return false;
-}
-
-HK_FORCEINLINE static bool NeedsCollision(CollisionQueryFilter const& _QueryFilter, btBroadphaseProxy* _Proxy)
-{
-    btCollisionObject* collisionObject = static_cast<btCollisionObject*>(_Proxy->m_clientObject);
-
-    HitProxy* hitProxy = static_cast<HitProxy*>(collisionObject->getUserPointer());
-
-    if (!hitProxy)
-    {
-        // something bad
-        return false;
-    }
-
-    if (FindCollisionActor(_QueryFilter, hitProxy->GetOwnerActor()))
-    {
-        return false;
-    }
-
-    if (FindCollisionBody(_QueryFilter, hitProxy->GetOwnerComponent()))
-    {
-        return false;
-    }
-
-    return (_Proxy->m_collisionFilterGroup & _QueryFilter.CollisionMask) && _Proxy->m_collisionFilterMask;
-}
-
-#if 0
-static bool CullTriangle( btCollisionObject const * Object, btCollisionWorld::LocalShapeInfo const * LocalShapeInfo, btVector3 const & HitNormal, bool bNormalInWorldSpace, int TriangleFaceCull )
-{
-    if ( TriangleFaceCull == COLLISION_TRIANGLE_CULL_NONE ) {
-        return false;
-    }
-
-    // TODO: TERRAIN_SHAPE_PROXYTYPE
-
-    if ( Object->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE
-         || Object->getCollisionShape()->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE )
-    {
-        const btBvhTriangleMeshShape * trimesh;
-
-        if ( Object->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE ) {
-            trimesh = static_cast< const btScaledBvhTriangleMeshShape * >( Object->getCollisionShape() )->getChildShape();
-        } else {
-            trimesh = static_cast< const btBvhTriangleMeshShape * >( Object->getCollisionShape() );
-        }
-
-        const Float3 * pVertices;
-        int VertexCount;
-        PHY_ScalarType VertexType;
-        int VertexStride;
-        const unsigned int *pIndices;
-        int IndexStride;
-        int FaceCount;
-        PHY_ScalarType IndexType;
-
-        trimesh->getMeshInterface()->getLockedReadOnlyVertexIndexBase((const byte **)&pVertices,
-                                                                      VertexCount,
-                                                                      VertexType,
-                                                                      VertexStride,
-                                                                      (const byte **)&pIndices,
-                                                                      IndexStride,
-                                                                      FaceCount,
-                                                                      IndexType,
-                                                                      LocalShapeInfo->m_shapePart);
-
-        HK_ASSERT(VertexType==PHY_FLOAT);
-        HK_ASSERT(IndexType==PHY_INTEGER);
-        HK_ASSERT(VertexStride==sizeof(Float3));
-        HK_ASSERT(IndexStride==sizeof(unsigned int)*3);
-
-        const unsigned int * triangleIndices = &pIndices[ LocalShapeInfo->m_triangleIndex * 3 ];
-
-        Float3 v0 = pVertices[ triangleIndices[0] ];
-        Float3 v1 = pVertices[ triangleIndices[1] ];
-        Float3 v2 = pVertices[ triangleIndices[2] ];
-
-        Float3 normal = Math::Cross( v1-v0, v2-v0 ).Normalized();
-        btVector3 triangleNormal = Object->getWorldTransform().getBasis() * btVectorToFloat3( normal );
-
-        btVector3 contactNormal = bNormalInWorldSpace
-                ? HitNormal
-                : Object->getWorldTransform().getBasis() * HitNormal;
-
-        const float dp = btDot( contactNormal, triangleNormal );
-        //const float eps = 0.001f;
-
-        if ( TriangleFaceCull == COLLISION_TRIANGLE_CULL_BACKFACE ) {
-            //return dp < 1.0f - eps;
-            return dp < 0.0f;
-        }
-
-        // front face
-        //return dp > -1.0f + eps;
-        return dp > 0.0f;
-    }
-
-    return false;
-}
-#endif
-
-struct TraceRayResultCallback : btCollisionWorld::RayResultCallback
-{
-    TraceRayResultCallback(CollisionQueryFilter const* _QueryFilter, Float3 const& _RayStart, Float3 const& _RayDir, TVector<CollisionTraceResult>& _Result) :
-        RayLength(_RayDir.Length()), RayStart(_RayStart), RayDir(_RayDir), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
-    {
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-
-        if (QueryFilter.bCullBackFace)
-        {
-            m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-        }
-
-        m_flags |= btTriangleRaycastCallback::kF_KeepUnflippedNormal;
-
-        //    enum EFlags
-        //    {
-        //       kF_None                 = 0,
-        //       kF_FilterBackfaces      = 1 << 0,
-        //       kF_KeepUnflippedNormal  = 1 << 1,   // Prevents returned face normal getting flipped when a ray hits a back-facing triangle
-        //         ///SubSimplexConvexCastRaytest is the default, even if kF_None is set.
-        //       kF_UseSubSimplexConvexCastRaytest = 1 << 2,   // Uses an approximate but faster ray versus convex intersection algorithm
-        //       kF_UseGjkConvexCastRaytest = 1 << 3,
-        //       kF_Terminator        = 0xFFFFFFFF
-        //    };
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btCollisionWorld::LocalRayResult& RayResult, bool bNormalInWorldSpace) override
-    {
-        // Ignore triangle edge collision
-        //if ( CullTriangle( RayResult.m_collisionObject, RayResult.m_localShapeInfo, RayResult.m_hitNormalLocal, bNormalInWorldSpace, QueryFilter.TriangleFaceCulling ) ) {
-        //    return 1;
-        //}
-
-        const btCollisionObject* hitCollisionObject = RayResult.m_collisionObject;
-
-        CollisionTraceResult& hit = Result.Add();
-        hit.Clear();
-        hit.pObject = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
-        hit.Position = RayStart + RayResult.m_hitFraction * RayDir;
-        hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(RayResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal);
-        hit.Distance = RayResult.m_hitFraction * RayLength;
-        hit.Fraction = RayResult.m_hitFraction;
-
-        return m_closestHitFraction;
-    }
-
-    float RayLength;
-    Float3 RayStart;
-    Float3 RayDir;
-    CollisionQueryFilter const& QueryFilter;
-    TVector<CollisionTraceResult>& Result;
-};
-
-struct TraceClosestRayResultCallback : btCollisionWorld::RayResultCallback
-{
-    TraceClosestRayResultCallback(CollisionQueryFilter const* _QueryFilter, btVector3 const& rayFromWorld, btVector3 const& rayToWorld) :
-        QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), m_rayFromWorld(rayFromWorld), m_rayToWorld(rayToWorld)
-
-    {
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-
-        if (QueryFilter.bCullBackFace)
-        {
-            m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-        }
-
-        m_flags |= btTriangleRaycastCallback::kF_KeepUnflippedNormal;
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btCollisionWorld::LocalRayResult& RayResult, bool bNormalInWorldSpace) override
-    {
-        // Ignore triangle edge collision
-        //if ( CullTriangle( RayResult.m_collisionObject, RayResult.m_localShapeInfo, RayResult.m_hitNormalLocal, bNormalInWorldSpace, QueryFilter.TriangleFaceCulling ) ) {
-        //    return 1;
-        //}
-
-        // caller already does the filter on the m_closestHitFraction
-        btAssert(RayResult.m_hitFraction <= m_closestHitFraction);
-
-        m_closestHitFraction = RayResult.m_hitFraction;
-        m_collisionObject = RayResult.m_collisionObject;
-        m_hitNormalWorld = bNormalInWorldSpace ? RayResult.m_hitNormalLocal : m_collisionObject->getWorldTransform().getBasis() * RayResult.m_hitNormalLocal;
-        m_hitPointWorld.setInterpolate3(m_rayFromWorld, m_rayToWorld, RayResult.m_hitFraction);
-        return RayResult.m_hitFraction;
-    }
-
-    CollisionQueryFilter const& QueryFilter;
-    btVector3 m_rayFromWorld;
-    btVector3 m_rayToWorld;
-    btVector3 m_hitPointWorld;
-    btVector3 m_hitNormalWorld;
-};
-
-struct TraceClosestConvexResultCallback : btCollisionWorld::ConvexResultCallback
-{
-    TraceClosestConvexResultCallback(CollisionQueryFilter const* _QueryFilter) :
-        m_hitCollisionObject(0), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
-    {
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-    }
-
-
-    btVector3 m_hitNormalWorld;
-    btVector3 m_hitPointWorld;
-    const btCollisionObject* m_hitCollisionObject;
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btCollisionWorld::LocalConvexResult& ConvexResult, bool bNormalInWorldSpace) override
-    {
-        // Ignore triangle edge collision
-        //if ( CullTriangle( ConvexResult.m_hitCollisionObject, ConvexResult.m_localShapeInfo, ConvexResult.m_hitNormalLocal, bNormalInWorldSpace, QueryFilter.TriangleFaceCulling ) ) {
-        //    return 1;
-        //}
-
-        // caller already does the filter on the m_closestHitFraction
-        btAssert(ConvexResult.m_hitFraction <= m_closestHitFraction);
-
-        m_closestHitFraction = ConvexResult.m_hitFraction;
-        m_hitCollisionObject = ConvexResult.m_hitCollisionObject;
-        if (bNormalInWorldSpace)
-        {
-            m_hitNormalWorld = ConvexResult.m_hitNormalLocal;
-        }
-        else
-        {
-            // need to transform normal into worldspace
-            m_hitNormalWorld = m_hitCollisionObject->getWorldTransform().getBasis() * ConvexResult.m_hitNormalLocal;
-        }
-        m_hitPointWorld = ConvexResult.m_hitPointLocal;
-        return ConvexResult.m_hitFraction;
-    }
-
-    CollisionQueryFilter const& QueryFilter;
-};
-
-struct TraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
-{
-    TraceConvexResultCallback(CollisionQueryFilter const* _QueryFilter, float _RayLength, TVector<CollisionTraceResult>& _Result) :
-        RayLength(_RayLength), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter), Result(_Result)
-    {
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btCollisionWorld::LocalConvexResult& ConvexResult, bool bNormalInWorldSpace) override
-    {
-        // Ignore triangle edge collision
-        //if ( CullTriangle( ConvexResult.m_hitCollisionObject, ConvexResult.m_localShapeInfo, ConvexResult.m_hitNormalLocal, bNormalInWorldSpace, QueryFilter.TriangleFaceCulling ) ) {
-        //    return 1;
-        //}
-
-        const btCollisionObject* hitCollisionObject = ConvexResult.m_hitCollisionObject;
-
-        CollisionTraceResult& hit = Result.Add();
-        hit.Clear();
-        hit.pObject = static_cast<HitProxy*>(hitCollisionObject->getUserPointer());
-        hit.Position = btVectorToFloat3(ConvexResult.m_hitPointLocal);
-        hit.Normal = bNormalInWorldSpace ? btVectorToFloat3(ConvexResult.m_hitNormalLocal) : btVectorToFloat3(hitCollisionObject->getWorldTransform().getBasis() * ConvexResult.m_hitNormalLocal);
-        hit.Distance = ConvexResult.m_hitFraction * RayLength;
-        hit.Fraction = ConvexResult.m_hitFraction;
-
-        return m_closestHitFraction;
-    }
-
-    float RayLength;
-    CollisionQueryFilter const& QueryFilter;
-    TVector<CollisionTraceResult>& Result;
-};
-
-bool PhysicsSystem::Trace(TVector<CollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    if (!_QueryFilter)
-    {
-        _QueryFilter = &DefaultCollisionQueryFilter;
-    }
-
-    _Result.Clear();
-
-    Float3 rayDir = _RayEnd - _RayStart;
-
-    TraceRayResultCallback hitResult(_QueryFilter, _RayStart, rayDir, _Result);
-
-    m_DynamicsWorld->rayTest(btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd), hitResult);
-
-    if (_QueryFilter->bSortByDistance)
-    {
-        std::sort(_Result.Begin(), _Result.End(), CompareDistance);
-    }
-
-    return !_Result.IsEmpty();
-}
-
-bool PhysicsSystem::TraceClosest(CollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    TraceClosestRayResultCallback hitResult(_QueryFilter, btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd));
-
-    m_DynamicsWorld->rayTest(hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult);
-
-    _Result.Clear();
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_collisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = (_Result.Position - _RayStart).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-bool PhysicsSystem::TraceSphere(CollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    TraceClosestConvexResultCallback hitResult(_QueryFilter);
-
-    btSphereShape shape(_Radius);
-    shape.setMargin(0.0f);
-
-    m_DynamicsWorld->convexSweepTest(&shape,
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
-
-    _Result.Clear();
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-bool PhysicsSystem::TraceBox(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
-    Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos = boxPosition + _RayStart;
-    Float3 endPos = boxPosition + _RayEnd;
-
-    TraceClosestConvexResultCallback hitResult(_QueryFilter);
-
-    btBoxShape shape(btVectorToFloat3(halfExtents));
-    shape.setMargin(0.0f);
-
-    m_DynamicsWorld->convexSweepTest(&shape,
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
-
-    _Result.Clear();
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-// TODO: Check TraceBox2 and add TraceSphere2, TraceCylinder2 etc
-bool PhysicsSystem::TraceBox2(TVector<CollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
-    Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos = boxPosition + _RayStart;
-    Float3 endPos = boxPosition + _RayEnd;
-    float rayLength = (endPos - startPos).Length();
-
-    _Result.Clear();
-
-    TraceConvexResultCallback hitResult(_QueryFilter, rayLength, _Result);
-
-    btBoxShape shape(btVectorToFloat3(halfExtents));
-    shape.setMargin(0.0f);
-
-    m_DynamicsWorld->convexSweepTest(&shape,
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
-
-    return !_Result.IsEmpty();
-}
-
-bool PhysicsSystem::TraceCylinder(CollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
-    Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
-    Float3 startPos = boxPosition + _RayStart;
-    Float3 endPos = boxPosition + _RayEnd;
-
-    TraceClosestConvexResultCallback hitResult(_QueryFilter);
-
-    btCylinderShape shape(btVectorToFloat3(halfExtents));
-    shape.setMargin(0.0f);
-
-    m_DynamicsWorld->convexSweepTest(&shape,
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(startPos)),
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(endPos)), hitResult);
-
-    _Result.Clear();
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-bool PhysicsSystem::TraceCapsule(CollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, CollisionQueryFilter const* _QueryFilter) const
-{
-    TraceClosestConvexResultCallback hitResult(_QueryFilter);
-
-    btCapsuleShape shape(CapsuleRadius, _CapsuleHeight);
-    shape.setMargin(0.0f);
-
-    m_DynamicsWorld->convexSweepTest(&shape,
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayStart)),
-                                     btTransform(btQuaternion::getIdentity(), btVectorToFloat3(_RayEnd)), hitResult);
-
-    _Result.Clear();
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = hitResult.m_closestHitFraction * (_RayEnd - _RayStart).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-bool PhysicsSystem::TraceConvex(CollisionTraceResult& _Result, ConvexSweepTest const& _SweepTest) const
-{
-    _Result.Clear();
-
-    Float3x4 startTransform, endTransform;
-
-    startTransform.Compose(_SweepTest.StartPosition, _SweepTest.StartRotation.ToMatrix3x3());
-    endTransform.Compose(_SweepTest.EndPosition, _SweepTest.EndRotation.ToMatrix3x3());
-
-    TUniqueRef<btConvexShape> shape;
-    Float3 position;
-    Quat rotation;
-    float margin;
-
-    COLLISION_SHAPE type = _SweepTest.CollisionSphere->Type;
-    switch (type)
-    {
-        case COLLISION_SHAPE_SPHERE: {
-            shape.Reset(new btSphereShape(_SweepTest.CollisionSphere->Radius));
-            position = _SweepTest.CollisionSphere->Position;
-            rotation = Quat::Identity();
-            margin = _SweepTest.CollisionSphere->Margin;
-            break;
-        }
-        case COLLISION_SHAPE_SPHERE_RADII: {
-            btVector3 pos(0, 0, 0);
-            float radius = 1.0f;
-            shape.Reset(new btMultiSphereShape(&pos, &radius, 1));
-            shape->setLocalScaling(btVectorToFloat3(_SweepTest.CollisionSphereRADII->Radius));
-            position = _SweepTest.CollisionSphereRADII->Position;
-            rotation = _SweepTest.CollisionSphereRADII->Rotation;
-            margin = _SweepTest.CollisionSphereRADII->Margin;
-            break;
-        }
-        case COLLISION_SHAPE_BOX:
-            shape.Reset(new btBoxShape(btVectorToFloat3(_SweepTest.CollisionBox->HalfExtents)));
-            position = _SweepTest.CollisionBox->Position;
-            rotation = _SweepTest.CollisionBox->Rotation;
-            margin = _SweepTest.CollisionBox->Margin;
-            break;
-        case COLLISION_SHAPE_CYLINDER:
-            switch (_SweepTest.CollisionCylinder->Axial)
-            {
-                case COLLISION_SHAPE_AXIAL_X:
-                    shape.Reset(new btCylinderShapeX(btVector3(_SweepTest.CollisionCylinder->Height * 0.5f, _SweepTest.CollisionCylinder->Radius, _SweepTest.CollisionCylinder->Radius)));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Z:
-                    shape.Reset(new btCylinderShapeZ(btVector3(_SweepTest.CollisionCylinder->Radius, _SweepTest.CollisionCylinder->Radius, _SweepTest.CollisionCylinder->Height * 0.5f)));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Y:
-                default:
-                    shape.Reset(new btCylinderShape(btVector3(_SweepTest.CollisionCylinder->Radius, _SweepTest.CollisionCylinder->Height * 0.5f, _SweepTest.CollisionCylinder->Radius)));
-                    break;
-            }
-            position = _SweepTest.CollisionCylinder->Position;
-            rotation = _SweepTest.CollisionCylinder->Rotation;
-            margin = _SweepTest.CollisionCylinder->Margin;
-            break;
-        case COLLISION_SHAPE_CONE:
-            switch (_SweepTest.CollisionCone->Axial)
-            {
-                case COLLISION_SHAPE_AXIAL_X:
-                    shape.Reset(new btConeShapeX(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Y:
-                    shape.Reset(new btConeShape(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Z:
-                    shape.Reset(new btConeShapeZ(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
-                    break;
-                default:
-                    shape.Reset(new btConeShape(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
-                    break;
-            }
-            position = _SweepTest.CollisionCone->Position;
-            rotation = _SweepTest.CollisionCone->Rotation;
-            margin = _SweepTest.CollisionCone->Margin;
-            break;
-        case COLLISION_SHAPE_CAPSULE:
-            switch (_SweepTest.CollisionCapsule->Axial)
-            {
-                case COLLISION_SHAPE_AXIAL_X:
-                    shape.Reset(new btCapsuleShapeX(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Y:
-                    shape.Reset(new btCapsuleShape(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
-                    break;
-                case COLLISION_SHAPE_AXIAL_Z:
-                    shape.Reset(new btCapsuleShapeZ(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
-                    break;
-                default:
-                    shape.Reset(new btCapsuleShape(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
-                    break;
-            }
-            position = _SweepTest.CollisionCapsule->Position;
-            rotation = _SweepTest.CollisionCapsule->Rotation;
-            margin = _SweepTest.CollisionCapsule->Margin;
-            break;
-        case COLLISION_SHAPE_CONVEX_HULL:
-            shape.Reset(new btConvexHullShape(&_SweepTest.CollisionConvexHull->pVertices[0][0], _SweepTest.CollisionConvexHull->VertexCount, sizeof(Float3)));
-            position = _SweepTest.CollisionConvexHull->Position;
-            rotation = _SweepTest.CollisionConvexHull->Rotation;
-            margin = _SweepTest.CollisionConvexHull->Margin;
-            break;
-        default:
-            LOG("PhysicsSystem::TraceConvex: unsupported collision shape\n");
-            return false;
-    }
-
-    shape->setMargin(margin);
-    Float3 startPos = startTransform * position;
-    Float3 endPos = endTransform * position;
-    Quat startRot = _SweepTest.StartRotation * rotation;
-    Quat endRot = _SweepTest.EndRotation * rotation;
-
-    TraceClosestConvexResultCallback hitResult(&_SweepTest.QueryFilter);
-
-    m_DynamicsWorld->convexSweepTest(shape.RawPtr(),
-                                     btTransform(btQuaternionToQuat(startRot), btVectorToFloat3(startPos)),
-                                     btTransform(btQuaternionToQuat(endRot), btVectorToFloat3(endPos)), hitResult);
-
-    if (!hitResult.hasHit())
-    {
-        return false;
-    }
-
-    _Result.pObject = static_cast<HitProxy*>(hitResult.m_hitCollisionObject->getUserPointer());
-    _Result.Position = btVectorToFloat3(hitResult.m_hitPointWorld);
-    _Result.Normal = btVectorToFloat3(hitResult.m_hitNormalWorld);
-    _Result.Distance = hitResult.m_closestHitFraction * (endPos - startPos).Length();
-    _Result.Fraction = hitResult.m_closestHitFraction;
-    return true;
-}
-
-struct QueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCallback
-{
-    QueryCollisionObjectsCallback(TVector<HitProxy*>& _Result, CollisionQueryFilter const* _QueryFilter) :
-        Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
-    {
-        _Result.Clear();
-
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
-    {
-        HitProxy* hitProxy;
-
-        hitProxy = static_cast<HitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddUnique(hitProxy);
-        }
-
-        hitProxy = static_cast<HitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddUnique(hitProxy);
-        }
-
-        return 0.0f;
-    }
-
-    void AddUnique(HitProxy* hitProxy)
-    {
-        for (HitProxy* proxy : Result)
-        {
-            if (proxy->Id == hitProxy->Id)
-            {
-                return;
-            }
-        }
-        Result.Add(hitProxy);
-    }
-
-    TVector<HitProxy*>& Result;
-    CollisionQueryFilter const& QueryFilter;
-};
-
-struct QueryCollisionCallback : public btCollisionWorld::ContactResultCallback
-{
-    QueryCollisionCallback(TVector<CollisionQueryResult>& _Result, CollisionQueryFilter const* _QueryFilter) :
-        Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
-    {
-        _Result.Clear();
-
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
-    {
-        HitProxy* hitProxy;
-
-        hitProxy = static_cast<HitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddContact(hitProxy, cp);
-        }
-
-        hitProxy = static_cast<HitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddContact(hitProxy, cp);
-        }
-
-        return 0.0f;
-    }
-
-    void AddContact(HitProxy* pObject, btManifoldPoint& cp)
-    {
-        CollisionQueryResult& contact = Result.Add();
-
-        contact.pObject = pObject;
-        contact.Position = btVectorToFloat3(cp.m_positionWorldOnB);
-        contact.Normal = btVectorToFloat3(cp.m_normalWorldOnB);
-        contact.Distance = cp.m_distance1; // FIXME?
-        //contact.Fraction; // FIXME
-
-        //contact.Fraction = contact.Distance / RayLength;
-
-        //contact.Impulse = cp.m_appliedImpulse;
-    }
-
-    TVector<CollisionQueryResult>& Result;
-    CollisionQueryFilter const& QueryFilter;
-};
-
-struct QueryActorsCallback : public btCollisionWorld::ContactResultCallback
-{
-    QueryActorsCallback(TVector<Actor*>& _Result, CollisionQueryFilter const* _QueryFilter) :
-        Result(_Result), QueryFilter(_QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter)
-    {
-        _Result.Clear();
-
-        m_collisionFilterGroup = CM_ALL;
-        m_collisionFilterMask = QueryFilter.CollisionMask;
-    }
-
-    bool needsCollision(btBroadphaseProxy* proxy0) const override
-    {
-        return NeedsCollision(QueryFilter, proxy0);
-    }
-
-    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
-    {
-        HitProxy* hitProxy;
-
-        hitProxy = static_cast<HitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddUnique(hitProxy->GetOwnerActor());
-        }
-
-        hitProxy = static_cast<HitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if (hitProxy && (hitProxy->GetCollisionGroup() & QueryFilter.CollisionMask))
-        {
-            AddUnique(hitProxy->GetOwnerActor());
-        }
-
-        return 0.0f;
-    }
-
-    void AddUnique(Actor* Actor)
-    {
-        Result.AddUnique(Actor);
-    }
-
-    TVector<Actor*>& Result;
-    CollisionQueryFilter const& QueryFilter;
-};
-
-static void CollisionShapeContactTest(btDiscreteDynamicsWorld const* InWorld, Float3 const& InPosition, btCollisionShape* InShape, btCollisionWorld::ContactResultCallback& InCallback)
-{
-    btRigidBody tempBody(0.0f, nullptr, InShape);
-    tempBody.setWorldTransform(btTransform(btQuaternion::getIdentity(), btVectorToFloat3(InPosition)));
-
-    btDiscreteDynamicsWorld* physWorld = const_cast<btDiscreteDynamicsWorld*>(InWorld);
-    physWorld->contactTest(&tempBody, InCallback);
-}
-
-void PhysicsSystem::QueryHitProxies_Sphere(TVector<HitProxy*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
-    btSphereShape shape(_Radius);
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryHitProxies_Box(TVector<HitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryCollisionObjectsCallback callback(_Result, _QueryFilter);
-    btBoxShape shape(btVectorToFloat3(_HalfExtents));
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryHitProxies(TVector<HitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryHitProxies_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
-}
-
-void PhysicsSystem::QueryActors_Sphere(TVector<Actor*>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryActorsCallback callback(_Result, _QueryFilter);
-    btSphereShape shape(_Radius);
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryActors_Box(TVector<Actor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryActorsCallback callback(_Result, _QueryFilter);
-    btBoxShape shape(btVectorToFloat3(_HalfExtents));
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryActors(TVector<Actor*>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryActors_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
-}
-
-void PhysicsSystem::QueryCollision_Sphere(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryCollisionCallback callback(_Result, _QueryFilter);
-    btSphereShape shape(_Radius);
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryCollision_Box(TVector<CollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryCollisionCallback callback(_Result, _QueryFilter);
-    btBoxShape shape(btVectorToFloat3(_HalfExtents));
-    shape.setMargin(0.0f);
-    CollisionShapeContactTest(m_DynamicsWorld.RawPtr(), _Position, &shape, callback);
-}
-
-void PhysicsSystem::QueryCollision(TVector<CollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, CollisionQueryFilter const* _QueryFilter) const
-{
-    QueryCollision_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
-}
-
-HK_NAMESPACE_END
 #endif

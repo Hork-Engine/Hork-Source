@@ -3,7 +3,9 @@
 #include "EngineSystem.h"
 
 #include "../Components/WorldTransformComponent.h"
-#include "../Components/ExperimentalComponents.h"
+#include "../Components/DirectionalLightComponent.h"
+#include "../Components/PunctualLightComponent.h"
+#include "../Components/EnvironmentProbeComponent.h"
 #include "../SpatialTree.h"
 
 HK_NAMESPACE_BEGIN
@@ -14,9 +16,9 @@ public:
     LightingSystem(ECS::World* world);
     ~LightingSystem();
 
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent_ECS> const& event);
-    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<EnvironmentProbeComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<EnvironmentProbeComponent> const& event);
 
@@ -28,7 +30,7 @@ public:
     void DrawDebug(DebugRenderer& renderer) override;
 
 private:
-    void UpdateLightBounding(PunctualLightComponent_ECS& light, Float3 const& worldPosition, Quat const& worldRotation);
+    void UpdateLightBounding(PunctualLightComponent& light, Float3 const& worldPosition, Quat const& worldRotation);
 
     ECS::World* m_World;
 

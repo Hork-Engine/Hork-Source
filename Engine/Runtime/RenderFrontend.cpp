@@ -137,7 +137,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     ECS::EntityView cameraEntityView = world->GetEntityView(worldRenderView->GetCamera());
 
-    auto* camera = cameraEntityView.GetComponent<CameraComponent_ECS>();
+    auto* camera = cameraEntityView.GetComponent<CameraComponent>();
     auto* cameraTransform = cameraEntityView.GetComponent<RenderTransformComponent>();
 
     if (!r_RenderView || !camera || !cameraTransform)
@@ -540,7 +540,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
     //LightingSystem& lightingSystem = InWorld->LightingSystem;
 
-    m_VisLights.Clear();
+    //m_VisLights.Clear();
     m_VisEnvProbes.Clear();
 
     world->AddDrawables(m_RenderDef, m_FrameData);
@@ -609,7 +609,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     m_LightVoxelizer.Reset();
 
     // Allocate lights
-    view->NumPointLights = m_VisLights.Size();
+    view->NumPointLights = 0;//m_VisLights.Size();
     view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
     view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
     view->PointLights = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
@@ -1017,10 +1017,9 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
     }
 }
 #endif
-
+#if 0
 bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radius)
 {
-    #if 0
     if (!Light->IsCastShadow())
     {
         return false;
@@ -1107,9 +1106,7 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
     }
 
     return true;
-    #else
-    return false;
-    #endif
 }
+#endif
 
 HK_NAMESPACE_END

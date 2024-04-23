@@ -109,13 +109,13 @@ public:
 LightingSystem::LightingSystem(ECS::World* world) :
     m_World(world)
 {
-    world->AddEventHandler<ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<DirectionalLightComponent>>(this);
 
-    world->AddEventHandler<ECS::Event::OnComponentAdded<PunctualLightComponent_ECS>>(this);
-    world->AddEventHandler<ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<PunctualLightComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentRemoved<PunctualLightComponent>>(this);
 }
 
-void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<DirectionalLightComponent> const& event)
 {
     auto& light = event.Component();
 
@@ -130,7 +130,7 @@ void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded
     light.m_EffectiveColor[2] = light.m_Color[2] * temperatureColor[2] * energy;
 }
 
-void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<PunctualLightComponent> const& event)
 {
     auto& light = event.Component();
 
@@ -143,7 +143,7 @@ void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded
     else
     {
         float fCosHalfConeAngle;
-        if (light.m_InnerConeAngle < PunctualLightComponent_ECS::MaxConeAngle)
+        if (light.m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
             fCosHalfConeAngle = Math::Min(light.m_CosHalfOuterConeAngle, 0.9999f);
         else
             fCosHalfConeAngle = -1.0f;
@@ -171,7 +171,7 @@ void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded
     //m_SpatialTree.AssignEntity(light.m_PrimID, event.GetEntity());
 }
 
-void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent_ECS> const& event)
+void LightingSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<PunctualLightComponent> const& event)
 {
     //auto& light = event.Component();
 
@@ -204,14 +204,14 @@ void LightingSystem::Update(struct GameFrame const& frame)
 {
     {
         using Query = ECS::Query<>
-            ::Required<DirectionalLightComponent_ECS>
+            ::Required<DirectionalLightComponent>
             ::ReadOnly<DynamicLightTag>;
 
         const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            DirectionalLightComponent_ECS* lights = it.Get<DirectionalLightComponent_ECS>();
+            DirectionalLightComponent* lights = it.Get<DirectionalLightComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
@@ -231,14 +231,14 @@ void LightingSystem::Update(struct GameFrame const& frame)
 
     {
         using Query = ECS::Query<>
-            ::Required<PunctualLightComponent_ECS>
+            ::Required<PunctualLightComponent>
             ::ReadOnly<DynamicLightTag>;
 
         const float EnergyUnitScale = 1.0f / com_LightEnergyScale.GetFloat();
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            PunctualLightComponent_ECS* lights = it.Get<PunctualLightComponent_ECS>();
+            PunctualLightComponent* lights = it.Get<PunctualLightComponent>();
 
             for (int i = 0; i < it.Count(); i++)
             {
@@ -253,7 +253,7 @@ void LightingSystem::Update(struct GameFrame const& frame)
                 else
                 {
                     float fCosHalfConeAngle;
-                    if (light.m_InnerConeAngle < PunctualLightComponent_ECS::MaxConeAngle)
+                    if (light.m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
                         fCosHalfConeAngle = Math::Min(light.m_CosHalfOuterConeAngle, 0.9999f);
                     else
                         fCosHalfConeAngle = -1.0f;
@@ -279,9 +279,9 @@ void LightingSystem::Update(struct GameFrame const& frame)
     }
 }
 
-void LightingSystem::UpdateLightBounding(PunctualLightComponent_ECS& light, Float3 const& worldPosition, Quat const& worldRotation)
+void LightingSystem::UpdateLightBounding(PunctualLightComponent& light, Float3 const& worldPosition, Quat const& worldRotation)
 {
-    if (light.m_InnerConeAngle < PunctualLightComponent_ECS::MaxConeAngle)
+    if (light.m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
     {
         const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
         const float HalfConeAngle = light.m_OuterConeAngle * ToHalfAngleRadians;
@@ -344,13 +344,13 @@ void LightingSystem::UpdateLightBounding(PunctualLightComponent_ECS& light, Floa
 void LightingSystem::UpdateBoundingBoxes(GameFrame const& frame)
 {
     using Query = ECS::Query<>
-        ::Required<PunctualLightComponent_ECS>
+        ::Required<PunctualLightComponent>
         ::ReadOnly<WorldTransformComponent>
         ::ReadOnly<MovableTag>;
 
     for (Query::Iterator it(*m_World); it; it++)
     {
-        PunctualLightComponent_ECS* lights = it.Get<PunctualLightComponent_ECS>();
+        PunctualLightComponent* lights = it.Get<PunctualLightComponent>();
         WorldTransformComponent const* transform = it.Get<WorldTransformComponent>();
 
         for (int i = 0; i < it.Count(); i++)
@@ -367,7 +367,7 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
     if (com_DrawDirectionalLights)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<DirectionalLightComponent_ECS>
+            ::ReadOnly<DirectionalLightComponent>
             ::ReadOnly<RenderTransformComponent>;
 
         renderer.SetDepthTest(false);
@@ -375,7 +375,7 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
+            DirectionalLightComponent const* lights = it.Get<DirectionalLightComponent>();
             RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
@@ -393,14 +393,14 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
     if (com_DrawPunctualLights)
     {
         using Query = ECS::Query<>
-            ::ReadOnly<PunctualLightComponent_ECS>
+            ::ReadOnly<PunctualLightComponent>
             ::ReadOnly<RenderTransformComponent>;
 
         renderer.SetDepthTest(false);
 
         for (Query::Iterator it(*m_World); it; it++)
         {
-            PunctualLightComponent_ECS const* lights = it.Get<PunctualLightComponent_ECS>();
+            PunctualLightComponent const* lights = it.Get<PunctualLightComponent>();
             RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
             for (int i = 0; i < it.Count(); i++)
@@ -410,7 +410,7 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
 
                 Float3 const& pos = transform[i].Position;
 
-                if (lights[i].m_InnerConeAngle < PunctualLightComponent_ECS::MaxConeAngle)
+                if (lights[i].m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
                 {
                     Float3x3 orient = transform[i].Rotation.ToMatrix3x3();
 
@@ -450,5 +450,79 @@ void LightingSystem::DrawDebug(DebugRenderer& renderer)
         }
     }
 }
+
+// TODO:
+#if 0
+void PackLight(Float4x4 const& InViewMatrix, LightParameters& Light)
+{
+    PhotometricProfile* profile = GetPhotometricProfile();
+
+    Light.Position = Float3(InViewMatrix * GetWorldPosition());
+    Light.Radius = GetRadius();
+    Light.InverseSquareRadius = m_InverseSquareRadius;
+    Light.Direction = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
+    Light.RenderMask = ~0u;                                                   //RenderMask; // TODO
+    Light.PhotometricProfile = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
+
+    if (m_InnerConeAngle < MaxConeAngle)
+    {
+        Light.CosHalfOuterConeAngle = m_CosHalfOuterConeAngle;
+        Light.CosHalfInnerConeAngle = m_CosHalfInnerConeAngle;
+        Light.SpotExponent = m_SpotExponent;
+        Light.Color = GetEffectiveColor(Math::Min(m_CosHalfOuterConeAngle, 0.9999f));
+        Light.LightType = CLUSTER_LIGHT_SPOT;
+    }
+    else
+    {   
+        Light.CosHalfOuterConeAngle = 0;
+        Light.CosHalfInnerConeAngle = 0;
+        Light.SpotExponent = 0;
+        Light.Color = GetEffectiveColor(-1.0f);
+        Light.LightType = CLUSTER_LIGHT_POINT;  
+    }
+}
+#endif
+
+// TODO: LightAnimationSystem to animate lights
+#if 0
+struct LightAnimationPatternComponent
+{
+    String Pattern;
+    float Speed = 1.0f;
+    float Quantizer = 0.0f;
+
+    float GetSample(float inTime);
+};
+
+HK_FORCEINLINE float Quantize(float frac, float quantizer)
+{
+    return _Quantizer > 0.0f ? Math::Floor(frac * quantizer) / _Quantizer : frac;
+}
+
+float LightAnimationPatternComponent::GetSample(float inTime)
+{
+    int frame_count = Pattern.Length();
+
+    if (frame_count > 0)
+    {
+        float t = inTime * Speed;
+
+        int keyframe = Math::Floor(t);
+        int nextframe = keyframe + 1;
+
+        float lerp = t - keyframe;
+
+        keyframe %= frame_count;
+        nextframe %= frame_count;
+
+        float a = (Math::Clamp(Pattern[keyframe], 'a', 'z') - 'a') / 26.0f;
+        float b = (Math::Clamp(Pattern[nextframe], 'a', 'z') - 'a') / 26.0f;
+
+        return Math::Lerp(a, b, Quantize(lerp, Quantizer));
+    }
+
+    return 1.0f;
+}
+#endif
 
 HK_NAMESPACE_END

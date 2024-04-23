@@ -24,7 +24,7 @@ ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
 
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
-ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"s, "1"s);
+ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"s, "0"s);
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -127,7 +127,7 @@ void RenderSystem::UpdateBoundingBoxes(GameFrame const& frame)
     }
 }
 
-void RenderSystem::AddShadowmapCascades(DirectionalLightComponent_ECS const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
+void RenderSystem::AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
 {
     float cascadeSplits[MAX_CASCADE_SPLITS];
     int numSplits = light.m_MaxShadowCascades + 1;
@@ -322,12 +322,12 @@ void RenderSystem::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& f
     auto& frameLoop = GameApplication::GetFrameLoop();
 
     using Query = ECS::Query<>
-        ::ReadOnly<DirectionalLightComponent_ECS>
+        ::ReadOnly<DirectionalLightComponent>
         ::ReadOnly<RenderTransformComponent>;
 
     for (Query::Iterator it(*m_World); it; it++)
     {
-        DirectionalLightComponent_ECS const* lights = it.Get<DirectionalLightComponent_ECS>();
+        DirectionalLightComponent const* lights = it.Get<DirectionalLightComponent>();
         RenderTransformComponent const* transform = it.Get<RenderTransformComponent>();
 
         bool bCastShadow = it.HasComponent<ShadowCastTag>();

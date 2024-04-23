@@ -14,9 +14,9 @@ enum CAMERA_PROJECTION_TYPE : uint8_t
     CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 };
 
-struct CameraComponent_ECS
+struct CameraComponent
 {
-    CameraComponent_ECS() = default;
+    CameraComponent() = default;
 
     // The camera has its own rotation, which is updated with a variable time step. It can be used to reduce input lag.
     Quat Rotation;

@@ -4,7 +4,7 @@
 
 HK_NAMESPACE_BEGIN
 
-void CameraComponent_ECS::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
+void CameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
 {
     if (m_Projection != _Projection)
     {
@@ -13,7 +13,7 @@ void CameraComponent_ECS::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
     }
 }
 
-void CameraComponent_ECS::SetZNear(float _ZNear)
+void CameraComponent::SetZNear(float _ZNear)
 {
     if (m_ZNear != _ZNear)
     {
@@ -22,7 +22,7 @@ void CameraComponent_ECS::SetZNear(float _ZNear)
     }
 }
 
-void CameraComponent_ECS::SetZFar(float _ZFar)
+void CameraComponent::SetZFar(float _ZFar)
 {
     if (m_ZFar != _ZFar)
     {
@@ -31,7 +31,7 @@ void CameraComponent_ECS::SetZFar(float _ZFar)
     }
 }
 
-void CameraComponent_ECS::SetFovX(float _FieldOfView)
+void CameraComponent::SetFovX(float _FieldOfView)
 {
     if (m_FovX != _FieldOfView)
     {
@@ -40,7 +40,7 @@ void CameraComponent_ECS::SetFovX(float _FieldOfView)
     }
 }
 
-void CameraComponent_ECS::SetFovY(float _FieldOfView)
+void CameraComponent::SetFovY(float _FieldOfView)
 {
     if (m_FovY != _FieldOfView)
     {
@@ -49,7 +49,7 @@ void CameraComponent_ECS::SetFovY(float _FieldOfView)
     }
 }
 
-void CameraComponent_ECS::SetAspectRatio(float _AspectRatio)
+void CameraComponent::SetAspectRatio(float _AspectRatio)
 {
     if (m_AspectRatio != _AspectRatio)
     {
@@ -58,7 +58,7 @@ void CameraComponent_ECS::SetAspectRatio(float _AspectRatio)
     }
 }
 
-void CameraComponent_ECS::GetEffectiveFov(float& _FovX, float& _FovY) const
+void CameraComponent::GetEffectiveFov(float& _FovX, float& _FovY) const
 {
     _FovX = 0;
     _FovY = 0;
@@ -82,7 +82,7 @@ void CameraComponent_ECS::GetEffectiveFov(float& _FovX, float& _FovY) const
     }
 }
 
-void CameraComponent_ECS::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
+void CameraComponent::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
 {
     m_OrthoMins = _Mins;
     m_OrthoMaxs = _Maxs;
@@ -93,7 +93,7 @@ void CameraComponent_ECS::SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs)
     }
 }
 
-void CameraComponent_ECS::SetOrthoZoom(float _Zoom)
+void CameraComponent::SetOrthoZoom(float _Zoom)
 {
     m_OrthoZoom = _Zoom;
 
@@ -103,7 +103,7 @@ void CameraComponent_ECS::SetOrthoZoom(float _Zoom)
     }
 }
 
-void CameraComponent_ECS::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Float2& _Mins, Float2& _Maxs)
+void CameraComponent::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Float2& _Mins, Float2& _Maxs)
 {
     if (_CameraAspectRatio > 0.0f)
     {
@@ -121,7 +121,7 @@ void CameraComponent_ECS::MakeOrthoRect(float _CameraAspectRatio, float _Zoom, F
     }
 }
 
-void CameraComponent_ECS::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) const
+void CameraComponent::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix) const
 {
     // TODO: if ( ClusterProjectionDirty ...
 
@@ -132,7 +132,7 @@ void CameraComponent_ECS::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatri
             break;
         case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
             Float2 orthoMins, orthoMaxs;
-            CameraComponent_ECS::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+            CameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
             _ProjectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
             break;
         }
@@ -148,7 +148,7 @@ void CameraComponent_ECS::MakeClusterProjectionMatrix(Float4x4& _ProjectionMatri
     }
 }
 
-Float4x4 const& CameraComponent_ECS::GetProjectionMatrix() const
+Float4x4 const& CameraComponent::GetProjectionMatrix() const
 {
     if (m_bProjectionDirty)
     {
@@ -159,7 +159,7 @@ Float4x4 const& CameraComponent_ECS::GetProjectionMatrix() const
                 break;
             case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
                 Float2 orthoMins, orthoMaxs;
-                CameraComponent_ECS::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+                CameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
                 m_ProjectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, m_ZNear, m_ZFar);
                 break;
             }
@@ -181,7 +181,7 @@ Float4x4 const& CameraComponent_ECS::GetProjectionMatrix() const
     return m_ProjectionMatrix;
 }
 
-//void CameraComponent_ECS::MakeRay(float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd) const
+//void CameraComponent::MakeRay(float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd) const
 //{
 //    // Update projection matrix
 //    GetProjectionMatrix();
@@ -196,7 +196,7 @@ Float4x4 const& CameraComponent_ECS::GetProjectionMatrix() const
 //    MakeRay(ModelViewProjectionInversed, _NormalizedX, _NormalizedY, _RayStart, _RayEnd);
 //}
 
-void CameraComponent_ECS::MakeRay(Float4x4 const& _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd)
+void CameraComponent::MakeRay(Float4x4 const& _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd)
 {
     float x = 2.0f * _NormalizedX - 1.0f;
     float y = 2.0f * _NormalizedY - 1.0f;
@@ -226,7 +226,7 @@ void CameraComponent_ECS::MakeRay(Float4x4 const& _ModelViewProjectionInversed, 
 #endif
 }
 
-//BvFrustum const& CameraComponent_ECS::GetFrustum() const
+//BvFrustum const& CameraComponent::GetFrustum() const
 //{
 //    // Update projection matrix
 //    GetProjectionMatrix();
@@ -244,7 +244,7 @@ void CameraComponent_ECS::MakeRay(Float4x4 const& _ModelViewProjectionInversed, 
 //    return m_Frustum;
 //}
 
-//Float4x4 const& CameraComponent_ECS::GetViewMatrix() const
+//Float4x4 const& CameraComponent::GetViewMatrix() const
 //{
 //    //if (m_bViewMatrixDirty)
 //    {
@@ -265,7 +265,7 @@ void CameraComponent_ECS::MakeRay(Float4x4 const& _ModelViewProjectionInversed, 
 //    return m_ViewMatrix;
 //}
 
-//Float3x3 const& CameraComponent_ECS::GetBillboardMatrix() const
+//Float3x3 const& CameraComponent::GetBillboardMatrix() const
 //{
 //    // Update billboard matrix
 //    GetViewMatrix();
@@ -274,7 +274,7 @@ void CameraComponent_ECS::MakeRay(Float4x4 const& _ModelViewProjectionInversed, 
 //}
 
 #if 0
-void CameraComponent_ECS::DrawDebug(DebugRenderer* InRenderer)
+void CameraComponent::DrawDebug(DebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
