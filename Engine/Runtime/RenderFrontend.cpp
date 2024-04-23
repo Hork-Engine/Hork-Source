@@ -161,7 +161,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     // FIXME: float overflow
     view->GameRunningTimeSeconds = world->GetFrame().RunningTime;
     view->GameplayTimeSeconds = world->GetFrame().VariableTime;
-    view->GameplayTimeStep = world->bPaused ? 0.0f : Math::Max(world->GetFrame().VariableTimeStep, 0.0001f);
+    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max(world->GetFrame().VariableTimeStep, 0.0001f);
 
     Quat cameraRotation = cameraTransform->Rotation * camera->Rotation;
 

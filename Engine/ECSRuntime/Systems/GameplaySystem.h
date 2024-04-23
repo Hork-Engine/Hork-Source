@@ -20,6 +20,8 @@ class DebugRenderer;
 class GameplaySystemECS : public RefCounted
 {
 public:
+    bool bTickEvenWhenPaused = false;
+
     virtual ~GameplaySystemECS() = default;
     virtual void VariableUpdate(float timeStep) {}
     virtual void FixedUpdate(GameFrame const& frame) {}

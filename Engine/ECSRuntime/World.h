@@ -9,13 +9,18 @@
 
 HK_NAMESPACE_BEGIN
 
+enum WORLD_REQUEST
+{
+    WORLD_REQUEST_PAUSE,
+    WORLD_REQUEST_UNPAUSE
+};
+
 class World : public ECS::World
 {
 public:
     World(ECS::WorldCreateInfo const& createInfo);
     ~World();
 
-    bool bPaused = false;
     bool bTick = true;
 
     PhysicsInterface& GetPhysicsInterface() { return m_PhysicsInterface; }
@@ -30,14 +35,19 @@ public:
 
     void SetEventHandler(IEventHandler* eventHandler);
 
+    void AddRequest(WORLD_REQUEST request);
+
     void Tick(float timeStep);
 
     void DrawDebug(DebugRenderer& renderer);
 
+    GameFrame const& GetFrame() const { return m_Frame; }
+
+    bool IsPaused() const { return m_bPaused; }
+
+    // TODO: Remove this:
     void AddDirectionalLight(struct RenderFrontendDef& rd, struct RenderFrameData& frameData);
     void AddDrawables(struct RenderFrontendDef& rd, struct RenderFrameData& frameData);
-
-    GameFrame const& GetFrame() const { return m_Frame; }
 
 private:
     template <typename T, typename... Args>
@@ -46,6 +56,8 @@ private:
         m_EngineSystems.Add(MakeUnique<T>(this, std::forward<Args>(args)...));
         return static_cast<T*>(m_EngineSystems.Last().RawPtr());
     }
+
+    void ProcessRequests();
 
     float m_Accumulator = 0.0f;
 
@@ -73,6 +85,10 @@ private:
     class EntityDestroySystem* m_EntityDestroySystem;
     class RenderSystem* m_RenderSystem;
     TRef<IEventHandler> m_EventHandler;
+
+    TVector<WORLD_REQUEST> m_Requests;
+
+    bool m_bPaused = false;
 };
 
 HK_NAMESPACE_END

@@ -66,16 +66,14 @@ void World::SetEventHandler(IEventHandler* eventHandler)
     m_EventHandler = eventHandler;
 }
 
+void World::AddRequest(WORLD_REQUEST request)
+{
+    m_Requests.Add(request);
+}
+
 void World::Tick(float timeStep)
 {
-    //if (!bTick)
-    //    return;
-
-    //if (bPaused)
-    //{
-    //    m_Frame.RunningTime += timeStep;
-    //    return;
-    //}
+    ProcessRequests();
 
     const float fixedTimeStep = 1.0f / 60.0f;
 
@@ -83,7 +81,10 @@ void World::Tick(float timeStep)
     m_Frame.FixedTimeStep = fixedTimeStep;
 
     for (auto& system : m_GameplayVariableUpdateSystems)
-        system->VariableUpdate(timeStep);
+    {
+        if (!m_bPaused || system->bTickEvenWhenPaused)
+            system->VariableUpdate(timeStep);
+    }
 
     m_Accumulator += timeStep;
 
@@ -97,17 +98,24 @@ void World::Tick(float timeStep)
         // FIXME: Call ExecuteCommands here?
         ExecuteCommands();
 
-        m_EntityDestroySystem->Update();
+        if (!m_bPaused)
+            m_EntityDestroySystem->Update();
 
-        m_TeleportSystem->Update(m_Frame);
+        if (!m_bPaused)
+            m_TeleportSystem->Update(m_Frame);
 
         for (auto& system : m_GameplayFixedUpdateSystems)
-            system->FixedUpdate(m_Frame);
+        {
+            if (!m_bPaused || system->bTickEvenWhenPaused)
+                system->FixedUpdate(m_Frame);
+        }
 
-        m_BehaviorTreeSystem->Update(m_Frame);
+        if (!m_bPaused)
+            m_BehaviorTreeSystem->Update(m_Frame);
 
         // Move / animate nodes
-        m_NodeMotionSystem->Update(m_Frame);
+        if (!m_bPaused)
+            m_NodeMotionSystem->Update(m_Frame);
 
         // Update skeleton poses and sockets
         m_SkinningSystem->UpdatePoses(m_Frame);
@@ -125,7 +133,10 @@ void World::Tick(float timeStep)
         m_PhysicsSystem->Update(m_Frame);
 
         for (auto& system : m_GameplayPostPhysicsSystems)
-            system->PostPhysicsUpdate(m_Frame);
+        {
+            if (!m_bPaused || system->bTickEvenWhenPaused)
+                system->PostPhysicsUpdate(m_Frame);
+        }
 
         m_LightingSystem->UpdateBoundingBoxes(m_Frame);
         m_RenderSystem->UpdateBoundingBoxes(m_Frame);
@@ -134,8 +145,11 @@ void World::Tick(float timeStep)
         if (m_EventHandler)
             m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
 
-        m_Frame.FixedFrameNum++;
-        m_Frame.FixedTime = m_Frame.FixedFrameNum * fixedTimeStep;
+        if (!m_bPaused)
+        {
+            m_Frame.FixedFrameNum++;
+            m_Frame.FixedTime = m_Frame.FixedFrameNum * fixedTimeStep;
+        }
     }
 
     m_Frame.Interpolate = m_Accumulator / fixedTimeStep;
@@ -158,15 +172,36 @@ void World::Tick(float timeStep)
     m_SkinningSystem->UpdateSkins();
 
     for (auto& system : m_GameplayLateUpdateSystems)
-        system->LateUpdate(timeStep);
+    {
+        if (!m_bPaused || system->bTickEvenWhenPaused)
+            system->LateUpdate(timeStep);
+    }
 
-    m_Frame.VariableTime += timeStep;
+    if (!m_bPaused)
+        m_Frame.VariableTime += timeStep;
     m_Frame.FrameNum++;
 
     m_Frame.RunningTime += timeStep;
 
     //LOG("TIME: Variable {}\tFixed {}\tDiff {}\n", m_Frame.VariableTime, m_Frame.FixedTime, Math::Abs(m_Frame.VariableTime - m_Frame.FixedTime));
     //LOG("TIME: Diff {} ms\n", (m_Frame.VariableTime - m_Frame.FixedTime) * 1000);
+}
+
+void World::ProcessRequests()
+{
+    for (WORLD_REQUEST request : m_Requests)
+    {
+        switch (request)
+        {
+            case WORLD_REQUEST_PAUSE:
+                m_bPaused = true;
+                break;
+            case WORLD_REQUEST_UNPAUSE:
+                m_bPaused = false;
+                break;
+        }
+    }
+    m_Requests.Clear();
 }
 
 void World::DrawDebug(DebugRenderer& renderer)

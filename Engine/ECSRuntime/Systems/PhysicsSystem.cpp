@@ -548,18 +548,22 @@ void PhysicsSystem::Update(GameFrame const& frame)
     UpdateScaling(frame);
 
     UpdateKinematicBodies(frame);
-    UpdateWaterBodies(frame);
 
-    m_PhysicsInterface.GetImpl().Update(frame.FixedTimeStep, collisionSteps, integrationSubSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
-
-    // Keep bodies in trigger active
-    m_IdBodiesInSensors.Clear();
-    for (auto& bodyRef : m_BodiesInSensors)
-        m_IdBodiesInSensors.Add(bodyRef.mBodyID);
-
-    if (!m_IdBodiesInSensors.IsEmpty())
+    if (!m_World->IsPaused())
     {
-        m_PhysicsInterface.GetImpl().GetBodyInterface().ActivateBodies(m_IdBodiesInSensors.ToPtr(), m_IdBodiesInSensors.Size());
+        UpdateWaterBodies(frame);
+
+        m_PhysicsInterface.GetImpl().Update(frame.FixedTimeStep, collisionSteps, integrationSubSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
+
+        // Keep bodies in trigger active
+        m_IdBodiesInSensors.Clear();
+        for (auto& bodyRef : m_BodiesInSensors)
+            m_IdBodiesInSensors.Add(bodyRef.mBodyID);
+
+        if (!m_IdBodiesInSensors.IsEmpty())
+        {
+            m_PhysicsInterface.GetImpl().GetBodyInterface().ActivateBodies(m_IdBodiesInSensors.ToPtr(), m_IdBodiesInSensors.Size());
+        }
     }
 
     StoreDynamicBodiesSnapshot();

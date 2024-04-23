@@ -218,7 +218,8 @@ void CharacterControllerSystem::Update(GameFrame const& frame)
     m_PendingAddCharacters.Clear();
 
     // On pre physics update:
-    UpdateMovement(frame);
+    if (!m_World->IsPaused())
+        UpdateMovement(frame);
 }
 
 bool IsNearZero(Float3 const& vec, float inMaxDistSq = 1.0e-12f)
