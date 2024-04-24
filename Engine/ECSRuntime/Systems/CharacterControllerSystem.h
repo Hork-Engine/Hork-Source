@@ -14,7 +14,7 @@ HK_NAMESPACE_BEGIN
 class DebugRenderer;
 class World;
 
-class CharacterControllerSystem : public EngineSystemECS, public JPH::CharacterContactListener
+class CharacterControllerSystem : public EngineSystemECS
 {
 public:
     CharacterControllerSystem(World* world);
@@ -30,29 +30,10 @@ public:
 private:
     void UpdateMovement(GameFrame const& frame);
 
-    // Called whenever the character collides with a body. Returns true if the contact can push the character.
-    void OnContactAdded(ECS::EntityHandle entityHandle, const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings);
-
-	// Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
-    void OnContactSolve(ECS::EntityHandle entityHandle, const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity);
-
-    void DestroyCharacters();
-
-    struct CharacterData
-    {
-        JPH::CharacterVirtual* pCharacter;
-        JPH::BodyID BodyID;
-    };
-
-    TVector<ECS::EntityHandle> m_PendingAddCharacters;
-    TVector<CharacterData> m_PendingRemoveCharacters;
-
     World* m_World;
     PhysicsInterface& m_PhysicsInterface;
 
     int m_FrameIndex{};
-
-    friend class CharacterControllerImpl;
 };
 
 HK_NAMESPACE_END

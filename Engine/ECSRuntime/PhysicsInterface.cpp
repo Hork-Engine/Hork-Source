@@ -14,6 +14,7 @@
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
@@ -120,8 +121,8 @@ public:
 class BroadphaseBodyCollector : public JPH::CollideShapeBodyCollector
 {
 public:
-    BroadphaseBodyCollector(TVector<PhysBodyID>& result) :
-        m_Hits(result)
+    BroadphaseBodyCollector(TVector<PhysBodyID>& outResult) :
+        m_Hits(outResult)
     {
         m_Hits.Clear();
     }
@@ -178,26 +179,26 @@ void CopyShapeCollideResult(TVector<ShapeCollideResult>& out, JPH::Array<JPH::Co
 
 } // namespace
 
-bool PhysicsInterface::CastRayClosest(Float3 const& start, Float3 const& dir, RayCastResult& result, RayCastFilter const& filter)
+bool PhysicsInterface::CastRayClosest(Float3 const& inRayStart, Float3 const& inRayDir, RayCastResult& outResult, RayCastFilter const& inFilter)
 {
-    JPH::RRayCast rayCast;
-    rayCast.mOrigin = ConvertVector(start);
-    rayCast.mDirection = ConvertVector(dir);
+    JPH::RRayCast raycast;
+    raycast.mOrigin = ConvertVector(inRayStart);
+    raycast.mDirection = ConvertVector(inRayDir);
 
     JPH::RayCastResult hit;
-    if (filter.bIgonreBackFaces)
+    if (inFilter.bIgonreBackFaces)
     {
         JPH::RayCastSettings settings;
 
         // How backfacing triangles should be treated
-        //settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+        //settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
         settings.mBackFaceMode = JPH::EBackFaceMode::IgnoreBackFaces;
 
         // If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
         settings.mTreatConvexAsSolid = true;
 
         JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> collector;
-        m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, settings, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+        m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
         if (!collector.HadHit())
             return false;
@@ -206,62 +207,62 @@ bool PhysicsInterface::CastRayClosest(Float3 const& start, Float3 const& dir, Ra
     }
     else
     {
-        if (!m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, hit, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())))
+        if (!m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(raycast, hit, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())))
             return false;
     }
 
-    result.BodyID = hit.mBodyID;
-    result.Fraction = hit.mFraction;
+    outResult.BodyID = hit.mBodyID;
+    outResult.Fraction = hit.mFraction;
 
-    if (filter.bCalcSurfcaceNormal)
+    if (inFilter.bCalcSurfcaceNormal)
     {
-        JPH::BodyLockRead lock(m_PhysicsSystem.GetBodyLockInterface(), result.BodyID);
+        JPH::BodyLockRead lock(m_PhysicsSystem.GetBodyLockInterface(), outResult.BodyID);
         JPH::Body const& body = lock.GetBody();
 
-        auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, rayCast.GetPointOnRay(result.Fraction));
-        result.Normal = ConvertVector(normal);
+        auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, raycast.GetPointOnRay(outResult.Fraction));
+        outResult.Normal = ConvertVector(normal);
     }
 
     return true;
 }
 
-bool PhysicsInterface::CastRay(Float3 const& start, Float3 const& dir, TVector<RayCastResult>& result, RayCastFilter const& filter)
+bool PhysicsInterface::CastRay(Float3 const& inRayStart, Float3 const& inRayDir, TVector<RayCastResult>& outResult, RayCastFilter const& inFilter)
 {
-    JPH::RRayCast rayCast;
-    rayCast.mOrigin = ConvertVector(start);
-    rayCast.mDirection = ConvertVector(dir);
+    JPH::RRayCast raycast;
+    raycast.mOrigin = ConvertVector(inRayStart);
+    raycast.mDirection = ConvertVector(inRayDir);
 
     JPH::RayCastSettings settings;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     // If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
     settings.mTreatConvexAsSolid = true;
 
     JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(rayCast, settings, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
         // Order hits on closest first
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        result.Reserve(collector.mHits.size());
+        outResult.Reserve(collector.mHits.size());
         for (auto& hit : collector.mHits)
         {
-            RayCastResult& r = result.Add();
+            RayCastResult& r = outResult.Add();
             r.BodyID = hit.mBodyID;
             r.Fraction = hit.mFraction;
 
-            if (filter.bCalcSurfcaceNormal)
+            if (inFilter.bCalcSurfcaceNormal)
             {
                 JPH::BodyLockRead lock(m_PhysicsSystem.GetBodyLockInterface(), hit.mBodyID);
                 JPH::Body const& body = lock.GetBody();
 
-                auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, rayCast.GetPointOnRay(hit.mFraction));
+                auto normal = body.GetWorldSpaceSurfaceNormal(hit.mSubShapeID2, raycast.GetPointOnRay(hit.mFraction));
                 r.Normal = ConvertVector(normal);
             }
         }
@@ -270,221 +271,221 @@ bool PhysicsInterface::CastRay(Float3 const& start, Float3 const& dir, TVector<R
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CastBoxClosest(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastBoxClosest(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+    JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastBox(Float3 const& start, Float3 const& dir, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+    JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& mins, Float3 const& maxs, Float3 const& dir, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+    JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
-    JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastBoxMinMax(Float3 const& mins, Float3 const& maxs, Float3 const& dir, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+    JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
-    JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastSphereClosest(Float3 const& start, Float3 const& dir, float sphereRadius, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::SphereShape sphereShape(sphereRadius);
+    JPH::SphereShape shape(inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastSphere(Float3 const& start, Float3 const& dir, float sphereRadius, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::SphereShape sphereShape(sphereRadius);
+    JPH::SphereShape shape(inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCapsuleClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+    JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&capsuleShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCapsule(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+    JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&capsuleShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCylinderClosest(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+    JPH::CylinderShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&cylinderShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCylinder(Float3 const& start, Float3 const& dir, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+    JPH::CylinderShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(start);
-    JPH::Vec3 direction = ConvertVector(dir);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+    JPH::Vec3 pos = ConvertVector(inRayStart);
+    JPH::Vec3 direction = ConvertVector(inRayDir);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&cylinderShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return CastShape(shapeCast, CalcBaseOffset(pos, direction), result, filter);
+    return CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastShapeClosest(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, ShapeCastResult& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastShapeClosest(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::ShapeCastSettings settings;
-    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = true;
 
     JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
     if (collector.HadHit())
-        CopyShapeCastResult(result, collector.mHit);
+        CopyShapeCastResult(outResult, collector.mHit);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CastShape(JPH::RShapeCast const& shapeCast, JPH::RVec3Arg baseOffset, TVector<ShapeCastResult>& result, ShapeCastFilter const& filter)
+bool PhysicsInterface::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::ShapeCastSettings settings;
-    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = false;
 
     JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, baseOffset, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+    m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
         // Order hits on closest first
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCastResult(result, collector.mHits);
+        CopyShapeCastResult(outResult, collector.mHits);
     }
 
     return collector.HadHit();
 }
 
-void PhysicsInterface::OverlapBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
-    BroadphaseBodyCollector collector(result);
-    if (boxRotation == Quat::Identity())
+    BroadphaseBodyCollector collector(outResult);
+    if (inRotation == Quat::Identity())
     {
-        m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(position - halfExtent), ConvertVector(position + halfExtent)),
+        m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(inPosition - inHalfExtent), ConvertVector(inPosition + inHalfExtent)),
                                                           collector,
-                                                          BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                          BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
     }
     else
     {
         JPH::OrientedBox oriented_box;
-        oriented_box.mOrientation.SetTranslation(ConvertVector(position));
-        oriented_box.mOrientation.SetRotation(ConvertMatrix(boxRotation.ToMatrix4x4()));
-        oriented_box.mHalfExtents = ConvertVector(halfExtent);
+        oriented_box.mOrientation.SetTranslation(ConvertVector(inPosition));
+        oriented_box.mOrientation.SetRotation(ConvertMatrix(inRotation.ToMatrix4x4()));
+        oriented_box.mHalfExtents = ConvertVector(inHalfExtent);
 
-        m_PhysicsSystem.GetBroadPhaseQuery().CollideOrientedBox(oriented_box, collector, BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+        m_PhysicsSystem.GetBroadPhaseQuery().CollideOrientedBox(oriented_box, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
     }
 }
 
-void PhysicsInterface::OverlapBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+void PhysicsInterface::OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
-    BroadphaseBodyCollector collector(result);
-    m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(mins), ConvertVector(maxs)),
+    BroadphaseBodyCollector collector(outResult);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(inMins), ConvertVector(inMaxs)),
                                                       collector,
-                                                      BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                      BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 }
 
-void PhysicsInterface::OverlapSphere(Float3 const& position, float sphereRadius, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+void PhysicsInterface::OverlapSphere(Float3 const& inPosition, float inRadius, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
-    BroadphaseBodyCollector collector(result);
-    m_PhysicsSystem.GetBroadPhaseQuery().CollideSphere(ConvertVector(position),
-                                                       sphereRadius,
+    BroadphaseBodyCollector collector(outResult);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollideSphere(ConvertVector(inPosition),
+                                                       inRadius,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 }
 
-void PhysicsInterface::OverlapPoint(Float3 const& position, TVector<PhysBodyID>& result, ShapeOverlapFilter const& filter)
+void PhysicsInterface::OverlapPoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
-    BroadphaseBodyCollector collector(result);
-    m_PhysicsSystem.GetBroadPhaseQuery().CollidePoint(ConvertVector(position),
+    BroadphaseBodyCollector collector(outResult);
+    m_PhysicsSystem.GetBroadPhaseQuery().CollidePoint(ConvertVector(inPosition),
                                                       collector,
-                                                      BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                      BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                       /* TODO: objectLayerFilter */);
 }
 
-bool PhysicsInterface::CheckBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, ShapeCastFilter const& filter)
+bool PhysicsInterface::CheckBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+    JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -492,32 +493,32 @@ bool PhysicsInterface::CheckBox(Float3 const& position, Float3 const& halfExtent
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, ShapeCastFilter const& filter)
+bool PhysicsInterface::CheckBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+    JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
+    JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
 
     JPH::CollideShapeSettings settings;
 
@@ -525,32 +526,32 @@ bool PhysicsInterface::CheckBoxMinMax(Float3 const& mins, Float3 const& maxs, Sh
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sTranslation(pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckSphere(Float3 const& position, float sphereRadius, ShapeCastFilter const& filter)
+bool PhysicsInterface::CheckSphere(Float3 const& inPosition, float inRadius, ShapeCastFilter const& inFilter)
 {
-    JPH::SphereShape sphereShape(sphereRadius);
+    JPH::SphereShape shape(inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Vec3 pos = ConvertVector(inPosition);
 
     JPH::CollideShapeSettings settings;
 
@@ -558,33 +559,33 @@ bool PhysicsInterface::CheckSphere(Float3 const& position, float sphereRadius, S
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sTranslation(pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, ShapeCastFilter const& filter)
+bool PhysicsInterface::CheckCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastFilter const& inFilter)
 {
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+    JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -592,33 +593,33 @@ bool PhysicsInterface::CheckCapsule(Float3 const& position, float halfHeightOfCy
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, ShapeCastFilter const& filter)
+bool PhysicsInterface::CheckCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastFilter const& inFilter)
 {
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+    JPH::CylinderShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -626,41 +627,41 @@ bool PhysicsInterface::CheckCylinder(Float3 const& position, float halfHeightOfC
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get())
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckPoint(Float3 const& point, BroadphaseLayer::Mask broadphaseLayrs)
+bool PhysicsInterface::CheckPoint(Float3 const& inPosition, BroadphaseLayer::Mask inBroadphaseLayrs)
 {
     JPH::AnyHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get())
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayrs.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
     return collector.HadHit();
 }
 
-void PhysicsInterface::CollideBox(Float3 const& position, Float3 const& halfExtent, Quat const& boxRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector(halfExtent));
+    JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(boxRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -668,38 +669,38 @@ void PhysicsInterface::CollideBox(Float3 const& position, Float3 const& halfExte
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
+    JPH::RVec3 base_offset = pos;
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCollideResult(result, collector.mHits);
+        CopyShapeCollideResult(outResult, collector.mHits);
     }
 }
 
-void PhysicsInterface::CollideBoxMinMax(Float3 const& mins, Float3 const& maxs, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::BoxShape boxShape(ConvertVector((maxs - mins) * 0.5f));
+    JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
-    JPH::Vec3 pos = ConvertVector((mins + maxs) * 0.5f);
+    JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
 
     JPH::CollideShapeSettings settings;
 
@@ -707,38 +708,38 @@ void PhysicsInterface::CollideBoxMinMax(Float3 const& mins, Float3 const& maxs, 
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
+    JPH::RVec3 base_offset = JPH::RVec3::sZero();
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&boxShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sTranslation(pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCollideResult(result, collector.mHits);
+        CopyShapeCollideResult(outResult, collector.mHits);
     }
 }
 
-void PhysicsInterface::CollideSphere(Float3 const& position, float sphereRadius, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::SphereShape sphereShape(sphereRadius);
+    JPH::SphereShape shape(inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
+    JPH::Vec3 pos = ConvertVector(inPosition);
 
     JPH::CollideShapeSettings settings;
 
@@ -746,39 +747,39 @@ void PhysicsInterface::CollideSphere(Float3 const& position, float sphereRadius,
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
+    JPH::RVec3 base_offset = pos;
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&sphereShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sTranslation(pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCollideResult(result, collector.mHits);
+        CopyShapeCollideResult(outResult, collector.mHits);
     }
 }
 
-void PhysicsInterface::CollideCapsule(Float3 const& position, float halfHeightOfCylinder, float capsuleRadius, Quat const& capsuleRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CapsuleShape capsuleShape(halfHeightOfCylinder, capsuleRadius);
+    JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(capsuleRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -786,39 +787,39 @@ void PhysicsInterface::CollideCapsule(Float3 const& position, float halfHeightOf
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
+    JPH::RVec3 base_offset = pos;
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&capsuleShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCollideResult(result, collector.mHits);
+        CopyShapeCollideResult(outResult, collector.mHits);
     }
 }
 
-void PhysicsInterface::CollideCylinder(Float3 const& position, float halfHeightOfCylinder, float cylinderRadius, Quat const& cylinderRotation, TVector<ShapeCollideResult>& result, ShapeCastFilter const& filter)
+void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
-    JPH::CylinderShape cylinderShape(halfHeightOfCylinder, cylinderRadius);
+    JPH::CylinderShape shape(inHalfHeight, inRadius);
 
-    JPH::Vec3 pos = ConvertVector(position);
-    JPH::Quat rotation = ConvertQuaternion(cylinderRotation);
+    JPH::Vec3 pos = ConvertVector(inPosition);
+    JPH::Quat rotation = ConvertQuaternion(inRotation);
 
     JPH::CollideShapeSettings settings;
 
@@ -826,143 +827,141 @@ void PhysicsInterface::CollideCylinder(Float3 const& position, float halfHeightO
     settings.mMaxSeparationDistance = 0.0f;
 
     // How backfacing triangles should be treated
-    settings.mBackFaceMode = filter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
+    settings.mBackFaceMode = inFilter.bIgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
 
     JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
 
-    // inBaseOffset All hit results will be returned relative to this offset, can be zero to get results in world position,
+    // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 baseOffset = pos;
+    JPH::RVec3 base_offset = pos;
 
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&cylinderShape,
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollideShape(&shape,
                                                        JPH::Vec3::sReplicate(1.0f),
                                                        JPH::RMat44::sRotationTranslation(rotation, pos),
                                                        settings,
-                                                       baseOffset,
+                                                       base_offset,
                                                        collector,
-                                                       BroadphaseLayerFilter(filter.BroadphaseLayerMask.Get()));
+                                                       BroadphaseLayerFilter(inFilter.BroadphaseLayerMask.Get()));
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        if (filter.bSortByDistance)
+        if (inFilter.bSortByDistance)
             collector.Sort();
 
-        CopyShapeCollideResult(result, collector.mHits);
+        CopyShapeCollideResult(outResult, collector.mHits);
     }
 }
 
-void PhysicsInterface::CollidePoint(Float3 const& point, TVector<PhysBodyID>& result, BroadphaseLayer::Mask broadphaseLayrs)
+void PhysicsInterface::CollidePoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, BroadphaseLayer::Mask inBroadphaseLayrs)
 {
     JPH::AllHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(point), collector, BroadphaseLayerFilter(broadphaseLayrs.Get())
+    m_PhysicsSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayrs.Get())
                                                        /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
 
-    result.Clear();
+    outResult.Clear();
     if (collector.HadHit())
     {
-        result.Reserve(collector.mHits.size());
+        outResult.Reserve(collector.mHits.size());
         for (JPH::CollidePointResult const& hit : collector.mHits)
-            result.Add(hit.mBodyID);
+            outResult.Add(hit.mBodyID);
     }
 }
 
-auto PhysicsInterface::GetEntity(PhysBodyID const& bodyID) -> ECS::EntityHandle
+auto PhysicsInterface::GetEntity(PhysBodyID const& inBodyID) -> ECS::EntityHandle
 {
-    return ECS::EntityHandle(m_PhysicsSystem.GetBodyInterface().GetUserData(bodyID));
+    return ECS::EntityHandle(m_PhysicsSystem.GetBodyInterface().GetUserData(inBodyID));
 }
 
-auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle entityHandle) -> PhysBodyID
+auto PhysicsInterface::GetPhysBodyID(ECS::EntityHandle inEntityHandle) -> PhysBodyID
 {
-    ECS::EntityView entityView = m_World->GetEntityView(entityHandle);
+    ECS::EntityView entity_view = m_World->GetEntityView(inEntityHandle);
 
-    if (auto body = entityView.GetComponent<RigidBodyComponent>())
+    if (auto body = entity_view.GetComponent<RigidBodyComponent>())
     {
         return body->GetBodyId();
     }
-    if (auto heightfield = entityView.GetComponent<HeightFieldComponent>())
+    if (auto heightfield = entity_view.GetComponent<HeightFieldComponent>())
     {
         return heightfield->GetBodyId();
     }
-    //if (auto character = entityView.GetComponent<CharacterControllerComponent>())
+    //if (auto character = entity_view.GetComponent<CharacterControllerComponent>())
     //{
     //    return character->GetBodyId();
     //}
     return {};
 }
 
-ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer, RigidBodyDesc const& desc)
+ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& inCB, RigidBodyDesc const& inDesc)
 {
-    JPH::EMotionType motionType{JPH::EMotionType::Static};
-    switch (desc.MotionBehavior)
+    JPH::EMotionType motion_type{JPH::EMotionType::Static};
+    switch (inDesc.MotionBehavior)
     {
         case MB_STATIC:
-            motionType = JPH::EMotionType::Static;
+            motion_type = JPH::EMotionType::Static;
             break;
         case MB_DYNAMIC:
-            motionType = JPH::EMotionType::Dynamic;
+            motion_type = JPH::EMotionType::Dynamic;
             break;
         case MB_KINEMATIC:
-            motionType = JPH::EMotionType::Kinematic;
+            motion_type = JPH::EMotionType::Kinematic;
             break;
     }
 
-    if (desc.bIsTrigger && motionType == JPH::EMotionType::Dynamic)
+    if (inDesc.bIsTrigger && motion_type == JPH::EMotionType::Dynamic)
     {
         LOG("WARNING: Triggers can only have STATIC or KINEMATIC motion behavior but set to DYNAMIC.\n");
-        motionType = JPH::EMotionType::Static;
+        motion_type = JPH::EMotionType::Static;
     }
 
-    JPH::uint8 broadphase;
-    if (desc.bIsTrigger)
+    uint8_t broadphase;
+    if (inDesc.bIsTrigger)
         broadphase = BroadphaseLayer::SENSOR;
-    else if (motionType == JPH::EMotionType::Static)
+    else if (motion_type == JPH::EMotionType::Static)
         broadphase = BroadphaseLayer::NON_MOVING;
     else
         broadphase = BroadphaseLayer::MOVING;    
 
-    SceneNodeDesc nodeDesc;
+    SceneNodeDesc nd;
+    nd.Parent = inDesc.Parent;
+    nd.Position = inDesc.Position;
+    nd.Rotation = inDesc.Rotation;
+    nd.Scale = inDesc.Scale;
+    nd.NodeFlags = motion_type != JPH::EMotionType::Dynamic ? inDesc.NodeFlags : SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
+    nd.bMovable = motion_type != JPH::EMotionType::Static;
+    nd.bTransformInterpolation = inDesc.bTransformInterpolation;
 
-    nodeDesc.Parent = desc.Parent;
-    nodeDesc.Position = desc.Position;
-    nodeDesc.Rotation = desc.Rotation;
-    nodeDesc.Scale = desc.Scale;
-    nodeDesc.NodeFlags = motionType != JPH::EMotionType::Dynamic ? desc.NodeFlags : SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
-    nodeDesc.bMovable = motionType != JPH::EMotionType::Static;
-    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
+    ECS::EntityHandle entity = CreateSceneNode(inCB, nd);
 
-    ECS::EntityHandle entityHandle = CreateSceneNode(commandBuffer, nodeDesc);
+    CollisionModel* model = inDesc.Model;
 
-    CollisionModel* collisionModel = desc.Model;
+    JPH::BodyCreationSettings settings(model->Instatiate(Float3(1)), JPH::Vec3::sZero(), JPH::Quat::sIdentity(), motion_type, MakeObjectLayer(inDesc.CollisionGroup, broadphase));
+    settings.mLinearVelocity = ConvertVector(inDesc.Dynamic.LinearVelocity);
+    settings.mAngularVelocity = ConvertVector(inDesc.Dynamic.AngularVelocity);
+    settings.mUserData = entity;
+    settings.mIsSensor = inDesc.bIsTrigger;
+    settings.mMotionQuality = inDesc.MotionQuality == MQ_DISCRETE ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast;
+    settings.mAllowSleeping = inDesc.bAllowSleeping;
+    settings.mFriction = inDesc.Friction;
+    settings.mRestitution = inDesc.Restitution;
+    settings.mLinearDamping = inDesc.Dynamic.LinearDamping;
+    settings.mAngularDamping = inDesc.Dynamic.AngularDamping;
+    settings.mMaxLinearVelocity = inDesc.Dynamic.MaxLinearVelocity;
+    settings.mMaxAngularVelocity = inDesc.Dynamic.MaxAngularVelocity;
+    settings.mGravityFactor = inDesc.Dynamic.GravityFactor;
 
-    JPH::BodyCreationSettings settings(collisionModel->Instatiate(Float3(1)), JPH::Vec3::sZero(), JPH::Quat::sIdentity(), motionType, MakeObjectLayer(desc.CollisionGroup, broadphase));
-
-    settings.mLinearVelocity = ConvertVector(desc.Dynamic.LinearVelocity);
-    settings.mAngularVelocity = ConvertVector(desc.Dynamic.AngularVelocity);
-    settings.mUserData = entityHandle;
-    settings.mIsSensor = desc.bIsTrigger;
-    settings.mMotionQuality = desc.MotionQuality == MQ_DISCRETE ? JPH::EMotionQuality::Discrete : JPH::EMotionQuality::LinearCast;
-    settings.mAllowSleeping = desc.bAllowSleeping;
-    settings.mFriction = desc.Friction;
-    settings.mRestitution = desc.Restitution;
-    settings.mLinearDamping = desc.Dynamic.LinearDamping;
-    settings.mAngularDamping = desc.Dynamic.AngularDamping;
-    settings.mMaxLinearVelocity = desc.Dynamic.MaxLinearVelocity;
-    settings.mMaxAngularVelocity = desc.Dynamic.MaxAngularVelocity;
-    settings.mGravityFactor = desc.Dynamic.GravityFactor;
-
-    if (desc.Dynamic.bCalculateInertia)
+    if (inDesc.Dynamic.bCalculateInertia)
     {
         settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-        settings.mInertiaMultiplier = desc.Dynamic.InertiaMultiplier;
+        settings.mInertiaMultiplier = inDesc.Dynamic.InertiaMultiplier;
     }
     else
     {
         settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
-        settings.mMassPropertiesOverride.mInertia = ConvertMatrix(desc.Dynamic.Inertia);
+        settings.mMassPropertiesOverride.mInertia = ConvertMatrix(inDesc.Dynamic.Inertia);
     }
-    settings.mMassPropertiesOverride.mMass = desc.Dynamic.Mass;
+    settings.mMassPropertiesOverride.mMass = inDesc.Dynamic.Mass;
 
     JPH::Body* body = m_PhysicsSystem.GetBodyInterface().CreateBody(settings);
     if (body)
@@ -970,62 +969,62 @@ ECS::EntityHandle PhysicsInterface::CreateBody(ECS::CommandBuffer& commandBuffer
         {
             SpinLockGuard lock(m_PendingBodiesMutex);
 
-            HK_ASSERT(m_PendingBodies.Count(entityHandle) == 0);
-            m_PendingBodies[entityHandle] = body->GetID();
+            HK_ASSERT(m_PendingBodies.Count(entity) == 0);
+            m_PendingBodies[entity] = body->GetID();
         }
 
-        switch (motionType)
+        switch (motion_type)
         {
             case JPH::EMotionType::Static:
-                commandBuffer.AddComponent<StaticBodyComponent>(entityHandle);
+                inCB.AddComponent<StaticBodyComponent>(entity);
                 break;
             case JPH::EMotionType::Dynamic:
-                commandBuffer.AddComponent<DynamicBodyComponent>(entityHandle);
+                inCB.AddComponent<DynamicBodyComponent>(entity);
                 break;
             case JPH::EMotionType::Kinematic:
-                commandBuffer.AddComponent<KinematicBodyComponent>(entityHandle);
+                inCB.AddComponent<KinematicBodyComponent>(entity);
                 break;
         }
 
-        if (desc.bIsTrigger)
-            commandBuffer.AddComponent<TriggerComponent>(entityHandle, desc.TriggerClass);
+        if (inDesc.bIsTrigger)
+            inCB.AddComponent<TriggerComponent>(entity, inDesc.TriggerClass);
 
-        commandBuffer.AddComponent<RigidBodyComponent>(entityHandle, desc.Model, body->GetID());
+        inCB.AddComponent<RigidBodyComponent>(entity, model, body->GetID());
 
-        if (desc.bAllowRigidBodyScaling)
+        if (inDesc.bAllowRigidBodyScaling)
         {
-            auto& scaling = commandBuffer.AddComponent<RigidBodyDynamicScaling>(entityHandle);
-            scaling.CachedScale = desc.Scale;
+            auto& scaling = inCB.AddComponent<RigidBodyDynamicScaling>(entity);
+            scaling.CachedScale = inDesc.Scale;
         }
     }
     else
     {
-        LOG("Couldn't create rigid body for the entity\n");
+        LOG("Couldn't create body for the entity\n");
     }
 
-    return entityHandle;
+    return entity;
 }
 
-ECS::EntityHandle PhysicsInterface::CreateHeightField(ECS::CommandBuffer& commandBuffer, HeightFieldDesc const& desc)
+ECS::EntityHandle PhysicsInterface::CreateHeightField(ECS::CommandBuffer& inCB, HeightFieldDesc const& inDesc)
 {
     auto& body_interface = m_PhysicsSystem.GetBodyInterface();
 
-    SceneNodeDesc node_desc;
-    node_desc.Parent = desc.Parent;
-    node_desc.Position = desc.Position;
-    node_desc.Rotation = desc.Rotation;
-    node_desc.bMovable = false;
-    node_desc.bTransformInterpolation = false;
+    SceneNodeDesc nd;
+    nd.Parent = inDesc.Parent;
+    nd.Position = inDesc.Position;
+    nd.Rotation = inDesc.Rotation;
+    nd.bMovable = false;
+    nd.bTransformInterpolation = false;
 
-    ECS::EntityHandle entity = CreateSceneNode(commandBuffer, node_desc);
+    ECS::EntityHandle entity = CreateSceneNode(inCB, nd);
 
-    TerrainCollision* cm = desc.Model;
+    TerrainCollision* model = inDesc.Model;
 
-    auto settings = JPH::BodyCreationSettings(cm->Instatiate(),
+    auto settings = JPH::BodyCreationSettings(model->Instatiate(),
                                               JPH::Vec3::sZero(),
                                               JPH::Quat::sIdentity(),
                                               JPH::EMotionType::Static,
-                                              MakeObjectLayer(desc.CollisionGroup, BroadphaseLayer::NON_MOVING));
+                                              MakeObjectLayer(inDesc.CollisionGroup, BroadphaseLayer::NON_MOVING));
     settings.mUserData = entity;
     
     JPH::Body* body = body_interface.CreateBody(settings);
@@ -1038,32 +1037,149 @@ ECS::EntityHandle PhysicsInterface::CreateHeightField(ECS::CommandBuffer& comman
             m_PendingBodies[entity] = body->GetID();
         }
 
-        commandBuffer.AddComponent<HeightFieldComponent>(entity, desc.Model, body->GetID());
+        inCB.AddComponent<HeightFieldComponent>(entity, inDesc.Model, body->GetID());
     }
     else
     {
-        LOG("Couldn't create height field for the entity\n");
+        LOG("Couldn't create body for the entity\n");
     }
 
     return entity;
 }
 
-
-ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer& commandBuffer, CharacterControllerDesc const& desc)
+class CharacterControllerImpl : public JPH::CharacterVirtual, public JPH::CharacterContactListener
 {
-    SceneNodeDesc nodeDesc;
+public:
+    JPH_OVERRIDE_NEW_DELETE
 
-    nodeDesc.Position = desc.Position;
-    nodeDesc.Rotation = desc.Rotation;
-    nodeDesc.NodeFlags = SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
-    nodeDesc.bMovable = true;
-    nodeDesc.bTransformInterpolation = desc.bTransformInterpolation;
+    CharacterControllerImpl(ECS::World* inWorld, ECS::EntityHandle inEntity, const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem) :
+        JPH::CharacterVirtual(inSettings, inPosition, inRotation, inSystem),
+        m_World(inWorld),
+        m_Entity(inEntity)
+    {
+        SetListener(this);
+    }
 
-    ECS::EntityHandle handle = CreateSceneNode(commandBuffer, nodeDesc);
+    // Called whenever the character collides with a body. Returns true if the contact can push the character.
+    void OnContactAdded(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings)
+    {
+        //LOG("CharacterControllerSystem::OnContactAdded {}\n", inBodyID2.GetIndexAndSequenceNumber());
 
-    commandBuffer.AddComponent<CharacterControllerComponent>(handle);
+        ECS::EntityView view = m_World->GetEntityView(m_Entity);
 
-    return handle;
+        CharacterControllerComponent* component = view.GetComponent<CharacterControllerComponent>();
+        if (component)
+        {
+#if 0
+        // Dynamic boxes on the ramp go through all permutations
+        JPH::Array<JPH::BodyID>::const_iterator i = std::find(mRampBlocks.begin(), mRampBlocks.end(), inBodyID2);
+        if (i != mRampBlocks.end())
+        {
+            size_t index = i - mRampBlocks.begin();
+            ioSettings.mCanPushCharacter = (index & 1) != 0;
+            ioSettings.mCanReceiveImpulses = (index & 2) != 0;
+        }
+#endif
+            // If we encounter an object that can push us, enable sliding
+            if (ioSettings.mCanPushCharacter && mSystem->GetBodyInterface().GetMotionType(inBodyID2) != JPH::EMotionType::Static)
+                component->m_bAllowSliding = true;
+        }
+    }
+
+    // Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
+    void OnContactSolve(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
+    {
+        ECS::EntityView view = m_World->GetEntityView(m_Entity);
+
+        CharacterControllerComponent* component = view.GetComponent<CharacterControllerComponent>();
+        if (component)
+        {
+            // Don't allow the player to slide down static not-too-steep surfaces when not actively moving and when not on a moving platform
+            if (!component->m_bAllowSliding && inContactVelocity.IsNearZero() && !IsSlopeTooSteep(inContactNormal))
+                ioNewCharacterVelocity = JPH::Vec3::sZero();
+        }
+    }
+
+private:
+    ECS::World* m_World;
+    ECS::EntityHandle m_Entity;
+};
+
+ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer& inCB, CharacterControllerDesc const& inDesc)
+{
+    auto& body_interface = m_PhysicsSystem.GetBodyInterface();
+
+    SceneNodeDesc nd;
+    nd.Position = inDesc.Position;
+    nd.Rotation = inDesc.Rotation;
+    nd.NodeFlags = SCENE_NODE_ABSOLUTE_POSITION | SCENE_NODE_ABSOLUTE_ROTATION | SCENE_NODE_ABSOLUTE_SCALE;
+    nd.bMovable = true;
+    nd.bTransformInterpolation = inDesc.bTransformInterpolation;
+
+    ECS::EntityHandle entity = CreateSceneNode(inCB, nd);
+
+    // Create capsule shapes for all stances
+    //switch (inDesc.ShapeType)
+    //{
+    //case CHARACTER_SHAPE_CAPSULE:
+    //standing_shape= JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightStanding, inDesc.RadiusStanding)).Create().Get();
+    //crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightCrouching, inDesc.RadiusCrouching)).Create().Get();
+    //        break;
+
+    //case CHARACTER_SHAPE_CYLINDER:
+    auto standing_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, inDesc.RadiusStanding)).Create().Get();
+    auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, inDesc.RadiusCrouching)).Create().Get();
+    //    break;
+
+    //case CHARACTER_SHAPE_BOX:
+    //    mStandingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * cCharacterHeightStanding + cCharacterRadiusStanding, 0), JPH::Quat::sIdentity(), new BoxShape(Vec3(cCharacterRadiusStanding, 0.5f * cCharacterHeightStanding + cCharacterRadiusStanding, cCharacterRadiusStanding))).Create().Get();
+    //    mCrouchingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * cCharacterHeightCrouching + cCharacterRadiusCrouching, 0), JPH::Quat::sIdentity(), new BoxShape(Vec3(cCharacterRadiusCrouching, 0.5f * cCharacterHeightCrouching + cCharacterRadiusCrouching, cCharacterRadiusCrouching))).Create().Get();
+    //    break;
+    //}
+
+    auto position = ConvertVector(inDesc.Position);
+    auto rotation = ConvertQuaternion(inDesc.Rotation);
+
+    auto body_settings = JPH::BodyCreationSettings(standing_shape,
+                                                   position,
+                                                   rotation,
+                                                   JPH::EMotionType::Kinematic,
+                                                   MakeObjectLayer(inDesc.CollisionGroup, BroadphaseLayer::CHARACTER_PROXY));    
+    body_settings.mUserData = entity;
+    //body_settings.mCollisionGroup.SetGroupID(groupId);
+    //body_settings.mCollisionGroup.SetGroupFilter(GetGroupFilter());
+
+    JPH::Body* body = body_interface.CreateBody(body_settings);
+    if (body)
+    {
+        {
+            SpinLockGuard lock(m_PendingBodiesMutex);
+
+            HK_ASSERT(m_PendingBodies.Count(entity) == 0);
+            m_PendingBodies[entity] = body->GetID();
+        }
+
+        auto& character = inCB.AddComponent<CharacterControllerComponent>(entity, body->GetID(), inDesc.CollisionGroup);
+
+        JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
+        settings->mMaxSlopeAngle = inDesc.MaxSlopeAngle;
+        settings->mMaxStrength = inDesc.MaxStrength;
+        settings->mShape = standing_shape;
+        settings->mCharacterPadding = inDesc.CharacterPadding;
+        settings->mPenetrationRecoverySpeed = inDesc.PenetrationRecoverySpeed;
+        settings->mPredictiveContactDistance = inDesc.PredictiveContactDistance;
+        settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -inDesc.RadiusStanding); // Accept contacts that touch the lower sphere of the capsule
+
+        character.m_pCharacter = new CharacterControllerImpl(m_World, entity, settings, position, rotation, &m_PhysicsSystem);
+        character.m_StandingShape = standing_shape;
+        character.m_CrouchingShape = crouching_shape;
+    }
+    else
+    {
+        LOG("Couldn't create body for the entity\n");
+    }
+
+    return entity;
 }
 
 void PhysicsInterface::ActivateBody(PhysBodyID const& inBodyID)
@@ -1140,11 +1256,11 @@ void PhysicsInterface::SetLinearAndAngularVelocity(PhysBodyID const& inBodyID, F
 }
 void PhysicsInterface::GetLinearAndAngularVelocity(PhysBodyID const& inBodyID, Float3& outLinearVelocity, Float3& outAngularVelocity) const
 {
-    JPH::Vec3 linearVel;
-    JPH::Vec3 angularVel;
-    m_PhysicsSystem.GetBodyInterface().GetLinearAndAngularVelocity(inBodyID, linearVel, angularVel);
-    outLinearVelocity = ConvertVector(linearVel);
-    outAngularVelocity = ConvertVector(angularVel);
+    JPH::Vec3 linear_vel;
+    JPH::Vec3 angular_vel;
+    m_PhysicsSystem.GetBodyInterface().GetLinearAndAngularVelocity(inBodyID, linear_vel, angular_vel);
+    outLinearVelocity = ConvertVector(linear_vel);
+    outAngularVelocity = ConvertVector(angular_vel);
 }
 void PhysicsInterface::SetLinearVelocity(PhysBodyID const& inBodyID, Float3 const& inLinearVelocity)
 {
@@ -1254,6 +1370,14 @@ void PhysicsInterface::SetGravityFactor(PhysBodyID const& inBodyID, float inGrav
 auto PhysicsInterface::GetGravityFactor(PhysBodyID const& inBodyID) const -> float
 {
     return m_PhysicsSystem.GetBodyInterface().GetGravityFactor(inBodyID);
+}
+void PhysicsInterface::SetGravity(Float3 const inGravity)
+{
+    return m_PhysicsSystem.SetGravity(ConvertVector(inGravity));
+}
+Float3 PhysicsInterface::GetGravity() const
+{
+    return ConvertVector(m_PhysicsSystem.GetGravity());
 }
 
 HK_NAMESPACE_END

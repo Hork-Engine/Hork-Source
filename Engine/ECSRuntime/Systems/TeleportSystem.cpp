@@ -39,7 +39,7 @@ void TeleportSystem::Update(GameFrame const& frame)
                 characterController[i].m_pCharacter->SetPosition(position);
                 characterController[i].m_pCharacter->SetRotation(rotation);
 
-                bodyInterface.SetPositionAndRotation(characterController[i].m_BodyId, position, rotation, JPH::EActivation::Activate);
+                bodyInterface.SetPositionAndRotation(characterController[i].GetBodyId(), position, rotation, JPH::EActivation::Activate);
 
                 // This will disable interpolation between frames while teleporting.
                 worldTransform[i].Position[frame.PrevStateIndex] = teleport[i].DestPosition;

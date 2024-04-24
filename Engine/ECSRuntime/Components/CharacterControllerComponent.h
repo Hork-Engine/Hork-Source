@@ -12,37 +12,40 @@ HK_NAMESPACE_BEGIN
 
 struct CharacterControllerComponent
 {
-    CharacterControllerComponent() = default;
+    CharacterControllerComponent(PhysBodyID inBodyID, uint8_t inCollisionGroup) :
+        m_BodyId(inBodyID),
+        m_CollisionGroup(inCollisionGroup)
+    {}
 
     PhysBodyID const& GetBodyId() const
     {
         return m_BodyId;
     }
 
+    uint8_t GetCollisionGroup() const
+    {
+        return m_CollisionGroup;
+    }
+
     Float3 MovementDirection;
     Float3 DesiredVelocity;
     bool Jump = false;
 
-    float AttackTime{};
+    float MoveSpeed = 2;
+    float JumpSpeed = 4.0f;
 
-    uint8_t m_CollisionGroup = CollisionGroup::CHARACTER;
+    bool EnableWalkStairs = true;
+    bool EnableStickToFloor = true;
 
-    float cCharacterHeightStanding = 1.35f;
-    float cCharacterRadiusStanding = 0.3f;
-    float cCharacterHeightCrouching = 0.8f;
-    float cCharacterRadiusCrouching = 0.3f;
-    float cCharacterSpeed = 2; // walk
-    //float cCharacterSpeed = 4; // run
-    float cJumpSpeed = 4.0f;
-
-    bool m_bAllowSliding = false;
-
+    // Internal
     JPH::CharacterVirtual* m_pCharacter{};
-    //JPH::Character* m_pCharacter2{};
     JPH::RefConst<JPH::Shape> m_StandingShape;
     JPH::RefConst<JPH::Shape> m_CrouchingShape;
+    bool m_bAllowSliding = false;
 
+private:
     PhysBodyID m_BodyId;
+    uint8_t m_CollisionGroup = CollisionGroup::CHARACTER;
 };
 
 HK_NAMESPACE_END

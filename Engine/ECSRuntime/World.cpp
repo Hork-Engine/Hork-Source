@@ -126,6 +126,8 @@ void World::Tick(float timeStep)
         // Recalc world transform
         m_TransformSystem->Update(m_Frame);
 
+        m_PhysicsSystem->AddAndRemoveBodies(m_Frame);
+
         // Update character controller
         m_CharacterControllerSystem->Update(m_Frame);
 

@@ -26,6 +26,7 @@ HK_NAMESPACE_END
 #include "../GameEvents.h"
 #include "../Events/TriggerEvent.h"
 #include "../Components/RigidBodyComponent.h"
+#include "../Components/CharacterControllerComponent.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -42,7 +43,12 @@ public:
 
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<HeightFieldComponent> const& event);
     void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<HeightFieldComponent> const& event);
+
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<CharacterControllerComponent> const& event);
+    void HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<CharacterControllerComponent> const& event);
     
+    void AddAndRemoveBodies(struct GameFrame const& frame);
+
     void Update(struct GameFrame const& frame);
 
     void DrawDebug(DebugRenderer& renderer) override;
@@ -57,8 +63,6 @@ private:
 
     void AddBody(ECS::EntityHandle entity);
     void RemoveBody(ECS::EntityHandle entity, PhysBodyID bodyID);
-
-    void AddAndRemoveBodies(GameFrame const& frame);
 
     void UpdateScaling(GameFrame const& frame);
     void UpdateKinematicBodies(GameFrame const& frame);
@@ -79,30 +83,30 @@ private:
     // Structure that keeps track of how many contact point each body has with the sensor
     struct BodyReference
     {
-        JPH::BodyID mBodyID;
-        int mCount;
+        JPH::BodyID BodyID;
+        int Count;
 
-        bool operator<(const BodyReference& inRHS) const { return mBodyID < inRHS.mBodyID; }
+        bool operator<(const BodyReference& inRHS) const { return BodyID < inRHS.BodyID; }
     };
 
     struct BodyAndCount
     {
-        JPH::BodyID mBodyID;
-        ECS::EntityHandle mEntity;
-        int mCount;
+        JPH::BodyID BodyID;
+        ECS::EntityHandle Entity;
+        int Count;
 
-        bool operator<(const BodyAndCount& inRHS) const { return mBodyID < inRHS.mBodyID; }
+        bool operator<(const BodyAndCount& inRHS) const { return BodyID < inRHS.BodyID; }
     };
 
     using BodiesInSensor = JPH::Array<BodyAndCount>;
 
     struct Trigger
     {
-        JPH::BodyID mBodyID;
-        ECS::EntityHandle mEntity;
+        JPH::BodyID BodyID;
+        ECS::EntityHandle Entity;
         ECS::ComponentTypeId TriggerClass;
 
-        BodiesInSensor mBodiesInSensor;
+        BodiesInSensor Bodies;
     };
 
     THashMap<JPH::BodyID, Trigger> m_Triggers;
@@ -110,15 +114,15 @@ private:
     TVector<BodyReference> m_BodiesInSensors;
     TVector<JPH::BodyID> m_IdBodiesInSensors;
 
-    void AddBodyReference(JPH::BodyID const& bodyId);
-    void RemoveBodyReference(JPH::BodyID const& bodyId);
+    void AddBodyReference(JPH::BodyID const& inBodyID);
+    void RemoveBodyReference(JPH::BodyID const& inBodyID);
 
     Trigger* GetTriggerBody(const JPH::BodyID& inBody1, const JPH::BodyID& inBody2);
 
     TVector<Float3> m_DebugDrawVertices;
     TVector<unsigned int> m_DebugDrawIndices;
 
-    JPH::Mutex mMutex; // Mutex that protects mBodiesInSensor
+    JPH::Mutex m_Mutex; // Mutex that protects m_BodiesInSensor
 };
 
 HK_NAMESPACE_END

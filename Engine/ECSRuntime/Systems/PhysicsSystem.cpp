@@ -1,7 +1,6 @@
 ﻿#include "PhysicsSystem.h"
 #include "../GameFrame.h"
 #include "../Utils.h"
-#include "../CollisionModel.h"
 #include "../World.h"
 
 #include "../Components/TransformComponent.h"
@@ -9,15 +8,6 @@
 #include "../Components/MovableTag.h"
 
 #include <Jolt/Core/JobSystemThreadPool.h>
-
-// TODO: remove unused includes:
-#include <Jolt/Physics/Collision/CastResult.h>
-#include <Jolt/Physics/Collision/CollidePointResult.h>
-#include <Jolt/Physics/Collision/AABoxCast.h>
-#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
-#include <Jolt/Physics/Collision/NarrowPhaseStats.h>
-#include <Jolt/Physics/Constraints/DistanceConstraint.h>
-#include <Jolt/Physics/Constraints/PulleyConstraint.h>
 
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Runtime/PhysicsModule.h>
@@ -52,6 +42,8 @@ PhysicsSystem::PhysicsSystem(World* world, GameEvents* gameEvents) :
     world->AddEventHandler<ECS::Event::OnComponentRemoved<RigidBodyComponent>>(this);
     world->AddEventHandler<ECS::Event::OnComponentAdded<HeightFieldComponent>>(this);
     world->AddEventHandler<ECS::Event::OnComponentRemoved<HeightFieldComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentAdded<CharacterControllerComponent>>(this);
+    world->AddEventHandler<ECS::Event::OnComponentRemoved<CharacterControllerComponent>>(this);
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -127,6 +119,16 @@ void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemove
     RemoveBody(event.GetEntity(), event.Component().GetBodyId());
 }
 
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentAdded<CharacterControllerComponent> const& event)
+{
+    AddBody(event.GetEntity());
+}
+
+void PhysicsSystem::HandleEvent(ECS::World* world, ECS::Event::OnComponentRemoved<CharacterControllerComponent> const& event)
+{
+    RemoveBody(event.GetEntity(), event.Component().GetBodyId());
+}
+
 JPH::ValidateResult PhysicsSystem::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
 {
     //LOG("Contact validate callback\n");
@@ -148,32 +150,32 @@ PhysicsSystem::Trigger* PhysicsSystem::GetTriggerBody(const JPH::BodyID& inBody1
     return nullptr;
 }
 
-void PhysicsSystem::AddBodyReference(JPH::BodyID const& bodyId)
+void PhysicsSystem::AddBodyReference(JPH::BodyID const& inBodyID)
 {
     // Add to list and make sure that the list remains sorted for determinism (contacts can be added from multiple threads)
-    BodyReference bodyRef{bodyId, 1};
+    BodyReference bodyRef{inBodyID, 1};
     auto b = std::lower_bound(m_BodiesInSensors.begin(), m_BodiesInSensors.end(), bodyRef);
-    if (b != m_BodiesInSensors.end() && b->mBodyID == bodyId)
+    if (b != m_BodiesInSensors.end() && b->BodyID == inBodyID)
     {
         // This is the right body, increment reference
-        b->mCount++;
+        b->Count++;
         return;
     }
     m_BodiesInSensors.Insert(b, bodyRef);
 }
 
-void PhysicsSystem::RemoveBodyReference(JPH::BodyID const& bodyId)
+void PhysicsSystem::RemoveBodyReference(JPH::BodyID const& inBodyID)
 {
-    BodyReference bodyRef{bodyId, 1};
+    BodyReference bodyRef{inBodyID, 1};
     auto b = std::lower_bound(m_BodiesInSensors.begin(), m_BodiesInSensors.end(), bodyRef);
-    if (b != m_BodiesInSensors.end() && b->mBodyID == bodyId)
+    if (b != m_BodiesInSensors.end() && b->BodyID == inBodyID)
     {
         // This is the right body, increment reference
-        HK_ASSERT(b->mCount > 0);
-        b->mCount--;
+        HK_ASSERT(b->Count > 0);
+        b->Count--;
 
         // When last reference remove from the list
-        if (b->mCount == 0)
+        if (b->Count == 0)
         {
             m_BodiesInSensors.Erase(b);
         }
@@ -187,23 +189,23 @@ void PhysicsSystem::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& in
     if (!trigger)
         return;
 
-    JPH::BodyID body_id = trigger->mBodyID == inBody1.GetID() ? inBody2.GetID() : inBody1.GetID();
+    JPH::BodyID body_id = trigger->BodyID == inBody1.GetID() ? inBody2.GetID() : inBody1.GetID();
 
-    ECS::EntityHandle bodyEntity = trigger->mBodyID == inBody1.GetID() ? ECS::EntityHandle(inBody2.GetUserData()) : ECS::EntityHandle(inBody1.GetUserData());
+    ECS::EntityHandle body_entity = trigger->BodyID == inBody1.GetID() ? ECS::EntityHandle(inBody2.GetUserData()) : ECS::EntityHandle(inBody1.GetUserData());
 
-    std::lock_guard lock(mMutex);
+    std::lock_guard lock(m_Mutex);
 
     // Make list of unique IDs
     AddBodyReference(body_id);
 
     // Add to list and make sure that the list remains sorted for determinism (contacts can be added from multiple threads)
-    BodyAndCount body_and_count{body_id, bodyEntity, 1};
-    BodiesInSensor& bodies_in_sensor = trigger->mBodiesInSensor;
+    BodyAndCount body_and_count{body_id, body_entity, 1};
+    BodiesInSensor& bodies_in_sensor = trigger->Bodies;
     BodiesInSensor::iterator b = lower_bound(bodies_in_sensor.begin(), bodies_in_sensor.end(), body_and_count);
-    if (b != bodies_in_sensor.end() && b->mBodyID == body_id)
+    if (b != bodies_in_sensor.end() && b->BodyID == body_id)
     {
         // This is the right body, increment reference
-        b->mCount++;
+        b->Count++;
         return;
     }
     bodies_in_sensor.insert(b, body_and_count);
@@ -211,8 +213,8 @@ void PhysicsSystem::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& in
     TriggerEvent& event = m_GameEvents->AddEvent<TriggerEvent>();
     event.Type = TRIGGER_EVENT_BEGIN_OVERLAP;
     event.TriggerClass = trigger->TriggerClass;
-    event.TriggerId = trigger->mEntity;
-    event.BodyId = bodyEntity;
+    event.Trigger = trigger->Entity;
+    event.Other = body_entity;
     event.NumEntitiesInTrigger = bodies_in_sensor.size();
 }
 
@@ -227,34 +229,34 @@ void PhysicsSystem::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
     if (!trigger)
         return;
 
-    JPH::BodyID body_id = trigger->mBodyID == inSubShapePair.GetBody1ID() ? inSubShapePair.GetBody2ID() : inSubShapePair.GetBody1ID();
+    JPH::BodyID body_id = trigger->BodyID == inSubShapePair.GetBody1ID() ? inSubShapePair.GetBody2ID() : inSubShapePair.GetBody1ID();
 
-    std::lock_guard lock(mMutex);
+    std::lock_guard lock(m_Mutex);
 
     // Remove list of unique IDs
     RemoveBodyReference(body_id);
 
     // Remove from list
     BodyAndCount body_and_count{body_id, 0, 1};
-    BodiesInSensor& bodies_in_sensor = trigger->mBodiesInSensor;
+    BodiesInSensor& bodies_in_sensor = trigger->Bodies;
     BodiesInSensor::iterator b = lower_bound(bodies_in_sensor.begin(), bodies_in_sensor.end(), body_and_count);
-    if (b != bodies_in_sensor.end() && b->mBodyID == body_id)
+    if (b != bodies_in_sensor.end() && b->BodyID == body_id)
     {
         // This is the right body, increment reference
-        HK_ASSERT(b->mCount > 0);
-        b->mCount--;
+        HK_ASSERT(b->Count > 0);
+        b->Count--;
 
         // When last reference remove from the list
-        if (b->mCount == 0)
+        if (b->Count == 0)
         {
             TriggerEvent& event = m_GameEvents->AddEvent<TriggerEvent>();
             event.Type = TRIGGER_EVENT_END_OVERLAP;
             event.TriggerClass = trigger->TriggerClass;
-            event.TriggerId = trigger->mEntity;
-            event.BodyId = b->mEntity;
+            event.Trigger = trigger->Entity;
+            event.Other = b->Entity;
             event.NumEntitiesInTrigger = bodies_in_sensor.size() - 1;
 
-            ECS::EntityView triggerView = m_World->GetEntityView(event.TriggerId);
+            ECS::EntityView triggerView = m_World->GetEntityView(event.Trigger);
 
             TriggerComponent* triggerComponent = triggerView.GetComponent<TriggerComponent>();
             event.TriggerClass = triggerComponent ? triggerComponent->TriggerClass : ECS::ComponentTypeId(-1);
@@ -288,8 +290,15 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
             if (it != m_Triggers.End())
                 m_Triggers.Erase(it);
 
-            // TODO: find if body in sensors, remove it from m_BodiesInSensors
-            //m_BodiesInSensors.Find()
+            {
+                std::lock_guard lock(m_Mutex);
+                BodyReference bodyRef{body, 1};
+                auto b = std::lower_bound(m_BodiesInSensors.begin(), m_BodiesInSensors.end(), bodyRef);
+                if (b != m_BodiesInSensors.end() && b->BodyID == body)
+                {
+                    m_BodiesInSensors.Erase(b);
+                }
+            }
         }
 
         body_interface.RemoveBodies(m_PendingDestroyBodies.ToPtr(), m_PendingDestroyBodies.Size());
@@ -302,55 +311,53 @@ void PhysicsSystem::AddAndRemoveBodies(GameFrame const& frame)
     {
         for (auto entity : m_PendingAddBodies)
         {
-            ECS::EntityView entityView = m_World->GetEntityView(entity);
+            ECS::EntityView entity_view = m_World->GetEntityView(entity);
 
-            WorldTransformComponent* worldTransform = entityView.GetComponent<WorldTransformComponent>();
+            WorldTransformComponent* world_transform = entity_view.GetComponent<WorldTransformComponent>();
 
-            auto scale = worldTransform ? worldTransform->Scale[frame.StateIndex] : Float3(1.0f);
-            auto position = worldTransform ? ConvertVector(worldTransform->Position[frame.StateIndex]) : JPH::Vec3::sZero();
-            auto rotation = worldTransform ? ConvertQuaternion(worldTransform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity();
+            auto scale = world_transform ? world_transform->Scale[frame.StateIndex] : Float3(1.0f);
+            auto position = world_transform ? ConvertVector(world_transform->Position[frame.StateIndex]) : JPH::Vec3::sZero();
+            auto rotation = world_transform ? ConvertQuaternion(world_transform->Rotation[frame.StateIndex]) : JPH::Quat::sIdentity();
 
-            if (RigidBodyComponent* physBody = entityView.GetComponent<RigidBodyComponent>())
+            if (RigidBodyComponent* rigid_body = entity_view.GetComponent<RigidBodyComponent>())
             {
                 if (scale != Float3(1.0f))
                 {
-                    auto scaledModel = physBody->GetModel()->Instatiate(scale);
+                    auto scaledModel = rigid_body->GetModel()->Instatiate(scale);
 
                     bool bUpdateMassProperties = false;
-                    body_interface.SetShape(physBody->GetBodyId(), scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
+                    body_interface.SetShape(rigid_body->GetBodyId(), scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
                 }
 
-                body_interface.SetPositionAndRotation(physBody->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
+                body_interface.SetPositionAndRotation(rigid_body->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
 
-                auto motionType = body_interface.GetMotionType(physBody->GetBodyId());
+                auto motionType = body_interface.GetMotionType(rigid_body->GetBodyId());
                 auto activation = (motionType == JPH::EMotionType::Static) ? JPH::EActivation::DontActivate : JPH::EActivation::Activate;
 
-                m_BodyAddList[int(activation)].Add(physBody->GetBodyId());
+                m_BodyAddList[int(activation)].Add(rigid_body->GetBodyId());
 
-                if (TriggerComponent* trigger = entityView.GetComponent<TriggerComponent>())
+                if (TriggerComponent* trigger = entity_view.GetComponent<TriggerComponent>())
                 {
-                    Trigger& t = m_Triggers[physBody->GetBodyId()];
-                    t.mBodyID = physBody->GetBodyId();
-                    t.mEntity = entity;
+                    Trigger& t = m_Triggers[rigid_body->GetBodyId()];
+                    t.BodyID = rigid_body->GetBodyId();
+                    t.Entity = entity;
                     t.TriggerClass = trigger->TriggerClass;
-                    HK_ASSERT(t.mBodiesInSensor.empty());
+                    HK_ASSERT(t.Bodies.empty());
                 }
             }
-            else if (HeightFieldComponent* heightfield = entityView.GetComponent<HeightFieldComponent>())
+            else if (HeightFieldComponent* heightfield = entity_view.GetComponent<HeightFieldComponent>())
             {
                 // TODO: scaling?
-                //if (scale != Float3(1.0f))
-                //{
-                //    auto scaledModel = physBody->GetModel()->Instatiate(scale);
-                //    bool bUpdateMassProperties = false;
-                //    body_interface.SetShape(physBody->GetBodyId(), scaledModel, bUpdateMassProperties, JPH::EActivation::DontActivate);
-                //}
-
-                body_interface.SetPositionAndRotation(heightfield->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
 
                 auto activation = JPH::EActivation::DontActivate;
 
+                body_interface.SetPositionAndRotation(heightfield->GetBodyId(), position, rotation, JPH::EActivation::DontActivate);
                 m_BodyAddList[int(activation)].Add(heightfield->GetBodyId());
+            }
+            else if (CharacterControllerComponent* character = entity_view.GetComponent<CharacterControllerComponent>())
+            {
+                auto activation = JPH::EActivation::Activate;
+                m_BodyAddList[int(activation)].Add(character->GetBodyId());
             }
             else
                 HK_ASSERT(0);
@@ -542,8 +549,6 @@ void PhysicsSystem::Update(GameFrame const& frame)
 
     m_FrameIndex = frame.StateIndex;
 
-    AddAndRemoveBodies(frame);
-
     // NOTE: We can update scale at lower framerate to save performance
     UpdateScaling(frame);
 
@@ -556,9 +561,12 @@ void PhysicsSystem::Update(GameFrame const& frame)
         m_PhysicsInterface.GetImpl().Update(frame.FixedTimeStep, collisionSteps, integrationSubSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
 
         // Keep bodies in trigger active
-        m_IdBodiesInSensors.Clear();
-        for (auto& bodyRef : m_BodiesInSensors)
-            m_IdBodiesInSensors.Add(bodyRef.mBodyID);
+        {
+            std::lock_guard lock(m_Mutex);
+            m_IdBodiesInSensors.Clear();
+            for (auto& bodyRef : m_BodiesInSensors)
+                m_IdBodiesInSensors.Add(bodyRef.BodyID);
+        }
 
         if (!m_IdBodiesInSensors.IsEmpty())
         {

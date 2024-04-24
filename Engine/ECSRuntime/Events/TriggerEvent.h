@@ -23,8 +23,8 @@ struct TriggerEvent : EventBase
 
     TRIGGER_EVENT Type;
     ECS::ComponentTypeId TriggerClass;
-    ECS::EntityHandle TriggerId;
-    ECS::EntityHandle BodyId;
+    ECS::EntityHandle Trigger;
+    ECS::EntityHandle Other;
     uint32_t NumEntitiesInTrigger;
 };
 

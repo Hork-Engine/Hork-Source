@@ -4,7 +4,6 @@
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 
 #include "JoltPhysics.h"
-#include <Jolt/Physics/Collision/Shape/Shape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
 
 HK_NAMESPACE_BEGIN
@@ -170,5 +169,7 @@ CollisionModel* CreateConvexDecompositionVHACD(Float3 const* vertices,
                                                int vertexStride,
                                                unsigned int const* indices,
                                                int indexCount);
+
+void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform);
 
 HK_NAMESPACE_END

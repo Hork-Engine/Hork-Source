@@ -757,20 +757,15 @@ void DrawCapsule(DebugRenderer& renderer, JPH::CapsuleShape const* shape)
 
 void DrawConvexHull(DebugRenderer& renderer, JPH::ConvexHullShape const* shape)
 {
-    // TODO: check
-
     TSmallVector<Float3, 32> verts;
-
     for (auto& face : shape->mFaces)
     {
         verts.Clear();
         for (uint16_t v = 0; v < face.mNumVertices; v++)
         {
-            uint16_t index = shape->mFaces[0].mFirstVertex + v;
-
+            auto index = shape->mVertexIdx[face.mFirstVertex + v];
             verts.Add(ConvertVector(shape->mPoints[index].mPosition));
         }
-
         renderer.DrawLine(verts, true);
     }
 }
@@ -780,7 +775,7 @@ void DrawMesh(DebugRenderer& renderer, JPH::MeshShape const* shape)
     // TODO
 }
 
-void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
+void DrawSimpleShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
 {
     renderer.PushTransform(transform);
 
@@ -814,10 +809,8 @@ void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const&
 
 } // namespace
 
-void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transform) const
+void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
 {
-    JPH::Shape const* shape = m_Shape.GetPtr();
-
     auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
 
     Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
@@ -836,7 +829,7 @@ void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transfor
             Float3x4 local_tranform;
             local_tranform.Compose(position, rotation.ToMatrix3x3());
 
-            DrawShape(renderer, subShape.mShape, final_transform * local_tranform);
+            DrawSimpleShape(renderer, subShape.mShape, final_transform * local_tranform);
         }
     }
     else if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
@@ -846,13 +839,19 @@ void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transfor
         Float3x4 local_tranform;
         local_tranform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
 
-        DrawShape(renderer, transformedShape->GetInnerShape(), final_transform * local_tranform);
+        DrawSimpleShape(renderer, transformedShape->GetInnerShape(), final_transform * local_tranform);
     }
     else
     {
-        DrawShape(renderer, shape, final_transform);
+        DrawSimpleShape(renderer, shape, final_transform);
     }
 }
+
+void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transform) const
+{
+    DrawShape(renderer, m_Shape.GetPtr(), transform);
+}
+
 
 CollisionModel* CreateConvexDecomposition(Float3 const* vertices,
                                           int vertexCount,
