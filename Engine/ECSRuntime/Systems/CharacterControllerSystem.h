@@ -5,9 +5,7 @@
 #include "../PhysicsInterface.h"
 
 #include "../Components/CharacterControllerComponent.h"
-
-#include <Jolt/Physics/Character/CharacterVirtual.h>
-#include <Jolt/Physics/Character/Character.h>
+#include "../Components/TransformComponent.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -29,6 +27,7 @@ public:
 
 private:
     void UpdateMovement(GameFrame const& frame);
+    void UpdateCharacter(CharacterControllerComponent& character, TransformComponent& transform, float time_step);
 
     World* m_World;
     PhysicsInterface& m_PhysicsInterface;

@@ -118,24 +118,24 @@ Utilites
 
 */
 
-template <typename T>
-T* Upcast(BaseObject* pObject)
-{
-    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
-    {
-        return static_cast<T*>(pObject);
-    }
-    return nullptr;
-}
-
-template <typename T>
-T const* Upcast(BaseObject const* pObject)
-{
-    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
-    {
-        return static_cast<T const*>(pObject);
-    }
-    return nullptr;
-}
+//template <typename T>
+//T* Upcast(BaseObject* pObject)
+//{
+//    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
+//    {
+//        return static_cast<T*>(pObject);
+//    }
+//    return nullptr;
+//}
+//
+//template <typename T>
+//T const* Upcast(BaseObject const* pObject)
+//{
+//    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
+//    {
+//        return static_cast<T const*>(pObject);
+//    }
+//    return nullptr;
+//}
 
 HK_NAMESPACE_END

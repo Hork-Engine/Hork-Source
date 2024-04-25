@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseObject.h"
+#include "GarbageCollector.h"
 #include "VisibilitySystem.h"
 #include <Engine/Renderer/VT/VirtualTextureFeedback.h>
 #include <Engine/ECSRuntime/Resources/ResourceManager.h>

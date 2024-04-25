@@ -39,8 +39,6 @@ ConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
 ConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
 ConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
 
-HK_CLASS_META(InputMappings)
-
 struct InputSystemStatic
 {
     TArray<const char*, MAX_KEYBOARD_BUTTONS>  KeyNames;

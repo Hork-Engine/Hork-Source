@@ -104,10 +104,8 @@ struct InputDeviceKey
     }
 };
 
-class InputMappings : public BaseObject
+class InputMappings : public GCObject
 {
-    HK_CLASS(InputMappings, BaseObject)
-
 public:
     struct Mapping
     {

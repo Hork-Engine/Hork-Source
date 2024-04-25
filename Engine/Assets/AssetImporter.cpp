@@ -962,8 +962,7 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
 
             for (int i = 0; i < skin->joints_count; i++)
             {
-                int parent = m_Joints[i].Parent;
-                HK_ASSERT(parent < i);
+                HK_ASSERT(m_Joints[i].Parent < i);
             }
         }
     }

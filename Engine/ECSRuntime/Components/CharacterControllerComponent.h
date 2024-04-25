@@ -2,7 +2,6 @@
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
-#include <Jolt/Physics/Character/Character.h>
 
 #include <Engine/Math/VectorMath.h>
 
