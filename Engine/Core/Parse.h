@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "Containers/Vector.h"
 #include "Logger.h"
 
 HK_NAMESPACE_BEGIN
@@ -193,6 +194,176 @@ template <>
 HK_FORCEINLINE bool Parse<bool>(StringView Str)
 {
     return ParseBool(Str);
+}
+
+HK_INLINE StringView GetToken(StringView& token, StringView string, bool bCrossLine = true)
+{
+    const char* p = string.Begin();
+    const char* end = string.End();
+
+    token = "";
+
+    // skip space
+    for (;;)
+    {
+        if (p == end)
+        {
+            return StringView(p, (StringSizeType)(end - p));
+        }
+
+        if (*p == '\n' && !bCrossLine)
+        {
+            LOG("Unexpected new line\n");
+            return StringView(p, (StringSizeType)(end - p));
+        }
+
+        if (*p > 32)
+            break;
+
+        p++;
+    }
+
+    const char* tokenBegin = p;
+    while (p < end)
+    {
+        if (*p == '\n')
+        {
+            if (!bCrossLine)
+                LOG("Unexpected new line\n");
+            break;
+        }
+
+        if (*p <= 32)
+            break;
+
+        if (*p == '(' || *p == ')')
+        {
+            ++p;
+            break;
+        }
+
+        ++p;
+    }
+
+    token = StringView(tokenBegin, p);
+
+    return StringView(p, (StringSizeType)(end - p), string.IsNullTerminated());
+}
+
+
+template <typename VectorType>
+HK_INLINE VectorType ParseVector(StringView string, StringView* newString = nullptr)
+{
+    VectorType v;
+
+    StringView token;
+    StringView tmp;
+
+    if (!newString)
+        newString = &tmp;
+
+    StringView& s = *newString;
+
+    s = GetToken(token, string);
+    if (!token.Compare("("))
+    {
+        LOG("Expected '('\n");
+        return v;
+    }
+
+    for (int i = 0; i < v.NumComponents(); i++)
+    {
+        s = GetToken(token, s);
+        if (token.IsEmpty())
+        {
+            LOG("Expected value\n");
+            return v;
+        }
+
+        using ElementType = std::remove_reference_t<decltype(v[i])>;
+
+        v[i] = Core::Parse<ElementType>(token);
+    }
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("Expected ')'\n");
+    }
+
+    return v;
+}
+
+// Parses a vector of variable length. Returns false if there were errors.
+HK_INLINE bool ParseVector(StringView string, TVector<StringView>& v)
+{
+    StringView token;
+
+    v.Clear();
+
+    StringView s = GetToken(token, string);
+    if (!token.Compare("("))
+    {
+        v.Add(token);
+        return true;
+    }
+
+    do
+    {
+        s = GetToken(token, s);
+        if (token.IsEmpty())
+        {
+            LOG("ParseVector: Expected value\n");
+            return false;
+        }
+
+        if (token.Compare(")"))
+        {
+            return true;
+        }
+
+        v.Add(token);
+    } while (1);
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("ParseVector: Expected ')'\n");
+        return false;
+    }
+
+    return true;
+}
+
+template <typename MatrixType>
+HK_INLINE MatrixType ParseMatrix(StringView string)
+{
+    MatrixType matrix(1);
+
+    StringView token;
+    StringView s = string;
+
+    s = GetToken(token, s);
+    if (!token.Compare("("))
+    {
+        LOG("Expected '('\n");
+        return matrix;
+    }
+
+    for (int i = 0; i < matrix.NumComponents(); i++)
+    {
+        using ElementType = std::remove_reference_t<decltype(matrix[i])>;
+
+        matrix[i] = ParseVector<ElementType>(s, &s);
+    }
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("Expected ')'\n");
+    }
+
+    return matrix;
 }
 
 }

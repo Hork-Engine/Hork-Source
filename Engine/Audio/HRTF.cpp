@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include <Engine/Core/Logger.h>
 #include <Engine/Core/Platform.h>
-#include <Engine/Geometry/BV/BvIntersect.h>
 #include <Engine/Core/ConsoleVar.h>
-#include <Engine/Runtime/GameApplication.h>
+#include <Engine/Geometry/BV/BvIntersect.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 // Use miniaudio for resampling
 #include <miniaudio/miniaudio.h>

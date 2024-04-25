@@ -31,7 +31,7 @@ SOFTWARE.
 #include "ShaderLoader.h"
 
 #include <Engine/Core/ConsoleVar.h>
-#include <Engine/Runtime/GameApplication.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
