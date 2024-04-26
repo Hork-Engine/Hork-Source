@@ -62,23 +62,20 @@ ConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"s, "0"s, CVAR_CH
 
 HK_VALIDATE_TYPE_SIZE(NavPolyRef, sizeof(dtPolyRef));
 
-static const int  MAX_LAYERS            = 255;
-static const bool RECAST_ENABLE_LOGGING = true;
-static const bool RECAST_ENABLE_TIMINGS = true;
-
-enum
+namespace
 {
-    MAX_POLYS = 2048
-};
-static NavPolyRef TmpPolys[MAX_POLYS];
-static NavPolyRef TmpPathPolys[MAX_POLYS];
-alignas(16) static Float3 TmpPathPoints[MAX_POLYS];
-static unsigned char TmpPathFlags[MAX_POLYS];
+
+const int MAX_LAYERS = 255;
+
+const bool RECAST_ENABLE_LOGGING = true;
+const bool RECAST_ENABLE_TIMINGS = true;
+
+}
 
 struct TileCacheData
 {
     byte* Data;
-    int   Size;
+    int Size;
 };
 
 struct TileCompressorCallback : public dtTileCacheCompressor
@@ -91,37 +88,23 @@ struct TileCompressorCallback : public dtTileCacheCompressor
     dtStatus compress(const unsigned char* buffer, const int bufferSize, unsigned char* compressed, const int /*maxCompressedSize*/, int* compressedSize) override
     {
         size_t size;
-
         *compressedSize = 0;
-
         if (!Core::FastLZCompress(compressed, &size, buffer, bufferSize))
-        {
             return DT_FAILURE;
-        }
-
         *compressedSize = size;
-
         return DT_SUCCESS;
     }
 
     dtStatus decompress(const unsigned char* compressed, const int compressedSize, unsigned char* buffer, const int maxBufferSize, int* bufferSize) override
     {
         size_t size;
-
         *bufferSize = 0;
-
         if (!Core::FastLZDecompress(compressed, compressedSize, buffer, &size, maxBufferSize))
-        {
             return DT_FAILURE;
-        }
-
         *bufferSize = size;
-
         return DT_SUCCESS;
     }
 };
-
-static TileCompressorCallback TileCompressorCallback;
 
 struct DetourLinearAllocator : public dtTileCacheAlloc
 {
@@ -155,14 +138,14 @@ struct DetourLinearAllocator : public dtTileCacheAlloc
 struct DetourMeshProcess : public dtTileCacheMeshProcess
 {
     // NavMesh connections
-    TVector<Float3>         OffMeshConVerts;
-    TVector<float>          OffMeshConRads;
-    TVector<unsigned char>  OffMeshConDirs;
-    TVector<unsigned char>  OffMeshConAreas;
+    TVector<Float3> OffMeshConVerts;
+    TVector<float> OffMeshConRads;
+    TVector<unsigned char> OffMeshConDirs;
+    TVector<unsigned char> OffMeshConAreas;
     TVector<unsigned short> OffMeshConFlags;
-    TVector<unsigned int>   OffMeshConId;
-    int                        OffMeshConCount;
-    NavMesh*          NavMesh;
+    TVector<unsigned int> OffMeshConID;
+    int OffMeshConCount;
+    NavMesh* NavMesh;
 
     void* operator new(size_t _SizeInBytes)
     {
@@ -176,7 +159,6 @@ struct DetourMeshProcess : public dtTileCacheMeshProcess
 
     void process(struct dtNavMeshCreateParams* _Params, unsigned char* _PolyAreas, unsigned short* _PolyFlags) override
     {
-
         // Update poly flags from areas.
         for (int i = 0; i < _Params->polyCount; ++i)
         {
@@ -200,9 +182,9 @@ struct DetourMeshProcess : public dtTileCacheMeshProcess
             }
         }
 
-        BvAxisAlignedBox clipBounds;
-        rcVcopy((float*)clipBounds.Mins.ToPtr(), _Params->bmin);
-        rcVcopy((float*)clipBounds.Maxs.ToPtr(), _Params->bmax);
+        BvAxisAlignedBox clip_bounds;
+        rcVcopy(clip_bounds.Mins.ToPtr(), _Params->bmin);
+        rcVcopy(clip_bounds.Maxs.ToPtr(), _Params->bmax);
 
         OffMeshConVerts.Clear();
         OffMeshConVerts.Clear();
@@ -210,20 +192,20 @@ struct DetourMeshProcess : public dtTileCacheMeshProcess
         OffMeshConDirs.Clear();
         OffMeshConAreas.Clear();
         OffMeshConFlags.Clear();
-        OffMeshConId.Clear();
+        OffMeshConID.Clear();
+        OffMeshConCount = 0;
 
-        BvAxisAlignedBox conBoundingBox;
-        const float      margin = 0.2f;
-        OffMeshConCount         = 0;
+        const float MARGIN = 0.2f;
+
         for (int i = 0; i < NavMesh->NavMeshConnections.Size(); i++)
         {
             NavMeshConnection const& con = NavMesh->NavMeshConnections[i];
 
-            con.CalcBoundingBox(conBoundingBox);
-            conBoundingBox.Mins -= margin;
-            conBoundingBox.Maxs += margin;
+            BvAxisAlignedBox bounds = con.CalcBoundingBox();
+            bounds.Mins -= MARGIN;
+            bounds.Maxs += MARGIN;
 
-            if (!BvBoxOverlapBox(clipBounds, conBoundingBox))
+            if (!BvBoxOverlapBox(clip_bounds, bounds))
             {
                 // Connection is outside of clip bounds
                 continue;
@@ -233,21 +215,21 @@ struct DetourMeshProcess : public dtTileCacheMeshProcess
             OffMeshConVerts.Add(con.EndPosition);
             OffMeshConRads.Add(con.Radius);
             OffMeshConDirs.Add(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
-            OffMeshConAreas.Add(con.AreaId);
+            OffMeshConAreas.Add(con.AreaID);
             OffMeshConFlags.Add(con.Flags);
-            OffMeshConId.Add(i); // FIXME?
+            OffMeshConID.Add(i); // FIXME?
 
             OffMeshConCount++;
         }
 
         // Pass in off-mesh connections.
-        _Params->offMeshConVerts  = (float*)OffMeshConVerts.ToPtr();
-        _Params->offMeshConRad    = OffMeshConRads.ToPtr();
-        _Params->offMeshConDir    = OffMeshConDirs.ToPtr();
-        _Params->offMeshConAreas  = OffMeshConAreas.ToPtr();
-        _Params->offMeshConFlags  = OffMeshConFlags.ToPtr();
-        _Params->offMeshConUserID = OffMeshConId.ToPtr();
-        _Params->offMeshConCount  = OffMeshConCount;
+        _Params->offMeshConVerts = (float*)OffMeshConVerts.ToPtr();
+        _Params->offMeshConRad = OffMeshConRads.ToPtr();
+        _Params->offMeshConDir = OffMeshConDirs.ToPtr();
+        _Params->offMeshConAreas = OffMeshConAreas.ToPtr();
+        _Params->offMeshConFlags = OffMeshConFlags.ToPtr();
+        _Params->offMeshConUserID = OffMeshConID.ToPtr();
+        _Params->offMeshConCount = OffMeshConCount;
     }
 };
 
@@ -284,10 +266,24 @@ protected:
     void doResetTimers() override {}
     void doStartTimer(const rcTimerLabel label) override {}
     void doStopTimer(const rcTimerLabel label) override {}
-    int  doGetAccumulatedTime(const rcTimerLabel label) const override { return -1; }
+    int doGetAccumulatedTime(const rcTimerLabel label) const override { return -1; }
 };
 
-static RecastContext RecastContext;
+
+namespace
+{
+
+const int MAX_POLYS = 2048;
+
+NavPolyRef TmpPolys[MAX_POLYS];
+NavPolyRef TmpPathPolys[MAX_POLYS];
+alignas(16) Float3 TmpPathPoints[MAX_POLYS];
+unsigned char TmpPathFlags[MAX_POLYS];
+
+Hk::TileCompressorCallback s_TileCompressorCallback;
+Hk::RecastContext s_RecastContext;
+
+} // namespace
 
 NavMesh::NavMesh()
 {
@@ -299,66 +295,61 @@ NavMesh::~NavMesh()
     Purge();
 }
 
-bool NavMesh::Initialize(NavMeshDesc const& _NavigationConfig)
+bool NavMesh::Initialize(NavMeshDesc const& inNavigationConfig)
 {
     dtStatus status;
 
     Purge();
 
-    if (_NavigationConfig.BoundingBox.IsEmpty())
+    if (inNavigationConfig.BoundingBox.IsEmpty())
     {
         LOG("NavMesh::Initialize: empty bounding box\n");
         return false;
     }
 
-    Initial = _NavigationConfig;
+    m_Desc = inNavigationConfig;
 
-    m_BoundingBox = _NavigationConfig.BoundingBox;
+    m_BoundingBox = inNavigationConfig.BoundingBox;
 
-    if (Initial.VertsPerPoly < 3)
+    if (m_Desc.VertsPerPoly < 3)
     {
         LOG("NavVertsPerPoly < 3\n");
 
-        Initial.VertsPerPoly = 3;
+        m_Desc.VertsPerPoly = 3;
     }
-    else if (Initial.VertsPerPoly > DT_VERTS_PER_POLYGON)
+    else if (m_Desc.VertsPerPoly > DT_VERTS_PER_POLYGON)
     {
         LOG("NavVertsPerPoly > NAV_MAX_VERTS_PER_POLYGON\n");
 
-        Initial.VertsPerPoly = DT_VERTS_PER_POLYGON;
+        m_Desc.VertsPerPoly = DT_VERTS_PER_POLYGON;
     }
 
-    if (Initial.MaxLayers > MAX_LAYERS)
+    if (m_Desc.MaxLayers > MAX_LAYERS)
     {
         LOG("MaxLayers > MAX_LAYERS\n");
-        Initial.MaxLayers = MAX_LAYERS;
+        m_Desc.MaxLayers = MAX_LAYERS;
     }
 
-    int gridWidth, gridHeight;
+    int grid_w, grid_h;
+    rcCalcGridSize(m_BoundingBox.Mins.ToPtr(), m_BoundingBox.Maxs.ToPtr(), m_Desc.CellSize, &grid_w, &grid_h);
 
-    rcCalcGridSize((const float*)m_BoundingBox.Mins.ToPtr(),
-                   (const float*)m_BoundingBox.Maxs.ToPtr(),
-                   Initial.CellSize, &gridWidth, &gridHeight);
-
-    m_NumTilesX = (gridWidth + Initial.TileSize - 1) / Initial.TileSize;
-    m_NumTilesZ = (gridHeight + Initial.TileSize - 1) / Initial.TileSize;
+    m_NumTilesX = (grid_w + m_Desc.TileSize - 1) / m_Desc.TileSize;
+    m_NumTilesZ = (grid_h + m_Desc.TileSize - 1) / m_Desc.TileSize;
 
     // Max tiles and max polys affect how the tile IDs are caculated.
     // There are 22 bits available for identifying a tile and a polygon.
-    uint64_t           powOf2          = Math::ToGreaterPowerOfTwo(m_NumTilesX * m_NumTilesZ);
-    const unsigned int tileBits        = Math::Min(Math::Log2(powOf2), 14);
-    const unsigned int maxTiles        = 1 << tileBits;
-    const unsigned int maxPolysPerTile = 1u << (22 - tileBits);
+    const int tile_bits = Math::Min<int>(Math::Log2(Math::ToGreaterPowerOfTwo((uint64_t)m_NumTilesX * m_NumTilesZ)), 14);
+    const int max_tiles = 1 << tile_bits;
+    const int max_polys_per_tile = 1u << (22 - tile_bits);
 
-    m_TileWidth = Initial.TileSize * Initial.CellSize;
+    m_TileWidth = m_Desc.TileSize * m_Desc.CellSize;
 
-    dtNavMeshParams params;
-    Core::ZeroMem(&params, sizeof(params));
-    rcVcopy(params.orig, (const float*)m_BoundingBox.Mins.ToPtr());
-    params.tileWidth  = m_TileWidth;
+    dtNavMeshParams params = {};
+    rcVcopy(params.orig, m_BoundingBox.Mins.ToPtr());
+    params.tileWidth = m_TileWidth;
     params.tileHeight = m_TileWidth;
-    params.maxTiles   = maxTiles;
-    params.maxPolys   = maxPolysPerTile;
+    params.maxTiles = max_tiles;
+    params.maxPolys = max_polys_per_tile;
 
     m_NavMesh = dtAllocNavMesh();
     if (!m_NavMesh)
@@ -385,7 +376,7 @@ bool NavMesh::Initialize(NavMeshDesc const& _NavigationConfig)
     }
 
     const int MAX_NODES = 2048;
-    status              = m_NavQuery->init(m_NavMesh, MAX_NODES);
+    status = m_NavQuery->init(m_NavMesh, MAX_NODES);
     if (dtStatusFailed(status))
     {
         Purge();
@@ -393,23 +384,21 @@ bool NavMesh::Initialize(NavMeshDesc const& _NavigationConfig)
         return false;
     }
 
-    if (Initial.bDynamicNavMesh)
+    if (m_Desc.bDynamicNavMesh)
     {
-        // Create tile cache
-
-        dtTileCacheParams tileCacheParams;
-        Core::ZeroMem(&tileCacheParams, sizeof(tileCacheParams));
-        rcVcopy(tileCacheParams.orig, (const float*)Initial.BoundingBox.Mins.ToPtr());
-        tileCacheParams.cs                     = Initial.CellSize;
-        tileCacheParams.ch                     = Initial.CellHeight;
-        tileCacheParams.width                  = Initial.TileSize;
-        tileCacheParams.height                 = Initial.TileSize;
-        tileCacheParams.walkableHeight         = Initial.WalkableHeight;
-        tileCacheParams.walkableRadius         = Initial.WalkableRadius;
-        tileCacheParams.walkableClimb          = Initial.WalkableClimb;
-        tileCacheParams.maxSimplificationError = Initial.EdgeMaxError;
-        tileCacheParams.maxTiles               = maxTiles * Initial.MaxLayers;
-        tileCacheParams.maxObstacles           = Initial.MaxDynamicObstacles;
+        dtTileCacheParams tile_cache_params;
+        Core::ZeroMem(&tile_cache_params, sizeof(tile_cache_params));
+        rcVcopy(tile_cache_params.orig, m_Desc.BoundingBox.Mins.ToPtr());
+        tile_cache_params.cs = m_Desc.CellSize;
+        tile_cache_params.ch = m_Desc.CellHeight;
+        tile_cache_params.width = m_Desc.TileSize;
+        tile_cache_params.height = m_Desc.TileSize;
+        tile_cache_params.walkableHeight = m_Desc.WalkableHeight;
+        tile_cache_params.walkableRadius = m_Desc.WalkableRadius;
+        tile_cache_params.walkableClimb = m_Desc.WalkableClimb;
+        tile_cache_params.maxSimplificationError = m_Desc.EdgeMaxError;
+        tile_cache_params.maxTiles = max_tiles * m_Desc.MaxLayers;
+        tile_cache_params.maxObstacles = m_Desc.MaxDynamicObstacles;
 
         m_TileCache = dtAllocTileCache();
         if (!m_TileCache)
@@ -421,10 +410,10 @@ bool NavMesh::Initialize(NavMeshDesc const& _NavigationConfig)
 
         m_LinearAllocator = MakeUnique<DetourLinearAllocator>();
 
-        m_MeshProcess          = MakeUnique<DetourMeshProcess>();
+        m_MeshProcess = MakeUnique<DetourMeshProcess>();
         m_MeshProcess->NavMesh = this;
 
-        status = m_TileCache->init(&tileCacheParams, m_LinearAllocator.RawPtr(), &TileCompressorCallback, m_MeshProcess.RawPtr());
+        status = m_TileCache->init(&tile_cache_params, m_LinearAllocator.RawPtr(), &s_TileCompressorCallback, m_MeshProcess.RawPtr());
         if (dtStatusFailed(status))
         {
             Purge();
@@ -435,103 +424,96 @@ bool NavMesh::Initialize(NavMeshDesc const& _NavigationConfig)
         // TODO: Add obstacles here?
     }
 
-    //bNavigationDirty = true;
-
     return true;
 }
 
 bool NavMesh::Build()
 {
-    Int2 regionMins(0, 0);
-    Int2 regionMaxs(m_NumTilesX - 1, m_NumTilesZ - 1);
-
-    //bNavigationDirty = false;
-
-    return BuildTiles(regionMins, regionMaxs);
-}
-
-bool NavMesh::Build(Int2 const& _Mins, Int2 const& _Maxs)
-{
-    Int2 regionMins;
-    Int2 regionMaxs;
-
-    regionMins.X = Math::Clamp<int>(_Mins.X, 0, m_NumTilesX - 1);
-    regionMins.Y = Math::Clamp<int>(_Mins.Y, 0, m_NumTilesZ - 1);
-    regionMaxs.X = Math::Clamp<int>(_Maxs.X, 0, m_NumTilesX - 1);
-    regionMaxs.Y = Math::Clamp<int>(_Maxs.Y, 0, m_NumTilesZ - 1);
-
-    return BuildTiles(regionMins, regionMaxs);
-}
-
-bool NavMesh::Build(BvAxisAlignedBox const& _BoundingBox)
-{
-    Int2 mins((_BoundingBox.Mins.X - m_BoundingBox.Mins.X) / m_TileWidth,
-              (_BoundingBox.Mins.Z - m_BoundingBox.Mins.Z) / m_TileWidth);
-    Int2 maxs((_BoundingBox.Maxs.X - m_BoundingBox.Mins.X) / m_TileWidth,
-              (_BoundingBox.Maxs.Z - m_BoundingBox.Mins.Z) / m_TileWidth);
+    Int2 mins(0, 0);
+    Int2 maxs(m_NumTilesX - 1, m_NumTilesZ - 1);
 
     return Build(mins, maxs);
 }
 
-void NavMesh::GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _BoundingBox) const
-{
-    _BoundingBox.Mins[0] = m_BoundingBox.Mins[0] + _X * m_TileWidth;
-    _BoundingBox.Mins[1] = m_BoundingBox.Mins[1];
-    _BoundingBox.Mins[2] = m_BoundingBox.Mins[2] + _Z * m_TileWidth;
-
-    _BoundingBox.Maxs[0] = m_BoundingBox.Mins[0] + (_X + 1) * m_TileWidth;
-    _BoundingBox.Maxs[1] = m_BoundingBox.Maxs[1];
-    _BoundingBox.Maxs[2] = m_BoundingBox.Mins[2] + (_Z + 1) * m_TileWidth;
-}
-
-bool NavMesh::BuildTiles(Int2 const& _Mins, Int2 const& _Maxs)
+bool NavMesh::Build(Int2 const& inMins, Int2 const& inMaxs)
 {
     if (!m_NavMesh)
     {
-        LOG("NavMesh::BuildTiles: navmesh must be initialized\n");
+        LOG("NavMesh::Build: navmesh must be initialized\n");
         return false;
     }
 
-    unsigned int totalBuilt = 0;
-    for (int z = _Mins[1]; z <= _Maxs[1]; z++)
-    {
-        for (int x = _Mins[0]; x <= _Maxs[0]; x++)
-        {
+    Int2 clamped_mins;
+    Int2 clamped_maxs;
+
+    clamped_mins.X = Math::Clamp<int>(inMins.X, 0, m_NumTilesX - 1);
+    clamped_mins.Y = Math::Clamp<int>(inMins.Y, 0, m_NumTilesZ - 1);
+    clamped_maxs.X = Math::Clamp<int>(inMaxs.X, 0, m_NumTilesX - 1);
+    clamped_maxs.Y = Math::Clamp<int>(inMaxs.Y, 0, m_NumTilesZ - 1);
+
+    unsigned int count = 0;
+    for (int z = clamped_mins[1]; z <= clamped_maxs[1]; z++)
+        for (int x = clamped_mins[0]; x <= clamped_maxs[0]; x++)
             if (BuildTile(x, z))
-            {
-                totalBuilt++;
-            }
-        }
-    }
-    return totalBuilt > 0;
+                count++;
+    return count > 0;
 }
+
+bool NavMesh::Build(BvAxisAlignedBox const& inBoundingBox)
+{
+    Int2 mins((inBoundingBox.Mins.X - m_BoundingBox.Mins.X) / m_TileWidth,
+              (inBoundingBox.Mins.Z - m_BoundingBox.Mins.Z) / m_TileWidth);
+    Int2 maxs((inBoundingBox.Maxs.X - m_BoundingBox.Mins.X) / m_TileWidth,
+              (inBoundingBox.Maxs.Z - m_BoundingBox.Mins.Z) / m_TileWidth);
+
+    return Build(mins, maxs);
+}
+
+BvAxisAlignedBox NavMesh::GetTileWorldBounds(int inX, int inZ) const
+{
+    return
+    {
+        {
+            m_BoundingBox.Mins[0] + inX * m_TileWidth,
+            m_BoundingBox.Mins[1],
+            m_BoundingBox.Mins[2] + inZ * m_TileWidth},
+        {
+            m_BoundingBox.Mins[0] + (inX + 1) * m_TileWidth,
+            m_BoundingBox.Maxs[1],
+            m_BoundingBox.Mins[2] + (inZ + 1) * m_TileWidth
+        }
+    };
+}
+
+namespace
+{
 
 // Based on rcMarkWalkableTriangles
-static void MarkWalkableTriangles(float WalkableSlopeAngle, Float3 const* Vertices, unsigned int const* Indices, int NumTriangles, int FirstTriangle, TBitMask<> const& WalkableMask, unsigned char* Areas)
+void MarkWalkableTriangles(float inSlopeAngleDeg, Float3 const* inVertices, unsigned int const* inIndices, int inTriangleCount, int inFirstTriangle, TBitMask<> const& inWalkableMask, unsigned char* outAreas)
 {
     Float3 perpendicular;
-    float  perpendicularLength;
+    float perpendicular_length;
 
-    const float WalkableThreshold = cosf(Math::Radians(WalkableSlopeAngle));
+    const float threshold = Math::Cos(Math::Radians(inSlopeAngleDeg));
 
-    for (int i = 0; i < NumTriangles; ++i)
+    for (int i = 0; i < inTriangleCount; ++i)
     {
-        int triangleNum = FirstTriangle + i;
-        if (WalkableMask.IsMarked(triangleNum))
+        int triangle = inFirstTriangle + i;
+        if (inWalkableMask.IsMarked(triangle))
         {
-            unsigned int const* tri = &Indices[triangleNum * 3];
+            unsigned int const* tri = &inIndices[triangle * 3];
 
-            perpendicular       = Math::Cross(Vertices[tri[1]] - Vertices[tri[0]], Vertices[tri[2]] - Vertices[tri[0]]);
-            perpendicularLength = perpendicular.Length();
-            if (perpendicularLength > 0 && perpendicular[1] > WalkableThreshold * perpendicularLength)
+            perpendicular = Math::Cross(inVertices[tri[1]] - inVertices[tri[0]], inVertices[tri[2]] - inVertices[tri[0]]);
+            perpendicular_length = perpendicular.Length();
+            if (perpendicular_length > 0 && perpendicular[1] > threshold * perpendicular_length)
             {
-                Areas[i] = RC_WALKABLE_AREA;
+                outAreas[i] = RC_WALKABLE_AREA;
             }
         }
     }
 }
 
-static bool PointInPoly2D(int nvert, const float* verts, const float* p)
+bool PointInPoly2D(int nvert, const float* verts, const float* p)
 {
     int i, j;
     bool c = false;
@@ -546,7 +528,7 @@ static bool PointInPoly2D(int nvert, const float* verts, const float* p)
     return c;
 }
 
-static String GetErrorStr(dtStatus status)
+String GetErrorStr(dtStatus status)
 {
     String s;
     if (status & DT_WRONG_MAGIC)
@@ -568,7 +550,9 @@ static String GetErrorStr(dtStatus status)
     return s;
 }
 
-bool NavMesh::BuildTile(int _X, int _Z)
+} // namespace
+
+bool NavMesh::BuildTile(int inX, int inZ)
 {
     struct TemportalData
     {
@@ -595,37 +579,36 @@ bool NavMesh::BuildTile(int _X, int _Z)
         }
     };
 
-    BvAxisAlignedBox tileWorldBounds;
-    BvAxisAlignedBox tileWorldBoundsWithPadding;
+    BvAxisAlignedBox tile_bounds;
+    BvAxisAlignedBox tile_bounds_with_pad;
 
     HK_ASSERT(m_NavMesh);
 
-    RemoveTile(_X, _Z);
+    RemoveTile(inX, inZ);
 
-    GetTileWorldBounds(_X, _Z, tileWorldBounds);
+    tile_bounds = GetTileWorldBounds(inX, inZ);
 
-    rcConfig config;
-    Core::ZeroMem(&config, sizeof(config));
-    config.cs                     = Initial.CellSize;
-    config.ch                     = Initial.CellHeight;
-    config.walkableSlopeAngle     = Initial.WalkableSlopeAngle;
-    config.walkableHeight         = (int)Math::Ceil(Initial.WalkableHeight / config.ch);
-    config.walkableClimb          = (int)Math::Floor(Initial.WalkableClimb / config.ch);
-    config.walkableRadius         = (int)Math::Ceil(Initial.WalkableRadius / config.cs);
-    config.maxEdgeLen             = (int)(Initial.EdgeMaxLength / Initial.CellSize);
-    config.maxSimplificationError = Initial.EdgeMaxError;
-    config.minRegionArea          = (int)rcSqr(Initial.MinRegionSize);   // Note: area = size*size
-    config.mergeRegionArea        = (int)rcSqr(Initial.MergeRegionSize); // Note: area = size*size
-    config.detailSampleDist       = Initial.DetailSampleDist < 0.9f ? 0 : Initial.CellSize * Initial.DetailSampleDist;
-    config.detailSampleMaxError   = Initial.CellHeight * Initial.DetailSampleMaxError;
-    config.tileSize               = Initial.TileSize;
-    config.borderSize             = config.walkableRadius + 3; // radius + padding
-    config.width                  = config.tileSize + config.borderSize * 2;
-    config.height                 = config.tileSize + config.borderSize * 2;
-    config.maxVertsPerPoly        = Initial.VertsPerPoly;
+    rcConfig config = {};
+    config.cs = m_Desc.CellSize;
+    config.ch = m_Desc.CellHeight;
+    config.walkableSlopeAngle = m_Desc.WalkableSlopeAngle;
+    config.walkableHeight = (int)Math::Ceil(m_Desc.WalkableHeight / config.ch);
+    config.walkableClimb = (int)Math::Floor(m_Desc.WalkableClimb / config.ch);
+    config.walkableRadius = (int)Math::Ceil(m_Desc.WalkableRadius / config.cs);
+    config.maxEdgeLen = (int)(m_Desc.EdgeMaxLength / m_Desc.CellSize);
+    config.maxSimplificationError = m_Desc.EdgeMaxError;
+    config.minRegionArea = (int)rcSqr(m_Desc.MinRegionSize);        // Note: area = size*size
+    config.mergeRegionArea = (int)rcSqr(m_Desc.MergeRegionSize); // Note: area = size*size
+    config.detailSampleDist = m_Desc.DetailSampleDist < 0.9f ? 0 : m_Desc.CellSize * m_Desc.DetailSampleDist;
+    config.detailSampleMaxError = m_Desc.CellHeight * m_Desc.DetailSampleMaxError;
+    config.tileSize = m_Desc.TileSize;
+    config.borderSize = config.walkableRadius + 3; // radius + padding
+    config.width = config.tileSize + config.borderSize * 2;
+    config.height = config.tileSize + config.borderSize * 2;
+    config.maxVertsPerPoly = m_Desc.VertsPerPoly;
 
-    rcVcopy(config.bmin, (const float*)tileWorldBounds.Mins.ToPtr());
-    rcVcopy(config.bmax, (const float*)tileWorldBounds.Maxs.ToPtr());
+    rcVcopy(config.bmin, tile_bounds.Mins.ToPtr());
+    rcVcopy(config.bmax, tile_bounds.Maxs.ToPtr());
 
     config.bmin[0] -= config.borderSize * config.cs;
     config.bmin[2] -= config.borderSize * config.cs;
@@ -634,30 +617,29 @@ bool NavMesh::BuildTile(int _X, int _Z)
 
     for (int i = 0; i < 3; i++)
     {
-        tileWorldBoundsWithPadding.Mins[i] = config.bmin[i];
-        tileWorldBoundsWithPadding.Maxs[i] = config.bmax[i];
+        tile_bounds_with_pad.Mins[i] = config.bmin[i];
+        tile_bounds_with_pad.Maxs[i] = config.bmax[i];
     }
 
     NavigationGeometry geometry;
-    geometry.pClipBoundingBox = &tileWorldBoundsWithPadding;
+    geometry.pClipBoundingBox = &tile_bounds_with_pad;
     geometry.BoundingBox.Clear();
     GatherNavigationGeometry(geometry);
 
+    // Empty tile
     if (geometry.BoundingBox.IsEmpty() || geometry.Indices.IsEmpty())
-    {
-        // Empty tile
         return true;
-    }
+
     //---------TEST-----------
     //walkableMask.Resize(indices.Size()/3);
     //walkableMask.MarkAll();
     //------------------------
 
-    //rcVcopy( config.bmin, (const float *)geometry.BoundingBox.Mins.ToPtr() );
-    //rcVcopy( config.bmax, (const float *)geometry.BoundingBox.Maxs.ToPtr() );
-    config.bmin[1]             = geometry.BoundingBox.Mins.Y;
-    config.bmax[1]             = geometry.BoundingBox.Maxs.Y;
-    tileWorldBoundsWithPadding = geometry.BoundingBox;
+    //rcVcopy( config.bmin, geometry.BoundingBox.Mins.ToPtr() );
+    //rcVcopy( config.bmax, geometry.BoundingBox.Maxs.ToPtr() );
+    config.bmin[1] = geometry.BoundingBox.Mins.Y;
+    config.bmax[1] = geometry.BoundingBox.Maxs.Y;
+    tile_bounds_with_pad = geometry.BoundingBox;
 
     TemportalData temporal;
 
@@ -669,35 +651,35 @@ bool NavMesh::BuildTile(int _X, int _Z)
         return false;
     }
 
-    if (!rcCreateHeightfield(&RecastContext, *temporal.Heightfield, config.width, config.height,
+    if (!rcCreateHeightfield(&s_RecastContext, *temporal.Heightfield, config.width, config.height,
                              config.bmin, config.bmax, config.cs, config.ch))
     {
         LOG("Failed on rcCreateHeightfield\n");
         return false;
     }
 
-    int trianglesCount = geometry.Indices.Size() / 3;
+    int triangle_count = geometry.Indices.Size() / 3;
 
     // Allocate array that can hold triangle area types.
     // If you have multiple meshes you need to process, allocate
     // and array which can hold the max number of triangles you need to process.
-    unsigned char* triangleAreaTypes = (unsigned char*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(trianglesCount, 16, MALLOC_ZERO);
+    unsigned char* triangle_area_types = (unsigned char*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(triangle_count, 16, MALLOC_ZERO);
 
     // Find triangles which are walkable based on their slope and rasterize them.
     // If your input data is multiple meshes, you can transform them here, calculate
     // the are type for each of the meshes and rasterize them.
-    MarkWalkableTriangles(config.walkableSlopeAngle, geometry.Vertices.ToPtr(), geometry.Indices.ToPtr(), trianglesCount, 0, geometry.WalkableMask, triangleAreaTypes);
+    MarkWalkableTriangles(config.walkableSlopeAngle, geometry.Vertices.ToPtr(), geometry.Indices.ToPtr(), triangle_count, 0, geometry.WalkableMask, triangle_area_types);
 
-    bool rasterized = rcRasterizeTriangles(&RecastContext,
+    bool rasterized = rcRasterizeTriangles(&s_RecastContext,
                                            (float const*)geometry.Vertices.ToPtr(),
                                            geometry.Vertices.Size(),
                                            (int const*)geometry.Indices.ToPtr(),
-                                           triangleAreaTypes,
-                                           trianglesCount,
+                                           triangle_area_types,
+                                           triangle_count,
                                            *temporal.Heightfield,
                                            config.walkableClimb);
 
-    Core::GetHeapAllocator<HEAP_TEMP>().Free(triangleAreaTypes);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(triangle_area_types);
 
     if (!rasterized)
     {
@@ -710,9 +692,9 @@ bool NavMesh::BuildTile(int _X, int _Z)
     // Once all geoemtry is rasterized, we do initial pass of filtering to
     // remove unwanted overhangs caused by the conservative rasterization
     // as well as filter spans where the character cannot possibly stand.
-    rcFilterLowHangingWalkableObstacles(&RecastContext, config.walkableClimb, *temporal.Heightfield);
-    rcFilterLedgeSpans(&RecastContext, config.walkableHeight, config.walkableClimb, *temporal.Heightfield);
-    rcFilterWalkableLowHeightSpans(&RecastContext, config.walkableHeight, *temporal.Heightfield);
+    rcFilterLowHangingWalkableObstacles(&s_RecastContext, config.walkableClimb, *temporal.Heightfield);
+    rcFilterLedgeSpans(&s_RecastContext, config.walkableHeight, config.walkableClimb, *temporal.Heightfield);
+    rcFilterWalkableLowHeightSpans(&s_RecastContext, config.walkableHeight, *temporal.Heightfield);
 
     // Partition walkable surface to simple regions.
     // Compact the heightfield so that it is faster to handle from now on.
@@ -725,46 +707,45 @@ bool NavMesh::BuildTile(int _X, int _Z)
         return false;
     }
 
-    if (!rcBuildCompactHeightfield(&RecastContext, config.walkableHeight, config.walkableClimb, *temporal.Heightfield, *temporal.CompactHeightfield))
+    if (!rcBuildCompactHeightfield(&s_RecastContext, config.walkableHeight, config.walkableClimb, *temporal.Heightfield, *temporal.CompactHeightfield))
     {
         LOG("Failed on rcBuildCompactHeightfield\n");
         return false;
     }
 
     // Erode the walkable area by agent radius.
-    if (!rcErodeWalkableArea(&RecastContext, config.walkableRadius, *temporal.CompactHeightfield))
+    if (!rcErodeWalkableArea(&s_RecastContext, config.walkableRadius, *temporal.CompactHeightfield))
     {
         LOG("NavMesh::Build: Failed on rcErodeWalkableArea\n");
         return false;
     }
 #if 1
-    BvAxisAlignedBox areaBoundingBox;
-    for (int areaNum = 0; areaNum < NavigationAreas.Size(); ++areaNum)
+    BvAxisAlignedBox area_bounds;
+    for (int area_num = 0; area_num < NavigationAreas.Size(); ++area_num)
     {
-        NavMeshArea const&    area = NavigationAreas[areaNum];
-        rcCompactHeightfield const& chf  = *temporal.CompactHeightfield;
+        NavMeshArea const& area = NavigationAreas[area_num];
+        rcCompactHeightfield const& chf = *temporal.CompactHeightfield;
 
-        area.CalcBoundingBox(areaBoundingBox);
-
-        if (areaBoundingBox.IsEmpty())
+        area_bounds = area.CalcBoundingBox();
+        if (area_bounds.IsEmpty())
         {
             // Invalid bounding box
             continue;
         }
 
-        if (!BvBoxOverlapBox(tileWorldBoundsWithPadding, areaBoundingBox))
+        if (!BvBoxOverlapBox(tile_bounds_with_pad, area_bounds))
         {
             // Area is outside of tile bounding box
             continue;
         }
 
         // The next code is based on rcMarkBoxArea and rcMarkConvexPolyArea
-        int minx = (int)((areaBoundingBox.Mins[0] - chf.bmin[0]) / chf.cs);
-        int miny = (int)((areaBoundingBox.Mins[1] - chf.bmin[1]) / chf.ch);
-        int minz = (int)((areaBoundingBox.Mins[2] - chf.bmin[2]) / chf.cs);
-        int maxx = (int)((areaBoundingBox.Maxs[0] - chf.bmin[0]) / chf.cs);
-        int maxy = (int)((areaBoundingBox.Maxs[1] - chf.bmin[1]) / chf.ch);
-        int maxz = (int)((areaBoundingBox.Maxs[2] - chf.bmin[2]) / chf.cs);
+        int minx = (int)((area_bounds.Mins[0] - chf.bmin[0]) / chf.cs);
+        int miny = (int)((area_bounds.Mins[1] - chf.bmin[1]) / chf.ch);
+        int minz = (int)((area_bounds.Mins[2] - chf.bmin[2]) / chf.cs);
+        int maxx = (int)((area_bounds.Maxs[0] - chf.bmin[0]) / chf.cs);
+        int maxy = (int)((area_bounds.Maxs[1] - chf.bmin[1]) / chf.ch);
+        int maxz = (int)((area_bounds.Maxs[2] - chf.bmin[2]) / chf.cs);
 
         if (maxx < 0) continue;
         if (minx >= chf.width) continue;
@@ -776,51 +757,52 @@ bool NavMesh::BuildTile(int _X, int _Z)
         if (minz < 0) minz = 0;
         if (maxz >= chf.height) maxz = chf.height - 1;
 
-        if (area.Shape == NAV_MESH_AREA_SHAPE_CONVEX_VOLUME)
+        switch (area.Shape)
         {
-            for (int z = minz; z <= maxz; ++z)
-            {
-                for (int x = minx; x <= maxx; ++x)
+            case NAV_MESH_AREA_SHAPE_BOX:
+                for (int z = minz; z <= maxz; ++z)
                 {
-                    const rcCompactCell& c = chf.cells[x + z * chf.width];
-                    for (int i = (int)c.index, ni = (int)(c.index + c.count); i < ni; ++i)
+                    for (int x = minx; x <= maxx; ++x)
                     {
-                        rcCompactSpan& s = chf.spans[i];
-                        if (chf.areas[i] == RC_NULL_AREA)
-                            continue;
-                        if ((int)s.y >= miny && (int)s.y <= maxy)
+                        const rcCompactCell& c = chf.cells[x + z * chf.width];
+                        for (int i = (int)c.index, ni = (int)(c.index + c.count); i < ni; ++i)
                         {
-                            float p[2];
-                            p[0] = chf.bmin[0] + (x + 0.5f) * chf.cs;
-                            p[1] = chf.bmin[2] + (z + 0.5f) * chf.cs;
-
-                            if (PointInPoly2D(area.NumConvexVolumeVerts, (float*)area.ConvexVolume[0].ToPtr(), p))
+                            rcCompactSpan& s = chf.spans[i];
+                            if ((int)s.y >= miny && (int)s.y <= maxy)
                             {
-                                chf.areas[i] = area.AreaId;
+                                if (chf.areas[i] != RC_NULL_AREA)
+                                    chf.areas[i] = area.AreaID;
                             }
                         }
                     }
                 }
-            }
-        }
-        else
-        {
-            for (int z = minz; z <= maxz; ++z)
-            {
-                for (int x = minx; x <= maxx; ++x)
+                break;
+            case NAV_MESH_AREA_SHAPE_CONVEX_VOLUME:
+                for (int z = minz; z <= maxz; ++z)
                 {
-                    const rcCompactCell& c = chf.cells[x + z * chf.width];
-                    for (int i = (int)c.index, ni = (int)(c.index + c.count); i < ni; ++i)
+                    for (int x = minx; x <= maxx; ++x)
                     {
-                        rcCompactSpan& s = chf.spans[i];
-                        if ((int)s.y >= miny && (int)s.y <= maxy)
+                        const rcCompactCell& c = chf.cells[x + z * chf.width];
+                        for (int i = (int)c.index, ni = (int)(c.index + c.count); i < ni; ++i)
                         {
-                            if (chf.areas[i] != RC_NULL_AREA)
-                                chf.areas[i] = area.AreaId;
+                            rcCompactSpan& s = chf.spans[i];
+                            if (chf.areas[i] == RC_NULL_AREA)
+                                continue;
+                            if ((int)s.y >= miny && (int)s.y <= maxy)
+                            {
+                                float p[2];
+                                p[0] = chf.bmin[0] + (x + 0.5f) * chf.cs;
+                                p[1] = chf.bmin[2] + (z + 0.5f) * chf.cs;
+
+                                if (PointInPoly2D(area.NumConvexVolumeVerts, area.ConvexVolume[0].ToPtr(), p))
+                                {
+                                    chf.areas[i] = area.AreaID;
+                                }
+                            }
                         }
                     }
                 }
-            }
+                break;
         }
     }
 #endif
@@ -850,27 +832,27 @@ bool NavMesh::BuildTile(int _X, int _Z)
     //     if you have large open areas with small obstacles (not a problem if you use tiles)
     //   * good choice to use for tiled navmesh with medium and small sized tiles
 
-    if (Initial.RecastPartitionMethod == NAV_MESH_PARTITION_WATERSHED)
+    if (m_Desc.RecastPartitionMethod == NAV_MESH_PARTITION_WATERSHED)
     {
         // Prepare for region partitioning, by calculating distance field along the walkable surface.
-        if (!rcBuildDistanceField(&RecastContext, *temporal.CompactHeightfield))
+        if (!rcBuildDistanceField(&s_RecastContext, *temporal.CompactHeightfield))
         {
             LOG("Could not build distance field\n");
             return false;
         }
 
         // Partition the walkable surface into simple regions without holes.
-        if (!rcBuildRegions(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
+        if (!rcBuildRegions(&s_RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
         {
             LOG("Could not build watershed regions\n");
             return false;
         }
     }
-    else if (Initial.RecastPartitionMethod == NAV_MESH_PARTITION_MONOTONE)
+    else if (m_Desc.RecastPartitionMethod == NAV_MESH_PARTITION_MONOTONE)
     {
         // Partition the walkable surface into simple regions without holes.
         // Monotone partitioning does not need distancefield.
-        if (!rcBuildRegionsMonotone(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
+        if (!rcBuildRegionsMonotone(&s_RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
         {
             LOG("Could not build monotone regions\n");
             return false;
@@ -879,14 +861,14 @@ bool NavMesh::BuildTile(int _X, int _Z)
     else
     { // RECAST_PARTITION_LAYERS
         // Partition the walkable surface into simple regions without holes.
-        if (!rcBuildLayerRegions(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea))
+        if (!rcBuildLayerRegions(&s_RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea))
         {
             LOG("Could not build layer regions\n");
             return false;
         }
     }
 
-    if (Initial.bDynamicNavMesh)
+    if (m_Desc.bDynamicNavMesh)
     {
         temporal.LayerSet = rcAllocHeightfieldLayerSet();
         if (!temporal.LayerSet)
@@ -895,26 +877,26 @@ bool NavMesh::BuildTile(int _X, int _Z)
             return false;
         }
 
-        if (!rcBuildHeightfieldLayers(&RecastContext, *temporal.CompactHeightfield, config.borderSize, config.walkableHeight, *temporal.LayerSet))
+        if (!rcBuildHeightfieldLayers(&s_RecastContext, *temporal.CompactHeightfield, config.borderSize, config.walkableHeight, *temporal.LayerSet))
         {
             LOG("Failed on rcBuildHeightfieldLayers\n");
             return false;
         }
 
-        TileCacheData cacheData[MAX_LAYERS];
+        TileCacheData cache_data[MAX_LAYERS];
 
-        int numLayers      = Math::Min(temporal.LayerSet->nlayers, MAX_LAYERS);
-        int numValidLayers = 0;
-        for (int i = 0; i < numLayers; i++)
+        int num_layers = Math::Min(temporal.LayerSet->nlayers, MAX_LAYERS);
+        int num_valid_layers = 0;
+        for (int i = 0; i < num_layers; i++)
         {
-            TileCacheData*           tile  = &cacheData[i];
+            TileCacheData* tile = &cache_data[i];
             rcHeightfieldLayer const* layer = &temporal.LayerSet->layers[i];
 
             dtTileCacheLayerHeader header;
             header.magic   = DT_TILECACHE_MAGIC;
             header.version = DT_TILECACHE_VERSION;
-            header.tx      = _X;
-            header.ty      = _Z;
+            header.tx      = inX;
+            header.ty      = inZ;
             header.tlayer  = i;
             dtVcopy(header.bmin, layer->bmin);
             dtVcopy(header.bmax, layer->bmax);
@@ -927,75 +909,69 @@ bool NavMesh::BuildTile(int _X, int _Z)
             header.hmin   = (unsigned short)layer->hmin;
             header.hmax   = (unsigned short)layer->hmax;
 
-            dtStatus status = dtBuildTileCacheLayer(&TileCompressorCallback, &header, layer->heights, layer->areas, layer->cons, &tile->Data, &tile->Size);
+            dtStatus status = dtBuildTileCacheLayer(&s_TileCompressorCallback, &header, layer->heights, layer->areas, layer->cons, &tile->Data, &tile->Size);
             if (dtStatusFailed(status))
             {
                 LOG("Failed on dtBuildTileCacheLayer\n");
                 break;
             }
 
-            numValidLayers++;
+            num_valid_layers++;
         }
 
-        int cacheLayerCount = 0;
-        //int cacheCompressedSize = 0;
-        //int cacheRawSize = 0;
-        //const int layerBufferSize = dtAlign4( sizeof( dtTileCacheLayerHeader ) ) + Initial.NavTileSize * Initial.NavTileSize * numLayers;
-        for (int i = 0; i < numValidLayers; i++)
+        int cached_layer_count = 0;
+        //int cache_compressed_size = 0;
+        //int cache_raw_size = 0;
+        //const int layer_size = dtAlign4(sizeof(dtTileCacheLayerHeader)) + m_Desc.NavTileSize * m_Desc.NavTileSize * num_layers;
+        for (int i = 0; i < num_valid_layers; i++)
         {
             dtCompressedTileRef ref;
-            dtStatus            status = m_TileCache->addTile(cacheData[i].Data, cacheData[i].Size, DT_COMPRESSEDTILE_FREE_DATA, &ref);
+            dtStatus status = m_TileCache->addTile(cache_data[i].Data, cache_data[i].Size, DT_COMPRESSEDTILE_FREE_DATA, &ref);
             if (dtStatusFailed(status))
             {
-                dtFree(cacheData[i].Data);
-                cacheData[i].Data = nullptr;
+                dtFree(cache_data[i].Data);
+                cache_data[i].Data = nullptr;
                 continue;
             }
 
             status = m_TileCache->buildNavMeshTile(ref, m_NavMesh);
             if (dtStatusFailed(status))
-            {
                 LOG("Failed to build navmesh tile {}\n", GetErrorStr(status));
-            }
 
-            cacheLayerCount++;
-            //            cacheCompressedSize += cacheData[i].Size;
-            //            cacheRawSize += layerBufferSize;
+            cached_layer_count++;
+            //cache_compressed_size += cache_data[i].Size;
+            //cache_raw_size += layer_size;
         }
 
-        if (cacheLayerCount == 0)
-        {
+        if (cached_layer_count == 0)
             return false;
-        }
 
+        //        int build_peak_memory_usage = LinearAllocator->High;
+        //        const float compression_ratio = (float)cache_compressed_size / (float)(cache_raw_size+1);
 
-        //        int cacheBuildMemUsage = LinearAllocator->High;
-        //        const float compressionRatio = (float)cacheCompressedSize / (float)(cacheRawSize+1);
-
-        //        int totalMemoryUsage = 0;
+        //        int time_memory_usage = 0;
         //        const dtNavMesh * mesh = m_NavMesh;
-        //        for ( int i = 0 ; i < mesh->getMaxTiles() ; ++i ) {
+        //        for ( int i = 0 ; i < mesh->getMaxTiles() ; ++i )
+        //        {
         //            const dtMeshTile * tile = mesh->getTile( i );
-        //            if ( tile->header ) {
-        //                totalMemoryUsage += tile->dataSize;
-        //            }
+        //            if (tile->header)
+        //                time_memory_usage += tile->dataSize;
         //        }
-
         //        GLogger.Printf( "Processed navigation data:\n"
-        //                        "Total memory usage for m_NavMesh: %.1f kB\n"
+        //                        "Total memory usage: %.1f kB\n"
         //                        "Cache compressed size: %.1f kB\n"
         //                        "Cache raw size: %.1f kB\n"
         //                        "Cache compression ratio: %.1f%%\n"
         //                        "Cache layers count: %d\n"
         //                        "Cache layers per tile: %.1f\n"
         //                        "Build peak memory usage: %d kB\n",
-        //                        totalMemoryUsage/1024.0f,
-        //                        cacheCompressedSize/1024.0f,
-        //                        cacheRawSize/1024.0f,
-        //                        compressionRatio*100.0f,
+        //                        time_memory_usage/1024.0f,
+        //                        cache_compressed_size/1024.0f,
+        //                        cache_raw_size/1024.0f,
+        //                        compression_ratio*100.0f,
         //                        cacheayerCount,
-        //                        (float)cacheLayerCount/gridSize,
-        //                        cacheBuildMemUsage
+        //                        (float)cached_layer_count/gridSize,
+        //                        build_peak_memory_usage
         //                        );
     }
     else
@@ -1010,7 +986,7 @@ bool NavMesh::BuildTile(int _X, int _Z)
         // Trace and simplify region contours.
 
         // Create contours.
-        if (!rcBuildContours(&RecastContext, *temporal.CompactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *temporal.ContourSet))
+        if (!rcBuildContours(&s_RecastContext, *temporal.CompactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *temporal.ContourSet))
         {
             LOG("Could not create contours\n");
             return false;
@@ -1024,7 +1000,7 @@ bool NavMesh::BuildTile(int _X, int _Z)
         }
 
         // Build polygon navmesh from the contours.
-        if (!rcBuildPolyMesh(&RecastContext, *temporal.ContourSet, config.maxVertsPerPoly, *temporal.PolyMesh))
+        if (!rcBuildPolyMesh(&s_RecastContext, *temporal.ContourSet, config.maxVertsPerPoly, *temporal.PolyMesh))
         {
             LOG("Could not triangulate contours\n");
             return false;
@@ -1044,7 +1020,7 @@ bool NavMesh::BuildTile(int _X, int _Z)
         }
 
         // Create detail mesh which allows to access approximate height on each polygon.
-        if (!rcBuildPolyMeshDetail(&RecastContext,
+        if (!rcBuildPolyMeshDetail(&s_RecastContext,
                                    *temporal.PolyMesh,
                                    *temporal.CompactHeightfield,
                                    config.detailSampleDist,
@@ -1062,64 +1038,58 @@ bool NavMesh::BuildTile(int _X, int _Z)
         static_assert(NAV_MESH_AREA_GROUND == RC_WALKABLE_AREA, "Navmesh area id static check");
         for (int i = 0; i < temporal.PolyMesh->npolys; ++i)
         {
-
             if (temporal.PolyMesh->areas[i] == NAV_MESH_AREA_GROUND ||
                 temporal.PolyMesh->areas[i] == NAV_MESH_AREA_GRASS ||
                 temporal.PolyMesh->areas[i] == NAV_MESH_AREA_ROAD)
             {
-
                 temporal.PolyMesh->flags[i] = NAV_MESH_FLAGS_WALK;
             }
             else if (temporal.PolyMesh->areas[i] == NAV_MESH_AREA_WATER)
             {
-
                 temporal.PolyMesh->flags[i] = NAV_MESH_FLAGS_SWIM;
             }
             else if (temporal.PolyMesh->areas[i] == NAV_MESH_AREA_DOOR)
             {
-
                 temporal.PolyMesh->flags[i] = NAV_MESH_FLAGS_WALK | NAV_MESH_FLAGS_DOOR;
             }
         }
 
-        BvAxisAlignedBox        conBoundingBox;
-        const float             margin = 0.2f;
-        TVector<Float3>         offMeshConVerts;
-        TVector<float>          offMeshConRads;
-        TVector<unsigned char>  offMeshConDirs;
-        TVector<unsigned char>  offMeshConAreas;
-        TVector<unsigned short> offMeshConFlags;
-        TVector<unsigned int>   offMeshConId;
-        int                     offMeshConCount = 0;
+        const float MARGIN = 0.2f;
+
+        TVector<Float3> offmesh_con_verts;
+        TVector<float> offmesh_con_rads;
+        TVector<unsigned char> offmesh_con_dirs;
+        TVector<unsigned char> offmesh_con_areas;
+        TVector<unsigned short> offmesh_con_flags;
+        TVector<unsigned int> offmesh_con_id;
+        int offmesh_con_count = 0;
+
         for (int i = 0; i < NavMeshConnections.Size(); i++)
         {
             NavMeshConnection const& con = NavMeshConnections[i];
 
-            con.CalcBoundingBox(conBoundingBox);
-            conBoundingBox.Mins -= margin;
-            conBoundingBox.Maxs += margin;
+            BvAxisAlignedBox bounds = con.CalcBoundingBox();
+            bounds.Mins -= MARGIN;
+            bounds.Maxs += MARGIN;
 
-            if (!BvBoxOverlapBox(tileWorldBoundsWithPadding, conBoundingBox))
-            {
-                // Connection is outside of tile bounding box
+            // Connection is outside of tile bounding box
+            if (!BvBoxOverlapBox(tile_bounds_with_pad, bounds))
                 continue;
-            }
 
-            offMeshConVerts.Add(con.StartPosition);
-            offMeshConVerts.Add(con.EndPosition);
-            offMeshConRads.Add(con.Radius);
-            offMeshConDirs.Add(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
-            offMeshConAreas.Add(con.AreaId);
-            offMeshConFlags.Add(con.Flags);
-            offMeshConId.Add(i); // FIXME?
+            offmesh_con_verts.Add(con.StartPosition);
+            offmesh_con_verts.Add(con.EndPosition);
+            offmesh_con_rads.Add(con.Radius);
+            offmesh_con_dirs.Add(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
+            offmesh_con_areas.Add(con.AreaID);
+            offmesh_con_flags.Add(con.Flags);
+            offmesh_con_id.Add(i); // FIXME?
 
-            offMeshConCount++;
+            offmesh_con_count++;
         }
 
         // Create Detour data from poly mesh.
 
-        dtNavMeshCreateParams params;
-        Core::ZeroMem(&params, sizeof(params));
+        dtNavMeshCreateParams params = {};
         params.verts            = temporal.PolyMesh->verts;
         params.vertCount        = temporal.PolyMesh->nverts;
         params.polys            = temporal.PolyMesh->polys;
@@ -1132,42 +1102,40 @@ bool NavMesh::BuildTile(int _X, int _Z)
         params.detailVertsCount = temporal.PolyMeshDetail->nverts;
         params.detailTris       = temporal.PolyMeshDetail->tris;
         params.detailTriCount   = temporal.PolyMeshDetail->ntris;
-        params.offMeshConVerts  = (float*)offMeshConVerts.ToPtr();
-        params.offMeshConRad    = offMeshConRads.ToPtr();
-        params.offMeshConDir    = offMeshConDirs.ToPtr();
-        params.offMeshConAreas  = offMeshConAreas.ToPtr();
-        params.offMeshConFlags  = offMeshConFlags.ToPtr();
-        params.offMeshConUserID = offMeshConId.ToPtr();
-        params.offMeshConCount  = offMeshConCount;
-        params.walkableHeight   = Initial.WalkableHeight;
-        params.walkableRadius   = Initial.WalkableRadius;
-        params.walkableClimb    = Initial.WalkableClimb;
-        params.tileX            = _X;
-        params.tileY            = _Z;
+        params.offMeshConVerts  = (float*)offmesh_con_verts.ToPtr();
+        params.offMeshConRad    = offmesh_con_rads.ToPtr();
+        params.offMeshConDir    = offmesh_con_dirs.ToPtr();
+        params.offMeshConAreas  = offmesh_con_areas.ToPtr();
+        params.offMeshConFlags  = offmesh_con_flags.ToPtr();
+        params.offMeshConUserID = offmesh_con_id.ToPtr();
+        params.offMeshConCount  = offmesh_con_count;
+        params.walkableHeight   = m_Desc.WalkableHeight;
+        params.walkableRadius   = m_Desc.WalkableRadius;
+        params.walkableClimb    = m_Desc.WalkableClimb;
+        params.tileX            = inX;
+        params.tileY            = inZ;
         rcVcopy(params.bmin, temporal.PolyMesh->bmin);
         rcVcopy(params.bmax, temporal.PolyMesh->bmax);
-        params.cs          = config.cs;
-        params.ch          = config.ch;
-        params.buildBvTree = true;
+        params.cs               = config.cs;
+        params.ch               = config.ch;
+        params.buildBvTree      = true;
 
-        unsigned char* navData     = 0;
-        int            navDataSize = 0;
+        unsigned char* nav_data = 0;
+        int nav_data_size = 0;
 
-        if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
+        if (!dtCreateNavMeshData(&params, &nav_data, &nav_data_size))
         {
             if (params.vertCount >= 0xffff)
-            {
                 LOG("vertCount >= 0xffff\n");
-            }
 
             LOG("Could not build navmesh tile\n");
             return false;
         }
 
-        dtStatus status = m_NavMesh->addTile(navData, navDataSize, DT_TILE_FREE_DATA, 0, nullptr);
+        dtStatus status = m_NavMesh->addTile(nav_data, nav_data_size, DT_TILE_FREE_DATA, 0, nullptr);
         if (dtStatusFailed(status))
         {
-            dtFree(navData);
+            dtFree(nav_data);
             LOG("Could not add tile to navmesh\n");
             return false;
         }
@@ -1176,55 +1144,45 @@ bool NavMesh::BuildTile(int _X, int _Z)
     return true;
 }
 
-void NavMesh::RemoveTile(int _X, int _Z)
+void NavMesh::RemoveTile(int inX, int inZ)
 {
     if (!m_NavMesh)
-    {
         return;
-    }
 
-    if (Initial.bDynamicNavMesh)
+    if (m_Desc.bDynamicNavMesh)
     {
-
         HK_ASSERT(m_TileCache);
 
-        dtCompressedTileRef compressedTiles[MAX_LAYERS];
-        int                 count = m_TileCache->getTilesAt(_X, _Z, compressedTiles, Initial.MaxLayers);
+        dtCompressedTileRef compressed_tiles[MAX_LAYERS];
+        int count = m_TileCache->getTilesAt(inX, inZ, compressed_tiles, m_Desc.MaxLayers);
         for (int i = 0; i < count; i++)
         {
-            byte*    data   = nullptr;
-            dtStatus status = m_TileCache->removeTile(compressedTiles[i], &data, nullptr);
+            byte* data = nullptr;
+            dtStatus status = m_TileCache->removeTile(compressed_tiles[i], &data, nullptr);
             if (dtStatusFailed(status))
-            {
                 continue;
-            }
             dtFree(data);
         }
     }
     else
     {
-
-        dtTileRef ref = m_NavMesh->getTileRefAt(_X, _Z, 0);
+        dtTileRef ref = m_NavMesh->getTileRefAt(inX, inZ, 0);
         if (ref)
-        {
             m_NavMesh->removeTile(ref, nullptr, nullptr);
-        }
     }
 }
 
 void NavMesh::RemoveTiles()
 {
     if (!m_NavMesh)
-    {
         return;
-    }
 
-    if (Initial.bDynamicNavMesh)
+    if (m_Desc.bDynamicNavMesh)
     {
         HK_ASSERT(m_TileCache);
 
-        int numTiles = m_TileCache->getTileCount();
-        for (int i = 0; i < numTiles; i++)
+        int tile_count = m_TileCache->getTileCount();
+        for (int i = 0; i < tile_count; i++)
         {
             const dtCompressedTile* tile = m_TileCache->getTile(i);
             if (tile && tile->header)
@@ -1235,11 +1193,11 @@ void NavMesh::RemoveTiles()
     }
     else
     {
-        int              numTiles = m_NavMesh->getMaxTiles();
-        const dtNavMesh* navMesh  = m_NavMesh;
-        for (int i = 0; i < numTiles; i++)
+        int tile_count = m_NavMesh->getMaxTiles();
+        const dtNavMesh* nav_mesh = m_NavMesh;
+        for (int i = 0; i < tile_count; i++)
         {
-            const dtMeshTile* tile = navMesh->getTile(i);
+            const dtMeshTile* tile = nav_mesh->getTile(i);
             if (tile && tile->header)
             {
                 m_NavMesh->removeTile(m_NavMesh->getTileRef(tile), nullptr, nullptr);
@@ -1248,106 +1206,81 @@ void NavMesh::RemoveTiles()
     }
 }
 
-void NavMesh::RemoveTiles(Int2 const& _Mins, Int2 const& _Maxs)
+void NavMesh::RemoveTiles(Int2 const& inMins, Int2 const& inMaxs)
 {
     if (!m_NavMesh)
-    {
         return;
-    }
-    for (int z = _Mins[1]; z <= _Maxs[1]; z++)
-    {
-        for (int x = _Mins[0]; x <= _Maxs[0]; x++)
-        {
+
+    for (int z = inMins[1]; z <= inMaxs[1]; z++)
+        for (int x = inMins[0]; x <= inMaxs[0]; x++)
             RemoveTile(x, z);
-        }
-    }
 }
 
-bool NavMesh::IsTileExsist(int _X, int _Z) const
+bool NavMesh::IsTileExsist(int inX, int inZ) const
 {
-    return m_NavMesh ? m_NavMesh->getTileAt(_X, _Z, 0) != nullptr : false;
+    return m_NavMesh ? m_NavMesh->getTileAt(inX, inZ, 0) != nullptr : false;
 }
 
-void NavMesh::AddObstacle(NavMeshObstacle* _Obstacle)
+void NavMesh::AddObstacle(NavMeshObstacle* inObstacle)
 {
     if (!m_TileCache)
-    {
         return;
-    }
 
     dtObstacleRef ref;
-    dtStatus      status;
+    dtStatus status = DT_FAILURE;
 
     // TODO:
-    //while ( m_TileCache->isObstacleQueueFull() ) {
+    //while (m_TileCache->isObstacleQueueFull())
     //    m_TileCache->update( 1, m_NavMesh );
-    //}
 
-    if (_Obstacle->Shape == NAV_MESH_OBSTACLE_BOX)
+    switch (inObstacle->Shape)
     {
-        Float3 mins = _Obstacle->Position - _Obstacle->HalfExtents;
-        Float3 maxs = _Obstacle->Position + _Obstacle->HalfExtents;
-        status      = m_TileCache->addBoxObstacle((const float*)mins.ToPtr(), (const float*)maxs.ToPtr(), &ref);
-    }
-    else
-    {
-        while (1)
-        {
-            status = m_TileCache->addObstacle((const float*)_Obstacle->Position.ToPtr(), _Obstacle->Radius, _Obstacle->Height, &ref);
-
-            if (status & DT_BUFFER_TOO_SMALL)
-            {
-                m_TileCache->update(1, m_NavMesh);
-                continue;
-            }
-
+        case NAV_MESH_OBSTACLE_BOX:
+            status = m_TileCache->addBoxObstacle((inObstacle->Position - inObstacle->HalfExtents).ToPtr(),
+                                                 (inObstacle->Position + inObstacle->HalfExtents).ToPtr(), &ref);
             break;
-        }
+        case NAV_MESH_OBSTACLE_CYLINDER:
+            while (1)
+            {
+                status = m_TileCache->addObstacle(inObstacle->Position.ToPtr(), inObstacle->Radius, inObstacle->Height, &ref);
+                if (!(status & DT_BUFFER_TOO_SMALL))
+                    break;
+                m_TileCache->update(1, m_NavMesh);
+            }
+            break;
     }
 
     if (dtStatusFailed(status))
     {
         LOG("Failed to add navmesh obstacle\n");
         if (status & DT_OUT_OF_MEMORY)
-        {
             LOG("DT_OUT_OF_MEMORY\n");
-        }
         return;
     }
     LOG("AddObstacle: {}\n", ref);
-    _Obstacle->ObstacleRef = ref;
+    inObstacle->ObstacleRef = ref;
 }
 
-void NavMesh::RemoveObstacle(NavMeshObstacle* _Obstacle)
+void NavMesh::RemoveObstacle(NavMeshObstacle* inObstacle)
 {
     if (!m_TileCache)
-    {
         return;
-    }
 
-    if (!_Obstacle->ObstacleRef)
-    {
+    if (!inObstacle->ObstacleRef)
         return;
-    }
 
     // TODO:
-    //while ( m_TileCache->isObstacleQueueFull() ) {
+    //while (m_TileCache->isObstacleQueueFull())
     //    m_TileCache->update( 1, m_NavMesh );
-    //}
 
     dtStatus status;
 
     while (1)
     {
-        status = m_TileCache->removeObstacle(_Obstacle->ObstacleRef);
-
-        if (status & DT_BUFFER_TOO_SMALL)
-        {
-            m_TileCache->update(1, m_NavMesh);
-            continue;
-        }
-
-        break;
+        status = m_TileCache->removeObstacle(inObstacle->ObstacleRef);
+        if (!(status & DT_BUFFER_TOO_SMALL))
+            break;
+        m_TileCache->update(1, m_NavMesh);
     }
 
     if (dtStatusFailed(status))
@@ -1356,19 +1289,19 @@ void NavMesh::RemoveObstacle(NavMeshObstacle* _Obstacle)
         return;
     }
 
-    _Obstacle->ObstacleRef = 0;
+    inObstacle->ObstacleRef = 0;
 }
 
-void NavMesh::UpdateObstacle(NavMeshObstacle* _Obstacle)
+void NavMesh::UpdateObstacle(NavMeshObstacle* inObstacle)
 {
-    if (!_Obstacle->ObstacleRef)
+    if (!inObstacle->ObstacleRef)
     {
         LOG("NavMesh::UpdateObstacle: obstacle is not in navmesh\n");
         return;
     }
 
-    RemoveObstacle(_Obstacle);
-    AddObstacle(_Obstacle);
+    RemoveObstacle(inObstacle);
+    AddObstacle(inObstacle);
 }
 
 void NavMesh::Purge()
@@ -1394,7 +1327,7 @@ void NavMesh::Purge()
 
 struct DebugDrawCallback : public duDebugDraw
 {
-    DebugRenderer*       DD;
+    DebugRenderer*        DD;
     Float3                AccumVertices[3];
     int                   AccumIndex;
     duDebugDrawPrimitives Primitive;
@@ -1485,30 +1418,22 @@ struct DebugDrawCallback : public duDebugDraw
     }
 };
 
-void NavMesh::DrawDebug(DebugRenderer* InRenderer)
+void NavMesh::DrawDebug(DebugRenderer* inRenderer)
 {
     if (!m_NavMesh)
-    {
         return;
-    }
 
     DebugDrawCallback callback;
-    callback.DD = InRenderer;
+    callback.DD = inRenderer;
 
     if (com_DrawNavMeshBVTree)
-    {
         duDebugDrawNavMeshBVTree(&callback, *m_NavMesh);
-    }
 
     if (com_DrawNavMeshNodes)
-    {
         duDebugDrawNavMeshNodes(&callback, *m_NavQuery);
-    }
 
     if (com_DrawNavMesh)
-    {
         duDebugDrawNavMeshWithClosedList(&callback, *m_NavMesh, *m_NavQuery, DU_DRAWNAVMESH_OFFMESHCONS | DU_DRAWNAVMESH_CLOSEDLIST | DU_DRAWNAVMESH_COLOR_TILES);
-    }
     //duDebugDrawNavMeshPolysWithFlags( &callback, *m_NavMesh, NAV_MESH_FLAGS_DISABLED/*NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
     //duDebugDrawNavMeshPolysWithFlags( &callback, *m_NavMesh, 0/*NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
 
@@ -1519,9 +1444,8 @@ void NavMesh::DrawDebug(DebugRenderer* InRenderer)
         for ( int i = 0 ; i < m_TileCache->getTileCount() ; ++i ) {
             const dtCompressedTile* tile = m_TileCache->getTile(i);
 
-            if ( !tile->header ) {
+            if ( !tile->header )
                 continue;
-            }
 
             m_TileCache->calcTightTileBounds( tile->header, bmin, bmax );
 
@@ -1530,28 +1454,18 @@ void NavMesh::DrawDebug(DebugRenderer* InRenderer)
 
             duDebugDrawBoxWire( &callback, bmin[0]-pad, bmin[1]-pad,bmin[2]-pad,
                 bmax[0]+pad, bmax[1]+pad,bmax[2]+pad, col, 2.0f);
-
         }
     }
 #endif
 
     if (com_DrawNavMeshTileBounds)
     {
-        BvAxisAlignedBox boundingBox;
-        InRenderer->SetDepthTest(false);
-        InRenderer->SetColor(Color4(1, 1, 1, 1));
+        inRenderer->SetDepthTest(false);
+        inRenderer->SetColor(Color4(1, 1, 1, 1));
         for (int z = 0; z < m_NumTilesZ; z++)
-        {
             for (int x = 0; x < m_NumTilesX; x++)
-            {
                 if (IsTileExsist(x, z))
-                {
-                    GetTileWorldBounds(x, z, boundingBox);
-
-                    InRenderer->DrawAABB(boundingBox);
-                }
-            }
-        }
+                    inRenderer->DrawAABB(GetTileWorldBounds(x, z));
     }
 
 #if 0
@@ -1564,8 +1478,8 @@ void NavMesh::DrawDebug(DebugRenderer* InRenderer)
         GatherNavigationGeometry( vertices, indices, walkableMask, dummyBoundingBox, &BoundingBox );
         //gen=true;
     }
-    InRenderer->SetDepthTest(true);
-    InRenderer->DrawTriangleSoup(vertices,indices,false);
+    inRenderer->SetDepthTest(true);
+    inRenderer->DrawTriangleSoup(vertices,indices,false);
 #endif
 }
 
@@ -1592,29 +1506,19 @@ NavQueryFilter::~NavQueryFilter()
 {
 }
 
-void NavQueryFilter::SetGameSession(GameSession* session)
+void NavQueryFilter::SetAreaCost(int inAreaID, float inCost)
 {
-    m_GameSession = session;
+    m_Filter->setAreaCost(inAreaID, inCost);
 }
 
-GameSession* NavQueryFilter::GetGameSession() const
+float NavQueryFilter::GetAreaCost(int inAreaID) const
 {
-    return m_GameSession;
+    return m_Filter->getAreaCost(inAreaID);
 }
 
-void NavQueryFilter::SetAreaCost(int _AreaId, float _Cost)
+void NavQueryFilter::SetIncludeFlags(unsigned short inFlags)
 {
-    m_Filter->setAreaCost(_AreaId, _Cost);
-}
-
-float NavQueryFilter::GetAreaCost(int _AreaId) const
-{
-    return m_Filter->getAreaCost(_AreaId);
-}
-
-void NavQueryFilter::SetIncludeFlags(unsigned short _Flags)
-{
-    m_Filter->setIncludeFlags(_Flags);
+    m_Filter->setIncludeFlags(inFlags);
 }
 
 unsigned short NavQueryFilter::GetIncludeFlags() const
@@ -1622,9 +1526,9 @@ unsigned short NavQueryFilter::GetIncludeFlags() const
     return m_Filter->getIncludeFlags();
 }
 
-void NavQueryFilter::SetExcludeFlags(unsigned short _Flags)
+void NavQueryFilter::SetExcludeFlags(unsigned short inFlags)
 {
-    m_Filter->setExcludeFlags(_Flags);
+    m_Filter->setExcludeFlags(inFlags);
 }
 
 unsigned short NavQueryFilter::GetExcludeFlags() const
@@ -1632,498 +1536,393 @@ unsigned short NavQueryFilter::GetExcludeFlags() const
     return m_Filter->getExcludeFlags();
 }
 
-bool NavMesh::Trace(NavMeshTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents, NavQueryFilter const& _Filter) const
+bool NavMesh::CastRay(Float3 const& inRayStart, Float3 const& inRayEnd, Float3 const& inExtents, NavMeshRayCastResult& outResult, NavQueryFilter const& inFilter) const
 {
-    NavPolyRef StartRef;
+    NavPolyRef poly_ref;
 
-    if (!QueryNearestPoly(_RayStart, _Extents, &StartRef))
-    {
-        _Result.Clear();
+    if (!QueryNearestPoly(inRayStart, inExtents, &poly_ref))
         return false;
-    }
 
-    int NumPolys;
-
-    _Result.HitFraction = Math::MaxValue<float>();
-
-    m_NavQuery->raycast(StartRef, (const float*)_RayStart.ToPtr(), (const float*)_RayEnd.ToPtr(), _Filter.m_Filter.RawPtr(), &_Result.HitFraction, (float*)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS);
-
-    bool bHasHit = _Result.HitFraction != Math::MaxValue<float>();
-    if (!bHasHit)
-    {
-        _Result.Clear();
+    auto status = m_NavQuery->raycast(poly_ref, inRayStart.ToPtr(), inRayEnd.ToPtr(), inFilter.m_Filter.RawPtr(), &outResult.Fraction, outResult.Normal.ToPtr(), TmpPolys, nullptr, MAX_POLYS);
+    if (dtStatusFailed(status))
         return false;
-    }
 
-    _Result.Position = _RayStart + (_RayEnd - _RayStart) * _Result.HitFraction;
-    _Result.Distance = (_Result.Position - _RayStart).Length();
-
-    return true;
+    return outResult.Fraction != FLT_MAX;
 }
 
-bool NavMesh::Trace(NavMeshTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, Float3 const& _Extents) const
+bool NavMesh::CastRay(Float3 const& inRayStart, Float3 const& inRayEnd, Float3 const& inExtents, NavMeshRayCastResult& outResult) const
 {
-    return Trace(_Result, _RayStart, _RayEnd, _Extents, QueryFilter);
+    return CastRay(inRayStart, inRayEnd, inExtents, outResult, QueryFilter);
 }
 
-bool NavMesh::QueryTileLocaction(Float3 const& _Position, int* _TileX, int* _TileY) const
+bool NavMesh::QueryTileLocaction(Float3 const& inPosition, int* outTileX, int* outTileY) const
 {
     if (!m_NavMesh)
     {
-        *_TileX = *_TileY = 0;
+        *outTileX = *outTileY = 0;
         return false;
     }
 
-    m_NavMesh->calcTileLoc((float*)_Position.ToPtr(), _TileX, _TileY);
+    m_NavMesh->calcTileLoc(inPosition.ToPtr(), outTileX, outTileY);
     return true;
 }
 
-bool NavMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPolyRef* _NearestPolyRef) const
+bool NavMesh::QueryNearestPoly(Float3 const& inPosition, Float3 const& inExtents, NavQueryFilter const& inFilter, NavPolyRef* outNearestPolyRef) const
 {
-    *_NearestPolyRef = 0;
+    *outNearestPolyRef = 0;
 
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.RawPtr(), _NearestPolyRef, NULL);
-    if (dtStatusFailed(Status))
-    {
+    auto status = m_NavQuery->findNearestPoly(inPosition.ToPtr(), inExtents.ToPtr(), inFilter.m_Filter.RawPtr(), outNearestPolyRef, NULL);
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::QueryNearestPoly(Float3 const& _Position, Float3 const& _Extents, NavPolyRef* _NearestPolyRef) const
+bool NavMesh::QueryNearestPoly(Float3 const& inPosition, Float3 const& inExtents, NavPolyRef* outNearestPolyRef) const
 {
-    return QueryNearestPoly(_Position, _Extents, QueryFilter, _NearestPolyRef);
+    return QueryNearestPoly(inPosition, inExtents, QueryFilter, outNearestPolyRef);
 }
 
-bool NavMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _NearestPointRef) const
+bool NavMesh::QueryNearestPoint(Float3 const& inPosition, Float3 const& inExtents, NavQueryFilter const& inFilter, NavPointRef* outNearestPointRef) const
 {
-    _NearestPointRef->PolyRef = 0;
-    _NearestPointRef->Position.Clear();
+    outNearestPointRef->PolyRef = 0;
+    outNearestPointRef->Position.Clear();
 
     if (!m_NavQuery)
-    {
         return false;
-    }
-
-    dtStatus Status = m_NavQuery->findNearestPoly((const float*)_Position.ToPtr(), (const float*)_Extents.ToPtr(), _Filter.m_Filter.RawPtr(), &_NearestPointRef->PolyRef, (float*)_NearestPointRef->Position.ToPtr());
-    if (dtStatusFailed(Status))
-    {
+    
+    auto status = m_NavQuery->findNearestPoly(inPosition.ToPtr(), inExtents.ToPtr(), inFilter.m_Filter.RawPtr(), &outNearestPointRef->PolyRef, outNearestPointRef->Position.ToPtr());
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::QueryNearestPoint(Float3 const& _Position, Float3 const& _Extents, NavPointRef* _NearestPointRef) const
+bool NavMesh::QueryNearestPoint(Float3 const& inPosition, Float3 const& inExtents, NavPointRef* outNearestPointRef) const
 {
-    return QueryNearestPoint(_Position, _Extents, QueryFilter, _NearestPointRef);
+    return QueryNearestPoint(inPosition, inExtents, QueryFilter, outNearestPointRef);
 }
 
-// Function returning a random number [0..1).
-// TODO: Rewrite random function: float NavRandom(MersenneTwisterRand* pRandomGenerator)
-static MersenneTwisterRand* pRandomGenerator{};
-static float NavRandom()
+namespace
 {
-    // TODO: The random number generator must come from the current Session!!!
-
-    const float range = 1.0f - FLT_EPSILON;
-
-    if (pRandomGenerator)
-        return pRandomGenerator->GetFloat() * range;
-    else
-        return static_cast<float>(rand()) / RAND_MAX * range;
+float NavRandom()
+{
+    return GameApplication::GetRandom().GetFloat();
 }
+} // namespace
 
-bool NavMesh::QueryRandomPoint(NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPoint(NavQueryFilter const& inFilter, NavPointRef* outRandomPointRef) const
 {
-    _RandomPointRef->PolyRef = 0;
-    _RandomPointRef->Position.Clear();
+    outRandomPointRef->PolyRef = 0;
+    outRandomPointRef->Position.Clear();
 
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    GameSession* gameSession = _Filter.GetGameSession();
-    if (gameSession)
-        pRandomGenerator = &gameSession->Rand;
-    else
-        pRandomGenerator = nullptr;
-
-    dtStatus Status = m_NavQuery->findRandomPoint(_Filter.m_Filter.RawPtr(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
-    if (dtStatusFailed(Status))
-    {
+    auto status = m_NavQuery->findRandomPoint(inFilter.m_Filter.RawPtr(), NavRandom, &outRandomPointRef->PolyRef, outRandomPointRef->Position.ToPtr());
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::QueryRandomPoint(NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPoint(NavPointRef* outRandomPointRef) const
 {
-    return QueryRandomPoint(QueryFilter, _RandomPointRef);
+    return QueryRandomPoint(QueryFilter, outRandomPointRef);
 }
 
-bool NavMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPointAroundCircle(Float3 const& inPosition, float inRadius, Float3 const& inExtents, NavQueryFilter const& inFilter, NavPointRef* outRandomPointRef) const
 {
-    NavPointRef StartRef;
+    NavPointRef point_ref;
 
-    if (!QueryNearestPoly(_Position, _Extents, _Filter, &StartRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inPosition, inExtents, inFilter, &point_ref.PolyRef))
         return false;
-    }
 
-    StartRef.Position = _Position;
+    point_ref.Position = inPosition;
 
-    return QueryRandomPointAroundCircle(StartRef, _Radius, _Filter, _RandomPointRef);
+    return QueryRandomPointAroundCircle(point_ref, inRadius, inFilter, outRandomPointRef);
 }
 
-bool NavMesh::QueryRandomPointAroundCircle(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPointAroundCircle(Float3 const& inPosition, float inRadius, Float3 const& inExtents, NavPointRef* outRandomPointRef) const
 {
-    return QueryRandomPointAroundCircle(_Position, _Radius, _Extents, QueryFilter, _RandomPointRef);
+    return QueryRandomPointAroundCircle(inPosition, inRadius, inExtents, QueryFilter, outRandomPointRef);
 }
 
-bool NavMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPointAroundCircle(NavPointRef const& inPointRef, float inRadius, NavQueryFilter const& inFilter, NavPointRef* outRandomPointRef) const
 {
-    _RandomPointRef->PolyRef = 0;
-    _RandomPointRef->Position.Clear();
+    outRandomPointRef->PolyRef = 0;
+    outRandomPointRef->Position.Clear();
 
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    GameSession* gameSession = _Filter.GetGameSession();
-    if (gameSession)
-        pRandomGenerator = &gameSession->Rand;
-    else
-        pRandomGenerator = nullptr;
-
-    dtStatus Status = m_NavQuery->findRandomPointAroundCircle(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.RawPtr(), NavRandom, &_RandomPointRef->PolyRef, (float*)_RandomPointRef->Position.ToPtr());
-    if (dtStatusFailed(Status))
-    {
+    dtStatus status = m_NavQuery->findRandomPointAroundCircle(inPointRef.PolyRef, inPointRef.Position.ToPtr(), inRadius, inFilter.m_Filter.RawPtr(), NavRandom, &outRandomPointRef->PolyRef, outRandomPointRef->Position.ToPtr());
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::QueryRandomPointAroundCircle(NavPointRef const& _StartRef, float _Radius, NavPointRef* _RandomPointRef) const
+bool NavMesh::QueryRandomPointAroundCircle(NavPointRef const& inPointRef, float inRadius, NavPointRef* outRandomPointRef) const
 {
-    return QueryRandomPointAroundCircle(_StartRef, _Radius, QueryFilter, _RandomPointRef);
+    return QueryRandomPointAroundCircle(inPointRef, inRadius, QueryFilter, outRandomPointRef);
 }
 
-bool NavMesh::QueryClosestPointOnPoly(NavPointRef const& _PointRef, Float3* _Point, bool* _OverPolygon) const
+bool NavMesh::QueryClosestPointOnPoly(NavPointRef const& inPointRef, Float3* outPoint, bool* outOverPolygon) const
 {
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    dtStatus Status = m_NavQuery->closestPointOnPoly(_PointRef.PolyRef, (const float*)_PointRef.Position.ToPtr(), (float*)_Point->ToPtr(), _OverPolygon);
-    if (dtStatusFailed(Status))
-    {
+    dtStatus status = m_NavQuery->closestPointOnPoly(inPointRef.PolyRef, inPointRef.Position.ToPtr(), outPoint->ToPtr(), outOverPolygon);
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::QueryClosestPointOnPolyBoundary(NavPointRef const& _PointRef, Float3* _Point) const
+bool NavMesh::QueryClosestPointOnPolyBoundary(NavPointRef const& inPointRef, Float3* outPoint) const
 {
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    dtStatus Status = m_NavQuery->closestPointOnPolyBoundary(_PointRef.PolyRef, (const float*)_PointRef.Position.ToPtr(), (float*)_Point->ToPtr());
-    if (dtStatusFailed(Status))
-    {
+    dtStatus status = m_NavQuery->closestPointOnPolyBoundary(inPointRef.PolyRef, inPointRef.Position.ToPtr(), outPoint->ToPtr());
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavQueryFilter const& _Filter, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
+bool NavMesh::MoveAlongSurface(NavPointRef const& inPointRef, Float3 const& inDestination, NavQueryFilter const& inFilter, NavPolyRef* outVisited, int* outVisitedCount, int inMaxVisitedSize, Float3& outResultPos) const
 {
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    _MaxVisitedSize = Math::Max(_MaxVisitedSize, 0);
+    inMaxVisitedSize = Math::Max(inMaxVisitedSize, 0);
 
-    dtStatus Status = m_NavQuery->moveAlongSurface(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_Destination.ToPtr(), _Filter.m_Filter.RawPtr(), (float*)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize);
-    if (dtStatusFailed(Status))
-    {
+    dtStatus status = m_NavQuery->moveAlongSurface(inPointRef.PolyRef, inPointRef.Position.ToPtr(), inDestination.ToPtr(), inFilter.m_Filter.RawPtr(), outResultPos.ToPtr(), outVisited, outVisitedCount, inMaxVisitedSize);
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-bool NavMesh::MoveAlongSurface(NavPointRef const& _StartRef, Float3 const& _Destination, NavPolyRef* _Visited, int* _VisitedCount, int _MaxVisitedSize, Float3& _ResultPos) const
+bool NavMesh::MoveAlongSurface(NavPointRef const& inPointRef, Float3 const& inDestination, NavPolyRef* outVisited, int* outVisitedCount, int inMaxVisitedSize, Float3& outResultPos) const
 {
-    return MoveAlongSurface(_StartRef, _Destination, QueryFilter, _Visited, _VisitedCount, _MaxVisitedSize, _ResultPos);
+    return MoveAlongSurface(inPointRef, inDestination, QueryFilter, outVisited, outVisitedCount, inMaxVisitedSize, outResultPos);
 }
 
-bool NavMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, NavQueryFilter const& _Filter, int _MaxVisitedSize, Float3& _ResultPos) const
+bool NavMesh::MoveAlongSurface(Float3 const& inPosition, Float3 const& inDestination, Float3 const& inExtents, NavQueryFilter const& inFilter, int inMaxVisitedSize, Float3& outResultPos) const
 {
-    NavPointRef StartRef;
+    NavPointRef point_ref;
 
     m_LastVisitedPolys.Clear();
 
-    if (!QueryNearestPoly(_Position, _Extents, _Filter, &StartRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inPosition, inExtents, inFilter, &point_ref.PolyRef))
         return false;
-    }
 
-    StartRef.Position = _Position;
+    point_ref.Position = inPosition;
 
-    m_LastVisitedPolys.ResizeInvalidate(Math::Max(_MaxVisitedSize, 0));
+    m_LastVisitedPolys.Resize(Math::Max(inMaxVisitedSize, 0));
 
-    int VisitedCount = 0;
-
-    if (!MoveAlongSurface(StartRef, _Destination, _Filter, m_LastVisitedPolys.ToPtr(), &VisitedCount, m_LastVisitedPolys.Size(), _ResultPos))
+    int visited_count = 0;
+    if (!MoveAlongSurface(point_ref, inDestination, inFilter, m_LastVisitedPolys.ToPtr(), &visited_count, m_LastVisitedPolys.Size(), outResultPos))
     {
         m_LastVisitedPolys.Clear();
         return false;
     }
 
-    m_LastVisitedPolys.Resize(VisitedCount);
+    m_LastVisitedPolys.Resize(visited_count);
 
     return true;
 }
 
-bool NavMesh::MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const
+bool NavMesh::MoveAlongSurface(Float3 const& inPosition, Float3 const& inDestination, Float3 const& inExtents, int inMaxVisitedSize, Float3& outResultPos) const
 {
-    return MoveAlongSurface(_Position, _Destination, _Extents, QueryFilter, _MaxVisitedSize, _ResultPos);
+    return MoveAlongSurface(inPosition, inDestination, inExtents, QueryFilter, inMaxVisitedSize, outResultPos);
 }
 
-bool NavMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavQueryFilter const& _Filter, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
+bool NavMesh::FindPath(NavPointRef const& inStartRef, NavPointRef const& inEndRef, NavQueryFilter const& inFilter, NavPolyRef* outPath, int* outPathCount, const int inMaxPath) const
 {
-    *_PathCount = 0;
+    *outPathCount = 0;
 
     if (!m_NavQuery)
-    {
         return false;
-    }
 
-    dtStatus Status = m_NavQuery->findPath(_StartRef.PolyRef, _EndRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), (const float*)_EndRef.Position.ToPtr(), _Filter.m_Filter.RawPtr(), _Path, _PathCount, _MaxPath);
-    if (dtStatusFailed(Status))
+    dtStatus status = m_NavQuery->findPath(inStartRef.PolyRef, inEndRef.PolyRef, inStartRef.Position.ToPtr(), inEndRef.Position.ToPtr(), inFilter.m_Filter.RawPtr(), outPath, outPathCount, inMaxPath);
+    if (dtStatusFailed(status))
     {
-        *_PathCount = 0;
+        *outPathCount = 0;
         return false;
     }
 
     return true;
 }
 
-bool NavMesh::FindPath(NavPointRef const& _StartRef, NavPointRef const& _EndRef, NavPolyRef* _Path, int* _PathCount, const int _MaxPath) const
+bool NavMesh::FindPath(NavPointRef const& inStartRef, NavPointRef const& inEndRef, NavPolyRef* outPath, int* outPathCount, const int inMaxPath) const
 {
-    return FindPath(_StartRef, _EndRef, QueryFilter, _Path, _PathCount, _MaxPath);
+    return FindPath(inStartRef, inEndRef, QueryFilter, outPath, outPathCount, inMaxPath);
 }
 
-bool NavMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<NavMeshPathPoint>& _PathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<NavMeshPathPoint>& outPathPoints) const
 {
-    NavPointRef StartRef;
-    NavPointRef EndRef;
+    NavPointRef start_ref;
+    NavPointRef end_ref;
 
-    if (!QueryNearestPoly(_StartPos, _Extents, _Filter, &StartRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inStartPos, inExtents, inFilter, &start_ref.PolyRef))
         return false;
-    }
 
-    if (!QueryNearestPoly(_EndPos, _Extents, _Filter, &EndRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inEndPos, inExtents, inFilter, &end_ref.PolyRef))
         return false;
-    }
 
-    StartRef.Position = _StartPos;
-    EndRef.Position   = _EndPos;
+    start_ref.Position = inStartPos;
+    end_ref.Position = inEndPos;
 
-    int NumPolys;
-
-    if (!FindPath(StartRef, EndRef, _Filter, TmpPolys, &NumPolys, MAX_POLYS))
-    {
+    int num_polys;
+    if (!FindPath(start_ref, end_ref, inFilter, TmpPolys, &num_polys, MAX_POLYS))
         return false;
-    }
 
-    Float3 ClosestLocalEnd = _EndPos;
+    Float3 closest_local_end = inEndPos;
 
     // Если не удалось проложить полный путь, установить конечную точку ближайшую к указанной конечной точке
-    if (TmpPolys[NumPolys - 1] != EndRef.PolyRef)
+    if (TmpPolys[num_polys - 1] != end_ref.PolyRef)
+        m_NavQuery->closestPointOnPoly(TmpPolys[num_polys - 1], inEndPos.ToPtr(), closest_local_end.ToPtr(), 0);
+
+    int path_len;
+    m_NavQuery->findStraightPath(inStartPos.ToPtr(), closest_local_end.ToPtr(), TmpPolys, num_polys, TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &path_len, MAX_POLYS);
+
+    outPathPoints.Resize(path_len);
+    for (int i = 0; i < path_len; ++i)
     {
-        m_NavQuery->closestPointOnPoly(TmpPolys[NumPolys - 1], (const float*)_EndPos.ToPtr(), (float*)ClosestLocalEnd.ToPtr(), 0);
-    }
-
-    int PathLength;
-
-    m_NavQuery->findStraightPath((const float*)_StartPos.ToPtr(), (const float*)ClosestLocalEnd.ToPtr(), TmpPolys, NumPolys, (float*)TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &PathLength, MAX_POLYS);
-
-    _PathPoints.ResizeInvalidate(PathLength);
-
-    for (int i = 0; i < PathLength; ++i)
-    {
-        _PathPoints[i].Position = TmpPathPoints[i];
-        _PathPoints[i].Flags    = TmpPathFlags[i];
+        outPathPoints[i].Position = TmpPathPoints[i];
+        outPathPoints[i].Flags = TmpPathFlags[i];
     }
 
     return true;
 }
 
-bool NavMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<NavMeshPathPoint>& _PathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<NavMeshPathPoint>& outPathPoints) const
 {
-    return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
+    return FindPath(inStartPos, inEndPos, inExtents, QueryFilter, outPathPoints);
 }
 
-bool NavMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, NavQueryFilter const& _Filter, TVector<Float3>& _PathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<Float3>& outPathPoints) const
 {
-    NavPointRef StartRef;
-    NavPointRef EndRef;
+    NavPointRef start_ref;
+    NavPointRef end_ref;
 
-    if (!QueryNearestPoly(_StartPos, _Extents, _Filter, &StartRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inStartPos, inExtents, inFilter, &start_ref.PolyRef))
         return false;
-    }
 
-    if (!QueryNearestPoly(_EndPos, _Extents, _Filter, &EndRef.PolyRef))
-    {
+    if (!QueryNearestPoly(inEndPos, inExtents, inFilter, &end_ref.PolyRef))
         return false;
-    }
 
-    StartRef.Position = _StartPos;
-    EndRef.Position   = _EndPos;
+    start_ref.Position = inStartPos;
+    end_ref.Position = inEndPos;
 
-    int NumPolys;
-
-    if (!FindPath(StartRef, EndRef, _Filter, TmpPolys, &NumPolys, MAX_POLYS))
-    {
+    int num_polys;
+    if (!FindPath(start_ref, end_ref, inFilter, TmpPolys, &num_polys, MAX_POLYS))
         return false;
-    }
 
-    Float3 ClosestLocalEnd = _EndPos;
+    Float3 closest_local_end = inEndPos;
 
     // Если не удалось проложить полный путь, установить конечную точку ближайшую к указанной конечной точке
-    if (TmpPolys[NumPolys - 1] != EndRef.PolyRef)
-    {
-        m_NavQuery->closestPointOnPoly(TmpPolys[NumPolys - 1], (const float*)_EndPos.ToPtr(), (float*)ClosestLocalEnd.ToPtr(), 0);
-    }
+    if (TmpPolys[num_polys - 1] != end_ref.PolyRef)
+        m_NavQuery->closestPointOnPoly(TmpPolys[num_polys - 1], inEndPos.ToPtr(), closest_local_end.ToPtr(), 0);
 
-    int PathLength;
+    int path_len;
+    m_NavQuery->findStraightPath(inStartPos.ToPtr(), closest_local_end.ToPtr(), TmpPolys, num_polys, TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &path_len, MAX_POLYS);
 
-    m_NavQuery->findStraightPath((const float*)_StartPos.ToPtr(), (const float*)ClosestLocalEnd.ToPtr(), TmpPolys, NumPolys, (float*)TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &PathLength, MAX_POLYS);
-
-    _PathPoints.ResizeInvalidate(PathLength);
-
-    Core::Memcpy(_PathPoints.ToPtr(), TmpPathPoints, sizeof(Float3) * PathLength);
+    outPathPoints.Resize(path_len);
+    Core::Memcpy(outPathPoints.ToPtr(), TmpPathPoints, sizeof(Float3) * path_len);
 
     return true;
 }
 
-bool NavMesh::FindPath(Float3 const& _StartPos, Float3 const& _EndPos, Float3 const& _Extents, TVector<Float3>& _PathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<Float3>& outPathPoints) const
 {
-    return FindPath(_StartPos, _EndPos, _Extents, QueryFilter, _PathPoints);
+    return FindPath(inStartPos, inEndPos, inExtents, QueryFilter, outPathPoints);
 }
 
-bool NavMesh::FindStraightPath(Float3 const& _StartPos, Float3 const& _EndPos, NavPolyRef const* _Path, int _PathSize, Float3* _StraightPath, unsigned char* _StraightPathFlags, NavPolyRef* _StraightPathRefs, int* _StraightPathCount, int _MaxStraightPath, NAV_MESH_STRAIGHTPATH_CROSSING _StraightPathCrossing) const
+bool NavMesh::FindStraightPath(Float3 const& inStartPos, Float3 const& inEndPos, NavPolyRef const* inPath, int inPathSize, Float3* outStraightPath, unsigned char* outStraightPathFlags, NavPolyRef* outStraightPathRefs, int* outStraightPathCount, int inMaxStraightPath, NAV_MESH_STRAIGHTPATH_CROSSING inStraightPathCrossing) const
+{
+    if (!m_NavQuery)
+        return false;
+
+    dtStatus status = m_NavQuery->findStraightPath(inStartPos.ToPtr(), inEndPos.ToPtr(), inPath, inPathSize, (float*)outStraightPath, outStraightPathFlags, outStraightPathRefs, outStraightPathCount, inMaxStraightPath, (int)inStraightPathCrossing);
+    if (dtStatusFailed(status))
+        return false;
+
+    return true;
+}
+
+bool NavMesh::CalcDistanceToWall(NavPointRef const& inPointRef, float inRadius, NavQueryFilter const& inFilter, NavMeshHitResult& outHitResult) const
+{
+    dtStatus status = m_NavQuery->findDistanceToWall(inPointRef.PolyRef, inPointRef.Position.ToPtr(), inRadius, inFilter.m_Filter.RawPtr(), &outHitResult.Distance, outHitResult.Position.ToPtr(), outHitResult.Normal.ToPtr());
+    if (dtStatusFailed(status))
+        return false;
+
+    return true;
+}
+
+bool NavMesh::CalcDistanceToWall(NavPointRef const& inPointRef, float inRadius, NavMeshHitResult& outHitResult) const
+{
+    return CalcDistanceToWall(inPointRef, inRadius, QueryFilter, outHitResult);
+}
+
+bool NavMesh::CalcDistanceToWall(Float3 const& inPosition, float inRadius, Float3 const& inExtents, NavQueryFilter const& inFilter, NavMeshHitResult& outHitResult) const
+{
+    NavPointRef point_ref;
+
+    if (!QueryNearestPoly(inPosition, inExtents, inFilter, &point_ref.PolyRef))
+        return false;
+
+    point_ref.Position = inPosition;
+
+    return CalcDistanceToWall(point_ref, inRadius, inFilter, outHitResult);
+}
+
+bool NavMesh::CalcDistanceToWall(Float3 const& inPosition, float inRadius, Float3 const& inExtents, NavMeshHitResult& outHitResult) const
+{
+    return CalcDistanceToWall(inPosition, inRadius, inExtents, QueryFilter, outHitResult);
+}
+
+bool NavMesh::GetHeight(NavPointRef const& inPointRef, float* outHeight) const
 {
     if (!m_NavQuery)
     {
+        *outHeight = 0;
         return false;
     }
 
-    dtStatus Status = m_NavQuery->findStraightPath((const float*)_StartPos.ToPtr(), (const float*)_EndPos.ToPtr(), _Path, _PathSize, (float*)_StraightPath, _StraightPathFlags, _StraightPathRefs, _StraightPathCount, _MaxStraightPath, (int)_StraightPathCrossing);
-    if (dtStatusFailed(Status))
+    dtStatus status = m_NavQuery->getPolyHeight(inPointRef.PolyRef, inPointRef.Position.ToPtr(), outHeight);
+    if (dtStatusFailed(status))
     {
+        *outHeight = 0;
         return false;
     }
 
     return true;
 }
 
-bool NavMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavQueryFilter const& _Filter, NavMeshHitResult& _HitResult) const
-{
-    dtStatus Status = m_NavQuery->findDistanceToWall(_StartRef.PolyRef, (const float*)_StartRef.Position.ToPtr(), _Radius, _Filter.m_Filter.RawPtr(), &_HitResult.Distance, (float*)_HitResult.Position.ToPtr(), (float*)_HitResult.Normal.ToPtr());
-    if (dtStatusFailed(Status))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool NavMesh::CalcDistanceToWall(NavPointRef const& _StartRef, float _Radius, NavMeshHitResult& _HitResult) const
-{
-    return CalcDistanceToWall(_StartRef, _Radius, QueryFilter, _HitResult);
-}
-
-bool NavMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavQueryFilter const& _Filter, NavMeshHitResult& _HitResult) const
-{
-    NavPointRef StartRef;
-
-    if (!QueryNearestPoly(_Position, _Extents, _Filter, &StartRef.PolyRef))
-    {
-        return false;
-    }
-
-    StartRef.Position = _Position;
-
-    return CalcDistanceToWall(StartRef, _Radius, _Filter, _HitResult);
-}
-
-bool NavMesh::CalcDistanceToWall(Float3 const& _Position, float _Radius, Float3 const& _Extents, NavMeshHitResult& _HitResult) const
-{
-    return CalcDistanceToWall(_Position, _Radius, _Extents, QueryFilter, _HitResult);
-}
-
-bool NavMesh::GetHeight(NavPointRef const& _PointRef, float* _Height) const
-{
-    if (!m_NavQuery)
-    {
-        *_Height = 0;
-        return false;
-    }
-
-    dtStatus Status = m_NavQuery->getPolyHeight(_PointRef.PolyRef, (const float*)_PointRef.Position.ToPtr(), _Height);
-    if (dtStatusFailed(Status))
-    {
-        *_Height = 0;
-        return false;
-    }
-
-    return true;
-}
-
-bool NavMesh::GetOffMeshConnectionPolyEndPoints(NavPolyRef _PrevRef, NavPolyRef _PolyRef, Float3* _StartPos, Float3* _EndPos) const
+bool NavMesh::GetOffMeshConnectionPolyEndPoints(NavPolyRef inPrevRef, NavPolyRef inPolyRef, Float3* outStartPos, Float3* outEndPos) const
 {
     if (!m_NavMesh)
-    {
         return false;
-    }
 
-    dtStatus Status = m_NavMesh->getOffMeshConnectionPolyEndPoints(_PrevRef, _PolyRef, (float*)_StartPos->ToPtr(), (float*)_EndPos->ToPtr());
-    if (dtStatusFailed(Status))
-    {
+    dtStatus status = m_NavMesh->getOffMeshConnectionPolyEndPoints(inPrevRef, inPolyRef, outStartPos->ToPtr(), outEndPos->ToPtr());
+    if (dtStatusFailed(status))
         return false;
-    }
 
     return true;
 }
 
-void NavMesh::Update(float _TimeStep)
+void NavMesh::Update(float inTimeStep)
 {
     if (m_TileCache)
-    {
-        m_TileCache->update(_TimeStep, m_NavMesh);
-    }
+        m_TileCache->update(inTimeStep, m_NavMesh);
 }
 
 #if 0
@@ -2138,13 +1937,13 @@ void NavMesh::Update(float _TimeStep)
 //  +-S-+-T-+
 //  |:::|   | <-- the step can end up in here, resulting U-turn path.
 //  +---+---+
-int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int _NPath ) const {
+int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int inNPath ) const {
     if ( _NPath < 3 ) {
         return _NPath;
     }
 
     // Get connected polygons
-    static const int maxNeis = 16;
+    const int maxNeis = 16;
     NavPolyRef neis[maxNeis];
     int nneis = 0;
 
@@ -2166,7 +1965,7 @@ int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int _NPath ) co
 
     // If any of the neighbour polygons is within the next few polygons
     // in the path, short cut to that polygon directly.
-    static const int maxLookAhead = 6;
+    const int maxLookAhead = 6;
     int cut = 0;
     for (int i = Math::Min(maxLookAhead, _NPath) - 1; i > 1 && cut == 0; i--) {
         for (int j = 0; j < nneis; j++)
@@ -2188,7 +1987,7 @@ int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int _NPath ) co
     return _NPath;
 }
 
-int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int _NPath, const int _MaxPath, const NavPolyRef * _Visited, const int _NVisited ) const {
+int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int inNPath, const int inMaxPath, const NavPolyRef * _Visited, const int inNVisited ) const {
     int furthestPath = -1;
     int furthestVisited = -1;
 
@@ -2219,8 +2018,8 @@ int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int _NPath
     const int req = _NVisited - furthestVisited;
     const int orig = Math::Min(furthestPath+1, _NPath);
     int size = Math::Max(0, _NPath-orig);
-    if (req+size > _MaxPath)
-        size = _MaxPath-req;
+    if (req+size > inMaxPath)
+        size = inMaxPath-req;
     if (size)
         Core::Memmove(_Path+req, _Path+orig, size*sizeof(NavPolyRef));
 
