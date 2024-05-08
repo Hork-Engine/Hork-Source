@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "BinaryStream.h"
-#include "String.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -155,7 +154,7 @@ public:
     static File OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Read from specified memory buffer. */
-    static File OpenRead(StringView FileName, BlobRef Blob);
+    //static File OpenRead(StringView FileName, BlobRef Blob);
 
     /** Read file from archive by file name. */
     static File OpenRead(StringView FileName, Archive const& Archive);
@@ -275,7 +274,7 @@ public:
 
     void SetMemoryGrowGranularity(uint32_t Granularity) { m_Granularity = Granularity; }
 
-    String const& GetName() const override
+    StringView GetName() const override
     {
         return m_Name;
     }
@@ -289,7 +288,7 @@ public:
     bool   SeekCur(int32_t Offset) override;
     bool   SeekEnd(int32_t Offset) override;
     size_t SizeInBytes() const override;
-    bool   Eof() const override;
+    bool   IsEOF() const override;
 
 private:
     enum FILE_TYPE : uint8_t

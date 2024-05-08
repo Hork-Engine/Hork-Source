@@ -120,7 +120,7 @@ static void Stbi_Skip(void* user, int n)
 static int Stbi_Eof(void* user)
 {
     Hk::IBinaryStreamReadInterface* stream = (Hk::IBinaryStreamReadInterface*)user;
-    return stream->Eof();
+    return stream->IsEOF();
 }
 
 static void Stbi_Write(void* context, void* data, int size)

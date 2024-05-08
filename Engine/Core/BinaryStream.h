@@ -60,9 +60,9 @@ public:
         SeekSet(0);
     }
 
-    virtual bool Eof() const = 0;
+    virtual bool IsEOF() const = 0;
 
-    virtual String const& GetName() const = 0;
+    virtual StringView GetName() const = 0;
 };
 
 

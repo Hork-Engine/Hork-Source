@@ -467,7 +467,7 @@ size_t File::SizeInBytes() const
     return m_FileSize;
 }
 
-bool File::Eof() const
+bool File::IsEOF() const
 {
     if (!IsOpened())
         return false;
@@ -506,7 +506,7 @@ File File::OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeI
 
     return f;
 }
-
+#if 0
 File File::OpenRead(StringView FileName, BlobRef Blob)
 {
     File f;
@@ -522,7 +522,7 @@ File File::OpenRead(StringView FileName, BlobRef Blob)
 
     return f;
 }
-
+#endif
 File File::OpenRead(StringView FileName, Archive const& Archive)
 {
     File f;
@@ -1013,7 +1013,7 @@ bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
                                   return;
                               }
 
-                              String fn = FileName.TruncateHead(path.Length() + 1);
+                              String fn(FileName.TruncateHead(path.Length() + 1));
 
                               LOG("Writing '{}'\n", fn);
 
