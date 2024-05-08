@@ -31,12 +31,48 @@ SOFTWARE.
 #pragma once
 
 #include "AudioDevice.h"
-#include "AudioChannel.h"
+#include "AudioTrack.h"
 
-#include <Engine/Core/Containers/Vector.h>
+#include <Engine/Core/Containers/ArrayView.h>
 #include <Engine/Core/ConsoleVar.h>
 
 HK_NAMESPACE_BEGIN
+
+class AudioMixerSubmitQueue final
+{
+    HK_FORBID_COPY(AudioMixerSubmitQueue)
+
+public:
+    AudioMixerSubmitQueue() = default;
+
+    ~AudioMixerSubmitQueue()
+    {
+        Clear();
+    }
+
+    void Clear()
+    {
+        for (AudioTrack* track : m_Tracks)
+            track->RemoveRef();
+        m_Tracks.Clear();
+    }
+
+    // TODO: В будущем, для многопоточки можно использовать вектор фиксированный длины и атомарный счетчик,
+    // либо для каждого потока создать свой вектор или экземпляр AudioMixerSubmitQueue
+    void Add(AudioTrack* track)
+    {
+        m_Tracks.Add(track);
+        track->AddRef();
+    }
+
+    TVector<AudioTrack*> const& GetTracks()
+    {
+        return m_Tracks;
+    }
+
+private:
+    TVector<AudioTrack*> m_Tracks;
+};
 
 class AudioMixer
 {
@@ -46,34 +82,34 @@ public:
     AudioMixer(AudioDevice* _Device);
     virtual ~AudioMixer();
 
-    /** Make channel visible for mixer thread */
-    void SubmitChannel(AudioChannel* Channel);
+    /// Add tracks to mixer thread
+    void SubmitTracks(AudioMixerSubmitQueue& submitQueue);
 
-    /** Get current active channels */
-    int GetNumActiveChannels() const
+    /// Get current active tracks
+    int GetNumActiveTracks() const
     {
-        return m_NumActiveChannels.Load();
+        return m_NumActiveTracks.Load();
     }
 
-    /** Get number of not active (virtual) channels */
-    int GetNumVirtualChannels() const
+    /// Get number of not active (virtual) tracks
+    int GetNumVirtualTracks() const
     {
-        return m_TotalChannels.Load() - m_NumActiveChannels.Load();
+        return m_TotalTracks.Load() - m_NumActiveTracks.Load();
     }
 
-    /** Get total count of channels */
-    int GetTotalChannels() const
+    /// Get total count of tracks
+    int GetTotalTracks() const
     {
-        return m_TotalChannels.Load();
+        return m_TotalTracks.Load();
     }
 
-    /** Start async mixing */
+    /// Start async mixing
     void StartAsync();
 
-    /** Stop async mixing */
+    /// Stop async mixing
     void StopAsync();
 
-    /** Perform mixing in main thread */
+    /// Perform mixing in main thread
     void Update();
 
     bool IsAsync() const
@@ -93,17 +129,17 @@ private:
 
     void UpdateAsync(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender);
 
-    // This fuction adds pending channels to list
-    void AddPendingChannels();
-    void RejectChannel(AudioChannel* Channel);
-    void RenderChannels(int64_t EndFrame);
-    void RenderChannel(AudioChannel* Chan, int64_t EndFrame);
-    void RenderStream(AudioChannel* Chan, int64_t EndFrame);
-    void RenderFramesHRTF(AudioChannel* Chan, int FrameCount, SamplePair* pBuffer);
-    void RenderFrames(AudioChannel* Chan, const void* pFrames, int FrameCount, SamplePair* pBuffer);
+    // This fuction adds pending tracks to list
+    void AddPendingTracks();
+    void RejectTrack(AudioTrack* track);
+    void RenderTracks(int64_t EndFrame);
+    void RenderTrack(AudioTrack* track, int64_t EndFrame);
+    void RenderStream(AudioTrack* track, int64_t EndFrame);
+    void RenderFramesHRTF(AudioTrack* track, int FrameCount, SamplePair* pBuffer);
+    void RenderFrames(AudioTrack* track, const void* pFrames, int FrameCount, SamplePair* pBuffer);
     void WriteToTransferBuffer(int const* pSamples, int64_t EndFrame);
     void MakeVolumeRamp(const int CurVol[2], const int NewVol[2], int FrameCount, int Scale);
-    void ReadFramesF32(AudioChannel* Chan, int FramesToRead, int HistoryExtraFrames, float* pFrames);
+    void ReadFramesF32(AudioTrack* track, int FramesToRead, int HistoryExtraFrames, float* pFrames);
 
     TUniqueRef<class AudioHRTF> m_Hrtf;
     TUniqueRef<class Freeverb> m_ReverbFilter;
@@ -116,21 +152,21 @@ private:
     uint8_t* m_pTransferBuffer;
     bool m_bAsync;
     int64_t m_RenderFrame;
-    AtomicInt m_NumActiveChannels;
-    AtomicInt m_TotalChannels;
+    AtomicInt m_NumActiveTracks;
+    AtomicInt m_TotalTracks;
 
-    AudioChannel* m_Channels;
-    AudioChannel* m_ChannelsTail;
-    AudioChannel* m_PendingList;
-    AudioChannel* m_PendingListTail;
+    AudioTrack* m_Tracks;
+    AudioTrack* m_TracksTail;
+    AudioTrack* m_PendingList;
+    AudioTrack* m_PendingListTail;
 
     SpinLock m_SubmitLock;
 
-    // For current mixing channel
+    // For current mixing track
     int m_NewVol[2];
     Float3 m_NewDir;
-    bool m_bSpatializedChannel;
-    bool m_bChannelPaused;
+    bool m_bSpatializedTrack;
+    bool m_bTrackPaused;
     int m_PlaybackPos;
     int m_VolumeRampL[1024];
     int m_VolumeRampR[1024];

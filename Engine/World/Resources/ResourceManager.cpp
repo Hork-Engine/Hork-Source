@@ -6,6 +6,7 @@
 #include "Resource_Texture.h"
 #include "Resource_Font.h"
 #include "Resource_Terrain.h"
+#include "Resource_Sound.h"
 
 #include <Engine/Geometry/BV/BvhTree.h>
 #include <Engine/World/Modules/Render/MaterialGraph.h> // TODO: remove dependency
@@ -422,6 +423,8 @@ TUniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, 
             return MakeUnique<TextureResource>(f, this);
         case RESOURCE_MATERIAL:
             return MakeUnique<MaterialResource>(f, this);
+        case RESOURCE_SOUND:
+            return MakeUnique<SoundResource>(f, this);
         case RESOURCE_FONT:
             return MakeUnique<FontResource>(f, this);
         case RESOURCE_TERRAIN:

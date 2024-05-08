@@ -13,9 +13,9 @@ enum RESOURCE_TYPE : uint8_t
     RESOURCE_TEXTURE,//ok
     RESOURCE_MATERIAL,// combine compiledmaterial with material
     RESOURCE_COLLISION,// todo
-    RESOURCE_SOUND,// todo
+    RESOURCE_SOUND,//ok
     RESOURCE_FONT,//ok
-    RESOURCE_TERRAIN,// todo, rename to RESOURCE_HEIGHTFIELD?
+    RESOURCE_TERRAIN,// ok
     RESOURCE_VIRTUAL_TEXTURE,// todo
 
 

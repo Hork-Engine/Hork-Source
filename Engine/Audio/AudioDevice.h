@@ -41,19 +41,19 @@ public:
     AudioDevice(int sampleRate);
     virtual ~AudioDevice();
 
-    /** Playback frequency */
+    /// Playback frequency
     int GetSampleRate() const
     {
         return m_SampleRate;
     }
 
-    /** Bits per sample (8, 16 or 32) */
+    /// Bits per sample (8, 16 or 32)
     int GetSampleBits() const
     {
         return m_SampleBits;
     }
 
-    /** Sample size in bytes */
+    /// Sample size in bytes
     int GetSampleWidth() const
     {
         return m_SampleBits >> 3;
@@ -93,16 +93,16 @@ public:
 
     void UnblockSound();
 
-    /** Clear transfer buffer. It calls MapTransferBuffer() and UnmapTransferBuffer() internally. */
+    /// Clear transfer buffer. It calls MapTransferBuffer() and UnmapTransferBuffer() internally.
     void ClearBuffer();
 
-    /** Lock transfer buffer for writing */
+    /// Lock transfer buffer for writing
     uint8_t* MapTransferBuffer(int64_t* pFrameNum = nullptr);
 
-    /** Submit changes and unlock the buffer. */
+    /// Submit changes and unlock the buffer.
     void UnmapTransferBuffer();
 
-    /** Pass MixerCallback for async mixing */
+    /// Pass MixerCallback for async mixing
     void SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback);
 
 private:

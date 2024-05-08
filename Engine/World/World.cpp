@@ -4,13 +4,14 @@
 #include <Engine/World/Modules/Transform/Systems/NodeMotionSystem.h>
 #include <Engine/World/Modules/Transform/Systems/TransformSystem.h>
 #include <Engine/World/Modules/Transform/Systems/TransformHistorySystem.h>
-#include <Engine/World/Modules/Render/Systems/RenderSystem.h>
 #include <Engine/World/Modules/Physics/Systems/PhysicsSystem.h>
 #include <Engine/World/Modules/Physics/Systems/CharacterControllerSystem.h>
 #include <Engine/World/Modules/Physics/Systems/TeleportSystem.h>
 #include <Engine/World/Modules/Skeleton/Systems/SkinningSystem.h>
-#include <Engine/World/Modules/Render/Systems/LightingSystem.h>
 #include <Engine/World/Modules/Logic/Systems/EntityDestroySystem.h>
+#include <Engine/World/Modules/Render/Systems/RenderSystem.h>
+#include <Engine/World/Modules/Render/Systems/LightingSystem.h>
+#include <Engine/World/Modules/Audio/Systems/SoundSystem.h>
 
 #include <Engine/Core/ConsoleVar.h>
 
@@ -20,7 +21,8 @@ ConsoleVar com_InterpolateTransform("com_InterpolateTransform"s, "1"s);
 
 World::World(ECS::WorldCreateInfo const& createInfo) :
     ECS::World(createInfo),
-    m_PhysicsInterface(this)
+    m_PhysicsInterface(this),
+    m_AudioInterface(this)
 {
     m_PhysicsSystem = CreateSystem<PhysicsSystem>(&m_GameEvents);
     m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
@@ -29,6 +31,7 @@ World::World(ECS::WorldCreateInfo const& createInfo) :
     m_TransformSystem = CreateSystem<TransformSystem>();
     m_TransformHistorySystem = CreateSystem<TransformHistorySystem>();
     m_RenderSystem = CreateSystem<RenderSystem>();
+    m_SoundSystem = CreateSystem<SoundSystem>();
     m_TeleportSystem = CreateSystem<TeleportSystem>();
     m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
     m_LightingSystem = CreateSystem<LightingSystem>();
@@ -147,6 +150,8 @@ void World::Tick(float timeStep)
         if (m_EventHandler)
             m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
 
+        m_SoundSystem->Update(m_Frame);
+
         if (!m_bPaused)
         {
             m_Frame.FixedFrameNum++;
@@ -197,9 +202,11 @@ void World::ProcessRequests()
         {
             case WORLD_REQUEST_PAUSE:
                 m_bPaused = true;
+                m_AudioInterface.bPaused = true;
                 break;
             case WORLD_REQUEST_UNPAUSE:
                 m_bPaused = false;
+                m_AudioInterface.bPaused = false;
                 break;
         }
     }

@@ -28,32 +28,32 @@ SOFTWARE.
 
 */
 
-#pragma once
-#if 0
-#include "Actor.h"
+#include "AudioSource.h"
 
 HK_NAMESPACE_BEGIN
 
-class SoundEmitter;
-
-class Actor_AmbientPlayer : public Actor
+AudioSource::AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, HeapBlob blob) :
+    m_Blob(std::move(blob))
 {
-    HK_ACTOR(Actor_AmbientPlayer, Actor)
+    m_FrameCount = inFrameCount;
+    m_Channels = inChannels;
+    m_SampleBits = inSampleBits;
+    m_SampleStride = (m_SampleBits >> 3) << (m_Channels - 1);
+    m_SampleRate = inSampleRate;
+    m_bIsEncoded = true;
+    m_Frames = nullptr;
+}
 
-public:
-protected:
-    Actor_AmbientPlayer();
-
-    void Initialize(ActorInitializer& Initializer) override;
-    void PreInitializeComponents() override;
-    void BeginPlay() override;
-    void Tick(float _TimeStep) override;
-
-private:
-    void UpdateAmbientVolume(float _TimeStep);
-
-    TVector<SoundEmitter*> AmbientSound;
-};
+AudioSource::AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, const void* inFrames)
+{
+    m_FrameCount = inFrameCount;
+    m_Channels = inChannels;
+    m_SampleBits = inSampleBits;
+    m_SampleStride = (m_SampleBits >> 3) << (m_Channels - 1);
+    m_SampleRate = inSampleRate;
+    m_Blob.Reset(m_FrameCount * m_SampleStride, inFrames);
+    m_Frames = m_Blob.GetData();
+    m_bIsEncoded = false;
+}
 
 HK_NAMESPACE_END
-#endif

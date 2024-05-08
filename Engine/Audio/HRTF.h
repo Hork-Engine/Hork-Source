@@ -46,26 +46,26 @@ public:
     AudioHRTF(int SampleRate);
     virtual ~AudioHRTF();
 
-    /** Gets a bilinearly interpolated HRTF */
+    /// Gets a bilinearly interpolated HRTF
     void SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRightHRTF) const;
 
-    /** Applies HRTF to input frames. Frames must also contain GetFrameCount()-1 of the previous frames.
-    FrameCount must be multiples of HRTF_BLOCK_LENGTH */
+    /// Applies HRTF to input frames. Frames must also contain GetFrameCount()-1 of the previous frames.
+    /// FrameCount must be multiples of HRTF_BLOCK_LENGTH
     void ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int FrameCount, float* pStream, Float3& Dir);
 
-    /** Sphere geometry vertics */
+    /// Sphere geometry vertics
     TVector<Float3> const& GetVertices() const { return m_Vertices; }
 
-    /** Sphere geometry indices */
+    /// Sphere geometry indices
     TVector<uint32_t> const& GetIndices() const { return m_Indices; }
 
-    /** Length of Head-Related Impulse Response (HRIR) */
+    /// Length of Head-Related Impulse Response (HRIR)
     int GetFrameCount() const
     {
         return m_FrameCount;
     }
 
-    /** HRTF FFT filter size in frames */
+    /// HRTF FFT filter size in frames
     int GetFilterSize() const
     {
         // Computed as power of two of FrameCount - 1 + HRTF_BLOCK_LENGTH
@@ -75,16 +75,16 @@ public:
 private:
     void GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pHRTF);
 
-    /** Fast fourier transform (forward) */
+    // Fast fourier transform (forward)
     void FFT(Complex const* pIn, Complex* pOut);
 
-    /** Fast fourier transform (inverse) */
+    // Fast fourier transform (inverse)
     void IFFT(Complex const* pIn, Complex* pOut);
 
-    /** Length of Head-Related Impulse Response (HRIR) */
+    // Length of Head-Related Impulse Response (HRIR)
     int m_FrameCount = 0;
 
-    /** HRTF FFT filter size in frames */
+    // HRTF FFT filter size in frames
     int m_FilterSize = 0;
 
     TVector<uint32_t> m_Indices;

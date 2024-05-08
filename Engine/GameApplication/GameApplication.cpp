@@ -28,14 +28,15 @@ SOFTWARE.
 
 */
 
+#include "GameApplication.h"
+
 #include <Engine/Core/Logger.h>
 #include <Engine/Core/Profiler.h>
 #include <Engine/Core/Display.h>
 #include <Engine/Core/AsyncJobManager.h>
 #include <Engine/Core/Platform.h>
+#include <Engine/Audio/AudioMixer.h>
 #include <Engine/World/World.h>
-
-#include "GameApplication.h"
 #include <Engine/World/Modules/Physics/PhysicsModule.h>
 #include <Engine/World/Modules/NavMesh/NavMeshModule.h>
 #include <Engine/World/Modules/Audio/AudioModule.h>
@@ -246,8 +247,6 @@ GameApplication::~GameApplication()
 {
     m_UIManager.Reset();
 
-    //SoundEmitter::ClearOneShotSounds();
-
     GarbageCollector::DeallocateObjects();
 
     HK_ASSERT(m_Worlds.IsEmpty());   
@@ -350,9 +349,8 @@ void GameApplication::RunMainLoop()
         //VisibilitySystem::PrimitivePool.CleanupEmptyBlocks();
         //VisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
 
-        // Update audio system
-        //AudioModule::Get().Update(Actor_PlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
-        AudioModule::Get().Update(nullptr, m_FrameDurationInSeconds);
+        // Update audio
+        AudioModule::Get().Update();
 
         m_UIManager->Tick(m_FrameDurationInSeconds);
 
@@ -447,7 +445,7 @@ void GameApplication::ShowStats()
         pos.Y += y_step;
         m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frontend time: %d msec", stat.FrontendTime), true);
         pos.Y += y_step;
-        //m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Audio channels: %d active, %d virtual", AudioModule::Get().GetMixer()->GetNumActiveChannels(), AudioModule::Get().GetMixer()->GetNumVirtualChannels()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Audio channels: %d active, %d virtual", AudioModule::Get().GetMixer()->GetNumActiveTracks(), AudioModule::Get().GetMixer()->GetNumVirtualTracks()), true);
     }
 
     if (com_ShowFPS)

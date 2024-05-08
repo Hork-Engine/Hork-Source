@@ -5,15 +5,6 @@
 class World : public GCObject
 {
 public:
-    /** Scale audio volume in the entire world */
-    void SetAudioVolume(float Volume)
-    {
-        m_AudioVolume = Math::Saturate(Volume);
-    }
-
-    /** Scale audio volume in the entire world */
-    float GetAudioVolume() const { return m_AudioVolume; }
-
     void SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap);
     EnvironmentMap* GetGlobalEnvironmentMap() const { return m_GlobalEnvironmentMap; }
 

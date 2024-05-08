@@ -55,18 +55,14 @@ AudioDevice::AudioDevice(int sampleRate)
     }
 
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
-    {
         CoreApplication::TerminateWithError("Failed to init audio system: {}\n", SDL_GetError());
-    }
 
     int numdrivers = SDL_GetNumAudioDrivers();
     if (numdrivers > 0)
     {
         LOG("Available audio drivers:\n");
         for (int i = 0; i < numdrivers; i++)
-        {
             LOG("\t{}\n", SDL_GetAudioDriver(i));
-        }
     }
 
     int numdevs = SDL_GetNumAudioDevices(SDL_FALSE);
@@ -74,9 +70,7 @@ AudioDevice::AudioDevice(int sampleRate)
     {
         LOG("Available audio devices:\n");
         for (int i = 0; i < numdevs; i++)
-        {
             LOG("\t{}\n", SDL_GetAudioDeviceName(i, SDL_FALSE));
-        }
     }
 
     SDL_AudioSpec desired = {};
@@ -102,6 +96,7 @@ AudioDevice::AudioDevice(int sampleRate)
         ((AudioDevice*)userdata)->RenderAudio(stream, len);
     };
     desired.userdata = this;
+    desired.format = AUDIO_F32SYS;
 
     int allowedChanges = 0;
 
@@ -110,56 +105,29 @@ AudioDevice::AudioDevice(int sampleRate)
     allowedChanges |= SDL_AUDIO_ALLOW_FORMAT_CHANGE;
     allowedChanges |= SDL_AUDIO_ALLOW_CHANNELS_CHANGE;
 
-    //SDL_AudioFormat formats[] = { AUDIO_F32SYS, AUDIO_S16SYS, AUDIO_U8, AUDIO_S8 };
-    SDL_AudioFormat formats[] = {AUDIO_S16SYS};
+    m_AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
+    if (m_AudioDeviceId == 0)
+        CoreApplication::TerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
 
-    // Try to search appropriate native format
-    for (int i = 0; i < HK_ARRAY_SIZE(formats);)
+    SDL_AudioFormat supportedFormats[] = {AUDIO_F32SYS, AUDIO_S16SYS, AUDIO_U8, AUDIO_S8};
+    bool formatSupported = false;
+    for (int i = 0; i < HK_ARRAY_SIZE(supportedFormats); i++)
     {
-        desired.format = formats[i];
-
-        m_AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
-        if (m_AudioDeviceId == 0)
+        if (obtained.format == supportedFormats[i])
         {
-            if (!driver)
-            {
-                // Reinit audio subsystem with dummy driver
-                SDL_QuitSubSystem(SDL_INIT_AUDIO);
-                driver = "dummy";
-                SDL_setenv("SDL_AUDIODRIVER", driver, SDL_TRUE);
-                if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
-                {
-                    CoreApplication::TerminateWithError("Failed to init audio system: {}\n", SDL_GetError());
-                }
-                continue;
-            }
-            // Should not happen
-            CoreApplication::TerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
-        }
-
-        if (obtained.format == desired.format)
-        {
-            // Ok
+            formatSupported = true;
             break;
         }
-
-        // Try another format
-        SDL_CloseAudioDevice(m_AudioDeviceId);
-        m_AudioDeviceId = 0;
-        i++;
     }
 
-    // If appropriate format was not found force default AUDIO_S16SYS
-    if (!m_AudioDeviceId)
+    if (!formatSupported)
     {
+        SDL_CloseAudioDevice(m_AudioDeviceId);
+
         allowedChanges &= ~SDL_AUDIO_ALLOW_FORMAT_CHANGE;
-        desired.format = AUDIO_S16SYS;
         m_AudioDeviceId = SDL_OpenAudioDevice(NULL, SDL_FALSE, &desired, &obtained, allowedChanges);
         if (m_AudioDeviceId == 0)
-        {
-            // Should not happen
             CoreApplication::TerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
-        }
     }
 
     m_SampleBits = obtained.format & 0xFF; // extract first byte which is sample bits

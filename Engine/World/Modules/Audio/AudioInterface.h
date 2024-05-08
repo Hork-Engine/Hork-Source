@@ -30,37 +30,49 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Ref.h>
 #include <Engine/World/Common/BaseModule.h>
+#include "SoundSource.h"
 
 HK_NAMESPACE_BEGIN
 
-class AudioDevice;
-class AudioMixer;
-
-class AudioModule : public BaseModule<AudioModule>
+class AudioInterface
 {
-    friend class BaseModule<AudioModule>;
+    HK_FORBID_COPY(AudioInterface)
 
 public:
-    AudioDevice* GetDevice() const
-    {
-        return m_Device;
-    }
+    float MasterVolume = 1;
+    bool bPaused = false;
 
-    AudioMixer* GetMixer() const
-    {
-        return m_Mixer.RawPtr();
-    }
+    explicit AudioInterface(ECS::World* world);
 
-    void Update();
+    void SetListener(ECS::EntityHandle inEntity);
+
+    ECS::EntityHandle GetListener() const { return m_Listener; }
+
+    /// Plays a sound at a given position in world space.
+    void PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+
+    /// Plays a sound at background.
+    void PlaySoundBackground(SoundHandle inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+
+    void UpdateOneShotSound(AudioMixerSubmitQueue& submitQueue, AudioListener const& inListener);
 
 private:
-    AudioModule();
-    ~AudioModule();
+    ECS::World* m_World;
+    ECS::EntityHandle m_Listener;
 
-    TRef<AudioDevice>      m_Device;
-    TUniqueRef<AudioMixer> m_Mixer;
+    struct OneShotSound
+    {
+        TRef<AudioTrack> Track;
+        TRef<SoundGroup> Group;
+        Float3 Position;
+        float Volume;
+        bool bIsBackground;
+        bool bNeedToSubmit;
+
+        void Spatialize(AudioListener const& inListener, int outChanVolume[2], Float3& outLocalDir, bool& outSpatializedStereo);
+    };
+    TVector<OneShotSound> m_OneShotSound;
 };
 
 HK_NAMESPACE_END
