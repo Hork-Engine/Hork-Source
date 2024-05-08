@@ -280,6 +280,11 @@ struct MaterialSource
 
     /** Source code */
     String Code;
+
+    MaterialSource() = default;
+    MaterialSource(StringView inSourceName, StringView inCode) :
+        SourceName(inSourceName), Code(inCode)
+    {}
 };
 
 class CompiledMaterial : public RefCounted
@@ -367,7 +372,7 @@ public:
 
     void AddShader(StringView SourceName, StringView SourceCode)
     {
-        Shaders.Add({SourceName, SourceCode});
+        Shaders.EmplaceBack(SourceName, SourceCode);
     }
 
     void Read(IBinaryStreamReadInterface& Stream)

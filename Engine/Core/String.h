@@ -459,7 +459,7 @@ public:
     TString();
     TString(TString const& Rhs);
     TString(TString&& Rhs) noexcept;
-    TString(TStringView<CharT> Rhs);
+    explicit TString(TStringView<CharT> Rhs);
     TString(const CharT* pRawString);
     TString(const CharT* pRawStringBegin, const CharT* pRawStringEnd);
     ~TString();
@@ -1528,7 +1528,7 @@ HK_INLINE WideString GetWideString(GlobalStringView utfStr)
 template <typename T>
 HK_INLINE String ToString(T const& Val)
 {
-    return Formatter().ToString(Val);
+    return String(Formatter().ToString(Val));
 }
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
@@ -1951,7 +1951,7 @@ struct TPathUtils
             return newPath;
         }
 
-        return Path;
+        return TString<CharT, Allocator>(Path);
     }
 };
 

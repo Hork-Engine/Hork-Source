@@ -235,7 +235,7 @@ String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source
     result += "#line 1\n";
 #endif
 
-    String source = Source;
+    String source(Source);
 
     CleanComments(source.ToPtr());
 
@@ -257,7 +257,7 @@ bool ShaderLoader::LoadFile(StringView FileName, String& Source)
     else
     {
         // Load shaders from sources
-        String fn = PathUtils::GetFilePath(__FILE__);
+        String fn(PathUtils::GetFilePath(__FILE__));
         fn += "/../Embedded/Shaders/";
         fn += FileName;
         PathUtils::FixPathInplace(fn);

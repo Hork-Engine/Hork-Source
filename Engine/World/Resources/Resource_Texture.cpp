@@ -34,9 +34,7 @@ TextureResource::TextureResource(ImageStorage image) :
 
 bool TextureResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
 {
-    String const& fn = stream.GetName();
-
-    if (GetImageFileFormat(fn) != IMAGE_FILE_FORMAT_UNKNOWN)
+    if (GetImageFileFormat(stream.GetName()) != IMAGE_FILE_FORMAT_UNKNOWN)
     {
         ImageMipmapConfig mipmapGen;
         mipmapGen.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;

@@ -843,7 +843,7 @@ static String MakeExpression(MaterialBuildContext& Context, MGInput& Input, MG_V
         return MakeVectorCast(connection->Expression, connection->Type, DesiredType, VectorCastFlags);
     }
 
-    return DefaultExpression; //MakeEmptyVector(DesiredType);
+    return String(DefaultExpression); //MakeEmptyVector(DesiredType);
 }
 
 void MGMaterialGraph::Compute(MaterialBuildContext& Context)

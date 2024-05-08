@@ -206,7 +206,7 @@ bool VT_MakeStructure(VirtualTextureStructure& _Struct,
 
 String VT_FileNameFromRelative(const char* _OutputPath, unsigned int _RelativeIndex, int _Lod)
 {
-    return HK_FORMAT("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION);
+    return String(HK_FORMAT("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION));
 }
 
 VirtualTextureLayer::CachedPage* VT_FindInCache(VirtualTextureLayer& Layer, unsigned int _AbsoluteIndex)
@@ -1681,7 +1681,7 @@ bool VT_CreateVirtualTexture(const VirtualTextureLayerDesc* _Layers,
 
     for (int LayerIndex = 0; LayerIndex < _NumLayers; LayerIndex++)
     {
-        String layerPath = HK_FORMAT("{}/layer{}/", _TempDir, LayerIndex);
+        String layerPath(HK_FORMAT("{}/layer{}/", _TempDir, LayerIndex));
 
         for (int lodIndex = 0; lodIndex < _MaxLods; lodIndex++)
         {

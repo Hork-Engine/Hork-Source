@@ -829,7 +829,7 @@ void AssetImporter::ReadSkeleton(cgltf_node* node, cgltf_skin* skin, int parentI
     }
     else
     {
-        String name = HK_FORMAT("unnamed_{}", m_Joints.Size() - 1);
+        String name(HK_FORMAT("unnamed_{}", m_Joints.Size() - 1));
         Core::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
     }
 
@@ -949,7 +949,7 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
                 }
                 else
                 {
-                    String name = HK_FORMAT("joint_{}", i);//m_Joints.Size() - 1);
+                    String name(HK_FORMAT("joint_{}", i));//m_Joints.Size() - 1);
                     Core::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
                 }
 
@@ -2177,7 +2177,7 @@ void AssetImporter::WriteMaterial(MaterialInfo& m)
 
 static String ValidateFileName(StringView FileName)
 {
-    String ValidatedName = FileName;
+    String ValidatedName(FileName);
 
     for (StringSizeType i = 0; i < ValidatedName.Size(); i++)
     {
@@ -2203,7 +2203,7 @@ static String ValidateFileName(StringView FileName)
 
 String AssetImporter::GeneratePhysicalPath(StringView DesiredName, StringView Extension)
 {
-    String sourceName    = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
+    String sourceName(PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile)));
     String validatedName = ValidateFileName(DesiredName);
 
     sourceName.ToLower();
