@@ -186,7 +186,7 @@ void UIWidget::OnFocusReceive()
 
 void UIWidget::OnWindowHovered(bool bHovered)
 {
-    E_OnHovered.Dispatch(bHovered);
+    E_OnHovered.Invoke(bHovered);
 }
 
 void UIWidget::Draw(Canvas& canvas)

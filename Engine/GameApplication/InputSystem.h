@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "InputDefs.h"
-#include <Engine/Core/Event.h>
+#include <Engine/Core/Delegate.h>
 #include <Engine/Core/Containers/Array.h>
 #include <Engine/Core/Containers/Hash.h>
 #include <Engine/Core/ConsoleVar.h>
@@ -104,7 +104,7 @@ struct InputDeviceKey
     }
 };
 
-class InputMappings : public GCObject
+class InputMappings : public RefCounted
 {
 public:
     struct Mapping
@@ -183,10 +183,8 @@ public:
     TArray<Hk::TVector<Action>, MAX_INPUT_CONTROLLERS> m_ActionPool;
 };
 
-class InputSystem //: public GCObject
+class InputSystem
 {
-    //HK_CLASS(InputSystem, GCObject)
-
 public:
     /** Filter keyboard events */
     bool bIgnoreKeyboardEvents = false;
@@ -217,7 +215,7 @@ public:
     }
 
     /** Set callback for input characters */
-    void SetCharacterCallback(TCallback<void(WideChar, int)> const& Callback, bool bExecuteEvenWhenPaused = false);
+    void SetCharacterCallback(Delegate<void(WideChar, int)> Callback, bool bExecuteEvenWhenPaused = false);
 
     void UnsetCharacterCallback();
 
@@ -311,7 +309,7 @@ protected:
 
     Float2 m_CursorPosition;
 
-    TCallback<void(WideChar, int)> m_CharacterCallback;
+    Delegate<void(WideChar, int)> m_CharacterCallback;
     bool m_bCharacterCallbackExecuteEvenWhenPaused = false;
 
     InputState m_InputState;

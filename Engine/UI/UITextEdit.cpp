@@ -599,7 +599,7 @@ bool UITextEdit::InsertChars(int offset, WideStringView text)
 
     UpdateRows();
 
-    E_OnTyping.Dispatch(m_Text);
+    E_OnTyping.Invoke(m_Text);
 
     return true;
 }
@@ -615,7 +615,7 @@ void UITextEdit::DeleteChars(int first, int count)
 
     UpdateRows();
 
-    E_OnTyping.Dispatch(m_Text);
+    E_OnTyping.Invoke(m_Text);
 }
 
 void UITextEdit::PressKey(int key)
@@ -1176,7 +1176,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
 
                 if (m_bSingleLine || (m_bCtrlEnterForNewLine && !bCtrl) || (!m_bCtrlEnterForNewLine && bCtrl))
                 {
-                    E_OnEnterPress.Dispatch(m_Text);
+                    E_OnEnterPress.Invoke(m_Text);
                 }
                 else if (!m_bReadOnly)
                 {
@@ -1225,7 +1225,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
             }
 
             case KEY_ESCAPE:
-                E_OnEscapePress.Dispatch();
+                E_OnEscapePress.Invoke();
                 break;
 
             case KEY_Z:

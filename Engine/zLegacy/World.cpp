@@ -2,7 +2,7 @@
 #if 0
 
 /** World. Defines a game map or editor/tool scene */
-class World : public GCObject
+class World
 {
 public:
     void SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap);

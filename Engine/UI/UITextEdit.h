@@ -42,9 +42,9 @@ class UITextEdit : public UIWidget
     UI_CLASS(UITextEdit, UIWidget)
 
 public:
-    TEvent<WideStringView> E_OnEnterPress;
-    TEvent<>               E_OnEscapePress;
-    TEvent<WideStringView> E_OnTyping;
+    Delegate<void(WideStringView)> E_OnEnterPress;
+    Delegate<void()>               E_OnEscapePress;
+    Delegate<void(WideStringView)> E_OnTyping;
 
     UITextEdit();
     ~UITextEdit();

@@ -695,80 +695,7 @@ private:
     typedef detail::ClosurePtr<GenericMemFn, StaticFunctionPtr, UnvoidStaticFunctionPtr> ClosureType;
     ClosureType m_Closure;
 
-public:
-    // Typedefs to aid generic programming
-    typedef Delegate type;
-
-    // Construction and comparison functions
-    Delegate() { Clear(); }
-    Delegate(const Delegate& x)
-    {
-        m_Closure.CopyFrom(this, x.m_Closure);
-    }
-    void operator=(const Delegate& x)
-    {
-        m_Closure.CopyFrom(this, x.m_Closure);
-    }
-    bool operator==(const Delegate& x) const
-    {
-        return m_Closure.IsEqual(x.m_Closure);
-    }
-    bool operator!=(const Delegate& x) const
-    {
-        return !m_Closure.IsEqual(x.m_Closure);
-    }
-    bool operator<(const Delegate& x) const
-    {
-        return m_Closure.IsLess(x.m_Closure);
-    }
-    bool operator>(const Delegate& x) const
-    {
-        return x.m_Closure.IsLess(m_Closure);
-    }
-    // Binding to non-const member functions
-    template <class X, class Y>
-    Delegate(Y* pthis, RetType (X::*function_to_bind)(Args...))
-    {
-        m_Closure.bindmemfunc(detail::implicit_cast<X*>(pthis), function_to_bind);
-    }
-    template <class X, class Y>
-    inline void Bind(Y* pthis, RetType (X::*function_to_bind)(Args...))
-    {
-        m_Closure.bindmemfunc(detail::implicit_cast<X*>(pthis), function_to_bind);
-    }
-    // Binding to const member functions.
-    template <class X, class Y>
-    Delegate(const Y* pthis, RetType (X::*function_to_bind)(Args...) const)
-    {
-        m_Closure.bindconstmemfunc(detail::implicit_cast<const X*>(pthis), function_to_bind);
-    }
-    template <class X, class Y>
-    inline void Bind(const Y* pthis, RetType (X::*function_to_bind)(Args...) const)
-    {
-        m_Closure.bindconstmemfunc(detail::implicit_cast<const X*>(pthis), function_to_bind);
-    }
-    // Static functions. We convert them into a member function call.
-    // This constructor also provides implicit conversion
-    Delegate(RetType (*function_to_bind)(Args...))
-    {
-        Bind(function_to_bind);
-    }
-    // for efficiency, prevent creation of a temporary
-    void operator=(RetType (*function_to_bind)(Args...))
-    {
-        Bind(function_to_bind);
-    }
-    inline void Bind(RetType (*function_to_bind)(Args...))
-    {
-        m_Closure.bindstaticfunc(this, &Delegate::InvokeStaticFunction, function_to_bind);
-    }
-    // Invoke the delegate
-    RetType operator()(Args&&... args) const
-    {
-        return (m_Closure.GetClosureThis()->*(m_Closure.GetClosureMemPtr()))(std::forward<Args>(args)...);
-    }
     // Implicit conversion to "bool" using the safe_bool idiom
-private:
     typedef struct SafeBoolStruct
     {
         int a_data_pointer_to_this_is_0_on_buggy_compilers;
@@ -777,6 +704,88 @@ private:
     typedef StaticFunctionPtr SafeBoolStruct::*unspecified_bool_type;
 
 public:
+    // Typedefs to aid generic programming
+    typedef Delegate type;
+
+    // Construction and comparison functions
+    Delegate() { Clear(); }
+    Delegate(Delegate const& rhs)
+    {
+        m_Closure.CopyFrom(this, rhs.m_Closure);
+    }
+    void operator=(Delegate const& rhs)
+    {
+        m_Closure.CopyFrom(this, rhs.m_Closure);
+    }
+    bool operator==(Delegate const& rhs) const
+    {
+        return m_Closure.IsEqual(rhs.m_Closure);
+    }
+    bool operator!=(Delegate const& rhs) const
+    {
+        return !m_Closure.IsEqual(rhs.m_Closure);
+    }
+    bool operator<(Delegate const& rhs) const
+    {
+        return m_Closure.IsLess(rhs.m_Closure);
+    }
+    bool operator>(Delegate const& rhs) const
+    {
+        return rhs.m_Closure.IsLess(m_Closure);
+    }
+    /// Binding to non-const member functions
+    template <class X, class Y>
+    Delegate(Y* object, RetType (X::*method)(Args...))
+    {
+        m_Closure.bindmemfunc(detail::implicit_cast<X*>(object), method);
+    }
+    /// Binding to non-const member functions
+    template <class X, class Y>
+    inline void Bind(Y* object, RetType (X::*method)(Args...))
+    {
+        m_Closure.bindmemfunc(detail::implicit_cast<X*>(object), method);
+    }
+    /// Binding to const member functions.
+    template <class X, class Y>
+    Delegate(const Y* object, RetType (X::*method)(Args...) const)
+    {
+        m_Closure.bindconstmemfunc(detail::implicit_cast<const X*>(object), method);
+    }
+    /// Binding to const member functions.
+    template <class X, class Y>
+    inline void Bind(const Y* object, RetType (X::*method)(Args...) const)
+    {
+        m_Closure.bindconstmemfunc(detail::implicit_cast<const X*>(object), method);
+    }
+    /// Static functions. We convert them into a member function call.
+    /// This constructor also provides implicit conversion
+    Delegate(RetType (*method)(Args...))
+    {
+        Bind(method);
+    }
+    /// for efficiency, prevent creation of a temporary
+    void operator=(RetType (*method)(Args...))
+    {
+        Bind(method);
+    }
+    inline void Bind(RetType (*method)(Args...))
+    {
+        m_Closure.bindstaticfunc(this, &Delegate::InvokeStaticFunction, method);
+    }
+
+    /// Invoke the delegate
+    RetType Invoke(Args... args) const
+    {
+		if (IsEmpty())
+		{
+            if constexpr (std::is_void_v<RetType>)
+                return;
+            else
+                return {};
+		}
+        return (m_Closure.GetClosureThis()->*(m_Closure.GetClosureMemPtr()))(std::forward<Args>(args)...);
+    }
+
     operator unspecified_bool_type() const
     {
         return IsEmpty() ? 0 : &SafeBoolStruct::m_nonzero;
@@ -791,15 +800,18 @@ public:
         return !m_Closure.IsEqualToStaticFuncPtr(funcptr);
     }
     inline bool operator!() const
-    { // Is it bound to anything?
+    {
+		// Is it bound to anything?
         return !m_Closure;
     }
     inline bool IsEmpty() const
     {
         return !m_Closure;
     }
+
     void Clear() { m_Closure.clear(); }
-    // Conversion to and from the DelegateMemento storage class
+
+    /// Conversion to and from the DelegateMemento storage class
     const DelegateMemento& GetMemento() { return m_Closure; }
     void SetMemento(const DelegateMemento& any) { m_Closure.CopyFrom(this, any); }
 
@@ -819,15 +831,15 @@ private: // Invoker for static functions
 // castable to X.
 
 template <class X, class Y, class RetType, class... Args>
-Delegate<RetType(Args...)> MakeDelegate(Y* x, RetType (X::*func)(Args...))
+Delegate<RetType(Args...)> MakeDelegate(Y* object, RetType (X::*method)(Args...))
 {
-    return Delegate<RetType(Args...)>(x, func);
+    return Delegate<RetType(Args...)>(object, method);
 }
 
 template <class X, class Y, class RetType, class... Args>
-Delegate<RetType(Args...)> MakeDelegate(Y* x, RetType (X::*func)(Args...) const)
+Delegate<RetType(Args...)> MakeDelegate(Y* object, RetType (X::*method)(Args...) const)
 {
-    return Delegate<RetType(Args...)>(x, func);
+    return Delegate<RetType(Args...)>(object, method);
 }
 
 HK_NAMESPACE_END

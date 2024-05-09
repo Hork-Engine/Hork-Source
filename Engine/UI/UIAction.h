@@ -47,20 +47,9 @@ public:
 
     Delegate<void(UIAction*)> E_OnActivate;
     Delegate<void(UIAction*)> E_OnDeactivate;
-    //TEvent<UIAction*> E_OnActivate;
-    //TEvent<UIAction*> E_OnDeactivate;
 
     UIAction() = default;
-    #if 0
-    UIAction(TEvent<UIAction*> OnActivate) :
-        E_OnActivate(std::move(OnActivate))
-    {}
 
-    UIAction(TEvent<UIAction*> OnActivate, TEvent<UIAction*> OnDeactivate) :
-        E_OnActivate(std::move(OnActivate)),
-        E_OnDeactivate(std::move(OnDeactivate))
-    {}
-    #else
     UIAction(Delegate<void(UIAction*)> OnActivate) :
         E_OnActivate(std::move(OnActivate))
     {}
@@ -69,7 +58,6 @@ public:
         E_OnActivate(std::move(OnActivate)),
         E_OnDeactivate(std::move(OnDeactivate))
     {}
-    #endif
 
     template <typename T>
     UIAction(T* object, void (T::*OnActivate)(UIAction*))
@@ -89,7 +77,7 @@ public:
         if (bDisabled)
             return;
 
-        E_OnActivate(this);
+        E_OnActivate.Invoke(this);
 
         if (bStick)
             m_bActive = true;
@@ -101,7 +89,7 @@ public:
             return;
 
         m_bActive = false;
-        E_OnDeactivate(this);
+        E_OnDeactivate.Invoke(this);
     }
 
     bool IsActive() const

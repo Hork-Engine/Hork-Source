@@ -173,18 +173,22 @@ public:
         m_RawPtr(rhs.m_RawPtr)
     {
         if (m_RawPtr)
-        {
             m_RawPtr->AddRef();
-        }
+    }
+
+    template <typename U>
+    TRef(TRef<U> const& rhs) :
+        m_RawPtr(rhs.m_RawPtr)
+    {
+        if (m_RawPtr)
+            m_RawPtr->AddRef();
     }
 
     explicit TRef(T* rhs) :
         m_RawPtr(rhs)
     {
         if (m_RawPtr)
-        {
             m_RawPtr->AddRef();
-        }
     }
 
     TRef(TRef&& rhs) :
@@ -196,9 +200,7 @@ public:
     ~TRef()
     {
         if (m_RawPtr)
-        {
             m_RawPtr->RemoveRef();
-        }
     }
 
     T* RawPtr()
@@ -211,11 +213,6 @@ public:
         return m_RawPtr;
     }
 
-    //    operator bool() const
-    //    {
-    //        return m_RawPtr != nullptr;
-    //    }
-
     operator T*() const
     {
         return m_RawPtr;
@@ -223,19 +220,19 @@ public:
 
     T& operator*() const
     {
-        HK_ASSERT_(m_RawPtr, "TRef");
+        HK_ASSERT(m_RawPtr);
         return *m_RawPtr;
     }
 
     T* operator->()
     {
-        HK_ASSERT_(m_RawPtr, "TRef");
+        HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(m_RawPtr, "TRef");
+        HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 
@@ -254,34 +251,31 @@ public:
         return *this;
     }
 
+    template <typename U>
+    TRef<T>& operator=(TRef<U> const& rhs)
+    {
+        this->operator=(rhs.m_RawPtr);
+        return *this;
+    }
+
     TRef<T>& operator=(T* rhs)
     {
         if (m_RawPtr == rhs)
-        {
             return *this;
-        }
         if (m_RawPtr)
-        {
             m_RawPtr->RemoveRef();
-        }
         m_RawPtr = rhs;
         if (m_RawPtr)
-        {
             m_RawPtr->AddRef();
-        }
         return *this;
     }
 
     TRef<T>& operator=(TRef&& rhs)
     {
         if (m_RawPtr == rhs.m_RawPtr)
-        {
             return *this;
-        }
         if (m_RawPtr)
-        {
             m_RawPtr->RemoveRef();
-        }
         m_RawPtr = rhs.m_RawPtr;
         rhs.m_RawPtr = nullptr;
         return *this;
@@ -312,6 +306,8 @@ public:
 
 private:
     T* m_RawPtr{};
+
+    template <typename U> friend class TRef;
 };
 
 
@@ -326,16 +322,12 @@ protected:
         T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->RawPtr : nullptr;
 
         if (Cur == RawPtr)
-        {
             return;
-        }
 
         RemoveWeakRef<T>();
 
         if (!RawPtr)
-        {
             return;
-        }
 
         m_WeakRefCounter = RawPtr->GetWeakRefCounter();
         if (!m_WeakRefCounter)
@@ -430,11 +422,6 @@ public:
         return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->RawPtr) : nullptr;
     }
 
-    //    operator bool() const
-    //    {
-    //        return !IsExpired();
-    //    }
-
     operator T*() const
     {
         return const_cast<T*>(RawPtr());
@@ -442,19 +429,19 @@ public:
 
     T& operator*() const
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT(!IsExpired());
         return *RawPtr();
     }
 
     T* operator->()
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT(!IsExpired());
         return RawPtr();
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT(!IsExpired());
         return RawPtr();
     }
 
@@ -486,9 +473,7 @@ public:
     TWeakRef<T>& operator=(TWeakRef<T>&& rhs)
     {
         if (*this == rhs)
-        {
             return *this;
-        }
 
         Reset();
 
@@ -558,8 +543,8 @@ public:
     TUniqueRef(TUniqueRef<T> const&) = delete;
     TUniqueRef& operator=(TUniqueRef<T> const&) = delete;
 
-    template <typename T2>
-    TUniqueRef(TUniqueRef<T2>&& rhs) :
+    template <typename U>
+    TUniqueRef(TUniqueRef<U>&& rhs) :
         m_RawPtr(rhs.Detach())
     {}
 
@@ -568,8 +553,8 @@ public:
         Reset();
     }
 
-    template <typename T2>
-    TUniqueRef& operator=(TUniqueRef<T2>&& rhs)
+    template <typename U>
+    TUniqueRef& operator=(TUniqueRef<U>&& rhs)
     {
         Reset(rhs.Detach());
         return *this;

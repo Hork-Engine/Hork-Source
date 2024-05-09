@@ -80,7 +80,7 @@ private:
 
         const char* GetComment() const { return Comment; }
 
-        void Execute(CommandProcessor const& _Proc) { Callback(_Proc); }
+        void Execute(CommandProcessor const& _Proc) { Callback.Invoke(_Proc); }
 
     private:
         const char*                             Name;

@@ -41,8 +41,6 @@ SOFTWARE.
 #include <Engine/UI/UIManager.h>
 #include <Engine/Renderer/RenderBackend.h>
 
-#include <Engine/Core/Event.h>
-
 #include "FrameLoop.h"
 #include "InputSystem.h"
 #include "StateMachine.h"

@@ -43,7 +43,7 @@ HK_NAMESPACE_BEGIN
 
 class World;
 
-class ColorGradingParameters : public GCObject
+class ColorGradingParameters : public RefCounted
 {
 public:
     ColorGradingParameters();
@@ -101,7 +101,7 @@ private:
     float         m_AdaptationSpeed;
 };
 
-class VignetteParameters : public GCObject
+class VignetteParameters : public RefCounted
 {
 public:
     VignetteParameters() = default;
@@ -125,7 +125,7 @@ public:
     float  InnerRadiusSqr = Math::Square(0.6f);
 };
 
-class WorldRenderView : public GCObject
+class WorldRenderView : public RefCounted
 {
 public:
     Color4                       BackgroundColor  = Color4(0.3f, 0.3f, 0.8f);
@@ -139,37 +139,37 @@ public:
     TRef<ColorGradingParameters> ColorGrading;
     TRef<VignetteParameters>     Vignette;
 
-    //TEvent<void(RenderCore::ITexture)> E_OnTextureReady; // TODO?
+    //Delegate<void(RenderCore::ITexture)> E_OnTextureReady; // TODO?
     //uint32_t                           RenderingOrder{}; // TODO?
 
     WorldRenderView();
     ~WorldRenderView();
 
-    void SetViewport(uint32_t width, uint32_t height);
+    void                    SetViewport(uint32_t width, uint32_t height);
 
-    uint32_t GetWidth() const { return m_Width; }
-    uint32_t GetHeight() const { return m_Height; }
+    uint32_t                GetWidth() const { return m_Width; }
+    uint32_t                GetHeight() const { return m_Height; }
 
-    void SetWorld(World* world);
-    World* GetWorld() { return m_World; }
+    void                    SetWorld(World* world);
+    World*                  GetWorld() { return m_World; }
 
-    void SetCamera(ECS::EntityHandle camera);
+    void                    SetCamera(ECS::EntityHandle camera);
 
-    ECS::EntityHandle GetCamera() const { return m_pCamera; }
+    ECS::EntityHandle       GetCamera() const { return m_Camera; }
 
     // NOTE: The culling camera has not yet been implemented. It is reserved for the future.
-    void SetCullingCamera(ECS::EntityHandle camera);
+    void                    SetCullingCamera(ECS::EntityHandle camera);
 
-    ECS::EntityHandle GetCullingCamera() const { return m_pCullingCamera; }
+    ECS::EntityHandle       GetCullingCamera() const { return m_CullingCamera; }
 
-    RenderCore::ITexture* GetCurrentExposure() { return m_CurrentExposure; }
-    RenderCore::ITexture* GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
+    RenderCore::ITexture*   GetCurrentExposure() { return m_CurrentExposure; }
+    RenderCore::ITexture*   GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
 
-    TextureHandle GetTextureHandle();
+    TextureHandle           GetTextureHandle();
 
     //TextureView* GetTextureView();
 
-    class TerrainView* GetTerrainView(TerrainHandle resource);
+    class TerrainView*      GetTerrainView(TerrainHandle resource);
 
     /*
     TODO    
@@ -237,8 +237,8 @@ private:
     RenderCore::ITexture* AcquireHBAOMaps();
     void                  ReleaseHBAOMaps();
 
-    ECS::EntityHandle m_pCamera;
-    ECS::EntityHandle m_pCullingCamera;
+    ECS::EntityHandle m_Camera;
+    ECS::EntityHandle m_CullingCamera;
     World* m_World{};
 
     //TWeakRef<TextureViewImpl>              m_WorldViewTex;

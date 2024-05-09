@@ -209,12 +209,12 @@ void WorldRenderView::SetWorld(World* world)
 
 void WorldRenderView::SetCamera(ECS::EntityHandle cameraEntity)
 {
-    m_pCamera = cameraEntity;
+    m_Camera = cameraEntity;
 }
 
 void WorldRenderView::SetCullingCamera(ECS::EntityHandle cameraEntity)
 {
-    m_pCullingCamera = cameraEntity;
+    m_CullingCamera = cameraEntity;
 }
 
 TextureHandle WorldRenderView::GetTextureHandle()

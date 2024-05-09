@@ -778,21 +778,12 @@ bool InputSystem::IsJoyDown(int JoystickId, uint16_t Button) const
 void InputSystem::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask)
 {
     if (bIgnoreCharEvents)
-    {
         return;
-    }
-
-    if (!m_CharacterCallback.IsValid())
-    {
-        return;
-    }
 
     //if (GetWorld()->IsPaused() && !m_bCharacterCallbackExecuteEvenWhenPaused)
-    //{
     //    return;
-    //}
-
-    m_CharacterCallback(UnicodeCharacter, ModMask);
+ 
+    m_CharacterCallback.Invoke(UnicodeCharacter, ModMask);
 }
 
 void InputSystem::SetMouseAxisState(float X, float Y)
@@ -846,9 +837,9 @@ float InputSystem::GetJoystickAxisState(int Joystick, int Axis)
     return Static.JoystickAxisState[Joystick][Axis];
 }
 
-void InputSystem::SetCharacterCallback(TCallback<void(WideChar, int)> const& Callback, bool bExecuteEvenWhenPaused)
+void InputSystem::SetCharacterCallback(Delegate<void(WideChar, int)> Callback, bool bExecuteEvenWhenPaused)
 {
-    m_CharacterCallback = Callback;
+    m_CharacterCallback = std::move(Callback);
     m_bCharacterCallbackExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
 }
 
@@ -856,8 +847,6 @@ void InputSystem::UnsetCharacterCallback()
 {
     m_CharacterCallback.Clear();
 }
-
-
 
 const char* InputHelper::TranslateDevice(uint16_t DeviceId)
 {

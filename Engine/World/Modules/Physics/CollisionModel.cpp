@@ -22,7 +22,7 @@
 
 HK_NAMESPACE_BEGIN
 
-CollisionModel* CollisionModel::Create(CollisionModelCreateInfo const& createInfo)
+TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& createInfo)
 {
     int shapeCount = 0;
 
@@ -34,7 +34,7 @@ CollisionModel* CollisionModel::Create(CollisionModelCreateInfo const& createInf
     shapeCount += createInfo.TriangleMeshCount;
 
     if (!shapeCount)
-        return nullptr;
+        return {};
 
     bool bUseCompound = shapeCount > 1;
 
@@ -44,7 +44,8 @@ CollisionModel* CollisionModel::Create(CollisionModelCreateInfo const& createInf
         compoundSettings.mSubShapes.reserve(shapeCount);
     }
 
-    CollisionModel* model = new CollisionModel;
+    TRef<CollisionModel> model;
+    model.Attach(new CollisionModel);
 
     for (CollisionSphereDef* shape = createInfo.pSpheres ; shape < &createInfo.pSpheres[createInfo.SphereCount] ; shape++)
     {
@@ -959,7 +960,7 @@ CollisionModel* CreateConvexDecompositionVHACD(Float3 const* vertices,
     return CollisionModel::Create(createInfo);
 }
 
-TerrainCollision* TerrainCollision::Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList)
+TRef<TerrainCollision> TerrainCollision::Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList)
 {
     const int BLOCK_SIZE_SHIFT = 2;
     const int BITS_PER_SAMPLE = 8;
@@ -975,7 +976,8 @@ TerrainCollision* TerrainCollision::Create(const float* inSamples, uint32_t inSa
     settings.mBlockSize = 1 << BLOCK_SIZE_SHIFT;
     settings.mBitsPerSample = BITS_PER_SAMPLE;
 
-    TerrainCollision* model = new TerrainCollision;
+    TRef<TerrainCollision> model;
+    model.Attach(new TerrainCollision);
     model->m_Shape = static_cast<JPH::HeightFieldShape*>(settings.Create().Get().GetPtr());
 
     LOG("TerrainCollision memory usage {} bytes\n", model->GetMemoryUsage());

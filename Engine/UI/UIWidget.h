@@ -35,7 +35,7 @@ SOFTWARE.
 #include "UIBrush.h"
 #include "UICursor.h"
 
-#include <Engine/Core/Event.h>
+#include <Engine/Core/Delegate.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -151,7 +151,7 @@ public:
     UI_TOOLTIP_POSITION TooltipPosition = UI_TOOLTIP_POSITION_AT_CURSOR;
     int                 Layer       = 0; // layer is used by StackLayout
 
-    TEvent<bool> E_OnHovered;
+    Delegate<void(bool)> E_OnHovered;
 
 public:
     UIWidget();

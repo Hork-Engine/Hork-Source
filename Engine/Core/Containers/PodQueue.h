@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory.h>
-#include <Engine/Core/Application/Logger.h>
+#include <Engine/Core/Memory.h>
+#include <Engine/Core/Logger.h>
 
 HK_NAMESPACE_BEGIN
 

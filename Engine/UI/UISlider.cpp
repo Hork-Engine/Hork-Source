@@ -44,7 +44,7 @@ UISlider& UISlider::SetValue(float value)
     {
         m_Value = NewValue;
 
-        E_OnUpdateValue.Dispatch(m_Value);
+        E_OnUpdateValue.Invoke(m_Value);
     }
 
     return *this;

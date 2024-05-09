@@ -167,7 +167,7 @@ Level
 Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class Level : public GCObject
+class Level
 {
     friend class World;
     friend class Actor;

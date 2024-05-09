@@ -91,10 +91,10 @@ struct CollisionModelCreateInfo
 
 using CollisionInstanceRef = JPH::Ref<JPH::Shape>;
 
-class CollisionModel : public GCObject
+class CollisionModel : public RefCounted
 {
 public:
-    static CollisionModel* Create(CollisionModelCreateInfo const& inCreateInfo);
+    static TRef<CollisionModel> Create(CollisionModelCreateInfo const& inCreateInfo);
 
     Float3 const& GetCenterOfMass() const;
 
@@ -121,10 +121,10 @@ private:
     SCALE_MODE m_AllowedScalingMode{NON_UNIFORM};
 };
 
-class TerrainCollision : public GCObject
+class TerrainCollision : public RefCounted
 {
 public:
-    static TerrainCollision* Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
+    static TRef<TerrainCollision> Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
 
     CollisionInstanceRef Instatiate();
 

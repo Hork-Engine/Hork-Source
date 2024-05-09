@@ -51,7 +51,7 @@ public:
     TRef<UIBrush> SliderBrush;
     Color4        LineColor = Color4::White();
 
-    TEvent<float> E_OnUpdateValue;    
+    Delegate<void(float)> E_OnUpdateValue;    
 
     UISlider() = default;
     ~UISlider() = default;
@@ -82,9 +82,9 @@ public:
     }
 
     template <typename T, typename... TArgs>
-    UISlider& SetOnUpdateValue(T* _Object, void (T::*_Method)(TArgs...))
+    UISlider& SetOnUpdateValue(T* object, void (T::*method)(TArgs...))
     {
-        E_OnUpdateValue.Add(_Object, _Method);
+        E_OnUpdateValue.Bind(object, method);
         return *this;
     }
 

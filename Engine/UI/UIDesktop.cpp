@@ -353,7 +353,7 @@ void UIDesktop::GenerateKeyEvents(KeyEvent const& event)
             {
                 if (shortcut.Key == event.Key && shortcut.ModMask == event.ModMask)
                 {
-                    shortcut.Binding();
+                    shortcut.Binding.Invoke();
                     return;
                 }
             }

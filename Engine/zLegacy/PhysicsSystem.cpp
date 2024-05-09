@@ -30,7 +30,7 @@ SOFTWARE.
 
 #if 0
 
-class HitProxy : public GCObject
+class HitProxy
 {
     friend class PhysicsSystem;
 
