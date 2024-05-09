@@ -38,8 +38,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class FontStash;
-
 //struct Joystick
 //{
 //    int NumAxes;
@@ -136,81 +134,78 @@ class WorldRenderView;
 class FrameLoop : public RefCounted
 {
 public:
-    FrameLoop(RenderCore::IDevice* RenderDevice);
-    virtual ~FrameLoop();
+                    FrameLoop(RenderCore::IDevice* RenderDevice);
+    virtual         ~FrameLoop();
 
     /** Allocate frame memory */
-    void* AllocFrameMem(size_t _SizeInBytes);
+    void*           AllocFrameMem(size_t _SizeInBytes);
 
     template <typename T>
-    T* AllocFrameMem()
-    {
-        return m_FrameMemory.Allocate<T>();
-    }
+    T*              AllocFrameMem() { return m_FrameMemory.Allocate<T>(); }
 
     /** Return frame memory size in bytes */
-    size_t GetFrameMemorySize() const;
+    size_t          GetFrameMemorySize() const;
 
     /** Return used frame memory in bytes */
-    size_t GetFrameMemoryUsed() const;
+    size_t          GetFrameMemoryUsed() const;
 
     /** Return used frame memory on previous frame, in bytes */
-    size_t GetFrameMemoryUsedPrev() const;
+    size_t          GetFrameMemoryUsedPrev() const;
 
     /** Return max frame memory usage since application start */
-    size_t GetMaxFrameMemoryUsage() const;
+    size_t          GetMaxFrameMemoryUsage() const;
 
     /** Get time stamp at beggining of the frame */
-    int64_t SysFrameTimeStamp();
+    int64_t         SysFrameTimeStamp();
 
     /** Get frame duration in microseconds */
-    int64_t SysFrameDuration();
+    int64_t         SysFrameDuration();
 
     /** Get current frame number */
-    int SysFrameNumber() const;
+    int             SysFrameNumber() const;
 
-    void SetGenerateInputEvents(bool bShouldGenerateInputEvents);
+    void            SetGenerateInputEvents(bool bShouldGenerateInputEvents);
 
     /** Begin a new frame */
-    void NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, class ResourceManager* resourceManager);
+    void            NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, class ResourceManager* resourceManager);
 
     /** Poll runtime events */
-    void PollEvents(IEventListener* Listener);
+    void            PollEvents(IEventListener* Listener);
 
-    void RegisterView(WorldRenderView* pView);
+    void            RegisterView(WorldRenderView* pView);
 
-    TVector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
+    TVector<WorldRenderView*> const&    GetRenderViews() { return m_Views; }
 
-    StreamedMemoryGPU* GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
+    StreamedMemoryGPU*                  GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
 
 private:
-    void ClearViews();
-    void ClearJoystickAxes(IEventListener* Listener, int _JoystickNum);
-    void UnpressKeysAndButtons(IEventListener* Listener);
-    void UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum);
-
+    void            ClearViews();
+    void            ClearJoystickAxes(IEventListener* Listener, int _JoystickNum);
+    void            UnpressKeysAndButtons(IEventListener* Listener);
+    void            UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum);
+        
     int64_t m_FrameTimeStamp;
     int64_t m_FrameDuration;
-    int m_FrameNumber;
+    int     m_FrameNumber;
 
     TLinearAllocator<>& m_FrameMemory;
-    size_t m_FrameMemoryUsedPrev = 0;
-    size_t m_MaxFrameMemoryUsage = 0;
+    size_t              m_FrameMemoryUsedPrev = 0;
+    size_t              m_MaxFrameMemoryUsage = 0;
 
-    TRef<class GPUSync> m_GPUSync;
+    TRef<class GPUSync>     m_GPUSync;
     TRef<StreamedMemoryGPU> m_StreamedMemoryGPU;
 
     TRef<RenderCore::IDevice> m_RenderDevice;
 
-    TArray<int, KEY_LAST + 1> m_PressedKeys;
-    TArray<bool, MOUSE_BUTTON_8 + 1> m_PressedMouseButtons;
-    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonState;
-    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT> m_JoystickAxisState;
-    TArray<bool, MAX_JOYSTICKS_COUNT> m_JoystickAdded;
-    bool m_bShouldGenerateInputEvents{true};
+    TArray<int, KEY_LAST + 1>           m_PressedKeys;
+    TArray<bool, MOUSE_BUTTON_8 + 1>    m_PressedMouseButtons;
+    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT>    m_JoystickButtonState;
+    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
+    TArray<bool, MAX_JOYSTICKS_COUNT>   m_JoystickAdded;
+    bool                                m_bShouldGenerateInputEvents{true};
 
-    TVector<WorldRenderView*> m_Views;
-    TRef<FontStash> m_FontStash;
+    TVector<WorldRenderView*>   m_Views;
+    TRef<class FontStash>       m_FontStash;
 };
 
 HK_NAMESPACE_END

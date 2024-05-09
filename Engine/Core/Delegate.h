@@ -776,13 +776,13 @@ public:
     /// Invoke the delegate
     RetType Invoke(Args... args) const
     {
-		if (IsEmpty())
-		{
+        if (IsEmpty())
+        {
             if constexpr (std::is_void_v<RetType>)
                 return;
             else
                 return {};
-		}
+        }
         return (m_Closure.GetClosureThis()->*(m_Closure.GetClosureMemPtr()))(std::forward<Args>(args)...);
     }
 

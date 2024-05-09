@@ -22,16 +22,16 @@
 
 HK_NAMESPACE_BEGIN
 
-TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& createInfo)
+TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& inCreateInfo)
 {
     int shapeCount = 0;
 
-    shapeCount += createInfo.SphereCount;
-    shapeCount += createInfo.BoxCount;
-    shapeCount += createInfo.CylinderCount;
-    shapeCount += createInfo.CapsuleCount;
-    shapeCount += createInfo.ConvexHullCount;
-    shapeCount += createInfo.TriangleMeshCount;
+    shapeCount += inCreateInfo.SphereCount;
+    shapeCount += inCreateInfo.BoxCount;
+    shapeCount += inCreateInfo.CylinderCount;
+    shapeCount += inCreateInfo.CapsuleCount;
+    shapeCount += inCreateInfo.ConvexHullCount;
+    shapeCount += inCreateInfo.TriangleMeshCount;
 
     if (!shapeCount)
         return {};
@@ -47,7 +47,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
     TRef<CollisionModel> model;
     model.Attach(new CollisionModel);
 
-    for (CollisionSphereDef* shape = createInfo.pSpheres ; shape < &createInfo.pSpheres[createInfo.SphereCount] ; shape++)
+    for (CollisionSphereDef* shape = inCreateInfo.pSpheres; shape < &inCreateInfo.pSpheres[inCreateInfo.SphereCount]; shape++)
     {
         JPH::SphereShape* sphere = new JPH::SphereShape(shape->Radius);
 
@@ -67,7 +67,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
         model->m_AllowedScalingMode = CollisionModel::UNIFORM;
     }
 
-    for (CollisionBoxDef* shape = createInfo.pBoxes ; shape < &createInfo.pBoxes[createInfo.BoxCount] ; shape++)
+    for (CollisionBoxDef* shape = inCreateInfo.pBoxes; shape < &inCreateInfo.pBoxes[inCreateInfo.BoxCount]; shape++)
     {
         JPH::BoxShape* box = new JPH::BoxShape(ConvertVector(shape->HalfExtents));
 
@@ -85,7 +85,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
         }
     }
 
-    for (CollisionCylinderDef* shape = createInfo.pCylinders ; shape < &createInfo.pCylinders[createInfo.CylinderCount] ; shape++)
+    for (CollisionCylinderDef* shape = inCreateInfo.pCylinders; shape < &inCreateInfo.pCylinders[inCreateInfo.CylinderCount]; shape++)
     {
         JPH::CylinderShape* cylinder = new JPH::CylinderShape(shape->Height * 0.5f, shape->Radius);
 
@@ -108,7 +108,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
         }
     }
 
-    for (CollisionCapsuleDef* shape = createInfo.pCapsules ; shape < &createInfo.pCapsules[createInfo.CapsuleCount] ; shape++)
+    for (CollisionCapsuleDef* shape = inCreateInfo.pCapsules; shape < &inCreateInfo.pCapsules[inCreateInfo.CapsuleCount]; shape++)
     {
         JPH::CapsuleShape* capsule = new JPH::CapsuleShape(shape->Height * 0.5f, shape->Radius);
 
@@ -130,7 +130,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
 
     JPH::ConvexHullShapeSettings convexHullSettings;
     convexHullSettings.mMaxConvexRadius = JPH::cDefaultConvexRadius;
-    for (CollisionConvexHullDef* shape = createInfo.pConvexHulls ; shape < &createInfo.pConvexHulls[createInfo.ConvexHullCount] ; shape++)
+    for (CollisionConvexHullDef* shape = inCreateInfo.pConvexHulls; shape < &inCreateInfo.pConvexHulls[inCreateInfo.ConvexHullCount]; shape++)
     {
         convexHullSettings.mPoints.resize(shape->VertexCount);
 
@@ -157,7 +157,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
 
     JPH::MeshShapeSettings meshSettings;
 
-    for (CollisionTriangleSoupDef* shape = createInfo.pTriangleMeshes ; shape < &createInfo.pTriangleMeshes[createInfo.TriangleMeshCount] ; shape++)
+    for (CollisionTriangleSoupDef* shape = inCreateInfo.pTriangleMeshes; shape < &inCreateInfo.pTriangleMeshes[inCreateInfo.TriangleMeshCount]; shape++)
     {
         uint32_t triangleCount = shape->IndexCount / 3;
 
@@ -212,10 +212,10 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& crea
 
     model->m_CenterOfMass = ConvertVector(model->m_Shape->GetCenterOfMass());
 
-    //if (createInfo.CenterOfMassOffset.LengthSqr() > 0.001f)
+    //if (inCreateInfo.CenterOfMassOffset.LengthSqr() > 0.001f)
     //{
     //    JPH::ShapeSettings::ShapeResult result;
-    //    JPH::OffsetCenterOfMassShape* offsetShape = new JPH::OffsetCenterOfMassShape(JPH::OffsetCenterOfMassShapeSettings(ConvertVector(createInfo.CenterOfMassOffset), model->m_Shape), result);
+    //    JPH::OffsetCenterOfMassShape* offsetShape = new JPH::OffsetCenterOfMassShape(JPH::OffsetCenterOfMassShapeSettings(ConvertVector(inCreateInfo.CenterOfMassOffset), model->m_Shape), result);
 
     //    model->m_Shape = offsetShape;
     //}
@@ -230,41 +230,41 @@ Float3 const& CollisionModel::GetCenterOfMass() const
     return m_CenterOfMass;//m_CenterOfMassWithOffset;
 }
 
-Float3 CollisionModel::GetValidScale(Float3 const& scale) const
+Float3 CollisionModel::GetValidScale(Float3 const& inScale) const
 {
-    if (scale.X != 1 || scale.Y != 1 || scale.Z != 1)
+    if (inScale.X != 1 || inScale.Y != 1 || inScale.Z != 1)
     {
-        bool bIsUniformXZ = scale.X == scale.Z;
-        bool bIsUniformScaling = bIsUniformXZ && scale.X == scale.Y; // FIXME: allow some epsilon?
+        bool bIsUniformXZ = inScale.X == inScale.Z;
+        bool bIsUniformScaling = bIsUniformXZ && inScale.X == inScale.Y; // FIXME: allow some epsilon?
 
         if (m_AllowedScalingMode == CollisionModel::NON_UNIFORM || bIsUniformScaling)
         {
-            return scale;
+            return inScale;
         }
         else if (m_AllowedScalingMode == CollisionModel::UNIFORM_XZ)
         {
-            float scaleXZ = Math::Max(scale.X, scale.Z);
+            float scaleXZ = Math::Max(inScale.X, inScale.Z);
 
-            return Float3(scaleXZ, scale.Y, scaleXZ);
+            return Float3(scaleXZ, inScale.Y, scaleXZ);
         }
         else
         {
-            return Float3(Math::Max3(scale.X, scale.Y, scale.Z));
+            return Float3(Math::Max3(inScale.X, inScale.Y, inScale.Z));
         }
     }
-    return scale;
+    return inScale;
 }
 
-CollisionInstanceRef CollisionModel::Instatiate(Float3 const& scale)
+CollisionInstanceRef CollisionModel::Instatiate(Float3 const& inScale)
 {
-    if (scale.X != 1 || scale.Y != 1 || scale.Z != 1)
+    if (inScale.X != 1 || inScale.Y != 1 || inScale.Z != 1)
     {
-        bool bIsUniformXZ = scale.X == scale.Z;
-        bool bIsUniformScaling = bIsUniformXZ && scale.X == scale.Y; // FIXME: allow some epsilon?
+        bool bIsUniformXZ = inScale.X == inScale.Z;
+        bool bIsUniformScaling = bIsUniformXZ && inScale.X == inScale.Y; // FIXME: allow some epsilon?
         
         if (m_AllowedScalingMode == CollisionModel::NON_UNIFORM || bIsUniformScaling)
         {
-            return new JPH::ScaledShape(m_Shape, ConvertVector(scale));
+            return new JPH::ScaledShape(m_Shape, ConvertVector(inScale));
         }
         else if (m_AllowedScalingMode == CollisionModel::UNIFORM_XZ)
         {
@@ -273,15 +273,15 @@ CollisionInstanceRef CollisionModel::Instatiate(Float3 const& scale)
                 LOG("WARNING: Non-uniform XZ scaling is not allowed for this collision model\n");
             }
 
-            float scaleXZ = Math::Max(scale.X, scale.Z);
+            float scaleXZ = Math::Max(inScale.X, inScale.Z);
 
-            return new JPH::ScaledShape(m_Shape, JPH::Vec3(scaleXZ, scale.Y, scaleXZ));
+            return new JPH::ScaledShape(m_Shape, JPH::Vec3(scaleXZ, inScale.Y, scaleXZ));
         }
         else
         {
             LOG("WARNING: Non-uniform scaling is not allowed for this collision model\n");
 
-            return new JPH::ScaledShape(m_Shape, JPH::Vec3::sReplicate(Math::Max3(scale.X, scale.Y, scale.Z)));
+            return new JPH::ScaledShape(m_Shape, JPH::Vec3::sReplicate(Math::Max3(inScale.X, inScale.Y, inScale.Z)));
         }
     }
     return m_Shape;
@@ -848,33 +848,29 @@ void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const&
     }
 }
 
-void CollisionModel::DrawDebug(DebugRenderer& renderer, Float3x4 const& transform) const
+void CollisionModel::DrawDebug(DebugRenderer& inRenderer, Float3x4 const& inTransform) const
 {
-    DrawShape(renderer, m_Shape.GetPtr(), transform);
+    DrawShape(inRenderer, m_Shape.GetPtr(), inTransform);
 }
 
 
-CollisionModel* CreateConvexDecomposition(Float3 const* vertices,
-                                          int vertexCount,
-                                          int vertexStride,
-                                          unsigned int const* indices,
-                                          int indexCount)
+TRef<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
 {
     TVector<Float3> hullVertices;
     TVector<unsigned int> hullIndices;
     TVector<ConvexHullDesc> hulls;
 
-    if (vertexStride <= 0)
+    if (inVertexStride <= 0)
     {
         LOG("CreateConvexDecomposition: invalid VertexStride\n");
         return {};
     }
 
-    Geometry::PerformConvexDecomposition(vertices,
-                                         vertexCount,
-                                         vertexStride,
-                                         indices,
-                                         indexCount,
+    Geometry::PerformConvexDecomposition(inVertices,
+                                         inVertexCount,
+                                         inVertexStride,
+                                         inIndices,
+                                         inIndexCount,
                                          hullVertices,
                                          hullIndices,
                                          hulls);
@@ -906,28 +902,24 @@ CollisionModel* CreateConvexDecomposition(Float3 const* vertices,
     return CollisionModel::Create(createInfo);
 }
 
-CollisionModel* CreateConvexDecompositionVHACD(Float3 const* vertices,
-                                               int vertexCount,
-                                               int vertexStride,
-                                               unsigned int const* indices,
-                                               int indexCount)
+TRef<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
 {
     TVector<Float3> hullVertices;
     TVector<unsigned int> hullIndices;
     TVector<ConvexHullDesc> hulls;
     Float3 decompositionCenterOfMass;
 
-    if (vertexStride <= 0)
+    if (inVertexStride <= 0)
     {
         LOG("CreateConvexDecompositionVHACD: invalid VertexStride\n");
         return {};
     }
 
-    Geometry::PerformConvexDecompositionVHACD(vertices,
-                                              vertexCount,
-                                              vertexStride,
-                                              indices,
-                                              indexCount,
+    Geometry::PerformConvexDecompositionVHACD(inVertices,
+                                              inVertexCount,
+                                              inVertexStride,
+                                              inIndices,
+                                              inIndexCount,
                                               hullVertices,
                                               hullIndices,
                                               hulls,
