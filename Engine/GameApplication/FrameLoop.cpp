@@ -67,7 +67,9 @@ FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
 }
 
 FrameLoop::~FrameLoop()
-{}
+{
+    ClearViews();
+}
 
 void* FrameLoop::AllocFrameMem(size_t _SizeInBytes)
 {
@@ -191,12 +193,15 @@ void FrameLoop::NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int Swa
 
 void FrameLoop::ClearViews()
 {
+    for (auto* view : m_Views)
+        view->RemoveRef();
     m_Views.Clear();
 }
 
 void FrameLoop::RegisterView(WorldRenderView* pView)
 {
     m_Views.Add(pView);
+    pView->AddRef();
 }
 
 struct KeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
