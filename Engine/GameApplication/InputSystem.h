@@ -109,65 +109,50 @@ class InputMappings : public RefCounted
 public:
     struct Mapping
     {
-        String Name;
-        int NameHash;
-        float AxisScale;
+        String  Name;
+        int     NameHash;
+        float   AxisScale;
         uint8_t ModMask;
         uint8_t ControllerId;
-        bool bAxis;
+        bool    bAxis;
     };
 
     struct AxisMapping
     {
         uint16_t DeviceId;
         uint16_t KeyId;
-        float AxisScale;
-        uint8_t ControllerId;
+        float    AxisScale;
+        uint8_t  ControllerId;
     };
+
+    using KeyMappings = THashMap<InputDeviceKey, TVector<Mapping>>;
+    using AxisMappings = TNameHash<TVector<AxisMapping>>;
 
     InputMappings() = default;
 
-    void MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey, float AxisScale, int ControllerId);
-    void UnmapAxis(InputDeviceKey const& DeviceKey);
+    void                MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey, float AxisScale, int ControllerId);
+    void                UnmapAxis(InputDeviceKey const& DeviceKey);
 
-    void MapAction(StringView ActionName, InputDeviceKey const& DeviceKey, int ModMask, int ControllerId);
-    void UnmapAction(InputDeviceKey const& DeviceKey, int ModMask);
+    void                MapAction(StringView ActionName, InputDeviceKey const& DeviceKey, int ModMask, int ControllerId);
+    void                UnmapAction(InputDeviceKey const& DeviceKey, int ModMask);
 
-    void UnmapAll();
+    void                UnmapAll();
 
-    THashMap<InputDeviceKey, TVector<Mapping>> const& GetMappings() const { return m_Mappings; }
-
-    TNameHash<TVector<AxisMapping>> const& GetAxisMappings() const { return m_AxisMappings; }
-
-protected:
-    ///** Load resource from file */
-    //bool LoadResource(IBinaryStreamReadInterface& Stream) override;
-
-    ///** Create internal resource */
-    //void LoadInternalResource(StringView Path) override;
-
-    //const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
+    KeyMappings const&  GetMappings() const { return m_Mappings; }
+    AxisMappings const& GetAxisMappings() const { return m_AxisMappings; }
 
 private:
-    //void InitializeFromDocument(DocumentValue const& Document);
-
-    THashMap<InputDeviceKey, TVector<Mapping>> m_Mappings;
-    TNameHash<TVector<AxisMapping>> m_AxisMappings;
+    KeyMappings     m_Mappings;
+    AxisMappings    m_AxisMappings;
 };
 
 class InputState
 {
 public:
-    //struct AxisState
-    //{
-    //    Hk::String Name;
-    //    float Scale;
-    //};
-
     struct Action
     {
-        Hk::String Name;
-        bool bPressed;
+        Hk::String  Name;
+        bool        bPressed;
     };
 
     using PlayerIndex = int;
@@ -180,81 +165,75 @@ public:
     }
 
     TArray<TNameHash<float>, MAX_INPUT_CONTROLLERS> m_AxisScale;
-    TArray<Hk::TVector<Action>, MAX_INPUT_CONTROLLERS> m_ActionPool;
+    TArray<TVector<Action>, MAX_INPUT_CONTROLLERS>  m_ActionPool;
 };
 
 class InputSystem
 {
 public:
-    /** Filter keyboard events */
+    /// Filter keyboard events
     bool bIgnoreKeyboardEvents = false;
 
-    /** Filter mouse events */
+    /// Filter mouse events
     bool bIgnoreMouseEvents = false;
 
-    /** Filter joystick events */
+    /// Filter joystick events
     bool bIgnoreJoystickEvents = false;
 
-    /** Filter character events */
+    /// Filter character events
     bool bIgnoreCharEvents = false;
 
     InputSystem();
     ~InputSystem();
 
-    /** Set input mappings config */
-    void SetInputMappings(InputMappings* Mappings);
+    /// Set input mappings config
+    void            SetInputMappings(InputMappings* Mappings);
 
-    /** Get input mappints config */
-    InputMappings* GetInputMappings() const;    
+    /// Get input mappints config
+    InputMappings*  GetInputMappings() const;    
 
-    /** Set callback for input characters */
+    /// Set callback for input characters
     template <typename T>
-    void SetCharacterCallback(T* Object, void (T::*Method)(WideChar, int), bool bExecuteEvenWhenPaused = false)
-    {
-        SetCharacterCallback({Object, Method}, bExecuteEvenWhenPaused);
-    }
+    void            SetCharacterCallback(T* Object, void (T::*Method)(WideChar, int), bool bExecuteEvenWhenPaused = false) { SetCharacterCallback({Object, Method}, bExecuteEvenWhenPaused); }
 
-    /** Set callback for input characters */
-    void SetCharacterCallback(Delegate<void(WideChar, int)> Callback, bool bExecuteEvenWhenPaused = false);
+    /// Set callback for input characters
+    void            SetCharacterCallback(Delegate<void(WideChar, int)> Callback, bool bExecuteEvenWhenPaused = false);
 
-    void UnsetCharacterCallback();
+    void            UnsetCharacterCallback();
 
-    void NewFrame();
+    void            NewFrame();
 
-    void Tick(float TimeStep);
+    void            Tick(float TimeStep);
 
-    bool IsKeyDown(uint16_t Key) const { return GetButtonState({ID_KEYBOARD, Key}); }
-    bool IsMouseDown(uint16_t Button) const { return GetButtonState({ID_MOUSE, Button}); }
-    bool IsJoyDown(int JoystickId, uint16_t Button) const;
+    bool            IsKeyDown(uint16_t Key) const { return GetButtonState({ID_KEYBOARD, Key}); }
+    bool            IsMouseDown(uint16_t Button) const { return GetButtonState({ID_MOUSE, Button}); }
+    bool            IsJoyDown(int JoystickId, uint16_t Button) const;
 
-    void SetButtonState(InputDeviceKey const& DeviceKey, int Action, int ModMask);
+    void            SetButtonState(InputDeviceKey const& DeviceKey, int Action, int ModMask);
 
-    /** Return is button pressed or not */
-    bool GetButtonState(InputDeviceKey const& DeviceKey) const;
+    /// Return is button pressed or not
+    bool            GetButtonState(InputDeviceKey const& DeviceKey) const;
 
-    void UnpressButtons();
+    void            UnpressButtons();
 
-    void SetMouseAxisState(float X, float Y);
+    void            SetMouseAxisState(float X, float Y);
 
-    float GetMouseMoveX() const { return m_MouseAxisState[m_MouseIndex].X; }
-    float GetMouseMoveY() const { return m_MouseAxisState[m_MouseIndex].Y; }
+    float           GetMouseMoveX() const { return m_MouseAxisState[m_MouseIndex].X; }
+    float           GetMouseMoveY() const { return m_MouseAxisState[m_MouseIndex].Y; }
 
-    float GetMouseAxisState(int Axis);
+    float           GetMouseAxisState(int Axis);
 
-    void SetCursorPosition(Float2 const& cursorPosition) { m_CursorPosition = cursorPosition; }
+    void            SetCursorPosition(Float2 const& cursorPosition) { m_CursorPosition = cursorPosition; }
 
-    Float2 const& GetCursorPosition() const { return m_CursorPosition; }
+    Float2 const&   GetCursorPosition() const { return m_CursorPosition; }
 
-    void NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask);
+    void            NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask);
 
-    static void SetJoystickAxisState(int Joystick, int Axis, float Value);
+    static void     SetJoystickAxisState(int Joystick, int Axis, float Value);
 
-    static float GetJoystickAxisState(int Joystick, int Axis);
+    static float    GetJoystickAxisState(int Joystick, int Axis);
 
-    InputState const& GetInputState() const
-    {
-        return m_InputState;
-    }
+    InputState const& GetInputState() const { return m_InputState; }
 
 protected:
     enum class BINDING_TYPE
@@ -294,20 +273,20 @@ protected:
 
     TRef<InputMappings> m_InputMappings;
 
-    /** Array of pressed keys */
+    /// Array of pressed keys
     TArray<PressedKey, MAX_PRESSED_KEYS> m_PressedKeys = {};
     int m_NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    TArray<int8_t*, MAX_INPUT_DEVICES> m_DeviceButtonDown;
-    TArray<int8_t, MAX_KEYBOARD_BUTTONS> m_KeyboardButtonDown;
-    TArray<int8_t, MAX_MOUSE_BUTTONS> m_MouseButtonDown;
+    TArray<int8_t*, MAX_INPUT_DEVICES>      m_DeviceButtonDown;
+    TArray<int8_t, MAX_KEYBOARD_BUTTONS>    m_KeyboardButtonDown;
+    TArray<int8_t, MAX_MOUSE_BUTTONS>       m_MouseButtonDown;
     TArray<TArray<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonDown;
 
-    TArray<Float2, 2> m_MouseAxisState;
-    int m_MouseIndex = 0;
+    TArray<Float2, 2>   m_MouseAxisState;
+    int                 m_MouseIndex = 0;
 
-    Float2 m_CursorPosition;
+    Float2  m_CursorPosition;
 
     Delegate<void(WideChar, int)> m_CharacterCallback;
     bool m_bCharacterCallbackExecuteEvenWhenPaused = false;
@@ -318,29 +297,29 @@ protected:
 class InputHelper final
 {
 public:
-    /** Translate device to string */
-    static const char* TranslateDevice(uint16_t DeviceId);
+    /// Translate device to string
+    static const char*  TranslateDevice(uint16_t DeviceId);
 
-    /** Translate modifier to string */
-    static const char* TranslateModifier(int Modifier);
+    /// Translate modifier to string
+    static const char*  TranslateModifier(int Modifier);
 
-    /** Translate key code to string */
-    static const char* TranslateDeviceKey(InputDeviceKey const& DeviceKey);
+    /// Translate key code to string
+    static const char*  TranslateDeviceKey(InputDeviceKey const& DeviceKey);
 
-    /** Translate key owner player to string */
-    static const char* TranslateController(int ControllerId);
+    /// Translate key owner player to string
+    static const char*  TranslateController(int ControllerId);
 
-    /** Lookup device from string */
-    static uint16_t LookupDevice(StringView Device);
+    /// Lookup device from string
+    static uint16_t     LookupDevice(StringView Device);
 
-    /** Lookup modifier from string */
-    static int LookupModifier(StringView Modifier);
+    /// Lookup modifier from string
+    static int          LookupModifier(StringView Modifier);
 
-    /** Lookup key code from string */
-    static uint16_t LookupDeviceKey(uint16_t DeviceId, StringView Key);
+    /// Lookup key code from string
+    static uint16_t     LookupDeviceKey(uint16_t DeviceId, StringView Key);
 
-    /** Lookup key owner player from string */
-    static int LookupController(StringView ControllerId);
+    /// Lookup key owner player from string
+    static int          LookupController(StringView ControllerId);
 };
 
 extern ConsoleVar in_MouseSensitivity;

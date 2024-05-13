@@ -88,7 +88,7 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
     UpdateViewSize();
 
     Float2 const& pos  = m_Geometry.Mins;
-    Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
+    Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
 
     //GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
     GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
@@ -138,7 +138,7 @@ void UIViewport::Draw(Canvas& canvas)
         return;
 
     Float2 const& pos = m_Geometry.Mins;
-    Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
+    Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
 
     if (size.X >= 1 && size.Y >= 1)
     {

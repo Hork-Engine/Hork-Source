@@ -1111,28 +1111,6 @@ void InputMappings::InitializeFromDocument(DocumentValue const& Document)
     }
 }
 #endif
-//bool InputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
-//{
-//    String script = Stream.AsString();
-//
-//    DocumentDeserializeInfo deserializeInfo;
-//    deserializeInfo.bInsitu = true;
-//    deserializeInfo.pDocumentData = script.CStr();
-//
-//    Document document;
-//    document.DeserializeFromString(deserializeInfo);
-//
-//    InitializeFromDocument(document);
-//
-//    return true;
-//}
-
-//void InputMappings::LoadInternalResource(StringView Path)
-//{
-//    // Empty resource
-//
-//    UnmapAll();
-//}
 
 void InputMappings::MapAxis(StringView AxisName, InputDeviceKey const& DeviceKey, float AxisScale, int ControllerId)
 {
@@ -1251,6 +1229,5 @@ void InputMappings::UnmapAll()
     m_Mappings.Clear();
     m_AxisMappings.Clear();
 }
-
 
 HK_NAMESPACE_END
