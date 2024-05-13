@@ -253,6 +253,8 @@ GameApplication::~GameApplication()
 
     m_Canvas.Reset();
 
+    m_FrameLoop.Reset();
+
     m_ResourceManager->UnloadResource(Global::GDefaultFontHandle);
 
     // Process resource unload
@@ -270,8 +272,6 @@ GameApplication::~GameApplication()
     PhysicsModule::Deinitialize();
 
     Hk::ECS::Shutdown();
-
-    m_FrameLoop.Reset();
 
     GarbageCollector::Shutdown();
 
