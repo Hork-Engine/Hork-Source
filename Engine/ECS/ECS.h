@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <Engine/Core/Allocators/LinearAllocator.h>
+#include <Engine/Core/Allocators/HandleAllocator.h>
 #include <Engine/Core/Containers/Hash.h>
 #include <Engine/Core/Containers/ArrayView.h>
 
@@ -16,69 +17,7 @@ using ArchetypeId = TVector<ComponentTypeId>;
 
 class World;
 
-class EntityHandle
-{
-    uint64_t Handle{};
-
-public:
-    EntityHandle() = default;
-    EntityHandle(EntityHandle const& rhs) = default;
-    EntityHandle(EntityHandle&& rhs) = default;
-
-    EntityHandle(uint32_t id, uint32_t version) :
-        Handle(uint64_t(id) | (uint64_t(version) << 32))
-    {}
-
-    EntityHandle(std::nullptr_t) :
-        Handle(0)
-    {}
-
-    explicit EntityHandle(uint64_t handle) :
-        Handle(handle)
-    {}
-
-    EntityHandle& operator=(EntityHandle const& rhs) = default;
-
-    bool operator==(EntityHandle const& rhs) const
-    {
-        return Handle == rhs.Handle;
-    }
-
-    bool operator!=(EntityHandle const& rhs) const
-    {
-        return Handle != rhs.Handle;
-    }
-
-    operator bool() const
-    {
-        return Handle != 0;
-    }
-
-    operator uint64_t() const
-    {
-        return Handle;
-    }
-
-    uint16_t GetVersion() const
-    {
-        return Handle >> 32;
-    }
-
-    uint32_t GetID() const
-    {
-        return Handle & 0xffffffff;
-    }
-
-    uint64_t ToUInt64() const
-    {
-        return Handle;
-    }
-
-    uint32_t Hash() const
-    {
-        return HashTraits::Hash(Handle);
-    }
-};
+using EntityHandle = Handle<struct Entity>;
 
 namespace Internal
 {
@@ -357,41 +296,14 @@ struct Entity
 
     // Entity generation
     uint32_t Version;
+
+    Entity() :
+        pArchetype(nullptr),
+        Index(0)
+    {}
 };
 
-// 32bits Version
-// id 26 bit for id inside pool + 4bits PoolID
-
-class EntityAllocator
-{
-public:
-    EntityAllocator();
-    ~EntityAllocator();
-
-    EntityHandle EntityAlloc();
-
-    void EntityFreeUnlocked(EntityHandle handle);
-
-    Entity& GetEntityRef(EntityHandle handle);
-
-private:
-    static constexpr size_t MAX_POOLS = 16;
-
-    void AllocatePool(size_t poolNum);
-
-    static uint32_t MakeId(uint32_t poolNum, uint32_t index);
-
-    struct Pool
-    {
-        Entity* Entities;
-        uint32_t Total;
-    };
-
-    Pool m_Pools[MAX_POOLS];
-    int m_NumPools{};
-    SpinLock m_Mutex;
-    TVector<uint32_t> m_FreeList;
-};
+using EntityAllocator = HandleAllocator<Entity>;
 
 class EntityView
 {
