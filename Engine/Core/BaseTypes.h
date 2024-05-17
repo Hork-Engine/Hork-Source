@@ -250,6 +250,10 @@ HK_NAMESPACE_END
 #endif
 #define HK_ASSERT(assertion)   HK_ASSERT_(assertion, nullptr)
 
+#define HK_IF_ASSERT(x) \
+    HK_ASSERT(x);       \
+    if (!(x))
+
 #define HK_VERIFY(Expression, Message)                               \
     do                                                               \
     {                                                                \
