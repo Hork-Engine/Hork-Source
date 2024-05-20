@@ -1121,8 +1121,8 @@ ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer
     //switch (inDesc.ShapeType)
     //{
     //case CHARACTER_SHAPE_CAPSULE:
-    //standing_shape= JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightStanding, inDesc.RadiusStanding)).Create().Get();
-    //crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightCrouching, inDesc.RadiusCrouching)).Create().Get();
+    //auto standing_shape= JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightStanding, inDesc.RadiusStanding)).Create().Get();
+    //auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * inDesc.HeightCrouching, inDesc.RadiusCrouching)).Create().Get();
     //        break;
 
     //case CHARACTER_SHAPE_CYLINDER:
@@ -1131,8 +1131,8 @@ ECS::EntityHandle PhysicsInterface::CreateCharacterController(ECS::CommandBuffer
     //    break;
 
     //case CHARACTER_SHAPE_BOX:
-    //    mStandingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * cCharacterHeightStanding + cCharacterRadiusStanding, 0), JPH::Quat::sIdentity(), new BoxShape(Vec3(cCharacterRadiusStanding, 0.5f * cCharacterHeightStanding + cCharacterRadiusStanding, cCharacterRadiusStanding))).Create().Get();
-    //    mCrouchingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * cCharacterHeightCrouching + cCharacterRadiusCrouching, 0), JPH::Quat::sIdentity(), new BoxShape(Vec3(cCharacterRadiusCrouching, 0.5f * cCharacterHeightCrouching + cCharacterRadiusCrouching, cCharacterRadiusCrouching))).Create().Get();
+    //auto standing_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(inDesc.RadiusStanding, 0.5f * inDesc.HeightStanding + inDesc.RadiusStanding, inDesc.RadiusStanding))).Create().Get();
+    //auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(inDesc.RadiusCrouching, 0.5f * inDesc.HeightCrouching + inDesc.RadiusCrouching, inDesc.RadiusCrouching))).Create().Get();
     //    break;
     //}
 

@@ -6,6 +6,7 @@
 #include <Engine/World/Common/GameEvents.h>
 #include <Engine/World/Modules/Physics/PhysicsInterface.h>
 #include <Engine/World/Modules/Audio/AudioInterface.h>
+#include <Engine/World/Modules/Transform/EntityGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -23,6 +24,7 @@ public:
 
     PhysicsInterface&   GetPhysicsInterface() { return m_PhysicsInterface; }
     AudioInterface&     GetAudioInterface() { return m_AudioInterface; }
+    SceneGraph&         GetSceneGraph() { return m_SceneGraph; }
 
     template <typename T>
     T*                  RegisterGameplaySystem(GAMEPLAY_SYSTEM_EXECUTION execution)
@@ -63,6 +65,7 @@ private:
     GameFrame           m_Frame;
     GameEvents          m_GameEvents;
 
+    SceneGraph          m_SceneGraph;
     PhysicsInterface    m_PhysicsInterface;
     AudioInterface      m_AudioInterface;
 

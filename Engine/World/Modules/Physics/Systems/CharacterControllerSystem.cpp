@@ -118,6 +118,8 @@ void CharacterControllerSystem::UpdateCharacter(CharacterControllerComponent& ch
         update_settings.mStickToFloorStepDown = JPH::Vec3::sZero();
     if (!character.EnableWalkStairs)
         update_settings.mWalkStairsStepUp = JPH::Vec3::sZero();
+    else
+        update_settings.mWalkStairsStepUp = JPH::Vec3(0,0.5f,0);
 
     class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
     {

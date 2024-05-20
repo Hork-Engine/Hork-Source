@@ -138,9 +138,8 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     ECS::EntityView cameraEntityView = world->GetEntityView(worldRenderView->GetCamera());
 
     auto* camera = cameraEntityView.GetComponent<CameraComponent>();
-    auto* cameraTransform = cameraEntityView.GetComponent<RenderTransformComponent>();
 
-    if (!r_RenderView || !camera || !cameraTransform)
+    if (!r_RenderView || !camera || !camera->Node)
     {
         ClearRenderView(view);
         return;
@@ -163,12 +162,17 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->GameplayTimeSeconds = world->GetFrame().VariableTime;
     view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max(world->GetFrame().VariableTimeStep, 0.0001f);
 
-    Quat cameraRotation = cameraTransform->Rotation * camera->Rotation;
+    Float3 cameraPosition;
+    Quat cameraRotation;
+    world->GetSceneGraph().GetLerpPositionAndRotation(camera->Node, cameraPosition, cameraRotation);
+    
+    cameraPosition = cameraPosition + camera->OffsetPosition;
+    cameraRotation = cameraRotation * camera->OffsetRotation;
 
     Float3x3 billboardMatrix = cameraRotation.ToMatrix3x3();
 
     Float3x3 basis = billboardMatrix.Transposed();
-    Float3 origin = basis * (-cameraTransform->Position);
+    Float3 origin = basis * (-cameraPosition);
 
     Float4x4 viewMatrix;
     viewMatrix[0] = Float4(basis[0], 0.0f);
@@ -179,7 +183,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     float fovx, fovy;
     camera->GetEffectiveFov(fovx, fovy);
 
-    view->ViewPosition       = cameraTransform->Position;
+    view->ViewPosition       = cameraPosition;
     view->ViewRotation       = cameraRotation;
     view->ViewRightVec       = cameraRotation.XAxis();
     view->ViewUpVec          = cameraRotation.YAxis();
@@ -541,7 +545,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     //LightingSystem& lightingSystem = InWorld->LightingSystem;
 
     //m_VisLights.Clear();
-    m_VisEnvProbes.Clear();
+    //m_VisEnvProbes.Clear();
 
     world->AddDrawables(m_RenderDef, m_FrameData);
 
@@ -664,7 +668,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     //}
 
     // Allocate probes
-    view->NumProbes = m_VisEnvProbes.Size();
+    view->NumProbes = 0;//m_VisEnvProbes.Size();
     view->ProbeStreamSize = sizeof(ProbeParameters) * view->NumProbes;
     view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
         streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :

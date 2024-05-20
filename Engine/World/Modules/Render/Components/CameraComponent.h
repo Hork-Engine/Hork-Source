@@ -2,6 +2,7 @@
 
 #include <Engine/Math/Quat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
+#include <Engine/World/Modules/Transform/EntityGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -18,8 +19,10 @@ struct CameraComponent
 {
     CameraComponent() = default;
 
-    // The camera has its own rotation, which is updated with a variable time step. It can be used to reduce input lag.
-    Quat Rotation;
+    // The camera has its own position and rotation, which can be updated with a variable time step. It can be used to reduce input lag.
+    Float3 OffsetPosition;
+    Quat OffsetRotation;
+    EntityNodeID Node;
 
     /** Set view projection */
     void SetProjection(CAMERA_PROJECTION_TYPE _Projection);

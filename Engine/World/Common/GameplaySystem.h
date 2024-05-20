@@ -26,7 +26,7 @@ public:
     virtual void VariableUpdate(float timeStep) {}
     virtual void FixedUpdate(GameFrame const& frame) {}
     virtual void PostPhysicsUpdate(GameFrame const& frame) {}
-    virtual void LateUpdate(float timeStep) {}
+    virtual void LateUpdate(GameFrame const& frame) {}
     virtual void DrawDebug(DebugRenderer& renderer) {}
 };
 

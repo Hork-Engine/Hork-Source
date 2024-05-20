@@ -1,5 +1,6 @@
 #include "RenderSystem.h"
 
+#include <Engine/World/World.h>
 #include <Engine/World/Common/GameFrame.h>
 
 #include <Engine/World/Modules/Transform/Components/MovableTag.h>
@@ -415,6 +416,61 @@ void RenderSystem::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameDat
                 for (int i = 0; i < q.Count(); i++)
                 {
                     AddMesh(rd, frameData, transform[i], mesh[i], bHasTransformHistory ? &history[i].TransformHistory : nullptr, mesh[i].Pose, bMovable);
+                }
+            }
+        }
+
+        {
+            using Query = ECS::Query<>
+                ::ReadOnly<MeshRenderer>
+                ;
+
+            // TODO: remove static cast
+            auto& scene_graph = static_cast<World*>(m_World)->GetSceneGraph();
+
+            for (Query::Iterator q(*m_World); q; q++)
+            {
+                auto mesh_renderer = q.Get<MeshRenderer>();
+                //auto transform_history = q.TryGet<TransformHistoryComponent>();
+
+                bool bMovable = q.HasComponent<MovableTag>();
+                //bool bHasTransformHistory = !!transform_history;
+
+                for (int i = 0; i < q.Count(); i++)
+                {
+                    for (auto& instance : mesh_renderer[i].Meshes)
+                    {
+                        Float3 position;
+                        Quat rotation;
+                        Float3 scale;
+
+                        scene_graph.GetLerpTransform(instance->Node, position, rotation, scale);
+
+                        RenderTransformComponent t;
+                        t.Position = position;
+                        t.Rotation = rotation;
+                        t.Scale = scale;
+
+                        MeshComponent_ECS mesh;
+
+                        mesh.Mesh = instance->Resource;
+                        mesh.SubmeshIndex = instance->SubmeshIndex;
+
+                        mesh.BoundingBox = instance->BoundingBox;
+                        mesh.m_WorldBoundingBox = instance->m_WorldBoundingBox;
+                        mesh.NumLayers = instance->NumLayers;
+                        Core::Memcpy(mesh.Materials, instance->Materials, sizeof(mesh.Materials));
+                        mesh.Pose = instance->Pose;
+                        mesh.bOutline = instance->bOutline;
+
+                        AddMesh(rd,
+                                frameData,
+                                t,
+                                mesh,
+                                /*todo*/ nullptr, //bHasTransformHistory ? &transform_history[i].TransformHistory : nullptr,
+                                instance->Pose,
+                                bMovable);
+                    }
                 }
             }
         }

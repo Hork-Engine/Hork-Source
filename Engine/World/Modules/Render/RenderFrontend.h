@@ -40,10 +40,6 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class World;
-class EnvironmentProbe;
-class Drawable;
-class MeshComponent;
-class SkinnedComponent;
 
 struct RenderFrontendStat
 {
@@ -98,12 +94,12 @@ private:
 
     TVector<PrimitiveDef*> m_VisPrimitives;
     //TVector<PunctualLightComponent*> m_VisLights;
-    TVector<EnvironmentProbe*> m_VisEnvProbes;
+    //TVector<EnvironmentProbe*> m_VisEnvProbes;
 
     int m_VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    TVector<Drawable*> m_ShadowCasters;
+    //TVector<Drawable*> m_ShadowCasters;
     TVector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
 
     struct alignas(16) CullResult

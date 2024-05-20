@@ -126,8 +126,50 @@ void World::Tick(float timeStep)
         // Copy socket transform to transform component
         m_SkinningSystem->UpdateSockets();
 
+        // Copy entity node transform to transform component
+        {
+            using Query = ECS::Query<>
+                ::ReadOnly<EntityAttachComponent>
+                ::Required<TransformComponent>;
+
+            for (Query::Iterator it(*this); it; it++)
+            {
+                auto attaches = it.Get<EntityAttachComponent>();
+                auto transforms = it.Get<TransformComponent>();
+
+                for (int i = 0; i < it.Count(); i++)
+                {
+                    auto& attach = attaches[i];
+                    auto& transform = transforms[i];
+
+                    m_SceneGraph.GetTransform(attach.Node, transform.Position, transform.Rotation, transform.Scale);
+                }
+            }
+        }
+        {
+            using Query = ECS::Query<>
+                ::Required<HierarchyComponent>
+                ::ReadOnly<TransformComponent>;
+
+            for (Query::Iterator it(*this); it; it++)
+            {
+                auto hierarchies = it.Get<HierarchyComponent>();
+                auto transforms = it.Get<TransformComponent>();
+
+                for (int i = 0; i < it.Count(); i++)
+                {
+                    auto& hierarchy = hierarchies[i];
+                    auto& transform = transforms[i];
+
+                    hierarchy.Graph->SetTransform(transform.Position, transform.Rotation, transform.Scale);
+                }
+            }
+        }
+
         // Recalc world transform
         m_TransformSystem->Update(m_Frame);
+
+        m_SceneGraph.CalcWorldTransform(m_Frame.StateIndex);
 
         m_PhysicsSystem->AddAndRemoveBodies(m_Frame);
 
@@ -166,10 +208,12 @@ void World::Tick(float timeStep)
     if (com_InterpolateTransform)
     {
         m_TransformSystem->InterpolateTransformState(m_Frame);
+        m_SceneGraph.InterpolateTransformState(m_Frame.PrevStateIndex, m_Frame.StateIndex, m_Frame.Interpolate);
     }
     else
     {
         m_TransformSystem->CopyTransformState(m_Frame);
+        m_SceneGraph.CopyTransformState(m_Frame.PrevStateIndex, m_Frame.StateIndex);
     }
 
     m_LightingSystem->Update(m_Frame);
@@ -181,7 +225,7 @@ void World::Tick(float timeStep)
     for (auto& system : m_GameplayLateUpdateSystems)
     {
         if (!m_bPaused || system->bTickEvenWhenPaused)
-            system->LateUpdate(timeStep);
+            system->LateUpdate(m_Frame);
     }
 
     if (!m_bPaused)
