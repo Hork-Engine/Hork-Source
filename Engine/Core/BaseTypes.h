@@ -252,6 +252,10 @@ HK_NAMESPACE_END
 
 #define HK_IF_ASSERT(x) \
     HK_ASSERT(x);       \
+    if (x)
+
+#define HK_IF_NOT_ASSERT(x) \
+    HK_ASSERT(x);       \
     if (!(x))
 
 #define HK_VERIFY(Expression, Message)                               \
@@ -304,6 +308,9 @@ HK_NAMESPACE_END
 
 #define _HK_CONCAT(a, b) a##b
 #define HK_CONCAT(a, b)  _HK_CONCAT(a, b)
+
+#define HK_NAME_GEN(prefix) HK_CONCAT(prefix, __COUNTER__)
+
 
 /*
 
