@@ -33,9 +33,7 @@ SOFTWARE.
 #include "BaseTypes.h"
 
 #ifdef HK_OS_WIN32
-#define CriticalError CriticalError_
 #include <Windows.h>
-#undef CriticalError
 #undef FindResource
 #undef GetObject
 #undef GetCommandLine
