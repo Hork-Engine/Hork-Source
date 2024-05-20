@@ -31,73 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Containers/Vector.h>
+#include <Engine/Core/Handle.h>
 
 HK_NAMESPACE_BEGIN
-
-template <typename Entity>
-class Handle
-{
-    uint64_t m_Handle{};
-
-public:
-    Handle() = default;
-    Handle(Handle const& rhs) = default;
-    Handle(Handle&& rhs) = default;
-
-    Handle(uint32_t id, uint32_t version) :
-        m_Handle(uint64_t(id) | (uint64_t(version) << 32))
-    {}
-
-    Handle(std::nullptr_t) :
-        m_Handle(0)
-    {}
-
-    explicit Handle(uint64_t handle) :
-        m_Handle(handle)
-    {}
-
-    Handle& operator=(Handle const& rhs) = default;
-
-    bool operator==(Handle const& rhs) const
-    {
-        return m_Handle == rhs.m_Handle;
-    }
-
-    bool operator!=(Handle const& rhs) const
-    {
-        return m_Handle != rhs.m_Handle;
-    }
-
-    operator bool() const
-    {
-        return m_Handle != 0;
-    }
-
-    operator uint64_t() const
-    {
-        return m_Handle;
-    }
-
-    uint16_t GetVersion() const
-    {
-        return m_Handle >> 32;
-    }
-
-    uint32_t GetID() const
-    {
-        return m_Handle & 0xffffffff;
-    }
-
-    uint64_t ToUInt64() const
-    {
-        return m_Handle;
-    }
-
-    uint32_t Hash() const
-    {
-        return HashTraits::Hash(m_Handle);
-    }
-};
 
 // 32bits Version
 // id 26 bit for id inside pool + 4bits PoolID
