@@ -44,10 +44,10 @@ auto World::GetArchetype(ArchetypeId const& id) -> Archetype*
     archetype->Type = id;
     m_Archetypes.Add(archetype);
 
-    archetype->Components.Resize(id.Size());
+    archetype->Components.Reserve(id.Size());
     for (ArchetypeId::SizeType i = 0; i < id.Size(); ++i)
     {
-        archetype->Components[i].ComponentSize = Internal::ComponentFactory::Registry[id[i]].Size;
+        archetype->Components.EmplaceBack(Internal::ComponentFactory::Registry[id[i]].Size);
 
 #ifdef HK_ECS_ARCHETYPE_LOOKUP_INDEX
         archetype->LookupIndex[id[i]] = i;

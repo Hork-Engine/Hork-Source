@@ -2,6 +2,7 @@
 
 #include <Engine/Core/Allocators/LinearAllocator.h>
 #include <Engine/Core/Allocators/HandleAllocator.h>
+#include <Engine/Core/Allocators/PageAllocator.h>
 #include <Engine/Core/Containers/Hash.h>
 #include <Engine/Core/Containers/ArrayView.h>
 
@@ -186,59 +187,9 @@ public:
 template<typename T>
 const ComponentTypeId Component<T>::Id = Internal::ComponentFactory::GenerateTypeId<T>();
 
-struct ComponentData
-{
-    static constexpr size_t PageSize = 64; // TODO: choose value
-
-    struct Page
-    {
-        uint8_t* Data;
-    };
-
-    TVector<Page> Pages;
-    size_t ComponentSize;
-
-    ~ComponentData()
-    {
-        for (Page& page : Pages)
-        {
-            Core::GetHeapAllocator<HEAP_MISC>().Free(page.Data);
-        }
-    }
-
-    void Grow(size_t count)
-    {
-        HK_ASSERT(count > 0);
-
-        size_t pageCount = count / PageSize + 1;
-        size_t curPageCount = Pages.Size();
-
-        const size_t alignment = 16;
-        const size_t pageSizeInBytes = Align(PageSize * ComponentSize, alignment);
-
-        if (pageCount > curPageCount)
-        {
-            Pages.Resize(pageCount);
-            for (size_t i = curPageCount ; i < pageCount ; ++i)
-                Pages[i].Data = (uint8_t*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(pageSizeInBytes, alignment);
-        }
-    }
-
-    uint8_t* GetPage(size_t pageIndex) const
-    {
-        return Pages[pageIndex].Data;
-    }
-
-    uint8_t* At(size_t index) const
-    {
-        size_t pageIndex = index / PageSize;
-        size_t pageOffset = index - pageIndex * PageSize;
-
-        return Pages[pageIndex].Data + pageOffset * ComponentSize;
-    }
-};
-
 //#define HK_ECS_ARCHETYPE_LOOKUP_INDEX
+
+using ComponentData = PageAllocator<64>;
 
 struct Archetype
 {
