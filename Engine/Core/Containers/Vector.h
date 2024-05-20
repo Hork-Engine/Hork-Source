@@ -453,6 +453,14 @@ public:
         Super::insert(begin() + index, std::forward<ValueType>(value));
     }
 
+    HK_FORCEINLINE void SortedInsert(ValueType const& value)
+    {
+        auto b = eastl::lower_bound(begin(), end(), value);
+        if (b != end() && *b == value)
+            return;
+        Super::insert(b, value);
+    }
+
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
     {
         return Super::erase(position);
@@ -958,6 +966,14 @@ public:
     HK_FORCEINLINE void InsertAt(SizeType index, ValueType&& value)
     {
         Super::insert(begin() + index, std::forward<ValueType>(value));
+    }
+
+    HK_FORCEINLINE void SortedInsert(ValueType const& value)
+    {
+        auto b = eastl::lower_bound(begin(), end(), value);
+        if (b != end() && *b == value)
+            return;
+        Super::insert(b, value);
     }
 
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
