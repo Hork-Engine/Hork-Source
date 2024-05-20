@@ -54,10 +54,7 @@ StringId::ID StringId::Pool::Insert(StringView str)
     
     size_t numStrings = m_Strings.Size();
     if (numStrings > Math::MaxValue<ID>())
-    {
-        LOG("StringId::Pool::Insert: Pool overflow - too many strings\n");
-        std::terminate();
-    }
+        CoreApplication::TerminateWithError("StringId::Pool::Insert: Pool overflow - too many strings\n");
 
     ID id = ID(numStrings);
 
