@@ -191,7 +191,7 @@ public:
             m_RawPtr->AddRef();
     }
 
-    TRef(TRef&& rhs) :
+    TRef(TRef&& rhs) noexcept :
         m_RawPtr(rhs.m_RawPtr)
     {
         rhs.m_RawPtr = nullptr;
@@ -270,7 +270,7 @@ public:
         return *this;
     }
 
-    TRef<T>& operator=(TRef&& rhs)
+    TRef<T>& operator=(TRef&& rhs) noexcept
     {
         if (m_RawPtr == rhs.m_RawPtr)
             return *this;
@@ -396,7 +396,7 @@ public:
         ResetWeakRef(rhs);
     }
 
-    TWeakRef(TWeakRef<T>&& rhs)
+    TWeakRef(TWeakRef<T>&& rhs) noexcept
     {
         m_WeakRefCounter      = rhs.m_WeakRefCounter;
         rhs.m_WeakRefCounter = nullptr;
@@ -470,7 +470,7 @@ public:
         ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.RawPtr()));
     }
 
-    TWeakRef<T>& operator=(TWeakRef<T>&& rhs)
+    TWeakRef<T>& operator=(TWeakRef<T>&& rhs) noexcept
     {
         if (*this == rhs)
             return *this;
