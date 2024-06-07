@@ -41,7 +41,7 @@ HK_NAMESPACE_BEGIN
 
 AudioDevice::AudioDevice(int sampleRate)
 {
-    m_pTransferBuffer = nullptr;
+    m_TransferBuffer = nullptr;
 
     const char* driver = NULL;
 
@@ -137,8 +137,8 @@ AudioDevice::AudioDevice(int sampleRate)
     m_Samples = Math::ToGreaterPowerOfTwo(obtained.samples * obtained.channels * 10);
     m_NumFrames = m_Samples >> (m_Channels - 1);
     m_TransferBufferSizeInBytes = m_Samples * (m_SampleBits / 8);
-    m_pTransferBuffer = (uint8_t*)Core::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(m_TransferBufferSizeInBytes);
-    Core::Memset(m_pTransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
+    m_TransferBuffer = (uint8_t*)Core::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(m_TransferBufferSizeInBytes);
+    Core::Memset(m_TransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
     m_TransferOffset = 0;
     m_PrevTransferOffset = 0;
     m_BufferWraps = 0;
@@ -159,10 +159,10 @@ AudioDevice::~AudioDevice()
 {
     SDL_CloseAudioDevice(m_AudioDeviceId);
 
-    Core::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(m_pTransferBuffer);
+    Core::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(m_TransferBuffer);
 }
 
-void AudioDevice::SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback)
+void AudioDevice::SetMixerCallback(std::function<void(uint8_t* transferBuffer, int transferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback)
 {
     SDL_LockAudioDevice(m_AudioDeviceId);
 
@@ -175,7 +175,7 @@ void AudioDevice::RenderAudio(uint8_t* pStream, int StreamLength)
 {
     int sampleWidth = m_SampleBits / 8;
 
-    if (!m_pTransferBuffer)
+    if (!m_TransferBuffer)
     {
         // Should never happen
         Core::ZeroMem(pStream, StreamLength);
@@ -192,7 +192,7 @@ void AudioDevice::RenderAudio(uint8_t* pStream, int StreamLength)
 
         int frameNum = m_BufferWraps * m_NumFrames + (m_TransferOffset >> (m_Channels - 1));
 
-        m_MixerCallback(m_pTransferBuffer, m_NumFrames, frameNum, StreamLength / sampleWidth);
+        m_MixerCallback(m_TransferBuffer, m_NumFrames, frameNum, StreamLength / sampleWidth);
     }
 
     int offset = m_TransferOffset * sampleWidth;
@@ -210,12 +210,12 @@ void AudioDevice::RenderAudio(uint8_t* pStream, int StreamLength)
         len2 = StreamLength - len1;
     }
 
-    Core::Memcpy(pStream, m_pTransferBuffer + offset, len1);
-    //Core::ZeroMem( pTransferBuffer + offset, len1 );
+    Core::Memcpy(pStream, m_TransferBuffer + offset, len1);
+    //Core::ZeroMem( transferBuffer + offset, len1 );
 
     if (len2 > 0)
     {
-        Core::Memcpy(pStream + len1, m_pTransferBuffer, len2);
+        Core::Memcpy(pStream + len1, m_TransferBuffer, len2);
         m_TransferOffset = len2 / sampleWidth;
     }
     else
@@ -224,11 +224,11 @@ void AudioDevice::RenderAudio(uint8_t* pStream, int StreamLength)
     }
 }
 
-uint8_t* AudioDevice::MapTransferBuffer(int64_t* pFrameNum)
+uint8_t* AudioDevice::MapTransferBuffer(int64_t* frameNum)
 {
     SDL_LockAudioDevice(m_AudioDeviceId);
 
-    if (pFrameNum)
+    if (frameNum)
     {
         if (m_TransferOffset < m_PrevTransferOffset)
         {
@@ -236,10 +236,10 @@ uint8_t* AudioDevice::MapTransferBuffer(int64_t* pFrameNum)
         }
         m_PrevTransferOffset = m_TransferOffset;
 
-        *pFrameNum = m_BufferWraps * m_NumFrames + (m_TransferOffset >> (m_Channels - 1));
+        *frameNum = m_BufferWraps * m_NumFrames + (m_TransferOffset >> (m_Channels - 1));
     }
 
-    return m_pTransferBuffer;
+    return m_TransferBuffer;
 }
 
 void AudioDevice::UnmapTransferBuffer()
@@ -260,7 +260,7 @@ void AudioDevice::UnblockSound()
 void AudioDevice::ClearBuffer()
 {
     MapTransferBuffer();
-    Core::Memset(m_pTransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
+    Core::Memset(m_TransferBuffer, m_SampleBits == 8 && !m_bSigned8 ? 0x80 : 0, m_TransferBufferSizeInBytes);
     UnmapTransferBuffer();
 }
 
