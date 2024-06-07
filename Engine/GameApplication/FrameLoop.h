@@ -131,11 +131,11 @@ public:
 
 class WorldRenderView;
 
-class FrameLoop : public RefCounted
+class FrameLoop final : public Noncopyable
 {
 public:
                     FrameLoop(RenderCore::IDevice* RenderDevice);
-    virtual         ~FrameLoop();
+                    ~FrameLoop();
 
     /** Allocate frame memory */
     void*           AllocFrameMem(size_t _SizeInBytes);

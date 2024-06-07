@@ -43,7 +43,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class RenderBackend : public RefCounted
+class RenderBackend final : public Noncopyable
 {
 public:
     RenderBackend(RenderCore::IDevice* pDevice);

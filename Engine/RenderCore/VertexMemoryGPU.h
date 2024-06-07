@@ -78,10 +78,8 @@ struct VertexHandle
     bool IsHuge() const { return Size > VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 };
 
-class VertexMemoryGPU : public RefCounted
+class VertexMemoryGPU final : public Noncopyable
 {
-    HK_FORBID_COPY(VertexMemoryGPU)
-
 public:
     /** Allow auto defragmentation */
     bool bAutoDefrag = true;
