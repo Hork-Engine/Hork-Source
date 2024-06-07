@@ -270,6 +270,12 @@ public:
         Super::reserve(n);
     }
 
+    HK_FORCEINLINE void Reserve(SizeType n, SizeType growGranularity)
+    {
+        SizeType mod = n % growGranularity;
+        Super::reserve(mod ? n + growGranularity - mod : n);
+    }
+
     HK_FORCEINLINE void ShrinkToFit()
     {
         Super::shrink_to_fit();
@@ -455,10 +461,17 @@ public:
 
     HK_FORCEINLINE void SortedInsert(ValueType const& value)
     {
-        auto b = eastl::lower_bound(begin(), end(), value);
-        if (b != end() && *b == value)
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
             return;
-        Super::insert(b, value);
+        Super::insert(it, value);
+    }
+
+    HK_FORCEINLINE void SortedErase(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            Super::erase(it);
     }
 
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
@@ -865,6 +878,12 @@ public:
         Super::reserve(n);
     }
 
+    HK_FORCEINLINE void Reserve(SizeType n, SizeType growGranularity)
+    {
+        SizeType mod = n % growGranularity;
+        Super::reserve(mod ? n + growGranularity - mod : n);
+    }
+
     HK_FORCEINLINE void ShrinkToFit()
     {
         Super::shrink_to_fit();
@@ -970,10 +989,17 @@ public:
 
     HK_FORCEINLINE void SortedInsert(ValueType const& value)
     {
-        auto b = eastl::lower_bound(begin(), end(), value);
-        if (b != end() && *b == value)
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
             return;
-        Super::insert(b, value);
+        Super::insert(it, value);
+    }
+
+    HK_FORCEINLINE void SortedErase(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            Super::erase(it);
     }
 
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
