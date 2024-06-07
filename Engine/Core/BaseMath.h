@@ -588,7 +588,9 @@ struct Half
 
     Half(Half const&) = default;
 
-    Half(uint16_t v) = delete;
+    Half(float f) :
+        v(f32tof16(f))
+    {}
 
     static Half MakeHalf(uint16_t val)
     {
@@ -596,10 +598,6 @@ struct Half
         f.v = val;
         return f;
     }
-
-    Half(float f) :
-        v(f32tof16(f))
-    {}
 
     Half& operator=(Half const&) = default;
 
