@@ -39,60 +39,117 @@ class PageAllocator final : Noncopyable
 {
     struct Page
     {
-        uint8_t* Data;
+        void* Data;
     };
 
-    TVector<Page> m_Pages;
-    size_t m_TypeSize;
+    TVector<Page>   m_Pages;
+    size_t          m_TypeSize;
 
 public:
     static constexpr size_t PageSize = _PageSize;
 
-    explicit PageAllocator(size_t typeSize) :
-        m_TypeSize(typeSize)
-    {}
+    explicit        PageAllocator(size_t typeSize);
+                    PageAllocator(PageAllocator&& rhs) noexcept;
+                    ~PageAllocator();
 
-    PageAllocator(PageAllocator&& rhs) noexcept :
-        m_Pages(std::move(rhs.m_Pages)),
-        m_TypeSize(rhs.m_TypeSize)
-    {}
+    PageAllocator&  operator=(PageAllocator&& rhs) noexcept;
 
-    ~PageAllocator()
-    {
-        for (Page& page : m_Pages)
-            Core::GetHeapAllocator<HEAP_MISC>().Free(page.Data);
-    }
+    uint32_t        GetPageCount() const;
 
-    void Grow(uint32_t count)
-    {
-        HK_ASSERT(count > 0);
+    void            Grow(uint32_t count);
 
-        uint32_t pageCount = count / _PageSize + 1;
-        uint32_t curPageCount = m_Pages.Size();
+    void            Shrink(uint32_t count);
 
-        const size_t alignment = 16;
-        const size_t pageSizeInBytes = Align(_PageSize * m_TypeSize, alignment);
+    void*           GetPageAddress(uint32_t pageIndex) const;
 
-        if (pageCount > curPageCount)
-        {
-            m_Pages.Resize(pageCount);
-            for (uint32_t i = curPageCount ; i < pageCount ; ++i)
-                m_Pages[i].Data = (uint8_t*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(pageSizeInBytes, alignment);
-        }
-    }
-
-    HK_FORCEINLINE uint8_t* GetPage(uint32_t pageIndex) const
-    {
-        return m_Pages[pageIndex].Data;
-    }
-
-    HK_FORCEINLINE uint8_t* At(uint32_t index) const
-    {
-        uint32_t pageIndex = index / _PageSize;
-        size_t pageOffset = index - pageIndex * _PageSize;
-
-        return m_Pages[pageIndex].Data + pageOffset * m_TypeSize;
-    }
+    void*           GetAddress(uint32_t index) const;
 };
+
+template <size_t _PageSize>
+HK_FORCEINLINE PageAllocator<_PageSize>::PageAllocator(size_t typeSize) :
+    m_TypeSize(typeSize)
+{}
+
+template <size_t _PageSize>
+HK_FORCEINLINE PageAllocator<_PageSize>::PageAllocator(PageAllocator&& rhs) noexcept :
+    m_Pages(std::move(rhs.m_Pages)),
+    m_TypeSize(rhs.m_TypeSize)
+{}
+
+template <size_t _PageSize>
+HK_FORCEINLINE PageAllocator<_PageSize>::~PageAllocator()
+{
+    for (Page& page : m_Pages)
+        Core::GetHeapAllocator<HEAP_MISC>().Free(page.Data);
+}
+
+template <size_t _PageSize>
+HK_FORCEINLINE PageAllocator<_PageSize>& PageAllocator<_PageSize>::operator=(PageAllocator&& rhs) noexcept
+{
+    m_Pages = std::move(rhs.m_Pages);
+    m_TypeSize = rhs.m_TypeSize;
+    return *this;
+}
+
+template <size_t _PageSize>
+HK_FORCEINLINE uint32_t PageAllocator<_PageSize>::GetPageCount() const
+{
+    return m_Pages.Size();
+}
+
+template <size_t _PageSize>
+HK_INLINE void PageAllocator<_PageSize>::Grow(uint32_t count)
+{
+    HK_ASSERT(count > 0);
+
+    uint32_t pageCount = count / _PageSize;
+    if (count % _PageSize)
+        ++pageCount;
+
+    uint32_t curPageCount = m_Pages.Size();
+
+    const size_t alignment = 16;
+    const size_t pageSizeInBytes = Align(_PageSize * m_TypeSize, alignment);
+
+    if (pageCount > curPageCount)
+    {
+        m_Pages.Resize(pageCount);
+        for (uint32_t i = curPageCount ; i < pageCount ; ++i)
+            m_Pages[i].Data = Core::GetHeapAllocator<HEAP_MISC>().Alloc(pageSizeInBytes, alignment);
+    }
+}
+
+template <size_t _PageSize>
+HK_INLINE void PageAllocator<_PageSize>::Shrink(uint32_t count)
+{
+    count = std::min(size_t(count), m_Pages.Size() * _PageSize);
+
+    uint32_t pageCount = count / _PageSize;
+    if (count % _PageSize)
+        ++pageCount;
+
+    uint32_t pagesToRemove = m_Pages.Size() - pageCount;
+    while (pagesToRemove > 0)
+    {
+        Core::GetHeapAllocator<HEAP_MISC>().Free(m_Pages.Last().Data);
+        m_Pages.RemoveLast();
+        --pagesToRemove;
+    }
+}
+
+template <size_t _PageSize>
+HK_FORCEINLINE void* PageAllocator<_PageSize>::GetPageAddress(uint32_t pageIndex) const
+{
+    return m_Pages[pageIndex].Data;
+}
+
+template <size_t _PageSize>
+HK_FORCEINLINE void* PageAllocator<_PageSize>::GetAddress(uint32_t index) const
+{
+    uint32_t pageIndex = index / _PageSize;
+    size_t pageOffset = index - pageIndex * _PageSize;
+
+    return reinterpret_cast<uint8_t*>(m_Pages[pageIndex].Data) + pageOffset * m_TypeSize;
+}
 
 HK_NAMESPACE_END
