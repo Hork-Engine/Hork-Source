@@ -281,13 +281,13 @@ public:
         return *this;
     }
 
-    void Attach(T* rhs)
+    void Attach(T* ptr)
     {
-        if (m_RawPtr == rhs)
+        if (m_RawPtr == ptr)
             return;
         if (m_RawPtr)
             m_RawPtr->RemoveRef();
-        m_RawPtr = rhs;
+        m_RawPtr = ptr;
     }
 
     T* Detach()
@@ -550,13 +550,13 @@ public:
 
     ~TUniqueRef()
     {
-        Reset();
+        CheckedDelete(m_RawPtr);
     }
 
     template <typename U>
     TUniqueRef& operator=(TUniqueRef<U>&& rhs)
     {
-        Reset(rhs.Detach());
+        Attach(rhs.Detach());
         return *this;
     }
 
@@ -589,22 +589,28 @@ public:
         return m_RawPtr != nullptr;
     }
 
-    T* Detach()
-    {
-        T* ptr = m_RawPtr;
-        m_RawPtr = nullptr;
-        return ptr;
-    }
-
     T* RawPtr() const
     {
         return m_RawPtr;
     }
 
-    void Reset(T* InPtr = nullptr)
+    void Reset()
     {
         CheckedDelete(m_RawPtr);
-        m_RawPtr = InPtr;
+        m_RawPtr = nullptr;
+    }
+
+    void Attach(T* ptr)
+    {
+        CheckedDelete(m_RawPtr);
+        m_RawPtr = ptr;
+    }
+
+    T* Detach()
+    {
+        T* ptr = m_RawPtr;
+        m_RawPtr = nullptr;
+        return ptr;
     }
 
 private:

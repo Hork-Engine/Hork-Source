@@ -146,7 +146,7 @@ private:
     AxisMappings    m_AxisMappings;
 };
 
-class InputState
+class InputState : public Noncopyable
 {
 public:
     struct Action
