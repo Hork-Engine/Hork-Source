@@ -311,6 +311,14 @@ HK_NAMESPACE_END
 
 #define HK_NAME_GEN(prefix) HK_CONCAT(prefix, __COUNTER__)
 
+#define HK_FIND_METHOD(Method) \
+    template <typename T, typename = int> \
+    struct __Has##Method : std::false_type { }; \
+    template <typename T> \
+    struct __Has##Method<T, decltype(&T::Method, 0)> : std::true_type { };
+
+#define HK_HAS_METHOD(Class, Method) \
+    __Has##Method<Class>::value
 
 /*
 
@@ -381,19 +389,20 @@ static_assert((char)-1 < 0, "signed char mismatch");
 Flag enum operators
 
 */
-template <typename EnumType>
-using _UNDERLYING_ENUM_T = typename std::underlying_type<EnumType>::type;
-
-#define HK_FLAG_ENUM_OPERATORS(ENUMTYPE)                                                                                                                                                                      \
-    inline ENUMTYPE&          operator|=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) |= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \
-    inline ENUMTYPE&          operator&=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) &= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \
-    inline ENUMTYPE&          operator^=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) ^= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \
-    inline constexpr ENUMTYPE operator|(ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a) | static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); }                \
-    inline constexpr ENUMTYPE operator&(ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a) & static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); }                \
-    inline constexpr ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a) ^ static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); }                \
-    inline constexpr ENUMTYPE operator~(ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a)); }
+#define HK_FLAG_ENUM_OPERATORS(Enum)                                                                                                                                                                      \
+    inline Enum&          operator|=(Enum& a, Enum b) { return reinterpret_cast<Enum&>(reinterpret_cast<std::underlying_type_t<Enum>&>(a) |= static_cast<std::underlying_type_t<Enum>>(b)); } \
+    inline Enum&          operator&=(Enum& a, Enum b) { return reinterpret_cast<Enum&>(reinterpret_cast<std::underlying_type_t<Enum>&>(a) &= static_cast<std::underlying_type_t<Enum>>(b)); } \
+    inline Enum&          operator^=(Enum& a, Enum b) { return reinterpret_cast<Enum&>(reinterpret_cast<std::underlying_type_t<Enum>&>(a) ^= static_cast<std::underlying_type_t<Enum>>(b)); } \
+    inline constexpr Enum operator|(Enum a, Enum b) { return static_cast<Enum>(static_cast<std::underlying_type_t<Enum>>(a) | static_cast<std::underlying_type_t<Enum>>(b)); }                \
+    inline constexpr Enum operator&(Enum a, Enum b) { return static_cast<Enum>(static_cast<std::underlying_type_t<Enum>>(a) & static_cast<std::underlying_type_t<Enum>>(b)); }                \
+    inline constexpr Enum operator^(Enum a, Enum b) { return static_cast<Enum>(static_cast<std::underlying_type_t<Enum>>(a) ^ static_cast<std::underlying_type_t<Enum>>(b)); }                \
+    inline constexpr Enum operator~(Enum a) { return static_cast<Enum>(~static_cast<std::underlying_type_t<Enum>>(a)); } \
+    inline constexpr bool operator!(Enum a) { return a == static_cast<Enum>(0); }
 
 HK_NAMESPACE_BEGIN
+
+template <typename Enum>
+constexpr std::underlying_type_t<Enum> ToUnderlying(Enum in) { return static_cast<std::underlying_type_t<Enum>>(in); }
 
 /** Power of two compile-time check */
 template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
