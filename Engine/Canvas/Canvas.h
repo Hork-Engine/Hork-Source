@@ -189,13 +189,11 @@ struct VGPathCache
     CanvasVertex* AllocVerts(int nverts);
 };
 
-class Canvas
+class Canvas final : public Noncopyable
 {
-    HK_FORBID_COPY(Canvas)
-
 public:
     Canvas();
-    virtual ~Canvas();
+    ~Canvas();
 
     /** Begin drawing a new frame */
     void NewFrame();
