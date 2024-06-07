@@ -73,7 +73,7 @@ private:
     bool   m_bNeedFree{};
 };
 
-class CoreApplication
+class CoreApplication : public Noncopyable
 {
 public:
     CoreApplication(ArgumentPack const& args);
@@ -153,7 +153,7 @@ private:
 #endif
     int                  m_ProcessAttribute{};
     FILE*                m_LogFile{};
-    Hk::Mutex            m_LogWriterSync;
+    Mutex                m_LogWriterSync;
     char*                m_Clipboard{};
     ConsoleBuffer        m_ConsoleBuffer;
 };
