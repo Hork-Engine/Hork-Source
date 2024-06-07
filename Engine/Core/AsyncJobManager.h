@@ -103,10 +103,8 @@ HK_FORCEINLINE int AsyncJobList::GetMaxParallelJobs() const
 }
 
 /** Job manager */
-class AsyncJobManager final : public RefCounted
+class AsyncJobManager final : public Noncopyable
 {
-    HK_FORBID_COPY(AsyncJobManager)
-
 public:
     static constexpr int MAX_WORKER_THREADS = 4;
     static constexpr int MAX_JOB_LISTS      = 4;
