@@ -31,7 +31,7 @@ SOFTWARE.
 #include "EnvironmentProbe.h"
 #include "World.h"
 #include <Engine/Runtime/EnvironmentMap.h>
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 
 #include <Engine/Core/ConsoleVar.h>
 
