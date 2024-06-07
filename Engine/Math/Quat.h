@@ -565,6 +565,62 @@ HK_INLINE Quat Slerp(Quat const& qs, Quat const& qe, float f)
     return scale0 * qs + scale1 * temp;
 }
 
+HK_INLINE Quat MakeRotationFromDir(Float3 const& direction)
+{
+    Float3x3 orientation;
+    Float3 dir = -direction.Normalized();
+
+    if (dir.X * dir.X + dir.Z * dir.Z == 0.0f)
+    {
+        orientation[0] = Float3(1, 0, 0);
+        orientation[1] = Float3(0, 0, -dir.Y);
+    }
+    else
+    {
+        orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), dir).Normalized();
+        orientation[1] = Math::Cross(dir, orientation[0]);
+    }
+    orientation[2] = dir;
+
+    Quat rotation;
+    rotation.FromMatrix(orientation);
+    return rotation;
+}
+
+HK_INLINE void GetTransformVectors(Quat const& rotation, Float3* right, Float3* up, Float3* back)
+{
+    float qxx(rotation.X * rotation.X);
+    float qyy(rotation.Y * rotation.Y);
+    float qzz(rotation.Z * rotation.Z);
+    float qxz(rotation.X * rotation.Z);
+    float qxy(rotation.X * rotation.Y);
+    float qyz(rotation.Y * rotation.Z);
+    float qwx(rotation.W * rotation.X);
+    float qwy(rotation.W * rotation.Y);
+    float qwz(rotation.W * rotation.Z);
+
+    if (right)
+    {
+        right->X = 1 - 2 * (qyy + qzz);
+        right->Y = 2 * (qxy + qwz);
+        right->Z = 2 * (qxz - qwy);
+    }
+
+    if (up)
+    {
+        up->X = 2 * (qxy - qwz);
+        up->Y = 1 - 2 * (qxx + qzz);
+        up->Z = 2 * (qyz + qwx);
+    }
+
+    if (back)
+    {
+        back->X = 2 * (qxz + qwy);
+        back->Y = 2 * (qyz - qwx);
+        back->Z = 1 - 2 * (qxx + qyy);
+    }
+}
+
 } // namespace Math
 
 HK_NAMESPACE_END
