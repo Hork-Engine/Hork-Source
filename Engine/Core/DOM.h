@@ -80,17 +80,17 @@ public:
 
     // Structure
 
-    bool HasMember(StringId memberName) const;
+    bool HasMember(StringID memberName) const;
 
-    Member* Find(StringId memberName) const;
+    Member* Find(StringID memberName) const;
 
     Object& operator[](StringView memberName);
 
-    Object& Insert(StringId memberName);
+    Object& Insert(StringID memberName);
 
-    Object& Insert(StringId memberName, Object&& object);
+    Object& Insert(StringID memberName, Object&& object);
 
-    void Remove(StringId memberName);
+    void Remove(StringID memberName);
 
     using MemberIterator = TVector<Member*>::Iterator;
     using MemberConstIterator = TVector<Member*>::ConstIterator;
@@ -197,12 +197,12 @@ private:
 class Member final
 {
 public:
-    explicit Member(StringId name);
-    explicit Member(StringId name, Object&& object);
+    explicit Member(StringID name);
+    explicit Member(StringID name, Object&& object);
     Member(Member const&) = delete;
     Member(Member&&) = delete;
 
-    StringId GetName() const
+    StringID GetName() const
     {
         return m_Name;
     }
@@ -218,7 +218,7 @@ public:
     }
 
 private:
-    StringId m_Name;
+    StringID m_Name;
     Object m_Object;
 };
 
@@ -260,7 +260,7 @@ public:
 
     // Structure
 
-    bool HasMember(StringId memberName) const
+    bool HasMember(StringID memberName) const
     {
         return m_ObjectPtr ? m_ObjectPtr->HasMember(memberName) : false;
     }
@@ -270,7 +270,7 @@ public:
         if (!m_ObjectPtr)
             return {};
 
-        auto* member = m_ObjectPtr->Find(StringId(memberName));
+        auto* member = m_ObjectPtr->Find(StringID(memberName));
         if (!member)
             return {};
 
@@ -441,7 +441,7 @@ private:
         return *static_cast<Impl*>(this);
     }
 
-    void VisitObject(StringId name, Object const& dobject, int index)
+    void VisitObject(StringID name, Object const& dobject, int index)
     {
         if (dobject.IsStructure())
         {
@@ -490,13 +490,13 @@ class Writer : public Visitor<Writer>
 public:
     virtual void Write(StringView text);
 
-    void OnBeginStructure(StringId name, Object const& dobject);
+    void OnBeginStructure(StringID name, Object const& dobject);
     void OnBeginStructure(Object const& dobject, int index);
     void OnEndStructure();
-    void OnBeginArray(StringId name, Object const& dobject);
+    void OnBeginArray(StringID name, Object const& dobject);
     void OnBeginArray(Object const& dobject, int index);
     void OnEndArray();
-    void OnVisitString(StringId name, Object const& dobject);
+    void OnVisitString(StringID name, Object const& dobject);
     void OnVisitString(Object const& dobject, int index);
 
 private:
@@ -508,13 +508,13 @@ class WriterCompact : public Visitor<WriterCompact>
 public:
     virtual void Write(StringView text);
 
-    void OnBeginStructure(StringId name, Object const& dobject);
+    void OnBeginStructure(StringID name, Object const& dobject);
     void OnBeginStructure(Object const& dobject, int index);
     void OnEndStructure();
-    void OnBeginArray(StringId name, Object const& dobject);
+    void OnBeginArray(StringID name, Object const& dobject);
     void OnBeginArray(Object const& dobject, int index);
     void OnEndArray();
-    void OnVisitString(StringId name, Object const& dobject);
+    void OnVisitString(StringID name, Object const& dobject);
     void OnVisitString(Object const& dobject, int index);
 };
 

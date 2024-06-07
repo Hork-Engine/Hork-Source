@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "StringId.h"
+#include "StringID.h"
 #include "Parse.h"
 #include "Ref.h"
 #include "Containers/Vector.h"
@@ -69,7 +69,7 @@ struct TypeInfo
 {
     TUniqueRef<StructureBase> Struct;
     uint32_t ArrayElementTypeId;
-    StringId Name; // just for debug
+    StringID Name; // just for debug
 
     union
     {
@@ -99,11 +99,11 @@ public:
     virtual void *DereferencePtr(void* inObjectPtr) = 0;
 
     uint32_t GetTypeId() const { return m_TypeId; }
-    StringId GetName() const { return m_Name; }
+    StringID GetName() const { return m_Name; }
 
 private:
     uint32_t m_TypeId;
-    StringId m_Name;
+    StringID m_Name;
 };
 
 template<typename Object, typename MemberType>
@@ -201,7 +201,7 @@ public:
     void RegisterArray(StringView inName);
 
     template <typename T>
-    StringId FindType() const;
+    StringID FindType() const;
 
     TypeInfo const* FindType(uint32_t inTypeId) const;
 
@@ -215,7 +215,7 @@ HK_INLINE void TypeRegistry::RegisterType(StringView inName)
     uint32_t id = TypeID<T>::GetID();
 
     TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringId(inName);
+    type_info.Name = StringID(inName);
 
     type_info.Value.ToString = [](void const* inObjectPtr)
     {
@@ -237,7 +237,7 @@ HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
     uint32_t id = TypeID<T>::GetID();
 
     TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringId(inName);
+    type_info.Name = StringID(inName);
     type_info.Struct = std::move(structure);
 
     type_info.Value.ToString = [](void const*) -> String
@@ -259,7 +259,7 @@ HK_INLINE void TypeRegistry::RegisterArray(StringView inName)
     uint32_t id = TypeID<ArrayType>::GetID();
 
     TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringId(inName);
+    type_info.Name = StringID(inName);
     type_info.ArrayElementTypeId = TypeID<T>::GetID();
     type_info.Array.GetArraySize = [](void const* inObjectPtr)
     {
@@ -279,7 +279,7 @@ HK_INLINE void TypeRegistry::RegisterArray(StringView inName)
 }
 
 template <typename T>
-HK_INLINE StringId TypeRegistry::FindType() const
+HK_INLINE StringID TypeRegistry::FindType() const
 {
     TypeInfo* type_info = FindType(TypeID<T>::GetID());
     if (type_info)

@@ -28,23 +28,23 @@ SOFTWARE.
 
 */
 
-#include "StringId.h"
+#include "StringID.h"
 #include "Logger.h"
 
 HK_NAMESPACE_BEGIN
 
-StringId::Pool& StringId::Pool::Instance()
+StringID::Pool& StringID::Pool::Instance()
 {
     static Pool instance;
     return instance;
 }
 
-StringId::Pool::Pool()
+StringID::Pool::Pool()
 {
     Insert("");
 }
 
-StringId::ID StringId::Pool::Insert(StringView str)
+StringID::ID StringID::Pool::Insert(StringView str)
 {
     MutexGuard guard(m_Mutex);
 
@@ -54,23 +54,13 @@ StringId::ID StringId::Pool::Insert(StringView str)
     
     size_t numStrings = m_Strings.Size();
     if (numStrings > Math::MaxValue<ID>())
-        CoreApplication::TerminateWithError("StringId::Pool::Insert: Pool overflow - too many strings\n");
+        CoreApplication::TerminateWithError("StringID::Pool::Insert: Pool overflow - too many strings\n");
 
     ID id = ID(numStrings);
 
     auto result = m_Storage.Insert(str, id);
     m_Strings.Add(result.first.get_node()->mValue.first);
     return id;
-}
-
-StringView StringId::Pool::GetString(ID id)
-{
-    return m_Strings.Get(id);
-}
-
-const char* StringId::Pool::GetRawString(ID id)
-{
-    return m_Strings.Get(id).ToPtr();
 }
 
 HK_NAMESPACE_END

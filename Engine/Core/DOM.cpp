@@ -95,12 +95,12 @@ bool Object::IsString() const
     return !IsStructure() && !IsArray();
 }
 
-bool Object::HasMember(StringId memberName) const
+bool Object::HasMember(StringID memberName) const
 {
     return !!Find(memberName);
 }
 
-Member* Object::Find(StringId memberName) const
+Member* Object::Find(StringID memberName) const
 {
     for (auto* m : m_Members)
         if (m->GetName() == memberName)
@@ -110,10 +110,10 @@ Member* Object::Find(StringId memberName) const
 
 Object& Object::operator[](StringView memberName)
 {
-    return Insert(StringId(memberName));
+    return Insert(StringID(memberName));
 }
 
-Object& Object::Insert(StringId memberName)
+Object& Object::Insert(StringID memberName)
 {
     ClearString();
     ClearArray();
@@ -129,7 +129,7 @@ Object& Object::Insert(StringId memberName)
     return member->GetObject();
 }
 
-Object& Object::Insert(StringId memberName, Object&& object)
+Object& Object::Insert(StringID memberName, Object&& object)
 {
     ClearString();
     ClearArray();
@@ -145,7 +145,7 @@ Object& Object::Insert(StringId memberName, Object&& object)
     return member->GetObject();
 }
 
-void Object::Remove(StringId memberName)
+void Object::Remove(StringID memberName)
 {
     for (auto it = m_Members.begin(); it != m_Members.end(); it++)
     {
@@ -186,11 +186,11 @@ void Object::ClearString()
     m_String.Clear();
 }
 
-Member::Member(StringId name) :
+Member::Member(StringID name) :
     m_Name(name)
 {}
 
-Member::Member(StringId name, Object&& object) :
+Member::Member(StringID name, Object&& object) :
     m_Name(name), m_Object(std::forward<Object>(object))
 {}
 
@@ -199,7 +199,7 @@ void Writer::Write(StringView text)
     LOG("{}", text);
 }
 
-void Writer::OnBeginStructure(StringId name, Object const& dobject)
+void Writer::OnBeginStructure(StringID name, Object const& dobject)
 {
     Indent();
     Write(name.GetStringView());
@@ -218,7 +218,7 @@ void Writer::OnEndStructure()
     Write("}\n");
 }
 
-void Writer::OnBeginArray(StringId name, Object const& dobject)
+void Writer::OnBeginArray(StringID name, Object const& dobject)
 {
     Indent();
     Write(name.GetStringView());
@@ -237,7 +237,7 @@ void Writer::OnEndArray()
     Write("]\n");
 }
 
-void Writer::OnVisitString(StringId name, Object const& dobject)
+void Writer::OnVisitString(StringID name, Object const& dobject)
 {
     Indent();
     Write(name.GetStringView());
@@ -274,7 +274,7 @@ void WriterCompact::Write(StringView text)
     LOG("{}", text);
 }
 
-void WriterCompact::OnBeginStructure(StringId name, Object const& dobject)
+void WriterCompact::OnBeginStructure(StringID name, Object const& dobject)
 {
     Write(name.GetStringView());
     Write("{");
@@ -290,7 +290,7 @@ void WriterCompact::OnEndStructure()
     Write("}");
 }
 
-void WriterCompact::OnBeginArray(StringId name, Object const& dobject)
+void WriterCompact::OnBeginArray(StringID name, Object const& dobject)
 {
     Write(name.GetStringView());
     Write("[");
@@ -306,7 +306,7 @@ void WriterCompact::OnEndArray()
     Write("]");
 }
 
-void WriterCompact::OnVisitString(StringId name, Object const& dobject)
+void WriterCompact::OnVisitString(StringID name, Object const& dobject)
 {
     Write(name.GetStringView());
     Write(HK_FORMAT("\"{}\"", dobject.AsString()));
@@ -639,18 +639,18 @@ Object Parser::ParseStructure(bool bExpectClosedBracket)
             m_Tokenizer.NextToken();
 
             Object child = ParseStructure(true);
-            dobject.Insert(StringId(memberName), std::move(child));
+            dobject.Insert(StringID(memberName), std::move(child));
         }
         else if (*token.Begin == '[')
         {
             m_Tokenizer.NextToken();
 
             Object child = ParseArray();
-            dobject.Insert(StringId(memberName), std::move(child));
+            dobject.Insert(StringID(memberName), std::move(child));
         }
         else if (token.Type == TOKEN_STRING)
         {
-            dobject.Insert(StringId(memberName), Object(StringView(token.Begin, token.End)));
+            dobject.Insert(StringID(memberName), Object(StringView(token.Begin, token.End)));
             m_Tokenizer.NextToken();
         }
         else if (token.Type == TOKEN_EOF)
