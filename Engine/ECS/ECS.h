@@ -125,10 +125,10 @@ struct OnComponentRemoved : Noncopyable
 
 struct ComponentTypeInfo
 {
-    void (*OnComponentAdded)(World* world, EntityHandle entityHandle, uint8_t* data);
-    void (*OnComponentRemoved)(World* world, EntityHandle entityHandle, uint8_t* data);
-    void (*Destruct)(uint8_t* data);
-    void (*Move)(uint8_t* src, uint8_t* dst);
+    void (*OnComponentAdded)(World* world, EntityHandle entityHandle, void* data);
+    void (*OnComponentRemoved)(World* world, EntityHandle entityHandle, void* data);
+    void (*Destruct)(void* data);
+    void (*Move)(void* src, void* dst);
     size_t Size{};
 };
 
@@ -284,7 +284,7 @@ public:
 
     TArrayView<ComponentTypeId> GetComponentIDs() const;
 
-    auto GetComponentByID(ComponentTypeId componentTID) const -> uint8_t*;
+    auto GetComponentByID(ComponentTypeId componentTID) const -> void*;
 
 private:
     EntityHandle m_Handle;
@@ -475,13 +475,13 @@ private:
 
     auto GetEntity(EntityHandle handle) const -> Entity const*;
 
-    void DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, uint8_t*>> const& components);
+    void DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, void*>> const& components);
 
     void DoDestroyEntity(EntityHandle handle);
 
     void DoDestroyEntities();
 
-    void DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, uint8_t* data);
+    void DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, void* data);
 
     void DoRemoveComponent(EntityHandle handle, ComponentTypeId componentTID);
 
@@ -508,7 +508,7 @@ private:
     struct Constructable
     {
         EntityHandle Handle{};
-        TVector<std::pair<uint32_t, uint8_t*>> Components;
+        TVector<std::pair<uint32_t, void*>> Components;
     };
     Constructable m_Constructable;
 };
@@ -612,19 +612,19 @@ HK_INLINE uint8_t* ComponentIterator::operator++()
 {
     Next();
 
-    return m_Archetype->Components[m_i].At(m_Index);
+    return m_Archetype->Components[m_i].GetAddress(m_Index);
 }
 
 HK_INLINE uint8_t* ComponentIterator::operator++(int)
 {
-    uint8_t* data = m_Archetype->Components[m_i].At(m_Index);
+    uint8_t* data = m_Archetype->Components[m_i].GetAddress(m_Index);
     Next();
     return data;
 }
 
 HK_INLINE uint8_t* ComponentIterator::GetData() const
 {
-    return m_Archetype->Components[m_i].At(m_Index);
+    return m_Archetype->Components[m_i].GetAddress(m_Index);
 }
 
 HK_INLINE ComponentTypeId ComponentIterator::GetTypeId() const
@@ -903,7 +903,7 @@ auto Query<TL_READ, TL_WRITE>::Iterator::GetComponentData() -> T*
     size_t index = m_Archetype->GetComponentIndex(Component<T>::Id);
     HK_ASSERT(index != -1);
 
-    return reinterpret_cast<T*>(m_Archetype->Components[index].GetPage(m_BatchPageIndex));
+    return reinterpret_cast<T*>(m_Archetype->Components[index].GetPageAddress(m_BatchPageIndex));
 }
 
 template <typename TL_READ, typename TL_WRITE>
@@ -914,7 +914,7 @@ auto Query<TL_READ, TL_WRITE>::Iterator::TryGetComponentData() -> T*
     if (index == -1)
         return nullptr;
 
-    return reinterpret_cast<T*>(m_Archetype->Components[index].GetPage(m_BatchPageIndex));
+    return reinterpret_cast<T*>(m_Archetype->Components[index].GetPageAddress(m_BatchPageIndex));
 }
 
 namespace Internal
@@ -937,22 +937,22 @@ ComponentTypeId ComponentFactory::_GenerateTypeId()
                 Core::ZeroMem((uint8_t*)Registry + oldSize * sizeof(ComponentTypeInfo), (RegistrySize - oldSize) * sizeof(ComponentTypeInfo));
             }
             Registry[Id].Size = sizeof(T);
-            Registry[Id].OnComponentAdded = [](World* world, EntityHandle entityHandle, uint8_t* data)
+            Registry[Id].OnComponentAdded = [](World* world, EntityHandle entityHandle, void* data)
             {
                 world->SendEvent(Hk::ECS::Event::OnComponentAdded<T>(entityHandle, *reinterpret_cast<T*>(data)));
             };
-            Registry[Id].OnComponentRemoved = [](World* world, EntityHandle entityHandle, uint8_t* data)
+            Registry[Id].OnComponentRemoved = [](World* world, EntityHandle entityHandle, void* data)
             {
                 world->SendEvent(Hk::ECS::Event::OnComponentRemoved<T>(entityHandle, *reinterpret_cast<T*>(data)));
             };
-            Registry[Id].Destruct = [](uint8_t* data)
+            Registry[Id].Destruct = [](void* data)
             {
                 T* component = std::launder(reinterpret_cast<T*>(data));
                 component->~T();
             };
-            Registry[Id].Move = [](uint8_t* src, uint8_t* dst)
+            Registry[Id].Move = [](void* src, void* dst)
             {
-                new (&dst[0]) T(std::move(*reinterpret_cast<T*>(src)));
+                new (dst) T(std::move(*reinterpret_cast<T*>(src)));
 
                 T* component = std::launder(reinterpret_cast<T*>(src));
                 component->~T();

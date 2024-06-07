@@ -225,11 +225,11 @@ void World::ExecuteCommands()
                 case CommandBuffer::CMD_ADD_COMPONENT:
                     if (command.Entity == m_Constructable.Handle)
                     {
-                        m_Constructable.Components.Add(std::make_pair(command.ComponentId, (uint8_t*)command.Component));
+                        m_Constructable.Components.Add(std::make_pair(command.ComponentId, command.Component));
                     }
                     else
                     {
-                        DoAddComponent(command.Entity, command.ComponentId, (uint8_t*)command.Component);
+                        DoAddComponent(command.Entity, command.ComponentId, command.Component);
                     }
                     break;
                 case CommandBuffer::CMD_REMOVE_COMPONENT:
@@ -256,7 +256,7 @@ void World::ExecuteCommands()
 //    }
 }
 
-void World::DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, uint8_t*>> const& components)
+void World::DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, void*>> const& components)
 {
     auto* entity = GetEntity(handle);
     HK_ASSERT(entity);
@@ -298,7 +298,7 @@ void World::DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, uint8
 
         auto index = GrowComponentPool(archetype, componentPoolIndex);
 
-        componentType.Move(componentData, archetype->Components[componentPoolIndex].At(index));
+        componentType.Move(componentData, archetype->Components[componentPoolIndex].GetAddress(index));
     }
 
     archetype->EntityIds.Add(handle);
@@ -308,7 +308,7 @@ void World::DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, uint8
     for (int componentIndex = 0 ; componentIndex < archetype->Type.Size() ; componentIndex++)
     {
         auto& componentType = registry[archetype->Type[componentIndex]];
-        componentType.OnComponentAdded(this, handle, archetype->Components[componentIndex].At(entity->Index));
+        componentType.OnComponentAdded(this, handle, archetype->Components[componentIndex].GetAddress(entity->Index));
     }
 
     //m_bSortArchetypes = true;
@@ -348,14 +348,14 @@ void World::DoDestroyEntity(EntityHandle handle)
         {
             auto  componentTID  = archetype->Type[i];
             auto& componentType = registry[componentTID];
-            auto  componentData = archetype->Components[i].At(entity->Index);
+            auto  componentData = archetype->Components[i].GetAddress(entity->Index);
 
             componentType.OnComponentRemoved(this, handle, componentData);
             componentType.Destruct(componentData);
 
             if (movedEntityIndex != entity->Index)
             {
-                componentType.Move(archetype->Components[i].At(movedEntityIndex), archetype->Components[i].At(entity->Index));
+                componentType.Move(archetype->Components[i].GetAddress(movedEntityIndex), archetype->Components[i].GetAddress(entity->Index));
             }
         }
     }
@@ -367,7 +367,7 @@ void World::DoDestroyEntity(EntityHandle handle)
         {
             auto  componentTID  = archetype->Type[i];
             auto& componentType = registry[componentTID];
-            auto  componentData = archetype->Components[i].At(entity->Index);
+            auto  componentData = archetype->Components[i].GetAddress(entity->Index);
 
             componentType.OnComponentRemoved(this, handle, componentData);
             componentType.Destruct(componentData);
@@ -395,7 +395,7 @@ void World::DoDestroyEntities()
 
             for (std::size_t index = 0; index < archetype->EntityIds.Size(); ++index)
             {
-                auto* data = archetype->Components[i].At(index);
+                auto* data = archetype->Components[i].GetAddress(index);
                 componentType.OnComponentRemoved(this, archetype->EntityIds[index], data);
                 componentType.Destruct(data);
 
@@ -466,7 +466,7 @@ ArchetypeId& ArchetypeId_MakeRemove(ArchetypeId const& src, ArchetypeId& dst, ui
     return dst;
 }
 
-void Cleanup(World* world, EntityHandle handle, ComponentTypeId componentTID, uint8_t* data)
+void Cleanup(World* world, EntityHandle handle, ComponentTypeId componentTID, void* data)
 {
     auto registry = ComponentRegistry();
 
@@ -476,7 +476,7 @@ void Cleanup(World* world, EntityHandle handle, ComponentTypeId componentTID, ui
 
 }
 
-void World::DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, uint8_t* data)
+void World::DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, void* data)
 {
     auto* entity = GetEntity(handle);
     HK_ASSERT(entity);
@@ -522,17 +522,17 @@ void World::DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, ui
             // Find component data and move it to new archetype.
             if (i < oldArchetypeId.Size() && oldArchetypeId[i] == newComponentTID)
             {
-                newComponentType.Move(oldArchetype->Components[i].At(entity->Index),
-                                      newArchetype->Components[j].At(index));
+                newComponentType.Move(oldArchetype->Components[i].GetAddress(entity->Index),
+                                      newArchetype->Components[j].GetAddress(index));
 
                 ++i;
             }
             else
             {
                 // If the component is not found, create it.
-                //newComponent = new (newArchetype->Components[j].At(index)) ComponentType(std::forward<Args>(args)...);
+                //newComponent = new (newArchetype->Components[j].GetAddress(index)) ComponentType(std::forward<Args>(args)...);
 
-                componentType.Move(data, newArchetype->Components[j].At(index));
+                componentType.Move(data, newArchetype->Components[j].GetAddress(index));
 
                 componentIndex = j;
             }
@@ -554,7 +554,7 @@ void World::DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, ui
                 auto& oldComponentType = registry[oldComponentTID];
 
                 // Move last component to entity->Index position
-                oldComponentType.Move(oldArchetype->Components[i].At(movedEntityIndex), oldArchetype->Components[i].At(entity->Index));
+                oldComponentType.Move(oldArchetype->Components[i].GetAddress(movedEntityIndex), oldArchetype->Components[i].GetAddress(entity->Index));
             }
         }
     }
@@ -566,15 +566,15 @@ void World::DoAddComponent(EntityHandle handle, ComponentTypeId componentTID, ui
 
         auto index = GrowComponentPool(newArchetype, 0);
 
-        //newComponent = new (newArchetype->Components[0].At(index)) ComponentType(std::forward<Args>(args)...);
-        componentType.Move(data, newArchetype->Components[0].At(index));
+        //newComponent = new (newArchetype->Components[0].GetAddress(index)) ComponentType(std::forward<Args>(args)...);
+        componentType.Move(data, newArchetype->Components[0].GetAddress(index));
     }
 
     newArchetype->EntityIds.Add(handle);
     entity->Index = newArchetype->EntityIds.Size() - 1;
     entity->pArchetype = newArchetype;
 
-    componentType.OnComponentAdded(this, handle, newArchetype->Components[componentIndex].At(entity->Index));
+    componentType.OnComponentAdded(this, handle, newArchetype->Components[componentIndex].GetAddress(entity->Index));
 
     //m_bSortArchetypes = true;
 }
@@ -606,7 +606,7 @@ void World::DoRemoveComponent(EntityHandle handle, ComponentTypeId componentTID)
     {
         if (componentTID == oldArchetypeId[i])
         {
-            auto componentData = oldArchetype->Components[i].At(entity->Index);
+            auto componentData = oldArchetype->Components[i].GetAddress(entity->Index);
             registry[componentTID].OnComponentRemoved(this, handle, componentData);
             registry[componentTID].Destruct(componentData);
             continue;
@@ -621,8 +621,8 @@ void World::DoRemoveComponent(EntityHandle handle, ComponentTypeId componentTID)
         size_t index = GrowComponentPool(newArchetype, j);
 
         // Move entity components from old archetype to new
-        newComponentType.Move(oldArchetype->Components[i].At(entity->Index),
-                              newArchetype->Components[j].At(index));
+        newComponentType.Move(oldArchetype->Components[i].GetAddress(entity->Index),
+                              newArchetype->Components[j].GetAddress(index));
 
         ++j;
     }
@@ -642,7 +642,7 @@ void World::DoRemoveComponent(EntityHandle handle, ComponentTypeId componentTID)
             auto  oldComponentTID  = oldArchetypeId[i];
             auto& oldComponentType = registry[oldComponentTID];
 
-            oldComponentType.Move(oldArchetype->Components[i].At(movedEntityIndex), oldArchetype->Components[i].At(entity->Index));
+            oldComponentType.Move(oldArchetype->Components[i].GetAddress(movedEntityIndex), oldArchetype->Components[i].GetAddress(entity->Index));
         }
     }
 
@@ -676,7 +676,7 @@ TArrayView<ComponentTypeId> EntityView::GetComponentIDs() const
     return TArrayView<ComponentTypeId>(archetype->Type.Begin(), archetype->Type.End());
 }
 
-auto EntityView::GetComponentByID(ComponentTypeId componentTID) const -> uint8_t*
+auto EntityView::GetComponentByID(ComponentTypeId componentTID) const -> void*
 {
     if (!IsValid())
         return nullptr;
@@ -689,7 +689,7 @@ auto EntityView::GetComponentByID(ComponentTypeId componentTID) const -> uint8_t
     if (index == -1)
         return nullptr;
 
-    return archetype->Components[index].At(m_EntityRef.Index);
+    return archetype->Components[index].GetAddress(m_EntityRef.Index);
 }
 
 }
