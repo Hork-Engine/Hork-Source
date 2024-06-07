@@ -88,6 +88,16 @@ public:
         return m_Handle != 0;
     }
 
+    bool operator<(Handle32 const& rhs) const
+    {
+        return m_Handle < rhs.m_Handle;
+    }
+
+    bool operator>(Handle32 const& rhs) const
+    {
+        return m_Handle > rhs.m_Handle;
+    }
+
     operator uint32_t() const
     {
         return m_Handle;
