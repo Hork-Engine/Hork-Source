@@ -99,7 +99,7 @@ public:
 
     // Returns num pages in the vector.
     // Must be protected by mutex.
-    uint32_t GetNumPages() const
+    uint32_t GetPageCount() const
     {
         return (m_Size >> PageSizeLog2) + 1;
     }
