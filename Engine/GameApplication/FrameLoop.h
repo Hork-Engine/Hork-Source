@@ -176,7 +176,7 @@ public:
 
     Vector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
 
-    StreamedMemoryGPU*              GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
+    StreamedMemoryGPU*              GetStreamedMemoryGPU() { return m_StreamedMemoryGPU.RawPtr(); }
 
 private:
     void            ClearViews();
@@ -192,8 +192,8 @@ private:
     size_t              m_FrameMemoryUsedPrev = 0;
     size_t              m_MaxFrameMemoryUsage = 0;
 
-    Ref<class GPUSync>     m_GPUSync;
-    Ref<StreamedMemoryGPU> m_StreamedMemoryGPU;
+    UniqueRef<class GPUSync>     m_GPUSync;
+    UniqueRef<StreamedMemoryGPU> m_StreamedMemoryGPU;
 
     Ref<RenderCore::IDevice> m_RenderDevice;
 

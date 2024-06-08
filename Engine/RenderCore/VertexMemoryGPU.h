@@ -181,14 +181,10 @@ private:
     size_t m_UsedMemoryHuge;
 };
 
-class StreamedMemoryGPU final : public RefCounted
+class StreamedMemoryGPU final : public Noncopyable
 {
 public:
     explicit StreamedMemoryGPU(RenderCore::IDevice* Device);
-
-    StreamedMemoryGPU(StreamedMemoryGPU const&) = delete;
-    StreamedMemoryGPU& operator=(StreamedMemoryGPU const&) = delete;
-
     ~StreamedMemoryGPU();
 
     /** Allocate vertex data. Return stream handle. Stream handle is actual during current frame. */

@@ -50,8 +50,8 @@ FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
     m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
     m_RenderDevice(RenderDevice)
 {
-    m_GPUSync = MakeRef<GPUSync>(m_RenderDevice->GetImmediateContext());
-    m_StreamedMemoryGPU = MakeRef<StreamedMemoryGPU>(m_RenderDevice);
+    m_GPUSync = MakeUnique<GPUSync>(m_RenderDevice->GetImmediateContext());
+    m_StreamedMemoryGPU = MakeUnique<StreamedMemoryGPU>(m_RenderDevice);
 
     m_FrameTimeStamp = Core::SysStartMicroseconds();
     m_FrameDuration = 1000000.0 / 60;
