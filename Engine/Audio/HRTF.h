@@ -38,13 +38,11 @@ HK_NAMESPACE_BEGIN
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
-class AudioHRTF
+class AudioHRTF final : public Noncopyable
 {
-    HK_FORBID_COPY(AudioHRTF)
-
 public:
     AudioHRTF(int SampleRate);
-    virtual ~AudioHRTF();
+    ~AudioHRTF();
 
     /// Gets a bilinearly interpolated HRTF
     void SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRightHRTF) const;

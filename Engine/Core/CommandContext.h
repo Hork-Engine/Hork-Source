@@ -37,10 +37,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class CommandContext : public ICommandContext
+class CommandContext : public ICommandContext, public Noncopyable
 {
-    HK_FORBID_COPY(CommandContext)
-
 public:
     CommandContext();
     ~CommandContext();

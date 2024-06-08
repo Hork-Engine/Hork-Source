@@ -40,14 +40,13 @@ class CommandProcessor;
 class ICommandContext
 {
 public:
+    virtual ~ICommandContext() {}
     virtual void ExecuteCommand(CommandProcessor const& proc) = 0;
 };
 
 /** Command buffer parser */
-class CommandProcessor final
+class CommandProcessor final : public Noncopyable
 {
-    HK_FORBID_COPY(CommandProcessor)
-
 public:
     static constexpr int MAX_ARGS    = 256;
     static constexpr int MAX_ARG_LEN = 256;

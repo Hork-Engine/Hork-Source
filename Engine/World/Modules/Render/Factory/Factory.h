@@ -39,10 +39,8 @@ class ClassMeta;
 class Property;
 class BaseObject;
 
-class ObjectFactory final
+class ObjectFactory final : public Noncopyable
 {
-    HK_FORBID_COPY(ObjectFactory)
-
     friend class ClassMeta;
 
 public:
@@ -78,10 +76,8 @@ private:
 
 using PropertyList = SmallVector<Property const*, 32>;
 
-class ClassMeta
+class ClassMeta : public Noncopyable
 {
-    HK_FORBID_COPY(ClassMeta)
-
     friend class ObjectFactory;
     friend class Property;
 
@@ -126,7 +122,7 @@ public:
 
     // Utilites
     Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
-    void             GetProperties(PropertyList& Properties, bool bRecursive = true) const;
+    void            GetProperties(PropertyList& Properties, bool bRecursive = true) const;
 
 protected:
     ClassMeta(ObjectFactory& Factory, GlobalStringView ClassName, ClassMeta const* SuperClassMeta) :
@@ -213,10 +209,8 @@ enum HK_PROPERTY_FLAGS : uint32_t
 HK_FLAG_ENUM_OPERATORS(HK_PROPERTY_FLAGS)
 
 
-class Property
+class Property final : public Noncopyable
 {
-    HK_FORBID_COPY(Property)
-
 public:
     using SetterFun = void (*)(BaseObject*, Variant const&);
     using GetterFun = Variant (*)(BaseObject const*);
@@ -371,7 +365,8 @@ public:                                                 \
     HK_FACTORY_CLASS_A(Factory, Class, SuperClass, BaseObject::Allocator)
 
 #define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                                          \
-    HK_FORBID_COPY(Class)                                                                                   \
+    Class(Class const&) = delete;                                                                           \
+    Class& operator=(Class const&) = delete;                                                                \
     friend class BaseObject;                                                                                \
                                                                                                             \
 public:                                                                                                     \

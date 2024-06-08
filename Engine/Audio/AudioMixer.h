@@ -38,10 +38,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class AudioMixerSubmitQueue final
+class AudioMixerSubmitQueue final : public Noncopyable
 {
-    HK_FORBID_COPY(AudioMixerSubmitQueue)
-
 public:
     AudioMixerSubmitQueue() = default;
 

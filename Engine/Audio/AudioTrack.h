@@ -43,10 +43,8 @@ AudioTrack
 All members can be freely modified before submit to mixer thread
 All ***_LOCK members are protected by spinlock
 */
-struct AudioTrack final
+struct AudioTrack final : public Noncopyable
 {
-    HK_FORBID_COPY(AudioTrack)
-
     /// Audio source. Read only
     Ref<AudioSource> pSource;
 

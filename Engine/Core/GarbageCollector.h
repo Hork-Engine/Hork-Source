@@ -37,10 +37,8 @@ HK_NAMESPACE_BEGIN
 
 struct WeakRefCounter;
 
-class GCObject
+class GCObject : public Noncopyable
 {
-    HK_FORBID_COPY(GCObject)
-
     friend class GarbageCollector;
     friend class WeakReference;
 
@@ -95,10 +93,8 @@ T* NewObj(TArgs&&... Args)
 Garbage collector
 
 */
-class GarbageCollector final
+class GarbageCollector final : public Noncopyable
 {
-    HK_FORBID_COPY(GarbageCollector)
-
     friend class GCObject;
 
 public:

@@ -181,12 +181,13 @@ private:
     size_t m_UsedMemoryHuge;
 };
 
-class StreamedMemoryGPU : public RefCounted
+class StreamedMemoryGPU final : public RefCounted
 {
-    HK_FORBID_COPY(StreamedMemoryGPU)
-
 public:
-    StreamedMemoryGPU(RenderCore::IDevice* Device);
+    explicit StreamedMemoryGPU(RenderCore::IDevice* Device);
+
+    StreamedMemoryGPU(StreamedMemoryGPU const&) = delete;
+    StreamedMemoryGPU& operator=(StreamedMemoryGPU const&) = delete;
 
     ~StreamedMemoryGPU();
 
@@ -253,10 +254,10 @@ private:
         RenderCore::SyncObject Sync;
     };
 
-    Ref<RenderCore::IDevice> m_pDevice;
+    Ref<RenderCore::IDevice>  m_pDevice;
     RenderCore::IImmediateContext* m_pImmediateContext;
     ChainBuffer               m_ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
-    Ref<RenderCore::IBuffer> m_Buffer;
+    Ref<RenderCore::IBuffer>  m_Buffer;
     void*                     m_pMappedMemory;
     int                       m_BufferIndex;
     size_t                    m_MaxMemoryUsage;

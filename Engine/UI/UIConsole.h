@@ -37,10 +37,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class UIConsole
+class UIConsole final : public Noncopyable
 {
-    HK_FORBID_COPY(UIConsole)
-
 public:
     UIConsole();
 

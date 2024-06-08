@@ -320,22 +320,14 @@ HK_NAMESPACE_END
 #define HK_HAS_METHOD(Class, Method) \
     __Has##Method<Class>::value
 
-/*
-
-Forbid to copy object
-
-*/
-#define HK_FORBID_COPY(_Class)      \
-    _Class(_Class const&) = delete; \
-    _Class& operator=(_Class const&) = delete;
-
 HK_NAMESPACE_BEGIN
 class Noncopyable
 {
-    HK_FORBID_COPY(Noncopyable)
-
 public:
-    Noncopyable() = default;
+                    Noncopyable() = default;
+                    Noncopyable(Noncopyable const&) = delete;
+
+    Noncopyable&    operator=(Noncopyable const&) = delete;
 };
 HK_NAMESPACE_END
 

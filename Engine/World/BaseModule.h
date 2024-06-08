@@ -35,10 +35,8 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T>
-class BaseModule
+class BaseModule : public Noncopyable
 {
-    HK_FORBID_COPY(BaseModule)
-
 public:
     static void Initialize()
     {

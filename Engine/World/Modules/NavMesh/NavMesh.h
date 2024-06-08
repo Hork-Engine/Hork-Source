@@ -268,14 +268,12 @@ public:
     unsigned int ObstacleRef;
 };
 
-struct NavQueryFilter
+struct NavQueryFilter final : public Noncopyable
 {
-    HK_FORBID_COPY(NavQueryFilter)
-
     friend class NavMesh;
 
     NavQueryFilter();
-    virtual ~NavQueryFilter();
+    ~NavQueryFilter();
 
     /// Sets the traversal cost of the area.
     void SetAreaCost(int inAreaID, float inCost);
@@ -365,10 +363,8 @@ public:
     virtual void GatherNavigationGeometry(NavigationGeometry& Geometry) const = 0;
 };
 
-class NavMesh
+class NavMesh final : public Noncopyable
 {
-    HK_FORBID_COPY(NavMesh)
-
 public:
     /// Default query filter
     NavQueryFilter QueryFilter;
@@ -386,7 +382,7 @@ public:
     //
 
     NavMesh();
-    virtual ~NavMesh();
+    ~NavMesh();
 
     /// Initialize empty nav mesh. You must rebuild nav mesh after that.
     bool Initialize(NavMeshDesc const& inNavigationConfig);

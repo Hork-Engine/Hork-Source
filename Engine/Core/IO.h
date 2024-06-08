@@ -79,10 +79,8 @@ Archive
 Read file from archive
 
 */
-class Archive final
+class Archive final : public Noncopyable
 {
-    HK_FORBID_COPY(Archive)
-
 public:
     Archive() = default;
     ~Archive();

@@ -116,10 +116,8 @@ struct Freeverb_FilterAllPass
 
 #undef freeverb_Undenormalise
 
-class Freeverb
+class Freeverb final : public Noncopyable
 {
-    HK_FORBID_COPY(Freeverb)
-
 public:
     const float MutedGain = 0;
     const float FixedGain = 0.015f;

@@ -51,10 +51,8 @@ struct AsyncJob
 class AsyncJobManager;
 
 /** Job list */
-class AsyncJobList final
+class AsyncJobList final : public Noncopyable
 {
-    HK_FORBID_COPY(AsyncJobList)
-
     friend class AsyncJobManager;
 
 public:
