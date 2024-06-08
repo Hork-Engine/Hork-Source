@@ -41,10 +41,10 @@ GPUSync
 Sync GPU and CPU. Used to reduce input lag.
 
 */
-class GPUSync : public RefCounted
+class GPUSync final : public Noncopyable
 {
 public:
-    GPUSync(RenderCore::IImmediateContext* pImmediateContext);
+    explicit GPUSync(RenderCore::IImmediateContext* pImmediateContext);
     ~GPUSync();
 
     void SetEvent();
