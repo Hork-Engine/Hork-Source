@@ -42,7 +42,7 @@ enum UI_CURSOR_MODE
     UI_CURSOR_MODE_FORCE_DISABLED
 };
 
-class UIManager
+class UIManager final
 {
 public:
     UI_CURSOR_MODE CursorMode = UI_CURSOR_MODE_AUTO;
@@ -58,7 +58,7 @@ public:
     TWeakRef<UIWidget> HoveredWidget;
 
     UIManager(RenderCore::IGenericWindow* mainWindow);
-    virtual ~UIManager();
+    ~UIManager();
 
     RenderCore::IGenericWindow* GetGenericWindow()
     {

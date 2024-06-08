@@ -50,6 +50,8 @@ HK_NAMESPACE_BEGIN
 class World;
 class AsyncJobManager;
 class AsyncJobList;
+class AudioDevice;
+class AudioMixer;
 
 class GameApplication : public CoreApplication, public IEventListener
 {
@@ -61,23 +63,23 @@ public:
 
     void DestroyWorld(World* world);
 
-    /** Set main window video mode. */
+    /// Set main window video mode.
     void PostChangeVideoMode(DisplayVideoMode const& mode);
 
-    /** Terminate the application */
+    /// Terminate the application
     void PostTerminateEvent();
 
     void TakeScreenshot(StringView filename);
 
-    /** Add global console command */
+    /// Add global console command
     void AddCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment = ""s);
 
-    /** Remove global console command */
+    /// Remove global console command
     void RemoveCommand(StringView name);
 
     void RunMainLoop();
 
-    /** Read main window back buffer pixels. */
+    /// Read main window back buffer pixels.
     void ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, size_t sizeInBytes, void* sysMem);
 
     static GameApplication* Instance()
@@ -85,7 +87,7 @@ public:
         return static_cast<GameApplication*>(CoreApplication::Instance());
     }
 
-    /** Current video mode */
+    /// Current video mode
     static DisplayVideoMode const& GetVideoMode()
     {
         return static_cast<GameApplication*>(Instance())->m_Window->GetVideoMode();
@@ -108,12 +110,12 @@ public:
 
     static ResourceManager& GetResourceManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_ResourceManager;
+        return *static_cast<GameApplication*>(Instance())->m_ResourceManager.RawPtr();
     }
 
     static MaterialManager& GetMaterialManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_MaterialManager;
+        return *static_cast<GameApplication*>(Instance())->m_MaterialManager.RawPtr();
     }
 
     static FrameLoop& GetFrameLoop()
@@ -148,7 +150,7 @@ public:
 
     static VertexMemoryGPU* GetVertexMemoryGPU()
     {
-        return static_cast<GameApplication*>(Instance())->m_VertexMemoryGPU;
+        return static_cast<GameApplication*>(Instance())->m_VertexMemoryGPU.RawPtr();
     }
 
     static RenderBackend& GetRenderBackend()
@@ -159,6 +161,16 @@ public:
     static AsyncJobList* GetRenderFrontendJobList()
     {
         return static_cast<GameApplication*>(Instance())->m_RenderFrontendJobList;
+    }
+
+    static AudioDevice* GetAudioDevice()
+    {
+        return static_cast<GameApplication*>(Instance())->m_AudioDevice;
+    }
+
+    static AudioMixer* GetAudioMixer()
+    {
+        return static_cast<GameApplication*>(Instance())->m_AudioMixer.RawPtr();
     }
 
 protected:
@@ -175,58 +187,60 @@ private:
 
     void Cmd_Quit(CommandProcessor const&);
 
-    /** IEventListener interface. */
-    void OnKeyEvent(KeyEvent const& event) override;
+    /// IEventListener interface.
+    void OnKeyEvent(KeyEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnMouseButtonEvent(MouseButtonEvent const& event) override;
+    /// IEventListener interface.
+    void OnMouseButtonEvent(MouseButtonEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnMouseWheelEvent(MouseWheelEvent const& event) override;
+    /// IEventListener interface.
+    void OnMouseWheelEvent(MouseWheelEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnMouseMoveEvent(MouseMoveEvent const& event) override;
+    /// IEventListener interface.
+    void OnMouseMoveEvent(MouseMoveEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnJoystickAxisEvent(JoystickAxisEvent const& event) override;
+    /// IEventListener interface.
+    void OnJoystickAxisEvent(JoystickAxisEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnJoystickButtonEvent(JoystickButtonEvent const& event);
+    /// IEventListener interface.
+    void OnJoystickButtonEvent(JoystickButtonEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnCharEvent(CharEvent const& event) override;
+    /// IEventListener interface.
+    void OnCharEvent(CharEvent const& event) override final;
 
-    /** IEventListener interface. */
-    void OnWindowVisible(bool bVisible) override;
+    /// IEventListener interface.
+    void OnWindowVisible(bool bVisible) override final;
 
-    /** IEventListener interface. */
-    void OnCloseEvent() override;
+    /// IEventListener interface.
+    void OnCloseEvent() override final;
 
-    /** IEventListener interface. */
-    void OnResize() override;
+    /// IEventListener interface.
+    void OnResize() override final;
 
 private:
     Archive                          m_EmbeddedArchive;
-    TRef<AsyncJobManager>            m_AsyncJobManager;
+    TUniqueRef<AsyncJobManager>      m_AsyncJobManager;
     AsyncJobList*                    m_RenderFrontendJobList{};
-    TRef<RenderCore::IDevice>        m_RenderDevice;
-    ResourceManager*                 m_ResourceManager{};
-    MaterialManager*                 m_MaterialManager{};
+    TUniqueRef<ResourceManager>      m_ResourceManager;
+    TUniqueRef<MaterialManager>      m_MaterialManager;
     String                           m_Title;
     String                           m_ApplicationLocalData;
-    TRef<FrameLoop>                  m_FrameLoop;
+    TUniqueRef<FrameLoop>            m_FrameLoop;
+    TRef<RenderCore::IDevice>        m_RenderDevice;
     TRef<RenderCore::IGenericWindow> m_Window;
-    TRef<RenderCore::ISwapChain>     m_pSwapChain;
-    TRef<VertexMemoryGPU>            m_VertexMemoryGPU;
+    TRef<RenderCore::ISwapChain>     m_SwapChain;
+    TUniqueRef<VertexMemoryGPU>      m_VertexMemoryGPU;
     TUniqueRef<Canvas>               m_Canvas;
     TUniqueRef<UIManager>            m_UIManager;
-    TRef<RenderFrontend>             m_Renderer;
-    TRef<RenderBackend>              m_RenderBackend;
+    TUniqueRef<RenderFrontend>       m_Renderer;
+    TUniqueRef<RenderBackend>        m_RenderBackend;
+    TRef<AudioDevice>                m_AudioDevice;
+    TUniqueRef<AudioMixer>           m_AudioMixer;
     InputSystem                      m_InputSystem;
     CommandProcessor                 m_CommandProcessor;
     CommandContext                   m_CommandContext;
     StateMachine                     m_StateMachine;
-    TVector<World*>                  m_Worlds;
+    TVector<World*>                  m_Worlds; 
     DisplayVideoMode                 m_DesiredMode;
     MersenneTwisterRand              m_Random;
     String                           m_Screenshot;

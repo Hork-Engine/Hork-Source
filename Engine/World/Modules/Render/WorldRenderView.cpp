@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "WorldRenderView.h"
-#include <Engine/World/Modules/Terrain/TerrainView.h>
+#include "TerrainView.h"
 #include <Engine/GameApplication/GameApplication.h>
 
 #include <Engine/Core/Guid.h>
@@ -207,14 +207,14 @@ void WorldRenderView::SetWorld(World* world)
     m_World = world;
 }
 
-void WorldRenderView::SetCamera(ECS::EntityHandle cameraEntity)
+void WorldRenderView::SetCamera(Handle32<CameraComponent> camera)
 {
-    m_Camera = cameraEntity;
+    m_Camera = camera;
 }
 
-void WorldRenderView::SetCullingCamera(ECS::EntityHandle cameraEntity)
+void WorldRenderView::SetCullingCamera(Handle32<CameraComponent> camera)
 {
-    m_CullingCamera = cameraEntity;
+    m_CullingCamera = camera;
 }
 
 TextureHandle WorldRenderView::GetTextureHandle()

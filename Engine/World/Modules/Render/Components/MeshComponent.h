@@ -1,68 +1,93 @@
 #pragma once
 
-#include <Engine/World/Modules/Skeleton/SkeletalAnimation.h>
+#include <Engine/World/Component.h>
 #include <Engine/World/Modules/Render/ProceduralMesh.h>
 #include <Engine/World/Resources/Resource_Mesh.h>
 #include <Engine/World/Resources/Resource_MaterialInstance.h>
 
-#include <Engine/World/Modules/Transform/EntityGraph.h>
-
 HK_NAMESPACE_BEGIN
 
-struct MeshInstance
+class MeshComponent : public Component
 {
-    static constexpr size_t MAX_LAYERS = 4;
+public:
+    //
+    // Meta info
+    //
 
-    EntityNodeID        Node;
-    MeshHandle          Resource;
-    int                 SubmeshIndex{};
-    int                 NumLayers{1};
-    BvAxisAlignedBox    BoundingBox;
-    BvAxisAlignedBox    m_WorldBoundingBox;
-    MaterialInstance*   Materials[MAX_LAYERS] = {};
-    TRef<SkeletonPose>  Pose;
-    bool                bOutline{};
+    static constexpr ComponentMode Mode = ComponentMode::Static;
+
+    struct Surface
+    {
+        TVector<MaterialInstance*>  Materials;
+        //BvAxisAlignedBox            BoundingBox;
+        //BvAxisAlignedBox            WorldBoundingBox;
+    };
+
+    MeshHandle              m_Resource;
+    TVector<Surface>        m_Surfaces;
+    TRef<SkeletonPose>      m_Pose;
+    bool                    m_Outline = false;
+    bool                    m_CastShadow = true;
+    uint32_t                m_CascadeMask = 0;
+
+    // Transform from current and previous fixed state
+    Float3                  m_Position[2];
+    Quat                    m_Rotation[2];
+    Float3                  m_Scale[2];
+    // Interpolated transform
+    Float3                  m_LerpPosition;
+    Quat                    m_LerpRotation;
+    Float3                  m_LerpScale;
+    // Transform from previous frame
+    Float3                  m_PrevPosition;
+    Quat                    m_PrevRotation;
+    Float3                  m_PrevScale;
+
+    void                    BeginPlay();
+    void                    EndPlay();
+
+    void                    UpdateBoundingBox();
+
+    void                    DrawDebug(DebugRenderer& renderer);
 };
 
-struct MeshRenderer
+class ProceduralMeshComponent : public Component
 {
-    TVector<TUniqueRef<MeshInstance>> Meshes;
-};
+public:
+    //
+    // Meta info
+    //
 
-struct MeshComponent_ECS
-{
-    static constexpr size_t MAX_LAYERS = 4;
+    static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    MeshHandle Mesh;
+    struct Surface
+    {
+        TVector<MaterialInstance*>  Materials;
+        //BvAxisAlignedBox            BoundingBox;
+        //BvAxisAlignedBox            WorldBoundingBox;
+    };
 
-    int SubmeshIndex{};
+    TRef<ProceduralMesh_ECS> m_Mesh;
+    Surface                 m_Surface;
+    bool                    m_Outline = false;
+    bool                    m_CastShadow = true;
 
-    BvAxisAlignedBox BoundingBox;
-    BvAxisAlignedBox m_WorldBoundingBox;
+    // Transform from current and previous fixed state
+    Float3                  m_Position[2];
+    Quat                    m_Rotation[2];
+    Float3                  m_Scale[2];
+    // Interpolated transform
+    Float3                  m_LerpPosition;
+    Quat                    m_LerpRotation;
+    Float3                  m_LerpScale;
+    // Transform from previous frame
+    Float3                  m_PrevPosition;
+    Quat                    m_PrevRotation;
+    Float3                  m_PrevScale;
 
-    int NumLayers{1};
+    void                    UpdateBoundingBox();
 
-    MaterialInstance* Materials[MAX_LAYERS] = {};
-
-    TRef<SkeletonPose> Pose;
-
-    bool bOutline{};
-};
-
-struct ProceduralMeshComponent_ECS
-{
-    static constexpr size_t MAX_LAYERS = 4;
-
-    TRef<ProceduralMesh_ECS> Mesh;
-
-    BvAxisAlignedBox BoundingBox;
-    BvAxisAlignedBox m_WorldBoundingBox;
-
-    int NumLayers{1};
-
-    MaterialInstance* Materials[MAX_LAYERS] = {};
-
-    bool bOutline{};
+    void                    DrawDebug(DebugRenderer& renderer);
 };
 
 HK_NAMESPACE_END

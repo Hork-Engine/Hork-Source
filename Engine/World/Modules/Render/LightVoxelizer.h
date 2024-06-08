@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 
 HK_NAMESPACE_BEGIN
 

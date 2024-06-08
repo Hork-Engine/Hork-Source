@@ -7,9 +7,6 @@
 
 HK_NAMESPACE_BEGIN
 
-namespace NewEngine
-{
-
 /*
 TODO:
 
@@ -117,8 +114,6 @@ private:
     TVector<T*>             m_RandomAccess;
     uint32_t                m_FreeListHead = 0;
 };
-
-} // namespace NewEngine
 
 HK_NAMESPACE_END
 

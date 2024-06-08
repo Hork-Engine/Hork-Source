@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Common/BaseModule.h>
+#include <Engine/World/BaseModule.h>
 
 HK_NAMESPACE_BEGIN
 

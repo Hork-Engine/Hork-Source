@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "VisibilitySystem.h"
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 
 #include <Engine/Geometry/BV/BvIntersect.h>
 #include <Engine/Geometry/ConvexHull.h>

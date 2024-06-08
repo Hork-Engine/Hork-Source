@@ -33,20 +33,29 @@ SOFTWARE.
 #include <Engine/Core/Memory.h>
 
 #include <Detour/DetourAlloc.h>
+#include <Recast/RecastAlloc.h>
 
 HK_NAMESPACE_BEGIN
 
 NavMeshModule::NavMeshModule()
 {
-    auto alloc = [](size_t sizeInBytes, dtAllocHint hint)
+    auto detourAlloc = [](size_t sizeInBytes, dtAllocHint hint)
     {
         return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
     };
+
+    auto recastAlloc = [](size_t sizeInBytes, rcAllocHint hint)
+    {
+        return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
+    };
+
     auto dealloc = [](void* bytes)
     {
         Core::GetHeapAllocator<HEAP_NAVIGATION>().Free(bytes);
     };
-    dtAllocSetCustom(alloc, dealloc);
+
+    dtAllocSetCustom(detourAlloc, dealloc);
+    rcAllocSetCustom(recastAlloc, dealloc);
 }
 
 NavMeshModule::~NavMeshModule()

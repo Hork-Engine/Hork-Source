@@ -1,279 +1,649 @@
 #include "World.h"
+#include "Component.h"
 
-#include <Engine/World/Modules/BehaviorTree/Systems/BehaviorTreeSystem.h>
-#include <Engine/World/Modules/Transform/Systems/NodeMotionSystem.h>
-#include <Engine/World/Modules/Transform/Systems/TransformSystem.h>
-#include <Engine/World/Modules/Transform/Systems/TransformHistorySystem.h>
-#include <Engine/World/Modules/Physics/Systems/PhysicsSystem.h>
-#include <Engine/World/Modules/Physics/Systems/CharacterControllerSystem.h>
-#include <Engine/World/Modules/Physics/Systems/TeleportSystem.h>
-#include <Engine/World/Modules/Skeleton/Systems/SkinningSystem.h>
-#include <Engine/World/Modules/Logic/Systems/EntityDestroySystem.h>
-#include <Engine/World/Modules/Render/Systems/RenderSystem.h>
-#include <Engine/World/Modules/Render/Systems/LightingSystem.h>
-#include <Engine/World/Modules/Audio/Systems/SoundSystem.h>
+#include <Engine/World/DebugRenderer.h>
 
-#include <Engine/Core/ConsoleVar.h>
+/*
+
+Object life cycle:
+
+GameObject представляет собой игровой объект, имеющий позицию, поворот, масштаб. К нему цепляются
+компоненты, которые определяют как объект будет выглядеть, как себя вести и т.п.
+
+Объект создается методом:
+World::CreateObject
+
+Удаление объекта:
+World::DestroyObject и World::DestroyObjectNow
+
+World::DestroyObject помещает объект в очередь на удаление, тогда как World::DestroyObjectNow
+удаляет объект сразу. Как только объект удаляется у него выставляеся флаг
+IsDestroyed = true. При удалении объекта, удаляются все его дочерние объекты и компоненты.
+
+Создание компоненты осуществляется методом CreateComponent. Создать компоненту отдельно без game-object
+нельзя. Компонента создается сразу, но ее инициализация происходит отложено. Во время инициализации
+для компоненты вызывается метод BeginPlay() и устанавливается флаг IsInitialized = true.
+Компненты удаляются методом DestroyComponent. При удалении сразу происходит деинициализация компоненты:
+вызывается метод EndPlay() и компоненте устанавливается флаг IsInitialized = false.
+
+Важно: даже после удаления объекта или компоненты по ним все еще можно итерироваться. Реальное удаление объектов
+из хранилища и вызов их деструкторов происходит в одной точке кадра.
+
+*/
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_InterpolateTransform("com_InterpolateTransform"s, "1"s);
-
-World::World(ECS::WorldCreateInfo const& createInfo) :
-    ECS::World(createInfo),
-    m_PhysicsInterface(this),
-    m_AudioInterface(this)
+World::World()
 {
-    m_PhysicsSystem = CreateSystem<PhysicsSystem>(&m_GameEvents);
-    m_CharacterControllerSystem = CreateSystem<CharacterControllerSystem>();
-    m_BehaviorTreeSystem = CreateSystem<BehaviorTreeSystem>();
-    m_NodeMotionSystem = CreateSystem<NodeMotionSystem>();
-    m_TransformSystem = CreateSystem<TransformSystem>();
-    m_TransformHistorySystem = CreateSystem<TransformHistorySystem>();
-    m_RenderSystem = CreateSystem<RenderSystem>();
-    m_SoundSystem = CreateSystem<SoundSystem>();
-    m_TeleportSystem = CreateSystem<TeleportSystem>();
-    m_SkinningSystem = CreateSystem<SkinningSystem_ECS>();
-    m_LightingSystem = CreateSystem<LightingSystem>();
-    m_EntityDestroySystem = CreateSystem<EntityDestroySystem>();
+    m_ComponentManagers.Resize(ComponentTypeRegistry::GetComponentTypesCount());
+    m_Interfaces.Resize(InterfaceTypeRegistry::GetInterfaceTypesCount());
+    m_EventHolders.Resize(WorldEvent::GetTypesCount());
 }
 
 World::~World()
 {
-    GetCommandBuffer(0).DestroyEntities();
+    for (auto it = m_ObjectStorage.GetObjects() ; it.IsValid() ; ++it)
+        DestroyObjectNow(it);
+    DestroyObjectsAndComponents();
 
-    ExecuteCommands();
+    for (auto& worldInterface : m_Interfaces)
+    {
+        if (worldInterface)
+            worldInterface->Deinitialize();
+    }
+
+    for (ComponentManagerBase* componentManager : m_ComponentManagers)
+        delete componentManager;
+
+    for (WorldInterfaceBase* worldInterface : m_Interfaces)
+        delete worldInterface;
+
+    for (EventHolderBase* eventHolder : m_EventHolders)
+        delete eventHolder;
 }
 
-GameplaySystemECS* World::RegisterGameplaySystem(GameplaySystemECS* gameplaySystem, GAMEPLAY_SYSTEM_EXECUTION execution)
+void World::InitializeInterface(InterfaceTypeID id)
 {
-    if (execution & GAMEPLAY_SYSTEM_VARIABLE_UPDATE)
-        m_GameplayVariableUpdateSystems.Add(gameplaySystem);
-
-    if (execution & GAMEPLAY_SYSTEM_FIXED_UPDATE)
-        m_GameplayFixedUpdateSystems.Add(gameplaySystem);
-
-    if (execution & GAMEPLAY_SYSTEM_POST_PHYSICS_UPDATE)
-        m_GameplayPostPhysicsSystems.Add(gameplaySystem);
-
-    if (execution & GAMEPLAY_SYSTEM_LATE_UPDATE)
-        m_GameplayLateUpdateSystems.Add(gameplaySystem);
-
-    m_AllGameplaySystems.EmplaceBack(gameplaySystem);
-
-    return gameplaySystem;
+    m_Interfaces[id]->m_World = this;
+    m_Interfaces[id]->m_InterfaceTypeID = id;
+    m_Interfaces[id]->Initialize();
 }
 
-void World::SetEventHandler(IEventHandler* eventHandler)
+void World::Purge()
 {
-    m_EventHandler = eventHandler;
+    for (auto it = m_ObjectStorage.GetObjects() ; it.IsValid() ; ++it)
+        DestroyObjectNow(it);
+    DestroyObjectsAndComponents();
+
+    HK_ASSERT(m_ObjectStorage.Size() == 0);
+
+    for (auto& worldInterface : m_Interfaces)
+    {
+        if (worldInterface)
+            worldInterface->Purge();
+    }
+
+    for (EventHolderBase* eventHolder : m_EventHolders)
+    {
+        if (eventHolder)
+            eventHolder->Clear();
+    }
+
+    m_TransformHierarchy[0].Clear();
+    m_TransformHierarchy[1].Clear();
+
+    m_ComponentsToInitialize.Clear();
 }
 
-void World::AddRequest(WORLD_REQUEST request)
+GameObjectHandle World::CreateObject(GameObjectDesc const& desc)
 {
-    m_Requests.Add(request);
+    GameObject* object;
+    return CreateObject(desc, object);
+}
+
+GameObjectHandle World::CreateObject(GameObjectDesc const& desc, GameObject*& gameObject)
+{
+    auto handle = m_ObjectStorage.CreateObject(gameObject);
+
+    HK_ASSERT(desc.Parent != handle);
+
+    uint32_t hierarchyLevel = 0;
+    bool dynamic = desc.IsDynamic;
+
+    if (auto* parent = GetObject(desc.Parent))
+    {
+        //parent->UpdateWorldTransform(); TODO?
+        hierarchyLevel = parent->m_HierarchyLevel + 1;
+
+        if (parent->m_Flags.IsDynamic)
+            dynamic = true;
+    }
+
+    gameObject->m_Handle = handle;
+    gameObject->m_World = this;
+    gameObject->m_Flags.IsDynamic = dynamic;
+    gameObject->m_Parent = desc.Parent;
+    gameObject->m_HierarchyLevel = hierarchyLevel;
+    gameObject->m_TransformData = AllocateTransformData(dynamic ? HierarchyType::Dynamic : HierarchyType::Static, hierarchyLevel);
+    gameObject->m_TransformData->Owner = gameObject;
+    gameObject->m_TransformData->LockWorldPositionAndRotation = false;
+    gameObject->m_TransformData->AbsolutePosition = desc.AbsolutePosition;
+    gameObject->m_TransformData->AbsoluteRotation = desc.AbsoluteRotation;
+    gameObject->m_TransformData->AbsoluteScale    = desc.AbsoluteScale;
+    gameObject->m_TransformData->Position = desc.Position;
+    gameObject->m_TransformData->Rotation = desc.Rotation;
+    gameObject->m_TransformData->Scale    = desc.Scale;
+
+    gameObject->LinkToParent();
+    gameObject->m_TransformData->UpdateWorldTransform();
+
+    gameObject->m_Name = desc.Name;
+
+    return handle;
+}
+
+void World::SetParent(GameObject* object, GameObject* parent, GameObject::TransformRule transformRule)
+{
+    if (object == parent)
+        return;
+
+    if (object->IsStatic() && (parent && parent->IsDynamic()))
+    {
+        LOG("WARNING: Attaching static object to dynamic is not allowed\n");
+        return;
+    }
+
+    object->UnlinkFromParent();
+
+    object->m_NextSibling = 0;
+    object->m_PrevSibling = 0;
+
+    if (parent)
+    {
+        parent->UpdateWorldTransform();
+
+        object->m_Parent = parent->m_Handle;
+        object->LinkToParent();
+    }
+
+    UpdateHierarchy(object, transformRule);
+}
+
+void World::UpdateHierarchy(GameObject* object, GameObject::TransformRule transformRule)
+{
+    GameObject* parent = object->GetParent();
+
+    UpdateHierarchyData(object, object->IsDynamic());
+
+    object->m_TransformData->Parent = parent ? parent->m_TransformData : nullptr;
+
+    switch (transformRule)
+    {
+    case GameObject::TransformRule::KeepRelative:
+        object->m_TransformData->UpdateWorldTransform();
+        break;
+    case GameObject::TransformRule::KeepWorld:
+        object->SetWorldTransform(object->m_TransformData->WorldPosition,
+                                  object->m_TransformData->WorldRotation,
+                                  object->m_TransformData->WorldScale);
+        break;
+    }
+
+    for (auto it = object->GetChildren(); it.IsValid(); ++it)
+    {
+        UpdateHierarchy(it, transformRule);
+    }
+}
+
+void World::UpdateHierarchyData(GameObject* object, bool wasDynamic)
+{
+    GameObject* parent = object->GetParent();
+
+    uint32_t newLevel = parent ? parent->m_HierarchyLevel + 1 : 0;
+    uint32_t oldLevel = object->m_HierarchyLevel;
+
+    bool isDynamic = object->IsDynamic();
+
+    if (newLevel != oldLevel || isDynamic != wasDynamic)
+    {
+        GameObject::TransformData* oldData = object->m_TransformData;
+        GameObject::TransformData* newData = AllocateTransformData(isDynamic ? HierarchyType::Dynamic : HierarchyType::Static, newLevel);
+
+        *newData = std::move(*oldData);
+
+        object->m_HierarchyLevel = newLevel;
+        object->m_TransformData = newData;
+
+        for (auto it = object->GetChildren(); it.IsValid(); ++it)
+        {
+            GameObject::TransformData* transformData = it->m_TransformData;
+            transformData->Parent = newData;
+        }
+
+        FreeTransformData(wasDynamic ? HierarchyType::Dynamic : HierarchyType::Static, oldLevel, oldData);
+    }
+}
+
+GameObject* World::GetObjectUnsafe(GameObjectHandle handle)
+{
+    return handle ? m_ObjectStorage.GetObject(handle) : nullptr;
+}
+
+GameObject const* World::GetObjectUnsafe(GameObjectHandle handle) const
+{
+    return const_cast<World*>(this)->GetObjectUnsafe(handle);
+}
+
+GameObject* World::GetObject(GameObjectHandle handle)
+{
+    return IsHandleValid(handle) ? m_ObjectStorage.GetObject(handle) : nullptr;
+}
+
+GameObject const* World::GetObject(GameObjectHandle handle) const
+{
+    return const_cast<World*>(this)->GetObject(handle);
+}
+
+bool World::IsHandleValid(GameObjectHandle handle) const
+{
+    if (!handle)
+        return false;
+
+    auto id = handle.GetID();
+
+    auto& objects = m_ObjectStorage.GetRandomAccessTable();
+
+    // Check garbage
+    if (id >= objects.Size())
+        return false;
+
+    // Check is freed
+    if (objects[id] == nullptr)
+        return false;
+
+    // Check version / id
+    return objects[id]->GetHandle().ToUInt32() == handle.ToUInt32();
+}
+
+void World::DestroyObject(GameObjectHandle handle)
+{
+    m_QueueToDestroy.Add(handle);
+}
+
+void World::DestroyObject(GameObject* gameObject)
+{
+    if (!gameObject)
+        return;
+
+    // TODO: Check if gameObject->GetWorld() == this
+
+    m_QueueToDestroy.Add(gameObject->GetHandle());
+}
+
+void World::DestroyObjectNow(GameObject* gameObject)
+{
+    HK_IF_NOT_ASSERT(gameObject) { return; }
+    HK_IF_NOT_ASSERT(gameObject->GetWorld() == this) { return; }
+
+    if (gameObject->m_Flags.IsDestroyed)
+        return;
+
+    gameObject->m_Flags.IsDestroyed = true;
+
+    for (auto it = gameObject->GetChildren(); it.IsValid(); ++it)
+        DestroyObjectNow(it);
+
+    while (!gameObject->m_Components.IsEmpty())
+    {
+        Component* component = gameObject->m_Components.First();
+        component->GetManager()->DestroyComponent(component);
+    }
+
+    gameObject->UnlinkFromParent();
+
+    // TODO: Where to free transform data?
+
+    auto hierarchyType = gameObject->IsDynamic() ? HierarchyType::Dynamic : HierarchyType::Static;
+    FreeTransformData(hierarchyType, gameObject->m_HierarchyLevel, gameObject->m_TransformData);
+
+    m_ObjectsToDelete.Add(gameObject->GetHandle());
+}
+
+void World::DestroyObjectsAndComponents()
+{
+    for (auto handle : m_QueueToDestroy)
+    {
+        if (GameObject* gameObject = GetObject(handle))
+            DestroyObjectNow(gameObject);
+    }
+    m_QueueToDestroy.Clear();
+
+    while (!m_ComponentsToDelete.IsEmpty())
+    {
+        Component* component = m_ComponentsToDelete.First();
+
+        Component* movedComponentOldPtr;
+        component->GetManager()->DestructComponent(component->GetHandle(), movedComponentOldPtr);
+
+        if (movedComponentOldPtr)
+        {
+            // Указатель component теперь ссылается на перемещенный компонент
+            GameObject* owner = component->GetOwner();
+
+            // Если компонент не удален из владельца, то пропатчим его указатель внутри game object
+            if (owner)
+                owner->PatchComponentPointer(movedComponentOldPtr, component);
+
+            // Если перемещенный компонент тоже в списке, то удаляем его старый указатель из списка,
+            // т.к. его реальным указателем теперь является component.
+            auto index = m_ComponentsToDelete.IndexOf(movedComponentOldPtr);
+            if (index != Core::NPOS)
+            {
+                m_ComponentsToDelete.RemoveUnsorted(index);
+                continue;
+            }
+        }
+
+        m_ComponentsToDelete.RemoveUnsorted(0);
+    }
+
+    struct HandleFetcher
+    {
+        HK_FORCEINLINE static GameObjectHandle FetchHandle(GameObject* object)
+        {
+            return object->GetHandle();
+        }
+    };
+    for (auto handle : m_ObjectsToDelete)
+        m_ObjectStorage.DestroyObject<HandleFetcher>(handle);
+    m_ObjectsToDelete.Clear();
+}
+
+void World::RegisterTickFunction(TickFunction const& f)
+{
+    m_FunctionsToRegister.Add(f);
+}
+
+void World::RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& function)
+{
+    m_DebugDrawFunctions.Add(function);
+}
+
+void World::RegisterTickFunctions()
+{
+    for (auto& f : m_FunctionsToRegister)
+    {
+        TickingGroup* tickingGroup = nullptr;
+        switch (f.Group)
+        {
+            case TickGroup::Update:
+                tickingGroup = &m_Update;
+                break;
+            case TickGroup::FixedUpdate:
+                tickingGroup = &m_FixedUpdate;
+                break;
+            case TickGroup::PhysicsUpdate:
+                tickingGroup = &m_PhysicsUpdate;
+                break;
+            case TickGroup::PostTransform:
+                tickingGroup = &m_PostTransform;
+                break;
+            case TickGroup::LateUpdate:
+                tickingGroup = &m_LateUpdate;
+                break;
+        }
+
+        HK_ASSERT(tickingGroup);
+
+        tickingGroup->AddFunction(f);
+    }
+    m_FunctionsToRegister.Clear();
+}
+
+void World::InitializeComponents()
+{
+    for (ComponentExtendedHandle extandedHandle : m_ComponentsToInitialize)
+    {
+        ComponentManagerBase* componentManager = m_ComponentManagers[extandedHandle.TypeID];
+        Component* component = componentManager->GetComponent(extandedHandle.Handle);
+        HK_ASSERT(component);
+
+        componentManager->InitializeComponent(component);
+    }
+
+    m_ComponentsToInitialize.Clear();
 }
 
 void World::Tick(float timeStep)
 {
-    ProcessRequests();
+    ProcessCommands();
 
     const float fixedTimeStep = 1.0f / 60.0f;
 
-    m_Frame.VariableTimeStep = timeStep;
-    m_Frame.FixedTimeStep = fixedTimeStep;
+    m_Tick.FrameTimeStep = timeStep;
+    m_Tick.FixedTimeStep = fixedTimeStep;
 
-    for (auto& system : m_GameplayVariableUpdateSystems)
+    m_Update.Dispatch(m_Tick);
+
+    m_TimeAccumulator += timeStep;
+
+    while (m_TimeAccumulator >= fixedTimeStep)
     {
-        if (!m_bPaused || system->bTickEvenWhenPaused)
-            system->VariableUpdate(timeStep);
-    }
+        m_TimeAccumulator -= fixedTimeStep;
 
-    m_Accumulator += timeStep;
+        m_Tick.PrevStateIndex = m_Tick.StateIndex;
+        m_Tick.StateIndex = (m_Tick.StateIndex + 1) & 1;
 
-    while (m_Accumulator >= fixedTimeStep)
-    {
-        m_Accumulator -= fixedTimeStep;
+        RegisterTickFunctions();
 
-        m_Frame.PrevStateIndex = m_Frame.StateIndex;
-        m_Frame.StateIndex = (m_Frame.StateIndex + 1) & 1;
+        InitializeComponents();
 
-        // FIXME: Call ExecuteCommands here?
-        ExecuteCommands();
+        m_FixedUpdate.Dispatch(m_Tick);
+        m_PhysicsUpdate.Dispatch(m_Tick);
 
-        if (!m_bPaused)
-            m_EntityDestroySystem->Update();
+        DestroyObjectsAndComponents();
 
-        if (!m_bPaused)
-            m_TeleportSystem->Update(m_Frame);
+        UpdateWorldTransforms();
 
-        for (auto& system : m_GameplayFixedUpdateSystems)
+        m_PostTransform.Dispatch(m_Tick);
+
+        //m_LightingSystem->UpdateBoundingBoxes(m_Tick);
+        //m_RenderSystem->UpdateBoundingBoxes(m_Tick);
+
+        //m_GameEvents.SwapReadWrite();
+        //if (m_EventHandler)
+        //    m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
+
+        if (!m_Tick.IsPaused)
         {
-            if (!m_bPaused || system->bTickEvenWhenPaused)
-                system->FixedUpdate(m_Frame);
-        }
-
-        if (!m_bPaused)
-            m_BehaviorTreeSystem->Update(m_Frame);
-
-        // Move / animate nodes
-        if (!m_bPaused)
-            m_NodeMotionSystem->Update(m_Frame);
-
-        // Update skeleton poses and sockets
-        m_SkinningSystem->UpdatePoses(m_Frame);
-
-        // Copy socket transform to transform component
-        m_SkinningSystem->UpdateSockets();
-
-        // Copy entity node transform to transform component
-        {
-            using Query = ECS::Query<>
-                ::ReadOnly<EntityAttachComponent>
-                ::Required<TransformComponent>;
-
-            for (Query::Iterator it(*this); it; it++)
-            {
-                auto attaches = it.Get<EntityAttachComponent>();
-                auto transforms = it.Get<TransformComponent>();
-
-                for (int i = 0; i < it.Count(); i++)
-                {
-                    auto& attach = attaches[i];
-                    auto& transform = transforms[i];
-
-                    m_SceneGraph.GetTransform(attach.Node, transform.Position, transform.Rotation, transform.Scale);
-                }
-            }
-        }
-        {
-            using Query = ECS::Query<>
-                ::Required<HierarchyComponent>
-                ::ReadOnly<TransformComponent>;
-
-            for (Query::Iterator it(*this); it; it++)
-            {
-                auto hierarchies = it.Get<HierarchyComponent>();
-                auto transforms = it.Get<TransformComponent>();
-
-                for (int i = 0; i < it.Count(); i++)
-                {
-                    auto& hierarchy = hierarchies[i];
-                    auto& transform = transforms[i];
-
-                    hierarchy.Graph->SetTransform(transform.Position, transform.Rotation, transform.Scale);
-                }
-            }
-        }
-
-        // Recalc world transform
-        m_TransformSystem->Update(m_Frame);
-
-        m_SceneGraph.CalcWorldTransform(m_Frame.StateIndex);
-
-        m_PhysicsSystem->AddAndRemoveBodies(m_Frame);
-
-        // Update character controller
-        m_CharacterControllerSystem->Update(m_Frame);
-
-        // Update physics
-        m_PhysicsSystem->Update(m_Frame);
-
-        for (auto& system : m_GameplayPostPhysicsSystems)
-        {
-            if (!m_bPaused || system->bTickEvenWhenPaused)
-                system->PostPhysicsUpdate(m_Frame);
-        }
-
-        m_LightingSystem->UpdateBoundingBoxes(m_Frame);
-        m_RenderSystem->UpdateBoundingBoxes(m_Frame);
-
-        m_GameEvents.SwapReadWrite();
-        if (m_EventHandler)
-            m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
-
-        m_SoundSystem->Update(m_Frame);
-
-        if (!m_bPaused)
-        {
-            m_Frame.FixedFrameNum++;
-            m_Frame.FixedTime = m_Frame.FixedFrameNum * fixedTimeStep;
+            m_Tick.FixedFrameNum++;
+            m_Tick.FixedTime = m_Tick.FixedFrameNum * fixedTimeStep;
         }
     }
 
-    m_Frame.Interpolate = m_Accumulator / fixedTimeStep;
+    m_Tick.Interpolate = m_TimeAccumulator / fixedTimeStep;
 
-    m_TransformHistorySystem->Update(m_Frame);
+    //m_TransformHistorySystem->Update(m_Tick);
 
-    if (com_InterpolateTransform)
-    {
-        m_TransformSystem->InterpolateTransformState(m_Frame);
-        m_SceneGraph.InterpolateTransformState(m_Frame.PrevStateIndex, m_Frame.StateIndex, m_Frame.Interpolate);
-    }
-    else
-    {
-        m_TransformSystem->CopyTransformState(m_Frame);
-        m_SceneGraph.CopyTransformState(m_Frame.PrevStateIndex, m_Frame.StateIndex);
-    }
+    //if (com_InterpolateTransform)
+    //{
+    //    m_TransformSystem->InterpolateTransformState(m_Tick);
+    //    m_SceneGraph.InterpolateTransformState(m_Tick.PrevStateIndex, m_Tick.StateIndex, m_Tick.Interpolate);
+    //}
+    //else
+    //{
+    //    m_TransformSystem->CopyTransformState(m_Tick);
+    //    m_SceneGraph.CopyTransformState(m_Tick.PrevStateIndex, m_Tick.StateIndex);
+    //}
 
-    m_LightingSystem->Update(m_Frame);
+    //m_LightingSystem->Update(m_Tick);
 
-    // TODO:
-    //m_SkinningSystem->InterpolatePoses(m_Frame);
-    m_SkinningSystem->UpdateSkins();
+    //m_SkinningSystem->InterpolatePoses(m_Tick);
+    //m_SkinningSystem->UpdateSkins();
 
-    for (auto& system : m_GameplayLateUpdateSystems)
-    {
-        if (!m_bPaused || system->bTickEvenWhenPaused)
-            system->LateUpdate(m_Frame);
-    }
+    m_LateUpdate.Dispatch(m_Tick);
 
-    if (!m_bPaused)
-        m_Frame.VariableTime += timeStep;
-    m_Frame.FrameNum++;
+    if (!m_Tick.IsPaused)
+        m_Tick.FrameTime += timeStep;
+    m_Tick.FrameNum++;
 
-    m_Frame.RunningTime += timeStep;
-
-    //LOG("TIME: Variable {}\tFixed {}\tDiff {}\n", m_Frame.VariableTime, m_Frame.FixedTime, Math::Abs(m_Frame.VariableTime - m_Frame.FixedTime));
-    //LOG("TIME: Diff {} ms\n", (m_Frame.VariableTime - m_Frame.FixedTime) * 1000);
+    m_Tick.RunningTime += timeStep;
 }
 
-void World::ProcessRequests()
+void World::SetPaused(bool paused)
 {
-    for (WORLD_REQUEST request : m_Requests)
+    m_CommandBuffer.Add(paused ? Command::Pause : Command::Unpause);
+}
+
+void World::ProcessCommands()
+{
+    for (Command command : m_CommandBuffer)
     {
-        switch (request)
+        switch (command)
         {
-            case WORLD_REQUEST_PAUSE:
-                m_bPaused = true;
-                m_AudioInterface.bPaused = true;
-                break;
-            case WORLD_REQUEST_UNPAUSE:
-                m_bPaused = false;
-                m_AudioInterface.bPaused = false;
-                break;
+        case Command::Pause:
+            m_Tick.IsPaused = true;
+            break;
+        case Command::Unpause:
+            m_Tick.IsPaused = false;
+            break;
         }
     }
-    m_Requests.Clear();
+    m_CommandBuffer.Clear();
 }
 
 void World::DrawDebug(DebugRenderer& renderer)
 {
-    for (auto& system : m_EngineSystems)
-        system->DrawDebug(renderer);
-
-    for (auto& system : m_AllGameplaySystems)
-        system->DrawDebug(renderer);
+    for (auto& function : m_DebugDrawFunctions)
+        function.Invoke(renderer);
 }
 
-void World::AddDirectionalLight(RenderFrontendDef& rd, RenderFrameData& frameData)
+TVector<PageStorage<GameObject::TransformData>>& World::GetTransformHierarchy(HierarchyType hierarchyType)
 {
-    m_RenderSystem->AddDirectionalLight(rd, frameData);
+    return m_TransformHierarchy[static_cast<int>(hierarchyType)];
 }
 
-void World::AddDrawables(RenderFrontendDef& rd, RenderFrameData& frameData)
+GameObject::TransformData* World::AllocateTransformData(HierarchyType hierarchyType, uint32_t hierarchyLevel)
 {
-    m_RenderSystem->AddDrawables(rd, frameData);
+    auto& transformHierarchy = GetTransformHierarchy(hierarchyType);
+
+    while (transformHierarchy.Size() <= hierarchyLevel)
+        transformHierarchy.Add();
+
+    return transformHierarchy[hierarchyLevel].EmplaceBack();
+}
+
+void World::FreeTransformData(HierarchyType hierarchyType, uint32_t hierarchyLevel, GameObject::TransformData* transformData)
+{
+    auto& transformHierarchy = GetTransformHierarchy(hierarchyType);
+    auto& storage = transformHierarchy[hierarchyLevel];
+
+    auto* last = &storage[storage.Size() - 1];
+
+    if (transformData != last)
+    {
+        *transformData = std::move(*last);
+        transformData->Owner->m_TransformData = transformData;
+
+        for (auto childIt = transformData->Owner->GetChildren(); childIt.IsValid(); ++childIt)
+        {
+            childIt->m_TransformData->Parent = transformData;
+        }
+    }
+
+    storage.PopBack();
+    storage.ShrinkToFit();
+}
+
+template <typename Visitor>
+HK_FORCEINLINE void World::UpdateTransformLevel(PageStorage<GameObject::TransformData>& transforms)
+{
+#if 0
+    for (uint32_t i = 0; i < transforms.Size(); ++i)
+    {
+        Visitor::Visit(transforms[i]);
+    }
+#else
+    uint32_t processed = 0;
+    for (uint32_t pageIndex = 0; pageIndex < transforms.GetPageCount(); ++pageIndex)
+    {
+        GameObject::TransformData* pageData = transforms.GetPageData(pageIndex);
+
+        uint32_t remaining = transforms.Size() - processed;
+        if (remaining < transforms.GetPageSize())
+        {
+            for (uint32_t i = 0; i < remaining; ++i)
+            {
+                Visitor::Visit(pageData[i]);
+            }
+
+            processed += remaining;
+        }
+        else
+        {
+            for (size_t i = 0; i < transforms.GetPageSize(); ++i)
+            {
+                Visitor::Visit(pageData[i]);
+            }
+
+            processed += transforms.GetPageSize();
+        }
+    }
+#endif
+}
+
+void World::UpdateWorldTransforms()
+{
+    DestroyObjectsAndComponents();
+
+    struct UpdateRoot
+    {
+        HK_FORCEINLINE void Visit(GameObject::TransformData& transform)
+        {
+            transform.WorldPosition = transform.Position;
+            transform.WorldRotation = transform.Rotation;
+            transform.WorldScale    = transform.Scale;
+
+            transform.UpdateWorldTransformMatrix();
+        }
+    };
+
+    struct UpdateWithParent
+    {
+        HK_FORCEINLINE void Visit(GameObject::TransformData& transform)
+        {
+            if (transform.LockWorldPositionAndRotation)
+            {
+                // Пересчитать локальную позицию и поворот относительно родителя так, чтобы мировая позиция
+                // оставалась неизменной.
+                transform.Position = transform.Parent->WorldTransform.Inversed() * transform.WorldPosition;
+                transform.Rotation = transform.Parent->WorldRotation.Inversed() * transform.WorldRotation;
+            }
+            else
+            {
+                transform.WorldPosition = transform.AbsolutePosition ? transform.Position : transform.Parent->WorldTransform * transform.Position;
+                transform.WorldRotation = transform.AbsoluteRotation ? transform.Rotation : transform.Parent->WorldRotation * transform.Rotation;
+            }
+
+            transform.WorldScale = transform.AbsoluteScale    ? transform.Scale    : transform.Parent->WorldScale * transform.Scale;
+
+            transform.UpdateWorldTransformMatrix();
+        }
+    };
+
+    auto& transformHierarchy = GetTransformHierarchy(HierarchyType::Dynamic);
+
+    if (!transformHierarchy.IsEmpty())
+    {
+        UpdateRoot updateRoot;
+        UpdateWithParent updateWithParent;
+
+        transformHierarchy[0].Iterate(updateRoot);
+        for (uint32_t hierarchyLevel = 1; hierarchyLevel < transformHierarchy.Size(); ++hierarchyLevel)
+        {
+            transformHierarchy[hierarchyLevel].Iterate(updateWithParent);
+        }
+    }
 }
 
 HK_NAMESPACE_END

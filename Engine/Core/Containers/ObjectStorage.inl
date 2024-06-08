@@ -1,8 +1,5 @@
 HK_NAMESPACE_BEGIN
 
-namespace NewEngine
-{
-
 template <typename T>
 HK_FORCEINLINE ObjectStorage<T>::ObjectStorage(ObjectStorage&& rhs) noexcept :
     m_PageStorage(std::move(rhs.m_PageStorage)),
@@ -232,7 +229,5 @@ HK_FORCEINLINE void ObjectStorage<T>::ConstIterator::operator++()
 {
     m_Index++;
 }
-
-} // namespace NewEngine
 
 HK_NAMESPACE_END

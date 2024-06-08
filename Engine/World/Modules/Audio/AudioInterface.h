@@ -30,49 +30,133 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Common/BaseModule.h>
-#include "SoundSource.h"
+#include <Engine/World/WorldInterface.h>
+#include <Engine/World/Resources/Resource_Sound.h>
+#include <Engine/World/GameObject.h>
+
+#include <Engine/Audio/AudioMixer.h>
+
+#include "Components/AudioListenerComponent.h"
 
 HK_NAMESPACE_BEGIN
 
-class AudioInterface
+/// Audio distance attenuation model. Not used now, reserved for future.
+enum class AudioDistanceModel
 {
-    HK_FORBID_COPY(AudioInterface)
+    Inverse          = 0,
+    InverseClamped   = 1, // default
+    Linear           = 2,
+    LinearClamped    = 3,
+    Exponent         = 4,
+    ExponentClamped  = 5
+};
 
+/// Priority to play the sound.
+/// NOTE: Not used now. Reserved for future to pick a free channel.
+enum class AudioChannelPriority : uint8_t
+{
+    OneShot  = 0,
+    Ambient  = 1,
+    Music    = 2,
+    Dialogue = 3,
+    Max      = 255
+};
+
+struct AudioListener
+{
+    /// Entity
+    GameObjectHandle        Entity;
+
+    /// World transfrom inversed
+    Float3x4                TransformInv;
+
+    /// World position
+    Float3                  Position;
+
+    /// View right vector
+    Float3                  RightVec;
+
+    /// Volume factor
+    float                   VolumeScale = 1.0f;
+
+    /// Listener mask
+    uint32_t                Mask = ~0u;
+};
+
+class SoundGroup : public RefCounted
+{
 public:
-    float MasterVolume = 1;
-    bool bPaused = false;
+    /// Scale volume for all sounds in group
+    void                    SetVolume(float inVolume) { m_Volume = Math::Saturate(inVolume); }
 
-    explicit AudioInterface(ECS::World* world);
+    /// Scale volume for all sounds in group
+    float                   GetVolume() const { return m_Volume; }
 
-    void SetListener(ECS::EntityHandle inEntity);
+    /// Pause/unpause all sounds in group
+    void                    SetPaused(bool inPaused) { m_IsPaused = inPaused; }
 
-    ECS::EntityHandle GetListener() const { return m_Listener; }
+    /// Is group paused
+    bool                    IsPaused() const { return m_IsPaused; }
 
-    /// Plays a sound at a given position in world space.
-    void PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+    /// Play sounds even when game is paused
+    void                    SetPlayEvenWhenPaused(bool inPlayEvenWhenPaused) { m_PlayEvenWhenPaused = inPlayEvenWhenPaused; }
 
-    /// Plays a sound at background.
-    void PlaySoundBackground(SoundHandle inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
-
-    void UpdateOneShotSound(AudioMixerSubmitQueue& submitQueue, AudioListener const& inListener);
+    /// Play sounds even when game is paused
+    bool                    ShouldPlayEvenWhenPaused() const { return m_PlayEvenWhenPaused; }
 
 private:
-    ECS::World* m_World;
-    ECS::EntityHandle m_Listener;
+    /// Scale volume for all sounds in group
+    float                   m_Volume = 1;
+
+    /// Pause all sounds in group
+    bool                    m_IsPaused = false;
+
+    /// Play sounds even when game is paused
+    bool                    m_PlayEvenWhenPaused = false;
+};
+
+class AudioInterface : public WorldInterfaceBase
+{
+public:
+    float                   MasterVolume = 1;
+
+                            AudioInterface();
+
+    void                    SetListener(Handle32<AudioListenerComponent> inListener);
+
+    Handle32<AudioListenerComponent> GetListener() const { return m_ListenerComponent; }
+
+    /// Plays a sound at a given position in world space.
+    void                    PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+
+    /// Plays a sound at background.
+    void                    PlaySoundBackground(SoundHandle inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+
+protected:
+    virtual void            Initialize() override;
+    virtual void            Deinitialize() override;
+
+private:
+    void                    UpdateOneShotSound();
+    void                    Update();
+    //void                    DrawDebug(DebugRenderer& renderer);
+
+    Handle32<AudioListenerComponent> m_ListenerComponent;
+    AudioListener           m_Listener;
+    AudioMixerSubmitQueue   m_SubmitQueue;
 
     struct OneShotSound
     {
-        TRef<AudioTrack> Track;
-        TRef<SoundGroup> Group;
-        Float3 Position;
-        float Volume;
-        bool bIsBackground;
-        bool bNeedToSubmit;
+        TRef<AudioTrack>    Track;
+        TRef<SoundGroup>    Group;
+        Float3              Position;
+        float               Volume;
+        bool                IsBackground;
+        bool                NeedToSubmit;
 
-        void Spatialize(AudioListener const& inListener, int outChanVolume[2], Float3& outLocalDir, bool& outSpatializedStereo);
+        void                Spatialize(AudioListener const& inListener, int outChanVolume[2], Float3& outLocalDir, bool& outSpatializedStereo);
     };
-    TVector<OneShotSound> m_OneShotSound;
+    TVector<OneShotSound>   m_OneShotSound;
 };
 
 HK_NAMESPACE_END

@@ -1,8 +1,14 @@
 #pragma once
 
-#include <Engine/ECS/ECS.h>
+/*
+
+Небольшой набросок на тему Behavior Tree.
+
+*/
+
 #include <Engine/Core/Ref.h>
 #include <Engine/Core/Random.h>
+#include <Engine/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -21,7 +27,6 @@ class BehaviorTreeContext
 {
 public:
     float TimeStep{};
-    ECS::CommandBuffer* CommandBuf{};
     MersenneTwisterRand* RandomGenerator{};
 };
 
@@ -220,56 +225,6 @@ public:
 
     void Start(BehaviorTreeContext& context) override;
     void Update(BehaviorTreeContext& context) override;
-};
-
-template <typename T>
-class ECSNode : public BehaviorTreeNode
-{
-    using Super = BehaviorTreeNode;
-
-    ECS::EntityHandle m_Entity;
-    STATUS m_UpdateStatus{UNDEFINED};
-
-public:
-    ECSNode(ECS::EntityHandle entity) :
-        m_Entity(entity)
-    {}
-
-    void SetSuccess()
-    {
-        m_UpdateStatus = SUCCESS;
-    }
-
-    void SetFailure()
-    {
-        m_UpdateStatus = FAILURE;
-    }
-
-    void Start(BehaviorTreeContext& context) override
-    {
-        Super::Start(context);
-
-        if (context.CommandBuf)
-        {
-            T& stateComponent = context.CommandBuf->AddComponent<T>(m_Entity);
-            stateComponent.BT_Leaf = this;
-        }
-
-        m_UpdateStatus = RUNNING;
-    }
-
-    void Update(BehaviorTreeContext& context) override
-    {
-        Super::Update(context);
-
-        if (m_UpdateStatus != RUNNING)
-        {
-            if (context.CommandBuf)
-                context.CommandBuf->RemoveComponent<T>(m_Entity);
-
-            SetStatus(m_UpdateStatus);
-        }
-    }
 };
 
 class BehaviorTree : public RefCounted

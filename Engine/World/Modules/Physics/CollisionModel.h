@@ -1,10 +1,11 @@
 #pragma once
 
-#include <Engine/Core/GarbageCollector.h>
-#include <Engine/Geometry/BV/BvAxisAlignedBox.h>
-
+// TODO: Remove JPH from public headers
 #include "JoltPhysics.h"
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
+
+#include <Engine/Core/Containers/Vector.h>
+#include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 
 HK_NAMESPACE_BEGIN
 

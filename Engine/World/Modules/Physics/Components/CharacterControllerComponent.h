@@ -1,30 +1,37 @@
 #pragma once
 
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Engine/World/Modules/Physics/PhysicsInterface.h>
 
-#include <Engine/Math/VectorMath.h>
-
-#include "../PhysicsInterface.h"
+#include "BodyComponent.h"
 
 HK_NAMESPACE_BEGIN
 
-struct CharacterControllerComponent
+class CharacterControllerComponent : public BodyComponent
 {
-    CharacterControllerComponent(PhysBodyID inBodyID, uint8_t inCollisionGroup) :
-        m_BodyId(inBodyID),
-        m_CollisionGroup(inCollisionGroup)
-    {}
+    friend class PhysicsInterface;
 
-    PhysBodyID const& GetBodyId() const
-    {
-        return m_BodyId;
-    }
+public:
+    //
+    // Meta info
+    //
 
-    uint8_t GetCollisionGroup() const
-    {
-        return m_CollisionGroup;
-    }
+    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
+
+    /// The collision group this body belongs to (determines if two objects can collide)
+    uint8_t     m_CollisionLayer = CollisionLayer::Character;
+
+    float      HeightStanding = 1.35f;
+    float      RadiusStanding = 0.3f;
+    float      HeightCrouching = 0.8f;
+    float      RadiusCrouching = 0.3f;
+    float      MaxSlopeAngle = Math::Radians(45.0f);
+    float      MaxStrength = 100.0f;
+    float      CharacterPadding = 0.02f;
+    float      PenetrationRecoverySpeed = 1.0f;
+    float      PredictiveContactDistance = 0.1f;
+
+
+
 
     Float3 MovementDirection;
     Float3 DesiredVelocity;
@@ -36,15 +43,27 @@ struct CharacterControllerComponent
     bool EnableWalkStairs = true;
     bool EnableStickToFloor = true;
 
-    // Internal
-    JPH::CharacterVirtual* m_pCharacter{};
-    JPH::RefConst<JPH::Shape> m_StandingShape;
-    JPH::RefConst<JPH::Shape> m_CrouchingShape;
-    bool m_bAllowSliding = false;
+    /// Teleport character to specified position / rotation
+    void                    SetWorldPosition(Float3 const& position);
+    void                    SetWorldRotation(Quat const& rotation);
+    void                    SetWorldPositionAndRotation(Float3 const& position, Quat const& rotation);
+
+    Float3                  GetWorldPosition() const;
+    Quat                    GetWorldRotation() const;
+
+    /// Set the linear velocity of the character (m / s)
+    void                    SetLinearVelocity(Float3 const& velocity);
+    /// Get the linear velocity of the character (m / s)
+    Float3                  GetLinearVelocity();
+
+    void                    BeginPlay();
+    void                    EndPlay();
 
 private:
-    PhysBodyID m_BodyId;
-    uint8_t m_CollisionGroup = CollisionGroup::CHARACTER;
+    PhysBodyID              m_BodyID;
+    class CharacterControllerImpl* m_pImpl;
+
+    class BodyUserData*     m_UserData = nullptr;
 };
 
 HK_NAMESPACE_END

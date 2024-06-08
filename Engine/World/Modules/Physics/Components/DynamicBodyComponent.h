@@ -1,0 +1,144 @@
+#pragma once
+
+#include <Engine/World/Modules/Physics/PhysicsInterface.h>
+#include <Engine/World/Modules/Physics/PhysicsMaterial.h>
+
+#include "BodyComponent.h"
+
+HK_NAMESPACE_BEGIN
+
+class CollisionModel;
+
+class DynamicBodyComponent final : public BodyComponent
+{
+    friend class PhysicsInterface;
+
+public:
+    //
+    // Meta info
+    //
+
+    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
+
+    //
+    // Initial properties
+    //
+
+    /// Collision model of the body
+    TRef<CollisionModel>    m_CollisionModel;
+
+    /// The collision layer this body belongs to (determines if two objects can collide)
+    uint8_t                 m_CollisionLayer;
+
+    //uint32_t              m_ObjectFilterID = ~0u;
+
+    /// World space linear velocity of the center of mass (m/s)
+    Float3                  LinearVelocity;
+
+    /// World space angular velocity (rad/s)
+    Float3                  AngularVelocity;
+
+    /// Linear damping: dv/dt = -c * v. c must be between 0 and 1 but is usually close to 0.
+    Half                    LinearDamping = 0.05f;
+
+    /// Angular damping: dw/dt = -c * w. c must be between 0 and 1 but is usually close to 0.
+    Half                    AngularDamping = 0.05f;
+
+    /// Maximum linear velocity that this body can reach (m/s)
+    Half                    MaxLinearVelocity = 500;
+
+    /// Maximum angular velocity that this body can reach (rad/s)
+    Half                    MaxAngularVelocity = 0.25f * Math::_PI * 60;
+
+    /// Mass of the body (kg).
+    Half                    Mass = 0;
+
+    /// The calculated inertia will be multiplied by this value
+    Half                    InertiaMultiplier = 1.0f;
+
+    /// If this body can go to sleep or not
+    bool                    AllowSleeping = true;
+
+    bool                    StartAsSleeping = false;
+
+    /// Motion quality, or how well it detects collisions when it has a high velocity
+    bool                    UseCCD = false;
+
+    /// Enable to allow rigid body scaling
+    bool                    IsDynamicScaling = false;
+
+    PhysicsMaterial         Material;
+
+    //
+    // Dynamic properties
+    //
+
+    /// Set motion behavior kinematic or dynamic
+    void                    SetKinematic(bool isKinematic);
+    bool                    IsKinematic() const { return m_IsKinematic; }
+
+    /// Value to multiply gravity with for this body
+    void                    SetGravityFactor(float factor);
+    float                   GetGravityFactor() const { return m_GravityFactor; }
+
+    //
+    // Interaction with the body
+    //
+
+    /// Teleport body to specified position / rotation
+    void                    SetWorldPosition(Float3 const& position);
+    void                    SetWorldRotation(Quat const& rotation);
+    void                    SetWorldPositionAndRotation(Float3 const& position, Quat const& rotation);
+
+    Float3                  GetWorldPosition() const;
+    Quat                    GetWorldRotation() const;
+
+    enum class CoordinateSpace
+    {
+        Local,
+        World
+    };
+
+    /// Kinematic movement (for kinematic body only)
+    void                    MoveKinematic(Float3 const& destPosition, CoordinateSpace coordSpace = CoordinateSpace::World);
+    void                    RotateKinematic(Quat const& destRotation, CoordinateSpace coordSpace = CoordinateSpace::World);
+    void                    MoveAndRotateKinematic(Float3 const& destPosition, Quat const& destRotation, CoordinateSpace coordSpace = CoordinateSpace::World);
+
+    /// Adds a force to the Rigidbody.
+    void                    AddForce(Float3 const& force);
+    /// Applies force at position. As a result this will apply a torque and force on the object.
+    void                    AddForceAtPosition(Float3 const& force, Float3 const& position);
+    /// Adds a torque to the rigidbody.
+    void                    AddTorque(Float3 const& torque);
+    /// A combination of AddForce and AddTorque
+    void                    AddForceAndTorque(Float3 const& force, Float3 const& torque);
+
+    /// Applied at center of mass
+    void                    AddImpulse(Float3 const& impulse);
+    /// Applied at position
+    void                    AddImpulseAtPosition(Float3 const& impulse, Float3 const& position);
+
+    void                    AddAngularImpulse(Float3 const& angularImpulse);
+
+    float                   GetMass() const;
+
+    Float3                  GetCenterOfMassPosition() const;
+
+    Float3                  GetLinearVelocity() const;
+    Float3                  GetAngularVelocity() const;
+    Float3                  GetVelocityAtPosition(Float3 const& position) const;
+
+    bool                    IsSleeping() const;
+
+    void                    BeginPlay();
+    void                    EndPlay();
+
+private:
+    PhysBodyID              m_BodyID;
+    Float3                  m_CachedScale;
+    float                   m_GravityFactor = 1.0f;
+    bool                    m_IsKinematic = false;
+    class BodyUserData*     m_UserData = nullptr;
+};
+
+HK_NAMESPACE_END

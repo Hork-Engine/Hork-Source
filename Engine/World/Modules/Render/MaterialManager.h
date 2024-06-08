@@ -20,7 +20,7 @@ public:
     TStringHashMap<MaterialInstance*> m_Instances;
 };
 
-class MaterialManager final
+class MaterialManager final : public Noncopyable
 {
 public:
     ~MaterialManager();

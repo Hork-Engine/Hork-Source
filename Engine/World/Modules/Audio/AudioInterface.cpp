@@ -29,25 +29,42 @@ SOFTWARE.
 */
 
 #include "AudioInterface.h"
-#include "AudioModule.h"
 
 #include <Engine/Core/Logger.h>
-#include <Engine/Core/IntrusiveLinkedListMacro.h>
 
 #include <Engine/Audio/AudioDevice.h>
-#include <Engine/Audio/AudioMixer.h>
 
 #include <Engine/GameApplication/GameApplication.h>
 
+#include "Components/SoundSource.h"
+#include "Components/AudioListenerComponent.h"
+
 HK_NAMESPACE_BEGIN
 
-AudioInterface::AudioInterface(ECS::World* world) :
-    m_World(world)
+//ConsoleVar Snd_RefreshRate("Snd_RefreshRate"s, "16"s); // TODO
+ConsoleVar Snd_MasterVolume("Snd_MasterVolume"s, "1"s);
+
+AudioInterface::AudioInterface()
 {}
 
-void AudioInterface::SetListener(ECS::EntityHandle inEntity)
+void AudioInterface::Initialize()
 {
-    m_Listener = inEntity;
+    TickFunction f;
+    f.Desc.Name.FromString("UpdateAudio");
+    f.Desc.TickEvenWhenPaused = true;
+    f.Group = TickGroup::PostTransform;
+    f.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
+    f.Delegate.Bind(this, &AudioInterface::Update);
+    RegisterTickFunction(f);
+}
+
+void AudioInterface::Deinitialize()
+{
+}
+
+void AudioInterface::SetListener(Handle32<AudioListenerComponent> inListener)
+{
+    m_ListenerComponent = inListener;
 }
 
 /*
@@ -55,7 +72,7 @@ void AudioInterface::SetListener(ECS::EntityHandle inEntity)
 TODO: Add these parameters?
 
 /// If target listener is not specified, audio will be hearable for all listeners
-ECS::EntityHandle TargetListener;
+Handle32<AudioListenerComponent> TargetListener;
 
 /// With listener mask you can filter listeners for the sound
 uint32_t ListenerMask = ~0u;
@@ -113,11 +130,11 @@ void AudioInterface::PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, 
 
     OneShotSound one_shot;
     one_shot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, false));
-    one_shot.bNeedToSubmit = true;
+    one_shot.NeedToSubmit = true;
     one_shot.Volume = Math::Saturate(inVolume);
     one_shot.Group = inGroup;
     one_shot.Position = inPosition;
-    one_shot.bIsBackground = false;
+    one_shot.IsBackground = false;
     m_OneShotSound.Add(one_shot);// TODO: Thread-safe
 }
 
@@ -160,14 +177,14 @@ void AudioInterface::PlaySoundBackground(SoundHandle inSound, SoundGroup* inGrou
 
     OneShotSound one_shot;
     one_shot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, false));
-    one_shot.bNeedToSubmit = true;
+    one_shot.NeedToSubmit = true;
     one_shot.Volume = Math::Saturate(inVolume);
     one_shot.Group = inGroup;
-    one_shot.bIsBackground = true;
+    one_shot.IsBackground = true;
     m_OneShotSound.Add(one_shot); // TODO: Thread-safe
 }
 
-void CalcAttenuation(SOUND_SOURCE_TYPE SourceType,
+void CalcAttenuation(SoundSourceType SourceType,
                      Float3 const& SoundPosition,
                      Float3 const& SoundDirection,
                      Float3 const& ListenerPosition,
@@ -212,7 +229,7 @@ void CalcAttenuation(SOUND_SOURCE_TYPE SourceType,
     if (ivolume == 0)
         return;
 
-    if (bIsBackground)
+    if (IsBackground)
     {
         // Use full volume without attenuation
         outChanVolume[0] = outChanVolume[1] = ivolume;
@@ -224,14 +241,18 @@ void CalcAttenuation(SOUND_SOURCE_TYPE SourceType,
 
     float left_vol, right_vol;
 
-    CalcAttenuation(bIsBackground ? SOUND_SOURCE_BACKGROUND : SOUND_SOURCE_POINT,
+    const float ReferenceDistance = 1;
+    const float MaxDistance = 100.0f;
+    const float RolloffRate = 1;
+
+    CalcAttenuation(IsBackground ? SoundSourceType::Background : SoundSourceType::Point,
                     Position,
                     Float3::AxisX(),
                     inListener.Position,
                     inListener.RightVec,
-                    SOUND_REF_DISTANCE_DEFAULT,
-                    SOUND_DISTANCE_DEFAULT,
-                    SOUND_ROLLOFF_RATE_DEFAULT,
+                    ReferenceDistance,
+                    MaxDistance,
+                    RolloffRate,
                     0,
                     0,
                     &left_vol,
@@ -250,7 +271,7 @@ void CalcAttenuation(SOUND_SOURCE_TYPE SourceType,
     if (outChanVolume[1] > 65535)
         outChanVolume[1] = 65535;
 
-    outSpatializedStereo = !AudioModule::Get().GetDevice()->IsMono();
+    outSpatializedStereo = !GameApplication::GetAudioDevice()->IsMono();
 
     if (Snd_HRTF)
     {
@@ -264,8 +285,10 @@ void CalcAttenuation(SOUND_SOURCE_TYPE SourceType,
     }
 }
 
-void AudioInterface::UpdateOneShotSound(AudioMixerSubmitQueue& submitQueue, AudioListener const& inListener)
+void AudioInterface::UpdateOneShotSound()
 {
+    bool isPaused = GetWorld()->GetTick().IsPaused;
+
     for (auto it = m_OneShotSound.begin(); it != m_OneShotSound.end();)
     {
         if (it->Track->GetPlaybackPos() >= it->Track->FrameCount || it->Track->IsStopped())
@@ -277,16 +300,16 @@ void AudioInterface::UpdateOneShotSound(AudioMixerSubmitQueue& submitQueue, Audi
         bool paused = false;
         bool play_even_when_paused = it->Group ? it->Group->ShouldPlayEvenWhenPaused() : false;
         if (!play_even_when_paused)
-            paused = paused || bPaused;
+            paused = paused || isPaused;
         if (it->Group)
             paused = paused || it->Group->IsPaused();
 
         int chan_vol[2];
         Float3 local_dir;
         bool spatialized_stereo;
-        it->Spatialize(inListener, chan_vol, local_dir, spatialized_stereo);
+        it->Spatialize(m_Listener, chan_vol, local_dir, spatialized_stereo);
 
-        if (it->bNeedToSubmit && chan_vol[0] == 0 && chan_vol[1] == 0)
+        if (it->NeedToSubmit && chan_vol[0] == 0 && chan_vol[1] == 0)
         {
             it = m_OneShotSound.Erase(it);
             continue;
@@ -294,14 +317,68 @@ void AudioInterface::UpdateOneShotSound(AudioMixerSubmitQueue& submitQueue, Audi
 
         it->Track->SetPlaybackParameters(chan_vol, local_dir, spatialized_stereo, paused);
 
-        if (it->bNeedToSubmit)
+        if (it->NeedToSubmit)
         {
-            it->bNeedToSubmit = false;
-            submitQueue.Add(it->Track);
+            it->NeedToSubmit = false;
+            m_SubmitQueue.Add(it->Track);
         }
 
         it++;
     }
+}
+
+void AudioInterface::Update()
+{
+    auto& audioListenerManager = GetWorld()->GetComponentManager<AudioListenerComponent>();
+
+    if (auto listenerComponent = audioListenerManager.GetComponent(m_ListenerComponent))
+    {
+        auto owner = listenerComponent->GetOwner();
+
+        m_Listener.Entity = owner->GetHandle();
+        m_Listener.TransformInv.Compose(owner->GetWorldPosition(), owner->GetWorldRotation().ToMatrix3x3());
+        m_Listener.TransformInv.InverseSelf();
+        m_Listener.Position = owner->GetWorldPosition();
+        m_Listener.RightVec = owner->GetWorldRotation().XAxis();
+        m_Listener.VolumeScale = Math::Saturate(listenerComponent->Volume * MasterVolume * Snd_MasterVolume.GetFloat());
+        m_Listener.Mask = listenerComponent->ListenerMask;
+    }
+    else
+    {
+        m_Listener.Entity = {};
+        m_Listener.TransformInv.SetIdentity();
+        m_Listener.Position.Clear();
+        m_Listener.RightVec = Float3(1, 0, 0);
+        m_Listener.VolumeScale = Math::Saturate(MasterVolume * Snd_MasterVolume.GetFloat());
+        m_Listener.Mask = ~0u;
+    }
+
+    auto& soundSourceManager = GetWorld()->GetComponentManager<SoundSource>();
+
+    struct Visitor
+    {
+        AudioListener& m_Listener;
+        AudioMixerSubmitQueue& m_SubmitQueue;
+        bool m_IsPaused;
+
+        Visitor(AudioListener& listener, AudioMixerSubmitQueue& submitQueue, bool isPaused) :
+            m_Listener(listener), m_SubmitQueue(submitQueue), m_IsPaused(isPaused)
+        {
+        }
+
+        HK_FORCEINLINE void Visit(SoundSource& soundSource)
+        {
+            soundSource.Spatialize(m_Listener);
+            soundSource.UpdateTrack(m_SubmitQueue, m_IsPaused);
+        }
+    };
+
+    Visitor visitor(m_Listener, m_SubmitQueue, GetWorld()->GetTick().IsPaused);
+    soundSourceManager.IterateComponents(visitor);
+
+    UpdateOneShotSound();
+
+    GameApplication::GetAudioMixer()->SubmitTracks(m_SubmitQueue);
 }
 
 HK_NAMESPACE_END

@@ -31,15 +31,17 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Renderer/RenderDefs.h>
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 #include <Engine/Canvas/Canvas.h>
-#include <Engine/World/Modules/Terrain/TerrainMesh.h>
+#include <Engine/World/Modules/Render/TerrainMesh.h>
 #include "LightVoxelizer.h"
 #include "WorldRenderView.h"
 
 HK_NAMESPACE_BEGIN
 
-class World;
+class MeshComponent;
+class ProceduralMeshComponent;
+class DirectionalLightComponent;
 
 struct RenderFrontendStat
 {
@@ -62,7 +64,7 @@ struct RenderFrontendDef
     class StreamedMemoryGPU* StreamedMemory;
 };
 
-class RenderFrontend : public RefCounted
+class RenderFrontend final : public Noncopyable
 {
 public:
     RenderFrontend();
@@ -84,11 +86,20 @@ private:
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
 
+    MaterialFrameData* GetMaterialFrameData(class MaterialInstance* materialInstance, FrameLoop* frameLoop, int frameNumber);
+
+    void AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
+    void AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef);
+
+    void AddMeshShadow(MeshComponent& mesh, struct SkeletonPose* pose, uint32_t cascadeMask, LightShadowmap* shadowmap);
+    void AddProceduralMeshShadow(ProceduralMeshComponent& mesh, uint32_t cascadeMask, LightShadowmap* shadowmap);
+
     //bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
     DebugRenderer m_DebugDraw;
     int m_FrameNumber = 0;
+    World* m_World;
 
     RenderFrontendStat m_Stat;
 

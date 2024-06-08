@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/GarbageCollector.h>
 #include <Engine/Renderer/RenderDefs.h>
 #include <Engine/Core/Allocators/PoolAllocator.h>
 

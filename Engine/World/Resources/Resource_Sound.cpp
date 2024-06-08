@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Logger.h>
 #include <Engine/Audio/AudioDecoder.h>
 #include <Engine/Audio/AudioDevice.h>
-#include <Engine/World/Modules/Audio/AudioModule.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,7 +47,7 @@ SoundResource::~SoundResource()
 
 bool SoundResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
 {
-    AudioDevice* device = AudioModule::Get().GetDevice();
+    AudioDevice* device = GameApplication::GetAudioDevice();
 
     auto sample_rate = device->GetSampleRate();
 

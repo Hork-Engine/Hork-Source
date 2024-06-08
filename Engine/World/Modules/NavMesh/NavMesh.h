@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Engine/Core/Containers/BitMask.h>
 #include <Engine/Core/IntrusiveLinkedListMacro.h>
 #include <Engine/GameApplication/GameApplication.h>
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 
 class dtNavMesh;
 class dtNavMeshQuery;

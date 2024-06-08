@@ -35,8 +35,10 @@ SOFTWARE.
 #include <Engine/Core/Platform.h>
 
 #include <Engine/World/Modules/Render/Components/CameraComponent.h>
-#include <Engine/World/Modules/Transform/Components/RenderTransformComponent.h>
-#include <Engine/World/World.h>
+#include <Engine/World/Modules/Render/Components/MeshComponent.h>
+#include <Engine/World/Modules/Render/Components/TerrainComponent.h>
+#include <Engine/World/Modules/Render/Components/DirectionalLightComponent.h>
+#include <Engine/World/Modules/Render/TerrainView.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,6 +49,8 @@ ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
 ConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
 ConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
 ConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
+ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
 
 extern ConsoleVar r_HBAO;
 extern ConsoleVar r_HBAODeinterleaved;
@@ -130,20 +134,614 @@ void RenderFrontend::ClearRenderView(RenderViewData* view)
     Core::ZeroMem(view, sizeof(*view));
 }
 
+MaterialFrameData* RenderFrontend::GetMaterialFrameData(MaterialInstance* materialInstance, FrameLoop* frameLoop, int frameNumber)
+{
+    if (materialInstance->m_VisFrame == frameNumber)
+    {
+        return materialInstance->m_FrameData;
+    }
+
+    MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+    if (!material)
+        return nullptr;
+
+    MaterialFrameData* frameData = (MaterialFrameData*)frameLoop->AllocFrameMem(sizeof(MaterialFrameData));
+
+    materialInstance->m_VisFrame = frameNumber;
+    materialInstance->m_FrameData = frameData;
+
+    frameData->Material    = material->m_GpuMaterial;
+    frameData->NumTextures = material->m_pCompiledMaterial->Samplers.Size();
+
+    HK_ASSERT(frameData->NumTextures <= MAX_MATERIAL_TEXTURES);
+
+    for (int i = 0, count = frameData->NumTextures; i < count; ++i)
+    {
+        TextureHandle texHandle = materialInstance->m_Textures[i];
+
+        TextureResource* texture = GameApplication::GetResourceManager().TryGet(texHandle);
+        if (!texture)
+        {
+            materialInstance->m_FrameData = nullptr;
+            return nullptr;
+        }
+
+        frameData->Textures[i] = texture->GetTextureGPU();
+    }
+
+    frameData->NumUniformVectors = material->m_pCompiledMaterial->NumUniformVectors;
+    Core::Memcpy(frameData->UniformVectors, materialInstance->m_Constants, sizeof(Float4) * frameData->NumUniformVectors);
+
+    return frameData;
+}
+
+
+static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
+
+static constexpr Float4x4 ShadowMapBias = Float4x4(
+    {0.5f, 0.0f, 0.0f, 0.0f},
+    {0.0f, -0.5f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f, 0.0f},
+    {0.5f, 0.5f, 0.0f, 1.0f});
+
+void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
+{
+    float cascadeSplits[MAX_CASCADE_SPLITS];
+    int numSplits = light.m_MaxShadowCascades + 1;
+    int numVisibleSplits;
+    Float4x4 lightViewMatrix;
+    Float3 worldspaceVerts[MAX_CASCADE_SPLITS][4];
+    Float3 right, up;
+
+    HK_ASSERT(light.m_MaxShadowCascades > 0 && light.m_MaxShadowCascades <= MAX_SHADOW_CASCADES);
+
+    if (View->bPerspective)
+    {
+        float tanFovX = std::tan(View->ViewFovX * 0.5f);
+        float tanFovY = std::tan(View->ViewFovY * 0.5f);
+        right = View->ViewRightVec * tanFovX;
+        up = View->ViewUpVec * tanFovY;
+    }
+    else
+    {
+        float orthoWidth = View->ViewOrthoMaxs.X - View->ViewOrthoMins.X;
+        float orthoHeight = View->ViewOrthoMaxs.Y - View->ViewOrthoMins.Y;
+        right = View->ViewRightVec * Math::Abs(orthoWidth * 0.5f);
+        up = View->ViewUpVec * Math::Abs(orthoHeight * 0.5f);
+    }
+
+    const float shadowMaxDistance = light.m_ShadowMaxDistance;
+    const float offset = light.m_ShadowCascadeOffset;
+    const float a = (shadowMaxDistance - offset) / View->ViewZNear;
+    const float b = (shadowMaxDistance - offset) - View->ViewZNear;
+    const float lambda = light.m_ShadowCascadeSplitLambda;
+
+    // Calc splits
+    cascadeSplits[0] = View->ViewZNear;
+    cascadeSplits[MAX_CASCADE_SPLITS - 1] = shadowMaxDistance;
+
+    for (int splitIndex = 1; splitIndex < MAX_CASCADE_SPLITS - 1; splitIndex++)
+    {
+        const float factor = (float)splitIndex / (MAX_CASCADE_SPLITS - 1);
+        const float logarithmic = View->ViewZNear * Math::Pow(a, factor);
+        const float linear = View->ViewZNear + b * factor;
+        const float dist = Math::Lerp(linear, logarithmic, lambda);
+        cascadeSplits[splitIndex] = offset + dist;
+    }
+
+    float maxVisibleDist = Math::Max(View->MaxVisibleDistance, cascadeSplits[0]);
+
+    // Calc worldspace verts
+    for (numVisibleSplits = 0;
+        numVisibleSplits < numSplits && (cascadeSplits[Math::Max(0, numVisibleSplits - 1)] <= maxVisibleDist);
+        numVisibleSplits++)
+    {
+        Float3* pWorldSpaceVerts = worldspaceVerts[numVisibleSplits];
+
+        float d = cascadeSplits[numVisibleSplits];
+
+        // FIXME: variable distance can cause edge shimmering
+        //d = d > maxVisibleDist ? maxVisibleDist : d;
+
+        Float3 centerWorldspace = View->ViewPosition + View->ViewDir * d;
+
+        Float3 c1 = right + up;
+        Float3 c2 = right - up;
+
+        if (View->bPerspective)
+        {
+            c1 *= d;
+            c2 *= d;
+        }
+
+        pWorldSpaceVerts[0] = centerWorldspace - c1;
+        pWorldSpaceVerts[1] = centerWorldspace - c2;
+        pWorldSpaceVerts[2] = centerWorldspace + c1;
+        pWorldSpaceVerts[3] = centerWorldspace + c2;
+    }
+
+    int numVisibleCascades = numVisibleSplits - 1;
+
+    BvSphere cascadeSphere;
+
+    Float3x3 basis = rotationMat.Transposed();
+    lightViewMatrix[0] = Float4(basis[0], 0.0f);
+    lightViewMatrix[1] = Float4(basis[1], 0.0f);
+    lightViewMatrix[2] = Float4(basis[2], 0.0f);
+
+    const float halfCascadeRes = light.m_ShadowCascadeResolution >> 1;
+    const float oneOverHalfCascadeRes = 1.0f / halfCascadeRes;
+
+    int firstCascade = View->NumShadowMapCascades;
+
+    // Distance from cascade bounds to light source (near clip plane)
+    // NOTE: We can calc actual light distance from scene geometry,
+    // but now it just a magic number big enough to enclose most scenes = 1km.
+    const float lightDistance = 1000.0f;
+
+    Float4x4* lightViewProjectionMatrices = nullptr;
+    if (numVisibleCascades > 0)
+    {
+        *ViewProjStreamHandle = StreamedMemory->AllocateConstant(numVisibleCascades * sizeof(Float4x4), nullptr);
+
+        lightViewProjectionMatrices = (Float4x4*)StreamedMemory->Map(*ViewProjStreamHandle);
+    }
+
+    for (int i = 0; i < numVisibleCascades; i++)
+    {
+        // Calc cascade bounding sphere
+        cascadeSphere.FromPointsAverage(worldspaceVerts[i], 8);
+
+        // Set light position at cascade center
+        lightViewMatrix[3] = Float4(basis * -cascadeSphere.Center, 1.0f);
+
+        // Set ortho box
+        Float3 cascadeMins = Float3(-cascadeSphere.Radius);
+        Float3 cascadeMaxs = Float3(cascadeSphere.Radius);
+
+        // Offset near clip distance
+        cascadeMins[2] -= lightDistance;
+
+        // Calc light view projection matrix
+        Float4x4 cascadeMatrix = Float4x4::OrthoCC(Float2(cascadeMins), Float2(cascadeMaxs), cascadeMins[2], cascadeMaxs[2]) * lightViewMatrix;
+
+#if 0
+        // Calc pixel fraction in texture space
+        Float2 error = Float2( cascadeMatrix[3] );  // same cascadeMatrix * Float4(0,0,0,1)
+        error.X = Math::Fract( error.X * halfCascadeRes ) * oneOverHalfCascadeRes;
+        error.Y = Math::Fract( error.Y * halfCascadeRes ) * oneOverHalfCascadeRes;
+
+        // Snap light projection to texel grid
+        // Same cascadeMatrix = Float4x4::Translation( -error ) * cascadeMatrix;
+        cascadeMatrix[3].X -= error.X;
+        cascadeMatrix[3].Y -= error.Y;
+#else
+        // Snap light projection to texel grid
+        cascadeMatrix[3].X -= Math::Fract(cascadeMatrix[3].X * halfCascadeRes) * oneOverHalfCascadeRes;
+        cascadeMatrix[3].Y -= Math::Fract(cascadeMatrix[3].Y * halfCascadeRes) * oneOverHalfCascadeRes;
+#endif
+
+        int cascadeIndex = firstCascade + i;
+
+        lightViewProjectionMatrices[i] = cascadeMatrix;
+        View->ShadowMapMatrices[cascadeIndex] = ShadowMapBias * cascadeMatrix * View->ClipSpaceToWorldSpace;
+    }
+
+    View->NumShadowMapCascades += numVisibleCascades;
+
+    *pFirstCascade = firstCascade;
+    *pNumCascades = numVisibleCascades;
+}
+
+// Convert direction to rotation matrix. Direction should be normalized.
+static Float3x3 DirectionToMatrix(Float3 const& direction)
+{
+    Float3 dir = -direction;
+
+    if (dir.X * dir.X + dir.Z * dir.Z == 0.0f)
+    {
+        return Float3x3(1, 0, 0,
+            0, 0, -dir.Y,
+            dir.X, dir.Y, dir.Z);
+    }
+    else
+    {
+        Float3 xaxis = Math::Cross(Float3(0.0f, 1.0f, 0.0f), dir).Normalized();
+
+        return Float3x3(xaxis,
+            Math::Cross(dir, xaxis),
+            dir);
+    }
+}
+
+HK_FORCEINLINE Float3x3 FixupLightRotation(Quat const& rotation)
+{
+    return DirectionToMatrix(-rotation.ZAxis());
+}
+
+void RenderFrontend::AddMeshShadow(MeshComponent& mesh, SkeletonPose* pose, uint32_t cascadeMask, LightShadowmap* shadowmap)
+{
+    auto& frameLoop = GameApplication::GetFrameLoop();
+
+    auto* gameObject = mesh.GetOwner();
+
+    // TODO: Исправить это временное решение
+    mesh.m_LerpPosition = gameObject->GetWorldPosition();
+    mesh.m_LerpRotation = gameObject->GetWorldRotation();
+    mesh.m_LerpScale    = gameObject->GetWorldScale();
+
+    Float3x4 transformMatrix;
+    Float3x3 worldRotation =  mesh.m_LerpRotation.ToMatrix3x3();
+    transformMatrix.Compose(mesh.m_LerpPosition, worldRotation, mesh.m_LerpScale);
+
+    Float3x4 const& instanceMatrix = transformMatrix;
+
+    MeshResource* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
+    if (!meshResource)
+        return;
+
+    size_t skeletonOffset = 0;
+    size_t skeletonSize = 0;
+
+    if (pose)
+    {
+        skeletonOffset = pose->m_SkeletonOffset;
+        skeletonSize = pose->m_SkeletonSize;
+    }
+
+    //for (int layerNum = 0; layerNum < mesh.NumLayers; layerNum++)
+    {
+        //if (!layers[layerNum].IsEnabled())
+        //    continue;
+
+        //if (mesh.SubmeshIndex >= meshResource->m_Subparts.Size())
+        //{
+        //    LOG("Invalid mesh subpart index\n");
+        //    continue;
+        //}
+
+        auto& surface = meshResource->m_Subparts[0];//mesh.SubmeshIndex];
+
+        MaterialInstance* materialInstance = mesh.m_Surfaces[0].Materials[0];//layerNum];
+        if (!materialInstance)
+            return;
+
+        MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+        if (!material)
+            return;
+
+        // Prevent rendering of instances with disabled shadow casting
+        if (material->m_pCompiledMaterial->bNoCastShadow)
+        {
+            return;
+        }
+
+        MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, &frameLoop, m_RenderDef.FrameNumber);
+        if (!materialInstanceFrameData)
+            return;
+
+        // Add render instance
+        ShadowRenderInstance* instance = (ShadowRenderInstance*)frameLoop.AllocFrameMem(sizeof(ShadowRenderInstance));
+
+        m_FrameData.ShadowInstances.Add(instance);
+
+        instance->Material = materialInstanceFrameData->Material;
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        meshResource->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
+        meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
+        meshResource->GetWeightsBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
+
+        instance->IndexCount = surface.IndexCount;
+        instance->StartIndexLocation = surface.FirstIndex;
+        instance->BaseVertexLocation = surface.BaseVertex; // + InComponent->SubpartBaseVertexOffset;
+        instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonSize = skeletonSize;
+        instance->WorldTransformMatrix = instanceMatrix;
+        instance->CascadeMask = cascadeMask;
+
+        uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+
+        instance->GenerateSortKey(priority, (uint64_t)meshResource);
+
+        shadowmap->ShadowInstanceCount++;
+
+        m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+    }
+}
+
+void RenderFrontend::AddProceduralMeshShadow(ProceduralMeshComponent& mesh, uint32_t cascadeMask, LightShadowmap* shadowmap)
+{
+    auto& frameLoop = GameApplication::GetFrameLoop();
+
+    auto* gameObject = mesh.GetOwner();
+
+    // TODO: Исправить это временное решение
+    mesh.m_LerpPosition = gameObject->GetWorldPosition();
+    mesh.m_LerpRotation = gameObject->GetWorldRotation();
+    mesh.m_LerpScale    = gameObject->GetWorldScale();
+
+    Float3x4 transformMatrix;
+    Float3x3 worldRotation =  mesh.m_LerpRotation.ToMatrix3x3();
+    transformMatrix.Compose(mesh.m_LerpPosition, worldRotation, mesh.m_LerpScale);
+
+    Float3x4 const& instanceMatrix = transformMatrix;
+
+    ProceduralMesh_ECS* proceduralMesh = mesh.m_Mesh;
+
+    if (!proceduralMesh)
+        return;
+
+    if (proceduralMesh->IndexCache.IsEmpty())
+    {
+        return;
+    }
+
+    //for (int layerNum = 0; layerNum < mesh.NumLayers; layerNum++)
+    {
+        //if (!layers[layerNum].IsEnabled())
+        //    continue;
+
+        MaterialInstance* materialInstance = mesh.m_Surface.Materials[0];//[layerNum];
+        if (!materialInstance)
+            return;
+
+        MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+        if (!material)
+            return;
+
+        // Prevent rendering of instances with disabled shadow casting
+        if (material->m_pCompiledMaterial->bNoCastShadow)
+        {
+            return;
+        }
+
+        MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, &frameLoop, m_RenderDef.FrameNumber);
+        if (!materialInstanceFrameData)
+            return;
+
+        // Add render instance
+        ShadowRenderInstance* instance = (ShadowRenderInstance*)frameLoop.AllocFrameMem(sizeof(ShadowRenderInstance));
+
+        m_FrameData.ShadowInstances.Add(instance);
+
+        instance->Material = materialInstanceFrameData->Material;
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        proceduralMesh->PrepareStreams(&m_RenderDef);
+        proceduralMesh->GetVertexBufferGPU(m_RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
+        proceduralMesh->GetIndexBufferGPU(m_RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
+
+        instance->WeightsBuffer = nullptr;
+        instance->WeightsBufferOffset = 0;
+        instance->IndexCount = proceduralMesh->IndexCache.Size();
+        instance->StartIndexLocation = 0;
+        instance->BaseVertexLocation = 0;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->WorldTransformMatrix = instanceMatrix;
+        instance->CascadeMask = cascadeMask;
+
+        uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+
+        instance->GenerateSortKey(priority, (uint64_t)proceduralMesh);
+
+        shadowmap->ShadowInstanceCount++;
+
+        m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+    }
+}
+
+
+void RenderFrontend::AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef)
+{
+    if (!m_RenderDef.View->NumShadowMapCascades)
+        return;
+
+    //if (!r_RenderMeshes)
+    //    return;
+#if 0
+    alignas(16) BvAxisAlignedBoxSSE bounds[4];
+    alignas(16) int32_t cullResult[4];
+
+    BvFrustum frustum[MAX_SHADOW_CASCADES];
+
+    Float4x4* lightViewProjectionMatrices = (Float4x4*)m_RenderDef.StreamedMemory->Map(lightDef->ViewProjStreamHandle);
+
+    for (int cascadeIndex = 0; cascadeIndex < lightDef->NumCascades; cascadeIndex++)
+        frustum[cascadeIndex].FromMatrix(lightViewProjectionMatrices[cascadeIndex]);
+
+    auto& meshManager = m_World->GetComponentManager<MeshComponent>();
+
+
+    struct Visitor
+    {
+        HK_FORCEINLINE void Visit(MeshComponent* batch, int batchSize)
+        {
+        }
+    };
+
+    Visitor visitor;
+    meshManager.IterateComponentBatches(visitor);
+
+    for (auto it = meshManager.GetComponents(); it.IsValid(); ++it)
+    {
+        MeshComponent& mesh = *it;
+
+        if (!mesh.m_CastShadow)
+            continue;
+
+        auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
+        if (!meshResource)
+            continue;
+
+        auto* gameObject = mesh.GetOwner();
+
+        // TODO: Исправить это временное решение
+        mesh.m_LerpPosition = gameObject->GetWorldPosition();
+        mesh.m_LerpRotation = gameObject->GetWorldRotation();
+        mesh.m_LerpScale    = gameObject->GetWorldScale();
+
+        int numChunks = q.Count() / 4;
+        int residual = q.Count() - numChunks * 4;
+
+        HK_ASSERT(residual < 4);
+
+        for (int cascadeIndex = 0; cascadeIndex < lightDef->NumCascades; cascadeIndex++)
+        {
+            BvFrustum const& cascadeFrustum = frustum[cascadeIndex];
+
+            int n = 0;
+
+            for (int i = 0; i < numChunks; i++, n += 4)
+            {
+                bounds[0] = mesh[n].m_WorldBoundingBox;
+                bounds[1] = mesh[n + 1].m_WorldBoundingBox;
+                bounds[2] = mesh[n + 2].m_WorldBoundingBox;
+                bounds[3] = mesh[n + 3].m_WorldBoundingBox;
+
+                cullResult[0] = 0;
+                cullResult[1] = 0;
+                cullResult[2] = 0;
+                cullResult[3] = 0;
+
+                cascadeFrustum.CullBox_SSE(bounds, 4, cullResult);
+
+                shadowCast[n].m_CascadeMask |= (cullResult[0] == 0) << cascadeIndex;
+                shadowCast[n + 1].m_CascadeMask |= (cullResult[1] == 0) << cascadeIndex;
+                shadowCast[n + 2].m_CascadeMask |= (cullResult[2] == 0) << cascadeIndex;
+                shadowCast[n + 3].m_CascadeMask |= (cullResult[3] == 0) << cascadeIndex;
+            }
+
+            if (residual)
+            {
+                for (int i = 0; i < residual; i++)
+                    bounds[i] = mesh[n + i].m_WorldBoundingBox;
+
+                cullResult[0] = 0;
+                cullResult[1] = 0;
+                cullResult[2] = 0;
+                cullResult[3] = 0;
+
+                cascadeFrustum.CullBox_SSE(bounds, 4, cullResult);
+
+                for (int i = 0; i < residual; i++)
+                    shadowCast[n + i].m_CascadeMask |= (cullResult[i] == 0) << cascadeIndex;
+            }
+        }
+
+        for (int i = 0; i < q.Count(); i++)
+        {
+            if (shadowCast[i].m_CascadeMask == 0)
+                continue;
+
+            AddMeshShadow(transform[i], mesh[i], mesh[i].Pose, shadowCast[i], shadowmap);
+
+            shadowCast[i].m_CascadeMask = 0;
+        }
+    }
+#endif
+    auto& meshManager = m_World->GetComponentManager<MeshComponent>();
+    for (auto it = meshManager.GetComponents(); it.IsValid(); ++it)
+    {
+        AddMeshShadow(*it, it->m_Pose, 0xffffffff, shadowmap);
+    }
+    auto& procMeshManager = m_World->GetComponentManager<ProceduralMeshComponent>();
+    for (auto it = procMeshManager.GetComponents(); it.IsValid(); ++it)
+    {
+        AddProceduralMeshShadow(*it, 0xffffffff, shadowmap);
+    }
+#if 0
+    {
+        using Query = ECS::Query<>
+            ::ReadOnly<ProceduralMeshComponent_ECS>
+            ::ReadOnly<RenderTransformComponent>
+            ::Required<ShadowCastComponent>;
+
+        for (Query::Iterator q(*m_World); q; q++)
+        {
+            ProceduralMeshComponent_ECS const* mesh = q.Get<ProceduralMeshComponent_ECS>();
+            RenderTransformComponent const* transform = q.Get<RenderTransformComponent>();
+            ShadowCastComponent* shadowCast = q.Get<ShadowCastComponent>();
+
+            int numChunks = q.Count() / 4;
+            int residual = q.Count() - numChunks * 4;
+
+            HK_ASSERT(residual < 4);
+
+            for (int cascadeIndex = 0; cascadeIndex < lightDef->NumCascades; cascadeIndex++)
+            {
+                BvFrustum const& cascadeFrustum = frustum[cascadeIndex];
+
+                int n = 0;
+
+                for (int i = 0; i < numChunks; i++, n += 4)
+                {
+                    bounds[0] = mesh[n    ].m_WorldBoundingBox;
+                    bounds[1] = mesh[n + 1].m_WorldBoundingBox;
+                    bounds[2] = mesh[n + 2].m_WorldBoundingBox;
+                    bounds[3] = mesh[n + 3].m_WorldBoundingBox;
+
+                    cullResult[0] = 0;
+                    cullResult[1] = 0;
+                    cullResult[2] = 0;
+                    cullResult[3] = 0;
+
+                    cascadeFrustum.CullBox_SSE(bounds, 4, cullResult);
+
+                    shadowCast[n    ].m_CascadeMask |= (cullResult[0] == 0) << cascadeIndex;
+                    shadowCast[n + 1].m_CascadeMask |= (cullResult[1] == 0) << cascadeIndex;
+                    shadowCast[n + 2].m_CascadeMask |= (cullResult[2] == 0) << cascadeIndex;
+                    shadowCast[n + 3].m_CascadeMask |= (cullResult[3] == 0) << cascadeIndex;
+                }
+
+                if (residual)
+                {
+                    for (int i = 0; i < residual; i++)
+                        bounds[i] = mesh[n + i].m_WorldBoundingBox;
+
+                    cullResult[0] = 0;
+                    cullResult[1] = 0;
+                    cullResult[2] = 0;
+                    cullResult[3] = 0;
+
+                    cascadeFrustum.CullBox_SSE(bounds, 4, cullResult);
+
+                    for (int i = 0; i < residual; i++)
+                        shadowCast[n + i].m_CascadeMask |= (cullResult[i] == 0) << cascadeIndex;
+                }
+            }
+
+            for (int i = 0; i < q.Count(); i++)
+            {
+                if (shadowCast[i].m_CascadeMask == 0)
+                    continue;
+
+                AddProceduralMeshShadow(transform[i], mesh[i], shadowCast[i], shadowmap);
+
+                shadowCast[i].m_CascadeMask = 0;
+            }
+        }
+    }
+#endif
+}
+
 void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-    World* world = worldRenderView->GetWorld();
+    auto* world = worldRenderView->GetWorld();
 
-    ECS::EntityView cameraEntityView = world->GetEntityView(worldRenderView->GetCamera());
+    m_World = world;
 
-    auto* camera = cameraEntityView.GetComponent<CameraComponent>();
+    auto& cameraManager = world->GetComponentManager<CameraComponent>();
+    auto* camera = cameraManager.GetComponent(worldRenderView->GetCamera());
 
-    if (!r_RenderView || !camera || !camera->Node)
+    if (!r_RenderView || !camera)
     {
         ClearRenderView(view);
         return;
     }
+
+    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
     uint32_t width = worldRenderView->GetWidth();
     uint32_t height = worldRenderView->GetHeight();
@@ -157,28 +755,34 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->WidthR  = width;
     view->HeightR = height;
 
+    auto& tick = world->GetTick();
+
     // FIXME: float overflow
-    view->GameRunningTimeSeconds = world->GetFrame().RunningTime;
-    view->GameplayTimeSeconds = world->GetFrame().VariableTime;
-    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max(world->GetFrame().VariableTimeStep, 0.0001f);
+    view->GameRunningTimeSeconds = tick.RunningTime;
+    view->GameplayTimeSeconds = tick.FrameTime;
+    view->GameplayTimeStep = tick.IsPaused ? 0.0f : Math::Max(tick.FrameTimeStep, 0.0001f);
 
     Float3 cameraPosition;
     Quat cameraRotation;
-    world->GetSceneGraph().GetLerpPositionAndRotation(camera->Node, cameraPosition, cameraRotation);
-    
-    cameraPosition = cameraPosition + camera->OffsetPosition;
-    cameraRotation = cameraRotation * camera->OffsetRotation;
+    // TODO: Interpolate!
+    cameraPosition = camera->GetOwner()->GetWorldPosition();
+    cameraRotation = camera->GetOwner()->GetWorldRotation();
+
+    //cameraPosition = cameraPosition + camera->OffsetPosition;
+    //cameraRotation = cameraRotation * camera->OffsetRotation;
 
     Float3x3 billboardMatrix = cameraRotation.ToMatrix3x3();
 
-    Float3x3 basis = billboardMatrix.Transposed();
-    Float3 origin = basis * (-cameraPosition);
-
     Float4x4 viewMatrix;
-    viewMatrix[0] = Float4(basis[0], 0.0f);
-    viewMatrix[1] = Float4(basis[1], 0.0f);
-    viewMatrix[2] = Float4(basis[2], 0.0f);
-    viewMatrix[3] = Float4(origin, 1.0f); 
+    {
+        Float3x3 basis = billboardMatrix.Transposed();
+        Float3 origin = basis * (-cameraPosition);
+
+        viewMatrix[0] = Float4(basis[0], 0.0f);
+        viewMatrix[1] = Float4(basis[1], 0.0f);
+        viewMatrix[2] = Float4(basis[2], 0.0f);
+        viewMatrix[3] = Float4(origin, 1.0f); 
+    }
 
     float fovx, fovy;
     camera->GetEffectiveFov(fovx, fovy);
@@ -203,8 +807,8 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->NormalToViewMatrix = Float3x3(view->ViewMatrix);
 
     view->InverseProjectionMatrix = camera->IsPerspective() ?
-            view->ProjectionMatrix.PerspectiveProjectionInverseFast() :
-            view->ProjectionMatrix.OrthoProjectionInverseFast();
+        view->ProjectionMatrix.PerspectiveProjectionInverseFast() :
+        view->ProjectionMatrix.OrthoProjectionInverseFast();
     camera->MakeClusterProjectionMatrix(view->ClusterProjectionMatrix);
 
     view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
@@ -329,7 +933,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     // Update local frame number
     worldRenderView->m_FrameNum++;
 
-    QueryVisiblePrimitives(world);
+    //QueryVisiblePrimitives(world);
 
     //EnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap(); TODO
 
@@ -340,17 +944,17 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     //}
     //else
     {
-        #if 0// todo
+#if 0// todo
         if (!m_DummyEnvironmentMap)
         {
             m_DummyEnvironmentMap = Resource::CreateDefault<EnvironmentMap>();
         }
         view->GlobalIrradianceMap = m_DummyEnvironmentMap->GetIrradianceHandle();
         view->GlobalReflectionMap = m_DummyEnvironmentMap->GetReflectionHandle();
-        #else
+#else
         view->GlobalIrradianceMap = 0;
         view->GlobalReflectionMap = 0;
-        #endif
+#endif
     }
 
     // Generate debug draw commands
@@ -366,7 +970,379 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         }
     }
 
-    AddRenderInstances(world); // TODO
+    if (r_RenderMeshes)
+    {
+        auto& meshManager = world->GetComponentManager<MeshComponent>();
+        for (auto it = meshManager.GetComponents(); it.IsValid(); ++it)
+        {
+            MeshComponent& mesh = *it;
+
+            auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
+            if (!meshResource)
+                continue;
+
+            auto* gameObject = mesh.GetOwner();
+
+            // TODO: Исправить это временное решение
+            mesh.m_LerpPosition = gameObject->GetWorldPosition();
+            mesh.m_LerpRotation = gameObject->GetWorldRotation();
+            mesh.m_LerpScale    = gameObject->GetWorldScale();
+        
+            Float3x4 transformMatrix;
+            Float3x3 worldRotation =  mesh.m_LerpRotation.ToMatrix3x3();
+            transformMatrix.Compose(mesh.m_LerpPosition, worldRotation, mesh.m_LerpScale);
+
+            Float3x4 const& componentWorldTransform = transformMatrix;   //InComponent->GetRenderTransformMatrix(rd.FrameNumber);
+            Float3x4 const& componentWorldTransformP = transformMatrix;//transformHistory ? *transformHistory : transformMatrix; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
+
+            Float4x4 instanceMatrix = view->ViewProjection * componentWorldTransform;
+            Float4x4 instanceMatrixP = view->ViewProjectionP * componentWorldTransformP;
+
+            for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
+            {
+                auto& surface = mesh.m_Surfaces[surfaceIndex];
+
+                MaterialInstance* materialInstance = surface.Materials[0];
+                if (!materialInstance)
+                    continue;
+
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                if (!material)
+                    continue;
+
+                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                if (!materialInstanceFrameData)
+                    continue;
+
+                auto& subpart = meshResource->m_Subparts[surfaceIndex];
+
+                // Add render instance
+                RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
+
+                if (material->m_pCompiledMaterial->bTranslucent)
+                {
+                    m_FrameData.TranslucentInstances.Add(instance);
+                    view->TranslucentInstanceCount++;
+                }
+                else
+                {
+                    m_FrameData.Instances.Add(instance);
+                    view->InstanceCount++;
+                }
+
+                if (mesh.m_Outline)
+                {
+                    m_FrameData.OutlineInstances.Add(instance);
+                    view->OutlineInstanceCount++;
+                }
+
+                instance->Material = materialInstanceFrameData->Material;
+                instance->MaterialInstance = materialInstanceFrameData;
+
+                meshResource->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
+                meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
+                meshResource->GetWeightsBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
+
+                //if (bHasLightmap)
+                //{
+                //    mesh->GetLightmapUVsGPU(&instance->LightmapUVChannel, &instance->LightmapUVOffset);
+                //    instance->LightmapOffset = InComponent->LightmapOffset;
+                //    instance->Lightmap = lighting->Lightmaps[InComponent->LightmapBlock];
+                //}
+                //else
+                {
+                    instance->LightmapUVChannel = nullptr;
+                    instance->Lightmap = nullptr;
+                }
+
+                //if (InComponent->bHasVertexLight && !pose)
+                //{
+                //    VertexLight* vertexLight = level->GetVertexLight(InComponent->VertexLightChannel);
+                //    if (vertexLight && vertexLight->GetVertexCount() == mesh->GetVertexCount())
+                //    {
+                //        vertexLight->GetVertexBufferGPU(&instance->VertexLightChannel, &instance->VertexLightOffset);
+                //    }
+                //}
+                //else
+                {
+                    instance->VertexLightChannel = nullptr;
+                }
+
+                instance->IndexCount = subpart.IndexCount;
+                instance->StartIndexLocation = subpart.FirstIndex;
+                instance->BaseVertexLocation = subpart.BaseVertex; // + InComponent->SubpartBaseVertexOffset;
+                instance->SkeletonOffset = 0;//skeletonOffset;
+                instance->SkeletonOffsetMB = 0;//skeletonOffsetMB;
+                instance->SkeletonSize = 0;//skeletonSize;
+                instance->Matrix = instanceMatrix;
+                instance->MatrixP = instanceMatrixP;
+                instance->ModelNormalToViewSpace = view->NormalToViewMatrix * worldRotation;
+
+                uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+                //if (bMovable)
+                //{
+                //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+                //}
+
+                instance->GenerateSortKey(priority, (uint64_t)meshResource);
+
+                m_RenderDef.PolyCount += instance->IndexCount / 3;
+            }
+        }
+
+        auto& procMeshManager = world->GetComponentManager<ProceduralMeshComponent>();
+        for (auto it = procMeshManager.GetComponents(); it.IsValid(); ++it)
+        {
+            ProceduralMeshComponent& mesh = *it;
+
+            auto* meshResource = mesh.m_Mesh.RawPtr();
+            if (!meshResource)
+                continue;
+
+            if (meshResource->IndexCache.IsEmpty())
+                continue;
+
+            auto* gameObject = mesh.GetOwner();
+
+            // TODO: Исправить это временное решение
+            mesh.m_LerpPosition = gameObject->GetWorldPosition();
+            mesh.m_LerpRotation = gameObject->GetWorldRotation();
+            mesh.m_LerpScale    = gameObject->GetWorldScale();
+
+            Float3x4 transformMatrix;
+            Float3x3 worldRotation =  mesh.m_LerpRotation.ToMatrix3x3();
+            transformMatrix.Compose(mesh.m_LerpPosition, worldRotation, mesh.m_LerpScale);
+
+            Float3x4 const& componentWorldTransform = transformMatrix;   //InComponent->GetRenderTransformMatrix(rd.FrameNumber);
+            Float3x4 const& componentWorldTransformP = transformMatrix;//transformHistory ? *transformHistory : transformMatrix; //InComponent->GetRenderTransformMatrix(rd.FrameNumber + 1);
+
+            Float4x4 instanceMatrix = view->ViewProjection * componentWorldTransform;
+            Float4x4 instanceMatrixP = view->ViewProjectionP * componentWorldTransformP;
+
+            auto& surface = mesh.m_Surface;
+
+            MaterialInstance* materialInstance = surface.Materials[0];
+            if (!materialInstance)
+                continue;
+
+            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+            if (!material)
+                continue;
+
+            MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+            if (!materialInstanceFrameData)
+                continue;
+
+            // Add render instance
+            RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
+
+            if (material->m_pCompiledMaterial->bTranslucent)
+            {
+                m_FrameData.TranslucentInstances.Add(instance);
+                view->TranslucentInstanceCount++;
+            }
+            else
+            {
+                m_FrameData.Instances.Add(instance);
+                view->InstanceCount++;
+            }
+
+            if (mesh.m_Outline)
+            {
+                m_FrameData.OutlineInstances.Add(instance);
+                view->OutlineInstanceCount++;
+            }
+
+            instance->Material = materialInstanceFrameData->Material;
+            instance->MaterialInstance = materialInstanceFrameData;
+
+            meshResource->PrepareStreams(&m_RenderDef);
+            meshResource->GetVertexBufferGPU(m_RenderDef.StreamedMemory, &instance->VertexBuffer, &instance->VertexBufferOffset);
+            meshResource->GetIndexBufferGPU(m_RenderDef.StreamedMemory, &instance->IndexBuffer, &instance->IndexBufferOffset);
+
+            instance->WeightsBuffer = nullptr;
+            instance->WeightsBufferOffset = 0;
+            instance->LightmapUVChannel = nullptr;
+            instance->Lightmap = nullptr;
+            instance->VertexLightChannel = nullptr;
+            instance->IndexCount = meshResource->IndexCache.Size();
+            instance->StartIndexLocation = 0;
+            instance->BaseVertexLocation = 0;
+            instance->SkeletonOffset = 0;
+            instance->SkeletonOffsetMB = 0;
+            instance->SkeletonSize = 0;
+            instance->Matrix = instanceMatrix;
+            instance->MatrixP = instanceMatrixP;
+            instance->ModelNormalToViewSpace = view->NormalToViewMatrix * worldRotation;
+
+            uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+            //if (bMovable)
+            //{
+            //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+            //}
+
+            instance->GenerateSortKey(priority, (uint64_t)meshResource);
+
+            m_RenderDef.PolyCount += instance->IndexCount / 3;
+        }
+    }
+
+    if (r_RenderTerrain)
+    {
+        auto& terrainManager = world->GetComponentManager<TerrainComponent>();
+        for (auto it = terrainManager.GetComponents(); it.IsValid(); ++it)
+        {
+            TerrainComponent& terrain = *it;
+
+            auto* terrainResource = GameApplication::GetResourceManager().TryGet(terrain.m_Resource);
+            if (!terrainResource)
+                continue;
+
+            auto* gameObject = terrain.GetOwner();
+
+            Float3 worldPosition = gameObject->GetWorldPosition();
+
+            // Terrain world rotation
+            Float3x3 worldRotation = gameObject->GetWorldRotation().ToMatrix3x3();
+            Float3x3 worldRotationInv = worldRotation.Transposed();
+
+            // Terrain transform without scale
+            //Float3x4 transformMatrix;
+            //transformMatrix.Compose(transform.Position, worldRotation);
+
+            // Terrain inversed transform
+            //Float3x4 terrainWorldTransformInv = transformMatrix.Inversed();
+
+            // Camera position in terrain space
+            //Float3 localViewPosition = terrainWorldTransformInv * view->ViewPosition;
+            Float3 localViewPosition = worldRotationInv * (view->ViewPosition - worldPosition);
+
+            // Camera rotation in terrain space
+            Float3x3 localRotation = worldRotationInv * view->ViewRotation.ToMatrix3x3();
+
+            Float3x3 basis = localRotation.Transposed();
+            Float3 origin = basis * (-localViewPosition);
+
+            Float4x4 localViewMatrix;
+            localViewMatrix[0] = Float4(basis[0], 0.0f);
+            localViewMatrix[1] = Float4(basis[1], 0.0f);
+            localViewMatrix[2] = Float4(basis[2], 0.0f);
+            localViewMatrix[3] = Float4(origin, 1.0f);
+
+            Float4x4 localMVP = view->ProjectionMatrix * localViewMatrix;
+
+            BvFrustum localFrustum;
+            localFrustum.FromMatrix(localMVP, true);
+
+            // Update view
+            auto terrainView = worldRenderView->GetTerrainView(terrain.m_Resource);
+
+            terrainView->Update(localViewPosition, localFrustum);
+            if (terrainView->GetIndirectBufferDrawCount() == 0)
+            {
+                // Everything was culled
+                return;
+            }
+
+            // TODO: transform history
+            //Float3x4 const& componentWorldTransform = transformMatrix;
+            //Float3x4 const& componentWorldTransformP = transformHistory ? *transformHistory : transformMatrix;
+            //Float4x4 instanceMatrix = view->ViewProjection * componentWorldTransform;
+            //Float4x4 instanceMatrixP = view->ViewProjectionP * componentWorldTransformP;
+
+            auto& frameLoop = GameApplication::GetFrameLoop();
+
+            TerrainRenderInstance* instance = (TerrainRenderInstance*)frameLoop.AllocFrameMem(sizeof(TerrainRenderInstance));
+
+            m_FrameData.TerrainInstances.Add(instance);
+
+            instance->VertexBuffer = terrainView->GetVertexBufferGPU();
+            instance->IndexBuffer = terrainView->GetIndexBufferGPU();
+            instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
+            instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
+            instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
+            instance->Clipmaps = terrainView->GetClipmapArray();
+            instance->Normals = terrainView->GetNormalMapArray();
+            instance->ViewPositionAndHeight.X = localViewPosition.X;
+            instance->ViewPositionAndHeight.Y = localViewPosition.Y;
+            instance->ViewPositionAndHeight.Z = localViewPosition.Z;
+            instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
+            instance->LocalViewProjection = localMVP;
+            instance->ModelNormalToViewSpace = view->NormalToViewMatrix * worldRotation;
+            instance->ClipMin = terrainResource->GetClipMin();
+            instance->ClipMax = terrainResource->GetClipMax();
+
+            view->TerrainInstanceCount++;
+        }
+    }
+
+    // Add directional lights
+    view->NumShadowMapCascades = 0;
+    view->NumCascadedShadowMaps = 0;
+    auto& dirLightManager = world->GetComponentManager<DirectionalLightComponent>();
+    for (auto it = dirLightManager.GetComponents(); it.IsValid(); ++it)
+    {
+        DirectionalLightComponent& light = *it;
+
+        if (view->NumDirectionalLights < MAX_DIRECTIONAL_LIGHTS)
+        {
+            DirectionalLightInstance* instance = (DirectionalLightInstance*)m_FrameLoop->AllocFrameMem(sizeof(DirectionalLightInstance));
+
+            m_FrameData.DirectionalLights.Add(instance);
+
+            Quat rotation = light.GetOwner()->GetWorldRotation(); // TODO: Interpolate?
+
+            Float3x3 rotationMat = FixupLightRotation(rotation);
+
+            if (light.m_CastShadow)
+            {
+                AddShadowmapCascades(light, rotationMat, m_FrameLoop->GetStreamedMemoryGPU(), view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades);
+
+                view->NumCascadedShadowMaps += instance->NumCascades > 0 ? 1 : 0; // Just statistics
+            }
+            else
+            {
+                instance->FirstCascade = 0;
+                instance->NumCascades = 0;
+            }
+
+            light.UpdateEffectiveColor();
+
+            instance->ColorAndAmbientIntensity = light.m_EffectiveColor;
+            instance->Matrix = rotationMat;
+            instance->MaxShadowCascades = light.GetMaxShadowCascades();
+            instance->RenderMask = ~0; //light.RenderingGroup;
+            instance->ShadowmapIndex = -1;
+            instance->ShadowCascadeResolution = light.GetShadowCascadeResolution();
+
+            view->NumDirectionalLights++;
+        }
+        else
+        {
+            LOG("MAX_DIRECTIONAL_LIGHTS hit\n");
+            break;
+        }
+    }
+    for (int lightIndex = 0; lightIndex < view->NumDirectionalLights; lightIndex++)
+    {
+        DirectionalLightInstance* lightDef = m_FrameData.DirectionalLights[view->FirstDirectionalLight + lightIndex];
+        if (lightDef->NumCascades == 0)
+            continue;
+
+        lightDef->ShadowmapIndex = m_FrameData.LightShadowmaps.Size();
+
+        LightShadowmap& shadowMap = m_FrameData.LightShadowmaps.Add();
+
+        shadowMap.FirstShadowInstance = m_FrameData.ShadowInstances.Size();
+        shadowMap.ShadowInstanceCount = 0;
+        shadowMap.FirstLightPortal = m_FrameData.LightPortals.Size();
+        shadowMap.LightPortalsCount = 0;
+
+        AddDirectionalLightShadows(&shadowMap, lightDef);
+        SortShadowInstances(&shadowMap);
+    }
+
+    //AddRenderInstances(world); // TODO
 
     m_Stat.PolyCount += m_RenderDef.PolyCount;
     m_Stat.ShadowMapPolyCount += m_RenderDef.ShadowMapPolyCount;
@@ -547,8 +1523,6 @@ void RenderFrontend::AddRenderInstances(World* world)
     //m_VisLights.Clear();
     //m_VisEnvProbes.Clear();
 
-    world->AddDrawables(m_RenderDef, m_FrameData);
-
     //for (PrimitiveDef* primitive : m_VisPrimitives)
     //{
         // TODO: Replace upcasting by something better (virtual function?)
@@ -608,7 +1582,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
 
-    world->AddDirectionalLight(m_RenderDef, m_FrameData);
+    //world->AddDirectionalLight(m_RenderDef, m_FrameData);
 
     m_LightVoxelizer.Reset();
 

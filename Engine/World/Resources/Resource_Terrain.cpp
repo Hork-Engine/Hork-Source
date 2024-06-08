@@ -32,7 +32,7 @@ void FillTestHeightmap(int resolution, float* heightmap)
 
             //float h = 0;
 
-            if (x > resolution / 2 && y > resolution / 2 && x < resolution / 2 + 15 && y < resolution / 2 + 5)
+            if (x > resolution / 2 + 15 && y > resolution / 2 + 15 && x < resolution / 2 + 45 && y < resolution / 2 + 35)
                 h = FLT_MAX;
 
             heightmap[y * resolution + x] = h;

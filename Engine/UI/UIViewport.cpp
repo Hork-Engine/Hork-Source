@@ -32,8 +32,6 @@ SOFTWARE.
 #include "UIManager.h"
 #include <Engine/GameApplication/FrameLoop.h>
 #include <Engine/GameApplication/GameApplication.h>
-
-#include <Engine/World/Modules/Render/Components/CameraComponent.h>
 #include <Engine/World/World.h>
 
 HK_NAMESPACE_BEGIN
@@ -144,39 +142,36 @@ void UIViewport::Draw(Canvas& canvas)
     {
         m_WorldRenderView->SetViewport(size.X, size.Y);
 
-        World* world = m_WorldRenderView->GetWorld();
-        ECS::EntityView cameraEntityView = world->GetEntityView(m_WorldRenderView->GetCamera());
-
-        auto* cameraComponent = cameraEntityView.GetComponent<CameraComponent>();
-        if (cameraComponent)
+        if (auto* world = m_WorldRenderView->GetWorld())
         {
-            float aspectRatio;
-            if (m_ViewWidth > 0 && m_ViewHeight > 0)
-                aspectRatio = (float)m_ViewWidth / m_ViewHeight;
-            else
-                aspectRatio = 1;
+            if (auto* cameraComponent = world->GetComponent(m_WorldRenderView->GetCamera()))
+            {
+                float aspectRatio;
+                if (m_ViewWidth > 0 && m_ViewHeight > 0)
+                    aspectRatio = (float)m_ViewWidth / m_ViewHeight;
+                else
+                    aspectRatio = 1;
 
-            DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
-            cameraComponent->SetAspectRatio(aspectRatio * vidMode.AspectScale);
+                DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
+                cameraComponent->SetAspectRatio(aspectRatio * vidMode.AspectScale);
 
-            GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
+                GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
 
-            DrawTextureDesc desc;
-            desc.TexHandle = m_WorldRenderView->GetTextureHandle();
-            desc.X = pos.X;
-            desc.Y = pos.Y;
-            desc.W = size.X;
-            desc.H = size.Y;
-            desc.Rounding = Rounding;
-            desc.Angle = 0;
-            desc.TintColor = TintColor;
-            desc.Composite = Composite;
-            desc.bFlipY = true;
+                DrawTextureDesc desc;
+                desc.TexHandle = m_WorldRenderView->GetTextureHandle();
+                desc.X = pos.X;
+                desc.Y = pos.Y;
+                desc.W = size.X;
+                desc.H = size.Y;
+                desc.Rounding = Rounding;
+                desc.Angle = 0;
+                desc.TintColor = TintColor;
+                desc.Composite = Composite;
+                desc.bFlipY = true;
 
-            canvas.DrawTexture(desc);
+                canvas.DrawTexture(desc);
+            }
         }
-        //Actor_HUD* hud = m_PlayerController->GetHUD();
-        //if (hud)
         //    hud->DrawHUD(canvas, pos.X, pos.Y, size.X, size.Y);
     }
 }

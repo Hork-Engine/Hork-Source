@@ -1,9 +1,8 @@
 #pragma once
 
-#include <Engine/Math/VectorMath.h>
-#include <Engine/Math/Quat.h>
-
 #include <Jolt/Jolt.h>
+
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 

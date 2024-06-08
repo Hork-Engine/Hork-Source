@@ -3,10 +3,16 @@
 #include <Engine/Geometry/BV/BvSphere.h>
 #include <Engine/Geometry/BV/BvOrientedBox.h>
 
+#include <Engine/World/Component.h>
+
 HK_NAMESPACE_BEGIN
 
-struct PunctualLightComponent
+class DebugRenderer;
+
+class PunctualLightComponent : public Component
 {
+public:
+
     static constexpr float MinRadius = 0.01f;
     static constexpr float MinConeAngle = 1.0f;
     static constexpr float MaxConeAngle = 180.0f;
@@ -117,6 +123,21 @@ struct PunctualLightComponent
         return m_LuminousIntensityScale;
     }
 
+    void SetCastShadow(bool castShadow)
+    {
+        m_CastShadow = castShadow;
+    }
+
+    bool IsCastShadow() const
+    {
+        return m_CastShadow;
+    }
+
+    void UpdateEffectiveColor();
+    void UpdateBoundingBox();
+
+    void DrawDebug(DebugRenderer& renderer);
+
     // Private
 
     BvSphere         m_SphereWorldBounds;
@@ -125,6 +146,7 @@ struct PunctualLightComponent
     BvAxisAlignedBox m_AABBWorldBounds;
     Float4x4         m_OBBTransformInverse;
     uint32_t         m_PrimID;
+    bool             m_CastShadow = false;
 
     Float3           m_Color = Float3(1.0f);
     float            m_Temperature = 6590.0f;

@@ -167,21 +167,17 @@ HK_INLINE T FromString(StringView s)
 namespace Internal
 {
 
-template <typename T, typename = int>
-struct HasResize : std::false_type { };
-
-template <typename T>
-struct HasResize <T, decltype(&T::Resize, 0)> : std::true_type { };
+HK_FIND_METHOD(Resize)
 
 template<typename T>
-typename std::enable_if<HasResize<T>::value>::type
+typename std::enable_if<HK_HAS_METHOD(T, Resize)>::type
 ArrayResize(T& container, size_t s)
 {
     container.Resize(s);
 }
 
 template<typename T>
-typename std::enable_if<!HasResize<T>::value>::type
+typename std::enable_if<!HK_HAS_METHOD(T, Resize)>::type
 ArrayResize(T&, size_t)
 {
 }

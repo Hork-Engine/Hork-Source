@@ -1,11 +1,16 @@
 #pragma once
 
 #include <Engine/Renderer/RenderDefs.h>
+#include <Engine/World/Component.h>
 
 HK_NAMESPACE_BEGIN
 
-struct DirectionalLightComponent
+class DebugRenderer;
+
+class DirectionalLightComponent : public Component
 {
+public:
+    static constexpr ComponentMode Mode = ComponentMode::Static;
     // Public
 
     void SetTemperature(float temperature)
@@ -88,12 +93,38 @@ struct DirectionalLightComponent
         return m_MaxShadowCascades;
     }
 
+    void SetCastShadow(bool castShadow)
+    {
+        m_CastShadow = castShadow;
+    }
+
+    bool IsCastShadow() const
+    {
+        return m_CastShadow;
+    }
+
+    void UpdateEffectiveColor()
+    {
+        const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
+        float energy = m_IlluminanceInLux * EnergyUnitScale; // * GetAnimationBrightness();
+
+        Color4 temperatureColor;
+        temperatureColor.SetTemperature(m_Temperature);
+
+        m_EffectiveColor[0] = m_Color[0] * temperatureColor[0] * energy;
+        m_EffectiveColor[1] = m_Color[1] * temperatureColor[1] * energy;
+        m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * energy;
+    }
+
+    void DrawDebug(DebugRenderer& renderer);
+
     // Private
 
     Float3         m_Color = Float3(1.0f);
     float          m_Temperature = 6590.0f;
     float          m_IlluminanceInLux = 110000.0f;
     Float4         m_EffectiveColor;
+    bool           m_CastShadow = true;
 
     // TODO: move to CascadeShadowComponent?
     float          m_ShadowMaxDistance = 128;

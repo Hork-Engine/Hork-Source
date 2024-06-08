@@ -15,7 +15,7 @@
 #include <Jolt/AABBTree/TriangleCodec/TriangleCodecIndexed8BitPackSOA4Flags.h>
 #include <Jolt/AABBTree/NodeCodec/NodeCodecQuadTreeHalfFloat.h>
 
-#include <Engine/World/Common/DebugRenderer.h>
+#include <Engine/World/DebugRenderer.h>
 #include <Engine/World/Modules/Physics/PhysicsModule.h>
 
 #include <Engine/Geometry/ConvexDecomposition.h>

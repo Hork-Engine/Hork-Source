@@ -30,12 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/GarbageCollector.h>
 #include <Engine/Renderer/VT/VirtualTextureFeedback.h>
 #include <Engine/World/Resources/ResourceManager.h>
 #include <Engine/World/Resources/Resource_Texture.h>
 #include <Engine/World/Resources/Resource_Terrain.h>
 #include <Engine/ECS/ECS.h>
+#include <Engine/World/World.h>
+#include <Engine/World/Modules/Render/Components/CameraComponent.h>
 
 #include "VisibilitySystem.h"
 
@@ -142,8 +143,8 @@ public:
     //Delegate<void(RenderCore::ITexture)> E_OnTextureReady; // TODO?
     //uint32_t                           RenderingOrder{}; // TODO?
 
-    WorldRenderView();
-    ~WorldRenderView();
+                            WorldRenderView();
+                            ~WorldRenderView();
 
     void                    SetViewport(uint32_t width, uint32_t height);
 
@@ -153,14 +154,14 @@ public:
     void                    SetWorld(World* world);
     World*                  GetWorld() { return m_World; }
 
-    void                    SetCamera(ECS::EntityHandle camera);
+    void                    SetCamera(Handle32<CameraComponent> camera);
 
-    ECS::EntityHandle       GetCamera() const { return m_Camera; }
+    Handle32<CameraComponent> GetCamera() const { return m_Camera; }
 
     // NOTE: The culling camera has not yet been implemented. It is reserved for the future.
-    void                    SetCullingCamera(ECS::EntityHandle camera);
+    void                    SetCullingCamera(Handle32<CameraComponent> camera);
 
-    ECS::EntityHandle       GetCullingCamera() const { return m_CullingCamera; }
+    Handle32<CameraComponent> GetCullingCamera() const { return m_CullingCamera; }
 
     RenderCore::ITexture*   GetCurrentExposure() { return m_CurrentExposure; }
     RenderCore::ITexture*   GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
@@ -237,9 +238,9 @@ private:
     RenderCore::ITexture* AcquireHBAOMaps();
     void                  ReleaseHBAOMaps();
 
-    ECS::EntityHandle m_Camera;
-    ECS::EntityHandle m_CullingCamera;
-    World* m_World{};
+    Handle32<CameraComponent> m_Camera;
+    Handle32<CameraComponent> m_CullingCamera;
+    World* m_World{}; // TODO: refcounting or handles
 
     //TWeakRef<TextureViewImpl>              m_WorldViewTex;
     uint32_t                               m_Width{};

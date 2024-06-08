@@ -39,7 +39,6 @@ SOFTWARE.
 #include <Engine/World/World.h>
 #include <Engine/World/Modules/Physics/PhysicsModule.h>
 #include <Engine/World/Modules/NavMesh/NavMeshModule.h>
-#include <Engine/World/Modules/Audio/AudioModule.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -191,12 +190,10 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
 
     m_EmbeddedArchive = Archive::OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
     if (!m_EmbeddedArchive)
-    {
         LOG("Failed to open embedded resources\n");
-    }
 
     int jobManagerThreadCount = Thread::NumHardwareThreads ? Math::Min(Thread::NumHardwareThreads, AsyncJobManager::MAX_WORKER_THREADS) : AsyncJobManager::MAX_WORKER_THREADS;
-    m_AsyncJobManager = MakeRef<AsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
+    m_AsyncJobManager = MakeUnique<AsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
     m_RenderFrontendJobList = m_AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
     //pRenderBackendJobList  = m_AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
@@ -206,20 +203,22 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
 
     // FIXME: Move to RenderModule?
     Global::GRetinaScale = Float2(1.0f);
-    m_VertexMemoryGPU = MakeRef<VertexMemoryGPU>(m_RenderDevice);
+    m_VertexMemoryGPU = MakeUnique<VertexMemoryGPU>(m_RenderDevice);
 
     PhysicsModule::Initialize();
 
     NavMeshModule::Initialize();
 
-    AudioModule::Initialize();
+    m_AudioDevice = MakeRef<AudioDevice>(44100);
+    m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
+    m_AudioMixer->StartAsync();
 
-    m_RenderBackend = MakeRef<RenderBackend>(m_RenderDevice);
+    m_RenderBackend = MakeUnique<RenderBackend>(m_RenderDevice);
 
-    m_Renderer = MakeRef<RenderFrontend>();
+    m_Renderer = MakeUnique<RenderFrontend>();
 
-    m_ResourceManager = new ResourceManager;
-    m_MaterialManager = new MaterialManager;
+    m_ResourceManager = MakeUnique<ResourceManager>();
+    m_MaterialManager = MakeUnique<MaterialManager>();
 
     // Q: Move RobotoMono-Regular.ttf to embedded files?
     Global::GDefaultFontHandle = m_ResourceManager->CreateResourceFromFile<FontResource>("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf");
@@ -228,7 +227,7 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     Global::GDefaultFont->Upload();
     HK_ASSERT(Global::GDefaultFont->IsValid());
 
-    m_FrameLoop = MakeRef<FrameLoop>(m_RenderDevice);
+    m_FrameLoop = MakeUnique<FrameLoop>(m_RenderDevice);
 
     // Process initial events
     m_FrameLoop->SetGenerateInputEvents(false);
@@ -249,7 +248,7 @@ GameApplication::~GameApplication()
 
     GarbageCollector::DeallocateObjects();
 
-    HK_ASSERT(m_Worlds.IsEmpty());   
+    HK_ASSERT(m_Worlds.IsEmpty());
 
     m_Canvas.Reset();
 
@@ -262,12 +261,14 @@ GameApplication::~GameApplication()
 
     m_Renderer.Reset();
 
-    delete m_MaterialManager;
-    delete m_ResourceManager;
+    m_MaterialManager.Reset();
+    m_ResourceManager.Reset();
 
     m_RenderBackend.Reset();
 
-    AudioModule::Deinitialize();
+    m_AudioMixer.Reset();
+    m_AudioDevice.Reset();
+    
     NavMeshModule::Deinitialize();
     PhysicsModule::Deinitialize();
 
@@ -275,8 +276,8 @@ GameApplication::~GameApplication()
 
     GarbageCollector::Shutdown();
 
-    VisibilitySystem::PrimitivePool.Free();
-    VisibilitySystem::PrimitiveLinkPool.Free();
+    //VisibilitySystem::PrimitivePool.Free();
+    //VisibilitySystem::PrimitiveLinkPool.Free();
 
     Core::ShutdownProfiler();
 
@@ -285,7 +286,7 @@ GameApplication::~GameApplication()
 
 void GameApplication::RunMainLoop()
 {
-    RenderCore::ISwapChain* swapChains[1] = {m_pSwapChain};
+    RenderCore::ISwapChain* swapChains[1] = {m_SwapChain};
 
     do
     {
@@ -295,7 +296,7 @@ void GameApplication::RunMainLoop()
         GarbageCollector::DeallocateObjects();
 
         // Set new frame, process game events
-        m_FrameLoop->NewFrame(swapChains, rt_SwapInterval.GetInteger(), m_ResourceManager);
+        m_FrameLoop->NewFrame(swapChains, rt_SwapInterval.GetInteger(), m_ResourceManager.RawPtr());
 
         m_InputSystem.NewFrame();
 
@@ -315,7 +316,7 @@ void GameApplication::RunMainLoop()
             m_Window->SetVideoMode(m_DesiredMode);
 
             // Swap buffers to prevent flickering
-            m_pSwapChain->Present(rt_SwapInterval.GetInteger());
+            m_SwapChain->Present(rt_SwapInterval.GetInteger());
         }
 
         // Take current frame duration
@@ -350,7 +351,8 @@ void GameApplication::RunMainLoop()
         //VisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
 
         // Update audio
-        AudioModule::Get().Update();
+        if (!m_AudioMixer->IsAsync())
+            m_AudioMixer->Update();
 
         m_UIManager->Tick(m_FrameDurationInSeconds);
 
@@ -358,10 +360,10 @@ void GameApplication::RunMainLoop()
         DrawCanvas();
 
         // Build frame data for rendering
-        m_Renderer->Render(m_FrameLoop, m_Canvas.RawPtr());
+        m_Renderer->Render(m_FrameLoop.RawPtr(), m_Canvas.RawPtr());
 
         // Generate GPU commands
-        m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_pSwapChain->GetBackBuffer(), m_Renderer->GetFrameData());
+        m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_SwapChain->GetBackBuffer(), m_Renderer->GetFrameData());
 
         SaveMemoryStats();
 
@@ -415,7 +417,7 @@ void GameApplication::ShowStats()
             pos.Y += y_step;
         }
 
-        int h = m_pSwapChain->GetHeight();
+        int h = m_SwapChain->GetHeight();
 
         pos.Y = h - numLines * y_step;
 
@@ -445,7 +447,7 @@ void GameApplication::ShowStats()
         pos.Y += y_step;
         m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frontend time: %d msec", stat.FrontendTime), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Audio channels: %d active, %d virtual", AudioModule::Get().GetMixer()->GetNumActiveTracks(), AudioModule::Get().GetMixer()->GetNumVirtualTracks()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Audio channels: %d active, %d virtual", m_AudioMixer->GetNumActiveTracks(), m_AudioMixer->GetNumVirtualTracks()), true);
     }
 
     if (com_ShowFPS)
@@ -537,10 +539,10 @@ void GameApplication::CreateMainWindowAndSwapChain()
     Core::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), m_Title.CStr());
 
     m_RenderDevice->GetOrCreateMainWindow(desiredMode, &m_Window);
-    m_RenderDevice->CreateSwapChain(m_Window, &m_pSwapChain);
+    m_RenderDevice->CreateSwapChain(m_Window, &m_SwapChain);
 
     // Swap buffers to prevent flickering
-    m_pSwapChain->Present(rt_SwapInterval.GetInteger());
+    m_SwapChain->Present(rt_SwapInterval.GetInteger());
 }
 
 void GameApplication::OnKeyEvent(KeyEvent const& event)
@@ -626,7 +628,7 @@ void GameApplication::TakeScreenshot(StringView filename)
 
 void GameApplication::ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, size_t sizeInBytes, void* sysMem)
 {
-    RenderCore::ITexture* pBackBuffer = m_pSwapChain->GetBackBuffer();
+    RenderCore::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
 
     RenderCore::TextureRect rect;
     rect.Offset.X    = x;
@@ -640,7 +642,7 @@ void GameApplication::ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t widt
 
 void GameApplication::TakeScreenshot()
 {
-    RenderCore::ITexture* pBackBuffer = m_pSwapChain->GetBackBuffer();
+    RenderCore::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
 
     uint32_t w = pBackBuffer->GetWidth();
     uint32_t h = pBackBuffer->GetHeight();
@@ -674,10 +676,7 @@ void GameApplication::TakeScreenshot()
 
 World* GameApplication::CreateWorld()
 {
-    ECS::WorldCreateInfo worldInfo;
-    worldInfo.NumThreads = 1;
-
-    World* world = new World(worldInfo);
+    auto* world = new World;
     m_Worlds.Add(world);
     return world;
 }

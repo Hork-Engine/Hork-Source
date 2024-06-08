@@ -1,11 +1,16 @@
 #pragma once
 
+#include <Engine/World/Component.h>
+
 HK_NAMESPACE_BEGIN
 
-struct AudioListenerComponent
+class AudioListenerComponent : public Component
 {
-    float Volume = 1.0f;
-    uint32_t ListenerMask = ~0u;
+public:
+    static constexpr ComponentMode Mode = ComponentMode::Static;
+
+    float           Volume = 1.0f;
+    uint32_t        ListenerMask = ~0u;
 
     // TODO
     //Float3 Velocity;
