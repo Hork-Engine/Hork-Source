@@ -45,7 +45,7 @@ public:
     BufferGLImpl(DeviceGLImpl* pDevice, BufferDesc const& Desc, const void* SysMem = nullptr);
     ~BufferGLImpl();
 
-    bool CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) override;
+    bool CreateView(BufferViewDesc const& BufferViewDesc, Ref<IBufferView>* ppBufferView) override;
 
     bool Orphan() override;
 

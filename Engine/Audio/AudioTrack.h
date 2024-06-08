@@ -48,10 +48,10 @@ struct AudioTrack final
     HK_FORBID_COPY(AudioTrack)
 
     /// Audio source. Read only
-    TRef<AudioSource> pSource;
+    Ref<AudioSource> pSource;
 
     /// Stream interface for partial audio streaming. Read only
-    TRef<AudioStream> pStream;
+    Ref<AudioStream> pStream;
 
     /// Playback position in frames.
     /// Read only for main thread. Modified by mixer thread.
@@ -193,7 +193,7 @@ public:
     static void FreePool();
 
 private:
-    static TPoolAllocator<AudioTrack> TrackPool;
+    static PoolAllocator<AudioTrack> TrackPool;
     static Mutex PoolMutex;
 };
 

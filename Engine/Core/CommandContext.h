@@ -88,7 +88,7 @@ private:
         Delegate<void(CommandProcessor const&)> Callback;
     };
 
-    TVector<RuntimeCommand> Commands;
+    Vector<RuntimeCommand> Commands;
 };
 
 HK_NAMESPACE_END

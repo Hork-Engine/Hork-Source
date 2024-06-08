@@ -44,16 +44,16 @@ public:
     RenderCore::ITexture* GetDefaultLuminance() { return DefaultLuminance; }
 
 private:
-    TRef<RenderCore::IPipeline> MakeLuminanceMapPipe;
-    TRef<RenderCore::IPipeline> SumLuminanceMapPipe;
-    TRef<RenderCore::IPipeline> DynamicExposurePipe;
-    TRef<RenderCore::ITexture> Luminance64;
-    TRef<RenderCore::ITexture> Luminance32;
-    TRef<RenderCore::ITexture> Luminance16;
-    TRef<RenderCore::ITexture> Luminance8;
-    TRef<RenderCore::ITexture> Luminance4;
-    TRef<RenderCore::ITexture> Luminance2;
-    TRef<RenderCore::ITexture> DefaultLuminance;
+    Ref<RenderCore::IPipeline> MakeLuminanceMapPipe;
+    Ref<RenderCore::IPipeline> SumLuminanceMapPipe;
+    Ref<RenderCore::IPipeline> DynamicExposurePipe;
+    Ref<RenderCore::ITexture> Luminance64;
+    Ref<RenderCore::ITexture> Luminance32;
+    Ref<RenderCore::ITexture> Luminance16;
+    Ref<RenderCore::ITexture> Luminance8;
+    Ref<RenderCore::ITexture> Luminance4;
+    Ref<RenderCore::ITexture> Luminance2;
+    Ref<RenderCore::ITexture> DefaultLuminance;
 };
 
 HK_NAMESPACE_END

@@ -52,15 +52,15 @@ public:
 
     StringView GetName() const { return m_Name; }
 
-    TVector<AnimationChannel> const& GetChannels() const { return m_Channels; }
-    TVector<Transform> const& GetTransforms() const { return m_Transforms; }
+    Vector<AnimationChannel> const& GetChannels() const { return m_Channels; }
+    Vector<Transform> const& GetTransforms() const { return m_Transforms; }
 
     int GetFrameCount() const { return m_FrameCount; }
     float GetFrameDelta() const { return m_FrameDelta; }
     float GetFrameRate() const { return m_FrameRate; }
     float GetDurationInSeconds() const { return m_DurationInSeconds; }
     float GetDurationNormalizer() const { return m_DurationNormalizer; }
-    TVector<BvAxisAlignedBox> const& GetBoundingBoxes() const { return m_Bounds; }
+    Vector<BvAxisAlignedBox> const& GetBoundingBoxes() const { return m_Bounds; }
     bool IsValid() const { return m_bIsAnimationValid; }
 
     void Read(IBinaryStreamReadInterface& stream);
@@ -71,9 +71,9 @@ public:
     void Initialize();
 
     String m_Name;
-    TVector<AnimationChannel> m_Channels;
-    TVector<Transform> m_Transforms;
-    TVector<BvAxisAlignedBox> m_Bounds;
+    Vector<AnimationChannel> m_Channels;
+    Vector<Transform> m_Transforms;
+    Vector<BvAxisAlignedBox> m_Bounds;
     int m_FrameCount = 0;           // frames count
     float m_FrameDelta = 0;         // fixed time delta between frames
     float m_FrameRate = 60;         // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
@@ -97,14 +97,14 @@ public:
 
     uint32_t GetJointsCount() const { return m_Joints.Size(); }
 
-    TVector<SkeletonJoint> const& GetJoints() const { return m_Joints; }
+    Vector<SkeletonJoint> const& GetJoints() const { return m_Joints; }
 
     BvAxisAlignedBox const& GetBindposeBounds() const { return m_BindposeBounds; }
 
     uint32_t FindAnimation(StringView name) const;
 
-    void SetAnimations(TArrayView<TRef<SkeletalAnimation>> const& animations);
-    TVector<TRef<SkeletalAnimation>> const& GetAnimations() const { return m_Animations; }
+    void SetAnimations(ArrayView<Ref<SkeletalAnimation>> const& animations);
+    Vector<Ref<SkeletalAnimation>> const& GetAnimations() const { return m_Animations; }
 
     int AddSolver(StringView name, int jointIndex, int chainSize);
 
@@ -120,9 +120,9 @@ public:
     void Write(IBinaryStreamWriteInterface& stream) const;
 
 public:
-    TVector<SkeletonJoint> m_Joints;
+    Vector<SkeletonJoint> m_Joints;
     BvAxisAlignedBox m_BindposeBounds;
-    TVector<TRef<SkeletalAnimation>> m_Animations;
+    Vector<Ref<SkeletalAnimation>> m_Animations;
 
     struct SolverInfo
     {
@@ -131,7 +131,7 @@ public:
         int JointIndex;
     };
 
-    TVector<SolverInfo> m_Solvers;
+    Vector<SolverInfo> m_Solvers;
 };
 
 using SkeletonHandle = ResourceHandle<SkeletonResource>;
@@ -142,8 +142,8 @@ struct SkeletonPose : RefCounted
 
     float SummaryWeights[MAX_SKELETON_JOINTS];
 
-    TVector<Float3x4> m_RelativeTransforms;
-    TVector<Float3x4> m_AbsoluteTransforms;
+    Vector<Float3x4> m_RelativeTransforms;
+    Vector<Float3x4> m_AbsoluteTransforms;
 
     alignas(16) Float3x4 m_SkinningTransforms[MAX_SKELETON_JOINTS]; // TODO: Dynamicaly sized vector?
 

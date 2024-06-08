@@ -98,7 +98,7 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* re
     return true;
 }
 
-TRef<AudioSource> SoundResource::GetSource()
+Ref<AudioSource> SoundResource::GetSource()
 {
     return m_Source;
 }

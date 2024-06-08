@@ -61,10 +61,10 @@ public:
     UIShareInputs& Add(UIWidget* widget);
     UIShareInputs& Add(std::initializer_list<UIWidget*> list);
 
-    TVector<TWeakRef<UIWidget>> const& GetWidgets() const { return m_Widgets; }
+    Vector<WeakRef<UIWidget>> const& GetWidgets() const { return m_Widgets; }
 
 private:
-    TVector<TWeakRef<UIWidget>> m_Widgets;
+    Vector<WeakRef<UIWidget>> m_Widgets;
 };
 
 #define UINew(Type, ...)            (Type*)&(*NewObj<Type>(__VA_ARGS__))
@@ -127,9 +127,9 @@ public:
     //Float2 MaxSize; // TODO
     UIPadding          Padding = UIPadding(4.0f);
     float              Opacity = 1;
-    TRef<UIBaseLayout> Layout;
-    TRef<UIBrush>      Background;
-    TRef<UIBrush>      Foreground;
+    Ref<UIBaseLayout> Layout;
+    Ref<UIBrush>      Background;
+    Ref<UIBrush>      Foreground;
     UIGridOffset       GridOffset;
     bool               bAutoWidth : 1;
     bool               bAutoHeight : 1;
@@ -143,10 +143,10 @@ public:
     bool               bShortcutsAllowed : 1;
     bool               bAllowDrag : 1;
     // The hit shape is used to test that the widget overlaps the cursor.
-    TRef<UIHitShape>    HitShape;
-    TRef<UICursor>      Cursor;
-    TRef<UIShareInputs> ShareInputs;
-    TRef<UIWidget>      Tooltip;
+    Ref<UIHitShape>    HitShape;
+    Ref<UICursor>      Cursor;
+    Ref<UIShareInputs> ShareInputs;
+    Ref<UIWidget>      Tooltip;
     float               TooltipTime = 0.1f;
     UI_TOOLTIP_POSITION TooltipPosition = UI_TOOLTIP_POSITION_AT_CURSOR;
     int                 Layer       = 0; // layer is used by StackLayout
@@ -413,7 +413,7 @@ public:
 
     bool HitTest(float x, float y) const;
 
-    TVector<UIWidget*> const& GetChildren() const { return m_Children; }
+    Vector<UIWidget*> const& GetChildren() const { return m_Children; }
 
     void ScrollSelfDelta(float delta);
 
@@ -493,11 +493,11 @@ private:
     class UIScroll* FindScrollWidget();
 
 protected:
-    TWeakRef<UIWidget> m_Parent;
+    WeakRef<UIWidget> m_Parent;
 
 public:
-    TVector<UIWidget*> m_Children;
-    TVector<UIWidget*> m_LayoutSlots;
+    Vector<UIWidget*> m_Children;
+    Vector<UIWidget*> m_LayoutSlots;
     UIDesktop*         m_Desktop{};
     Float2             m_AdjustedSize;
     Float2             m_MeasuredSize;

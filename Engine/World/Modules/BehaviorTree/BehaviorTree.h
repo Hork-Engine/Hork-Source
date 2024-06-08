@@ -115,7 +115,7 @@ public:
     }
 
 private:
-    TVector<BehaviorTreeNode*> m_Children;
+    Vector<BehaviorTreeNode*> m_Children;
     bool m_bRandom{};
 };
 
@@ -124,10 +124,10 @@ class CompositeNode : public BehaviorTreeNode
     using Super = BehaviorTreeNode;
 
 protected:
-    TVector<BehaviorTreeNode*> m_Children;
+    Vector<BehaviorTreeNode*> m_Children;
 
 private:
-    TVector<int> m_Order;
+    Vector<int> m_Order;
 
 protected:
     int m_Current{};

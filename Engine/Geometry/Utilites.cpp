@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void CreateBoxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+void CreateBoxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -168,7 +168,7 @@ void CreateBoxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsig
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSphereMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateSphereMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
@@ -234,7 +234,7 @@ void CreateSphereMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<un
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreatePlaneMeshXZ(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXZ(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -263,7 +263,7 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<u
     Bounds.Maxs.Z  = halfHeight;
 }
 
-void CreatePlaneMeshXY(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXY(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -292,7 +292,7 @@ void CreatePlaneMeshXY(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<u
     Bounds.Maxs.Z  = 0.001f;
 }
 
-void CreatePatchMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 2);
     NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 2);
@@ -425,7 +425,7 @@ void CreatePatchMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<uns
     Bounds.AddPoint(Corner11);
 }
 
-void CreateCylinderMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateCylinderMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -543,7 +543,7 @@ void CreateCylinderMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateConeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateConeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -653,7 +653,7 @@ void CreateConeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsi
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
 {
     int          x, y, tcY;
     float        verticalAngle, horizontalAngle;
@@ -753,7 +753,7 @@ void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<u
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+void CreateSkyboxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -894,7 +894,7 @@ void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<un
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreateSkydomeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
+void CreateSkydomeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;

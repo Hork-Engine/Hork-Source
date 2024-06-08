@@ -112,7 +112,7 @@ struct VirtualTextureLayer
 
     void (*PageCompressionMethod)(const void* _InputData, void* _OutputData);
 
-    THashMap<unsigned int, CachedPage*> Pages;
+    HashMap<unsigned int, CachedPage*> Pages;
 };
 
 // Создает структуру виртуальной текстуры, на выходе _struct и binRects

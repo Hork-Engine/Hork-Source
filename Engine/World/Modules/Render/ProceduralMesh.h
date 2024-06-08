@@ -46,10 +46,10 @@ public:
     ~ProceduralMesh_ECS();
 
     /** Update vertex cache occasionally or every frame */
-    TVertexBufferCPU<MeshVertex> VertexCache;
+    VertexBufferCPU<MeshVertex> VertexCache;
 
     /** Update index cache occasionally or every frame */
-    TIndexBufferCPU<unsigned int> IndexCache;
+    IndexBufferCPU<unsigned int> IndexCache;
 
     /** Bounding box is used for raycast early exit and VSD culling */
     BvAxisAlignedBox BoundingBox;
@@ -61,7 +61,7 @@ public:
     void GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;
 
     /** Check ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;

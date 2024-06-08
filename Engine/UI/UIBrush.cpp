@@ -88,7 +88,7 @@ static void DrawImage(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs
         paint.Solid(brush->TintColor);
 }
 
-void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush)
+void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, ArrayView<Float2> vertices, UIBrush* brush)
 {
     if (brush->Type == UIBrush::CUSTOM)
     {

@@ -241,7 +241,7 @@ public:
     bool              bHasDisplacement{};
     bool              bHasAlphaMask{};
     bool              bHasShadowMask{};
-    TVector<StageVarying> InputVaryings;
+    Vector<StageVarying> InputVaryings;
     int               Serial{};
 
     MaterialBuildContext(MGMaterialGraph const* Graph, MATERIAL_STAGE Stage) :
@@ -2823,7 +2823,7 @@ static void GenerateBuiltinSource()
         f.Write(builtin.CStr(), builtin.Size());
 }
 
-static void WriteDebugShaders(TVector<MaterialSource> const& Shaders)
+static void WriteDebugShaders(Vector<MaterialSource> const& Shaders)
 {
     File f = File::OpenWrite("debug.glsl");
     if (!f)
@@ -2838,7 +2838,7 @@ static void WriteDebugShaders(TVector<MaterialSource> const& Shaders)
     }
 }
 
-static String GenerateOutputVaryingsCode(TVector<StageVarying> const& Varyings, StringView Prefix, bool bArrays)
+static String GenerateOutputVaryingsCode(Vector<StageVarying> const& Varyings, StringView Prefix, bool bArrays)
 {
     String  s;
     uint32_t location = 0;
@@ -2856,7 +2856,7 @@ static String GenerateOutputVaryingsCode(TVector<StageVarying> const& Varyings, 
     return s;
 }
 
-static String GenerateInputVaryingsCode(TVector<StageVarying> const& Varyings, StringView Prefix, bool bArrays)
+static String GenerateInputVaryingsCode(Vector<StageVarying> const& Varyings, StringView Prefix, bool bArrays)
 {
     String  s;
     uint32_t location = 0;
@@ -2875,7 +2875,7 @@ static String GenerateInputVaryingsCode(TVector<StageVarying> const& Varyings, S
 }
 
 #if 0
-static void MergeVaryings( TVector< StageVarying > const & A, TVector< StageVarying > const & B, TVector< StageVarying > & Result )
+static void MergeVaryings( Vector< StageVarying > const & A, Vector< StageVarying > const & B, Vector< StageVarying > & Result )
 {
     Result = A;
     for ( int i = 0 ; i < B.Size() ; i++ ) {
@@ -2892,7 +2892,7 @@ static void MergeVaryings( TVector< StageVarying > const & A, TVector< StageVary
     }
 }
 
-static bool FindVarying( TVector< StageVarying > const & Varyings, StageVarying const & Var )
+static bool FindVarying( Vector< StageVarying > const & Varyings, StageVarying const & Var )
 {
     for ( int i = 0 ; i < Varyings.Size() ; i++ ) {
         if ( Var.VaryingName == Varyings[i].VaryingName ) {
@@ -2903,7 +2903,7 @@ static bool FindVarying( TVector< StageVarying > const & Varyings, StageVarying 
 }
 #endif
 
-static void AddVaryings(TVector<StageVarying>& InOutResult, TVector<StageVarying> const& B)
+static void AddVaryings(Vector<StageVarying>& InOutResult, Vector<StageVarying> const& B)
 {
     if (InOutResult.IsEmpty())
     {
@@ -2934,7 +2934,7 @@ static void AddVaryings(TVector<StageVarying>& InOutResult, TVector<StageVarying
     }
 }
 
-static void RemoveVaryings(TVector<StageVarying>& InOutResult, TVector<StageVarying> const& B)
+static void RemoveVaryings(Vector<StageVarying>& InOutResult, Vector<StageVarying> const& B)
 {
     for (int i = 0; i < B.Size(); i++)
     {
@@ -2951,7 +2951,7 @@ static void RemoveVaryings(TVector<StageVarying>& InOutResult, TVector<StageVary
 
 struct MaterialStageTransition
 {
-    TVector<StageVarying> Varyings;
+    Vector<StageVarying> Varyings;
     int               MaxTextureSlot;
     int               MaxUniformAddress;
 
@@ -2983,7 +2983,7 @@ void MGMaterialGraph::CreateStageTransitions(MaterialStageTransition&    Transit
 {
     HK_ASSERT(VertexStage != nullptr);
 
-    TVector<StageVarying>& varyings = Transition.Varyings;
+    Vector<StageVarying>& varyings = Transition.Varyings;
 
     varyings.Clear();
 
@@ -3263,7 +3263,7 @@ void MGMaterialGraph::CompileStage(MaterialBuildContext& ctx)
     Build(ctx);
 }
 
-TRef<CompiledMaterial> MGMaterialGraph::Compile()
+Ref<CompiledMaterial> MGMaterialGraph::Compile()
 {
     int n = 0;
     for (auto textureSlot : GetTextures())
@@ -3278,7 +3278,7 @@ TRef<CompiledMaterial> MGMaterialGraph::Compile()
 
     int maxUniformAddress = -1;
 
-    TRef<CompiledMaterial> material = MakeRef<CompiledMaterial>();
+    Ref<CompiledMaterial> material = MakeRef<CompiledMaterial>();
 
     material->Type                      = MaterialType;
     material->Blending                  = Blending;
@@ -3879,7 +3879,7 @@ public:
             return NodeClass != nullptr;
         }
     };
-    TStringHashMap<NodeType> m_Types;
+    StringHashMap<NodeType> m_Types;
 
     void Register(ClassMeta const& NodeClass, StringView Name, MG_NODE_FLAGS Flags = MG_NODE_DEFAULT)
     {
@@ -3948,9 +3948,9 @@ public:
         Register(MGAtmosphere::GetClassMeta(), "Atmosphere");
     }
 
-    TVector<StringView> GetTypes() const
+    Vector<StringView> GetTypes() const
     {
-        TVector<StringView> types;
+        Vector<StringView> types;
         for (auto& it : m_Types)
         {
             types.Add(it.first);
@@ -4034,7 +4034,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
     auto dtextureSlots = documentView["textures"];
    
-    TStringHashMap<uint32_t> textureSlots;
+    StringHashMap<uint32_t> textureSlots;
 
     for (uint32_t slot = 0; slot < dtextureSlots.GetArraySize(); slot++)
     {
@@ -4061,7 +4061,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
         MGNode*         Node;
     };
 
-    TStringHashMap<NodeInfo> nodes;
+    StringHashMap<NodeInfo> nodes;
 
     nodes["__root__"].Node = graph;
     nodes["__root__"].ObjectView = documentView;
@@ -4099,7 +4099,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
         info.Node = node;   
     }
 
-    TVector<StringView> vector;
+    Vector<StringView> vector;
     vector.Reserve(4);
 
     // Resolve connections
@@ -4110,7 +4110,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
         node->ParseProperties(info.ObjectView);
         
-        TVector<MGInput*> const& inputs = node->GetInputs();
+        Vector<MGInput*> const& inputs = node->GetInputs();
 
         for (MGInput* input : inputs)
         {

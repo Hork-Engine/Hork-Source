@@ -91,7 +91,7 @@ public:
     RenderCore::IBuffer* GetLightPortalsVB() { return LightPortalsVB; }
     RenderCore::IBuffer* GetLightPortalsIB() { return LightPortalsIB; }
 
-    TVector<LightPortalDef> const& GetLightPortals() const { return LightPortals; }
+    Vector<LightPortalDef> const& GetLightPortals() const { return LightPortals; }
 
     /** Lightmap pixel format */
     LIGHTMAP_FORMAT LightmapFormat = LIGHTMAP_GRAYSCALED16_FLOAT;
@@ -106,20 +106,20 @@ public:
     void* LightData = nullptr;
 
     /** Static lightmaps (experimental). Indexed by lightmap block. */
-    TVector<TRef<RenderCore::ITexture>> Lightmaps;
+    Vector<Ref<RenderCore::ITexture>> Lightmaps;
 
-    TRef<RenderCore::IBuffer> ShadowCasterVB;
-    TRef<RenderCore::IBuffer> ShadowCasterIB;
+    Ref<RenderCore::IBuffer> ShadowCasterVB;
+    Ref<RenderCore::IBuffer> ShadowCasterIB;
 
-    TRef<RenderCore::IBuffer> LightPortalsVB;
-    TRef<RenderCore::IBuffer> LightPortalsIB;
+    Ref<RenderCore::IBuffer> LightPortalsVB;
+    Ref<RenderCore::IBuffer> LightPortalsIB;
 
     int ShadowCasterIndexCount{};
 
     /** Light portals */
-    TVector<LightPortalDef>  LightPortals;
-    TVector<Float3>       LightPortalVertexBuffer;
-    TVector<unsigned int> LightPortalIndexBuffer;
+    Vector<LightPortalDef>  LightPortals;
+    Vector<Float3>       LightPortalVertexBuffer;
+    Vector<unsigned int> LightPortalIndexBuffer;
 };
 
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
@@ -138,7 +138,7 @@ struct LevelAudioCreateInfo
     AudioArea* AudioAreas;
     int NumAudioAreas;
 
-    TVector<TRef<SoundResource>> AmbientSounds;
+    Vector<Ref<SoundResource>> AmbientSounds;
 };
 
 class LevelAudio : public RefCounted
@@ -147,10 +147,10 @@ public:
     LevelAudio(LevelAudioCreateInfo const& CreateInfo);
 
     /** Baked audio */
-    TVector<AudioArea> AudioAreas;
+    Vector<AudioArea> AudioAreas;
 
     /** Ambient sounds */
-    TVector<TRef<SoundResource>> AmbientSounds;
+    Vector<Ref<SoundResource>> AmbientSounds;
 };
 
 class LevelGeometry
@@ -173,9 +173,9 @@ class Level
     friend class Actor;
 
 public:
-    TRef<VisibilityLevel> Visibility;
-    TRef<LevelLighting>   Lighting;
-    TRef<LevelAudio>      Audio;
+    Ref<VisibilityLevel> Visibility;
+    Ref<LevelLighting>   Lighting;
+    Ref<LevelAudio>      Audio;
 
     Level() = default;
     
@@ -186,7 +186,7 @@ public:
     World* GetOwnerWorld() const { return m_OwnerWorld; }
 
     /** Get actors in level */
-    TVector<Actor*> const& GetActors() const { return m_Actors; }
+    Vector<Actor*> const& GetActors() const { return m_Actors; }
 
     /** Destroy all actors in the level */
     void DestroyActors();
@@ -202,7 +202,7 @@ public:
     VertexLight* GetVertexLight(uint32_t VertexLightChannel);
 
     /** Get all vertex light channels inside the level */
-    TVector<VertexLight*> const& GetVertexLightChannels() const { return m_VertexLightChannels; }
+    Vector<VertexLight*> const& GetVertexLightChannels() const { return m_VertexLightChannels; }
     #endif
 
     /** Sample lightmap by texture coordinate */
@@ -225,10 +225,10 @@ private:
     bool m_bIsPersistent = false;
 
     /** Array of actors */
-    TVector<Actor*> m_Actors;
+    Vector<Actor*> m_Actors;
 
-    TVector<VertexLight*> m_VertexLightChannels;
-    TVector<uint32_t> m_FreeVertexLightChannels;
+    Vector<VertexLight*> m_VertexLightChannels;
+    Vector<uint32_t> m_FreeVertexLightChannels;
 };
 
 HK_NAMESPACE_END

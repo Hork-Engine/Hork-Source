@@ -64,7 +64,7 @@ void EnvironmentMap::InitializeFromImage(ImageStorage const& Image)
         textureDesc.Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
     }
 
-    TRef<RenderCore::ITexture> cubemap;
+    Ref<RenderCore::ITexture> cubemap;
     GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &cubemap);
 
     RenderCore::TextureRect rect;
@@ -171,7 +171,7 @@ bool EnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
     // Choose max width for memory allocation
     int maxSize = Math::Max(irradianceMapWidth, reflectionMapWidth);
 
-    TVector<uint32_t> buffer(maxSize * maxSize * 6);
+    Vector<uint32_t> buffer(maxSize * maxSize * 6);
 
     uint32_t* data = buffer.ToPtr();
 

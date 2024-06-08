@@ -53,9 +53,9 @@ public:
     /** Allow to drop down the console */
     bool bAllowConsole = true;
 
-    TRef<UIBrush> ConsoleBackground;
+    Ref<UIBrush> ConsoleBackground;
 
-    TWeakRef<UIWidget> HoveredWidget;
+    WeakRef<UIWidget> HoveredWidget;
 
     UIManager(RenderCore::IGenericWindow* mainWindow);
     ~UIManager();
@@ -107,17 +107,17 @@ public:
 private:
     void DrawCursor(Canvas& cv);
 
-    TRef<RenderCore::IGenericWindow> m_MainWindow;
+    Ref<RenderCore::IGenericWindow> m_MainWindow;
     UIConsole                        m_Console;
-    TVector<TRef<UIDesktop>>         m_Desktops;
-    TRef<UIDesktop>                  m_ActiveDesktop;
-    TRef<UICursor>                   m_Cursor;
-    mutable TRef<UICursor>           m_ArrowCursor;
-    mutable TRef<UICursor>           m_TextInputCursor;
-    mutable TRef<UIBrush>            m_SliderBrush;
-    mutable TRef<UIBrush>            m_ScrollbarBrush;
+    Vector<Ref<UIDesktop>>         m_Desktops;
+    Ref<UIDesktop>                  m_ActiveDesktop;
+    Ref<UICursor>                   m_Cursor;
+    mutable Ref<UICursor>           m_ArrowCursor;
+    mutable Ref<UICursor>           m_TextInputCursor;
+    mutable Ref<UIBrush>            m_SliderBrush;
+    mutable Ref<UIBrush>            m_ScrollbarBrush;
     bool                             m_bInsertMode{};
-    TWeakRef<UIWidget>               m_TooltipWidget;
+    WeakRef<UIWidget>               m_TooltipWidget;
     float                            m_TooltipTime{};
     Float2                           m_TooltipPosition;
 };

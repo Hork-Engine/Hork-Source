@@ -41,19 +41,19 @@ public:
     /** Navigation areas are used to gather navigation geometry.
     
     NOTE: In the future, we can create a bit mask for each terrain quad to decide which triangles should be used for navigation.
-    e.g. TBitMask<> WalkableMask
+    e.g. BitMask<> WalkableMask
     */
-    TVector<BvAxisAlignedBox> NavigationAreas;
+    Vector<BvAxisAlignedBox> NavigationAreas;
 
     /** Find ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const;
+    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;
     /** Find ray intersection */
     bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TriangleHitResult& HitResult) const;
 
     bool GetTriangle(float X, float Z, TerrainTriangle& Triangle) const;
 };
 
-bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
+bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const
 {
     class ATriangleRaycastCallback : public btTriangleCallback
     {
@@ -63,7 +63,7 @@ bool Terrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distan
         bool bCullBackFace;
         int IntersectionCount = 0;
 
-        TVector<TriangleHitResult>* Result;
+        Vector<TriangleHitResult>* Result;
 
         void processTriangle(btVector3* triangle, int partId, int triangleIndex) override
         {
@@ -282,7 +282,7 @@ public:
     void SetQueryGroup(int _UserQueryGroup);
 
     /** Raycast the terrain */
-    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, Vector<TriangleHitResult>& Hits) const;
 
     /** Raycast the terrain */
     bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, TriangleHitResult& Hit) const;
@@ -295,11 +295,11 @@ public:
 
     float SampleHeight(Float3 const& Position) const;
 
-    void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const;
+    void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, Vector<Float3>& CollisionVertices, Vector<unsigned int>& CollisionIndices) const;
 
     void GatherNavigationGeometry(NavigationGeometry& Geometry) const override;
 };
-static bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits)
+static bool RaycastCallback(PrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, Vector<TriangleHitResult>& Hits)
 {
     TerrainComponent const* terrain        = static_cast<TerrainComponent const*>(Self->Owner);
     bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
@@ -515,7 +515,7 @@ void TerrainComponent::SetQueryGroup(int _UserQueryGroup)
     Primitive->QueryGroup |= VSD_QUERY_MASK(_UserQueryGroup & 0xffff0000);
 }
 
-bool TerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TVector<TriangleHitResult>& Hits) const
+bool TerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, Vector<TriangleHitResult>& Hits) const
 {
     if (!Primitive->RaycastCallback)
     {
@@ -589,7 +589,7 @@ float TerrainComponent::SampleHeight(Float3 const& InPosition) const
     return m_Terrain->SampleHeight(x, z);
 }
 
-void TerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const
+void TerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, Vector<Float3>& CollisionVertices, Vector<unsigned int>& CollisionIndices) const
 {
     if (!m_Terrain)
         return;
@@ -615,19 +615,19 @@ void TerrainComponent::GatherNavigationGeometry(NavigationGeometry& Geometry) co
         return;
     }
 
-    TVector<Float3>       collisionVertices;
-    TVector<unsigned int> collisionIndices;
+    Vector<Float3>       collisionVertices;
+    Vector<unsigned int> collisionIndices;
 
-    TVector<Float3>&       Vertices          = Geometry.Vertices;
-    TVector<unsigned int>& Indices           = Geometry.Indices;
-    TBitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
+    Vector<Float3>&       Vertices          = Geometry.Vertices;
+    Vector<unsigned int>& Indices           = Geometry.Indices;
+    BitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
     BvAxisAlignedBox&             ResultBoundingBox = Geometry.BoundingBox;
     BvAxisAlignedBox const*       pClipBoundingBox  = Geometry.pClipBoundingBox;
 
     Float3x4 const& worldTransform    = GetWorldTransformMatrix();
     Float3x4        worldTransformInv = worldTransform.Inversed();
 
-    TVector<BvAxisAlignedBox> const& areas = m_Terrain->NavigationAreas;
+    Vector<BvAxisAlignedBox> const& areas = m_Terrain->NavigationAreas;
 
     // Gather terrain geometry from navigation areas
     for (BvAxisAlignedBox const& areaBounds : areas)

@@ -49,7 +49,7 @@ struct ResourceArea
 {
     ResourceAreaID      m_Id{};
     uint32_t            m_ResourcesLoaded{};
-    TVector<ResourceID> m_ResourceList;
+    Vector<ResourceID> m_ResourceList;
     bool                m_Load{};
 
     bool IsReady() const
@@ -434,7 +434,7 @@ ResourceProxy* ResourceManager::FindResource(StringView resourcePath)
     return &GetProxy(resource);
 }
 
-TUniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, StringView name)
+UniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, StringView name)
 {
     File f = OpenResource(name);
     if (!f)
@@ -839,9 +839,9 @@ void ResourceManager::AddCommand(Command const& command)
 namespace
 {
 
-TVector<ResourceID> MakeUniqueList(TArrayView<ResourceID> resourceList)
+Vector<ResourceID> MakeUniqueList(ArrayView<ResourceID> resourceList)
 {
-    TVector<ResourceID> uniqueList(resourceList.begin(), resourceList.end());
+    Vector<ResourceID> uniqueList(resourceList.begin(), resourceList.end());
 
     std::sort(uniqueList.begin(), uniqueList.end(),
         [](ResourceID a, ResourceID b)
@@ -860,7 +860,7 @@ TVector<ResourceID> MakeUniqueList(TArrayView<ResourceID> resourceList)
 
 }
 
-ResourceAreaID ResourceManager::CreateResourceArea(TArrayView<ResourceID> resourceList)
+ResourceAreaID ResourceManager::CreateResourceArea(ArrayView<ResourceID> resourceList)
 {
     ResourceArea* area = AllocateArea();
 

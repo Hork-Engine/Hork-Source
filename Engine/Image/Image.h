@@ -248,7 +248,7 @@ struct ImageSubresourceDesc
     uint32_t MipmapIndex{};
 };
 
-class ImageSubresource
+class ImageSubresource final
 {
 public:
     ImageSubresource() = default;
@@ -368,7 +368,7 @@ struct ImageMipmapConfig
     IMAGE_RESAMPLE_FILTER_3D Filter3D = IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
 };
 
-class ImageStorage
+class ImageStorage final
 {
 public:
     ImageStorage() = default;
@@ -378,7 +378,7 @@ public:
         Reset(_Desc);
     }
 
-    virtual ~ImageStorage() = default;
+    ~ImageStorage() = default;
 
     ImageStorage(ImageStorage const& Rhs) = delete;
     ImageStorage& operator=(ImageStorage const& Rhs) = delete;
@@ -608,7 +608,7 @@ enum SKYBOX_IMPORT_TEXTURE_FORMAT
 struct SkyboxImportSettings
 {
     /** Source files for skybox */
-    TArray<String, 6> Faces;
+    Array<String, 6> Faces;
 
     SKYBOX_IMPORT_TEXTURE_FORMAT Format{SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT};
 

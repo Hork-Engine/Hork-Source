@@ -71,8 +71,8 @@ private:
     void CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth);
     void UpdateSamplers();
 
-    TRef<RenderCore::ITexture> m_IrradianceMap;
-    TRef<RenderCore::ITexture> m_ReflectionMap;
+    Ref<RenderCore::ITexture> m_IrradianceMap;
+    Ref<RenderCore::ITexture> m_ReflectionMap;
 
     RenderCore::BindlessHandle m_IrradianceMapHandle{};
     RenderCore::BindlessHandle m_ReflectionMapHandle{};

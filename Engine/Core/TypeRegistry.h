@@ -67,7 +67,7 @@ class StructureBase;
 
 struct TypeInfo
 {
-    TUniqueRef<StructureBase> Struct;
+    UniqueRef<StructureBase> Struct;
     uint32_t ArrayElementTypeId;
     StringID Name; // just for debug
 
@@ -127,10 +127,10 @@ class StructureBase
 public:
     virtual ~StructureBase() {}
 
-    TVector<TUniqueRef<BasePointerDefinition>> const& GetMembers() const { return m_Members; }
+    Vector<UniqueRef<BasePointerDefinition>> const& GetMembers() const { return m_Members; }
 
 protected:
-    TVector<TUniqueRef<BasePointerDefinition>> m_Members;
+    Vector<UniqueRef<BasePointerDefinition>> m_Members;
 };
 
 template <typename Object>
@@ -140,7 +140,7 @@ public:
     template <typename MemberType>
     void RegisterMember(StringView inName, MemberType Object::* inMemberObjectPtr)
     {
-        TUniqueRef<MemberObjectDefinition<Object, MemberType>> member =
+        UniqueRef<MemberObjectDefinition<Object, MemberType>> member =
             MakeUnique<MemberObjectDefinition<Object, MemberType>>(inName, inMemberObjectPtr);
 
         m_Members.Add(std::move(member));
@@ -202,7 +202,7 @@ public:
     TypeInfo const* FindType(uint32_t inTypeId) const;
 
 private:
-    THashMap<uint32_t, TypeInfo> m_TypeInfos;
+    HashMap<uint32_t, TypeInfo> m_TypeInfos;
 };
 
 template <typename T>
@@ -226,7 +226,7 @@ HK_INLINE void TypeRegistry::RegisterType(StringView inName)
 template <typename T>
 HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
 {
-    TUniqueRef<Structure<T>> structure = MakeUnique<Structure<T>>();
+    UniqueRef<Structure<T>> structure = MakeUnique<Structure<T>>();
 
     auto ptr = structure.RawPtr();
 

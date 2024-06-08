@@ -105,7 +105,7 @@ void CommandContext::AddCommand(GlobalStringView _Name, Delegate<void(CommandPro
 
 void CommandContext::RemoveCommand(StringView _Name)
 {
-    for (TVector<RuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
+    for (Vector<RuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
     {
         RuntimeCommand& command = *it;
 
@@ -195,8 +195,8 @@ int CommandContext::CompleteString(StringView Str, String& _Result)
 
 void CommandContext::Print(StringView Str)
 {
-    TVector<RuntimeCommand*>  cmds;
-    TVector<ConsoleVar*> vars;
+    Vector<RuntimeCommand*>  cmds;
+    Vector<ConsoleVar*> vars;
 
     if (!Str.IsEmpty())
     {

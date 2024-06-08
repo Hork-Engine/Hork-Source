@@ -63,11 +63,11 @@ public:
     // Input watts
     float m_ElecInputWatts{};
     // Vertical angles
-    TVector<float> m_VertAngles;
+    Vector<float> m_VertAngles;
     // Horizontal angles
-    TVector<float> m_HorzAngles;
+    Vector<float> m_HorzAngles;
     // Candela values
-    TVector<TVector<float>> m_Candela;
+    Vector<Vector<float>> m_Candela;
 
     operator bool() const
     {

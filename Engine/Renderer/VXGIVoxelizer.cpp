@@ -341,7 +341,7 @@ void VXGIVoxelizer::Render()
 
     ConstantBuffer->Write( &ConstantBufferData );
 
-    TRef< IResourceTable > resourceTbl;
+    Ref< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
@@ -361,7 +361,7 @@ void VXGIVoxelizer::Render()
     framebufferCI.NumColorAttachments = 1;
     framebufferCI.pColorAttachments = &attachment;
 
-    TRef< RenderCore::IFramebuffer > framebuffer;
+    Ref< RenderCore::IFramebuffer > framebuffer;
     GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
 
     SRenderPassBegin renderPassBegin = {};

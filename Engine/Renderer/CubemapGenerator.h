@@ -40,8 +40,8 @@ class CubemapGenerator
 public:
     CubemapGenerator();
 
-    void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture** _Sources, TRef<RenderCore::ITexture>* ppTextureArray);
-    void Generate(TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture);
+    void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture** _Sources, Ref<RenderCore::ITexture>* ppTextureArray);
+    void Generate(TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture* _Source, Ref<RenderCore::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -49,9 +49,9 @@ private:
         Float4x4 Transform[6];
         Float4   Index;
     };
-    TRef<RenderCore::IBuffer>   ConstantBuffer;
+    Ref<RenderCore::IBuffer>   ConstantBuffer;
     ConstantData               ConstantBufferData;
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

@@ -54,10 +54,10 @@ public:
     void ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int FrameCount, float* pStream, Float3& Dir);
 
     /// Sphere geometry vertics
-    TVector<Float3> const& GetVertices() const { return m_Vertices; }
+    Vector<Float3> const& GetVertices() const { return m_Vertices; }
 
     /// Sphere geometry indices
-    TVector<uint32_t> const& GetIndices() const { return m_Indices; }
+    Vector<uint32_t> const& GetIndices() const { return m_Indices; }
 
     /// Length of Head-Related Impulse Response (HRIR)
     int GetFrameCount() const
@@ -87,10 +87,10 @@ private:
     // HRTF FFT filter size in frames
     int m_FilterSize = 0;
 
-    TVector<uint32_t> m_Indices;
-    TVector<Float3> m_Vertices;
-    TVector<Complex> m_hrtfL;
-    TVector<Complex> m_hrtfR;
+    Vector<uint32_t> m_Indices;
+    Vector<Float3> m_Vertices;
+    Vector<Complex> m_hrtfL;
+    Vector<Complex> m_hrtfR;
 
     void* m_ForwardFFT = nullptr;
     void* m_InverseFFT = nullptr;

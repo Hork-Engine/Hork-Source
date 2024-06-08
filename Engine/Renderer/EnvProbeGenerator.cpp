@@ -104,7 +104,7 @@ EnvProbeGenerator::EnvProbeGenerator()
     GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray)
+void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray)
 {
     int size = 1 << _MaxLod;
 
@@ -117,14 +117,14 @@ void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture*
     FrameGraph frameGraph(GDevice);
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
-    TRef<IResourceTable> resourceTbl;
+    Ref<IResourceTable> resourceTbl;
     GDevice->CreateResourceTable(&resourceTbl);
 
     resourceTbl->BindBuffer(0, ConstantBuffer);
 
     int lodWidth = size;
 
-    TVector<String> strs(_MaxLod + 1);
+    Vector<String> strs(_MaxLod + 1);
 
     for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
     {
@@ -168,7 +168,7 @@ void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture*
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture)
 {
     int size = 1 << _MaxLod;
 
@@ -181,7 +181,7 @@ void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, TRef<Ren
     FrameGraph frameGraph(GDevice);
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
-    TRef<IResourceTable> resourceTbl;
+    Ref<IResourceTable> resourceTbl;
     GDevice->CreateResourceTable(&resourceTbl);
 
     resourceTbl->BindBuffer(0, ConstantBuffer);
@@ -190,7 +190,7 @@ void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, TRef<Ren
 
     int lodWidth = size;
 
-    TVector<String> strs(_MaxLod + 1);
+    Vector<String> strs(_MaxLod + 1);
 
     for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
     {

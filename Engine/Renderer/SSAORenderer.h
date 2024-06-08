@@ -61,14 +61,14 @@ private:
         HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE
     };
 
-    TRef<RenderCore::IPipeline> Pipe;
-    TRef<RenderCore::IPipeline> Pipe_ORTHO;
-    TRef<RenderCore::IPipeline> CacheAwarePipe;
-    TRef<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
-    TRef<RenderCore::IPipeline> BlurPipe;
-    TRef<RenderCore::ITexture>  RandomMap;
-    TRef<RenderCore::IPipeline> DeinterleavePipe;
-    TRef<RenderCore::IPipeline> ReinterleavePipe;
+    Ref<RenderCore::IPipeline> Pipe;
+    Ref<RenderCore::IPipeline> Pipe_ORTHO;
+    Ref<RenderCore::IPipeline> CacheAwarePipe;
+    Ref<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
+    Ref<RenderCore::IPipeline> BlurPipe;
+    Ref<RenderCore::ITexture>  RandomMap;
+    Ref<RenderCore::IPipeline> DeinterleavePipe;
+    Ref<RenderCore::IPipeline> ReinterleavePipe;
 };
 
 HK_NAMESPACE_END

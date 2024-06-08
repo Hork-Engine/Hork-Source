@@ -45,7 +45,7 @@ IDevice::~IDevice()
     }
     HK_ASSERT(ListHead == nullptr);
 
-    TArray<const char*, DEVICE_OBJECT_TYPE_MAX> name =
+    Array<const char*, DEVICE_OBJECT_TYPE_MAX> name =
         {
             "DEVICE_OBJECT_TYPE_UNKNOWN",
 
@@ -77,7 +77,7 @@ IDevice::~IDevice()
 }
 
 void CreateLogicalDevice(const char*              Backend,
-                         TRef<IDevice>*           ppDevice)
+                         Ref<IDevice>*           ppDevice)
 {
     if (!Core::Stricmp(Backend, "OpenGL 4.5"))
     {

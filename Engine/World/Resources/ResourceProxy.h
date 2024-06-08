@@ -105,7 +105,7 @@ private:
     }
 
     // NOTE: Resource can be used only if m_State == RESOURCE_STATE_READY.
-    TUniqueRef<ResourceBase> m_Resource;
+    UniqueRef<ResourceBase> m_Resource;
 
     // Updated by resource manager in main thread.
     int m_UseCount{};
@@ -116,7 +116,7 @@ private:
     // Updated by resource manager in main thread.
     // Used to notify areas when resource loaded/unloaded.
     // FIXME: Use linked list?
-    TVector<ResourceArea*> m_Areas;
+    Vector<ResourceArea*> m_Areas;
 
     // Updated by the resource manager on the main thread during Update(), so it can be read from any worker thread.
     RESOURCE_STATE m_State{RESOURCE_STATE_FREE};

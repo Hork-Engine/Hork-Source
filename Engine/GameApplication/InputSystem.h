@@ -125,8 +125,8 @@ public:
         uint8_t  ControllerId;
     };
 
-    using KeyMappings = THashMap<InputDeviceKey, TVector<Mapping>>;
-    using AxisMappings = TNameHash<TVector<AxisMapping>>;
+    using KeyMappings = HashMap<InputDeviceKey, Vector<Mapping>>;
+    using AxisMappings = NameHash<Vector<AxisMapping>>;
 
     InputMappings() = default;
 
@@ -164,8 +164,8 @@ public:
         return it == scale.End() ? 0.0f : it->second;
     }
 
-    TArray<TNameHash<float>, MAX_INPUT_CONTROLLERS> m_AxisScale;
-    TArray<TVector<Action>, MAX_INPUT_CONTROLLERS>  m_ActionPool;
+    Array<NameHash<float>, MAX_INPUT_CONTROLLERS> m_AxisScale;
+    Array<Vector<Action>, MAX_INPUT_CONTROLLERS>  m_ActionPool;
 };
 
 class InputSystem
@@ -271,19 +271,19 @@ protected:
         }
     };
 
-    TRef<InputMappings> m_InputMappings;
+    Ref<InputMappings> m_InputMappings;
 
     /// Array of pressed keys
-    TArray<PressedKey, MAX_PRESSED_KEYS> m_PressedKeys = {};
+    Array<PressedKey, MAX_PRESSED_KEYS> m_PressedKeys = {};
     int m_NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    TArray<int8_t*, MAX_INPUT_DEVICES>      m_DeviceButtonDown;
-    TArray<int8_t, MAX_KEYBOARD_BUTTONS>    m_KeyboardButtonDown;
-    TArray<int8_t, MAX_MOUSE_BUTTONS>       m_MouseButtonDown;
-    TArray<TArray<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonDown;
+    Array<int8_t*, MAX_INPUT_DEVICES>      m_DeviceButtonDown;
+    Array<int8_t, MAX_KEYBOARD_BUTTONS>    m_KeyboardButtonDown;
+    Array<int8_t, MAX_MOUSE_BUTTONS>       m_MouseButtonDown;
+    Array<Array<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> m_JoystickButtonDown;
 
-    TArray<Float2, 2>   m_MouseAxisState;
+    Array<Float2, 2>   m_MouseAxisState;
     int                 m_MouseIndex = 0;
 
     Float2  m_CursorPosition;

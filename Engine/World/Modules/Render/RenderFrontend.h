@@ -83,7 +83,7 @@ private:
     void SortShadowInstances(LightShadowmap const* shadowMap);
 
     void QueryVisiblePrimitives(World* world);
-    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives);
+    void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, Vector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
 
     MaterialFrameData* GetMaterialFrameData(class MaterialInstance* materialInstance, FrameLoop* frameLoop, int frameNumber);
@@ -103,26 +103,26 @@ private:
 
     RenderFrontendStat m_Stat;
 
-    TVector<PrimitiveDef*> m_VisPrimitives;
-    //TVector<PunctualLightComponent*> m_VisLights;
-    //TVector<EnvironmentProbe*> m_VisEnvProbes;
+    Vector<PrimitiveDef*> m_VisPrimitives;
+    //Vector<PunctualLightComponent*> m_VisLights;
+    //Vector<EnvironmentProbe*> m_VisEnvProbes;
 
     int m_VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    //TVector<Drawable*> m_ShadowCasters;
-    TVector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
+    //Vector<Drawable*> m_ShadowCasters;
+    Vector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
 
     struct alignas(16) CullResult
     {
         int32_t Result[4];
     };
-    TVector<CullResult> m_ShadowCasterCullResult;
+    Vector<CullResult> m_ShadowCasterCullResult;
 
     RenderFrontendDef m_RenderDef;
 
-    TRef<RenderCore::ITexture> m_PhotometricProfiles;
-    //TRef<EnvironmentMap> m_DummyEnvironmentMap;
+    Ref<RenderCore::ITexture> m_PhotometricProfiles;
+    //Ref<EnvironmentMap> m_DummyEnvironmentMap;
 
     LightVoxelizer m_LightVoxelizer;
 

@@ -81,7 +81,7 @@ struct Signal
     }
 
 private:
-    TVector<Delegate<void(Args...)>> m_Delegates;
+    Vector<Delegate<void(Args...)>> m_Delegates;
 };
 
 HK_NAMESPACE_END

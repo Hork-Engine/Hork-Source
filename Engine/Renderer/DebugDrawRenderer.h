@@ -41,7 +41,7 @@ public:
     void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* DepthTexture);
 
 private:
-    TRef< RenderCore::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];
+    Ref< RenderCore::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];
 };
 
 HK_NAMESPACE_END

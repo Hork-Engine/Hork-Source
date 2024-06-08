@@ -77,9 +77,9 @@ public:
     // AddResourcePack is not thread safe.
     void AddResourcePack(StringView fileName);
 
-    TVector<Archive> const& GetResourcePacks() const { return m_ResourcePacks; }
+    Vector<Archive> const& GetResourcePacks() const { return m_ResourcePacks; }
 
-    ResourceAreaID CreateResourceArea(TArrayView<ResourceID> resourceList);
+    ResourceAreaID CreateResourceArea(ArrayView<ResourceID> resourceList);
     void DestroyResourceArea(ResourceAreaID area);
 
     void LoadArea(ResourceAreaID area);
@@ -97,7 +97,7 @@ public:
     void UnloadResource(StringView name);
 
     template <typename T>
-    ResourceHandle<T> CreateResourceWithData(StringView name, TUniqueRef<T> resourceData);
+    ResourceHandle<T> CreateResourceWithData(StringView name, UniqueRef<T> resourceData);
 
     template <typename T, typename... Args>
     ResourceHandle<T> CreateResource(StringView name, Args&&... args);
@@ -155,7 +155,7 @@ private:
 
     void UpdateAsync();
 
-    TUniqueRef<ResourceBase> LoadResourceAsync(RESOURCE_TYPE type, StringView name);
+    UniqueRef<ResourceBase> LoadResourceAsync(RESOURCE_TYPE type, StringView name);
 
     /** Find file in resource packs */
     bool FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const;
@@ -173,32 +173,32 @@ private:
     void IncrementAreas(ResourceProxy& proxy);
     void DecrementAreas(ResourceProxy& proxy);
 
-    using ResourceList = TPagedVector<ResourceProxy, 1024, 1024>;
+    using ResourceList = PagedVector<ResourceProxy, 1024, 1024>;
     ResourceList m_ResourceList;
-    TStringHashMap<ResourceID> m_ResourceHash;
+    StringHashMap<ResourceID> m_ResourceHash;
     Mutex m_ResourceHashMutex;
 
-    TVector<ResourceID> m_DelayedRelease;
+    Vector<ResourceID> m_DelayedRelease;
 
     ResourceStreamQueue m_StreamQueue;
     ThreadSafeQueue<ResourceID> m_ProcessingQueue;
     SyncEvent m_StreamQueueEvent;
     SyncEvent m_ProcessingQueueEvent;
 
-    TVector<ResourceArea*> m_ResourceAreas;
-    TVector<uint32_t> m_ResourceAreaFreeList;
+    Vector<ResourceArea*> m_ResourceAreas;
+    Vector<uint32_t> m_ResourceAreaFreeList;
     Mutex m_ResourceAreaAllocMutex;
 
-    TVector<Command> m_CommandBuffer;
+    Vector<Command> m_CommandBuffer;
     Mutex m_CommandBufferMutex;    
 
-    THashMap<ResourceID, int> m_Refs;
-    THashSet<ResourceID> m_ReloadResources;
+    HashMap<ResourceID, int> m_Refs;
+    HashSet<ResourceID> m_ReloadResources;
 
     Thread m_Thread;
     AtomicBool m_RunAsync;
 
-    TVector<Archive> m_ResourcePacks;
+    Vector<Archive> m_ResourcePacks;
 };
 
 template <typename T>
@@ -216,7 +216,7 @@ void ResourceManager::UnloadResource(StringView name)
 }
 
 template <typename T>
-ResourceHandle<T> ResourceManager::CreateResourceWithData(StringView name, TUniqueRef<T> resourceData)
+ResourceHandle<T> ResourceManager::CreateResourceWithData(StringView name, UniqueRef<T> resourceData)
 {
     ResourceHandle<T> resource = GetResource<T>(name);
     if (!resource)

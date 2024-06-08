@@ -54,9 +54,9 @@ public:
     ITexture* GetDepthBuffer() override;
 
 private:
-    TRef<GenericWindowGLImpl> pWindow;
-    TRef<TextureGLImpl> BackBuffer;
-    TRef<TextureGLImpl> DepthBuffer;
+    Ref<GenericWindowGLImpl> pWindow;
+    Ref<TextureGLImpl> BackBuffer;
+    Ref<TextureGLImpl> DepthBuffer;
 };
 
 } // namespace RenderCore

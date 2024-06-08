@@ -51,9 +51,9 @@ public:
 private:
     void GrowCapacity();
 
-    TRef<RenderCore::ITexture> m_Texture;
-    TVector<uint8_t> m_Memory;
-    TVector<uint16_t> m_FreeList;
+    Ref<RenderCore::ITexture> m_Texture;
+    Vector<uint8_t> m_Memory;
+    Vector<uint16_t> m_FreeList;
     uint32_t m_PoolSize{1};
     uint32_t m_MaxSize{};
 };

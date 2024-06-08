@@ -99,16 +99,16 @@ private:
     bool HandleDraggingWidget();
 
     UIWidgetGeometry          m_Geometry;
-    TVector<UIWidget*>        m_Widgets;
-    TWeakRef<UIWidget>        m_FocusWidget;
-    TRef<UIWidget>            m_MouseFocusWidget;
-    TRef<UIWidget>            m_Popup;
-    TRef<UIWidget>            m_PendingDrag;
-    TRef<UIWidget>            m_FullscreenWidget;
-    TRef<UIWidget>            m_DraggingWidget;
-    TRef<UIWidget>            m_MouseClickWidget;
-    TRef<UIShortcutContainer> m_ShortcutContainer;
-    TRef<UIBrush>             m_Wallpaper;
+    Vector<UIWidget*>        m_Widgets;
+    WeakRef<UIWidget>        m_FocusWidget;
+    Ref<UIWidget>            m_MouseFocusWidget;
+    Ref<UIWidget>            m_Popup;
+    Ref<UIWidget>            m_PendingDrag;
+    Ref<UIWidget>            m_FullscreenWidget;
+    Ref<UIWidget>            m_DraggingWidget;
+    Ref<UIWidget>            m_MouseClickWidget;
+    Ref<UIShortcutContainer> m_ShortcutContainer;
+    Ref<UIBrush>             m_Wallpaper;
     uint64_t                  m_MouseClickTime{};
     Float2                    m_MouseClickPos{};
     Float2                    m_DraggingCursor{};

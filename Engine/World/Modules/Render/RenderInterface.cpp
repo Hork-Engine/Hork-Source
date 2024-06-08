@@ -125,14 +125,14 @@ public:
     }
 
     // CPU cache
-    TVector<TUniquePtr<EnvironmentMapData>> m_EnvMaps;
-    TVector<uint32_t> m_FreeList;
+    Vector<TUniquePtr<EnvironmentMapData>> m_EnvMaps;
+    Vector<uint32_t> m_FreeList;
 
     static constexpr uint32_t MAX_GPU_RESIDENT = 256;
 
     // GPU cache
-    TRef<RenderCore::ITexture> m_IrradianceMapArray;
-    TRef<RenderCore::ITexture> m_ReflectionMapArray;
+    Ref<RenderCore::ITexture> m_IrradianceMapArray;
+    Ref<RenderCore::ITexture> m_ReflectionMapArray;
 
     struct Resident
     {

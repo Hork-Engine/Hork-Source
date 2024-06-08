@@ -66,7 +66,7 @@ protected:
     bool OnChildrenMouseButtonEvent(struct MouseButtonEvent const& event, double timeStamp);
 
 private:
-    TWeakRef<UIDockNode> m_Leaf;
+    WeakRef<UIDockNode> m_Leaf;
     uint64_t             m_ContainerId{};
     Float2               m_DockPosition;
 
@@ -74,7 +74,7 @@ public:
     Float2 m_DockSize;
 
 private:
-    TWeakRef<UIDockContainer> m_Container;
+    WeakRef<UIDockContainer> m_Container;
 
     friend class UIDockContainer;
     friend class UIDockNode;

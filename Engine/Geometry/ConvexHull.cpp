@@ -252,8 +252,8 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
 
     constexpr size_t MaxHullVerts = 128;
 
-    TSmallVector<float, MaxHullVerts>  distances(count + 1);
-    TSmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<float, MaxHullVerts>  distances(count + 1);
+    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
     backHull.Clear();
@@ -389,8 +389,8 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
 
     constexpr size_t MaxHullVerts = 128;
 
-    TSmallVector<float, MaxHullVerts> distances(count + 1);
-    TSmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<float, MaxHullVerts> distances(count + 1);
+    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
 

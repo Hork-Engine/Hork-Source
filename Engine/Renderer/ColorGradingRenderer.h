@@ -42,8 +42,8 @@ public:
     void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppColorGrading);
 
 private:
-    TRef<RenderCore::IPipeline> PipelineLUT;
-    TRef<RenderCore::IPipeline> PipelineProcedural;
+    Ref<RenderCore::IPipeline> PipelineLUT;
+    Ref<RenderCore::IPipeline> PipelineProcedural;
 };
 
 HK_NAMESPACE_END

@@ -61,7 +61,7 @@ void ConstructContour(ClipperPath const& path, Hk::ClipperContour& contour)
     }
 }
 
-void ComputeNode_r(ClipperLib::PolyNode const& node, Hk::TVector<Hk::ClipperPolygon>& polygons)
+void ComputeNode_r(ClipperLib::PolyNode const& node, Hk::Vector<Hk::ClipperPolygon>& polygons)
 {
     Hk::ClipperPolygon polygon;
     Hk::ClipperContour hole;
@@ -92,7 +92,7 @@ void ComputeNode_r(ClipperLib::PolyNode const& node, Hk::TVector<Hk::ClipperPoly
     polygons.Add(polygon);
 }
 
-void ComputeContours(ClipperLib::PolyTree const& polygonTree, Hk::TVector<Hk::ClipperPolygon>& polygons)
+void ComputeContours(ClipperLib::PolyTree const& polygonTree, Hk::Vector<Hk::ClipperPolygon>& polygons)
 {
     if (polygonTree.Contour.size() > 0 && !polygonTree.IsOpen())
     {
@@ -204,7 +204,7 @@ void PolyClipper::AddClip3D(Double3 const* points, int pointsCount, bool closed)
     m_pImpl->AddPath(Path, ClipperLib::ptClip, closed);
 }
 
-bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<ClipperPolygon>& polygons)
+bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons)
 {
     ClipperLib::PolyTree polygonTree;
 
@@ -219,7 +219,7 @@ bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<ClipperPolygon>& poly
     return true;
 }
 
-bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<ClipperContour>& contours)
+bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours)
 {
     ClipperPaths resultPaths;
 

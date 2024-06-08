@@ -13,10 +13,10 @@ public:
 
     int GetSize() const;
 
-    TRef<RenderCore::ITexture> const& GetTexture() const { return Texture; }
+    Ref<RenderCore::ITexture> const& GetTexture() const { return Texture; }
 
 private:
-    TRef<RenderCore::ITexture> Texture;
+    Ref<RenderCore::ITexture> Texture;
     int                        PoolSize;
 };
 

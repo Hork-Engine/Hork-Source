@@ -70,7 +70,7 @@ UICursor* UIManager::TextInputCursor() const
 
 void UIManager::AddDesktop(UIDesktop* desktop)
 {
-    if (m_Desktops.IndexOf(TRef<UIDesktop>(desktop)) != Core::NPOS)
+    if (m_Desktops.IndexOf(Ref<UIDesktop>(desktop)) != Core::NPOS)
         return;
 
     m_Desktops.Add() = desktop;
@@ -81,7 +81,7 @@ void UIManager::AddDesktop(UIDesktop* desktop)
 
 void UIManager::RemoveDesktop(UIDesktop* desktop)
 {
-    auto index = m_Desktops.IndexOf(TRef<UIDesktop>(desktop));
+    auto index = m_Desktops.IndexOf(Ref<UIDesktop>(desktop));
     if (index == Core::NPOS)
         return;
 

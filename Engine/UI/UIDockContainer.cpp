@@ -198,7 +198,7 @@ UIDockNode* UIDockContainer::AttachWidget(UIDockWidget* dockWidget, UIDockNode* 
     {
         // Just assign new widget to leaf
 
-        leaf->m_LeafWidgets.Add(TRef<UIDockWidget>(dockWidget));
+        leaf->m_LeafWidgets.Add(Ref<UIDockWidget>(dockWidget));
         leaf->m_WidgetNum = leaf->m_LeafWidgets.Size() - 1;
 
         dockWidget->m_Leaf        = leaf;
@@ -227,7 +227,7 @@ UIDockNode* UIDockContainer::AttachWidget(UIDockWidget* dockWidget, UIDockNode* 
     int child1 = ((int)zone + 1) & 1;
 
     leaf = node->m_Child[child0];
-    leaf->m_LeafWidgets.Add(TRef<UIDockWidget>(dockWidget));
+    leaf->m_LeafWidgets.Add(Ref<UIDockWidget>(dockWidget));
     leaf->m_WidgetNum = leaf->m_LeafWidgets.Size() - 1;
 
     dockWidget->m_Leaf = leaf;
@@ -236,7 +236,7 @@ UIDockNode* UIDockContainer::AttachWidget(UIDockWidget* dockWidget, UIDockNode* 
 
     node->m_Child[child1]->m_LeafWidgets = std::move(node->m_LeafWidgets);
     node->m_Child[child1]->m_WidgetNum   = node->m_WidgetNum;
-    for (TRef<UIDockWidget>& w : node->m_Child[child1]->m_LeafWidgets)
+    for (Ref<UIDockWidget>& w : node->m_Child[child1]->m_LeafWidgets)
         w->m_Leaf = node->m_Child[child1];
 
     //node->UpdateRecursive(node->m_Mins, node->m_Maxs);
@@ -256,7 +256,7 @@ bool UIDockContainer::DetachWidget(UIDockWidget* dockWidget)
     if (!dockWidget->m_Leaf)
         return false;
 
-    int index = dockWidget->m_Leaf->m_LeafWidgets.IndexOf(TRef<UIDockWidget>(dockWidget));
+    int index = dockWidget->m_Leaf->m_LeafWidgets.IndexOf(Ref<UIDockWidget>(dockWidget));
 
     return DetachWidget(dockWidget->m_Leaf, index) != nullptr;
 }
@@ -267,7 +267,7 @@ UIDockWidget* UIDockContainer::DetachWidget(UIDockNode* leaf, int index)
     if (leaf->m_NodeType != UIDockNode::NODE_LEAF)
         return {};
 
-    TRef<UIDockWidget> detachedWidget = leaf->m_LeafWidgets[index];
+    Ref<UIDockWidget> detachedWidget = leaf->m_LeafWidgets[index];
     if (detachedWidget)
     {
         detachedWidget->m_Leaf.Reset();
@@ -282,7 +282,7 @@ UIDockWidget* UIDockContainer::DetachWidget(UIDockNode* leaf, int index)
         UIDockNode* parent = FindParent(leaf);
         if (parent)
         {
-            TRef<UIDockNode> neighborNode;
+            Ref<UIDockNode> neighborNode;
             if (leaf == parent->m_Child[0])
                 neighborNode = parent->m_Child[1];
             else
@@ -305,9 +305,9 @@ UIDockWidget* UIDockContainer::DetachWidget(UIDockNode* leaf, int index)
     return detachedWidget;
 }
 
-TVector<TRef<UIDockWidget>> UIDockContainer::GetWidgets() const
+Vector<Ref<UIDockWidget>> UIDockContainer::GetWidgets() const
 {
-    TVector<TRef<UIDockWidget>> widgetList;
+    Vector<Ref<UIDockWidget>> widgetList;
     m_Root->GetWidgets(widgetList);
     return widgetList;
 }
@@ -697,7 +697,7 @@ UIDockNode* UIDockNode::FindParent(UIDockNode* node)
     return m_Child[1]->FindParent(node);
 }
 
-void UIDockNode::GetWidgets(TVector<TRef<UIDockWidget>>& widgetList) const
+void UIDockNode::GetWidgets(Vector<Ref<UIDockWidget>>& widgetList) const
 {
     if (m_NodeType == NODE_LEAF)
     {

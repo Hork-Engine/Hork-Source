@@ -121,7 +121,7 @@ protected:
     void Draw(Canvas& cv) override;
 
 private:
-    TRef<UIGridLayout> m_Layout;
+    Ref<UIGridLayout> m_Layout;
     UIGridSplitter     m_Splitter;
     Float2             m_DragStart;
     float              m_StartWidth;

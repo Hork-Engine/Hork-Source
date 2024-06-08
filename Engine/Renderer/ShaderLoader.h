@@ -35,6 +35,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-String LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined = {});
+String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined = {});
 
 HK_NAMESPACE_END

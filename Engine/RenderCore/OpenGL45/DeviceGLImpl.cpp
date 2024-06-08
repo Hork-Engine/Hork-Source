@@ -447,7 +447,7 @@ IImmediateContext* DeviceGLImpl::GetImmediateContext()
     return MainWindowHandle.ImmediateCtx;
 }
 
-void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
 {
     if (pMainWindow.IsExpired())
     {
@@ -460,59 +460,59 @@ void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef
     }
 }
 
-void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
 {
     WindowPoolGL::WindowGL dummyHandle = {};
 
     *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
 }
 
-void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain)
+void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain)
 {
     *ppSwapChain = MakeRef<SwapChainGLImpl>(this, static_cast<GenericWindowGLImpl*>(pWindow));
 }
 
-void DeviceGLImpl::CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline)
+void DeviceGLImpl::CreatePipeline(PipelineDesc const& Desc, Ref<IPipeline>* ppPipeline)
 {
     *ppPipeline = MakeRef<PipelineGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, Ref<IShaderModule>* ppShaderModule)
 {
     *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _BinaryData);
 }
 
-void DeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, Ref<IShaderModule>* ppShaderModule)
 {
     *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _ShaderType, _NumSources, _Sources);
 }
 
-void DeviceGLImpl::CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer)
+void DeviceGLImpl::CreateBuffer(BufferDesc const& Desc, const void* _SysMem, Ref<IBuffer>* ppBuffer)
 {
     *ppBuffer = MakeRef<BufferGLImpl>(this, Desc, _SysMem);
 }
 
-void DeviceGLImpl::CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture)
+void DeviceGLImpl::CreateTexture(TextureDesc const& Desc, Ref<ITexture>* ppTexture)
 {
     *ppTexture = MakeRef<TextureGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture)
+void DeviceGLImpl::CreateSparseTexture(SparseTextureDesc const& Desc, Ref<ISparseTexture>* ppTexture)
 {
     *ppTexture = MakeRef<SparseTextureGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback)
+void DeviceGLImpl::CreateTransformFeedback(TransformFeedbackDesc const& Desc, Ref<ITransformFeedback>* ppTransformFeedback)
 {
     *ppTransformFeedback = MakeRef<TransformFeedbackGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool)
+void DeviceGLImpl::CreateQueryPool(QueryPoolDesc const& Desc, Ref<IQueryPool>* ppQueryPool)
 {
     *ppQueryPool = MakeRef<QueryPoolGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateResourceTable(TRef<IResourceTable>* ppResourceTable)
+void DeviceGLImpl::CreateResourceTable(Ref<IResourceTable>* ppResourceTable)
 {
     *ppResourceTable = MakeRef<ResourceTableGLImpl>(this);
 }
@@ -625,7 +625,7 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
         }
     }
 
-    TRef<VertexLayoutGL> pVertexLayout;
+    Ref<VertexLayoutGL> pVertexLayout;
     pVertexLayout = MakeRef<VertexLayoutGL>(desc);
     pVertexLayout->AddRef();
     vertexLayout = pVertexLayout;

@@ -32,7 +32,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-TPoolAllocator<AudioTrack> AudioTrack::TrackPool;
+PoolAllocator<AudioTrack> AudioTrack::TrackPool;
 Mutex AudioTrack::PoolMutex;
 
 AudioTrack::AudioTrack(AudioSource* inSource, int inStartFrame, int inLoopStart, int inLoopsCount, bool inVirtualizeWhenSilent) :

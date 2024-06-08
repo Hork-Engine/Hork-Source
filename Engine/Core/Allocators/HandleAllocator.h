@@ -86,7 +86,7 @@ private:
     Pool                m_Pools[MAX_POOLS];
     int                 m_NumPools{};
     SpinLock            m_Mutex;
-    TVector<uint32_t>   m_FreeList;
+    Vector<uint32_t>   m_FreeList;
 };
 
 template <typename Entity>

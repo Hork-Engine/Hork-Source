@@ -41,9 +41,9 @@ class UIButton : public UIWidget
 {
     UI_CLASS(UIButton, UIWidget)
 
-    TRef<UIAction>    m_Action;
-    TRef<UIDecorator> m_Decorator;
-    TRef<UIText>      m_Text;
+    Ref<UIAction>    m_Action;
+    Ref<UIDecorator> m_Decorator;
+    Ref<UIText>      m_Text;
     bool              m_bTryPress{};
     bool              m_bTriggerOnPress{};
 

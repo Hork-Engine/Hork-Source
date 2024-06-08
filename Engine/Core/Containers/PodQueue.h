@@ -37,24 +37,24 @@ HK_NAMESPACE_BEGIN
 
 /**
 
-TPodQueue
+PodQueue
 
 Queue for POD types
 
 */
 template <typename T, int BaseCapacity = 256, bool bEnableOverflow = false, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-class TPodQueue final
+class PodQueue final
 {
 public:
     static constexpr size_t TYPE_SIZE = sizeof(T);
 
-    TPodQueue() :
+    PodQueue() :
         m_pQueue(StaticData), m_QueueHead(0), m_QueueTail(0), m_MaxQueueLength(BaseCapacity)
     {
         static_assert(IsPowerOfTwo(BaseCapacity), "Queue length must be power of two");
     }
 
-    TPodQueue(TPodQueue const& _Queue)
+    PodQueue(PodQueue const& _Queue)
     {
         if (_Queue.m_MaxQueueLength > BaseCapacity)
         {
@@ -86,7 +86,7 @@ public:
         }
     }
 
-    ~TPodQueue()
+    ~PodQueue()
     {
         if (m_pQueue != StaticData)
         {
@@ -122,7 +122,7 @@ public:
 
         if (!bEnableOverflow)
         {
-            LOG("TPodQueue::Push: queue overflow\n");
+            LOG("PodQueue::Push: queue overflow\n");
             m_QueueTail++;
             m_QueueHead++;
             return &m_pQueue[(m_QueueHead - 1) & (m_MaxQueueLength - 1)];
@@ -216,7 +216,7 @@ public:
         return m_MaxQueueLength;
     }
 
-    TPodQueue& operator=(TPodQueue const& _Queue)
+    PodQueue& operator=(PodQueue const& _Queue)
     {
         // Resize queue
         if (_Queue.Size() > m_MaxQueueLength)

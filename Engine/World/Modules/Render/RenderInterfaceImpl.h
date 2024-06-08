@@ -42,8 +42,8 @@ public:
                             RenderInterfaceImpl();
 
     // Used for debug draw;
-    TVector<Float3>         m_DebugDrawVertices;
-    TVector<unsigned int>   m_DebugDrawIndices;
+    Vector<Float3>         m_DebugDrawVertices;
+    Vector<unsigned int>   m_DebugDrawIndices;
 };
 
 HK_NAMESPACE_END

@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    THashMap<GameObjectHandle, TVector<DelegateWithComponent>> m_Delegates;
+    HashMap<GameObjectHandle, Vector<DelegateWithComponent>> m_Delegates;
 };
 
 struct Event_OnBeginOverlap

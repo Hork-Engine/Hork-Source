@@ -44,7 +44,7 @@ namespace ECS
 {
 
 using ComponentTypeId = uint32_t;
-using ArchetypeId = TVector<ComponentTypeId>;
+using ArchetypeId = Vector<ComponentTypeId>;
 
 class World;
 
@@ -202,9 +202,9 @@ HK_INLINE void Shutdown()
     }
 }
 
-HK_INLINE TArrayView<ComponentTypeInfo> ComponentRegistry()
+HK_INLINE ArrayView<ComponentTypeInfo> ComponentRegistry()
 {
-    return TArrayView<ComponentTypeInfo>(Internal::ComponentFactory::Registry, Internal::ComponentFactory::RegistrySize);
+    return ArrayView<ComponentTypeInfo>(Internal::ComponentFactory::Registry, Internal::ComponentFactory::RegistrySize);
 };
 
 template <typename T>
@@ -224,8 +224,8 @@ using ComponentData = PageAllocator<64>;
 struct Archetype
 {
     ArchetypeId Type;
-    TVector<ComponentData> Components;
-    TVector<EntityHandle> EntityIds;
+    Vector<ComponentData> Components;
+    Vector<EntityHandle> EntityIds;
 #ifdef HK_ECS_ARCHETYPE_LOOKUP_INDEX
     std::unordered_map<ComponentTypeId, uint32_t> LookupIndex;
 #endif
@@ -312,7 +312,7 @@ public:
     template <typename T>
     auto GetComponent() const -> T*;
 
-    TArrayView<ComponentTypeId> GetComponentIDs() const;
+    ArrayView<ComponentTypeId> GetComponentIDs() const;
 
     auto GetComponentByID(ComponentTypeId componentTID) const -> void*;
 
@@ -366,10 +366,10 @@ class CommandBuffer
     };
 
     EntityAllocator*   m_EntityAllocator;
-    TVector<Command>   m_CommandBuffer;
-    TLinearAllocator<> m_Allocator;
+    Vector<Command>    m_CommandBuffer;
+    LinearAllocator<>  m_Allocator;
 
-    TVector<Command> const& GetCommands() const
+    Vector<Command> const& GetCommands() const
     {
         return m_CommandBuffer;
     }
@@ -455,7 +455,7 @@ EntityConstruct& EntityConstruct::AddComponent(Args&&... args)
 
 struct QueryCache
 {
-    TVector<Archetype*> Archetypes;
+    Vector<Archetype*> Archetypes;
 };
 
 struct WorldCreateInfo
@@ -493,7 +493,7 @@ public:
     void SendEvent(T const& event);
 
     // Returns all archetypes in the world.
-    auto GetArchetypes() const -> TVector<Archetype*> const& { return m_Archetypes; }
+    auto GetArchetypes() const -> Vector<Archetype*> const& { return m_Archetypes; }
 
     // Returns query cache. Used by queries to speed up archetype searching.
     auto GetQueryCache(uint32_t queryId) -> QueryCache const&;
@@ -505,7 +505,7 @@ private:
 
     auto GetEntity(EntityHandle handle) const -> Entity const*;
 
-    void DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, void*>> const& components);
+    void DoSpawnEntity(EntityHandle handle, Vector<std::pair<uint32_t, void*>> const& components);
 
     void DoDestroyEntity(EntityHandle handle);
 
@@ -531,14 +531,14 @@ private:
     // Temp data to generate archetype ids
     ArchetypeId m_TempArchetypeId;
 
-    TVector<Archetype*> m_Archetypes;
-    TVector<QueryCache> m_QueryCaches;
-    THashMap<size_t, TVector<Internal::EventFunction>> m_EventHandlers;
+    Vector<Archetype*> m_Archetypes;
+    Vector<QueryCache> m_QueryCaches;
+    HashMap<size_t, Vector<Internal::EventFunction>> m_EventHandlers;
 
     struct Constructable
     {
         EntityHandle Handle{};
-        TVector<std::pair<uint32_t, void*>> Components;
+        Vector<std::pair<uint32_t, void*>> Components;
     };
     Constructable m_Constructable;
 };
@@ -671,11 +671,11 @@ HK_INLINE void ComponentIterator::Next()
     }
 }
 #endif
-using QueryId = TVector<ComponentTypeId>;
+using QueryId = Vector<ComponentTypeId>;
 
-HK_INLINE TVector<QueryId>& GetQueryList()
+HK_INLINE Vector<QueryId>& GetQueryList()
 {
-    static TVector<QueryId> queries;
+    static Vector<QueryId> queries;
     return queries;
 }
 
@@ -790,7 +790,7 @@ struct Query {
         template <typename T>
         auto TryGetComponentData() -> T*;
 
-        TVector<Archetype*> const& m_Archetypes;
+        Vector<Archetype*> const& m_Archetypes;
         Archetype* m_Archetype;
         int m_i;
         int m_Remains;

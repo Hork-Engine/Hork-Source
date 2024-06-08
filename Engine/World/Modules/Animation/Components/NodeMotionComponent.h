@@ -55,7 +55,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
     uint32_t            NodeID;
-    TRef<NodeMotion>    Animation;
+    Ref<NodeMotion>    Animation;
     NodeMotionTimer     Timer;
 
     void FixedUpdate();

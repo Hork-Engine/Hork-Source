@@ -112,7 +112,7 @@ public:
 private:
     ImageStorage m_Image;
 
-    TRef<RenderCore::ITexture> m_TextureGPU;
+    Ref<RenderCore::ITexture> m_TextureGPU;
     TEXTURE_TYPE m_Type = TEXTURE_2D;
     TEXTURE_FORMAT m_Format = TEXTURE_FORMAT_BGRA8_UNORM;
     uint32_t m_Width = 0;

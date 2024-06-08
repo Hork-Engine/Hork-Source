@@ -39,7 +39,7 @@ class UILabel : public UIWidget
     UI_CLASS(UILabel, UIWidget)
 
 public:
-    TRef<UIText> Text;
+    Ref<UIText> Text;
 
     UILabel(UIText* text = {}) :
         Text(text)

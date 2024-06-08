@@ -43,7 +43,7 @@ BRDFGenerator::BRDFGenerator()
     ShaderFactory::CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
-void BRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
+void BRDFGenerator::Render(Ref<RenderCore::ITexture>* ppTexture)
 {
     FrameGraph  frameGraph(GDevice);
     RenderPass& pass = frameGraph.AddTask<RenderPass>("BRDF generation pass");

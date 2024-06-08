@@ -135,7 +135,7 @@ private:
     void                UpdateHierarchy(GameObject* object, GameObject::TransformRule transformRule);
     void                UpdateHierarchyData(GameObject* object, bool wasDynamic);
 
-    TVector<PageStorage<GameObject::TransformData>>& GetTransformHierarchy(HierarchyType hierarchyType);
+    Vector<PageStorage<GameObject::TransformData>>& GetTransformHierarchy(HierarchyType hierarchyType);
 
     enum Command
     {
@@ -144,24 +144,24 @@ private:
     };
 
     ObjectStorage<GameObject>   m_ObjectStorage;
-    TVector<ComponentManagerBase*> m_ComponentManagers;
-    TVector<WorldInterfaceBase*>m_Interfaces;
-    TVector<EventHolderBase*>   m_EventHolders;
-    TVector<ComponentExtendedHandle> m_ComponentsToInitialize;
-    TVector<GameObjectHandle>   m_ObjectsToDelete;
-    TVector<Component*>         m_ComponentsToDelete;
-    TVector<GameObjectHandle>   m_QueueToDestroy;
-    TVector<TickFunction>       m_FunctionsToRegister;
-    TVector<Delegate<void(DebugRenderer&)>> m_DebugDrawFunctions;
+    Vector<ComponentManagerBase*> m_ComponentManagers;
+    Vector<WorldInterfaceBase*> m_Interfaces;
+    Vector<EventHolderBase*>    m_EventHolders;
+    Vector<ComponentExtendedHandle> m_ComponentsToInitialize;
+    Vector<GameObjectHandle>    m_ObjectsToDelete;
+    Vector<Component*>          m_ComponentsToDelete;
+    Vector<GameObjectHandle>    m_QueueToDestroy;
+    Vector<TickFunction>        m_FunctionsToRegister;
+    Vector<Delegate<void(DebugRenderer&)>> m_DebugDrawFunctions;
     TickingGroup                m_Update;
     TickingGroup                m_FixedUpdate;
     TickingGroup                m_PhysicsUpdate;
     TickingGroup                m_PostTransform;
     TickingGroup                m_LateUpdate;
-    TVector<Command>            m_CommandBuffer;
+    Vector<Command>             m_CommandBuffer;
     WorldTick                   m_Tick;
     float                       m_TimeAccumulator = 0.0f;
-    TVector<PageStorage<GameObject::TransformData>> m_TransformHierarchy[2];
+    Vector<PageStorage<GameObject::TransformData>> m_TransformHierarchy[2];
 };
 
 HK_NAMESPACE_END

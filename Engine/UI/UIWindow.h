@@ -62,7 +62,7 @@ public:
     };
 
     float            CaptionHeight = 24;
-    TRef<UIHitShape> CaptionHitShape;
+    Ref<UIHitShape> CaptionHitShape;
     WINDOW_STATE     WindowState = WS_NORMAL;
     bool             bResizable{true};
     bool             bDropShadow{true};
@@ -135,8 +135,8 @@ private:
         void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
     };
 
-    TRef<UIWidget> m_Caption;
-    TRef<UIWidget> m_Central;
+    Ref<UIWidget> m_Caption;
+    Ref<UIWidget> m_Central;
 };
 
 

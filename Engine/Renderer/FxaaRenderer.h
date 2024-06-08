@@ -44,7 +44,7 @@ public:
 private:
     void CreateSampler();
 
-    TRef<RenderCore::IPipeline> FxaaPipeline;
+    Ref<RenderCore::IPipeline> FxaaPipeline;
 };
 
 HK_NAMESPACE_END

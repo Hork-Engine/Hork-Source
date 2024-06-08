@@ -111,10 +111,10 @@ HK_FORCEINLINE Handle32<ComponentType> GameObject::GetComponentHandle()
 }
 
 template <typename ComponentType>
-HK_FORCEINLINE void GameObject::GetAllComponents(TVector<ComponentType*>& components)
+HK_FORCEINLINE void GameObject::GetAllComponents(Vector<ComponentType*>& components)
 {
     GetAllComponents(ComponentTypeRegistry::GetComponentTypeID<ComponentType>(),
-        static_cast<TVector<ComponenBase*>&>(components));
+        static_cast<Vector<ComponenBase*>&>(components));
 }
 
 HK_FORCEINLINE GameObject::ComponentVector const& GameObject::GetComponents() const

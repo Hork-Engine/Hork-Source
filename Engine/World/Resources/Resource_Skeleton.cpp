@@ -188,7 +188,7 @@ void SkeletonResource::Write(IBinaryStreamWriteInterface& stream) const
     }
 }
 
-void SkeletonResource::SetAnimations(TArrayView<TRef<SkeletalAnimation>> const& animations)
+void SkeletonResource::SetAnimations(ArrayView<Ref<SkeletalAnimation>> const& animations)
 {
     m_Animations.Clear();
     m_Animations.Reserve(animations.Size());

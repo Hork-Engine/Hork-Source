@@ -57,7 +57,7 @@ private:
 
     void Wait(RenderCore::SyncObject Sync);
 
-    TRef<RenderCore::IBuffer> m_Buffer;
+    Ref<RenderCore::IBuffer> m_Buffer;
     void* m_pMappedMemory;
     int m_BufferIndex;
 

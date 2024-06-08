@@ -53,10 +53,10 @@ class UIHitPolygon : public UIHitShape
     UI_CLASS(UIHitPolygon, UIHitShape)
 
 public:
-    TVector<Float2> Vertices;
+    Vector<Float2> Vertices;
 
     UIHitPolygon() = default;
-    UIHitPolygon(TVector<Float2> vertices) :
+    UIHitPolygon(Vector<Float2> vertices) :
         Vertices(std::move(vertices))
     {}
 
@@ -86,7 +86,7 @@ class UIHitImage : public UIHitShape
     UI_CLASS(UIHitImage, UIHitShape)
 
 private:
-    TBitMask<> m_BitMask;
+    BitMask<> m_BitMask;
     uint32_t   m_Width{};
     uint32_t   m_Height{};
 

@@ -48,14 +48,14 @@ public:
 
     struct Surface
     {
-        TVector<MaterialInstance*>  Materials;
+        Vector<MaterialInstance*>  Materials;
         //BvAxisAlignedBox            BoundingBox;
         //BvAxisAlignedBox            WorldBoundingBox;
     };
 
     MeshHandle              m_Resource;
-    TVector<Surface>        m_Surfaces;
-    TRef<SkeletonPose>      m_Pose;
+    Vector<Surface>        m_Surfaces;
+    Ref<SkeletonPose>      m_Pose;
     bool                    m_Outline = false;
     bool                    m_CastShadow = true;
     uint32_t                m_CascadeMask = 0;
@@ -92,12 +92,12 @@ public:
 
     struct Surface
     {
-        TVector<MaterialInstance*>  Materials;
+        Vector<MaterialInstance*>  Materials;
         //BvAxisAlignedBox            BoundingBox;
         //BvAxisAlignedBox            WorldBoundingBox;
     };
 
-    TRef<ProceduralMesh_ECS> m_Mesh;
+    Ref<ProceduralMesh_ECS> m_Mesh;
     Surface                 m_Surface;
     bool                    m_Outline = false;
     bool                    m_CastShadow = true;

@@ -62,7 +62,7 @@ struct RawImageFormatInfo
 
 RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format);
 
-class RawImage
+class RawImage final
 {
 public:
     RawImage() = default;
@@ -78,7 +78,7 @@ public:
         Clear(Color);
     }
 
-    virtual ~RawImage()
+    ~RawImage()
     {
         Reset();
     }

@@ -46,7 +46,7 @@ public:
     bool                    ShouldCollide(uint32_t group1, uint32_t group2) const;
 
 private:
-    TArray<uint32_t, 32>    m_CollisionMask;
+    Array<uint32_t, 32>    m_CollisionMask;
 };
 
 HK_NAMESPACE_END

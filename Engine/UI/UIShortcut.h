@@ -64,10 +64,10 @@ public:
         return *this;
     }
 
-    TVector<UIShortcutInfo> const& GetShortcuts() const { return m_Shortcuts; }
+    Vector<UIShortcutInfo> const& GetShortcuts() const { return m_Shortcuts; }
 
 private:
-    TVector<UIShortcutInfo> m_Shortcuts;
+    Vector<UIShortcutInfo> m_Shortcuts;
 };
 
 HK_NAMESPACE_END

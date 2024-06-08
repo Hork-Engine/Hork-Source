@@ -82,7 +82,7 @@ private:
 
     AsyncJobManager* JobManager{nullptr};
 
-    TSmallVector<AsyncJob, 1024> JobPool;
+    SmallVector<AsyncJob, 1024> JobPool;
     AsyncJob*                    JobList{nullptr};
     int                          NumPendingJobs{0};
 

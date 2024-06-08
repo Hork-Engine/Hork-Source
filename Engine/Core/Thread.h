@@ -35,13 +35,13 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename Callable, typename... Types>
-class TArgumentsWrapper
+class ArgumentsWrapper
 {
     Callable                           m_Callable;
     std::tuple<std::decay_t<Types>...> m_Args;
 
 public:
-    TArgumentsWrapper(Callable&& _Callable, Types&&... _Args) :
+    ArgumentsWrapper(Callable&& _Callable, Types&&... _Args) :
         m_Callable(std::forward<Callable>(_Callable)),
         m_Args(std::forward<Types>(_Args)...)
     {}
@@ -66,10 +66,8 @@ Thread
 Thread.
 
 */
-class Thread final
+class Thread final : public Noncopyable
 {
-    HK_FORBID_COPY(Thread)
-
 public:
     static const int NumHardwareThreads;
 
@@ -104,7 +102,7 @@ public:
     {
         Join();
 
-        auto* threadProc = new TArgumentsWrapper<Fn, Args...>(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
+        auto* threadProc = new ArgumentsWrapper<Fn, Args...>(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
         CreateThread(&Invoker<std::remove_reference_t<decltype(*threadProc)>>, threadProc);
     }
 
@@ -159,10 +157,8 @@ Mutex
 Thread mutex.
 
 */
-class Mutex final
+class Mutex final : public Noncopyable
 {
-    HK_FORBID_COPY(Mutex)
-
     friend class SyncEvent;
 
 public:
@@ -223,10 +219,8 @@ HK_FORCEINLINE void YieldCPU()
 SpinLock
 
 */
-class SpinLock final
+class SpinLock final : public Noncopyable
 {
-    HK_FORBID_COPY(SpinLock)
-
 public:
     SpinLock() :
         m_LockVar(false) {}
@@ -270,24 +264,23 @@ private:
 
 /**
 
-TLockGuard
+LockGuard
 
 Controls a synchronization primitive ownership within a scope, releasing
 ownership in the destructor.
 
 */
 template <typename T>
-class TLockGuard
+class LockGuard final : public Noncopyable
 {
-    HK_FORBID_COPY(TLockGuard)
 public:
-    HK_FORCEINLINE explicit TLockGuard(T& _Primitive) :
+    HK_FORCEINLINE explicit LockGuard(T& _Primitive) :
         m_Primitive(_Primitive)
     {
         m_Primitive.Lock();
     }
 
-    HK_FORCEINLINE ~TLockGuard()
+    HK_FORCEINLINE ~LockGuard()
     {
         m_Primitive.Unlock();
     }
@@ -299,18 +292,17 @@ private:
 
 /**
 
-TLockGuardCond
+LockGuardCond
 
 Controls a synchronization primitive ownership within a scope, releasing
 ownership in the destructor. Checks condition.
 
 */
 template <typename T>
-class TLockGuardCond
+class LockGuardCond final : public Noncopyable
 {
-    HK_FORBID_COPY(TLockGuardCond)
 public:
-    HK_FORCEINLINE explicit TLockGuardCond(T& _Primitive, const bool _Cond = true) :
+    HK_FORCEINLINE explicit LockGuardCond(T& _Primitive, const bool _Cond = true) :
         m_Primitive(_Primitive), m_Cond(_Cond)
     {
         if (m_Cond)
@@ -319,7 +311,7 @@ public:
         }
     }
 
-    HK_FORCEINLINE ~TLockGuardCond()
+    HK_FORCEINLINE ~LockGuardCond()
     {
         if (m_Cond)
         {
@@ -333,8 +325,8 @@ private:
 };
 
 
-using MutexGuard    = TLockGuard<Mutex>;
-using SpinLockGuard = TLockGuard<SpinLock>;
+using MutexGuard    = LockGuard<Mutex>;
+using SpinLockGuard = LockGuard<SpinLock>;
 
 
 /**
@@ -344,10 +336,8 @@ SyncEvent
 Thread event.
 
 */
-class SyncEvent final
+class SyncEvent final : public Noncopyable
 {
-    HK_FORBID_COPY(SyncEvent)
-
 public:
     SyncEvent();
     ~SyncEvent();

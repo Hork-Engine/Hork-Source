@@ -111,7 +111,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
     {
         // There is no need for resampling, so we just read it as is
 
-        TVector<float> framesIn;
+        Vector<float> framesIn;
         framesIn.Resize(m_FrameCount);
 
         m_FilterSize = m_FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
@@ -149,10 +149,10 @@ AudioHRTF::AudioHRTF(int SampleRate)
         ma_uint64 frameCountIn = m_FrameCount;
         ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count(&resampler, m_FrameCount);
 
-        TVector<float> framesIn;
+        Vector<float> framesIn;
         framesIn.Resize(frameCountIn);
 
-        TVector<float> framesOut;
+        Vector<float> framesOut;
         framesOut.Resize(frameCountOut);
 
         m_FrameCount = frameCountOut;
@@ -430,8 +430,8 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
 void DrawHRTF( DebugRenderer * InRenderer )
 {
     static bool binit = false;
-    static TVector< Float3 > sphereVerts;
-    static TVector< uint32_t > sphereIndices;
+    static Vector< Float3 > sphereVerts;
+    static Vector< uint32_t > sphereIndices;
     if ( !binit ) {
         binit = true;
 

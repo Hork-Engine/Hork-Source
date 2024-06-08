@@ -52,7 +52,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& inCreateInfo)
+Ref<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& inCreateInfo)
 {
     int shapeCount = 0;
 
@@ -74,7 +74,7 @@ TRef<CollisionModel> CollisionModel::Create(CollisionModelCreateInfo const& inCr
         compoundSettings.mSubShapes.reserve(shapeCount);
     }
 
-    TRef<CollisionModel> model;
+    Ref<CollisionModel> model;
     model.Attach(new CollisionModel);
 
     for (CollisionSphereDef* shape = inCreateInfo.pSpheres; shape < &inCreateInfo.pSpheres[inCreateInfo.SphereCount]; shape++)
@@ -335,7 +335,7 @@ T CheckedStaticCast(U u)
 namespace
 {
 
-void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::SphereShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
@@ -390,7 +390,7 @@ void GatherGeometry(JPH::SphereShape const* shape, TVector<Float3>& vertices, TV
     }
 }
 
-void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::BoxShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     unsigned int const faceIndices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
@@ -420,7 +420,7 @@ void GatherGeometry(JPH::BoxShape const* shape, TVector<Float3>& vertices, TVect
     }
 }
     
-void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::CylinderShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     float sinPhi, cosPhi;
 
@@ -492,7 +492,7 @@ void GatherGeometry(JPH::CylinderShape const* shape, TVector<Float3>& vertices, 
     }
 }
     
-void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::CapsuleShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     float radius = shape->GetRadius();
 
@@ -583,7 +583,7 @@ void GatherGeometry(JPH::CapsuleShape const* shape, TVector<Float3>& vertices, T
     }
 }
 
-void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::ConvexHullShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     int vertexCount = shape->mPoints.size();
 
@@ -621,7 +621,7 @@ void GatherGeometry(JPH::ConvexHullShape const* shape, TVector<Float3>& vertices
     }
 }
 
-void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometry(JPH::MeshShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     using TriangleCodec = JPH::TriangleCodecIndexed8BitPackSOA4Flags;
     using NodeCodec = JPH::NodeCodecQuadTreeHalfFloat<1>;
@@ -667,8 +667,8 @@ void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVec
             }
         }
 
-        TVector<Float3>& m_Vertices;
-        TVector<unsigned int>& m_Indices;
+        Vector<Float3>& m_Vertices;
+        Vector<unsigned int>& m_Indices;
     };
 
     Visitor visitor{vertices, indices};
@@ -681,7 +681,7 @@ void GatherGeometry(JPH::MeshShape const* shape, TVector<Float3>& vertices, TVec
     node_ctx.WalkTree(buffer_start, triangle_ctx, visitor);
 }
 
-void GatherGeometrySimpleShape(JPH::Shape const* shape, TVector<Float3>& vertices, TVector<unsigned int>& indices)
+void GatherGeometrySimpleShape(JPH::Shape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
     switch (shape->GetSubType())
     {
@@ -711,7 +711,7 @@ void GatherGeometrySimpleShape(JPH::Shape const* shape, TVector<Float3>& vertice
 
 } // namespace
 
-void CollisionModel::GatherGeometry(TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const
+void CollisionModel::GatherGeometry(Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
 {
     JPH::Shape const* shape = m_Shape.GetPtr();
 
@@ -788,7 +788,7 @@ void DrawCapsule(DebugRenderer& renderer, JPH::CapsuleShape const* shape)
 
 void DrawConvexHull(DebugRenderer& renderer, JPH::ConvexHullShape const* shape)
 {
-    TSmallVector<Float3, 32> verts;
+    SmallVector<Float3, 32> verts;
     for (auto& face : shape->mFaces)
     {
         verts.Clear();
@@ -884,11 +884,11 @@ void CollisionModel::DrawDebug(DebugRenderer& inRenderer, Float3x4 const& inTran
 }
 
 
-TRef<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
+Ref<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
 {
-    TVector<Float3> hullVertices;
-    TVector<unsigned int> hullIndices;
-    TVector<ConvexHullDesc> hulls;
+    Vector<Float3> hullVertices;
+    Vector<unsigned int> hullIndices;
+    Vector<ConvexHullDesc> hulls;
 
     if (inVertexStride <= 0)
     {
@@ -911,7 +911,7 @@ TRef<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inV
         return {};
     }
 
-    TVector<CollisionConvexHullDef> hullDefs;
+    Vector<CollisionConvexHullDef> hullDefs;
     hullDefs.Reserve(hulls.Size());
 
     for (ConvexHullDesc const& hull : hulls)
@@ -932,11 +932,11 @@ TRef<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inV
     return CollisionModel::Create(createInfo);
 }
 
-TRef<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
+Ref<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
 {
-    TVector<Float3> hullVertices;
-    TVector<unsigned int> hullIndices;
-    TVector<ConvexHullDesc> hulls;
+    Vector<Float3> hullVertices;
+    Vector<unsigned int> hullIndices;
+    Vector<ConvexHullDesc> hulls;
     Float3 decompositionCenterOfMass;
 
     if (inVertexStride <= 0)
@@ -961,7 +961,7 @@ TRef<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, in
         return {};
     }
 
-    TVector<CollisionConvexHullDef> hullDefs;
+    Vector<CollisionConvexHullDef> hullDefs;
     hullDefs.Reserve(hulls.Size());
 
     for (ConvexHullDesc const& hull : hulls)
@@ -982,7 +982,7 @@ TRef<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, in
     return CollisionModel::Create(createInfo);
 }
 
-TRef<TerrainCollision> TerrainCollision::Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList)
+Ref<TerrainCollision> TerrainCollision::Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList)
 {
     const int BLOCK_SIZE_SHIFT = 2;
     const int BITS_PER_SAMPLE = 8;
@@ -998,7 +998,7 @@ TRef<TerrainCollision> TerrainCollision::Create(const float* inSamples, uint32_t
     settings.mBlockSize = 1 << BLOCK_SIZE_SHIFT;
     settings.mBitsPerSample = BITS_PER_SAMPLE;
 
-    TRef<TerrainCollision> model;
+    Ref<TerrainCollision> model;
     model.Attach(new TerrainCollision);
     model->m_Shape = static_cast<JPH::HeightFieldShape*>(settings.Create().Get().GetPtr());
 
@@ -1043,7 +1043,7 @@ size_t TerrainCollision::GetMemoryUsage() const
     return m_Shape->GetStats().mSizeBytes;
 }
 
-void TerrainCollision::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const
+void TerrainCollision::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
 {
     int first_vertex = outVertices.Size();
 

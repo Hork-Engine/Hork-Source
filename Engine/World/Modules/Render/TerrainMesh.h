@@ -81,14 +81,14 @@ private:
     TerrainPatch m_CrackPatch;
 
     /** Vertex buffer in GPU */
-    TRef<RenderCore::IBuffer> m_VertexBufferGPU;
+    Ref<RenderCore::IBuffer> m_VertexBufferGPU;
     /** Index buffer in GPU */
-    TRef<RenderCore::IBuffer> m_IndexBufferGPU;
+    Ref<RenderCore::IBuffer> m_IndexBufferGPU;
 
     /** Vertex buffer in CPU. We keep it only for debug draw */
-    TVector<TerrainVertex> m_VertexBuffer;
+    Vector<TerrainVertex> m_VertexBuffer;
     /** Index buffer in CPU. We keep it only for debug draw */
-    TVector<unsigned short> m_IndexBuffer;
+    Vector<unsigned short> m_IndexBuffer;
 };
 
 HK_NAMESPACE_END

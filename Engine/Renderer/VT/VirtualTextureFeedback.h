@@ -54,14 +54,14 @@ public:
     Float2 const& GetResolutionRatio() const { return ResolutionRatio; }
 
 private:
-    TRef<RenderCore::ITexture> FeedbackTexture;
-    TRef<RenderCore::ITexture> FeedbackDepth;
-    TRef<RenderCore::IBuffer> PixelBufferObject[2];
+    Ref<RenderCore::ITexture> FeedbackTexture;
+    Ref<RenderCore::ITexture> FeedbackDepth;
+    Ref<RenderCore::IBuffer> PixelBufferObject[2];
     const void* MappedData[2];
     int SwapIndex;
     Float2 ResolutionRatio;
     int FeedbackSize[2];
-    TRef<RenderCore::IPipeline> DrawFeedbackPipeline;
+    Ref<RenderCore::IPipeline> DrawFeedbackPipeline;
 };
 
 HK_NAMESPACE_END

@@ -53,10 +53,10 @@ enum NODE_ANIMATION_PATH_TYPE
 class NodeMotion : public RefCounted // Resource
 {
 public:
-    TVector<float> m_AnimationTimes;
+    Vector<float> m_AnimationTimes;
 
-    TVector<Float3> m_VectorData;
-    TVector<Quat> m_QuaternionData;
+    Vector<Float3> m_VectorData;
+    Vector<Quat> m_QuaternionData;
 
     struct Sampler
     {
@@ -77,7 +77,7 @@ public:
         NODE_ANIMATION_PATH_TYPE TargetPath;
     };
 
-    TVector<AnimationChannel> m_Channels;
+    Vector<AnimationChannel> m_Channels;
 
     Float3 SampleVector(Sampler& sampler, float time);
     Quat SampleQuaternion(Sampler& sampler, float time);

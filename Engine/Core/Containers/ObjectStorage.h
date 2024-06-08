@@ -134,14 +134,14 @@ public:
     Iterator        GetObjects();
     ConstIterator   GetObjects() const;
 
-    TVector<T*> const& GetRandomAccessTable() const
+    Vector<T*> const& GetRandomAccessTable() const
     {
         return m_RandomAccess;
     }
 
 private:
     PageStorage<T>          m_PageStorage;
-    TVector<T*>             m_RandomAccess;
+    Vector<T*>             m_RandomAccess;
     uint32_t                m_FreeListHead = 0;
 };
 

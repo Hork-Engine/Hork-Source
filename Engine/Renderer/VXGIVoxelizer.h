@@ -61,15 +61,15 @@ private:
     //    Float4x4 Transform[6];
     //    Float4 LightDir;
     //};
-    //TRef< RenderCore::IBuffer > ConstantBuffer;
+    //Ref< RenderCore::IBuffer > ConstantBuffer;
     //ConstantData ConstantBufferData;
-    TRef< RenderCore::IPipeline > Pipeline;
+    Ref< RenderCore::IPipeline > Pipeline;
 
-//    TRef< RenderCore::IFramebuffer > voxelFBO;
-    TRef< RenderCore::ITexture > voxel2DTex;
-    TRef< RenderCore::ITexture > voxelTex;
-    TRef< RenderCore::IBuffer > drawIndBuffer;
-    TRef< RenderCore::IBuffer > compIndBuffer;
+//    Ref< RenderCore::IFramebuffer > voxelFBO;
+    Ref< RenderCore::ITexture > voxel2DTex;
+    Ref< RenderCore::ITexture > voxelTex;
+    Ref< RenderCore::IBuffer > drawIndBuffer;
+    Ref< RenderCore::IBuffer > compIndBuffer;
 };
 
 HK_NAMESPACE_END

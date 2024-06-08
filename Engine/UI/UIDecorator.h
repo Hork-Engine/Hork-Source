@@ -53,11 +53,11 @@ class UIBrushDecorator : public UIDecorator
     UI_CLASS(UIBrushDecorator, UIObject)
 
 public:
-    TRef<UIBrush> InactiveBrush;
-    TRef<UIBrush> ActiveBrush;
-    TRef<UIBrush> HoverBrush;
-    TRef<UIBrush> SelectedBrush;
-    TRef<UIBrush> DisabledBrush;
+    Ref<UIBrush> InactiveBrush;
+    Ref<UIBrush> ActiveBrush;
+    Ref<UIBrush> HoverBrush;
+    Ref<UIBrush> SelectedBrush;
+    Ref<UIBrush> DisabledBrush;
 
     UIBrushDecorator& WithInactiveBrush(UIBrush* inactiveBrush)
     {

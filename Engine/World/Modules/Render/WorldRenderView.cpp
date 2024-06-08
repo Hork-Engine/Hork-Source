@@ -257,7 +257,7 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
 
-        TRef<RenderCore::ITexture> newTex;
+        Ref<RenderCore::ITexture> newTex;
         GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &newTex);
 
         renderTarget->SetTextureGPU(newTex);

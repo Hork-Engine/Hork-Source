@@ -52,8 +52,8 @@ public:
 
 private:
     RenderCore::IImmediateContext* pImmediateContext;
-    TRef<RenderCore::ITexture>     Texture;
-    TRef<RenderCore::ITexture>     Staging;
+    Ref<RenderCore::ITexture>     Texture;
+    Ref<RenderCore::ITexture>     Staging;
 };
 
 HK_NAMESPACE_END

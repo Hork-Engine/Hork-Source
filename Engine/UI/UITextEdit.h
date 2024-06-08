@@ -188,7 +188,7 @@ private:
 
     FontHandle         m_Font;
     WideString         m_Text;
-    TVector<TextRowW>  m_Rows;
+    Vector<TextRowW>  m_Rows;
     FontStyle          m_FontStyle;
     Color4             m_TextColor;
     Color4             m_SelectionColor;

@@ -97,7 +97,7 @@ private:
 #endif
 
     /** Table of indirection */
-    TRef<RenderCore::ITexture> IndirectionTexture;
+    Ref<RenderCore::ITexture> IndirectionTexture;
 
     /**
     [xxxxyyyyyyyyyyyy]
@@ -106,7 +106,7 @@ private:
     Max pages in cache may reach to 4096
     Duplicates Indirection texture in video memory
     */
-    TRef<RenderCore::IBuffer> IndirectionData;
+    Ref<RenderCore::IBuffer> IndirectionData;
     uint16_t* pIndirectionData;
 
     int bDirtyLods[VT_MAX_LODS];
@@ -120,10 +120,10 @@ private:
     byte* PIT;
 
     // Used only by cache to update page LRU
-    TVector<uint32_t> PendingUpdateLRU;
+    Vector<uint32_t> PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
-    THashMap<uint32_t, int64_t> StreamedPages;
+    HashMap<uint32_t, int64_t> StreamedPages;
 
     VirtualTextureCache* pCache;
 

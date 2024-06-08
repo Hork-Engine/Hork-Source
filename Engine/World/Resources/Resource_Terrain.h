@@ -66,7 +66,7 @@ public:
     bool GetTriangleVertices(float x, float z, Float3& outV0, Float3& outV1, Float3& outV2) const;
     bool GetNormal(float x, float z, Float3& outNormal) const;
     bool GetTexcoord(float x, float z, Float2& outTexcoord) const;
-    void GatherGeometry(BvAxisAlignedBox const& inLocalBounds, TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const;
+    void GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
 
     Int2 const& GetClipMin() const { return m_ClipMin; }
     Int2 const& GetClipMax() const { return m_ClipMax; }
@@ -84,7 +84,7 @@ private:
 
     // TODO: store heightmap in blocks m*m for cache friendly sampling
     // TODO: проверить, можем ли мы обойтись без лодов без потери в качетсве отображения.
-    TVector<HeapBlob> m_Lods;
+    Vector<HeapBlob> m_Lods;
 };
 
 using TerrainHandle = ResourceHandle<TerrainResource>;

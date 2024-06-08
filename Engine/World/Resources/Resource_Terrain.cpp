@@ -379,7 +379,7 @@ bool TerrainResource::GetTexcoord(float x, float z, Float2& outTexcoord) const
     return true;
 }
 
-void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const
+void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
 {
     if (!BvBoxOverlapBox(m_BoundingBox, inLocalBounds))
         return;

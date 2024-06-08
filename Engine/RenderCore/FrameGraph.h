@@ -116,17 +116,17 @@ public:
         int               NumReleasedResources;
     };
 
-    TVector<TimelineStep> const& GetTimeline() const
+    Vector<TimelineStep> const& GetTimeline() const
     {
         return Timeline;
     }
 
-    TVector<FGResourceProxyBase*> const& GetAcquiredResources() const
+    Vector<FGResourceProxyBase*> const& GetAcquiredResources() const
     {
         return AcquiredResources;
     }
 
-    TVector<FGResourceProxyBase*> const& GetReleasedResources() const
+    Vector<FGResourceProxyBase*> const& GetReleasedResources() const
     {
         return ReleasedResources;
     }
@@ -152,20 +152,20 @@ private:
 
     void ReleaseCapturedResources();
 
-    TRef<IDevice>             pDevice;
-    TRef<FGRenderTargetCache> pRenderTargetCache;
+    Ref<IDevice>             pDevice;
+    Ref<FGRenderTargetCache> pRenderTargetCache;
 
-    TVector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
-    TVector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
-    TVector<FGResourceProxyBase*>              Resources; // all resources
-    TVector<FGResourceProxyBase*>              CapturedResources;
+    Vector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
+    Vector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
+    Vector<FGResourceProxyBase*>              Resources; // all resources
+    Vector<FGResourceProxyBase*>              CapturedResources;
 
-    TVector<TimelineStep>        Timeline;
-    TVector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
+    Vector<TimelineStep>        Timeline;
+    Vector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
 
     // Temporary data. Used for building
-    TStack<FGResourceProxyBase*>  UnreferencedResources;
-    TVector<FGResourceProxyBase*> ResourcesRW;
+    Stack<FGResourceProxyBase*>  UnreferencedResources;
+    Vector<FGResourceProxyBase*> ResourcesRW;
 
     mutable std::size_t IdGenerator = 0;
 };

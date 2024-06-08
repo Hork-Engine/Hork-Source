@@ -36,14 +36,14 @@ HK_NAMESPACE_BEGIN
 
 /**
 
-TStack
+Stack
 
 */
 template <typename T, size_t BaseCapacity = 32, typename OverflowAllocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-class TStack
+class Stack
 {
 public:
-    using Container      = TSmallVector<T, BaseCapacity, OverflowAllocator>;
+    using Container      = SmallVector<T, BaseCapacity, OverflowAllocator>;
     using SizeType       = typename Container::SizeType;
     using Reference      = typename Container::Reference;
     using ConstReference = typename Container::ConstReference;
@@ -52,9 +52,9 @@ public:
 
     Container Array;
 
-    TStack()              = default;
-    TStack(TStack const&) = default;
-    TStack(TStack&&)      = default;
+    Stack()              = default;
+    Stack(Stack const&) = default;
+    Stack(Stack&&)      = default;
 
     HK_FORCEINLINE void Clear()
     {
@@ -169,47 +169,47 @@ public:
         return (int)Size() - 1;
     }
 
-    HK_FORCEINLINE void Swap(TStack& x)
+    HK_FORCEINLINE void Swap(Stack& x)
     {
         Swap(Array, x.Array);
     }
 
-    TStack& operator=(TStack const&) = default;
-    TStack& operator=(TStack&&) = default;
+    Stack& operator=(Stack const&) = default;
+    Stack& operator=(Stack&&) = default;
 };
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator==(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator==(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return (lhs.Array == rhs.Array);
 }
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator!=(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator!=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return !(lhs.Array == rhs.Array);
 }
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator<(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator<(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return (lhs.Array < rhs.Array);
 }
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator>(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator>(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return (rhs.Array < lhs.Array);
 }
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator<=(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator<=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return !(rhs.Array < lhs.Array);
 }
 
 template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator>=(TStack<T, BaseCapacity, Container> const& lhs, TStack<T, BaseCapacity, Container> const& rhs)
+inline bool operator>=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
 {
     return !(lhs.Array < rhs.Array);
 }
@@ -219,7 +219,7 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <typename T, size_t BaseCapacity, typename Container>
-inline void swap(Hk::TStack<T, BaseCapacity, Container>& lhs, Hk::TStack<T, BaseCapacity, Container>& rhs)
+inline void swap(Hk::Stack<T, BaseCapacity, Container>& lhs, Hk::Stack<T, BaseCapacity, Container>& rhs)
 {
     lhs.Swap(rhs);
 }

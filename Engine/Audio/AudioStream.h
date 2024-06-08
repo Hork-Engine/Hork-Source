@@ -39,21 +39,21 @@ HK_NAMESPACE_BEGIN
 class AudioStream final : public InterlockedRef
 {
 public:
-    AudioStream(AudioSource* inSource);
-    ~AudioStream();
+                        AudioStream(AudioSource* inSource);
+                        ~AudioStream();
 
-    AudioSource* GetSource() const { return m_Source; }
+    AudioSource*        GetSource() const { return m_Source; }
 
     /// Seeks to a PCM frame based on it's absolute index.
-    void         SeekToFrame(int inFrameNum);
+    void                SeekToFrame(int inFrameNum);
 
     /// Reads PCM frames from the stream.
-    int          ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
+    int                 ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
 
 private:
-    TRef<AudioSource> m_Source;
-    ma_decoder*       m_Decoder = nullptr;
-    int               m_FrameIndex = 0;
+    Ref<AudioSource>    m_Source;
+    ma_decoder*         m_Decoder = nullptr;
+    int                 m_FrameIndex = 0;
 };
 
 HK_NAMESPACE_END

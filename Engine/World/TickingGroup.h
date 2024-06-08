@@ -45,8 +45,8 @@ private:
         uint32_t            TraverseID;
     };
 
-    TVector<Function>       m_FunctionList;
-    TVector<uint32_t>       m_ExecutionOrder;
+    Vector<Function>        m_FunctionList;
+    Vector<uint32_t>        m_ExecutionOrder;
     bool                    m_RebuildRequired{};
     uint32_t                m_TraverseID{};
 

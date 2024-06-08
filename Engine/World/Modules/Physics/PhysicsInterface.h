@@ -171,27 +171,27 @@ public:
                             PhysicsInterface();
 
     bool                    CastRayClosest(Float3 const& inRayStart, Float3 const& inRayDir, RayCastResult& outResult, RayCastFilter const& inFilter = {});
-    bool                    CastRay(Float3 const& inRayStart, Float3 const& inRayDir, TVector<RayCastResult>& outResult, RayCastFilter const& inFilter = {});
+    bool                    CastRay(Float3 const& inRayStart, Float3 const& inRayDir, Vector<RayCastResult>& outResult, RayCastFilter const& inFilter = {});
 
     bool                    CastBoxClosest(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter = {});
-    bool                    CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
+    bool                    CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
 
     bool                    CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, ShapeCastResult& outResult, ShapeCastFilter const& inFilter = {});
-    bool                    CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
+    bool                    CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
 
     bool                    CastSphereClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, ShapeCastResult& outResult, ShapeCastFilter const& inFilter = {});
-    bool                    CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
+    bool                    CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
 
     bool                    CastCapsuleClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter = {});
-    bool                    CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
+    bool                    CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
 
     bool                    CastCylinderClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter = {});
-    bool                    CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
+    bool                    CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter = {});
 
-    void                    OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
-    void                    OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
-    void                    OverlapSphere(Float3 const& inPosition, float inRadius, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
-    void                    OverlapPoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
+    void                    OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
+    void                    OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
+    void                    OverlapSphere(Float3 const& inPosition, float inRadius, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
+    void                    OverlapPoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter = {});
 
     bool                    CheckBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, ShapeCastFilter const& inFilter = {});
     bool                    CheckBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, ShapeCastFilter const& inFilter = {});
@@ -200,12 +200,12 @@ public:
     bool                    CheckCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastFilter const& inFilter = {});
     bool                    CheckPoint(Float3 const& inPosition, BroadphaseLayerMask inBroadphaseLayers = {});
 
-    void                    CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollideSphere(Float3 const& inPosition, float inRadius, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollidePoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers = {});
+    void                    CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
+    void                    CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
+    void                    CollideSphere(Float3 const& inPosition, float inRadius, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
+    void                    CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
+    void                    CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
+    void                    CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers = {});
 
     void                    SetGravity(Float3 const inGravity);
     Float3                  GetGravity() const;
@@ -225,12 +225,12 @@ private:
     void                    DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID, T* rigidBody);
     void                    DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyID, class HeightFieldComponent* heightfield);
 
-    TUniqueRef<class PhysicsInterfaceImpl> m_pImpl;
+    UniqueRef<class PhysicsInterfaceImpl> m_pImpl;
 
     // Used for debug draw
-    TVector<PhysBodyID>     m_BodyQueryResult;
-    TVector<Float3>         m_DebugDrawVertices;
-    TVector<unsigned int>   m_DebugDrawIndices;
+    Vector<PhysBodyID>     m_BodyQueryResult;
+    Vector<Float3>         m_DebugDrawVertices;
+    Vector<unsigned int>   m_DebugDrawIndices;
 };
 
 HK_NAMESPACE_END

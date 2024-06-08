@@ -48,11 +48,11 @@ private:
 
     void CreateTextures();
 
-    TRef<RenderCore::IPipeline> EdgeDetectionPipeline;
-    TRef<RenderCore::IPipeline> BlendingWeightCalculationPipeline;
-    TRef<RenderCore::IPipeline> NeighborhoodBlendingPipeline;
-    TRef<RenderCore::ITexture> AreaTex;
-    TRef<RenderCore::ITexture> SearchTex;
+    Ref<RenderCore::IPipeline> EdgeDetectionPipeline;
+    Ref<RenderCore::IPipeline> BlendingWeightCalculationPipeline;
+    Ref<RenderCore::IPipeline> NeighborhoodBlendingPipeline;
+    Ref<RenderCore::ITexture> AreaTex;
+    Ref<RenderCore::ITexture> SearchTex;
 };
 
 HK_NAMESPACE_END

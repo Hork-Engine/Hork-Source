@@ -81,10 +81,10 @@ struct NavMeshHitResult
 
 struct NavigationGeometry
 {
-    TVector<Float3> Vertices;
-    TVector<unsigned int> Indices;
+    Vector<Float3> Vertices;
+    Vector<unsigned int> Indices;
     BvAxisAlignedBox BoundingBox;
-    TBitMask<> WalkableMask;
+    BitMask<> WalkableMask;
     BvAxisAlignedBox const* pClipBoundingBox;
 };
 
@@ -297,7 +297,7 @@ struct NavQueryFilter
     unsigned short GetExcludeFlags() const;
 
 private:
-    TUniqueRef<class NavQueryFilterPrivate> m_Filter;
+    UniqueRef<class NavQueryFilterPrivate> m_Filter;
 };
 
 struct NavMeshDesc
@@ -374,10 +374,10 @@ public:
     NavQueryFilter QueryFilter;
 
     /// Navigation mesh connections. You must rebuild navigation mesh if you change connections.
-    TVector<NavMeshConnection> NavMeshConnections; // TODO: Components?
+    Vector<NavMeshConnection> NavMeshConnections; // TODO: Components?
 
     /// Navigation areas. You must rebuild navigation mesh if you change areas.
-    TVector<NavMeshArea> NavigationAreas; // TODO: Components?
+    Vector<NavMeshArea> NavigationAreas; // TODO: Components?
 
     TList<NavigationPrimitive> NavigationPrimitives;
 
@@ -498,7 +498,7 @@ public:
     bool MoveAlongSurface(Float3 const& inPosition, Float3 const& inDestination, Float3 const& inExtents, int inMaxVisitedSize, Float3& outResultPos) const;
 
     /// Last visited polys from MoveAlongSurface
-    TVector<NavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
+    Vector<NavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
 
     /// Finds a path from the start polygon to the end polygon.
     bool FindPath(NavPointRef const& inStartRef, NavPointRef const& inEndRef, NavQueryFilter const& inFilter, NavPolyRef* outPath, int* outPathCount, const int inMaxPath) const;
@@ -507,16 +507,16 @@ public:
     bool FindPath(NavPointRef const& inStartRef, NavPointRef const& inEndRef, NavPolyRef* outPath, int* outPathCount, const int inMaxPath) const;
 
     /// Finds a path from the start position to the end position.
-    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<NavMeshPathPoint>& outPathPoints) const;
+    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, Vector<NavMeshPathPoint>& outPathPoints) const;
 
     /// Finds a path from the start position to the end position.
-    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<NavMeshPathPoint>& outPathPoints) const;
+    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, Vector<NavMeshPathPoint>& outPathPoints) const;
 
     /// Finds a path from the start position to the end position.
-    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<Float3>& outPathPoints) const;
+    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, Vector<Float3>& outPathPoints) const;
 
     /// Finds a path from the start position to the end position.
-    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<Float3>& outPathPoints) const;
+    bool FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, Vector<Float3>& outPathPoints) const;
 
     /// Finds the straight path from the start to the end position within the polygon corridor.
     bool FindStraightPath(Float3 const& inStartPos, Float3 const& inEndPos, NavPolyRef const* inPath, int inPathSize, Float3* outStraightPath, unsigned char* outStraightPathFlags, NavPolyRef* outStraightPathRefs, int* outStraightPathCount, int inMaxStraightPath, NAV_MESH_STRAIGHTPATH_CROSSING inStraightPathCrossing = NAV_MESH_STRAIGHTPATH_DEFAULT) const;
@@ -564,14 +564,14 @@ private:
     dtTileCache*     m_TileCache{};
 
     // For tile cache
-    TUniqueRef<struct DetourLinearAllocator> m_LinearAllocator;
-    TUniqueRef<struct DetourMeshProcess>     m_MeshProcess;
+    UniqueRef<struct DetourLinearAllocator> m_LinearAllocator;
+    UniqueRef<struct DetourMeshProcess>     m_MeshProcess;
 
     // NavMesh areas
-    //TVector<NavMeshArea> m_Areas;
+    //Vector<NavMeshArea> m_Areas;
 
     // Temp array to reduce memory allocations in MoveAlongSurface
-    mutable TVector<NavPolyRef> m_LastVisitedPolys;
+    mutable Vector<NavPolyRef> m_LastVisitedPolys;
 };
 
 HK_NAMESPACE_END

@@ -47,8 +47,8 @@ struct BvhSplit
 
 struct BvhBuildContext
 {
-    TVector<BvAxisAlignedBox>   RightBounds;
-    TVector<BvhPrimitiveBounds> Primitives[3];
+    Vector<BvAxisAlignedBox>   RightBounds;
+    Vector<BvhPrimitiveBounds> Primitives[3];
 };
 
 static void CalcNodeBounds(BvhPrimitiveBounds const* Primitives, int PrimCount, BvAxisAlignedBox& Bounds)
@@ -147,7 +147,7 @@ BvhTree::BvhTree()
     m_BoundingBox.Clear();
 }
 
-BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, TArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf)
+BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, ArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf)
 {
     PrimitivesPerLeaf = Math::Max(PrimitivesPerLeaf, 16u);
 
@@ -207,7 +207,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
 }
 
 #if 0
-BvhTree::BvhTree(TArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf)
+BvhTree::BvhTree(ArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf)
 {
     PrimitivesPerLeaf = Math::Max(PrimitivesPerLeaf, 16u);
 

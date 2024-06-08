@@ -37,29 +37,29 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename VertexType>
-using TVertexBufferCPU = TVector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
+using VertexBufferCPU = Vector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
 
 template <typename IndexType>
-using TIndexBufferCPU = TVector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
+using IndexBufferCPU = Vector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
 
-void CreateBoxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
+void CreateBoxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
-void CreateSphereMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
+void CreateSphereMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32);
 
-void CreatePlaneMeshXZ(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
+void CreatePlaneMeshXZ(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
 
-void CreatePlaneMeshXY(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
+void CreatePlaneMeshXY(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale);
 
-void CreatePatchMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
+void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs);
 
-void CreateCylinderMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+void CreateCylinderMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
-void CreateConeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
+void CreateConeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs = 32);
 
-void CreateCapsuleMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
+void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs = 6, int NumHorizontalSubdivs = 8);
 
-void CreateSkyboxMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
+void CreateSkyboxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
-void CreateSkydomeMesh(TVertexBufferCPU<MeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
+void CreateSkydomeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
 
 HK_NAMESPACE_END

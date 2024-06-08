@@ -170,12 +170,12 @@ private:
         size_t UsedMemory;
     };
 
-    TRef<RenderCore::IDevice> m_pDevice;
-    TVector<VertexHandle*> m_Handles;
-    TVector<VertexHandle*> m_HugeHandles;
-    TVector<Block> m_Blocks;
-    TVector<TRef<RenderCore::IBuffer>> m_BufferHandles;
-    TPoolAllocator<VertexHandle> m_HandlePool;
+    Ref<RenderCore::IDevice> m_pDevice;
+    Vector<VertexHandle*> m_Handles;
+    Vector<VertexHandle*> m_HugeHandles;
+    Vector<Block> m_Blocks;
+    Vector<Ref<RenderCore::IBuffer>> m_BufferHandles;
+    PoolAllocator<VertexHandle> m_HandlePool;
 
     size_t m_UsedMemory;
     size_t m_UsedMemoryHuge;
@@ -253,10 +253,10 @@ private:
         RenderCore::SyncObject Sync;
     };
 
-    TRef<RenderCore::IDevice> m_pDevice;
+    Ref<RenderCore::IDevice> m_pDevice;
     RenderCore::IImmediateContext* m_pImmediateContext;
     ChainBuffer               m_ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
-    TRef<RenderCore::IBuffer> m_Buffer;
+    Ref<RenderCore::IBuffer> m_Buffer;
     void*                     m_pMappedMemory;
     int                       m_BufferIndex;
     size_t                    m_MaxMemoryUsage;

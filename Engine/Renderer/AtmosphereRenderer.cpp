@@ -101,7 +101,7 @@ AtmosphereRenderer::AtmosphereRenderer() {
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
+void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, Ref< RenderCore::ITexture > * ppTexture )
 {
     FrameGraph frameGraph( GDevice );
     RenderPass & pass = frameGraph.AddTask< RenderPass >( "Atmosphere pass" );
@@ -129,7 +129,7 @@ void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 
 
                         immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
 
-                        TRef<IResourceTable> resourceTbl;
+                        Ref<IResourceTable> resourceTbl;
                         GDevice->CreateResourceTable(&resourceTbl);
 
                         resourceTbl->BindBuffer(0, ConstantBuffer);

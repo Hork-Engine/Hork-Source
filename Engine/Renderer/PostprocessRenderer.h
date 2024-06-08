@@ -55,7 +55,7 @@ public:
                  RenderCore::FGTextureProxy* Dest);
 
 private:
-    TRef<RenderCore::IPipeline> PostprocessPipeline;
+    Ref<RenderCore::IPipeline> PostprocessPipeline;
 };
 
 HK_NAMESPACE_END

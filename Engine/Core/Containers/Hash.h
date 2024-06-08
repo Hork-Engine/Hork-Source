@@ -32,10 +32,10 @@ SOFTWARE.
 
 /*
 
-THashMap
-TStringHashMap
-TNameHash
-THashSet
+HashMap
+StringHashMap
+NameHash
+HashSet
 
 */
 
@@ -70,7 +70,7 @@ struct NameHasher
 };
 
 template <typename Key, typename Val, typename Hash = Hasher<Key>, typename Predicate = eastl::equal_to<Key>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>, bool bCacheHashCode = false>
-class THashMap : public eastl::hashtable<Key, eastl::pair<const Key, Val>, Allocator, eastl::use_first<eastl::pair<const Key, Val>>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, true, true>
+class HashMap : public eastl::hashtable<Key, eastl::pair<const Key, Val>, Allocator, eastl::use_first<eastl::pair<const Key, Val>>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, true, true>
 {
 public:
     using Super            = eastl::hashtable<Key, eastl::pair<const Key, Val>, Allocator, eastl::use_first<eastl::pair<const Key, Val>>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, true, true>;
@@ -83,55 +83,55 @@ public:
     using ValueType        = typename Super::value_type;
 
     /** Default constructor. */
-    explicit THashMap(AllocatorType const& allocator = AllocatorType("HashMap")) :
+    explicit HashMap(AllocatorType const& allocator = AllocatorType("HashMap")) :
         Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
     /** Constructor which creates an empty container, but start with nBucketCount buckets.
         We default to a small nBucketCount value, though the user really should manually
         specify an appropriate value in order to prevent memory from being reallocated. */
-    explicit THashMap(SizeType nBucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+    explicit HashMap(SizeType nBucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
         Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
-    THashMap(THashMap const& x) :
+    HashMap(HashMap const& x) :
         Super(x)
     {}
 
-    THashMap(THashMap&& x) :
+    HashMap(HashMap&& x) :
         Super(eastl::move(x))
     {}
 
-    THashMap(THashMap&& x, AllocatorType const& allocator) :
+    HashMap(HashMap&& x, AllocatorType const& allocator) :
         Super(eastl::move(x), allocator)
     {}
 
     /** initializer_list - based constructor.
-        Allows for initializing with brace values (e.g. THashMap<int, char*> hm = { {3,"c"}, {4,"d"}, {5,"e"} }; ) */
-    THashMap(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Allows for initializing with brace values (e.g. HashMap<int, char*> hm = { {3,"c"}, {4,"d"}, {5,"e"} }; ) */
+    HashMap(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
         Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
     /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
         elements in the input range. */
     template <typename ForwardIterator>
-    THashMap(ForwardIterator first, ForwardIterator last, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+    HashMap(ForwardIterator first, ForwardIterator last, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
         Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
-    HK_FORCEINLINE THashMap& operator=(const THashMap& x)
+    HK_FORCEINLINE HashMap& operator=(const HashMap& x)
     {
-        return static_cast<THashMap&>(Super::operator=(x));
+        return static_cast<HashMap&>(Super::operator=(x));
     }
 
-    HK_FORCEINLINE THashMap& operator=(std::initializer_list<ValueType> ilist)
+    HK_FORCEINLINE HashMap& operator=(std::initializer_list<ValueType> ilist)
     {
-        return static_cast<THashMap&>(Super::operator=(ilist));
+        return static_cast<HashMap&>(Super::operator=(ilist));
     }
 
-    HK_FORCEINLINE THashMap& operator=(THashMap&& x)
+    HK_FORCEINLINE HashMap& operator=(HashMap&& x)
     {
-        return static_cast<THashMap&>(Super::operator=(eastl::move(x)));
+        return static_cast<HashMap&>(Super::operator=(eastl::move(x)));
     }
 
     /** This is an extension to the C++ standard.We insert a default - constructed
@@ -268,12 +268,12 @@ public:
         return Super::bucket_size(n);
     }
 
-    HK_FORCEINLINE void Swap(THashMap& x)
+    HK_FORCEINLINE void Swap(HashMap& x)
     {
         Super::swap(x);
     }
 
-    HK_INLINE bool operator==(THashMap const& rhs) const
+    HK_INLINE bool operator==(HashMap const& rhs) const
     {
         if (Super::size() != rhs.size())
             return false;
@@ -286,7 +286,7 @@ public:
         return true;
     }
 
-    HK_INLINE bool operator!=(THashMap const& rhs) const
+    HK_INLINE bool operator!=(HashMap const& rhs) const
     {
         return !(operator==(rhs));
     }
@@ -322,7 +322,7 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <typename Key, typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
-HK_INLINE void swap(Hk::THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+HK_INLINE void swap(Hk::HashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::HashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
 {
     lhs.Swap(rhs);
 }
@@ -331,11 +331,11 @@ HK_INLINE void swap(Hk::THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHas
 HK_NAMESPACE_BEGIN
 
 template <typename Val, typename Hash = Hasher<StringView>, typename Predicate = eastl::equal_to<StringView>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>>
-class TStringHashMap : public THashMap<StringView, Val, Hash, Predicate, Allocator>
+class StringHashMap : public HashMap<StringView, Val, Hash, Predicate, Allocator>
 {
 public:
-    using Super            = THashMap<StringView, Val, Hash, Predicate, Allocator>;
-    using ThisType         = TStringHashMap<Val, Hash, Predicate, Allocator>;
+    using Super            = HashMap<StringView, Val, Hash, Predicate, Allocator>;
+    using ThisType         = StringHashMap<Val, Hash, Predicate, Allocator>;
     using AllocatorType    = typename Super::Super::allocator_type;
     using InsertReturnType = typename Super::Super::insert_return_type;
     using Iterator         = typename Super::Super::iterator;
@@ -344,10 +344,10 @@ public:
     using ValueType     = typename Super::Super::value_type;
     using MappedType    = Val;
 
-    TStringHashMap(const AllocatorType& allocator = AllocatorType()) :
+    StringHashMap(const AllocatorType& allocator = AllocatorType()) :
         Super(allocator) {}
-    TStringHashMap(const TStringHashMap& src, const AllocatorType& allocator = AllocatorType());
-    ~TStringHashMap();
+    StringHashMap(const StringHashMap& src, const AllocatorType& allocator = AllocatorType());
+    ~StringHashMap();
     void Clear();
     void Clear(bool clearBuckets);
 
@@ -366,7 +366,7 @@ private:
 
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-TStringHashMap<Val, Hash, Predicate, Allocator>::TStringHashMap(const TStringHashMap& src, const AllocatorType& allocator) :
+StringHashMap<Val, Hash, Predicate, Allocator>::StringHashMap(const StringHashMap& src, const AllocatorType& allocator) :
     Super(allocator)
 {
     for (ConstIterator i = src.begin(), e = src.end(); i != e; ++i)
@@ -374,13 +374,13 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::TStringHashMap(const TStringHas
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-TStringHashMap<Val, Hash, Predicate, Allocator>::~TStringHashMap()
+StringHashMap<Val, Hash, Predicate, Allocator>::~StringHashMap()
 {
     Clear();
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear()
+void StringHashMap<Val, Hash, Predicate, Allocator>::Clear()
 {
     AllocatorType& allocator = Super::Super::get_allocator();
     for (ConstIterator i = Super::Super::begin(), e = Super::Super::end(); i != e; ++i)
@@ -389,7 +389,7 @@ void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear()
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear(bool clearBuckets)
+void StringHashMap<Val, Hash, Predicate, Allocator>::Clear(bool clearBuckets)
 {
     AllocatorType& allocator = Super::Super::get_allocator();
     for (ConstIterator i = Super::Super::begin(), e = Super::Super::end(); i != e; ++i)
@@ -398,8 +398,8 @@ void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear(bool clearBuckets)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::ThisType&
-TStringHashMap<Val, Hash, Predicate, Allocator>::operator=(const ThisType& x)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::ThisType&
+StringHashMap<Val, Hash, Predicate, Allocator>::operator=(const ThisType& x)
 {
     AllocatorType allocator = Super::Super::get_allocator();
     this->~ThisType();
@@ -408,15 +408,15 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::operator=(const ThisType& x)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
+StringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key)
 {
     return Insert(key, MappedType());
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key, const Val& value)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
+StringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key, const Val& value)
 {
     //EASTL_ASSERT(key);
     Iterator i = Super::Super::find(key);
@@ -431,8 +431,8 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(StringView key, const Va
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-eastl::pair<typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator, bool>
-TStringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(StringView key, const Val& value)
+eastl::pair<typename StringHashMap<Val, Hash, Predicate, Allocator>::Iterator, bool>
+StringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(StringView key, const Val& value)
 {
     Iterator i = Super::Super::find(key);
     if (i != Super::Super::end())
@@ -446,8 +446,8 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(StringView key, 
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator
-TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::Iterator
+StringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
 {
     StringView key    = position->first;
     Iterator    result = Super::Super::erase(position);
@@ -456,8 +456,8 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::SizeType
-TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(StringView key)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::SizeType
+StringHashMap<Val, Hash, Predicate, Allocator>::Erase(StringView key)
 {
     const Iterator it(Super::Super::find(key));
 
@@ -470,8 +470,8 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(StringView key)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-typename TStringHashMap<Val, Hash, Predicate, Allocator>::MappedType&
-TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](StringView key)
+typename StringHashMap<Val, Hash, Predicate, Allocator>::MappedType&
+StringHashMap<Val, Hash, Predicate, Allocator>::operator[](StringView key)
 {
     using base_value_type = typename Super::Super::value_type;
 
@@ -483,7 +483,7 @@ TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](StringView key)
 }
 
 template <typename Val, typename Hash, typename Predicate, typename Allocator>
-StringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringView str)
+StringView StringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringView str)
 {
     size_t len    = str.Size();
     char*  result = (char*)EASTLAlloc(Super::Super::get_allocator(), len + 1);
@@ -494,10 +494,10 @@ StringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringV
 
 /** Case insensitive string hash map. */
 template <typename T>
-using TNameHash = TStringHashMap<T, NameHasher, NameHasher::Compare>;
+using NameHash = StringHashMap<T, NameHasher, NameHasher::Compare>;
 
 template <typename Val, typename Hash = Hasher<Val>, typename Predicate = eastl::equal_to<Val>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_SET>, bool bCacheHashCode = false>
-class THashSet : public eastl::hashtable<Val, Val, Allocator, eastl::use_self<Val>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, false, true>
+class HashSet : public eastl::hashtable<Val, Val, Allocator, eastl::use_self<Val>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, false, true>
 {
 public:
     using Super            = eastl::hashtable<Val, Val, Allocator, eastl::use_self<Val>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, false, true>;
@@ -510,55 +510,55 @@ public:
     using ValueType        = typename Super::value_type;
 
     /** Default constructor. */
-    explicit THashSet(AllocatorType const& allocator = AllocatorType("HashSet")) :
+    explicit HashSet(AllocatorType const& allocator = AllocatorType("HashSet")) :
         Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_self<Val>(), allocator)
     {}
 
     /** Constructor which creates an empty container, but start with nBucketCount buckets.
         We default to a small nBucketCount value, though the user really should manually
         specify an appropriate value in order to prevent memory from being reallocated. */
-    explicit THashSet(SizeType nBucketCount, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+    explicit HashSet(SizeType nBucketCount, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
         Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
-    THashSet(THashSet const& x) :
+    HashSet(HashSet const& x) :
         Super(x)
     {}
 
-    THashSet(THashSet&& x) :
+    HashSet(HashSet&& x) :
         Super(eastl::move(x))
     {}
 
-    THashSet(THashSet&& x, AllocatorType const& allocator) :
+    HashSet(HashSet&& x, AllocatorType const& allocator) :
         Super(eastl::move(x), allocator)
     {}
 
     /** initializer_list - based constructor.
-        Allows for initializing with brace values (e.g. THashSet<int> hs = { 3, 4, 5, }; ) */
-    THashSet(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Allows for initializing with brace values (e.g. HashSet<int> hs = { 3, 4, 5, }; ) */
+    HashSet(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
         Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
     /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
         elements in the input range. */
     template <typename FowardIterator>
-    THashSet(FowardIterator first, FowardIterator last, SizeType nBucketCount = 0, const Hash& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+    HashSet(FowardIterator first, FowardIterator last, SizeType nBucketCount = 0, const Hash& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
         Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
-    THashSet& operator=(THashSet const& x)
+    HashSet& operator=(HashSet const& x)
     {
-        return static_cast<THashSet&>(Super::operator=(x));
+        return static_cast<HashSet&>(Super::operator=(x));
     }
 
-    THashSet& operator=(std::initializer_list<ValueType> ilist)
+    HashSet& operator=(std::initializer_list<ValueType> ilist)
     {
-        return static_cast<THashSet&>(Super::operator=(ilist));
+        return static_cast<HashSet&>(Super::operator=(ilist));
     }
 
-    THashSet& operator=(THashSet&& x)
+    HashSet& operator=(HashSet&& x)
     {
-        return static_cast<THashSet&>(Super::operator=(eastl::move(x)));
+        return static_cast<HashSet&>(Super::operator=(eastl::move(x)));
     }
 
     HK_FORCEINLINE void Reserve(SizeType elementCount)
@@ -666,12 +666,12 @@ public:
         return Super::bucket_size(n);
     }
 
-    HK_FORCEINLINE void Swap(THashSet& x)
+    HK_FORCEINLINE void Swap(HashSet& x)
     {
         Super::swap(x);
     }
 
-    HK_INLINE bool operator==(THashSet const& rhs) const
+    HK_INLINE bool operator==(HashSet const& rhs) const
     {
         if (Super::size() != rhs.size())
             return false;
@@ -684,7 +684,7 @@ public:
         return true;
     }
 
-    HK_INLINE bool operator!=(THashSet const& rhs) const
+    HK_INLINE bool operator!=(HashSet const& rhs) const
     {
         return !(operator==(rhs));
     }
@@ -720,7 +720,7 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
-HK_INLINE void swap(Hk::THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+HK_INLINE void swap(Hk::HashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, Hk::HashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
 {
     lhs.Swap(rhs);
 }

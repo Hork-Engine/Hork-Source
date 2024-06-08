@@ -51,7 +51,7 @@ extern RenderCore::IDevice* GDevice;
 
 using namespace RenderCore;
 
-void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, SourceList const& Sources, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, SourceList const& Sources, Ref<IShaderModule>& Module)
 {
     SourceList sources;
 
@@ -133,19 +133,19 @@ void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, SourceList const& Sourc
     GDevice->CreateShaderFromCode(ShaderType, sources.Size(), sources.ToPtr(), &Module);
 }
 
-void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, Ref<IShaderModule>& Module)
 {
     SourceList sources;
     sources.Add(Source);
     CreateShader(ShaderType, sources, Module);
 }
 
-void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, String const& Source, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateShader(SHADER_TYPE ShaderType, String const& Source, Ref<IShaderModule>& Module)
 {
     CreateShader(ShaderType, Source.CStr(), Module);
 }
 
-void ShaderFactory::CreateVertexShader(StringView FileName, VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateVertexShader(StringView FileName, VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, Ref<IShaderModule>& Module)
 {
     // TODO: here check if the shader binary is cached. Load from cache if so.
 
@@ -163,31 +163,31 @@ void ShaderFactory::CreateVertexShader(StringView FileName, VertexAttribInfo con
     // TODO: Write shader binary to cache
 }
 
-void ShaderFactory::CreateTessControlShader(StringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateTessControlShader(StringView FileName, Ref<IShaderModule>& Module)
 {
     String source = LoadShader(FileName);
     CreateShader(TESS_CONTROL_SHADER, source, Module);
 }
 
-void ShaderFactory::CreateTessEvalShader(StringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateTessEvalShader(StringView FileName, Ref<IShaderModule>& Module)
 {
     String source = LoadShader(FileName);
     CreateShader(TESS_EVALUATION_SHADER, source, Module);
 }
 
-void ShaderFactory::CreateGeometryShader(StringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateGeometryShader(StringView FileName, Ref<IShaderModule>& Module)
 {
     String source = LoadShader(FileName);
     CreateShader(GEOMETRY_SHADER, source, Module);
 }
 
-void ShaderFactory::CreateFragmentShader(StringView FileName, TRef<IShaderModule>& Module)
+void ShaderFactory::CreateFragmentShader(StringView FileName, Ref<IShaderModule>& Module)
 {
     String source = LoadShader(FileName);
     CreateShader(FRAGMENT_SHADER, source, Module);
 }
 
-void ShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
+void ShaderFactory::CreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
 {
     using namespace RenderCore;
 
@@ -222,7 +222,7 @@ void ShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, St
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void ShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, StringView GeometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
+void ShaderFactory::CreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, StringView VertexShader, StringView FragmentShader, StringView GeometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
 {
     using namespace RenderCore;
 

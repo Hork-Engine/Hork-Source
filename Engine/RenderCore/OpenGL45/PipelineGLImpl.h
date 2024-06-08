@@ -73,12 +73,12 @@ private:
     int                          NumBuffers;
     unsigned int                 PrimitiveTopology;
     int                          NumPatchVertices;
-    TRef<IShaderModule>          pVS;
-    TRef<IShaderModule>          pTCS;
-    TRef<IShaderModule>          pTES;
-    TRef<IShaderModule>          pGS;
-    TRef<IShaderModule>          pFS;
-    TRef<IShaderModule>          pCS;
+    Ref<IShaderModule>          pVS;
+    Ref<IShaderModule>          pTCS;
+    Ref<IShaderModule>          pTES;
+    Ref<IShaderModule>          pGS;
+    Ref<IShaderModule>          pFS;
+    Ref<IShaderModule>          pCS;
 };
 
 } // namespace RenderCore

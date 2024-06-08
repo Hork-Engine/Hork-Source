@@ -73,7 +73,7 @@ public:
 class BroadphaseBodyCollector : public JPH::CollideShapeBodyCollector
 {
 public:
-    BroadphaseBodyCollector(TVector<PhysBodyID>& outResult) :
+    BroadphaseBodyCollector(Vector<PhysBodyID>& outResult) :
         m_Hits(outResult)
     {
         m_Hits.Clear();
@@ -84,7 +84,7 @@ public:
         m_Hits.Add(PhysBodyID(inBodyID.GetIndexAndSequenceNumber()));
     }
 
-    TVector<PhysBodyID>& m_Hits;
+    Vector<PhysBodyID>& m_Hits;
 };
 
 class GroupFilter : public JPH::GroupFilter
@@ -96,7 +96,7 @@ public:
         return !m_IgnoreCollisions.Contains(id);
     }
 
-    THashSet<uint64_t> m_IgnoreCollisions;
+    HashSet<uint64_t> m_IgnoreCollisions;
 };
 
 class ObjectLayerFilter final : public JPH::ObjectLayerFilter
@@ -154,7 +154,7 @@ void CopyShapeCastResult(ShapeCastResult& out, JPH::ShapeCastResult const& in)
     out.IsBackFaceHit = in.mIsBackFaceHit;
 }
 
-void CopyShapeCastResult(TVector<ShapeCastResult>& out, JPH::Array<JPH::ShapeCastResult> const& in)
+void CopyShapeCastResult(Vector<ShapeCastResult>& out, JPH::Array<JPH::ShapeCastResult> const& in)
 {
     out.Resize(in.size());
     for (int i = 0; i < in.size(); i++)
@@ -170,7 +170,7 @@ void CopyShapeCollideResult(ShapeCollideResult& out, JPH::CollideShapeResult con
     out.PenetrationDepth = in.mPenetrationDepth;
 }
 
-void CopyShapeCollideResult(TVector<ShapeCollideResult>& out, JPH::Array<JPH::CollideShapeResult> const& in)
+void CopyShapeCollideResult(Vector<ShapeCollideResult>& out, JPH::Array<JPH::CollideShapeResult> const& in)
 {
     out.Resize(in.size());
     for (int i = 0; i < in.size(); i++)
@@ -192,7 +192,7 @@ bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, 
     return collector.HadHit();
 }
 
-bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::ShapeCastSettings settings;
     settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = inFilter.IgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
@@ -1063,11 +1063,11 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
         struct Visitor
         {
             DebugRenderer& m_DebugRenderer;
-            TVector<Float3>& m_DebugDrawVertices;
-            TVector<unsigned int>& m_DebugDrawIndices;
+            Vector<Float3>& m_DebugDrawVertices;
+            Vector<unsigned int>& m_DebugDrawIndices;
             JPH::BodyInterface& m_BodyInterface;
 
-            Visitor(DebugRenderer& debugRenderer, TVector<Float3>& debugDrawVertices, TVector<unsigned int>& debugDrawIndices, JPH::BodyInterface& bodyInterface) :
+            Visitor(DebugRenderer& debugRenderer, Vector<Float3>& debugDrawVertices, Vector<unsigned int>& debugDrawIndices, JPH::BodyInterface& bodyInterface) :
                 m_DebugRenderer(debugRenderer), m_DebugDrawVertices(debugDrawVertices), m_DebugDrawIndices(debugDrawIndices), m_BodyInterface(bodyInterface)
             {}
 
@@ -1241,7 +1241,7 @@ bool PhysicsInterface::CastRayClosest(Float3 const& inRayStart, Float3 const& in
     return true;
 }
 
-bool PhysicsInterface::CastRay(Float3 const& inRayStart, Float3 const& inRayDir, TVector<RayCastResult>& outResult, RayCastFilter const& inFilter)
+bool PhysicsInterface::CastRay(Float3 const& inRayStart, Float3 const& inRayDir, Vector<RayCastResult>& outResult, RayCastFilter const& inFilter)
 {
     JPH::RRayCast raycast;
     raycast.mOrigin = ConvertVector(inRayStart);
@@ -1299,7 +1299,7 @@ bool PhysicsInterface::CastBoxClosest(Float3 const& inRayStart, Float3 const& in
     return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
@@ -1324,7 +1324,7 @@ bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& 
     return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
@@ -1348,7 +1348,7 @@ bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const&
     return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::SphereShape shape(inRadius);
 
@@ -1373,7 +1373,7 @@ bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const
     return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
@@ -1399,7 +1399,7 @@ bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 cons
     return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::CylinderShape shape(inHalfHeight, inRadius);
 
@@ -1412,7 +1412,7 @@ bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRa
     return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
-void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
+void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
     BroadphaseBodyCollector collector(outResult);
     if (inRotation == Quat::Identity())
@@ -1432,7 +1432,7 @@ void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalf
     }
 }
 
-void PhysicsInterface::OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
+void PhysicsInterface::OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
     BroadphaseBodyCollector collector(outResult);
     m_pImpl->m_PhysSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(inMins), ConvertVector(inMaxs)),
@@ -1440,7 +1440,7 @@ void PhysicsInterface::OverlapBoxMinMax(Float3 const& inMins, Float3 const& inMa
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
 }
 
-void PhysicsInterface::OverlapSphere(Float3 const& inPosition, float inRadius, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
+void PhysicsInterface::OverlapSphere(Float3 const& inPosition, float inRadius, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
     BroadphaseBodyCollector collector(outResult);
     m_pImpl->m_PhysSystem.GetBroadPhaseQuery().CollideSphere(ConvertVector(inPosition),
@@ -1449,7 +1449,7 @@ void PhysicsInterface::OverlapSphere(Float3 const& inPosition, float inRadius, T
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
 }
 
-void PhysicsInterface::OverlapPoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
+void PhysicsInterface::OverlapPoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
     BroadphaseBodyCollector collector(outResult);
     m_pImpl->m_PhysSystem.GetBroadPhaseQuery().CollidePoint(ConvertVector(inPosition),
@@ -1634,7 +1634,7 @@ bool PhysicsInterface::CheckPoint(Float3 const& inPosition, BroadphaseLayerMask 
     return collector.HadHit();
 }
 
-void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
+void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::BoxShape shape(ConvertVector(inHalfExtent));
 
@@ -1674,7 +1674,7 @@ void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalf
     }
 }
 
-void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
+void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::BoxShape shape(ConvertVector((inMaxs - inMins) * 0.5f));
 
@@ -1713,7 +1713,7 @@ void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMa
     }
 }
 
-void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
+void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::SphereShape shape(inRadius);
 
@@ -1752,7 +1752,7 @@ void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, T
     }
 }
 
-void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
+void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::CapsuleShape shape(inHalfHeight, inRadius);
 
@@ -1792,7 +1792,7 @@ void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeig
     }
 }
 
-void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, TVector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
+void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::CylinderShape shape(inHalfHeight, inRadius);
 
@@ -1832,7 +1832,7 @@ void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHei
     }
 }
 
-void PhysicsInterface::CollidePoint(Float3 const& inPosition, TVector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers)
+void PhysicsInterface::CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers)
 {
     JPH::AllHitCollisionCollector<JPH::CollidePointCollector> collector;
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get())

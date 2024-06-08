@@ -89,9 +89,9 @@ public:
 private:
     void CreateDefaultViews();
 
-    THashMap<TextureViewDesc, TRef<TextureViewGLImpl>> Views;
+    HashMap<TextureViewDesc, Ref<TextureViewGLImpl>> Views;
 
-    THashSet<uint64_t> BindlessSamplers;
+    HashSet<uint64_t> BindlessSamplers;
 
     // Dummy texture is used for default color and depth buffers
     bool bDummyTexture{};

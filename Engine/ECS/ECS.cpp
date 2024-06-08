@@ -105,7 +105,7 @@ void World::AddEventHandler(size_t eventId, Internal::EventFunction handler)
     auto it = m_EventHandlers.Find(eventId);
     if (it == m_EventHandlers.End())
     {
-        TVector<Internal::EventFunction> handlers(1, handler);
+        Vector<Internal::EventFunction> handlers(1, handler);
         m_EventHandlers[eventId] = std::move(handlers);
     }
     else
@@ -286,7 +286,7 @@ void World::ExecuteCommands()
 //    }
 }
 
-void World::DoSpawnEntity(EntityHandle handle, TVector<std::pair<uint32_t, void*>> const& components)
+void World::DoSpawnEntity(EntityHandle handle, Vector<std::pair<uint32_t, void*>> const& components)
 {
     auto* entity = GetEntity(handle);
     HK_ASSERT(entity);
@@ -414,7 +414,7 @@ void World::DoDestroyEntity(EntityHandle handle)
 
 void World::DoDestroyEntities()
 {
-    THashSet<EntityHandle> entities;
+    HashSet<EntityHandle> entities;
 
     auto registry = ComponentRegistry();
     for (Archetype* archetype : m_Archetypes)
@@ -694,7 +694,7 @@ void World::DoConstructEntity()
     m_Constructable.Components.Clear();
 }
 
-TArrayView<ComponentTypeId> EntityView::GetComponentIDs() const
+ArrayView<ComponentTypeId> EntityView::GetComponentIDs() const
 {
     if (!IsValid())
         return {};
@@ -703,7 +703,7 @@ TArrayView<ComponentTypeId> EntityView::GetComponentIDs() const
     if (!archetype)
         return {};
 
-    return TArrayView<ComponentTypeId>(archetype->Type.Begin(), archetype->Type.End());
+    return ArrayView<ComponentTypeId>(archetype->Type.Begin(), archetype->Type.End());
 }
 
 auto EntityView::GetComponentByID(ComponentTypeId componentTID) const -> void*

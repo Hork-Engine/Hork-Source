@@ -43,17 +43,17 @@ ConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
 
 struct InputSystemStatic
 {
-    TArray<const char*, MAX_KEYBOARD_BUTTONS>  KeyNames;
-    TArray<const char*, MAX_MOUSE_BUTTONS>     MouseButtonNames;
-    TArray<const char*, MAX_MOUSE_AXES>        MouseAxisNames;
-    TArray<const char*, MAX_INPUT_DEVICES>     DeviceNames;
-    TArray<const char*, MAX_JOYSTICK_BUTTONS>  JoystickButtonNames;
-    TArray<const char*, MAX_JOYSTICK_AXES>     JoystickAxisNames;
-    TArray<const char*, MAX_MODIFIERS>         ModifierNames;
-    TArray<const char*, MAX_INPUT_CONTROLLERS> ControllerNames;
+    Array<const char*, MAX_KEYBOARD_BUTTONS>  KeyNames;
+    Array<const char*, MAX_MOUSE_BUTTONS>     MouseButtonNames;
+    Array<const char*, MAX_MOUSE_AXES>        MouseAxisNames;
+    Array<const char*, MAX_INPUT_DEVICES>     DeviceNames;
+    Array<const char*, MAX_JOYSTICK_BUTTONS>  JoystickButtonNames;
+    Array<const char*, MAX_JOYSTICK_AXES>     JoystickAxisNames;
+    Array<const char*, MAX_MODIFIERS>         ModifierNames;
+    Array<const char*, MAX_INPUT_CONTROLLERS> ControllerNames;
 
-    TArray<int, MAX_INPUT_DEVICES>                                DeviceButtonLimits;
-    TArray<TArray<float, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT> JoystickAxisState;
+    Array<int, MAX_INPUT_DEVICES>                                DeviceButtonLimits;
+    Array<Array<float, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT> JoystickAxisState;
 
     InputSystemStatic()
     {

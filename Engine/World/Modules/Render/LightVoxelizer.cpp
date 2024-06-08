@@ -780,7 +780,7 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
     }
 }
 
-void LightVoxelizer::GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
+void LightVoxelizer::GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
 {
     Float3  clusterMins;
     Float3  clusterMaxs;
@@ -853,8 +853,8 @@ void LightVoxelizer::DrawVoxels(DebugRenderer* InRenderer)
     int n = 0;
     for (Float3* lineP = DebugLinePoints.ToPtr(); n < DebugLinePoints.Size(); lineP += 8, n += 8)
     {
-        InRenderer->DrawLine(TArrayView<Float3>(lineP, 4), true);
-        InRenderer->DrawLine(TArrayView<Float3>(lineP + 4, 4), true);
+        InRenderer->DrawLine(ArrayView<Float3>(lineP, 4), true);
+        InRenderer->DrawLine(ArrayView<Float3>(lineP + 4, 4), true);
         InRenderer->DrawLine(lineP[0], lineP[5]);
         InRenderer->DrawLine(lineP[1], lineP[4]);
         InRenderer->DrawLine(lineP[2], lineP[7]);

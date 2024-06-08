@@ -116,7 +116,7 @@ void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         int64_t time = Core::SysMilliseconds();
 
-        THashMap<uint32_t, int64_t>& streamedPages = pTexture->StreamedPages;
+        HashMap<uint32_t, int64_t>& streamedPages = pTexture->StreamedPages;
         auto it = streamedPages.Find(quedPage.PageIndex);
         if (it != streamedPages.End())
         {
@@ -185,7 +185,7 @@ void VirtualTextureFeedbackAnalyzer::ClearQueue()
     QueueLoadPos = 0;
 }
 
-void VirtualTextureFeedbackAnalyzer::SubmitPages(TVector<VTPageDesc> const& Pages)
+void VirtualTextureFeedbackAnalyzer::SubmitPages(Vector<VTPageDesc> const& Pages)
 {
     HK_ASSERT(Pages.Size() < MAX_QUEUE_LENGTH);
 

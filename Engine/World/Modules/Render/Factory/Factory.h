@@ -69,14 +69,14 @@ public:
 private:
     const char*           m_Tag;
     ClassMeta*            m_Classes;
-    mutable TVector<ClassMeta*> m_IdTable;
-    mutable THashMap<StringView, ClassMeta const*> m_LookupTable;
+    mutable Vector<ClassMeta*> m_IdTable;
+    mutable HashMap<StringView, ClassMeta const*> m_LookupTable;
     uint64_t              m_NumClasses;
     ObjectFactory*        m_NextFactory;
     static ObjectFactory* m_FactoryList;
 };
 
-using PropertyList = TSmallVector<Property const*, 32>;
+using PropertyList = SmallVector<Property const*, 32>;
 
 class ClassMeta
 {

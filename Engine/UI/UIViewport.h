@@ -79,7 +79,7 @@ protected:
 private:
     void UpdateViewSize();
 
-    TRef<WorldRenderView> m_WorldRenderView;
+    Ref<WorldRenderView> m_WorldRenderView;
     int                   m_ViewWidth{};
     int                   m_ViewHeight{};
 };

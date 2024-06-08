@@ -152,7 +152,7 @@ public:
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
-    virtual bool CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;
+    virtual bool CreateView(BufferViewDesc const& BufferViewDesc, Ref<IBufferView>* ppBufferView) = 0;
 
     BufferDesc const& GetDesc() const { return Desc; }
 

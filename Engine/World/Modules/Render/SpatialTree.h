@@ -78,8 +78,8 @@ public:
     }
 
 private:
-    TVector<SpatialArea> m_Areas;
-    TVector<uint32_t> m_FreeList;
+    Vector<SpatialArea> m_Areas;
+    Vector<uint32_t> m_FreeList;
 };
 
 class SpatialTree

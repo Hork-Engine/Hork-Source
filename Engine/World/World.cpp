@@ -548,7 +548,7 @@ void World::DrawDebug(DebugRenderer& renderer)
         function.Invoke(renderer);
 }
 
-TVector<PageStorage<GameObject::TransformData>>& World::GetTransformHierarchy(HierarchyType hierarchyType)
+Vector<PageStorage<GameObject::TransformData>>& World::GetTransformHierarchy(HierarchyType hierarchyType)
 {
     return m_TransformHierarchy[static_cast<int>(hierarchyType)];
 }

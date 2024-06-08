@@ -167,16 +167,16 @@ public:
     void            SetGenerateInputEvents(bool bShouldGenerateInputEvents);
 
     /** Begin a new frame */
-    void            NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, class ResourceManager* resourceManager);
+    void            NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, class ResourceManager* resourceManager);
 
     /** Poll runtime events */
     void            PollEvents(IEventListener* Listener);
 
     void            RegisterView(WorldRenderView* pView);
 
-    TVector<WorldRenderView*> const&    GetRenderViews() { return m_Views; }
+    Vector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
 
-    StreamedMemoryGPU*                  GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
+    StreamedMemoryGPU*              GetStreamedMemoryGPU() { return m_StreamedMemoryGPU; }
 
 private:
     void            ClearViews();
@@ -188,24 +188,24 @@ private:
     int64_t m_FrameDuration;
     int     m_FrameNumber;
 
-    TLinearAllocator<>& m_FrameMemory;
+    LinearAllocator<>&  m_FrameMemory;
     size_t              m_FrameMemoryUsedPrev = 0;
     size_t              m_MaxFrameMemoryUsage = 0;
 
-    TRef<class GPUSync>     m_GPUSync;
-    TRef<StreamedMemoryGPU> m_StreamedMemoryGPU;
+    Ref<class GPUSync>     m_GPUSync;
+    Ref<StreamedMemoryGPU> m_StreamedMemoryGPU;
 
-    TRef<RenderCore::IDevice> m_RenderDevice;
+    Ref<RenderCore::IDevice> m_RenderDevice;
 
-    TArray<int, KEY_LAST + 1>           m_PressedKeys;
-    TArray<bool, MOUSE_BUTTON_8 + 1>    m_PressedMouseButtons;
-    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT>    m_JoystickButtonState;
-    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
-    TArray<bool, MAX_JOYSTICKS_COUNT>   m_JoystickAdded;
+    Array<int, KEY_LAST + 1>           m_PressedKeys;
+    Array<bool, MOUSE_BUTTON_8 + 1>    m_PressedMouseButtons;
+    Array<Array<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT>    m_JoystickButtonState;
+    Array<Array<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
+    Array<bool, MAX_JOYSTICKS_COUNT>    m_JoystickAdded;
     bool                                m_bShouldGenerateInputEvents{true};
 
-    TVector<WorldRenderView*>   m_Views;
-    TRef<class FontStash>       m_FontStash;
+    Vector<WorldRenderView*>   m_Views;
+    Ref<class FontStash>       m_FontStash;
 };
 
 HK_NAMESPACE_END

@@ -39,11 +39,11 @@ class LayoutSymbol;
 
 HK_NAMESPACE_BEGIN
 
-class SvgDocument
+class SvgDocument final
 {
 public:
     SvgDocument() = default;
-    virtual ~SvgDocument();
+    ~SvgDocument();
 
     SvgDocument(SvgDocument const& Rhs) = delete;
     SvgDocument& operator=(SvgDocument const& Rhs) = delete;

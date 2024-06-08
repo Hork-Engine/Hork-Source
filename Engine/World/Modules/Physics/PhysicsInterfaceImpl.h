@@ -126,7 +126,7 @@ class ObjectVsBroadPhaseLayerFilterImpl final : public JPH::ObjectVsBroadPhaseLa
 public:
     uint32_t BroadphaseCollisionMask(JPH::BroadPhaseLayer broadphaseLayer) const
     {
-        static constexpr Hk::TArray<uint32_t, size_t(BroadphaseLayer::Max)> mask =
+        static constexpr Hk::Array<uint32_t, size_t(BroadphaseLayer::Max)> mask =
         {
             // Static
             HK_BIT(uint32_t(BroadphaseLayer::Dynamic)) | HK_BIT(uint32_t(BroadphaseLayer::Character)),
@@ -174,8 +174,8 @@ class BodyActivationListener final : public JPH::BodyActivationListener
 public:
     // FIXME: Use set?
     Mutex                   m_Mutex;
-    TVector<uint32_t>       m_ActiveBodies;
-    TVector<uint32_t>       m_JustDeactivated;
+    Vector<uint32_t>       m_ActiveBodies;
+    Vector<uint32_t>       m_JustDeactivated;
 
     virtual void			OnBodyActivated(const JPH::BodyID &inBodyID, JPH::uint64 inBodyUserData) override;
 
@@ -195,7 +195,7 @@ public:
         ComponentExtendedHandle             Target;
         uint32_t                            Count;
     };
-    THashMap<uint64_t, TriggerContact> m_Triggers;
+    HashMap<uint64_t, TriggerContact> m_Triggers;
 
   
 
@@ -213,7 +213,7 @@ public:
         ComponentExtendedHandle             Target;
     };
 
-    TVector<TriggerEvent> m_TriggerEvents;
+    Vector<TriggerEvent> m_TriggerEvents;
 
     virtual JPH::ValidateResult	OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override;
 
@@ -269,18 +269,18 @@ public:
     void                                QueueToAdd(JPH::Body* body, bool startAsSleeping);
 
     bool                                CastShapeClosest(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, ShapeCastResult& outResult, ShapeCastFilter const& inFilter);
-    bool                                CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, TVector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter);
+    bool                                CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter);
 
     JPH::PhysicsSystem                  m_PhysSystem;
 
     BodyActivationListener              m_BodyActivationListener;
     ContactListener                     m_ContactListener;
 
-    TVector<Handle32<class DynamicBodyComponent>> m_KinematicBodies;
-    TVector<Handle32<class DynamicBodyComponent>> m_DynamicScaling;
-    TVector<Handle32<class TriggerComponent>>     m_MovableTriggers;
+    Vector<Handle32<class DynamicBodyComponent>> m_KinematicBodies;
+    Vector<Handle32<class DynamicBodyComponent>> m_DynamicScaling;
+    Vector<Handle32<class TriggerComponent>>     m_MovableTriggers;
 
-    TVector<DynamicBodyMessage>         m_DynamicBodyMessageQueue;
+    Vector<DynamicBodyMessage>         m_DynamicBodyMessageQueue;
 
     CollisionFilter                     m_CollisionFilter;
 
@@ -295,9 +295,9 @@ public:
 
     JPH::GroupFilter*                   m_GroupFilter;
 
-    TVector<JPH::BodyID>                m_QueueToAdd[2];
+    Vector<JPH::BodyID>                m_QueueToAdd[2];
 
-    TPoolAllocator<BodyUserData>        m_UserDataAllocator;
+    PoolAllocator<BodyUserData>        m_UserDataAllocator;
 };
 
 HK_FORCEINLINE JPH::ObjectLayer MakeObjectLayer(uint32_t group, BroadphaseLayer broadphase)

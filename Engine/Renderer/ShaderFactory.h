@@ -42,25 +42,25 @@ HK_NAMESPACE_BEGIN
 class ShaderFactory
 {
 public:
-    using SourceList = TSmallVector<const char*, 64>;
+    using SourceList = SmallVector<const char*, 64>;
 
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, SourceList const& Sources, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, const char* Source, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, String const& Source, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, SourceList const& Sources, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, const char* Source, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, String const& Source, Ref<RenderCore::IShaderModule>& Module);
 
-    static void CreateVertexShader(StringView FileName, RenderCore::VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateTessControlShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateTessEvalShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateGeometryShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
-    static void CreateFragmentShader(StringView FileName, TRef<RenderCore::IShaderModule>& Module);
+    static void CreateVertexShader(StringView FileName, RenderCore::VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateTessControlShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateTessEvalShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateGeometryShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateFragmentShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
 
-    static void CreateFullscreenQuadPipeline(TRef<RenderCore::IPipeline>*               ppPipeline,
+    static void CreateFullscreenQuadPipeline(Ref<RenderCore::IPipeline>*               ppPipeline,
                                              StringView                                VertexShader,
                                              StringView                                FragmentShader,
                                              RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
                                              RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
-    static void CreateFullscreenQuadPipelineGS(TRef<RenderCore::IPipeline>*               ppPipeline,
+    static void CreateFullscreenQuadPipelineGS(Ref<RenderCore::IPipeline>*               ppPipeline,
                                                StringView                                VertexShader,
                                                StringView                                FragmentShader,
                                                StringView                                GeometryShader,

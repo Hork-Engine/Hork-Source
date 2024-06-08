@@ -86,9 +86,9 @@ private:
 
         String                          PathToWrite;
         const char*                     DefaultMaterial{""};
-        TVector<TextureInfo*>           Textures;
+        Vector<TextureInfo*>           Textures;
         float                           Uniforms[16];
-        THashMap<uint32_t, const char*> DefaultTexture;
+        HashMap<uint32_t, const char*> DefaultTexture;
     };
 
     struct AnimationInfo
@@ -96,9 +96,9 @@ private:
         String                    Name;
         float                     FrameDelta; // fixed time delta between frames
         uint32_t                  FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-        TVector<AnimationChannel> Channels;
-        TVector<Transform>        Transforms;
-        TVector<BvAxisAlignedBox> Bounds;
+        Vector<AnimationChannel> Channels;
+        Vector<Transform>        Transforms;
+        Vector<BvAxisAlignedBox> Bounds;
     };
 
     void         ReadGLTF(cgltf_data* Data);
@@ -134,14 +134,14 @@ private:
     String                  m_Path;
     cgltf_data*             m_Data;
     bool                    m_bSkeletal;
-    TVector<MeshVertex>     m_Vertices;
-    TVector<MeshVertexSkin> m_Weights;
-    TVector<unsigned int>   m_Indices;
-    TVector<MeshInfo>       m_Meshes;
-    TVector<TextureInfo>    m_Textures;
-    TVector<MaterialInfo>   m_Materials;
-    TVector<AnimationInfo>  m_Animations;
-    TVector<SkeletonJoint>  m_Joints;
+    Vector<MeshVertex>     m_Vertices;
+    Vector<MeshVertexSkin> m_Weights;
+    Vector<unsigned int>   m_Indices;
+    Vector<MeshInfo>       m_Meshes;
+    Vector<TextureInfo>    m_Textures;
+    Vector<MaterialInfo>   m_Materials;
+    Vector<AnimationInfo>  m_Animations;
+    Vector<SkeletonJoint>  m_Joints;
     MeshSkin                m_Skin;
     BvAxisAlignedBox        m_BindposeBounds;
     String                  m_SkeletonPath;
@@ -764,7 +764,7 @@ bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
     HeapBlob blob = f.AsBlob();
 
     constexpr int MAX_MEMORY_GLTF = 16 << 20;
-    using ALinearAllocatorGLTF    = TLinearAllocator<MAX_MEMORY_GLTF>;
+    using ALinearAllocatorGLTF    = LinearAllocator<MAX_MEMORY_GLTF>;
 
     ALinearAllocatorGLTF allocator;
 
@@ -1035,7 +1035,7 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
 
             m_Joints.Clear();
 
-            TVector<cgltf_node*> roots;
+            Vector<cgltf_node*> roots;
             for (int i = 0; i < skin->joints_count; i++)
             {
                 cgltf_node* root = skin->joints[i];
@@ -2416,7 +2416,7 @@ void AssetImporter::WriteSingleModel()
         for (MeshInfo const& meshInfo : m_Meshes)
         {
             // Generate subpart BVH
-            BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
 
             // Write subpart BVH
             f.WriteObject(aabbTree);
@@ -2432,7 +2432,7 @@ void AssetImporter::WriteSingleModel()
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
-    //TVector< ACollisionTriangleSoupData::SSubpart > subparts;
+    //Vector< ACollisionTriangleSoupData::SSubpart > subparts;
 
     //subparts.Resize( m_Meshes.Size() );
     //for ( int i = 0 ; i < subparts.Size() ; i++ ) {
@@ -2528,7 +2528,7 @@ void AssetImporter::WriteSingleModel2()
         stream.WriteUInt32(0); // weights count
     }
 
-    TVector<MeshVertexUV> lightmapUVs;
+    Vector<MeshVertexUV> lightmapUVs;
     stream.WriteArray(lightmapUVs);
 
     stream.WriteArray(m_Indices);
@@ -2544,7 +2544,7 @@ void AssetImporter::WriteSingleModel2()
 
         if (bRaycastBVH)
         {
-            BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
             stream.WriteObject(aabbTree);
         }
         else
@@ -2663,8 +2663,8 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     if (bRaycastBVH)
     {
         // Generate subpart BVH
-        BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
-                         TArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
+        BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+                         ArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
                          0,
                          m_Settings.RaycastPrimitivesPerLeaf);
 
@@ -2750,7 +2750,7 @@ void AssetImporter::WriteMesh2(MeshInfo const& Mesh)
         stream.WriteUInt32(0); // weights count
     }
 
-    TVector<MeshVertexUV> lightmapUVs;
+    Vector<MeshVertexUV> lightmapUVs;
     stream.WriteArray(lightmapUVs);
 
     stream.WriteUInt32(Mesh.IndexCount);
@@ -2769,8 +2769,8 @@ void AssetImporter::WriteMesh2(MeshInfo const& Mesh)
 
     if (bRaycastBVH)
     {
-        BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
-                         TArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
+        BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+                         ArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
                          0,
                          m_Settings.RaycastPrimitivesPerLeaf);
 
@@ -2940,8 +2940,8 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
         }
     };
 
-    THashMap<unsigned int, TVector<Vertex>> vertexList;
-    THashMap<Vertex, unsigned int>          vertexHash;
+    HashMap<unsigned int, Vector<Vertex>> vertexList;
+    HashMap<Vertex, unsigned int>          vertexHash;
     bool                                    bUnsupportedVertexCount = false;
 
     for (unsigned int groupIndex = 0; groupIndex < pMesh->group_count; ++groupIndex)
@@ -2955,7 +2955,7 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
             unsigned int vertexCount = pMesh->face_vertices[group->face_offset + faceIndex];
             unsigned int material    = pMesh->face_materials[group->face_offset + faceIndex];
 
-            TVector<Vertex>& vertices = vertexList[material];
+            Vector<Vertex>& vertices = vertexList[material];
 
             if (vertexCount == 3)
             {
@@ -3011,8 +3011,8 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
         LOG("AssetImporter::ReadOBJ: The mesh contains polygons with an unsupported number of vertices. Polygons are expected to have 3 or 4 vertices.\n");
     }
 
-    TStringHashMap<unsigned int> uniqueMaterials;
-    TVector<fastObjMaterial const*> materialList;
+    StringHashMap<unsigned int> uniqueMaterials;
+    Vector<fastObjMaterial const*> materialList;
 
     for (auto& it : vertexList)
     {
@@ -3050,7 +3050,7 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
     for (auto& it : vertexList)
     {
         unsigned int     materialNum = it.first;
-        TVector<Vertex>& vertices = it.second;
+        Vector<Vertex>& vertices = it.second;
 
         if (vertices.IsEmpty())
             continue;

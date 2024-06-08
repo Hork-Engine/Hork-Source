@@ -48,6 +48,10 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
+    //
+    // Initial properties
+    //
+
     //PhysicsMaterial         Material;
 
     /// The collision group this body belongs to (determines if two objects can collide)
@@ -55,7 +59,7 @@ public:
 
     //uint32_t                ObjectFilterID = ~0u;
     
-    TRef<TerrainCollision>  m_CollisionModel;
+    Ref<TerrainCollision>  m_CollisionModel;
 
     void                    BeginPlay();
     void                    EndPlay();

@@ -322,7 +322,7 @@ VertexHandle* VertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _Da
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
-    TRef<RenderCore::IBuffer> buffer;
+    Ref<RenderCore::IBuffer> buffer;
     m_pDevice->CreateBuffer(bufferCI, _Data, &buffer);
     buffer->SetDebugName("Vertex memory HUGE buffer");
 
@@ -384,7 +384,7 @@ void VertexMemoryGPU::AddGPUBuffer()
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
-    TRef<RenderCore::IBuffer> buffer;
+    Ref<RenderCore::IBuffer> buffer;
     m_pDevice->CreateBuffer(bufferCI, nullptr, &buffer);
 
     buffer->SetDebugName("Vertex memory block buffer");

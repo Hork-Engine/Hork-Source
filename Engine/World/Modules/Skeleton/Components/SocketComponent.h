@@ -46,7 +46,7 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
-    TRef<SkeletonPose>  Pose;
+    Ref<SkeletonPose>  Pose;
     int                 SocketIndex{};
     
     void FixedUpdate();

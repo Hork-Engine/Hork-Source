@@ -43,7 +43,7 @@ constexpr int VT_MAX_LAYERS = 8;
 
 typedef size_t SFileOffset;
 
-using VTPageBitfield = TBitMask<>;
+using VTPageBitfield = BitMask<>;
 
 enum VT_PAGE_FLAGS_4BIT
 {

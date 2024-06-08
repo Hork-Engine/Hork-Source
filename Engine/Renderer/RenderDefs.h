@@ -314,10 +314,10 @@ public:
     int NumUniformVectors{};
 
     /** Material samplers */
-    TStaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
+    StaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
 
     /** Material shaders */
-    TVector<MaterialSource> Shaders;
+    Vector<MaterialSource> Shaders;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
@@ -1176,21 +1176,21 @@ struct RenderFrameData
     int NumViews;
 
     /** Opaque instances */
-    TVector<RenderInstance*> Instances;
+    Vector<RenderInstance*> Instances;
     /** Translucent instances */
-    TVector<RenderInstance*> TranslucentInstances;
+    Vector<RenderInstance*> TranslucentInstances;
     /** Outline instances */
-    TVector<RenderInstance*> OutlineInstances;
+    Vector<RenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TVector<ShadowRenderInstance*> ShadowInstances;
+    Vector<ShadowRenderInstance*> ShadowInstances;
     /** Light portal instances */
-    TVector<LightPortalRenderInstance*> LightPortals;
+    Vector<LightPortalRenderInstance*> LightPortals;
     /** Directional light instances */
-    TVector<DirectionalLightInstance*> DirectionalLights;
+    Vector<DirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */
-    TVector<LightShadowmap> LightShadowmaps;
+    Vector<LightShadowmap> LightShadowmaps;
     /** Terrain instances */
-    TVector<TerrainRenderInstance*> TerrainInstances;
+    Vector<TerrainRenderInstance*> TerrainInstances;
 
     /** Canvas draw commands */
     CanvasDrawData const* pCanvasDrawData;

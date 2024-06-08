@@ -94,10 +94,10 @@ void CalcBoundingBoxes(MeshVertex const*         Vertices,
                        AnimationChannel const*   Channels,
                        int                        ChannelsCount,
                        Transform const*          Transforms,
-                       TVector<BvAxisAlignedBox>& Bounds)
+                       Vector<BvAxisAlignedBox>& Bounds)
 {
     Float3x4          absoluteTransforms[MAX_SKELETON_JOINTS + 1];
-    TVector<Float3x4> relativeTransforms[MAX_SKELETON_JOINTS];
+    Vector<Float3x4> relativeTransforms[MAX_SKELETON_JOINTS];
     Float3x4          vertexTransforms[MAX_SKELETON_JOINTS];
 
     Bounds.ResizeInvalidate(FrameCount);

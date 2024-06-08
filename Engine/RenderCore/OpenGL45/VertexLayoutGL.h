@@ -93,7 +93,7 @@ public:
 private:
     HK_NODISCARD std::unique_ptr<VertexArrayObjectGL> CreateVAO();
 
-    THashMap<uint32_t /* context id */, std::unique_ptr<VertexArrayObjectGL>> VaoHandles;
+    HashMap<uint32_t /* context id */, std::unique_ptr<VertexArrayObjectGL>> VaoHandles;
     std::unique_ptr<VertexArrayObjectGL>                                      VaoHandleMainContext;
     VertexLayoutDescGL                                                        Desc;
     uint32_t                                                                  VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};

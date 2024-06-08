@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 GCObject*          GarbageCollector::m_GarbageObjects     = nullptr;
 GCObject*          GarbageCollector::m_GarbageObjectsTail = nullptr;
-TVector<GCObject*> GarbageCollector::m_KeepAlivePtrs;
+Vector<GCObject*> GarbageCollector::m_KeepAlivePtrs;
 
 GCObject::GCObject()
 {

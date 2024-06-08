@@ -147,8 +147,8 @@ private:
 
     struct OneShotSound
     {
-        TRef<AudioTrack>    Track;
-        TRef<SoundGroup>    Group;
+        Ref<AudioTrack>    Track;
+        Ref<SoundGroup>    Group;
         Float3              Position;
         float               Volume;
         bool                IsBackground;
@@ -156,7 +156,7 @@ private:
 
         void                Spatialize(AudioListener const& inListener, int outChanVolume[2], Float3& outLocalDir, bool& outSpatializedStereo);
     };
-    TVector<OneShotSound>   m_OneShotSound;
+    Vector<OneShotSound>   m_OneShotSound;
 };
 
 HK_NAMESPACE_END

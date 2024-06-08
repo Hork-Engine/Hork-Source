@@ -49,7 +49,7 @@ struct AudioResample
     bool bForce8Bit;
 };
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, TRef<AudioSource>& outSource);
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource);
 bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo);
 
 HK_NAMESPACE_END

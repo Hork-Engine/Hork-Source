@@ -241,12 +241,12 @@ HK_FORCEINLINE bool operator!=(HeapMemoryAllocator<Heap> const&, HeapMemoryAlloc
 
 
 template <typename T, MEMORY_HEAP Heap>
-struct TStdHeapAllocator
+struct StdHeapAllocator
 {
     typedef T value_type;
 
-    TStdHeapAllocator() = default;
-    template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U, Heap> const&) noexcept {}
+    StdHeapAllocator() = default;
+    template <typename U> constexpr StdHeapAllocator(StdHeapAllocator<U, Heap> const&) noexcept {}
 
     HK_NODISCARD T* allocate(std::size_t _Count) noexcept
     {
@@ -260,8 +260,8 @@ struct TStdHeapAllocator
         Core::GetHeapAllocator<Heap>().Free(_Bytes);
     }
 };
-template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return true; }
-template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return false; }
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(StdHeapAllocator<T, Heap> const&, StdHeapAllocator<U, Heap> const&) { return true; }
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(StdHeapAllocator<T, Heap> const&, StdHeapAllocator<U, Heap> const&) { return false; }
 
 }
 

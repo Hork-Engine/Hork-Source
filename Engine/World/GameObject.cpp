@@ -116,7 +116,7 @@ Component* GameObject::GetComponent(ComponentTypeID id)
     return nullptr;
 }
 
-void GameObject::GetAllComponents(ComponentTypeID id, TVector<Component*>& components)
+void GameObject::GetAllComponents(ComponentTypeID id, Vector<Component*>& components)
 {
     for (auto* component : m_Components)
     {

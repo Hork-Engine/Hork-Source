@@ -46,8 +46,8 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    TRef<AnimationInstance> AnimInstance;
-    TRef<SkeletonPose> Pose;
+    Ref<AnimationInstance> AnimInstance;
+    Ref<SkeletonPose> Pose;
     MeshHandle Mesh;
 
     void FixedUpdate()

@@ -64,7 +64,7 @@ public:
     {
         INPLACE_COMPONENT_COUNT = 8
     };
-    using ComponentVector = TSmallVector<Component*, INPLACE_COMPONENT_COUNT>;
+    using ComponentVector = SmallVector<Component*, INPLACE_COMPONENT_COUNT>;
 
     GameObjectHandle        GetHandle() const;
     StringID                GetName() const;
@@ -98,9 +98,9 @@ public:
     Component*              GetComponent(ComponentTypeID id);
 
     template <typename ComponentType>
-    void                    GetAllComponents(TVector<ComponentType*>& components);
+    void                    GetAllComponents(Vector<ComponentType*>& components);
 
-    void                    GetAllComponents(ComponentTypeID id, TVector<Component*>& components);
+    void                    GetAllComponents(ComponentTypeID id, Vector<Component*>& components);
 
     ComponentVector const&  GetComponents() const;
 

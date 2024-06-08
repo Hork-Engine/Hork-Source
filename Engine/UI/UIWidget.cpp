@@ -402,9 +402,9 @@ void UIWidget::ForwardKeyEvent(KeyEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnKeyEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnKeyEvent(event);
     }
 }
 
@@ -434,9 +434,9 @@ void UIWidget::ForwardMouseButtonEvent(MouseButtonEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnMouseButtonEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnMouseButtonEvent(event);
     }
 }
 
@@ -446,9 +446,9 @@ void UIWidget::ForwardDblClickEvent(int buttonKey, Float2 const& clickPos, uint6
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnDblClickEvent(buttonKey, clickPos, clickTime);
+                const_cast<WeakRef<UIWidget>&>(w)->OnDblClickEvent(buttonKey, clickPos, clickTime);
     }
 }
 
@@ -458,9 +458,9 @@ void UIWidget::ForwardMouseWheelEvent(MouseWheelEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnMouseWheelEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnMouseWheelEvent(event);
     }
 }
 
@@ -470,9 +470,9 @@ void UIWidget::ForwardMouseMoveEvent(MouseMoveEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnMouseMoveEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnMouseMoveEvent(event);
     }
 }
 
@@ -482,9 +482,9 @@ void UIWidget::ForwardJoystickButtonEvent(JoystickButtonEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnJoystickButtonEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnJoystickButtonEvent(event);
     }
 }
 
@@ -494,9 +494,9 @@ void UIWidget::ForwardJoystickAxisEvent(JoystickAxisEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnJoystickAxisEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnJoystickAxisEvent(event);
     }
 }
 
@@ -506,9 +506,9 @@ void UIWidget::ForwardCharEvent(CharEvent const& event)
 
     if (ShareInputs)
     {
-        for (TWeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
+        for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<TWeakRef<UIWidget>&>(w)->OnCharEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnCharEvent(event);
     }
 }
 

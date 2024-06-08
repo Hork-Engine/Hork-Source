@@ -49,12 +49,12 @@ public:
     SoundResource(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
     ~SoundResource();
 
-    TRef<AudioSource> GetSource();
+    Ref<AudioSource> GetSource();
 
 private:
     bool Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
 
-    TRef<AudioSource> m_Source;
+    Ref<AudioSource> m_Source;
 };
 
 using SoundHandle = ResourceHandle<SoundResource>;

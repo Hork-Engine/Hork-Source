@@ -295,7 +295,7 @@ HK_INLINE VectorType ParseVector(StringView string, StringView* newString = null
 }
 
 // Parses a vector of variable length. Returns false if there were errors.
-HK_INLINE bool ParseVector(StringView string, TVector<StringView>& v)
+HK_INLINE bool ParseVector(StringView string, Vector<StringView>& v)
 {
     StringView token;
 

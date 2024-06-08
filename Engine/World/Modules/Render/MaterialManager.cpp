@@ -134,7 +134,7 @@ void MaterialManager::AddMaterialLibrary(MaterialLibrary* library)
 
 void MaterialManager::RemoveMaterialLibrary(MaterialLibrary* library)
 {
-    auto i = m_Libraries.IndexOf(TRef<MaterialLibrary>(library));
+    auto i = m_Libraries.IndexOf(Ref<MaterialLibrary>(library));
     if (i != Core::NPOS)
         m_Libraries.Remove(i);
 }

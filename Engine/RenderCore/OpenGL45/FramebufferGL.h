@@ -74,7 +74,7 @@ public:
 
     uint16_t GetNumColorAttachments() const { return NumColorAttachments; }
 
-    TWeakRef<ITextureView> const* GetColorAttachments() const { return &RTVs[0]; }
+    WeakRef<ITextureView> const* GetColorAttachments() const { return &RTVs[0]; }
 
     bool HasDepthStencilAttachment() const { return bHasDepthStencilAttachment; }
 
@@ -123,10 +123,10 @@ private:
     uint16_t Height;
 
     uint16_t               NumColorAttachments;
-    TWeakRef<ITextureView> RTVs[MAX_COLOR_ATTACHMENTS];
+    WeakRef<ITextureView> RTVs[MAX_COLOR_ATTACHMENTS];
 
     bool                   bHasDepthStencilAttachment;
-    TWeakRef<ITextureView> pDSV;
+    WeakRef<ITextureView> pDSV;
 };
 
 } // namespace RenderCore

@@ -49,7 +49,7 @@ struct TickFunctionDesc
 {
     StringID                    Name;
     bool                        TickEvenWhenPaused = false;
-    TSmallVector<uint32_t, 4>   Prerequisites;
+    SmallVector<uint32_t, 4>    Prerequisites;
 
     template <typename ComponentType>
     void AddPrerequisiteComponent()

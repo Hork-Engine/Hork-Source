@@ -35,35 +35,35 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T, uint32_t MaxCapacity = 128>
-class TCircularVector
+class CircularVector final
 {
 public:
     using Reference      = T&;
     using ConstReference = T const&;
     using SizeType       = uint32_t;
-    using ThisType       = TCircularVector<T, MaxCapacity>;
+    using ThisType       = CircularVector<T, MaxCapacity>;
 
-    TCircularVector() :
+    CircularVector() :
         m_Head(0), m_Size(0)
     {
         static_assert(IsPowerOfTwo(MaxCapacity), "Circular vector size must be power of two");
     }
 
-    TCircularVector(std::initializer_list<T> list) :
+    CircularVector(std::initializer_list<T> list) :
         m_Head(0), m_Size(0)
     {
         for (T const& value : list)
             Add(value);
     }
 
-    TCircularVector(ThisType const& Rhs) :
+    CircularVector(ThisType const& Rhs) :
         m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
             Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
-    TCircularVector(ThisType&& Rhs) noexcept :
+    CircularVector(ThisType&& Rhs) noexcept :
         m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
@@ -84,7 +84,7 @@ public:
             Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
-    virtual ~TCircularVector()
+    ~CircularVector()
     {
         for (SizeType i = 0; i < m_Size; ++i)
         {

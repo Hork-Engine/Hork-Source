@@ -125,7 +125,7 @@ float PhotometricData::Sample2D(float x, float y) const
 
     float fractH = 0;
 
-    TVector<float> const *horizA, *horizB;
+    Vector<float> const *horizA, *horizB;
 
     if (m_HorzAngles.Size() > 1)
     {

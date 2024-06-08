@@ -36,7 +36,7 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T>
-class TArrayView
+class ArrayView
 {
 public:
     using ValueType            = std::remove_cv_t<T>;
@@ -50,61 +50,61 @@ public:
     using ConstReverseIterator = eastl::reverse_iterator<ConstIterator>;
     using SizeType             = size_t;
 
-    constexpr HK_FORCEINLINE TArrayView() :
+    constexpr HK_FORCEINLINE ArrayView() :
         m_Data(nullptr), m_Size(0)
     {}
 
-    constexpr HK_FORCEINLINE TArrayView(ConstPointer _Data, SizeType _Size) :
+    constexpr HK_FORCEINLINE ArrayView(ConstPointer _Data, SizeType _Size) :
         m_Data(_Data), m_Size(_Size)
     {}
 
-    constexpr HK_FORCEINLINE TArrayView(ConstPointer pBegin, ConstPointer pEnd) :
+    constexpr HK_FORCEINLINE ArrayView(ConstPointer pBegin, ConstPointer pEnd) :
         m_Data(pBegin), m_Size(static_cast<SizeType>(pEnd - pBegin))
     {}
 
     template <size_t N>
-    constexpr HK_FORCEINLINE TArrayView(T const (&Array)[N]) :
+    constexpr HK_FORCEINLINE ArrayView(T const (&Array)[N]) :
         m_Data(Array), m_Size(N)
     {}
 
     template <size_t N>
-    constexpr HK_FORCEINLINE TArrayView(TArray<ValueType, N> const& Array) :
+    constexpr HK_FORCEINLINE ArrayView(Array<ValueType, N> const& Array) :
         m_Data(Array.ToPtr()), m_Size(Array.Size())
     {}
 
     template <typename Allocator>
-    constexpr HK_FORCEINLINE TArrayView(TVector<ValueType, Allocator> const& Vector) :
+    constexpr HK_FORCEINLINE ArrayView(Vector<ValueType, Allocator> const& Vector) :
         m_Data(Vector.ToPtr()), m_Size(Vector.Size())
     {}
 
     template <size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
-    constexpr HK_FORCEINLINE TArrayView(TFixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator> const& Vector) :
+    constexpr HK_FORCEINLINE ArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator> const& Vector) :
         m_Data(Vector.ToPtr()), m_Size(Vector.Size())
     {}
 
-    constexpr TArrayView(TArrayView const& Rhs) = default;
-    constexpr TArrayView& operator=(TArrayView const& Rhs) = default;
+    constexpr ArrayView(ArrayView const& Rhs) = default;
+    constexpr ArrayView& operator=(ArrayView const& Rhs) = default;
 
-    constexpr HK_FORCEINLINE bool operator==(TArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator==(ArrayView Rhs) const
     {
         return (m_Size == Rhs.m_Size) && eastl::equal(begin(), end(), Rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator!=(TArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator!=(ArrayView Rhs) const
     {
         return (m_Size != Rhs.m_Size) || !eastl::equal(begin(), end(), Rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator<(TArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator<(ArrayView Rhs) const
     {
         return eastl::lexicographical_compare(begin(), end(), Rhs.begin(), Rhs.end());
     }
 
-    constexpr HK_FORCEINLINE bool operator<=(TArrayView Rhs) const { return !(Rhs < *this); }
+    constexpr HK_FORCEINLINE bool operator<=(ArrayView Rhs) const { return !(Rhs < *this); }
 
-    constexpr HK_FORCEINLINE bool operator>(TArrayView Rhs) const { return Rhs < *this; }
+    constexpr HK_FORCEINLINE bool operator>(ArrayView Rhs) const { return Rhs < *this; }
 
-    constexpr HK_FORCEINLINE bool operator>=(TArrayView Rhs) const { return !(*this < Rhs); }
+    constexpr HK_FORCEINLINE bool operator>=(ArrayView Rhs) const { return !(*this < Rhs); }
 
     constexpr HK_FORCEINLINE ConstPointer ToPtr() const
     {
@@ -241,16 +241,16 @@ public:
         return it == end() ? Core::NPOS : (SizeType)(it - begin());
     }
 
-    HK_FORCEINLINE TArrayView<T> GetSubView(SizeType first, SizeType count) const
+    HK_FORCEINLINE ArrayView<T> GetSubView(SizeType first, SizeType count) const
     {
         HK_ASSERT_(first + count <= m_Size, "Undefined behavior accessing out of bounds");
-        return TArrayView<T>(m_Data + first, count);
+        return ArrayView<T>(m_Data + first, count);
     }
 
-    HK_FORCEINLINE TArrayView<T> GetSubView(SizeType first) const
+    HK_FORCEINLINE ArrayView<T> GetSubView(SizeType first) const
     {
         HK_ASSERT_(first <= m_Size, "Undefined behavior accessing out of bounds");
-        return TArrayView<T>(m_Data + first, m_Size - first);
+        return ArrayView<T>(m_Data + first, m_Size - first);
     }
 
 private:

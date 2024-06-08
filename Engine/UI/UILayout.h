@@ -150,10 +150,10 @@ class UIGridLayout : public UIBaseLayout
 
 public:
     // Vector of column widths
-    TVector<float> ColumnWidth;
+    Vector<float> ColumnWidth;
 
     // Vector of row widths
-    TVector<float> RowWidth;
+    Vector<float> RowWidth;
 
     float VSpacing = 0;
     float HSpacing = 0;
@@ -214,10 +214,10 @@ protected:
 
 private:
     // Vector of column offsets
-    TVector<float> ColumnOffset;
+    Vector<float> ColumnOffset;
 
     // Vector of row offsets
-    TVector<float> RowOffset;
+    Vector<float> RowOffset;
 };
 
 class UIHorizontalLayout : public UIBaseLayout

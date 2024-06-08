@@ -172,9 +172,9 @@ struct VGPath
 
 struct VGPathCache
 {
-    TVector<VGPoint>      Points;
-    TVector<VGPath>       Paths;
-    TVector<CanvasVertex> Verts;
+    Vector<VGPoint>       Points;
+    Vector<VGPath>        Paths;
+    Vector<CanvasVertex>  Verts;
     float                 Bounds[4];
     float                 DistTol;
 
@@ -529,11 +529,11 @@ private:
 
     FontResource* CurrentFont();
 
-    TVector<VGState>         m_States;
+    Vector<VGState>         m_States;
     int                      m_NumStates{};
     CanvasDrawData           m_DrawData;
-    mutable TRef<FontStash>  m_FontStash;
-    TVector<float>           m_Commands;
+    mutable Ref<FontStash>  m_FontStash;
+    Vector<float>           m_Commands;
     Float2                   m_CommandPos;
     VGPathCache              m_PathCache;
     float                    m_TessTol{};

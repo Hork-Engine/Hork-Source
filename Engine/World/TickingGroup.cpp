@@ -67,12 +67,12 @@ void TickingGroup::Rebuild()
 {
     struct DepthFirstTranversal
     {
-        TVector<Function>&  FunctionList;
-        TVector<uint32_t>&  ExecutionOrder;
+        Vector<Function>&  FunctionList;
+        Vector<uint32_t>&  ExecutionOrder;
         uint32_t            TraverseID;
 
-        DepthFirstTranversal(TVector<Function>& functionList,
-            TVector<uint32_t>& executionOrder) :
+        DepthFirstTranversal(Vector<Function>& functionList,
+            Vector<uint32_t>& executionOrder) :
             FunctionList(functionList),
             ExecutionOrder(executionOrder)
         {}

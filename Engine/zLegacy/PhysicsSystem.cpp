@@ -54,10 +54,10 @@ struct CollisionContact
 {
     btPersistentManifold* Manifold;
 
-    TRef<Actor>   ActorA;
-    TRef<Actor>   ActorB;
-    TRef<HitProxy> ComponentA;
-    TRef<HitProxy> ComponentB;
+    Ref<Actor>   ActorA;
+    Ref<Actor>   ActorB;
+    Ref<HitProxy> ComponentA;
+    Ref<HitProxy> ComponentB;
 
     bool bActorADispatchContactEvents;
     bool bActorBDispatchContactEvents;
@@ -173,7 +173,7 @@ void PhysicsSystem::RemoveCollisionContacts()
 {
     for (int i = 0; i < 2; i++)
     {
-        TVector<CollisionContact>& currentContacts = m_CollisionContacts[i];
+        Vector<CollisionContact>& currentContacts = m_CollisionContacts[i];
         auto& contactHash = m_ContactHash[i];
 
         currentContacts.Clear();
@@ -190,8 +190,8 @@ void PhysicsSystem::DispatchContactAndOverlapEvents()
     int curTickNumber = m_FixedTickNumber & 1;
     int prevTickNumber = (m_FixedTickNumber + 1) & 1;
 
-    TVector<CollisionContact>& currentContacts = m_CollisionContacts[curTickNumber];
-    TVector<CollisionContact>& prevContacts = m_CollisionContacts[prevTickNumber];
+    Vector<CollisionContact>& currentContacts = m_CollisionContacts[curTickNumber];
+    Vector<CollisionContact>& prevContacts = m_CollisionContacts[prevTickNumber];
 
     auto& contactHash = m_ContactHash[curTickNumber];
     auto& prevContactHash = m_ContactHash[prevTickNumber];

@@ -824,12 +824,12 @@ struct PipelineDesc
     RasterizerStateInfo       RS;
     DepthStencilStateInfo     DSS;
     PipelineResourceLayout    ResourceLayout;
-    TRef<IShaderModule>       pVS;
-    TRef<IShaderModule>       pTCS;
-    TRef<IShaderModule>       pTES;
-    TRef<IShaderModule>       pGS;
-    TRef<IShaderModule>       pFS;
-    TRef<IShaderModule>       pCS;
+    Ref<IShaderModule>       pVS;
+    Ref<IShaderModule>       pTCS;
+    Ref<IShaderModule>       pTES;
+    Ref<IShaderModule>       pGS;
+    Ref<IShaderModule>       pFS;
+    Ref<IShaderModule>       pCS;
     uint32_t                  NumVertexBindings = 0;
     VertexBindingInfo const*  pVertexBindings = nullptr;
     uint32_t                  NumVertexAttribs = 0;

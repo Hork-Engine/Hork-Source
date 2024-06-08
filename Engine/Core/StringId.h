@@ -37,7 +37,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class StringID
+class StringID final
 {
 public:
                     StringID() = default;
@@ -75,8 +75,8 @@ private:
         const char*     GetRawString(ID id);
 
     private:
-        TStringHashMap<ID>                  m_Storage;
-        TPagedVector<StringView, 1024, 64>  m_Strings;
+        StringHashMap<ID>                  m_Storage;
+        PagedVector<StringView, 1024, 64>  m_Strings;
         Mutex                               m_Mutex;
     };
 

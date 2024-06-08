@@ -39,10 +39,10 @@ class SphereMesh : public RefCounted
 public:
     SphereMesh(int _HDiv = 128, int _VDiv = 128);
 
-    TRef<RenderCore::IBuffer> VertexBuffer;
+    Ref<RenderCore::IBuffer> VertexBuffer;
 
     // Indices format unsigned short
-    TRef<RenderCore::IBuffer> IndexBuffer;
+    Ref<RenderCore::IBuffer> IndexBuffer;
 
     unsigned int IndexCount;
 };

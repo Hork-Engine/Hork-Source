@@ -79,7 +79,7 @@ struct VisibilityQueryContext
 
 struct VisibilityQueryResult
 {
-    TVector<PrimitiveDef*>* pVisPrimitives;
+    Vector<PrimitiveDef*>* pVisPrimitives;
 };
 
 VisibilityLevel::VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo)
@@ -284,7 +284,7 @@ VisArea* VisibilityLevel::FindArea(Float3 const& InPosition)
     return m_pOutdoorArea;
 }
 
-void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, TVector<VisArea*>& OverlappedAreas)
+void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const& Bounds, Vector<VisArea*>& OverlappedAreas)
 {
     do {
         if (NodeIndex < 0)
@@ -319,7 +319,7 @@ void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox const
     } while (NodeIndex != 0);
 }
 
-void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, TVector<VisArea*>& OverlappedAreas)
+void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds, Vector<VisArea*>& OverlappedAreas)
 {
     do {
         if (NodeIndex < 0)
@@ -353,7 +353,7 @@ void VisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bounds
     } while (NodeIndex != 0);
 }
 
-void VisibilityLevel::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& OverlappedAreas)
+void VisibilityLevel::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, Vector<VisArea*>& OverlappedAreas)
 {
     if (m_Nodes.IsEmpty())
     {
@@ -363,7 +363,7 @@ void VisibilityLevel::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector
     QueryOverplapAreas_r(0, Bounds, OverlappedAreas);
 }
 
-void VisibilityLevel::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& OverlappedAreas)
+void VisibilityLevel::QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea*>& OverlappedAreas)
 {
     if (m_Nodes.IsEmpty())
     {
@@ -480,7 +480,7 @@ void VisibilityLevel::AddSphereRecursive(int NodeIndex, PrimitiveDef* Primitive)
     } while (NodeIndex != 0);
 }
 
-void VisibilityLevel::AddPrimitiveToLevelAreas(TVector<VisibilityLevel*> const& levels, PrimitiveDef* Primitive)
+void VisibilityLevel::AddPrimitiveToLevelAreas(Vector<VisibilityLevel*> const& levels, PrimitiveDef* Primitive)
 {
     bool bInsideArea{};
 
@@ -1260,7 +1260,7 @@ void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCull
 */
 }
 
-void VisibilityLevel::QueryVisiblePrimitives(TVector<VisibilityLevel*> const& m_Levels, TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& InQuery)
+void VisibilityLevel::QueryVisiblePrimitives(Vector<VisibilityLevel*> const& m_Levels, Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& InQuery)
 {
     //int QueryVisiblePrimitivesTime = SysMicroseconds();
     VisibilityQueryContext QueryContext;
@@ -1838,7 +1838,7 @@ void VisibilityLevel::ProcessLevelRaycastClosest(VisRaycast& Raycast)
     LevelRaycastPortals_r(area);
 }
 
-void VisibilityLevel::ProcessLevelRaycastBounds(VisRaycast& Raycast, TVector<BoxHitResult>& Result)
+void VisibilityLevel::ProcessLevelRaycastBounds(VisRaycast& Raycast, Vector<BoxHitResult>& Result)
 {
     m_pRaycast = &Raycast;
     m_pBoundsRaycastResult = &Result;
@@ -1860,7 +1860,7 @@ void VisibilityLevel::ProcessLevelRaycastClosestBounds(VisRaycast& Raycast)
     LevelRaycastBoundsPortals_r(area);
 }
 
-bool VisibilityLevel::RaycastTriangles(TVector<VisibilityLevel*> const& levels, WorldRaycastResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::RaycastTriangles(Vector<VisibilityLevel*> const& levels, WorldRaycastResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -1911,7 +1911,7 @@ bool VisibilityLevel::RaycastTriangles(TVector<VisibilityLevel*> const& levels, 
     return true;
 }
 
-bool VisibilityLevel::RaycastClosest(TVector<VisibilityLevel*> const& levels, WorldRaycastClosestResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::RaycastClosest(Vector<VisibilityLevel*> const& levels, WorldRaycastClosestResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -1999,7 +1999,7 @@ bool VisibilityLevel::RaycastClosest(TVector<VisibilityLevel*> const& levels, Wo
     return true;
 }
 
-bool VisibilityLevel::RaycastBounds(TVector<VisibilityLevel*> const& levels, TVector<BoxHitResult>& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::RaycastBounds(Vector<VisibilityLevel*> const& levels, Vector<BoxHitResult>& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -2058,7 +2058,7 @@ bool VisibilityLevel::RaycastBounds(TVector<VisibilityLevel*> const& levels, TVe
     return true;
 }
 
-bool VisibilityLevel::RaycastClosestBounds(TVector<VisibilityLevel*> const& levels, BoxHitResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::RaycastClosestBounds(Vector<VisibilityLevel*> const& levels, BoxHitResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -2125,8 +2125,8 @@ bool VisibilityLevel::RaycastClosestBounds(TVector<VisibilityLevel*> const& leve
 }
 
 
-TPoolAllocator<PrimitiveDef> VisibilitySystem::PrimitivePool;
-TPoolAllocator<PrimitiveLink> VisibilitySystem::PrimitiveLinkPool;
+PoolAllocator<PrimitiveDef> VisibilitySystem::PrimitivePool;
+PoolAllocator<PrimitiveLink> VisibilitySystem::PrimitiveLinkPool;
 
 PrimitiveDef* VisibilitySystem::AllocatePrimitive()
 {
@@ -2312,7 +2312,7 @@ void VisibilitySystem::DrawDebug(DebugRenderer* Renderer)
     }
 }
 
-void VisibilitySystem::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& m_Areas) const
+void VisibilitySystem::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, Vector<VisArea*>& m_Areas) const
 {
     for (VisibilityLevel* level : m_Levels)
     {
@@ -2320,7 +2320,7 @@ void VisibilitySystem::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVecto
     }
 }
 
-void VisibilitySystem::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& m_Areas) const
+void VisibilitySystem::QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea*>& m_Areas) const
 {
     for (VisibilityLevel* level : m_Levels)
     {
@@ -2328,7 +2328,7 @@ void VisibilitySystem::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisAre
     }
 }
 
-void VisibilitySystem::QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const
+void VisibilitySystem::QueryVisiblePrimitives(Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const
 {
     VisibilityLevel::QueryVisiblePrimitives(m_Levels, VisPrimitives, VisPass, Query);
 }
@@ -2343,7 +2343,7 @@ bool VisibilitySystem::RaycastClosest(WorldRaycastClosestResult& Result, Float3 
     return VisibilityLevel::RaycastClosest(m_Levels, Result, RayStart, RayEnd, Filter);
 }
 
-bool VisibilitySystem::RaycastBounds(TVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
+bool VisibilitySystem::RaycastBounds(Vector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilityLevel::RaycastBounds(m_Levels, Result, RayStart, RayEnd, Filter);
 }

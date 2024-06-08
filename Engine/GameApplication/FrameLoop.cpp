@@ -116,7 +116,7 @@ void FrameLoop::SetGenerateInputEvents(bool bShouldGenerateInputEvents)
     m_bShouldGenerateInputEvents = bShouldGenerateInputEvents;
 }
 
-void FrameLoop::NewFrame(TArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, ResourceManager* resourceManager)
+void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, ResourceManager* resourceManager)
 {
     HK_PROFILER_EVENT("Setup new frame");
 
@@ -204,7 +204,7 @@ void FrameLoop::RegisterView(WorldRenderView* pView)
     pView->AddRef();
 }
 
-struct KeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
+struct KeyMappingsSDL : public Array<unsigned short, SDL_NUM_SCANCODES>
 {
     KeyMappingsSDL()
     {

@@ -59,10 +59,8 @@ enum CVAR_ENVIRONMENT_FLAGS
     CVAR_INGAME_STATUS  = HK_BIT(2)
 };
 
-class ConsoleVar final
+class ConsoleVar final : public Noncopyable
 {
-    HK_FORBID_COPY(ConsoleVar)
-
 public:
     static int EnvironmentFlags;
 

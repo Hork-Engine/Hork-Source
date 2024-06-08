@@ -87,7 +87,7 @@ private:
     float m_Radius;
     bool m_bEnabled;
 
-    TRef<EnvironmentMap>       m_EnvironmentMap;
+    Ref<EnvironmentMap>       m_EnvironmentMap;
     RenderCore::BindlessHandle m_IrradianceMapHandle{};
     RenderCore::BindlessHandle m_ReflectionMapHandle{};
 };

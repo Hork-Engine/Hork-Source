@@ -47,10 +47,10 @@ MeshSkin
 struct MeshSkin
 {
     /** Index of the joint in skeleton */
-    TVector<int32_t> JointIndices;
+    Vector<int32_t> JointIndices;
 
     /** Transform vertex to joint-space */
-    TVector<Float3x4> OffsetMatrices;
+    Vector<Float3x4> OffsetMatrices;
 };
 
 /**
@@ -145,7 +145,7 @@ void CalcBoundingBoxes(MeshVertex const*         Vertices,
                        AnimationChannel const*    Channels,
                        int                        ChannelsCount,
                        Transform const*          Transforms,
-                       TVector<BvAxisAlignedBox>& Bounds);
+                       Vector<BvAxisAlignedBox>& Bounds);
 
 } // namespace Geometry
 

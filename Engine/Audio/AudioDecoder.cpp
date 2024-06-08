@@ -61,7 +61,7 @@ ma_bool32 Seek(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin)
 }
 } // namespace
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, TRef<AudioSource>& outSource)
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource)
 {
     ma_decoder_config config = ma_decoder_config_init(inResample.bForce8Bit ? ma_format_u8 : ma_format_s16, inResample.bForceMono ? 1 : 0, inResample.SampleRate);
 

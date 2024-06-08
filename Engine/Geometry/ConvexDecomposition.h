@@ -47,30 +47,30 @@ struct ConvexHullDesc
 namespace Geometry
 {
 
-void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, TVector<Float3>& outVertices, float margin = 0.01f);
+void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vector<Float3>& outVertices, float margin = 0.01f);
 
 bool PerformConvexDecomposition(Float3 const* vertices,
                                 int vertexCount,
                                 int vertexStride,
                                 unsigned int const* indices,
                                 int indexCount,
-                                TVector<Float3>& outVertices,
-                                TVector<unsigned int>& outIndices,
-                                TVector<ConvexHullDesc>& outHulls);
+                                Vector<Float3>& outVertices,
+                                Vector<unsigned int>& outIndices,
+                                Vector<ConvexHullDesc>& outHulls);
 
 bool PerformConvexDecompositionVHACD(Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
                                      unsigned int const* indices,
                                      int indexCount,
-                                     TVector<Float3>& outVertices,
-                                     TVector<unsigned int>& outIndices,
-                                     TVector<ConvexHullDesc>& outHulls,
+                                     Vector<Float3>& outVertices,
+                                     Vector<unsigned int>& outIndices,
+                                     Vector<ConvexHullDesc>& outHulls,
                                      Float3& centerOfMass);
 
-void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVector<PlaneF>& planes);
+void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, Vector<PlaneF>& planes);
 
-void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<Float3>& vertices);
+void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, Vector<Float3>& vertices);
 
 } // namespace Geometry
 

@@ -72,7 +72,7 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
 {
     HK_PROFILER_EVENT("Render frontend");
 
-    TVector<WorldRenderView*> const& renderViews = frameLoop->GetRenderViews();
+    Vector<WorldRenderView*> const& renderViews = frameLoop->GetRenderViews();
     StreamedMemoryGPU* streamedMemory = frameLoop->GetStreamedMemoryGPU();
 
     m_FrameLoop = frameLoop;
@@ -1413,7 +1413,7 @@ void RenderFrontend::QueryVisiblePrimitives(World* world)
     //world->QueryVisiblePrimitives(m_VisPrimitives, &m_VisPass, query);
 }
 
-void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TVector<PrimitiveDef*>& Primitives)
+void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, Vector<PrimitiveDef*>& Primitives)
 {
     VisibilityQuery query;
     BvFrustum frustum;
@@ -1961,7 +1961,7 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
                 if (!lighting)
                     continue;
 
-                TVector<LightPortalDef> const& lightPortals = lighting->GetLightPortals();
+                Vector<LightPortalDef> const& lightPortals = lighting->GetLightPortals();
 
                 if (lightPortals.IsEmpty())
                 {

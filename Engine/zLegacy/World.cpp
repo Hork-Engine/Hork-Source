@@ -8,7 +8,7 @@ public:
     void SetGlobalEnvironmentMap(EnvironmentMap* EnvironmentMap);
     EnvironmentMap* GetGlobalEnvironmentMap() const { return m_GlobalEnvironmentMap; }
 
-    TRef<EnvironmentMap> m_GlobalEnvironmentMap;
+    Ref<EnvironmentMap> m_GlobalEnvironmentMap;
 };
 
 bool World::Raycast(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
@@ -16,7 +16,7 @@ bool World::Raycast(WorldRaycastResult& Result, Float3 const& RayStart, Float3 c
     return VisibilitySystem.RaycastTriangles(Result, RayStart, RayEnd, Filter);
 }
 
-bool World::RaycastBounds(TVector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
+bool World::RaycastBounds(Vector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
     return VisibilitySystem.RaycastBounds(Result, RayStart, RayEnd, Filter);
 }
@@ -31,17 +31,17 @@ bool World::RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, F
     return VisibilitySystem.RaycastClosestBounds(Result, RayStart, RayEnd, Filter);
 }
 
-void World::QueryVisiblePrimitives(TVector<PrimitiveDef*>& VisPrimitives, TVector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query)
+void World::QueryVisiblePrimitives(Vector<PrimitiveDef*>& VisPrimitives, Vector<SurfaceDef*>& VisSurfs, int* VisPass, VisibilityQuery const& Query)
 {
     VisibilitySystem.QueryVisiblePrimitives(VisPrimitives, VisSurfs, VisPass, Query);
 }
 
-void World::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TVector<VisArea*>& Areas)
+void World::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, Vector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
-void World::QueryOverplapAreas(BvSphere const& Bounds, TVector<VisArea*>& Areas)
+void World::QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea*>& Areas)
 {
     VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }

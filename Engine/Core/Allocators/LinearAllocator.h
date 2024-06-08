@@ -35,27 +35,24 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <size_t BlockSize = 64 << 10>
-class TLinearAllocator
+class LinearAllocator final : public Noncopyable
 {
-    HK_FORBID_COPY(TLinearAllocator)
-
 public:
-    TLinearAllocator()
-    {}
+    LinearAllocator() = default;
 
-    ~TLinearAllocator()
+    ~LinearAllocator()
     {
         Free();
     }
 
-    TLinearAllocator(TLinearAllocator&& Rhs) noexcept
+    LinearAllocator(LinearAllocator&& Rhs) noexcept
     {
         Core::Swap(m_Blocks, Rhs.m_Blocks);
         Core::Swap(m_TotalAllocs, Rhs.m_TotalAllocs);
         Core::Swap(m_TotalMemoryUsage, Rhs.m_TotalMemoryUsage);
     }
 
-    TLinearAllocator& operator=(TLinearAllocator&& Rhs) noexcept
+    LinearAllocator& operator=(LinearAllocator&& Rhs) noexcept
     {
         Free();
 
@@ -448,9 +445,9 @@ public:
         GetAllocator().TryFree(p);
     }
 
-    static TLinearAllocator<>& GetAllocator()
+    static LinearAllocator<>& GetAllocator()
     {
-        static TLinearAllocator<> frameMemory;
+        static LinearAllocator<> frameMemory;
         return frameMemory;
     }
 };

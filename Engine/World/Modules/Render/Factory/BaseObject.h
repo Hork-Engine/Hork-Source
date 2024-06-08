@@ -69,7 +69,7 @@ public:
     BaseObject();
     ~BaseObject();
 
-    void SetProperties(TStringHashMap<String> const& Properties);
+    void SetProperties(StringHashMap<String> const& Properties);
 
     bool SetProperty(StringView PropertyName, StringView PropertyValue);
 
@@ -100,7 +100,7 @@ public:
     }
 
 private:
-    void SetProperties_r(ClassMeta const* Meta, TStringHashMap<String> const& Properties);
+    void SetProperties_r(ClassMeta const* Meta, StringHashMap<String> const& Properties);
 
     /** Object global list */
     BaseObject* m_NextObject{};

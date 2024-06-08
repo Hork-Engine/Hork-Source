@@ -125,7 +125,7 @@ using CollisionInstanceRef = JPH::Ref<JPH::Shape>;
 class CollisionModel : public RefCounted
 {
 public:
-    static TRef<CollisionModel>     Create(CollisionModelCreateInfo const& inCreateInfo);
+    static Ref<CollisionModel>     Create(CollisionModelCreateInfo const& inCreateInfo);
 
     Float3 const&                   GetCenterOfMass() const;
 
@@ -133,7 +133,7 @@ public:
 
     CollisionInstanceRef            Instatiate(Float3 const& inScale);
 
-    void                            GatherGeometry(TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const;
+    void                            GatherGeometry(Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
 
     void                            DrawDebug(DebugRenderer& inRenderer, Float3x4 const& inTransform) const;
 
@@ -155,7 +155,7 @@ private:
 class TerrainCollision : public RefCounted
 {
 public:
-    static TRef<TerrainCollision>   Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
+    static Ref<TerrainCollision>   Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
 
     CollisionInstanceRef            Instatiate();
 
@@ -173,7 +173,7 @@ public:
     /// Amount of memory used by height field (size in bytes)
     size_t                          GetMemoryUsage() const;
 
-    void                            GatherGeometry(BvAxisAlignedBox const& inLocalBounds, TVector<Float3>& outVertices, TVector<unsigned int>& outIndices) const;
+    void                            GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
 
 private:
     TerrainCollision() = default;
@@ -189,8 +189,8 @@ HK_INLINE void TransformVertices(Float3* inoutVertices, uint32_t inVertexCount, 
     }
 }
 
-TRef<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
-TRef<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
+Ref<CollisionModel> CreateConvexDecomposition(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
+Ref<CollisionModel> CreateConvexDecompositionVHACD(Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
 
 void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform);
 

@@ -333,9 +333,9 @@ public:
         UIBrush(CUSTOM)
     {}
 
-    virtual void Draw(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices) {}
+    virtual void Draw(Canvas& canvas, Float2 const& mins, Float2 const& maxs, ArrayView<Float2> vertices) {}
 };
 
-void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush);
+void DrawBrush(Canvas& canvas, Float2 const& mins, Float2 const& maxs, ArrayView<Float2> vertices, UIBrush* brush);
 
 HK_NAMESPACE_END

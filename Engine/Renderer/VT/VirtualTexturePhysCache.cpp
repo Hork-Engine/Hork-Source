@@ -177,11 +177,11 @@ VirtualTextureCache::~VirtualTextureCache()
     }
 }
 
-bool VirtualTextureCache::CreateTexture(const char* FileName, TRef<VirtualTexture>* ppTexture)
+bool VirtualTextureCache::CreateTexture(const char* FileName, Ref<VirtualTexture>* ppTexture)
 {
     ppTexture->Reset();
 
-    TRef<VirtualTexture> pTexture = MakeRef<VirtualTexture>(FileName, this);
+    Ref<VirtualTexture> pTexture = MakeRef<VirtualTexture>(FileName, this);
     if (!pTexture->IsLoaded())
     {
         return false;
@@ -196,7 +196,7 @@ bool VirtualTextureCache::CreateTexture(const char* FileName, TRef<VirtualTextur
     return true;
 }
 
-//void VirtualTextureCache::DestroyTexture( TRef< VirtualTexture > * ppTexture ) {
+//void VirtualTextureCache::DestroyTexture( Ref< VirtualTexture > * ppTexture ) {
 //    VirtualTexture * pTexture = *ppTexture;
 
 //    HK_ASSERT( pTexture && pTexture->pCache == this );

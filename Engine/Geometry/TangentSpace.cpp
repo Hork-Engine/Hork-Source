@@ -43,8 +43,8 @@ void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsi
 {
     Float3 binormal, tangent;
 
-    TVector<Float3> binormals(NumVerts);
-    TVector<Float3> tangents(NumVerts);
+    Vector<Float3> binormals(NumVerts);
+    Vector<Float3> tangents(NumVerts);
 
     for (unsigned int i = 0; i < NumIndices; i += 3)
     {

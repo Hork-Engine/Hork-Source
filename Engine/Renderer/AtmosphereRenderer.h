@@ -40,7 +40,7 @@ class AtmosphereRenderer
 public:
     AtmosphereRenderer();
 
-    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
+    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -48,9 +48,9 @@ private:
         Float4x4 Transform[6];
         Float4   LightDir;
     };
-    TRef<RenderCore::IBuffer>   ConstantBuffer;
+    Ref<RenderCore::IBuffer>   ConstantBuffer;
     ConstantData                ConstantBufferData;
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

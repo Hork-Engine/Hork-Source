@@ -39,10 +39,10 @@ class BRDFGenerator
 public:
     BRDFGenerator();
 
-    void Render(TRef<RenderCore::ITexture>* ppTexture);
+    void Render(Ref<RenderCore::ITexture>* ppTexture);
 
 private:
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

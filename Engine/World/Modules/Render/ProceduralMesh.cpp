@@ -73,7 +73,7 @@ void ProceduralMesh_ECS::PrepareStreams(RenderFrontendDef const* pDef)
     }
 }
 
-bool ProceduralMesh_ECS::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TVector<TriangleHitResult>& HitResult) const
+bool ProceduralMesh_ECS::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const
 {
     if (Distance < 0.0001f)
     {

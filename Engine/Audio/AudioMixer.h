@@ -65,13 +65,13 @@ public:
         track->AddRef();
     }
 
-    TVector<AudioTrack*> const& GetTracks()
+    Vector<AudioTrack*> const& GetTracks()
     {
         return m_Tracks;
     }
 
 private:
-    TVector<AudioTrack*> m_Tracks;
+    Vector<AudioTrack*> m_Tracks;
 };
 
 class AudioMixer final : public Noncopyable
@@ -127,13 +127,13 @@ private:
     void                MakeVolumeRamp(const int curVol[2], const int newVol[2], int frameCount, int scale);
     void                ReadFramesF32(AudioTrack* track, int framesToRead, int historyExtraFrames, float* frames);
 
-    TUniqueRef<class AudioHRTF> m_Hrtf;
-    TUniqueRef<class Freeverb>  m_ReverbFilter;
+    UniqueRef<class AudioHRTF> m_Hrtf;
+    UniqueRef<class Freeverb>  m_ReverbFilter;
 
     alignas(16) SamplePair  m_RenderBuffer[2048];
     static constexpr int    m_RenderBufferSize = HK_ARRAY_SIZE(m_RenderBuffer);
 
-    TRef<AudioDevice>       m_Device;
+    Ref<AudioDevice>        m_Device;
     AudioDevice*            m_DeviceRawPtr;
     uint8_t*                m_TransferBuffer;
     bool                    m_IsAsync;
@@ -158,9 +158,9 @@ private:
     int                     m_VolumeRampR[1024];
     int                     m_VolumeRampSize;
 
-    TVector<uint8_t>        m_TempFrames;
-    TVector<float>          m_FramesF32;
-    TVector<SamplePair>     m_StreamF32;
+    Vector<uint8_t>         m_TempFrames;
+    Vector<float>           m_FramesF32;
+    Vector<SamplePair>      m_StreamF32;
 };
 
 extern ConsoleVar Snd_HRTF;

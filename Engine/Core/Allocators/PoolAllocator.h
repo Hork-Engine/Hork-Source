@@ -36,35 +36,31 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T, size_t BlockCapacity = 1024>
-class TPoolAllocator
+class PoolAllocator final : public Noncopyable
 {
-    HK_FORBID_COPY(TPoolAllocator)
-
     static_assert(BlockCapacity > 0, "Invalid BlockCapacity");
 
     constexpr static size_t Alignment = std::max(alignof(T), alignof(size_t));
     constexpr static size_t ChunkSize = std::max(sizeof(T), sizeof(size_t));
 
 public:
-    TPoolAllocator();
-    ~TPoolAllocator();
+    PoolAllocator();
+    ~PoolAllocator();
 
-    TPoolAllocator(TPoolAllocator&& Rhs) noexcept
+    PoolAllocator(PoolAllocator&& Rhs) noexcept
     {
         Core::Swap(m_Blocks, Rhs.m_Blocks);
         Core::Swap(m_CurBlock, Rhs.m_CurBlock);
-        //Core::Swap(m_FreeList, Rhs.m_FreeList);
         Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
         Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
     }
 
-    TPoolAllocator& operator=(TPoolAllocator&& Rhs) noexcept
+    PoolAllocator& operator=(PoolAllocator&& Rhs) noexcept
     {
         Free();
 
         Core::Swap(m_Blocks, Rhs.m_Blocks);
         Core::Swap(m_CurBlock, Rhs.m_CurBlock);
-        //Core::Swap(m_FreeList, Rhs.m_FreeList);
         Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
         Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
 
@@ -104,7 +100,6 @@ private:
     };
     Block* m_Blocks;
     Block* m_CurBlock;
-    //Chunk * m_FreeList;
     int m_TotalChunks;
     int m_TotalBlocks;
 
@@ -113,23 +108,22 @@ private:
 };
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE TPoolAllocator<T, BlockCapacity>::TPoolAllocator()
+HK_INLINE PoolAllocator<T, BlockCapacity>::PoolAllocator()
 {
     m_Blocks = nullptr;
     m_CurBlock = nullptr;
-    //m_FreeList = nullptr;
     m_TotalChunks = 0;
     m_TotalBlocks = 0;
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE TPoolAllocator<T, BlockCapacity>::~TPoolAllocator()
+HK_INLINE PoolAllocator<T, BlockCapacity>::~PoolAllocator()
 {
     Free();
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE void TPoolAllocator<T, BlockCapacity>::Free()
+HK_INLINE void PoolAllocator<T, BlockCapacity>::Free()
 {
     while (m_Blocks)
     {
@@ -138,18 +132,17 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::Free()
         Core::GetHeapAllocator<HEAP_MISC>().Free(block);
     }
     m_CurBlock = nullptr;
-    //m_FreeList = nullptr;
     m_TotalChunks = 0;
     m_TotalBlocks = 0;
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
+HK_INLINE void PoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
 {
     Block* prev = nullptr;
     Block* next;
 
-    //DEBUG( "TPoolAllocator: total blocks {}\n", m_TotalBlocks );
+    //DEBUG( "PoolAllocator: total blocks {}\n", m_TotalBlocks );
 
     // Keep at least one block allocated
     for (Block* block = m_Blocks; block && m_TotalBlocks > 1; block = next)
@@ -193,34 +186,27 @@ HK_INLINE void TPoolAllocator<T, BlockCapacity>::CleanupEmptyBlocks()
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE typename TPoolAllocator<T, BlockCapacity>::Block* TPoolAllocator<T, BlockCapacity>::AllocateBlock()
+HK_INLINE typename PoolAllocator<T, BlockCapacity>::Block* PoolAllocator<T, BlockCapacity>::AllocateBlock()
 {
     Block* block   = (Block*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Block), Alignment);
     block->FreeList = block->Chunks;
-#if 0
-    for ( int i = 0 ; i < BlockCapacity ; ++i ) {
-        block->Chunks[ i ].Next = m_FreeList;
-        m_FreeList = &block->Chunks[ i ];
-    }
-#else
     int i;
     for (i = 0; i < BlockCapacity - 1; ++i)
     {
         block->Chunks[i].Next = &block->Chunks[i + 1];
     }
     block->Chunks[i].Next = nullptr;
-#endif
     block->Allocated = 0;
     block->Next      = m_Blocks;
     m_Blocks         = block;
     m_CurBlock       = block;
     ++m_TotalBlocks;
-    DEBUG("TPoolAllocator::AllocateBlock: allocated a new block\n");
+    DEBUG("PoolAllocator::AllocateBlock: allocated a new block\n");
     return block;
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE T* TPoolAllocator<T, BlockCapacity>::Allocate()
+HK_INLINE T* PoolAllocator<T, BlockCapacity>::Allocate()
 {
     if (m_CurBlock && !m_CurBlock->FreeList)
     {
@@ -249,7 +235,7 @@ HK_INLINE T* TPoolAllocator<T, BlockCapacity>::Allocate()
 }
 
 template <typename T, size_t BlockCapacity>
-HK_INLINE void TPoolAllocator<T, BlockCapacity>::Deallocate(void* _Bytes)
+HK_INLINE void PoolAllocator<T, BlockCapacity>::Deallocate(void* _Bytes)
 {
     Chunk* chunk = (Chunk*)_Bytes;
     m_CurBlock = nullptr;

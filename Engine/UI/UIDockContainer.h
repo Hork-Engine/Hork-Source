@@ -61,7 +61,7 @@ public:
 
     void GetSplitterBounds(Float2& bmins, Float2& bmaxs, float splitterWidth) const;
 
-    void GetWidgets(TVector<TRef<UIDockWidget>>& widgetList) const;
+    void GetWidgets(Vector<Ref<UIDockWidget>>& widgetList) const;
 
 private:
     enum NODE_TYPE : int
@@ -76,8 +76,8 @@ private:
     // [left, right] if NODE_SPLIT_VERTICAL
     // [top, bottom] if NODE_SPLIT_HORIZONTAL
     // [null,  null] if NODE_LEAF
-    TRef<UIDockNode>  m_Child[2];
-    TVector<TRef<UIDockWidget>> m_LeafWidgets;
+    Ref<UIDockNode>  m_Child[2];
+    Vector<Ref<UIDockWidget>> m_LeafWidgets;
     int                         m_WidgetNum = 0;// TODO
 
     Float2 m_Mins;
@@ -91,9 +91,9 @@ private:
 
 struct UIDockPlacement
 {
-    TRef<UIDockNode>  Leaf;
+    Ref<UIDockNode>  Leaf;
     DOCK_ZONE         Zone;
-    TArray<Float2, 4> PolygonVerts;
+    Array<Float2, 4> PolygonVerts;
 
     operator bool() const
     {
@@ -127,14 +127,14 @@ public:
     // Removes widget from dock container. Returns widget pointer on success.
     UIDockWidget* DetachWidget(UIDockNode* leaf, int index);
 
-    TVector<TRef<UIDockWidget>> GetWidgets() const;
+    Vector<Ref<UIDockWidget>> GetWidgets() const;
 
     UIDockNode* FindParent(UIDockNode* node);
 
     UIDockNode* GetRoot() { return m_Root; }
 
     bool bDrawPlacement = false;
-    TRef<UIDockWidget> DragWidget;
+    Ref<UIDockWidget> DragWidget;
 
 protected:
     void PostDraw(Canvas& canvas) override;
@@ -160,8 +160,8 @@ private:
     };
 
     String m_ContainerName;
-    TRef<UIDockNode>    m_Root;
-    TWeakRef<UIDockNode> m_DragSplitter;
+    Ref<UIDockNode>    m_Root;
+    WeakRef<UIDockNode> m_DragSplitter;
     Float2 m_DragPos;
     float m_StartSplitPos;
 };

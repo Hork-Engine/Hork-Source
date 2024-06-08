@@ -56,7 +56,7 @@ ITexture* FGRenderTargetCache::Acquire(TextureDesc const& TextureDesc)
 
     // Create new texture
     //LOG( "Create new texture ( in use {}, free {} )\n", Textures.Size()+1, FreeTextures.Size() );
-    TRef<ITexture> texture;
+    Ref<ITexture> texture;
     pDevice->CreateTexture(TextureDesc, &texture);
     #ifdef HK_DEBUG
     texture->SetDebugName("Render Target");

@@ -50,7 +50,7 @@ ConsoleVar com_TerrainMinLod("com_TerrainMinLod"s, "0"s);
 ConsoleVar com_TerrainMaxLod("com_TerrainMaxLod"s, "5"s);
 ConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"s, "0"s);
 
-TUniqueRef<TerrainMesh> TerrainView::s_TerrainMesh;
+UniqueRef<TerrainMesh> TerrainView::s_TerrainMesh;
 uint32_t TerrainView::s_InstanceCount{};
 
 TerrainView::TerrainView(TerrainHandle resource)

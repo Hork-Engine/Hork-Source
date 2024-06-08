@@ -155,7 +155,7 @@ void SkinnedMeshComponent::DrawDebug(DebugRenderer& renderer)
             auto owner = GetOwner();
             tranformMat.Compose(owner->GetWorldPosition(), owner->GetWorldRotation().ToMatrix3x3(), owner->GetWorldScale());
 
-            TVector<SkeletonJoint> const& joints = skeleton->GetJoints();
+            Vector<SkeletonJoint> const& joints = skeleton->GetJoints();
             for (int jointIndex = 0, count = joints.Size(); jointIndex < count; ++jointIndex)
             {
                 SkeletonJoint const& joint = joints[jointIndex];

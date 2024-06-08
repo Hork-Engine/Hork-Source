@@ -425,7 +425,7 @@ static const VertexAttribInfo VertexAttribsTerrainInstanced[] = {
      1, // InstanceDataStepRate
      HK_OFS(TerrainPatchInstance, QuadColor)}};
 
-void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateDepthPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -530,7 +530,7 @@ void CreateDepthPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateDepthVelocityPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -638,7 +638,7 @@ void CreateDepthVelocityPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateWireframePassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -749,7 +749,7 @@ void CreateWireframePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
+void CreateNormalsPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -862,7 +862,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset(BLENDING_MODE _Blending)
     return RenderCore::BLENDING_NO_BLEND;
 }
 
-void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1014,7 +1014,7 @@ void CreateLightPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassLightmapPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1137,7 +1137,7 @@ void CreateLightPassLightmapPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateLightPassVertexLightPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, BLENDING_MODE _Blending, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1260,7 +1260,7 @@ void CreateLightPassVertexLightPipeline(TRef<RenderCore::IPipeline>* ppPipeline,
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateShadowMapPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1392,7 +1392,7 @@ void CreateShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateOmniShadowMapPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1506,7 +1506,7 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
 }
 
 
-void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
+void CreateFeedbackPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1600,7 +1600,7 @@ void CreateFeedbackPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const c
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
+void CreateOutlinePassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, TextureSampler const* Samplers, int NumSamplers)
 {
     PipelineDesc pipelineCI;
     ShaderFactory::SourceList sources;
@@ -1707,9 +1707,9 @@ void CreateOutlinePassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth()
+Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth()
 {
-    TRef<RenderCore::IPipeline> pipeline;
+    Ref<RenderCore::IPipeline> pipeline;
 
     PipelineDesc pipelineCI;
 
@@ -1761,9 +1761,9 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     return pipeline;
 }
 
-TRef<RenderCore::IPipeline> CreateTerrainMaterialLight()
+Ref<RenderCore::IPipeline> CreateTerrainMaterialLight()
 {
-    TRef<RenderCore::IPipeline> pipeline;
+    Ref<RenderCore::IPipeline> pipeline;
 
     PipelineDesc pipelineCI;
 
@@ -1847,9 +1847,9 @@ TRef<RenderCore::IPipeline> CreateTerrainMaterialLight()
     return pipeline;
 }
 
-TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
+Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
 {
-    TRef<RenderCore::IPipeline> pipeline;
+    Ref<RenderCore::IPipeline> pipeline;
 
     PipelineDesc pipelineCI;
 

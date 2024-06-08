@@ -107,8 +107,8 @@ private:
     const std::size_t                   Id;
     const char*                         Name;
     FGRenderTaskBase const*             Creator;
-    TSmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Readers;
-    TSmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Writers;
+    SmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Readers;
+    SmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Writers;
     int                                 ResourceRefs;
     bool                                bCaptured;
     DEVICE_OBJECT_PROXY_TYPE            ProxyType{DEVICE_OBJECT_TYPE_UNKNOWN};

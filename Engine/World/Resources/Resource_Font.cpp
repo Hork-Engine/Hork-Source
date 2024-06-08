@@ -1211,7 +1211,7 @@ void FontStash::Cleanup()
 
     if (m_FontImageIdx != 0)
     {
-        TRef<ITexture> fontImage = m_FontImages[m_FontImageIdx];
+        Ref<ITexture> fontImage = m_FontImages[m_FontImageIdx];
         int i, j;
         // delete images that smaller than current one
         if (!fontImage)

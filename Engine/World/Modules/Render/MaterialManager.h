@@ -47,7 +47,7 @@ public:
 
     MaterialInstance* Get(StringView name);
 
-    TStringHashMap<MaterialInstance*> m_Instances;
+    StringHashMap<MaterialInstance*> m_Instances;
 };
 
 class MaterialManager final : public Noncopyable
@@ -61,7 +61,7 @@ public:
     MaterialInstance* Get(StringView name);
 
 private:
-    TVector<TRef<MaterialLibrary>> m_Libraries;
+    Vector<Ref<MaterialLibrary>> m_Libraries;
 };
 
 HK_NAMESPACE_END

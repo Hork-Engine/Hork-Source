@@ -39,9 +39,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using ArrayOfDebugVertices = TVector<DebugVertex>;
-using ArrayOfDebugIndices  = TVector<unsigned short>;
-using ArrayOfDebugDrawCmds = TVector<DebugDrawCmd>;
+using ArrayOfDebugVertices = Vector<DebugVertex>;
+using ArrayOfDebugIndices  = Vector<unsigned short>;
+using ArrayOfDebugDrawCmds = Vector<DebugDrawCmd>;
 
 class DebugRenderer final : public Noncopyable
 {
@@ -77,31 +77,31 @@ public:
 
     void DrawPoints(Float3 const* _Points, int _NumPoints, int _Stride);
 
-    void DrawPoints(TArrayView<Float3> _Points);
+    void DrawPoints(ArrayView<Float3> _Points);
 
     void DrawLine(Float3 const& _P0, Float3 const& _P1);
 
     void DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float _Step);
 
-    void DrawLine(TArrayView<Float3> _Points, bool _Closed = false);
+    void DrawLine(ArrayView<Float3> _Points, bool _Closed = false);
 
-    void DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided = false);
+    void DrawConvexPoly(ArrayView<Float3> _Points, bool _TwoSided = false);
 
     void DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned int const* _Indices, int _NumIndices, bool _TwoSided = false);
 
-    void DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices, bool _TwoSided = false);
+    void DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices, bool _TwoSided = false);
 
     void DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned short const* _Indices, int _NumIndices, bool _TwoSided = false);
 
-    void DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices, bool _TwoSided = false);
+    void DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices, bool _TwoSided = false);
 
     void DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned int const* _Indices, int _NumIndices);
 
-    void DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices);
+    void DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices);
 
     void DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned short const* _Indices, int _NumIndices);
 
-    void DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices);
+    void DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices);
 
     void DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided = false);
 
@@ -180,7 +180,7 @@ private:
     int                  m_VisPass{};
     bool                 m_bDepthTest{};
     bool                 m_bSplit{};
-    TStack<Float3x4, 4>  m_TransformStack;
+    Stack<Float3x4, 4>   m_TransformStack;
     const uint32_t*      m_pColors{};
     size_t               m_ColorMask{1};
 };

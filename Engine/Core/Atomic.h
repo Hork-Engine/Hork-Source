@@ -37,15 +37,14 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T>
-class TAtomic
+class Atomic final : Noncopyable
 {
-    HK_FORBID_COPY(TAtomic)
-
 public:
     using AtomicType = T;
 
-    HK_FORCEINLINE TAtomic() {}
-    HK_FORCEINLINE explicit TAtomic(AtomicType const& _i) :
+    Atomic() = default;
+
+    HK_FORCEINLINE explicit Atomic(AtomicType const& _i) :
         i(_i) {}
 
     HK_FORCEINLINE AtomicType LoadRelaxed() const
@@ -157,9 +156,9 @@ private:
     std::atomic<AtomicType> i;
 };
 
-using AtomicShort = TAtomic<int16_t>;
-using AtomicInt   = TAtomic<int32_t>;
-using AtomicLong  = TAtomic<int64_t>;
-using AtomicBool  = TAtomic<bool>;
+using AtomicShort = Atomic<int16_t>;
+using AtomicInt   = Atomic<int32_t>;
+using AtomicLong  = Atomic<int64_t>;
+using AtomicBool  = Atomic<bool>;
 
 HK_NAMESPACE_END

@@ -62,19 +62,19 @@ constexpr uint32_t ConstexprLog2(uint32_t v)
 //}
 
 template <typename T, size_t PageSize, size_t MaxPages>
-class TPagedVector : Noncopyable
+class PagedVector : Noncopyable
 {
 public:
     static constexpr size_t ElementSize = sizeof(T);
     static constexpr size_t PageSizeLog2 = ConstexprLog2(PageSize);
 
-    TPagedVector()
+    PagedVector()
     {
         static_assert(IsPowerOfTwo(PageSize), "Page size must be power of two");
         Core::ZeroMem(m_Pages, sizeof(m_Pages));
     }
 
-    ~TPagedVector()
+    ~PagedVector()
     {
         for (size_t i = 0; i < m_Size; i++)
         {

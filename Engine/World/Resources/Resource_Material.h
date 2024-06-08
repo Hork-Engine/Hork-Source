@@ -54,8 +54,8 @@ public:
 
     void Upload() override;
 
-    TRef<MaterialGPU> m_GpuMaterial;
-    TRef<CompiledMaterial> m_pCompiledMaterial;
+    Ref<MaterialGPU> m_GpuMaterial;
+    Ref<CompiledMaterial> m_pCompiledMaterial;
 
 private:
     String m_Shader;

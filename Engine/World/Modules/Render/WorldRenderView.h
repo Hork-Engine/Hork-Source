@@ -34,7 +34,6 @@ SOFTWARE.
 #include <Engine/World/Resources/ResourceManager.h>
 #include <Engine/World/Resources/Resource_Texture.h>
 #include <Engine/World/Resources/Resource_Terrain.h>
-#include <Engine/ECS/ECS.h>
 #include <Engine/World/World.h>
 #include <Engine/World/Modules/Render/Components/CameraComponent.h>
 
@@ -137,8 +136,8 @@ public:
     bool                         bAllowMotionBlur = true;
     ANTIALIASING_TYPE            AntialiasingType = ANTIALIASING_SMAA;
     VISIBILITY_GROUP             VisibilityMask   = VISIBILITY_GROUP_ALL;
-    TRef<ColorGradingParameters> ColorGrading;
-    TRef<VignetteParameters>     Vignette;
+    Ref<ColorGradingParameters> ColorGrading;
+    Ref<VignetteParameters>     Vignette;
 
     //Delegate<void(RenderCore::ITexture)> E_OnTextureReady; // TODO?
     //uint32_t                           RenderingOrder{}; // TODO?
@@ -229,7 +228,7 @@ private:
     //        m_Resource = pResource;
     //    }
 
-    //    TRef<WorldRenderView> m_WorldRenderView;
+    //    Ref<WorldRenderView> m_WorldRenderView;
     //};
 
     RenderCore::ITexture* AcquireRenderTarget();
@@ -242,21 +241,21 @@ private:
     Handle32<CameraComponent> m_CullingCamera;
     World* m_World{}; // TODO: refcounting or handles
 
-    //TWeakRef<TextureViewImpl>              m_WorldViewTex;
+    //WeakRef<TextureViewImpl>              m_WorldViewTex;
     uint32_t                               m_Width{};
     uint32_t                               m_Height{};
-    TRef<RenderCore::ITexture>             m_LightTexture;
-    TRef<RenderCore::ITexture>             m_DepthTexture;
-    //TRef<RenderCore::ITexture>             m_RenderTarget;
-    TRef<RenderCore::ITexture>             m_HBAOMaps;
-    THashMap<ResourceID, TerrainView*>     m_TerrainViews;     // TODO: Needs to be cleaned from time to time
+    Ref<RenderCore::ITexture>             m_LightTexture;
+    Ref<RenderCore::ITexture>             m_DepthTexture;
+    //Ref<RenderCore::ITexture>             m_RenderTarget;
+    Ref<RenderCore::ITexture>             m_HBAOMaps;
+    HashMap<ResourceID, TerrainView*>     m_TerrainViews;     // TODO: Needs to be cleaned from time to time
     Float4x4                               m_ProjectionMatrix; // last rendered projection
     Float4x4                               m_ViewMatrix;       // last rendered view
     float                                  m_ScaledWidth{};
     float                                  m_ScaledHeight{};
     VirtualTextureFeedback                 m_VTFeedback;
-    TRef<RenderCore::ITexture>             m_CurrentColorGradingLUT;
-    TRef<RenderCore::ITexture>             m_CurrentExposure;
+    Ref<RenderCore::ITexture>             m_CurrentColorGradingLUT;
+    Ref<RenderCore::ITexture>             m_CurrentExposure;
     int                                    m_FrameNum{};
     TextureHandle                          m_HandleRT;
 

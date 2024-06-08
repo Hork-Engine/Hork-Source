@@ -412,7 +412,7 @@ void MeshResource::SetBoundingBox(BvAxisAlignedBox const& boundingBox)
     m_BoundingBox = boundingBox;
 }
 #if 0
-void MeshResource::SetMaterials(TArrayView<MaterialInstanceHandle> materials)
+void MeshResource::SetMaterials(ArrayView<MaterialInstanceHandle> materials)
 {
     m_Materials.Clear();
     m_Materials.Reserve(materials.Size());
@@ -427,7 +427,7 @@ void MeshResource::SetMaterial(int subpartIndex, MaterialInstanceHandle handle)
     m_Materials[subpartIndex] = handle;
 }
 #endif
-void MeshResource::SetSockets(TArrayView<MeshSocket> sockets)
+void MeshResource::SetSockets(ArrayView<MeshSocket> sockets)
 {
     m_Sockets.Clear();
     m_Sockets.Reserve(sockets.Size());
@@ -458,13 +458,13 @@ void MeshResource::GenerateBVH(uint16_t primitivesPerLeaf)
 
     for (MeshSubpart& subpart : m_Subparts)
     {
-        subpart.Bvh = BvhTree(TArrayView<MeshVertex>(m_Vertices), TArrayView<unsigned int>(m_Indices.ToPtr() + subpart.FirstIndex, (size_t)subpart.IndexCount), subpart.BaseVertex, primitivesPerLeaf);
+        subpart.Bvh = BvhTree(ArrayView<MeshVertex>(m_Vertices), ArrayView<unsigned int>(m_Indices.ToPtr() + subpart.FirstIndex, (size_t)subpart.IndexCount), subpart.BaseVertex, primitivesPerLeaf);
     }
 
     m_BvhPrimitivesPerLeaf = primitivesPerLeaf;
 }
 
-bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, TVector<TriangleHitResult>& hitResult) const
+bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
 {
     bool ret = false;
     float d, u, v;
@@ -479,7 +479,7 @@ bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Floa
 
     if (!subpart.Bvh.GetNodes().IsEmpty())
     {
-        TVector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
+        Vector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
         unsigned int const* indirection = subpart.Bvh.GetIndirection();
 
         float hitMin, hitMax;
@@ -584,7 +584,7 @@ bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStar
 
     if (!subpart.Bvh.GetNodes().IsEmpty())
     {
-        TVector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
+        Vector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
         unsigned int const* indirection = subpart.Bvh.GetIndirection();
 
         float hitMin, hitMax;
@@ -670,7 +670,7 @@ bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStar
     return ret;
 }
 
-bool MeshResource::Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, TVector<TriangleHitResult>& hitResult) const
+bool MeshResource::Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
 {
     bool ret = false;
 

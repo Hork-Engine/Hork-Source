@@ -177,10 +177,10 @@ private:
     void DoMeasureLayout(Float2 const& size);
     void DoArrangeChildren();
 
-    TRef<UIWidget>    m_ContentWidget;
-    TRef<UIDecorator> m_ButtonDecorator[4];
-    TRef<UIBrush>     m_SliderBrush; // FIXME: replace with Decorator?
-    TRef<UIBrush>     m_ScrollbarBrush; // FIXME: replace with Decorator?
+    Ref<UIWidget>    m_ContentWidget;
+    Ref<UIDecorator> m_ButtonDecorator[4];
+    Ref<UIBrush>     m_SliderBrush; // FIXME: replace with Decorator?
+    Ref<UIBrush>     m_ScrollbarBrush; // FIXME: replace with Decorator?
     float             m_ScrollbarWidth   = 12;
     float             m_ScrollbarPadding = 0;
     float             m_SliderPadding    = 2;

@@ -104,7 +104,7 @@ IrradianceGenerator::IrradianceGenerator()
     GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray)
+void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray)
 {
     int size = 32;
 
@@ -117,7 +117,7 @@ void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
 
-    TRef<IResourceTable> resourceTbl;
+    Ref<IResourceTable> resourceTbl;
     GDevice->CreateResourceTable(&resourceTbl);
 
     resourceTbl->BindBuffer(0, ConstantBuffer);
@@ -154,7 +154,7 @@ void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void IrradianceGenerator::Generate(ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void IrradianceGenerator::Generate(ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture)
 {
     int size = 32;
 
@@ -167,7 +167,7 @@ void IrradianceGenerator::Generate(ITexture* _SourceCubemap, TRef<RenderCore::IT
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
 
-    TRef<IResourceTable> resourceTbl;
+    Ref<IResourceTable> resourceTbl;
     GDevice->CreateResourceTable(&resourceTbl);
 
     resourceTbl->BindBuffer(0, ConstantBuffer);

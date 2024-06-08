@@ -281,7 +281,7 @@ void DebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Strid
     }
 }
 
-void DebugRenderer::DrawPoints(TArrayView<Float3> _Points)
+void DebugRenderer::DrawPoints(ArrayView<Float3> _Points)
 {
     DrawPoints(_Points.ToPtr(), _Points.Size(), sizeof(Float3));
 }
@@ -330,7 +330,7 @@ void DebugRenderer::DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float _
     }
 }
 
-void DebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
+void DebugRenderer::DrawLine(ArrayView<Float3> _Points, bool _Closed)
 {
     if (_Points.Size() < 2)
     {
@@ -367,7 +367,7 @@ void DebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
     }
 }
 
-void DebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
+void DebugRenderer::DrawConvexPoly(ArrayView<Float3> _Points, bool _TwoSided)
 {
     if (_Points.Size() < 3)
     {
@@ -473,7 +473,7 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     }
 }
 
-void DebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
@@ -530,7 +530,7 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     }
 }
 
-void DebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
@@ -548,7 +548,7 @@ void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride
     }
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
@@ -566,7 +566,7 @@ void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride
     }
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }

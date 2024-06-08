@@ -108,7 +108,7 @@ struct TileCompressorCallback : public dtTileCacheCompressor
 
 struct DetourLinearAllocator : public dtTileCacheAlloc
 {
-    TLinearAllocator<> Allocator;
+    LinearAllocator<> Allocator;
 
     void* operator new(size_t _SizeInBytes)
     {
@@ -138,12 +138,12 @@ struct DetourLinearAllocator : public dtTileCacheAlloc
 struct DetourMeshProcess : public dtTileCacheMeshProcess
 {
     // NavMesh connections
-    TVector<Float3> OffMeshConVerts;
-    TVector<float> OffMeshConRads;
-    TVector<unsigned char> OffMeshConDirs;
-    TVector<unsigned char> OffMeshConAreas;
-    TVector<unsigned short> OffMeshConFlags;
-    TVector<unsigned int> OffMeshConID;
+    Vector<Float3> OffMeshConVerts;
+    Vector<float> OffMeshConRads;
+    Vector<unsigned char> OffMeshConDirs;
+    Vector<unsigned char> OffMeshConAreas;
+    Vector<unsigned short> OffMeshConFlags;
+    Vector<unsigned int> OffMeshConID;
     int OffMeshConCount;
     NavMesh* NavMesh;
 
@@ -489,7 +489,7 @@ namespace
 {
 
 // Based on rcMarkWalkableTriangles
-void MarkWalkableTriangles(float inSlopeAngleDeg, Float3 const* inVertices, unsigned int const* inIndices, int inTriangleCount, int inFirstTriangle, TBitMask<> const& inWalkableMask, unsigned char* outAreas)
+void MarkWalkableTriangles(float inSlopeAngleDeg, Float3 const* inVertices, unsigned int const* inIndices, int inTriangleCount, int inFirstTriangle, BitMask<> const& inWalkableMask, unsigned char* outAreas)
 {
     Float3 perpendicular;
     float perpendicular_length;
@@ -1056,12 +1056,12 @@ bool NavMesh::BuildTile(int inX, int inZ)
 
         const float MARGIN = 0.2f;
 
-        TVector<Float3> offmesh_con_verts;
-        TVector<float> offmesh_con_rads;
-        TVector<unsigned char> offmesh_con_dirs;
-        TVector<unsigned char> offmesh_con_areas;
-        TVector<unsigned short> offmesh_con_flags;
-        TVector<unsigned int> offmesh_con_id;
+        Vector<Float3> offmesh_con_verts;
+        Vector<float> offmesh_con_rads;
+        Vector<unsigned char> offmesh_con_dirs;
+        Vector<unsigned char> offmesh_con_areas;
+        Vector<unsigned short> offmesh_con_flags;
+        Vector<unsigned int> offmesh_con_id;
         int offmesh_con_count = 0;
 
         for (int i = 0; i < NavMeshConnections.Size(); i++)
@@ -1469,10 +1469,10 @@ void NavMesh::DrawDebug(DebugRenderer* inRenderer)
     }
 
 #if 0
-    static TVector< Float3 > vertices;
-    static TVector< unsigned int > indices;
+    static Vector< Float3 > vertices;
+    static Vector< unsigned int > indices;
     static BvAxisAlignedBox dummyBoundingBox;
-    static TBitMask<> walkableMask;
+    static BitMask<> walkableMask;
     static bool gen=false;
     if (!gen) {
         GatherNavigationGeometry( vertices, indices, walkableMask, dummyBoundingBox, &BoundingBox );
@@ -1766,7 +1766,7 @@ bool NavMesh::FindPath(NavPointRef const& inStartRef, NavPointRef const& inEndRe
     return FindPath(inStartRef, inEndRef, QueryFilter, outPath, outPathCount, inMaxPath);
 }
 
-bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<NavMeshPathPoint>& outPathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, Vector<NavMeshPathPoint>& outPathPoints) const
 {
     NavPointRef start_ref;
     NavPointRef end_ref;
@@ -1803,12 +1803,12 @@ bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 
     return true;
 }
 
-bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<NavMeshPathPoint>& outPathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, Vector<NavMeshPathPoint>& outPathPoints) const
 {
     return FindPath(inStartPos, inEndPos, inExtents, QueryFilter, outPathPoints);
 }
 
-bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, TVector<Float3>& outPathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, NavQueryFilter const& inFilter, Vector<Float3>& outPathPoints) const
 {
     NavPointRef start_ref;
     NavPointRef end_ref;
@@ -1841,7 +1841,7 @@ bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 
     return true;
 }
 
-bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, TVector<Float3>& outPathPoints) const
+bool NavMesh::FindPath(Float3 const& inStartPos, Float3 const& inEndPos, Float3 const& inExtents, Vector<Float3>& outPathPoints) const
 {
     return FindPath(inStartPos, inEndPos, inExtents, QueryFilter, outPathPoints);
 }

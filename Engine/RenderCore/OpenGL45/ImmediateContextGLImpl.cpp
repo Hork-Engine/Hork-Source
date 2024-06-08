@@ -186,7 +186,7 @@ void FramebufferCacheGL::CleanupOutdatedFramebuffers()
         }
         else
         {
-            for (TWeakRef<ITextureView> const& att : fbHash.ColorAttachments)
+            for (WeakRef<ITextureView> const& att : fbHash.ColorAttachments)
             {
                 if (att.IsExpired())
                 {
@@ -222,11 +222,11 @@ void FramebufferCacheGL::CleanupOutdatedFramebuffers()
 }
 
 FramebufferGL* FramebufferCacheGL::GetFramebuffer(const char*                  RenderPassName,
-                                                    TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments,
+                                                    StaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments,
                                                     TextureAttachment*          pDepthStencilAttachment)
 {
     FramebufferDescGL                           framebufferDesc;
-    TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
+    Array<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
 
     FrameBufferHash fbHash;
  
@@ -2618,7 +2618,7 @@ void ImmediateContextGLImpl::BeginSubpass()
     bool bScissorEnabled    = RasterizerState.bScissorEnable;
     bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
 
-    TWeakRef<ITextureView> const* framebufferColorAttachments = CurrentFramebuffer->GetColorAttachments();
+    WeakRef<ITextureView> const* framebufferColorAttachments = CurrentFramebuffer->GetColorAttachments();
 
     FGSubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
 
@@ -2797,7 +2797,7 @@ void ImmediateContextGLImpl::EndSubpass()
 
     HK_ASSERT(CurrentRenderPass != nullptr);
 
-    TArray<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
+    Array<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
     int                                       numAttachments = 0;
 
     FGSubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
@@ -5459,7 +5459,7 @@ void ImmediateContextGLImpl::ExecuteRenderPass(RenderPass* pRenderPass)
 
     if (pFramebuffer->IsDefault())
     {
-        ImmediateContextGLImpl* curContext = static_cast<TextureGLImpl*>(const_cast<TWeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
+        ImmediateContextGLImpl* curContext = static_cast<TextureGLImpl*>(const_cast<WeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
         if (curContext != this)
         {
             MakeCurrent(curContext);

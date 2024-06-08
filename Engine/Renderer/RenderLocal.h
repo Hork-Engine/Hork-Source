@@ -209,28 +209,28 @@ extern StreamedMemoryGPU*  GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-extern TRef<CircularBuffer> GCircularBuffer;
+extern Ref<CircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-extern TRef<SphereMesh> GSphereMesh;
+extern Ref<SphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
-extern TRef<RenderCore::IBuffer> GSaq;
+extern Ref<RenderCore::IBuffer> GSaq;
 
 /** Simple white texture */
-extern TRef<RenderCore::ITexture> GWhiteTexture;
+extern Ref<RenderCore::ITexture> GWhiteTexture;
 
 /** BRDF */
-extern TRef<RenderCore::ITexture> GLookupBRDF;
+extern Ref<RenderCore::ITexture> GLookupBRDF;
 
 /** Cluster lookcup 3D texture */
-extern TRef<RenderCore::ITexture> GClusterLookup;
+extern Ref<RenderCore::ITexture> GClusterLookup;
 
 /** Cluster item references */
-extern TRef<RenderCore::IBuffer> GClusterItemBuffer;
+extern Ref<RenderCore::IBuffer> GClusterItemBuffer;
 
 /** Cluster item references view */
-extern TRef<RenderCore::IBufferView> GClusterItemTBO;
+extern Ref<RenderCore::IBufferView> GClusterItemTBO;
 
 struct RenderViewContext
 {
@@ -238,7 +238,7 @@ struct RenderViewContext
     size_t ViewConstantBufferBindingBindingOffset;
     size_t ViewConstantBufferBindingBindingSize;
 };
-extern TVector<RenderViewContext> GRenderViewContext;
+extern Vector<RenderViewContext> GRenderViewContext;
 
 
 extern VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;

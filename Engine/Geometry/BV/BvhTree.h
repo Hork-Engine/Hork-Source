@@ -97,19 +97,19 @@ public:
     }
 
     template <typename VertexType>
-    BvhTree(TArrayView<VertexType> Vertices, TArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf) :
+    BvhTree(ArrayView<VertexType> Vertices, ArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf) :
         BvhTree(&Vertices[0].Position, Vertices.Size(), sizeof(VertexType), Indices, BaseVertex, PrimitivesPerLeaf)
     {}
 
     #if 0
-    BvhTree(TArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf);
+    BvhTree(ArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf);
     #endif
 
     int MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEnd, unsigned int* MarkLeafs, int MaxLeafs) const;
 
     int MarkBoxOverlappingLeafs(BvAxisAlignedBox const& Bounds, unsigned int* MarkLeafs, int MaxLeafs) const;
 
-    TVector<BvhNode> const& GetNodes() const { return m_Nodes; }
+    Vector<BvhNode> const& GetNodes() const { return m_Nodes; }
 
     unsigned int const* GetIndirection() const { return m_Indirection.ToPtr(); }
 
@@ -119,12 +119,12 @@ public:
     void Write(IBinaryStreamWriteInterface& Stream) const;
 
 private:
-    BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, TArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf);
+    BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, ArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf);
 
     void Subdivide(struct BvhBuildContext& Build, int Axis, int FirstPrimitive, int LastPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex);
 
-    TVector<BvhNode>      m_Nodes;
-    TVector<unsigned int> m_Indirection;
+    Vector<BvhNode>      m_Nodes;
+    Vector<unsigned int> m_Indirection;
     BvAxisAlignedBox      m_BoundingBox;
 };
 

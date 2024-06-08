@@ -71,7 +71,7 @@ BaseObject* BaseObject::FindObject(uint64_t _Id)
     return nullptr;
 }
 
-void BaseObject::SetProperties_r(ClassMeta const* Meta, TStringHashMap<String> const& Properties)
+void BaseObject::SetProperties_r(ClassMeta const* Meta, StringHashMap<String> const& Properties)
 {
     if (Meta)
     {
@@ -89,7 +89,7 @@ void BaseObject::SetProperties_r(ClassMeta const* Meta, TStringHashMap<String> c
     }
 }
 
-void BaseObject::SetProperties(TStringHashMap<String> const& Properties)
+void BaseObject::SetProperties(StringHashMap<String> const& Properties)
 {
     if (Properties.IsEmpty())
     {

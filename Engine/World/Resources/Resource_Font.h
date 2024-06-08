@@ -67,7 +67,7 @@ private:
         INITIAL_FONTIMAGE_SIZE = 512
     };
     FONScontext* m_pImpl{};
-    TRef<RenderCore::ITexture> m_FontImages[MAX_FONT_IMAGES];
+    Ref<RenderCore::ITexture> m_FontImages[MAX_FONT_IMAGES];
     int m_FontImageIdx{};
 };
 
@@ -174,7 +174,7 @@ public:
 private:
     HeapBlob m_Blob;
     int m_FontId = -1;
-    mutable TRef<FontStash> m_FontStash;
+    mutable Ref<FontStash> m_FontStash;
 };
 
 using FontHandle = ResourceHandle<FontResource>;

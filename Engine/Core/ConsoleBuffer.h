@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class ConsoleBuffer
+class ConsoleBuffer final : public Noncopyable
 {
 public:
     static constexpr int Padding        = 8;

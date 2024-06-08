@@ -119,7 +119,7 @@ public:
 private:
     String      m_Name;
     MGOutput*    m_Slot = nullptr;
-    TRef<MGNode> m_SlotNode;
+    Ref<MGNode> m_SlotNode;
 
     friend class MGNode;
 };
@@ -156,8 +156,8 @@ public:
     void ResetConnections(MaterialBuildContext const& Context);
     void TouchConnections(MaterialBuildContext const& Context);
 
-    TVector<MGInput*> const&  GetInputs() const { return m_Inputs; }
-    TVector<MGOutput*> const& GetOutputs() const { return m_Outputs; }
+    Vector<MGInput*> const&  GetInputs() const { return m_Inputs; }
+    Vector<MGOutput*> const& GetOutputs() const { return m_Outputs; }
 
     void ParseProperties(DOM::ObjectView dobject);
 
@@ -176,8 +176,8 @@ protected:
 private:
     uint32_t           m_ID{};
     String             m_Name;
-    TVector<MGInput*>  m_Inputs;
-    TVector<MGOutput*> m_Outputs;
+    Vector<MGInput*>  m_Inputs;
+    Vector<MGOutput*> m_Outputs;
     int                m_Serial{};
     bool               m_bTouched{};
 };
@@ -1055,9 +1055,9 @@ public:
 
     MGTextureSlot* GetTexture(uint32_t Slot);
 
-    TVector<MGTextureSlot*> const& GetTextures() const { return m_TextureSlots; }
+    Vector<MGTextureSlot*> const& GetTextures() const { return m_TextureSlots; }
 
-    TRef<CompiledMaterial> Compile();
+    Ref<CompiledMaterial> Compile();
 
 private:
     void CompileStage(class MaterialBuildContext& ctx);
@@ -1080,8 +1080,8 @@ private:
     void ComputeTessellationEvalStage(MaterialBuildContext& Context);
     void ComputeAlphaMask(MaterialBuildContext& Context);
 
-    TVector<MGNode*>        m_Nodes;
-    TVector<MGTextureSlot*> m_TextureSlots;
+    Vector<MGNode*>        m_Nodes;
+    Vector<MGTextureSlot*> m_TextureSlots;
     uint32_t                m_NodeIdGen{};
 };
 

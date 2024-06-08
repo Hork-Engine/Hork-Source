@@ -49,7 +49,7 @@ protected:
 private:
     void                    DrawDebug(DebugRenderer& renderer);
 
-    TUniqueRef<class RenderInterfaceImpl> m_pImpl;
+    UniqueRef<class RenderInterfaceImpl> m_pImpl;
 };
 
 HK_NAMESPACE_END

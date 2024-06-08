@@ -235,7 +235,7 @@ void CalculateJointTransforms(SkeletonPose* pose, SkeletalAnimation const* anima
     {
         int jointIndex = channel.JointIndex;
 
-        TVector<Transform> const& transforms = animation->GetTransforms();
+        Vector<Transform> const& transforms = animation->GetTransforms();
 
         if (frame.FrameIndex == frame.NextFrameIndex || frame.FrameBlend < 0.0001f)
         {

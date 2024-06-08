@@ -189,8 +189,8 @@ start:
 class ShaderLoader
 {
 public:
-    String LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined = {});
-    String LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined = {});
+    String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined = {});
+    String LoadShaderFromString(StringView FileName, StringView Source, ArrayView<MaterialSource> Predefined = {});
 
 protected:
     virtual bool LoadFile(StringView FileName, String& Source);
@@ -198,10 +198,10 @@ protected:
     bool LoadShaderWithInclude(StringView FileName, String& Out);
 
     /** Predefined shaders */
-    TArrayView<MaterialSource> m_Predefined;
+    ArrayView<MaterialSource> m_Predefined;
 };
 
-String ShaderLoader::LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined)
+String ShaderLoader::LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
@@ -222,7 +222,7 @@ String ShaderLoader::LoadShader(StringView FileName, TArrayView<MaterialSource> 
     return result;
 }
 
-String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined)
+String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, ArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
@@ -358,7 +358,7 @@ bool ShaderLoader::LoadShaderWithInclude(StringView FileName, String& Out)
     return LoadShaderFromString(FileName, source, Out);
 }
 
-String LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined)
+String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined)
 {
     return ShaderLoader{}.LoadShader(FileName, Predefined);
 }

@@ -65,10 +65,10 @@ public:
 
     int GetRefCount() const { return m_RefCount; }
 
-    /** Set weakref counter. Used by TWeakRef */
+    /** Set weakref counter. Used by WeakRef */
     void SetWeakRefCounter(WeakRefCounter* pRefCounter) { m_WeakRefCounter = pRefCounter; }
 
-    /** Get weakref counter. Used by TWeakRef */
+    /** Get weakref counter. Used by WeakRef */
     WeakRefCounter* GetWeakRefCounter() { return m_WeakRefCounter; }
 
 private:
@@ -118,7 +118,7 @@ private:
     static GCObject* m_GarbageObjects;
     static GCObject* m_GarbageObjectsTail;
 
-    static TVector<GCObject*> m_KeepAlivePtrs;
+    static Vector<GCObject*> m_KeepAlivePtrs;
 };
 
 HK_NAMESPACE_END

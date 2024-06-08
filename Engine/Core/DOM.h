@@ -92,8 +92,8 @@ public:
 
     void Remove(StringID memberName);
 
-    using MemberIterator = TVector<Member*>::Iterator;
-    using MemberConstIterator = TVector<Member*>::ConstIterator;
+    using MemberIterator = Vector<Member*>::Iterator;
+    using MemberConstIterator = Vector<Member*>::ConstIterator;
 
     MemberIterator MemberBegin() { return m_Members.begin(); }
     MemberIterator MemberEnd() { return m_Members.end(); }
@@ -187,9 +187,9 @@ private:
     void ClearString();
 
     // Structure data
-    TVector<Member*> m_Members;
+    Vector<Member*> m_Members;
     // Array data
-    TVector<Object*> m_Array;
+    Vector<Object*> m_Array;
     // String data
     SmallString m_String;
 };

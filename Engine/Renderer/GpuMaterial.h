@@ -54,7 +54,7 @@ public:
     int NormalsPassTextureCount{};
     int ShadowMapPassTextureCount{};
 
-    using PipelineRef = TRef<RenderCore::IPipeline>;
+    using PipelineRef = Ref<RenderCore::IPipeline>;
 
     // NOTE: 0 - Static geometry, 1 - Skinned geometry
 

@@ -126,7 +126,7 @@ private:
     void TransformItemsSSE();
     void TransformItemsGeneric();
 
-    void GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed);
+    void GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed);
 
     ItemInfo ItemInfos[MAX_ITEMS];
     int       ItemsCount;
@@ -148,7 +148,7 @@ private:
     ClusterHeader*      pClusterHeaderData;
     ClusterPackedIndex* pClusterPackedIndices;
 
-    TVector<Float3> DebugLinePoints;
+    Vector<Float3> DebugLinePoints;
 
     bool bUseSSE;
 };

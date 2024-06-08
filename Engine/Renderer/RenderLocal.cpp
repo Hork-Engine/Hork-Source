@@ -60,30 +60,30 @@ StreamedMemoryGPU* GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-TRef<CircularBuffer> GCircularBuffer;
+Ref<CircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-TRef<SphereMesh> GSphereMesh;
+Ref<SphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
-TRef<IBuffer> GSaq;
+Ref<IBuffer> GSaq;
 
 /** Simple white texture */
-TRef<ITexture> GWhiteTexture;
+Ref<ITexture> GWhiteTexture;
 
 /** Cluster lookcup 3D texture */
-TRef<ITexture> GLookupBRDF;
+Ref<ITexture> GLookupBRDF;
 
 /** Cluster lookcup 3D texture */
-TRef<ITexture> GClusterLookup;
+Ref<ITexture> GClusterLookup;
 
 /** Cluster item references */
-TRef<IBuffer> GClusterItemBuffer;
+Ref<IBuffer> GClusterItemBuffer;
 
 /** Cluster item references view */
-TRef<IBufferView> GClusterItemTBO;
+Ref<IBufferView> GClusterItemTBO;
 
-TVector<RenderViewContext> GRenderViewContext;
+Vector<RenderViewContext> GRenderViewContext;
 
 VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
 VirtualTextureCache*            GPhysCacheVT{};

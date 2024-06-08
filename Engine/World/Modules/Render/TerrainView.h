@@ -174,14 +174,14 @@ private:
     /** Height above the terrain */
     float m_ViewHeight{};
 
-    static TUniqueRef<TerrainMesh> s_TerrainMesh;
+    static UniqueRef<TerrainMesh> s_TerrainMesh;
     static uint32_t s_InstanceCount;
 
-    TVector<TerrainPatchInstance> m_InstanceBuffer;
-    TVector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
+    Vector<TerrainPatchInstance> m_InstanceBuffer;
+    Vector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
 
-    TRef<RenderCore::ITexture> m_ClipmapArray;
-    TRef<RenderCore::ITexture> m_NormalMapArray;
+    Ref<RenderCore::ITexture> m_ClipmapArray;
+    Ref<RenderCore::ITexture> m_NormalMapArray;
 
     size_t m_InstanceBufferStreamHandle;
     size_t m_IndirectBufferStreamHandle;
@@ -196,7 +196,7 @@ private:
     Float3 VertexShader(TerrainVertex const& v);
     DebugRenderer* m_TerrainRenderer;
     TerrainPatchInstance const* m_pDrawCallUniformData;
-    TVector<BvAxisAlignedBox> m_BoundingBoxes;
+    Vector<BvAxisAlignedBox> m_BoundingBoxes;
 };
 
 HK_NAMESPACE_END

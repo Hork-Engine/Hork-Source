@@ -114,7 +114,7 @@ public:
 private:
     void UpdateStateChange();
 
-    TVector<std::unique_ptr<StateBase>> m_States;
+    Vector<std::unique_ptr<StateBase>> m_States;
     StateBase* m_CurrentState{};
     StateBase* m_PendingState{};
 };

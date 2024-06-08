@@ -206,7 +206,7 @@ ITextureView* TextureGLImpl::GetTextureView(TextureViewDesc const& TextureViewDe
     auto it = Views.Find(TextureViewDesc);
     if (it == Views.End())
     {
-        TRef<TextureViewGLImpl> textureView;
+        Ref<TextureViewGLImpl> textureView;
 
         textureView = MakeRef<TextureViewGLImpl>(TextureViewDesc, this);
         Views[TextureViewDesc] = textureView;

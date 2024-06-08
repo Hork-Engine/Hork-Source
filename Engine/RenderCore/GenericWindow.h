@@ -97,7 +97,7 @@ public:
 
 protected:
     DisplayVideoMode  VideoMode;
-    TWeakRef<ISwapChain> SwapChain;
+    WeakRef<ISwapChain> SwapChain;
 };
 
 } // namespace RenderCore

@@ -60,7 +60,7 @@ HK_NAMESPACE_BEGIN
 
 static const unsigned short RESET_INDEX = 0xffff;
 
-static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<TerrainVertex>& Vertices, TVector<unsigned short>& Indices)
+static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, Vector<TerrainVertex>& Vertices, Vector<unsigned short>& Indices)
 {
     int numVertsX = NumQuadsX + 1;
     int numVertsY = NumQuadsY + 1;
@@ -99,24 +99,24 @@ HK_FORCEINLINE TerrainVertex MakeVertex(short X, short Y)
 
 TerrainMesh::TerrainMesh()
 {
-    TVector<TerrainVertex> blockVerts;
-    TVector<unsigned short> blockIndices;
-    TVector<TerrainVertex> horGapVertices;
-    TVector<unsigned short> horGapIndices;
-    TVector<TerrainVertex> vertGapVertices;
-    TVector<unsigned short> vertGapIndices;
-    TVector<TerrainVertex> interiorTLVertices;
-    TVector<TerrainVertex> interiorTRVertices;
-    TVector<TerrainVertex> interiorBLVertices;
-    TVector<TerrainVertex> interiorBRVertices;
-    TVector<TerrainVertex> interiorFinestVertices;
-    TVector<unsigned short> interiorTLIndices;
-    TVector<unsigned short> interiorTRIndices;
-    TVector<unsigned short> interiorBLIndices;
-    TVector<unsigned short> interiorBRIndices;
-    TVector<unsigned short> interiorFinestIndices;
-    TVector<TerrainVertex> crackVertices;
-    TVector<unsigned short> crackIndices;
+    Vector<TerrainVertex> blockVerts;
+    Vector<unsigned short> blockIndices;
+    Vector<TerrainVertex> horGapVertices;
+    Vector<unsigned short> horGapIndices;
+    Vector<TerrainVertex> vertGapVertices;
+    Vector<unsigned short> vertGapIndices;
+    Vector<TerrainVertex> interiorTLVertices;
+    Vector<TerrainVertex> interiorTRVertices;
+    Vector<TerrainVertex> interiorBLVertices;
+    Vector<TerrainVertex> interiorBRVertices;
+    Vector<TerrainVertex> interiorFinestVertices;
+    Vector<unsigned short> interiorTLIndices;
+    Vector<unsigned short> interiorTRIndices;
+    Vector<unsigned short> interiorBLIndices;
+    Vector<unsigned short> interiorBRIndices;
+    Vector<unsigned short> interiorFinestIndices;
+    Vector<TerrainVertex> crackVertices;
+    Vector<unsigned short> crackIndices;
 
     HK_ASSERT(IsPowerOfTwo(TERRAIN_CLIPMAP_SIZE));
 
@@ -372,7 +372,7 @@ TerrainMesh::TerrainMesh()
     int firstVert = 0;
     int firstIndex = 0;
 
-    auto AddPatch = [&](TerrainPatch& Patch, TVector<TerrainVertex> const& VB, TVector<unsigned short> const& IB)
+    auto AddPatch = [&](TerrainPatch& Patch, Vector<TerrainVertex> const& VB, Vector<unsigned short> const& IB)
     {
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;

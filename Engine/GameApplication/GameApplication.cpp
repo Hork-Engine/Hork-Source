@@ -272,7 +272,7 @@ GameApplication::~GameApplication()
     NavMeshModule::Deinitialize();
     PhysicsModule::Deinitialize();
 
-    Hk::ECS::Shutdown();
+    //Hk::ECS::Shutdown();
 
     GarbageCollector::Shutdown();
 
@@ -514,7 +514,7 @@ void GameApplication::CreateMainWindowAndSwapChain()
     {
         DisplayMode mode;
 
-        TVector<DisplayInfo> displays;
+        Vector<DisplayInfo> displays;
         Core::GetDisplays(displays);
         if (!displays.IsEmpty())
         {

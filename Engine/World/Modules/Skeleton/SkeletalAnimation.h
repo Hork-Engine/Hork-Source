@@ -113,7 +113,7 @@ public:
     struct Node
     {
         NODE_TYPE Type;
-        TRef<SkeletalAnimationTrack> Track;
+        Ref<SkeletalAnimationTrack> Track;
     };
 
     struct BlendPose
@@ -131,7 +131,7 @@ public:
 
     struct BlendNode : Node
     {
-        TVector<BlendPose> BlendPoses;
+        Vector<BlendPose> BlendPoses;
     };
 
     struct State
@@ -277,9 +277,9 @@ public:
 
         String m_Name;
 
-        TVector<Node*> m_Nodes;
-        TVector<State*> m_States;
-        TVector<Transition*> m_Transitions;
+        Vector<Node*> m_Nodes;
+        Vector<State*> m_States;
+        Vector<Transition*> m_Transitions;
     };
 
     struct LayerData
@@ -466,13 +466,13 @@ public:
 
     float GetAnimationDuration(StringView animation);
 
-    TRef<AnimationInstance> Instantiate()
+    Ref<AnimationInstance> Instantiate()
     {
         return MakeRef<AnimationInstance>(this);
     }
 
 private:
-    TVector<Layer*> m_Layers;
+    Vector<Layer*> m_Layers;
     SkeletonHandle m_Skeleton;
 
     friend class AnimationInstance;
@@ -541,8 +541,8 @@ public:
     void Update(float timeStep, SkeletonPose* pose);
 
 private:
-    TRef<AnimationBlendMachine> m_BlendMachine;
-    TVector<AnimationBlendMachine::LayerData> m_Layers;
+    Ref<AnimationBlendMachine> m_BlendMachine;
+    Vector<AnimationBlendMachine::LayerData> m_Layers;
 };
 
 HK_NAMESPACE_END

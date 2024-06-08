@@ -52,7 +52,7 @@ class FGRenderTaskBase : public AFrameResource
 {
 public:
     template <typename T>
-    using TFrameVector = TVector<T, Allocators::FrameMemoryAllocator>;
+    using TFrameVector = Vector<T, Allocators::FrameMemoryAllocator>;
 
     explicit FGRenderTaskBase(FrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
         pFrameGraph(pFrameGraph), Name(Name), ResourceRefs(0), bCulled(false), ProxyType(ProxyType)

@@ -480,7 +480,7 @@ static CanvasVertex* nvg__roundCapEnd(CanvasVertex* dst, VGPoint* p, float dx, f
     return dst;
 }
 
-static int GetVertexCount(TVector<VGPath> const& paths)
+static int GetVertexCount(Vector<VGPath> const& paths)
 {
     int count = 0;
     for (VGPath const& path : paths)
@@ -2320,7 +2320,7 @@ void Canvas::CreateCursorMap()
         }
     }
 
-    TUniqueRef<TextureResource> cursorMap = MakeUnique<TextureResource>(CreateImage(image, nullptr));
+    UniqueRef<TextureResource> cursorMap = MakeUnique<TextureResource>(CreateImage(image, nullptr));
     cursorMap->Upload();
 
     m_CursorMap = GameApplication::GetResourceManager().CreateResourceWithData("internal_cursor_map", std::move(cursorMap));
