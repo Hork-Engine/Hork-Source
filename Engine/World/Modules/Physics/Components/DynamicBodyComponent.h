@@ -171,4 +171,13 @@ private:
     class BodyUserData*     m_UserData = nullptr;
 };
 
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<DynamicBodyComponent>()
+    {
+        return ObjectStorageType::Sparse;
+    }
+}
+
 HK_NAMESPACE_END

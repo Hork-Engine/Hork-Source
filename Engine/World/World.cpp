@@ -377,16 +377,26 @@ void World::DestroyObjectsAndComponents()
         m_ComponentsToDelete.RemoveUnsorted(0);
     }
 
-    struct HandleFetcher
+    if (!m_ObjectsToDelete.IsEmpty())
     {
-        HK_FORCEINLINE static GameObjectHandle FetchHandle(GameObject* object)
+        if (m_ObjectsToDelete.Size() == m_ObjectStorage.Size())
         {
-            return object->GetHandle();
+            m_ObjectStorage.Clear();
         }
-    };
-    for (auto handle : m_ObjectsToDelete)
-        m_ObjectStorage.DestroyObject<HandleFetcher>(handle);
-    m_ObjectsToDelete.Clear();
+        else
+        {
+            struct HandleFetcher
+            {
+                HK_FORCEINLINE static GameObjectHandle FetchHandle(GameObject* object)
+                {
+                    return object->GetHandle();
+                }
+            };
+            for (auto handle : m_ObjectsToDelete)
+                m_ObjectStorage.DestroyObject<HandleFetcher>(handle);
+        }
+        m_ObjectsToDelete.Clear();
+    }
 }
 
 void World::RegisterTickFunction(TickFunction const& f)

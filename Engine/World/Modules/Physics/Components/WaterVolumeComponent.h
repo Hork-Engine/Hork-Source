@@ -49,4 +49,13 @@ public:
     uint8_t                 m_CollisionLayer = CollisionLayer::Default;
 };
 
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<WaterVolumeComponent>()
+    {
+        return ObjectStorageType::Compact;
+    }
+}
+
 HK_NAMESPACE_END

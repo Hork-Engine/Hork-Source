@@ -96,4 +96,13 @@ private:
     class BodyUserData*     m_UserData = nullptr;
 };
 
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<CharacterControllerComponent>()
+    {
+        return ObjectStorageType::Compact;
+    }
+}
+
 HK_NAMESPACE_END

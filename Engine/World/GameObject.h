@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Containers/PageStorage.h>
+#include <Engine/Core/Containers/ObjectStorage.h>
 #include <Engine/Math/Transform.h>
 
 #include "Component.h"
@@ -57,7 +57,7 @@ class GameObject final
 {
     friend class World;
     friend class ComponentManagerBase;
-    friend class PageStorage<GameObject>;
+    friend class ObjectStorage<GameObject, 64, ObjectStorageType::Compact>;
 
 public:
     enum

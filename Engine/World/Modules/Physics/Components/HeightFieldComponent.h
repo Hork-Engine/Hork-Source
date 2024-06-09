@@ -52,14 +52,14 @@ public:
     // Initial properties
     //
 
-    //PhysicsMaterial         Material;
+    //PhysicsMaterial       Material;
 
     /// The collision group this body belongs to (determines if two objects can collide)
     uint8_t                 m_CollisionLayer = CollisionLayer::Default;
 
-    //uint32_t                ObjectFilterID = ~0u;
+    //uint32_t              ObjectFilterID = ~0u;
     
-    Ref<TerrainCollision>  m_CollisionModel;
+    Ref<TerrainCollision>   m_CollisionModel;
 
     void                    BeginPlay();
     void                    EndPlay();
@@ -69,5 +69,14 @@ private:
 
     class BodyUserData*     m_UserData = nullptr;
 };
+
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<HeightFieldComponent>()
+    {
+        return ObjectStorageType::Sparse;
+    }
+}
 
 HK_NAMESPACE_END

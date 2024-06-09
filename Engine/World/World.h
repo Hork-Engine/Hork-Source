@@ -37,6 +37,8 @@ SOFTWARE.
 #include "TickingGroup.h"
 #include "GameObject.h"
 
+#include <Engine/Core/Containers/PageStorage.h>
+
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
@@ -143,7 +145,9 @@ private:
         Unpause
     };
 
-    ObjectStorage<GameObject>   m_ObjectStorage;
+    using GameObjectStorage = ObjectStorage<GameObject, 64, ObjectStorageType::Compact>;
+
+    GameObjectStorage           m_ObjectStorage;
     Vector<ComponentManagerBase*> m_ComponentManagers;
     Vector<WorldInterfaceBase*> m_Interfaces;
     Vector<EventHolderBase*>    m_EventHolders;

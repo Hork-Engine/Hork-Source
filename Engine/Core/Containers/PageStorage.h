@@ -77,8 +77,8 @@ public:
 
     void                    PopBack();
 
-    void                    RemoveUnsorted(uint32_t index);
-    void                    RemoveUnsorted(T* ptr);
+    //void                    RemoveUnsorted(uint32_t index);
+    //void                    RemoveUnsorted(T* ptr);
 
     void                    ShrinkToFit();
 
@@ -146,10 +146,11 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::Clear()
     if constexpr (!std::is_trivially_destructible_v<T>)
     {
         uint32_t i{};
-        while (m_Size--)
+        while (m_Size)
         {
             T* ptr = std::launder(reinterpret_cast<T*>(m_Data.GetAddress(i++)));
             ptr->~T();
+            --m_Size;
         }
     }
     else
@@ -235,6 +236,8 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::PushBack(T const& value)
 template <typename T, size_t PageSize>
 HK_FORCEINLINE void PageStorage<T, PageSize>::PopBack()
 {
+    HK_ASSERT(m_Size > 0);
+
     if constexpr (!std::is_trivially_destructible_v<T>)
     {
         T* ptr = std::launder(reinterpret_cast<T*>(m_Data.GetAddress(--m_Size)));
@@ -245,7 +248,7 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::PopBack()
         --m_Size;
     }
 }
-
+#if 0
 template <typename T, size_t PageSize>
 HK_FORCEINLINE void PageStorage<T, PageSize>::RemoveUnsorted(uint32_t index)
 {
@@ -300,7 +303,7 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::RemoveUnsorted(T* ptr)
         }
     }
 }
-
+#endif
 template <typename T, size_t PageSize>
 HK_FORCEINLINE void PageStorage<T, PageSize>::ShrinkToFit()
 {
@@ -328,14 +331,11 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::Iterate(Visitor& visitor)
         {
             for (uint32_t i = 0; i < remaining; ++i)
                 visitor.Visit(pageData[i]);
-            processed += remaining;
+            break;
         }
-        else
-        {
-            for (size_t i = 0; i < PageSize; ++i)
-                visitor.Visit(pageData[i]);
-            processed += PageSize;
-        }
+        for (size_t i = 0; i < PageSize; ++i)
+            visitor.Visit(pageData[i]);
+        processed += PageSize;
     }
 }
 
@@ -353,13 +353,10 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::IterateBatches(Visitor& visitor)
         if (remaining < PageSize)
         {
             visitor.Visit(pageData, remaining);
-            processed += remaining;
+            break;
         }
-        else
-        {
-            visitor.Visit(pageData, PageSize);
-            processed += PageSize;
-        }
+        visitor.Visit(pageData, PageSize);
+        processed += PageSize;
     }
 }
 

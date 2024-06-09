@@ -93,6 +93,10 @@ class ComponentManager final : public ComponentManagerBase
     friend class World;
 
 public:
+    static constexpr ObjectStorageType StorageType = ComponentMeta::ComponentStorageType<ComponentType>();
+
+    using ComponentStorage = ObjectStorage<ComponentType, 64, StorageType>;
+
     Handle32<ComponentType> CreateComponent(GameObject* gameObject);
 
     Handle32<ComponentType> CreateComponent(GameObject* gameObject, ComponentType*& component);
@@ -110,8 +114,8 @@ public:
 
     uint32_t                GetComponentCount() const;
 
-    using Iterator = typename ObjectStorage<ComponentType>::Iterator;
-    using ConstIterator = typename ObjectStorage<ComponentType>::ConstIterator;
+    using Iterator = typename ComponentStorage::Iterator;
+    using ConstIterator = typename ComponentStorage::ConstIterator;
 
     Iterator                GetComponents();
     ConstIterator           GetComponents() const;
@@ -142,8 +146,8 @@ private:
 
     void                    OnBeginOverlap(ComponentHandle handle, class BodyComponent* body);
     void                    OnEndOverlap(ComponentHandle handle, class BodyComponent* body);
-    
-    ObjectStorage<ComponentType> m_ComponentStorage;
+
+    ComponentStorage        m_ComponentStorage;
 };
 
 HK_NAMESPACE_END

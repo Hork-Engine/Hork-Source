@@ -42,7 +42,7 @@ class PageAllocator final : Noncopyable
         void* Data;
     };
 
-    Vector<Page>   m_Pages;
+    Vector<Page>    m_Pages;
     size_t          m_TypeSize;
 
 public:

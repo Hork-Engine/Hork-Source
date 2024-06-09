@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Handle.h>
 #include <Engine/Core/StringID.h>
+#include <Engine/Core/Containers/ObjectStorage.h>
 
 #include "ComponentTypeRegistry.h"
 
@@ -110,6 +110,15 @@ private:
     GameObject*             m_Owner{};
     ComponentManagerBase*   m_Manager{};
 };
+
+namespace ComponentMeta
+{
+    template <typename ComponentType>
+    constexpr ObjectStorageType ComponentStorageType()
+    {
+        return ObjectStorageType::Compact;
+    }
+}
 
 HK_NAMESPACE_END
 

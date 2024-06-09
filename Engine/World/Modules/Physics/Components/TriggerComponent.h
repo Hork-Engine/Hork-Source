@@ -55,7 +55,7 @@ public:
     //
 
     /// Collision model of the body
-    Ref<CollisionModel>    m_CollisionModel;
+    Ref<CollisionModel>     m_CollisionModel;
 
     /// The collision layer this body belongs to (determines if two objects can collide)
     uint8_t                 m_CollisionLayer;
@@ -67,7 +67,16 @@ public:
 
 private:
     PhysBodyID              m_BodyID;
-    class BodyUserData*     m_UserData = nullptr; // TODO: Use allocator for this
+    class BodyUserData*     m_UserData = nullptr;
 };
+
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<TriggerComponent>()
+    {
+        return ObjectStorageType::Sparse;
+    }
+}
 
 HK_NAMESPACE_END

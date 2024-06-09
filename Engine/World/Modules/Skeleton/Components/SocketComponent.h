@@ -46,12 +46,12 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
-    Ref<SkeletonPose>  Pose;
+    Ref<SkeletonPose>   Pose;
     int                 SocketIndex{};
     
-    void FixedUpdate();
+    void                FixedUpdate();
 
-    void DrawDebug(DebugRenderer& renderer);
+    void                DrawDebug(DebugRenderer& renderer);
 };
 
 namespace TickGroup_FixedUpdate
