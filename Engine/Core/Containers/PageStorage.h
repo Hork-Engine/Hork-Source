@@ -77,9 +77,6 @@ public:
 
     void                    PopBack();
 
-    //void                    RemoveUnsorted(uint32_t index);
-    //void                    RemoveUnsorted(T* ptr);
-
     void                    ShrinkToFit();
 
     static constexpr size_t GetPageSize();
@@ -248,62 +245,7 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::PopBack()
         --m_Size;
     }
 }
-#if 0
-template <typename T, size_t PageSize>
-HK_FORCEINLINE void PageStorage<T, PageSize>::RemoveUnsorted(uint32_t index)
-{
-    HK_ASSERT(index < m_Size);
 
-    if constexpr (!std::is_trivial_v<T>)
-    {
-        void* address = m_Data.GetAddress(index);
-        T* ptr = std::launder(reinterpret_cast<T*>(address));
-        ptr->~T();
-
-        --m_Size;
-        if (index != m_Size)
-        {
-            T* last = std::launder(reinterpret_cast<T*>(m_Data.GetAddress(m_Size)));
-            new (address) T(std::move(*last));
-            last->~T();
-        }
-    }
-    else
-    {
-        --m_Size;
-        if (index != m_Size)
-        {
-            Core::Memcpy(m_Data.GetAddress(index), m_Data.GetAddress(m_Size), sizeof(T));
-        }
-    }
-}
-
-template <typename T, size_t PageSize>
-HK_FORCEINLINE void PageStorage<T, PageSize>::RemoveUnsorted(T* ptr)
-{
-    HK_ASSERT(m_Size);
-
-    if constexpr (!std::is_trivial_v<T>)
-    {
-        ptr->~T();
-
-        T* last = std::launder(reinterpret_cast<T*>(m_Data.GetAddress(--m_Size)));
-        if (ptr != last)
-        {
-            new (ptr) T(std::move(*last));
-            last->~T();
-        }
-    }
-    else
-    {
-        T* last = reinterpret_cast<T*>(m_Data.GetAddress(--m_Size));
-        if (ptr != last)
-        {
-            Core::Memcpy(ptr, last, sizeof(T));
-        }
-    }
-}
-#endif
 template <typename T, size_t PageSize>
 HK_FORCEINLINE void PageStorage<T, PageSize>::ShrinkToFit()
 {
