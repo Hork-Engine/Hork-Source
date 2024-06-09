@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -229,22 +230,22 @@ inline static void sDrawQuad(QuadVertex *&v ,float x1, float y1, float x2, float
 	v->mTexCoord = Float2(tx1, ty2);
 	v->mColor = inColor;
 	++v;
-	
+
 	v->mPosition = Float3(x2, y2, 0);
 	v->mTexCoord = Float2(tx2, ty2);
 	v->mColor = inColor;
 	++v;
-	
+
 	v->mPosition = Float3(x1, y1, 0);
 	v->mTexCoord = Float2(tx1, ty1);
 	v->mColor = inColor;
 	++v;
-	
+
 	v->mPosition = Float3(x2, y2, 0);
 	v->mTexCoord = Float2(tx2, ty2);
 	v->mColor = inColor;
 	++v;
-	
+
 	v->mPosition = Float3(x2, y1, 0);
 	v->mTexCoord = Float2(tx2, ty1);
 	v->mColor = inColor;
@@ -286,7 +287,7 @@ void UIManager::DrawQuad(int inX, int inY, int inWidth, int inHeight, const UITe
 			float ix2 = float(inX + inWidth - (inQuad.mWidth - inQuad.mInnerWidth - (inQuad.mInnerX - inQuad.mX)));
 			float iy2 = float(inY + inHeight - (inQuad.mHeight - inQuad.mInnerHeight - (inQuad.mInnerY - inQuad.mY)));
 
-			// Inner area - texture coordiantes
+			// Inner area - texture coordinates
 			float itx1 = float(inQuad.mInnerX);
 			float ity1 = float(inQuad.mInnerY);
 			float itx2 = float(inQuad.mInnerX + inQuad.mInnerWidth);

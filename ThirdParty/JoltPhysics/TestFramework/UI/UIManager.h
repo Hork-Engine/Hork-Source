@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -22,7 +23,7 @@ public:
 
 	/// Update elements
 	virtual void				Update(float inDeltaTime) override;
-	
+
 	/// Draw elements
 	virtual void				Draw() const override;
 
@@ -69,7 +70,7 @@ public:
 
 	/// Draw a string in screen coordinates (assumes that the projection matrix has been set up correctly)
 	void						DrawText(int inX, int inY, const string_view &inText, const Font *inFont, ColorArg inColor = Color::sWhite);
-								
+
 private:
 	Renderer *					mRenderer;
 	UIEventListener *			mListener;

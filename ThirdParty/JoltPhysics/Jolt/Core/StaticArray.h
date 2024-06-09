@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -64,7 +65,7 @@ public:
 	/// Construct element at the back of the array
 	template <class... A>
 	void				emplace_back(A &&... inElement)
-	{	
+	{
 		JPH_ASSERT(mSize < N);
 		::new (&mElements[mSize++]) T(std::forward<A>(inElement)...);
 	}
@@ -155,6 +156,19 @@ public:
 		return reinterpret_cast<const T &>(mElements[inIdx]);
 	}
 
+	/// Access element
+	T &					at(size_type inIdx)
+	{
+		JPH_ASSERT(inIdx < mSize);
+		return reinterpret_cast<T &>(mElements[inIdx]);
+	}
+
+	const T &			at(size_type inIdx) const
+	{
+		JPH_ASSERT(inIdx < mSize);
+		return reinterpret_cast<const T &>(mElements[inIdx]);
+	}
+
 	/// First element in the array
 	const T &			front() const
 	{
@@ -210,7 +224,7 @@ public:
 	{
 		size_type rhs_size = inRHS.size();
 
-		if ((void *)this != (void *)&inRHS)
+		if (static_cast<const void *>(this) != static_cast<const void *>(&inRHS))
 		{
 			clear();
 
@@ -231,7 +245,7 @@ public:
 		size_type rhs_size = inRHS.size();
 		JPH_ASSERT(rhs_size <= N);
 
-		if ((void *)this != (void *)&inRHS)
+		if (static_cast<const void *>(this) != static_cast<const void *>(&inRHS))
 		{
 			clear();
 
@@ -244,7 +258,7 @@ public:
 
 		return *this;
 	}
-	
+
 	/// Comparing arrays
 	bool				operator == (const StaticArray<T, N> &inRHS) const
 	{
@@ -265,7 +279,7 @@ public:
 				return true;
 		return false;
 	}
-	
+
 protected:
 	struct alignas(T) Storage
 	{

@@ -1,3 +1,7 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
+// SPDX-FileCopyrightText: 2023 Jorrit Rouwe
+// SPDX-License-Identifier: MIT
+
 #include <TestFramework.h>
 
 #include <Tests/General/ChangeMotionQualityTest.h>
@@ -46,14 +50,19 @@ void ChangeMotionQualityTest::Initialize()
 	mBodyInterface->AddBody(mBody->GetID(), EActivation::Activate);
 }
 
+void ChangeMotionQualityTest::UpdateMotionQuality()
+{
+	// Calculate desired motion quality
+	EMotionQuality motion_quality = (int(mTime) & 1) == 0? EMotionQuality::LinearCast : EMotionQuality::Discrete;
+	mBodyInterface->SetMotionQuality(mBody->GetID(), motion_quality);
+}
+
 void ChangeMotionQualityTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 {
 	// Increment time
 	mTime += inParams.mDeltaTime;
 
-	// Calculate desired motion quality
-	EMotionQuality motion_quality = (int(mTime) & 1) == 0? EMotionQuality::LinearCast : EMotionQuality::Discrete;
-	mBodyInterface->SetMotionQuality(mBody->GetID(), motion_quality);
+	UpdateMotionQuality();
 }
 
 void ChangeMotionQualityTest::SaveState(StateRecorder &inStream) const
@@ -64,4 +73,6 @@ void ChangeMotionQualityTest::SaveState(StateRecorder &inStream) const
 void ChangeMotionQualityTest::RestoreState(StateRecorder &inStream)
 {
 	inStream.Read(mTime);
+
+	UpdateMotionQuality();
 }

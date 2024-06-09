@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -60,7 +61,7 @@ void RenderPrimitive::CreateVertexBuffer(int inNumVtx, int inVtxSize, const void
 	else
 	{
 		// No data provided, create a buffer that will be uploaded to the GPU every time it is used
-		mVtxBuffer = mRenderer->CreateD3DResourceOnUploadHeap(size);	
+		mVtxBuffer = mRenderer->CreateD3DResourceOnUploadHeap(size);
 		mVtxBufferInUploadHeap = true;
 	}
 
@@ -83,7 +84,7 @@ void RenderPrimitive::UnlockVertexBuffer()
 {
 	mVtxBuffer->Unmap(0, nullptr);
 }
-	
+
 void RenderPrimitive::CreateIndexBuffer(int inNumIdx, const uint32 *inData)
 {
 	ReleaseIndexBuffer();
@@ -99,7 +100,7 @@ void RenderPrimitive::CreateIndexBuffer(int inNumIdx, const uint32 *inData)
 	else
 	{
 		// No data provided, create a buffer that will be uploaded to the GPU every time it is used
-		mIdxBuffer = mRenderer->CreateD3DResourceOnUploadHeap(size);	
+		mIdxBuffer = mRenderer->CreateD3DResourceOnUploadHeap(size);
 		mIdxBufferInUploadHeap = true;
 	}
 

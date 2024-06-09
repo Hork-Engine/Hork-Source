@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,9 +11,9 @@
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Layers.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(SimpleTest) 
-{ 
-	JPH_ADD_BASE_CLASS(SimpleTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(SimpleTest)
+{
+	JPH_ADD_BASE_CLASS(SimpleTest, Test)
 }
 
 SimpleTest::~SimpleTest()

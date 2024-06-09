@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -15,7 +16,7 @@
 #include <crtdbg.h>
 
 // Constructor
-Application::Application() : 
+Application::Application() :
 	mDebugRenderer(nullptr),
 	mRenderer(nullptr),
 	mKeyboard(nullptr),
@@ -79,7 +80,7 @@ Application::Application() :
 	}
 
 	// Get initial time
-	mLastUpdateTicks = GetProcessorTickCount();
+	mLastUpdateTime = chrono::high_resolution_clock::now();
 }
 
 // Destructor
@@ -97,6 +98,9 @@ Application::~Application()
 		mFont = nullptr;
 		delete mRenderer;
 	}
+
+	// Unregisters all types with the factory and cleans up the default material
+	UnregisterTypes();
 
 	delete Factory::sInstance;
 	Factory::sInstance = nullptr;
@@ -159,27 +163,52 @@ void Application::Run()
 				}
 
 			// Calculate delta time
-			uint64 ticks = GetProcessorTickCount();
-			uint64 delta = ticks - mLastUpdateTicks;
-			mLastUpdateTicks = ticks;
-			float clock_delta_time = float(delta) / float(GetProcessorTicksPerSecond());
-			float world_delta_time = !mIsPaused || mSingleStep? clock_delta_time : 0.0f;
+			chrono::high_resolution_clock::time_point time = chrono::high_resolution_clock::now();
+			chrono::microseconds delta = chrono::duration_cast<chrono::microseconds>(time - mLastUpdateTime);
+			mLastUpdateTime = time;
+			float clock_delta_time = 1.0e-6f * delta.count();
+			float world_delta_time = 0.0f;
+			if (mRequestedDeltaTime <= 0.0f)
+			{
+				// If no fixed frequency update is requested, update with variable time step
+				world_delta_time = !mIsPaused || mSingleStep? clock_delta_time : 0.0f;
+				mResidualDeltaTime = 0.0f;
+			}
+			else
+			{
+				// Else use fixed time steps
+				if (mSingleStep)
+				{
+					// Single step
+					world_delta_time = mRequestedDeltaTime;
+				}
+				else if (!mIsPaused)
+				{
+					// Calculate how much time has passed since the last render
+					world_delta_time = clock_delta_time + mResidualDeltaTime;
+					if (world_delta_time < mRequestedDeltaTime)
+					{
+						// Too soon, set the residual time and don't update
+						mResidualDeltaTime = world_delta_time;
+						world_delta_time = 0.0f;
+					}
+					else
+					{
+						// Update and clamp the residual time to a full update to avoid spiral of death
+						mResidualDeltaTime = min(mRequestedDeltaTime, world_delta_time - mRequestedDeltaTime);
+						world_delta_time = mRequestedDeltaTime;
+					}
+				}
+			}
 			mSingleStep = false;
 
 			// Clear debug lines if we're going to step
 			if (world_delta_time > 0.0f)
 				ClearDebugRenderer();
 
-			// Update the camera position
-			if (!mUI->IsVisible())
-				UpdateCamera(clock_delta_time);
-
-			// Start rendering
-			mRenderer->BeginFrame(mWorldCamera, GetWorldScale());
-
 			{
-				JPH_PROFILE("RenderFrame");
-				if (!RenderFrame(world_delta_time))
+				JPH_PROFILE("UpdateFrame");
+				if (!UpdateFrame(world_delta_time))
 					break;
 			}
 
@@ -190,6 +219,13 @@ void Application::Run()
 			// For next frame: mark that we haven't cleared debug stuff
 			mDebugRendererCleared = false;
 
+			// Update the camera position
+			if (!mUI->IsVisible())
+				UpdateCamera(clock_delta_time);
+
+			// Start rendering
+			mRenderer->BeginFrame(mWorldCamera, GetWorldScale());
+
 			// Draw debug information
 			static_cast<DebugRendererImp *>(mDebugRenderer)->Draw();
 
@@ -198,7 +234,7 @@ void Application::Run()
 
 			if (mUI->IsVisible())
 			{
-				// Send mouse input to UI		
+				// Send mouse input to UI
 				bool left_pressed = mMouse->IsLeftPressed();
 				if (left_pressed && !mLeftMousePressed)
 					mUI->MouseDown(mMouse->GetX(), mMouse->GetY());

@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -7,8 +8,8 @@
 #include <Layers.h>
 #include <Renderer/DebugRendererImp.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(CharacterTest) 
-{ 
+JPH_IMPLEMENT_RTTI_VIRTUAL(CharacterTest)
+{
 	JPH_ADD_BASE_CLASS(CharacterTest, CharacterBaseTest)
 }
 
@@ -41,6 +42,7 @@ void CharacterTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 	// Draw state of character
 	DrawCharacterState(mCharacter, mCharacter->GetWorldTransform(), mCharacter->GetLinearVelocity());
 }
+
 void CharacterTest::PostPhysicsUpdate(float inDeltaTime)
 {
 	// Fetch the new ground properties
@@ -71,15 +73,16 @@ void CharacterTest::RestoreState(StateRecorder &inStream)
 void CharacterTest::HandleInput(Vec3Arg inMovementDirection, bool inJump, bool inSwitchStance, float inDeltaTime)
 {
 	// Cancel movement in opposite direction of normal when touching something we can't walk up
+	Vec3 movement_direction = inMovementDirection;
 	Character::EGroundState ground_state = mCharacter->GetGroundState();
 	if (ground_state == Character::EGroundState::OnSteepGround
 		|| ground_state == Character::EGroundState::NotSupported)
 	{
 		Vec3 normal = mCharacter->GetGroundNormal();
 		normal.SetY(0.0f);
-		float dot = normal.Dot(inMovementDirection);
+		float dot = normal.Dot(movement_direction);
 		if (dot < 0.0f)
-			inMovementDirection -= (dot * normal) / normal.LengthSq();
+			movement_direction -= (dot * normal) / normal.LengthSq();
 	}
 
 	// Stance switch
@@ -90,7 +93,7 @@ void CharacterTest::HandleInput(Vec3Arg inMovementDirection, bool inJump, bool i
 	{
 		// Update velocity
 		Vec3 current_velocity = mCharacter->GetLinearVelocity();
-		Vec3 desired_velocity = sCharacterSpeed * inMovementDirection;
+		Vec3 desired_velocity = sCharacterSpeed * movement_direction;
 		desired_velocity.SetY(current_velocity.GetY());
 		Vec3 new_velocity = 0.75f * current_velocity + 0.25f * desired_velocity;
 

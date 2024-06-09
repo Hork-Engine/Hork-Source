@@ -768,15 +768,10 @@ void PhysicsInterface::Update()
 
     // Simulation step
     {
-        // If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
-        const int collisionSteps = 1;
-
-        // If you want more accurate step results you can do multiple sub steps within a collision step. Usually you would set this to 1.
-        const int integrationSubSteps = 1;
-
+        const int numCollisionSteps = 1;
         auto& physicsModule = PhysicsModule::Get();
 
-        m_pImpl->m_PhysSystem.Update(GetWorld()->GetTick().FixedTimeStep, collisionSteps, integrationSubSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
+        m_pImpl->m_PhysSystem.Update(GetWorld()->GetTick().FixedTimeStep, numCollisionSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
     }
 
     // Capture active bodies transform

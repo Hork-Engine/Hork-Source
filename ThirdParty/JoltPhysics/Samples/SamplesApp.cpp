@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -6,12 +7,16 @@
 #include <SamplesApp.h>
 #include <Application/EntryPoint.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Core/JobSystemSingleThreaded.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Core/StreamWrapper.h>
+#include <Jolt/Core/StringTools.h>
 #include <Jolt/Geometry/OrientedBox.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/StateRecorderImpl.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/SoftBody/SoftBodyMotionProperties.h>
+#include <Jolt/Physics/SoftBody/SoftBodyCreationSettings.h>
 #include <Jolt/Physics/PhysicsScene.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
@@ -28,6 +33,7 @@
 #include <Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/TriangleShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Collision/Shape/MutableCompoundShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
@@ -38,6 +44,7 @@
 #include <Utils/Log.h>
 #include <Utils/ShapeCreator.h>
 #include <Utils/CustomMemoryHook.h>
+#include <Utils/SoftBodyCreator.h>
 #include <Renderer/DebugRendererImp.h>
 
 JPH_SUPPRESS_WARNINGS_STD_BEGIN
@@ -61,47 +68,56 @@ struct TestCategory
 	size_t				mNumTests;
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(SimpleTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(StackTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(WallTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(IslandTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(FunnelTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(FrictionTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(FrictionPerTriangleTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(GravityFactorTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(RestitutionTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(DampingTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(KinematicTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ContactManifoldTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ManifoldReductionTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CenterOfMassTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(HeavyOnLightTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(HighSpeedTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ChangeMotionQualityTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ChangeMotionTypeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ChangeShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ChangeObjectLayerTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(LoadSaveSceneTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(LoadSaveBinaryTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(BigVsSmallTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ActiveEdgesTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(MultithreadedTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ContactListenerTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ActivateDuringUpdateTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SensorTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(DynamicMeshTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(TwoDFunnelTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SimpleTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, StackTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, WallTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PyramidTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, IslandTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, FunnelTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, FrictionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, FrictionPerTriangleTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConveyorBeltTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, GravityFactorTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, RestitutionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, DampingTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, KinematicTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ContactManifoldTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ManifoldReductionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CenterOfMassTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, HeavyOnLightTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, HighSpeedTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ChangeMotionQualityTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ChangeMotionTypeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ChangeShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ChangeObjectLayerTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadSaveSceneTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadSaveBinaryTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BigVsSmallTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ActiveEdgesTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, EnhancedInternalEdgeRemovalTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, MultithreadedTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ContactListenerTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ModifyMassTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ActivateDuringUpdateTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SensorTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, DynamicMeshTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, TwoDFunnelTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, AllowedDOFsTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ShapeFilterTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, GyroscopicForceTest)
 
 static TestNameAndRTTI sGeneralTests[] =
 {
 	{ "Simple",								JPH_RTTI(SimpleTest) },
 	{ "Stack",								JPH_RTTI(StackTest) },
 	{ "Wall",								JPH_RTTI(WallTest) },
+	{ "Pyramid",							JPH_RTTI(PyramidTest) },
 	{ "Island",								JPH_RTTI(IslandTest) },
 	{ "Funnel",								JPH_RTTI(FunnelTest) },
 	{ "2D Funnel",							JPH_RTTI(TwoDFunnelTest) },
 	{ "Friction",							JPH_RTTI(FrictionTest) },
 	{ "Friction (Per Triangle)",			JPH_RTTI(FrictionPerTriangleTest) },
+	{ "Conveyor Belt",						JPH_RTTI(ConveyorBeltTest) },
 	{ "Gravity Factor",						JPH_RTTI(GravityFactorTest) },
 	{ "Restitution",						JPH_RTTI(RestitutionTest) },
 	{ "Damping",							JPH_RTTI(DampingTest) },
@@ -119,31 +135,38 @@ static TestNameAndRTTI sGeneralTests[] =
 	{ "Load/Save Binary",					JPH_RTTI(LoadSaveBinaryTest) },
 	{ "Big vs Small",						JPH_RTTI(BigVsSmallTest) },
 	{ "Active Edges",						JPH_RTTI(ActiveEdgesTest) },
+	{ "Enhanced Internal Edge Removal",		JPH_RTTI(EnhancedInternalEdgeRemovalTest) },
 	{ "Multithreaded",						JPH_RTTI(MultithreadedTest) },
 	{ "Contact Listener",					JPH_RTTI(ContactListenerTest) },
+	{ "Modify Mass",						JPH_RTTI(ModifyMassTest) },
 	{ "Activate During Update",				JPH_RTTI(ActivateDuringUpdateTest) },
 	{ "Sensor",								JPH_RTTI(SensorTest) },
 	{ "Dynamic Mesh",						JPH_RTTI(DynamicMeshTest) },
+	{ "Allowed Degrees of Freedom",			JPH_RTTI(AllowedDOFsTest) },
+	{ "Shape Filter",						JPH_RTTI(ShapeFilterTest) },
+	{ "Gyroscopic Force",					JPH_RTTI(GyroscopicForceTest) },
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(DistanceConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(FixedConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ConeConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SwingTwistConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SixDOFConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(HingeConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PoweredHingeConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PointConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SliderConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PoweredSliderConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SpringTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ConstraintSingularityTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PoweredSwingTwistConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SwingTwistConstraintFrictionTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PathConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(RackAndPinionConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(GearConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PulleyConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, DistanceConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, FixedConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConeConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SwingTwistConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SixDOFConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, HingeConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PoweredHingeConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PointConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SliderConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PoweredSliderConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SpringTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConstraintSingularityTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConstraintPriorityTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PoweredSwingTwistConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SwingTwistConstraintFrictionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PathConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, RackAndPinionConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, GearConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PulleyConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConstraintVsCOMChangeTest)
 
 static TestNameAndRTTI sConstraintTests[] =
 {
@@ -165,21 +188,24 @@ static TestNameAndRTTI sConstraintTests[] =
 	{ "Pulley Constraint",					JPH_RTTI(PulleyConstraintTest) },
 	{ "Spring",								JPH_RTTI(SpringTest) },
 	{ "Constraint Singularity",				JPH_RTTI(ConstraintSingularityTest) },
+	{ "Constraint vs Center Of Mass Change",JPH_RTTI(ConstraintVsCOMChangeTest) },
+	{ "Constraint Priority",				JPH_RTTI(ConstraintPriorityTest) },
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(BoxShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SphereShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(TaperedCapsuleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CapsuleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CylinderShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(StaticCompoundShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(MutableCompoundShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(TriangleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ConvexHullShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(MeshShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(HeightFieldShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(RotatedTranslatedShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(OffsetCenterOfMassShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BoxShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SphereShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, TaperedCapsuleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CapsuleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CylinderShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, StaticCompoundShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, MutableCompoundShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, TriangleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConvexHullShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, MeshShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, HeightFieldShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, DeformedHeightFieldShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, RotatedTranslatedShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, OffsetCenterOfMassShapeTest)
 
 static TestNameAndRTTI sShapeTests[] =
 {
@@ -191,6 +217,7 @@ static TestNameAndRTTI sShapeTests[] =
 	{ "Convex Hull Shape",					JPH_RTTI(ConvexHullShapeTest) },
 	{ "Mesh Shape",							JPH_RTTI(MeshShapeTest) },
 	{ "Height Field Shape",					JPH_RTTI(HeightFieldShapeTest) },
+	{ "Deformed Height Field Shape",		JPH_RTTI(DeformedHeightFieldShapeTest) },
 	{ "Static Compound Shape",				JPH_RTTI(StaticCompoundShapeTest) },
 	{ "Mutable Compound Shape",				JPH_RTTI(MutableCompoundShapeTest) },
 	{ "Triangle Shape",						JPH_RTTI(TriangleShapeTest) },
@@ -198,18 +225,18 @@ static TestNameAndRTTI sShapeTests[] =
 	{ "Offset Center Of Mass Shape",		JPH_RTTI(OffsetCenterOfMassShapeTest) }
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledSphereShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledBoxShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledCapsuleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledTaperedCapsuleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledCylinderShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledConvexHullShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledMeshShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledHeightFieldShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledStaticCompoundShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledMutableCompoundShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledTriangleShapeTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ScaledOffsetCenterOfMassShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledSphereShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledBoxShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledCapsuleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledTaperedCapsuleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledCylinderShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledConvexHullShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledMeshShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledHeightFieldShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledStaticCompoundShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledMutableCompoundShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledTriangleShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ScaledOffsetCenterOfMassShapeTest)
 
 static TestNameAndRTTI sScaledShapeTests[] =
 {
@@ -227,19 +254,21 @@ static TestNameAndRTTI sScaledShapeTests[] =
 	{ "Offset Center Of Mass Shape",		JPH_RTTI(ScaledOffsetCenterOfMassShapeTest) }
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(CreateRigTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(LoadRigTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(KinematicRigTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(PoweredRigTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(RigPileTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(LoadSaveBinaryRigTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(SkeletonMapperTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(BigWorldTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CreateRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, KinematicRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, PoweredRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, RigPileTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadSaveRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadSaveBinaryRigTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SkeletonMapperTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BigWorldTest)
 
 static TestNameAndRTTI sRigTests[] =
 {
 	{ "Create Rig",							JPH_RTTI(CreateRigTest) },
 	{ "Load Rig",							JPH_RTTI(LoadRigTest) },
+	{ "Load / Save Rig",					JPH_RTTI(LoadSaveRigTest) },
 	{ "Load / Save Binary Rig",				JPH_RTTI(LoadSaveBinaryRigTest) },
 	{ "Kinematic Rig",						JPH_RTTI(KinematicRigTest) },
 	{ "Powered Rig",						JPH_RTTI(PoweredRigTest) },
@@ -248,9 +277,9 @@ static TestNameAndRTTI sRigTests[] =
 	{ "Big World",							JPH_RTTI(BigWorldTest) }
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(CharacterTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CharacterVirtualTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CharacterSpaceShipTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CharacterTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CharacterVirtualTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CharacterSpaceShipTest)
 
 static TestNameAndRTTI sCharacterTests[] =
 {
@@ -259,26 +288,67 @@ static TestNameAndRTTI sCharacterTests[] =
 	{ "Character Virtual vs Space Ship",	JPH_RTTI(CharacterSpaceShipTest) },
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(WaterShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, WaterShapeTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BoatTest)
 
 static TestNameAndRTTI sWaterTests[] =
 {
 	{ "Shapes",								JPH_RTTI(WaterShapeTest) },
+	{ "Boat",								JPH_RTTI(BoatTest) },
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(VehicleSixDOFTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(VehicleConstraintTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(TankTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, VehicleSixDOFTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, VehicleConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, MotorcycleTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, TankTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, VehicleStressTest)
 
 static TestNameAndRTTI sVehicleTests[] =
 {
 	{ "Car (VehicleConstraint)",			JPH_RTTI(VehicleConstraintTest) },
+	{ "Motorcycle (VehicleConstraint)",		JPH_RTTI(MotorcycleTest) },
 	{ "Tank (VehicleConstraint)",			JPH_RTTI(TankTest) },
 	{ "Car (SixDOFConstraint)",				JPH_RTTI(VehicleSixDOFTest) },
+	{ "Vehicle Stress Test",				JPH_RTTI(VehicleStressTest) },
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(BroadPhaseCastRayTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(BroadPhaseInsertionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyShapesTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyFrictionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyRestitutionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyPressureTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyGravityFactorTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyKinematicTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyUpdatePositionTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyStressTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyVsFastMovingTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyVertexRadiusTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyContactListenerTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyCustomUpdateTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyLRAConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodyBendConstraintTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, SoftBodySkinnedConstraintTest)
+
+static TestNameAndRTTI sSoftBodyTests[] =
+{
+	{ "Soft Body vs Shapes",			JPH_RTTI(SoftBodyShapesTest) },
+	{ "Soft Body vs Fast Moving",		JPH_RTTI(SoftBodyVsFastMovingTest) },
+	{ "Soft Body Friction",				JPH_RTTI(SoftBodyFrictionTest) },
+	{ "Soft Body Restitution",			JPH_RTTI(SoftBodyRestitutionTest) },
+	{ "Soft Body Pressure",				JPH_RTTI(SoftBodyPressureTest) },
+	{ "Soft Body Gravity Factor",		JPH_RTTI(SoftBodyGravityFactorTest) },
+	{ "Soft Body Kinematic",			JPH_RTTI(SoftBodyKinematicTest) },
+	{ "Soft Body Update Position",		JPH_RTTI(SoftBodyUpdatePositionTest) },
+	{ "Soft Body Stress Test",			JPH_RTTI(SoftBodyStressTest) },
+	{ "Soft Body Vertex Radius Test",	JPH_RTTI(SoftBodyVertexRadiusTest) },
+	{ "Soft Body Contact Listener",		JPH_RTTI(SoftBodyContactListenerTest) },
+	{ "Soft Body Custom Update",		JPH_RTTI(SoftBodyCustomUpdateTest) },
+	{ "Soft Body LRA Constraint",		JPH_RTTI(SoftBodyLRAConstraintTest) },
+	{ "Soft Body Bend Constraint",		JPH_RTTI(SoftBodyBendConstraintTest) },
+	{ "Soft Body Skinned Constraint",	JPH_RTTI(SoftBodySkinnedConstraintTest) }
+};
+
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BroadPhaseCastRayTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, BroadPhaseInsertionTest)
 
 static TestNameAndRTTI sBroadPhaseTests[] =
 {
@@ -286,13 +356,13 @@ static TestNameAndRTTI sBroadPhaseTests[] =
 	{ "Insertion",							JPH_RTTI(BroadPhaseInsertionTest) }
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(InteractivePairsTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(EPATest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ClosestPointTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ConvexHullTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(ConvexHullShrinkTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(RandomRayTest)
-JPH_DECLARE_RTTI_FOR_FACTORY(CapsuleVsBoxTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, InteractivePairsTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, EPATest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ClosestPointTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConvexHullTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, ConvexHullShrinkTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, RandomRayTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, CapsuleVsBoxTest)
 
 static TestNameAndRTTI sConvexCollisionTests[] =
 {
@@ -305,15 +375,15 @@ static TestNameAndRTTI sConvexCollisionTests[] =
 	{ "Capsule Vs Box",						JPH_RTTI(CapsuleVsBoxTest) }
 };
 
-JPH_DECLARE_RTTI_FOR_FACTORY(LoadSnapshotTest)
+JPH_DECLARE_RTTI_FOR_FACTORY(JPH_NO_EXPORT, LoadSnapshotTest)
 
 static TestNameAndRTTI sTools[] =
 {
 	{ "Load Snapshot",						JPH_RTTI(LoadSnapshotTest) },
 };
 
-static TestCategory sAllCategories[] = 
-{ 
+static TestCategory sAllCategories[] =
+{
 	{ "General", sGeneralTests, size(sGeneralTests) },
 	{ "Shapes", sShapeTests, size(sShapeTests) },
 	{ "Scaled Shapes", sScaledShapeTests, size(sScaledShapeTests) },
@@ -322,9 +392,10 @@ static TestCategory sAllCategories[] =
 	{ "Character", sCharacterTests, size(sCharacterTests) },
 	{ "Water", sWaterTests, size(sWaterTests) },
 	{ "Vehicle", sVehicleTests, size(sVehicleTests) },
+	{ "Soft Body", sSoftBodyTests, size(sSoftBodyTests) },
 	{ "Broad Phase", sBroadPhaseTests, size(sBroadPhaseTests) },
 	{ "Convex Collision", sConvexCollisionTests, size(sConvexCollisionTests) },
-	{ "Tools", sTools, size(sTools) } 
+	{ "Tools", sTools, size(sTools) }
 };
 
 //-----------------------------------------------------------------------------
@@ -333,22 +404,28 @@ static TestCategory sAllCategories[] =
 static constexpr uint cNumBodies = 10240;
 static constexpr uint cNumBodyMutexes = 0; // Autodetect
 static constexpr uint cMaxBodyPairs = 65536;
-static constexpr uint cMaxContactConstraints = 10240;
+static constexpr uint cMaxContactConstraints = 20480;
 
 SamplesApp::SamplesApp()
 {
+	// Limit the render frequency to our simulation frequency so we don't play back the simulation too fast
+	// Note that if the simulation frequency > vsync frequency the simulation will slow down as we want
+	// to visualize every simulation step. When the simulation frequency is lower than the vsync frequency
+	// we will not render a new frame every frame as we want to show the result of the sim and not an interpolated version.
+	SetRenderFrequency(mUpdateFrequency);
+
 	// Allocate temp memory
 #ifdef JPH_DISABLE_TEMP_ALLOCATOR
 	mTempAllocator = new TempAllocatorMalloc();
 #else
-	mTempAllocator = new TempAllocatorImpl(16 * 1024 * 1024);
+	mTempAllocator = new TempAllocatorImpl(32 * 1024 * 1024);
 #endif
 
 	// Create job system
 	mJobSystem = new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, mMaxConcurrentJobs - 1);
 
-	// Create job system without extra threads for validating
-	mJobSystemValidating = new JobSystemThreadPool(cMaxPhysicsJobs, cMaxPhysicsBarriers, 0);
+	// Create single threaded job system for validating
+	mJobSystemValidating = new JobSystemSingleThreaded(cMaxPhysicsJobs);
 
 	{
 		// Disable allocation checking
@@ -356,14 +433,14 @@ SamplesApp::SamplesApp()
 
 		// Create UI
 		UIElement *main_menu = mDebugUI->CreateMenu();
-		mDebugUI->CreateTextButton(main_menu, "Select Test", [this]() { 
+		mDebugUI->CreateTextButton(main_menu, "Select Test", [this]() {
 			UIElement *tests = mDebugUI->CreateMenu();
 			for (TestCategory &c : sAllCategories)
 			{
-				mDebugUI->CreateTextButton(tests, c.mName, [=]() { 
+				mDebugUI->CreateTextButton(tests, c.mName, [this, &c]() {
 					UIElement *category = mDebugUI->CreateMenu();
 					for (uint j = 0; j < c.mNumTests; ++j)
-						mDebugUI->CreateTextButton(category, c.mTests[j].mName, [=]() { StartTest(c.mTests[j].mRTTI); });
+						mDebugUI->CreateTextButton(category, c.mTests[j].mName, [this, &c, j]() { StartTest(c.mTests[j].mRTTI); });
 					mDebugUI->ShowMenu(category);
 				});
 			}
@@ -380,27 +457,29 @@ SamplesApp::SamplesApp()
 		mNextTestButton->SetDisabled(true);
 		mDebugUI->CreateTextButton(main_menu, "Take Snapshot", [this]() { TakeSnapshot(); });
 		mDebugUI->CreateTextButton(main_menu, "Take And Reload Snapshot", [this]() { TakeAndReloadSnapshot(); });
-		mDebugUI->CreateTextButton(main_menu, "Physics Settings", [this]() { 
+		mDebugUI->CreateTextButton(main_menu, "Physics Settings", [this]() {
 			UIElement *phys_settings = mDebugUI->CreateMenu();
 			mDebugUI->CreateSlider(phys_settings, "Max Concurrent Jobs", float(mMaxConcurrentJobs), 1, float(thread::hardware_concurrency()), 1, [this](float inValue) { mMaxConcurrentJobs = (int)inValue; });
 			mDebugUI->CreateSlider(phys_settings, "Gravity (m/s^2)", -mPhysicsSystem->GetGravity().GetY(), 0.0f, 20.0f, 1.0f, [this](float inValue) { mPhysicsSystem->SetGravity(Vec3(0, -inValue, 0)); });
-			mDebugUI->CreateSlider(phys_settings, "Update Frequency (Hz)", mUpdateFrequency, 7.5f, 300.0f, 2.5f, [this](float inValue) { mUpdateFrequency = inValue; });
+			mDebugUI->CreateSlider(phys_settings, "Update Frequency (Hz)", mUpdateFrequency, 7.5f, 300.0f, 2.5f, [this](float inValue) { mUpdateFrequency = inValue; SetRenderFrequency(mUpdateFrequency); });
 			mDebugUI->CreateSlider(phys_settings, "Num Collision Steps", float(mCollisionSteps), 1.0f, 4.0f, 1.0f, [this](float inValue) { mCollisionSteps = int(inValue); });
-			mDebugUI->CreateSlider(phys_settings, "Num Integration Sub Steps", float(mIntegrationSubSteps), 1.0f, 4.0f, 1.0f, [this](float inValue) { mIntegrationSubSteps = int(inValue); });
 			mDebugUI->CreateSlider(phys_settings, "Num Velocity Steps", float(mPhysicsSettings.mNumVelocitySteps), 0, 30, 1, [this](float inValue) { mPhysicsSettings.mNumVelocitySteps = int(round(inValue)); mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateSlider(phys_settings, "Num Position Steps", float(mPhysicsSettings.mNumPositionSteps), 0, 30, 1, [this](float inValue) { mPhysicsSettings.mNumPositionSteps = int(round(inValue)); mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateSlider(phys_settings, "Baumgarte Stabilization Factor", mPhysicsSettings.mBaumgarte, 0.01f, 1.0f, 0.05f, [this](float inValue) { mPhysicsSettings.mBaumgarte = inValue; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateSlider(phys_settings, "Speculative Contact Distance (m)", mPhysicsSettings.mSpeculativeContactDistance, 0.0f, 0.1f, 0.005f, [this](float inValue) { mPhysicsSettings.mSpeculativeContactDistance = inValue; });
 			mDebugUI->CreateSlider(phys_settings, "Penetration Slop (m)", mPhysicsSettings.mPenetrationSlop, 0.0f, 0.1f, 0.005f, [this](float inValue) { mPhysicsSettings.mPenetrationSlop = inValue; });
+			mDebugUI->CreateSlider(phys_settings, "Linear Cast Threshold", mPhysicsSettings.mLinearCastThreshold, 0.0f, 1.0f, 0.05f, [this](float inValue) { mPhysicsSettings.mLinearCastThreshold = inValue; });
 			mDebugUI->CreateSlider(phys_settings, "Min Velocity For Restitution (m/s)", mPhysicsSettings.mMinVelocityForRestitution, 0.0f, 10.0f, 0.1f, [this](float inValue) { mPhysicsSettings.mMinVelocityForRestitution = inValue; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateSlider(phys_settings, "Time Before Sleep (s)", mPhysicsSettings.mTimeBeforeSleep, 0.1f, 1.0f, 0.1f, [this](float inValue) { mPhysicsSettings.mTimeBeforeSleep = inValue; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateSlider(phys_settings, "Point Velocity Sleep Threshold (m/s)", mPhysicsSettings.mPointVelocitySleepThreshold, 0.01f, 1.0f, 0.01f, [this](float inValue) { mPhysicsSettings.mPointVelocitySleepThreshold = inValue; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 		#if defined(_DEBUG) && !defined(JPH_DISABLE_CUSTOM_ALLOCATOR) && !defined(JPH_COMPILER_MINGW)
 			mDebugUI->CreateCheckBox(phys_settings, "Enable Checking Memory Hook", IsCustomMemoryHookEnabled(), [](UICheckBox::EState inState) { EnableCustomMemoryHook(inState == UICheckBox::STATE_CHECKED); });
 		#endif
+			mDebugUI->CreateCheckBox(phys_settings, "Deterministic Simulation", mPhysicsSettings.mDeterministicSimulation, [this](UICheckBox::EState inState) { mPhysicsSettings.mDeterministicSimulation = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Constraint Warm Starting", mPhysicsSettings.mConstraintWarmStart, [this](UICheckBox::EState inState) { mPhysicsSettings.mConstraintWarmStart = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Use Body Pair Contact Cache", mPhysicsSettings.mUseBodyPairContactCache, [this](UICheckBox::EState inState) { mPhysicsSettings.mUseBodyPairContactCache = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Contact Manifold Reduction", mPhysicsSettings.mUseManifoldReduction, [this](UICheckBox::EState inState) { mPhysicsSettings.mUseManifoldReduction = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
+			mDebugUI->CreateCheckBox(phys_settings, "Use Large Island Splitter", mPhysicsSettings.mUseLargeIslandSplitter, [this](UICheckBox::EState inState) { mPhysicsSettings.mUseLargeIslandSplitter = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Allow Sleeping", mPhysicsSettings.mAllowSleeping, [this](UICheckBox::EState inState) { mPhysicsSettings.mAllowSleeping = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Check Active Triangle Edges", mPhysicsSettings.mCheckActiveEdges, [this](UICheckBox::EState inState) { mPhysicsSettings.mCheckActiveEdges = inState == UICheckBox::STATE_CHECKED; mPhysicsSystem->SetPhysicsSettings(mPhysicsSettings); });
 			mDebugUI->CreateCheckBox(phys_settings, "Record State For Playback", mRecordState, [this](UICheckBox::EState inState) { mRecordState = inState == UICheckBox::STATE_CHECKED; });
@@ -409,7 +488,7 @@ SamplesApp::SamplesApp()
 			mDebugUI->ShowMenu(phys_settings);
 		});
 	#ifdef JPH_DEBUG_RENDERER
-		mDebugUI->CreateTextButton(main_menu, "Drawing Options", [this]() { 
+		mDebugUI->CreateTextButton(main_menu, "Drawing Options", [this]() {
 			UIElement *drawing_options = mDebugUI->CreateMenu();
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Shapes (H)", mBodyDrawSettings.mDrawShape, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawShape = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Shapes Wireframe (Alt+W)", mBodyDrawSettings.mDrawShapeWireframe, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawShapeWireframe = inState == UICheckBox::STATE_CHECKED; });
@@ -427,6 +506,7 @@ SamplesApp::SamplesApp()
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Contact Manifolds (M)", ContactConstraintManager::sDrawContactManifolds, [](UICheckBox::EState inState) { ContactConstraintManager::sDrawContactManifolds = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Motion Quality Linear Cast", PhysicsSystem::sDrawMotionQualityLinearCast, [](UICheckBox::EState inState) { PhysicsSystem::sDrawMotionQualityLinearCast = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Bounding Boxes", mBodyDrawSettings.mDrawBoundingBox, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawBoundingBox = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Physics System Bounds", mDrawPhysicsSystemBounds, [this](UICheckBox::EState inState) { mDrawPhysicsSystemBounds = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Center of Mass Transforms", mBodyDrawSettings.mDrawCenterOfMassTransform, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawCenterOfMassTransform = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw World Transforms", mBodyDrawSettings.mDrawWorldTransform, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawWorldTransform = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Velocity", mBodyDrawSettings.mDrawVelocity, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawVelocity = inState == UICheckBox::STATE_CHECKED; });
@@ -443,20 +523,28 @@ SamplesApp::SamplesApp()
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Character Virtual Constraints", CharacterVirtual::sDrawConstraints, [](UICheckBox::EState inState) { CharacterVirtual::sDrawConstraints = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Character Virtual Walk Stairs", CharacterVirtual::sDrawWalkStairs, [](UICheckBox::EState inState) { CharacterVirtual::sDrawWalkStairs = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(drawing_options, "Draw Character Virtual Stick To Floor", CharacterVirtual::sDrawStickToFloor, [](UICheckBox::EState inState) { CharacterVirtual::sDrawStickToFloor = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Vertices", mBodyDrawSettings.mDrawSoftBodyVertices, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyVertices = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Vertex Velocities", mBodyDrawSettings.mDrawSoftBodyVertexVelocities, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyVertexVelocities = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Edge Constraints", mBodyDrawSettings.mDrawSoftBodyEdgeConstraints, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyEdgeConstraints = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Bend Constraints", mBodyDrawSettings.mDrawSoftBodyBendConstraints, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyBendConstraints = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Volume Constraints", mBodyDrawSettings.mDrawSoftBodyVolumeConstraints, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyVolumeConstraints = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Skin Constraints", mBodyDrawSettings.mDrawSoftBodySkinConstraints, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodySkinConstraints = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body LRA Constraints", mBodyDrawSettings.mDrawSoftBodyLRAConstraints, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyLRAConstraints = inState == UICheckBox::STATE_CHECKED; });
+			mDebugUI->CreateCheckBox(drawing_options, "Draw Soft Body Predicted Bounds", mBodyDrawSettings.mDrawSoftBodyPredictedBounds, [this](UICheckBox::EState inState) { mBodyDrawSettings.mDrawSoftBodyPredictedBounds = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->ShowMenu(drawing_options);
 		});
 	#endif // JPH_DEBUG_RENDERER
-		mDebugUI->CreateTextButton(main_menu, "Mouse Probe", [this]() { 
+		mDebugUI->CreateTextButton(main_menu, "Mouse Probe", [this]() {
 			UIElement *probe_options = mDebugUI->CreateMenu();
-			mDebugUI->CreateComboBox(probe_options, "Mode", { "Pick", "Ray", "RayCollector", "CollidePoint", "CollideShape", "CastShape", "TransfShape", "GetTriangles", "BP Ray", "BP Box", "BP Sphere", "BP Point", "BP OBox", "BP Cast Box" }, (int)mProbeMode, [this](int inItem) { mProbeMode = (EProbeMode)inItem; });
-			mDebugUI->CreateComboBox(probe_options, "Shape", { "Sphere", "Box", "ConvexHull", "Capsule", "TaperedCapsule", "Cylinder", "Triangle", "StaticCompound", "StaticCompound2", "MutableCompound", "Mesh" }, (int)mProbeShape, [=](int inItem) { mProbeShape = (EProbeShape)inItem; });
+			mDebugUI->CreateComboBox(probe_options, "Mode", { "Pick", "Ray", "RayCollector", "CollidePoint", "CollideShape", "CastShape", "CollideSoftBody", "TransfShape", "GetTriangles", "BP Ray", "BP Box", "BP Sphere", "BP Point", "BP OBox", "BP Cast Box" }, (int)mProbeMode, [this](int inItem) { mProbeMode = (EProbeMode)inItem; });
+			mDebugUI->CreateComboBox(probe_options, "Shape", { "Sphere", "Box", "ConvexHull", "Capsule", "TaperedCapsule", "Cylinder", "Triangle", "RotatedTranslated", "StaticCompound", "StaticCompound2", "MutableCompound", "Mesh" }, (int)mProbeShape, [this](int inItem) { mProbeShape = (EProbeShape)inItem; });
 			mDebugUI->CreateCheckBox(probe_options, "Scale Shape", mScaleShape, [this](UICheckBox::EState inState) { mScaleShape = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateSlider(probe_options, "Scale X", mShapeScale.GetX(), -5.0f, 5.0f, 0.1f, [this](float inValue) { mShapeScale.SetX(inValue); });
 			mDebugUI->CreateSlider(probe_options, "Scale Y", mShapeScale.GetY(), -5.0f, 5.0f, 0.1f, [this](float inValue) { mShapeScale.SetY(inValue); });
 			mDebugUI->CreateSlider(probe_options, "Scale Z", mShapeScale.GetZ(), -5.0f, 5.0f, 0.1f, [this](float inValue) { mShapeScale.SetZ(inValue); });
-			mDebugUI->CreateComboBox(probe_options, "Back Face Cull", { "On", "Off" }, (int)mBackFaceMode, [=](int inItem) { mBackFaceMode = (EBackFaceMode)inItem; });
-			mDebugUI->CreateComboBox(probe_options, "Active Edge Mode", { "Only Active", "All" }, (int)mActiveEdgeMode, [=](int inItem) { mActiveEdgeMode = (EActiveEdgeMode)inItem; });
-			mDebugUI->CreateComboBox(probe_options, "Collect Faces Mode", { "Collect Faces", "No Faces" }, (int)mCollectFacesMode, [=](int inItem) { mCollectFacesMode = (ECollectFacesMode)inItem; });
+			mDebugUI->CreateComboBox(probe_options, "Back Face Cull", { "On", "Off" }, (int)mBackFaceMode, [this](int inItem) { mBackFaceMode = (EBackFaceMode)inItem; });
+			mDebugUI->CreateComboBox(probe_options, "Active Edge Mode", { "Only Active", "All" }, (int)mActiveEdgeMode, [this](int inItem) { mActiveEdgeMode = (EActiveEdgeMode)inItem; });
+			mDebugUI->CreateComboBox(probe_options, "Collect Faces Mode", { "Collect Faces", "No Faces" }, (int)mCollectFacesMode, [this](int inItem) { mCollectFacesMode = (ECollectFacesMode)inItem; });
 			mDebugUI->CreateSlider(probe_options, "Max Separation Distance", mMaxSeparationDistance, 0.0f, 5.0f, 0.1f, [this](float inValue) { mMaxSeparationDistance = inValue; });
 			mDebugUI->CreateCheckBox(probe_options, "Treat Convex As Solid", mTreatConvexAsSolid, [this](UICheckBox::EState inState) { mTreatConvexAsSolid = inState == UICheckBox::STATE_CHECKED; });
 			mDebugUI->CreateCheckBox(probe_options, "Return Deepest Point", mReturnDeepestPoint, [this](UICheckBox::EState inState) { mReturnDeepestPoint = inState == UICheckBox::STATE_CHECKED; });
@@ -465,12 +553,12 @@ SamplesApp::SamplesApp()
 			mDebugUI->CreateSlider(probe_options, "Max Hits", float(mMaxHits), 0, 10, 1, [this](float inValue) { mMaxHits = (int)inValue; });
 			mDebugUI->ShowMenu(probe_options);
 		});
-		mDebugUI->CreateTextButton(main_menu, "Shoot Object", [this]() { 
+		mDebugUI->CreateTextButton(main_menu, "Shoot Object", [this]() {
 			UIElement *shoot_options = mDebugUI->CreateMenu();
-			mDebugUI->CreateTextButton(shoot_options, "Shoot Object (B)", [=]() { ShootObject(); });
+			mDebugUI->CreateTextButton(shoot_options, "Shoot Object (B)", [this]() { ShootObject(); });
 			mDebugUI->CreateSlider(shoot_options, "Initial Velocity", mShootObjectVelocity, 0.0f, 500.0f, 10.0f, [this](float inValue) { mShootObjectVelocity = inValue; });
-			mDebugUI->CreateComboBox(shoot_options, "Shape", { "Sphere", "ConvexHull", "Thin Bar" }, (int)mShootObjectShape, [=](int inItem) { mShootObjectShape = (EShootObjectShape)inItem; });
-			mDebugUI->CreateComboBox(shoot_options, "Motion Quality", { "Discrete", "LinearCast" }, (int)mShootObjectMotionQuality, [=](int inItem) { mShootObjectMotionQuality = (EMotionQuality)inItem; });
+			mDebugUI->CreateComboBox(shoot_options, "Shape", { "Sphere", "ConvexHull", "Thin Bar", "Soft Body Cube" }, (int)mShootObjectShape, [this](int inItem) { mShootObjectShape = (EShootObjectShape)inItem; });
+			mDebugUI->CreateComboBox(shoot_options, "Motion Quality", { "Discrete", "LinearCast" }, (int)mShootObjectMotionQuality, [this](int inItem) { mShootObjectMotionQuality = (EMotionQuality)inItem; });
 			mDebugUI->CreateSlider(shoot_options, "Friction", mShootObjectFriction, 0.0f, 1.0f, 0.05f, [this](float inValue) { mShootObjectFriction = inValue; });
 			mDebugUI->CreateSlider(shoot_options, "Restitution", mShootObjectRestitution, 0.0f, 1.0f, 0.05f, [this](float inValue) { mShootObjectRestitution = inValue; });
 			mDebugUI->CreateCheckBox(shoot_options, "Scale Shape", mShootObjectScaleShape, [this](UICheckBox::EState inState) { mShootObjectScaleShape = inState == UICheckBox::STATE_CHECKED; });
@@ -526,7 +614,7 @@ SamplesApp::SamplesApp()
 						test = t.mRTTI;
 						break;
 					}
-				}		
+				}
 
 			// Construct test
 			StartTest(test);
@@ -573,7 +661,11 @@ void SamplesApp::StartTest(const RTTI *inRTTI)
 
 	// Reset dragging
 	mDragAnchor = nullptr;
+	mDragBody = BodyID();
 	mDragConstraint = nullptr;
+	mDragVertexIndex = ~uint(0);
+	mDragVertexPreviousInvMass = 0.0f;
+	mDragFraction = 0.0f;
 
 	// Reset playback state
 	mPlaybackFrames.clear();
@@ -599,7 +691,7 @@ void SamplesApp::StartTest(const RTTI *inRTTI)
 		mPhysicsSystem->SetContactListener(mTest->GetContactListener());
 	}
 	mTest->Initialize();
-				
+
 	// Optimize the broadphase to make the first update fast
 	mPhysicsSystem->OptimizeBroadPhase();
 
@@ -754,6 +846,11 @@ RefConst<Shape> SamplesApp::CreateProbeShape()
 		shape = new TriangleShape(Vec3(0.1f, 0.9f, 0.3f), Vec3(-0.9f, -0.5f, 0.2f), Vec3(0.7f, -0.3f, -0.1f));
 		break;
 
+	case EProbeShape::RotatedTranslated:
+		scale = scale.Swizzle<SWIZZLE_X, SWIZZLE_Y, SWIZZLE_X>(); // Can freely scale around y but x and z must be the same
+		shape = new RotatedTranslatedShape(Vec3(0.1f, 0.2f, 0.3f), Quat::sRotation(Vec3::sAxisY(), 0.25f * JPH_PI), new BoxShape(Vec3(0.1f, 0.2f, 0.3f)));
+		break;
+
 	case EProbeShape::StaticCompound:
 		{
 			Array<Vec3> tetrahedron;
@@ -870,6 +967,10 @@ RefConst<Shape> SamplesApp::CreateShootObjectShape()
 	case EShootObjectShape::ThinBar:
 		shape = BoxShapeSettings(Vec3(0.05f, 0.8f, 0.03f), 0.015f).Create().Get();
 		break;
+
+	case EShootObjectShape::SoftBodyCube:
+		JPH_ASSERT(false);
+		break;
 	}
 
 	// Scale shape if needed
@@ -881,15 +982,35 @@ RefConst<Shape> SamplesApp::CreateShootObjectShape()
 
 void SamplesApp::ShootObject()
 {
-	// Configure body
-	BodyCreationSettings creation_settings(CreateShootObjectShape(), GetCamera().mPos, Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-	creation_settings.mMotionQuality = mShootObjectMotionQuality;
-	creation_settings.mFriction = mShootObjectFriction;
-	creation_settings.mRestitution = mShootObjectRestitution;
-	creation_settings.mLinearVelocity = mShootObjectVelocity * GetCamera().mForward;
+	if (mShootObjectShape != EShootObjectShape::SoftBodyCube)
+	{
+		// Configure body
+		BodyCreationSettings creation_settings(CreateShootObjectShape(), GetCamera().mPos, Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+		creation_settings.mMotionQuality = mShootObjectMotionQuality;
+		creation_settings.mFriction = mShootObjectFriction;
+		creation_settings.mRestitution = mShootObjectRestitution;
+		creation_settings.mLinearVelocity = mShootObjectVelocity * GetCamera().mForward;
 
-	// Create body
-	mPhysicsSystem->GetBodyInterface().CreateAndAddBody(creation_settings, EActivation::Activate);
+		// Create body
+		mPhysicsSystem->GetBodyInterface().CreateAndAddBody(creation_settings, EActivation::Activate);
+	}
+	else
+	{
+		Ref<SoftBodySharedSettings> shared_settings = SoftBodyCreator::CreateCube(5, 0.5f * GetWorldScale());
+		for (SoftBodySharedSettings::Vertex &v : shared_settings->mVertices)
+		{
+			v.mInvMass = 0.025f;
+			(mShootObjectVelocity * GetCamera().mForward).StoreFloat3(&v.mVelocity);
+		}
+
+		// Confgure soft body
+		SoftBodyCreationSettings creation_settings(shared_settings, GetCamera().mPos, Quat::sIdentity(), Layers::MOVING);
+		creation_settings.mFriction = mShootObjectFriction;
+		creation_settings.mRestitution = mShootObjectRestitution;
+
+		// Create body
+		mPhysicsSystem->GetBodyInterface().CreateAndAddSoftBody(creation_settings, EActivation::Activate);
+	}
 }
 
 bool SamplesApp::CastProbe(float inProbeLength, float &outFraction, RVec3 &outPosition, BodyID &outID)
@@ -1035,7 +1156,7 @@ bool SamplesApp::CastProbe(float inProbeLength, float &outFraction, RVec3 &outPo
 				outPosition = ray.GetPointOnRay(first_hit.mFraction);
 				outFraction = first_hit.mFraction;
 				outID = first_hit.mBodyID;
-	
+
 				// Draw results
 				RVec3 prev_position = start;
 				bool c = false;
@@ -1253,7 +1374,7 @@ bool SamplesApp::CastProbe(float inProbeLength, float &outFraction, RVec3 &outPo
 					hits.resize(mMaxHits);
 			}
 
-			had_hit = !hits.empty();		
+			had_hit = !hits.empty();
 			if (had_hit)
 			{
 				// Fill in results
@@ -1319,6 +1440,67 @@ bool SamplesApp::CastProbe(float inProbeLength, float &outFraction, RVec3 &outPo
 			#ifdef JPH_DEBUG_RENDERER
 				shape_cast.mShape->Draw(mDebugRenderer, shape_cast.mCenterOfMassStart.PostTranslated(shape_cast.mDirection), Vec3::sReplicate(1.0f), Color::sRed, false, false);
 			#endif // JPH_DEBUG_RENDERER
+			}
+		}
+		break;
+
+	case EProbeMode::CollideSoftBody:
+		{
+			// Create a soft body vertex
+			const float fraction = 0.2f;
+			const float max_distance = 10.0f;
+			SoftBodyVertex vertex;
+			vertex.mInvMass = 1.0f;
+			vertex.mPosition = fraction * direction;
+			vertex.mVelocity = 10.0f * direction;
+			vertex.mCollidingShapeIndex = -1;
+			vertex.mLargestPenetration = -FLT_MAX;
+
+			// Get shapes in a large radius around the start position
+			AABox box(Vec3(start + vertex.mPosition), max_distance);
+			AllHitCollisionCollector<TransformedShapeCollector> collector;
+			mPhysicsSystem->GetNarrowPhaseQuery().CollectTransformedShapes(box, collector);
+
+			// Closest point found using CollideShape, position relative to 'start'
+			Vec3 closest_point = vertex.mPosition;
+			float closest_point_penetration = 0;
+
+			// Test against each shape
+			for (const TransformedShape &ts : collector.mHits)
+			{
+				int colliding_shape_index = int(&ts - collector.mHits.data());
+				ts.mShape->CollideSoftBodyVertices((RMat44::sTranslation(-start) * ts.GetCenterOfMassTransform()).ToMat44(), ts.GetShapeScale(), &vertex, 1, 1.0f / 60.0f, Vec3::sZero(), colliding_shape_index);
+				if (vertex.mCollidingShapeIndex == colliding_shape_index)
+				{
+					// To draw a plane, we need a point but CollideSoftBodyVertices doesn't provide one, so we use CollideShape with a tiny sphere to get the closest point and then project that onto the plane to draw the plane
+					SphereShape point_sphere(1.0e-6f);
+					point_sphere.SetEmbedded();
+					CollideShapeSettings settings;
+					settings.mMaxSeparationDistance = sqrt(3.0f) * max_distance; // Box is extended in all directions by max_distance
+					ClosestHitCollisionCollector<CollideShapeCollector> collide_shape_collector;
+					ts.CollideShape(&point_sphere, Vec3::sReplicate(1.0f), RMat44::sTranslation(start + vertex.mPosition), settings, start, collide_shape_collector);
+					if (collide_shape_collector.HadHit())
+					{
+						closest_point = collide_shape_collector.mHit.mContactPointOn2;
+						closest_point_penetration = collide_shape_collector.mHit.mPenetrationDepth;
+					}
+				}
+			}
+
+			// Draw test point
+			mDebugRenderer->DrawMarker(start + vertex.mPosition, Color::sYellow, 0.1f);
+			mDebugRenderer->DrawMarker(start + closest_point, Color::sRed, 0.1f);
+
+			// Draw collision plane
+			if (vertex.mCollidingShapeIndex != -1)
+			{
+				RVec3 plane_point = start + vertex.mPosition - vertex.mCollisionPlane.GetNormal() * vertex.mCollisionPlane.SignedDistance(vertex.mPosition);
+				mDebugRenderer->DrawPlane(plane_point, vertex.mCollisionPlane.GetNormal(), Color::sGreen, 2.0f);
+
+				if (abs(closest_point_penetration - vertex.mLargestPenetration) > 0.001f)
+					mDebugRenderer->DrawText3D(plane_point, StringFormat("Pen %f (exp %f)", (double)vertex.mLargestPenetration, (double)closest_point_penetration));
+				else
+					mDebugRenderer->DrawText3D(plane_point, StringFormat("Pen %f", (double)vertex.mLargestPenetration));
 			}
 		}
 		break;
@@ -1635,30 +1817,24 @@ bool SamplesApp::CastProbe(float inProbeLength, float &outFraction, RVec3 &outPo
 	return had_hit;
 }
 
-void SamplesApp::UpdateDebug()
+void SamplesApp::UpdateDebug(float inDeltaTime)
 {
 	JPH_PROFILE_FUNCTION();
 
 	const float cDragRayLength = 40.0f;
 
 	BodyInterface &bi = mPhysicsSystem->GetBodyInterface();
-			
-	// Handle keyboard input for which simulation needs to be running
-	for (int key = mKeyboard->GetFirstKey(); key != 0; key = mKeyboard->GetNextKey())
-		switch (key)
-		{
-		case DIK_B:
-			ShootObject();
-			break;
-		}
 
-	// Allow the user to drag rigid bodies around
-	if (mDragConstraint == nullptr)
+	// Handle keyboard input for which simulation needs to be running
+	if (mKeyboard->IsKeyPressedAndTriggered(DIK_B, mWasShootKeyPressed))
+		ShootObject();
+
+	// Allow the user to drag rigid/soft bodies around
+	if (mDragConstraint == nullptr && mDragVertexIndex == ~uint(0))
 	{
 		// Not dragging yet
 		RVec3 hit_position;
-		float hit_fraction;
-		if (CastProbe(cDragRayLength, hit_fraction, hit_position, mDragBody))
+		if (CastProbe(cDragRayLength, mDragFraction, hit_position, mDragBody))
 		{
 			// If key is pressed create constraint to start dragging
 			if (mKeyboard->IsKeyPressed(DIK_SPACE))
@@ -1668,13 +1844,35 @@ void SamplesApp::UpdateDebug()
 				if (lock.Succeeded())
 				{
 					Body &drag_body = lock.GetBody();
-					if (drag_body.IsDynamic())
+					if (drag_body.IsSoftBody())
+					{
+						SoftBodyMotionProperties *mp = static_cast<SoftBodyMotionProperties *>(drag_body.GetMotionProperties());
+
+						// Find closest vertex
+						Vec3 local_hit_position = Vec3(drag_body.GetInverseCenterOfMassTransform() * hit_position);
+						float closest_dist_sq = FLT_MAX;
+						for (SoftBodyVertex &v : mp->GetVertices())
+						{
+							float dist_sq = (v.mPosition - local_hit_position).LengthSq();
+							if (dist_sq < closest_dist_sq)
+							{
+								closest_dist_sq = dist_sq;
+								mDragVertexIndex = uint(&v - mp->GetVertices().data());
+							}
+						}
+
+						// Make the vertex kinematic
+						SoftBodyVertex &v = mp->GetVertex(mDragVertexIndex);
+						mDragVertexPreviousInvMass = v.mInvMass;
+						v.mInvMass = 0.0f;
+					}
+					else if (drag_body.IsDynamic())
 					{
 						// Create constraint to drag body
 						DistanceConstraintSettings settings;
 						settings.mPoint1 = settings.mPoint2 = hit_position;
-						settings.mFrequency = 2.0f / GetWorldScale();
-						settings.mDamping = 1.0f;
+						settings.mLimitsSpringSettings.mFrequency = 2.0f / GetWorldScale();
+						settings.mLimitsSpringSettings.mDamping = 1.0f;
 
 						// Construct fixed body for the mouse constraint
 						// Note that we don't add it to the world since we don't want anything to collide with it, we just
@@ -1685,8 +1883,6 @@ void SamplesApp::UpdateDebug()
 						// Construct constraint that connects the drag anchor with the body that we want to drag
 						mDragConstraint = settings.Create(*drag_anchor, drag_body);
 						mPhysicsSystem->AddConstraint(mDragConstraint);
-
-						mDragFraction = hit_fraction;
 					}
 				}
 			}
@@ -1698,20 +1894,61 @@ void SamplesApp::UpdateDebug()
 		{
 			// If key released, destroy constraint
 			if (mDragConstraint != nullptr)
+			{
 				mPhysicsSystem->RemoveConstraint(mDragConstraint);
-			mDragConstraint = nullptr;
+				mDragConstraint = nullptr;
+			}
 
 			// Destroy drag anchor
-			bi.DestroyBody(mDragAnchor->GetID());
-			mDragAnchor = nullptr;
+			if (mDragAnchor != nullptr)
+			{
+				bi.DestroyBody(mDragAnchor->GetID());
+				mDragAnchor = nullptr;
+			}
+
+			// Release dragged vertex
+			if (mDragVertexIndex != ~uint(0))
+			{
+				// Restore vertex mass
+				BodyLockWrite lock(mPhysicsSystem->GetBodyLockInterface(), mDragBody);
+				if (lock.Succeeded())
+				{
+					Body &body = lock.GetBody();
+					JPH_ASSERT(body.IsSoftBody());
+					SoftBodyMotionProperties *mp = static_cast<SoftBodyMotionProperties *>(body.GetMotionProperties());
+					mp->GetVertex(mDragVertexIndex).mInvMass = mDragVertexPreviousInvMass;
+				}
+				mDragVertexIndex = ~uint(0);
+				mDragVertexPreviousInvMass = 0;
+			}
 
 			// Forget the drag body
 			mDragBody = BodyID();
 		}
 		else
 		{
-			// Else update position of anchor
-			bi.SetPositionAndRotation(mDragAnchor->GetID(), GetCamera().mPos + cDragRayLength * mDragFraction * GetCamera().mForward, Quat::sIdentity(), EActivation::DontActivate);
+			// Else drag the body to the new position
+			RVec3 new_pos = GetCamera().mPos + cDragRayLength * mDragFraction * GetCamera().mForward;
+
+			switch (bi.GetBodyType(mDragBody))
+			{
+			case EBodyType::RigidBody:
+				bi.SetPositionAndRotation(mDragAnchor->GetID(), new_pos, Quat::sIdentity(), EActivation::DontActivate);
+				break;
+
+			case EBodyType::SoftBody:
+				{
+					BodyLockWrite lock(mPhysicsSystem->GetBodyLockInterface(), mDragBody);
+					if (lock.Succeeded())
+					{
+						Body &body = lock.GetBody();
+						SoftBodyMotionProperties *mp = static_cast<SoftBodyMotionProperties *>(body.GetMotionProperties());
+						SoftBodyVertex &v = mp->GetVertex(mDragVertexIndex);
+						v.mVelocity = body.GetRotation().Conjugated() * Vec3(new_pos - body.GetCenterOfMassTransform() * v.mPosition) / inDeltaTime;
+					}
+				}
+				break;
+			}
 
 			// Activate other body
 			bi.ActivateBody(mDragBody);
@@ -1719,7 +1956,7 @@ void SamplesApp::UpdateDebug()
 	}
 }
 
-bool SamplesApp::RenderFrame(float inDeltaTime)
+bool SamplesApp::UpdateFrame(float inDeltaTime)
 {
 	// Reinitialize the job system if the concurrency setting changed
 	if (mMaxConcurrentJobs != mJobSystem->GetMaxConcurrency())
@@ -1734,7 +1971,7 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 
 	// Get the status string
 	mStatusString = mTest->GetStatusString();
-		
+
 	// Select the next test if automatic testing times out
 	if (!CheckNextTest())
 		return false;
@@ -1786,7 +2023,7 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 		case DIK_3:
 			ContactConstraintManager::sDrawContactPointReduction = !ContactConstraintManager::sDrawContactPointReduction;
 			break;
-				
+
 		case DIK_C:
 			mDrawConstraints = !mDrawConstraints;
 			break;
@@ -1894,9 +2131,13 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 			ClearDebugRenderer();
 
 			// Restore state to what it was during that time
-			StateRecorderImpl &recorder = mPlaybackFrames[mCurrentPlaybackFrame];
-			RestoreState(recorder);
-				
+			PlayBackFrame &frame = mPlaybackFrames[mCurrentPlaybackFrame];
+			RestoreState(frame.mState);
+
+			// Also restore input back to what it was at the time
+			frame.mInputState.Rewind();
+			mTest->RestoreInputState(frame.mInputState);
+
 			// Physics world is drawn using debug lines, when not paused
 			// Draw state prior to step so that debug lines are created from the same state
 			// (the constraints are solved on the current state and then the world is stepped)
@@ -1913,7 +2154,7 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 
 			// Validate that update result is the same as the previously recorded state
 			if (check_determinism && mCurrentPlaybackFrame < (int)mPlaybackFrames.size() - 1)
-				ValidateState(mPlaybackFrames[mCurrentPlaybackFrame + 1]);
+				ValidateState(mPlaybackFrames[mCurrentPlaybackFrame + 1].mState);
 		}
 
 		// On the last frame go back to play mode
@@ -1927,7 +2168,7 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 		if (mCurrentPlaybackFrame == 0)
 			mPlaybackMode = EPlaybackMode::Stop;
 	}
-	else 
+	else
 	{
 		// Normal update
 		JPH_ASSERT(mCurrentPlaybackFrame == -1);
@@ -1935,13 +2176,26 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 		if (inDeltaTime > 0.0f)
 		{
 			// Debugging functionality like shooting a ball and dragging objects
-			UpdateDebug();
+			UpdateDebug(inDeltaTime);
+
+			{
+				// Process input, this is done once and before we save the state so that we can save the input state
+				JPH_PROFILE("ProcessInput");
+				Test::ProcessInputParams handle_input;
+				handle_input.mDeltaTime = 1.0f / mUpdateFrequency;
+				handle_input.mKeyboard = mKeyboard;
+				handle_input.mCameraState = GetCamera();
+				mTest->ProcessInput(handle_input);
+			}
 
 			if (mRecordState || check_determinism)
 			{
 				// Record the state prior to the step
-				mPlaybackFrames.push_back(StateRecorderImpl());
-				SaveState(mPlaybackFrames.back());
+				mPlaybackFrames.push_back(PlayBackFrame());
+				SaveState(mPlaybackFrames.back().mState);
+
+				// Save input too
+				mTest->SaveInputState(mPlaybackFrames.back().mInputState);
 			}
 
 			// Physics world is drawn using debug lines, when not paused
@@ -1965,7 +2219,12 @@ bool SamplesApp::RenderFrame(float inDeltaTime)
 				SaveState(post_step_state);
 
 				// Restore to the previous state
-				RestoreState(mPlaybackFrames.back());
+				PlayBackFrame &frame = mPlaybackFrames.back();
+				RestoreState(frame.mState);
+
+				// Also restore input back to what it was at the time
+				frame.mInputState.Rewind();
+				mTest->RestoreInputState(frame.mInputState);
 
 				// Step again
 				StepPhysics(mJobSystemValidating);
@@ -1992,6 +2251,9 @@ void SamplesApp::DrawPhysics()
 
 	if (mDrawConstraintReferenceFrame)
 		mPhysicsSystem->DrawConstraintReferenceFrame(mDebugRenderer);
+
+	if (mDrawPhysicsSystemBounds)
+		mDebugRenderer->DrawWireBox(mPhysicsSystem->GetBounds(), Color::sGreen);
 #endif // JPH_DEBUG_RENDERER
 
 	// This map collects the shapes that we used this frame
@@ -2043,7 +2305,7 @@ void SamplesApp::DrawPhysics()
 
 						// Start iterating all triangles of the shape
 						Shape::GetTrianglesContext context;
-						transformed_shape.mShape->GetTrianglesStart(context, AABox::sBiggest(), Vec3::sZero(), Quat::sIdentity(), Vec3::sReplicate(1.0f));						
+						transformed_shape.mShape->GetTrianglesStart(context, AABox::sBiggest(), Vec3::sZero(), Quat::sIdentity(), Vec3::sReplicate(1.0f));
 						for (;;)
 						{
 							// Get the next batch of vertices
@@ -2092,7 +2354,9 @@ void SamplesApp::DrawPhysics()
 					}
 
 					// Ensure that we cache the geometry for next frame
-					shape_to_geometry[transformed_shape.mShape] = geometry;
+					// Don't cache soft bodies as their shape changes every frame
+					if (!body.IsSoftBody())
+						shape_to_geometry[transformed_shape.mShape] = geometry;
 
 					// Determine color
 					Color color;
@@ -2139,7 +2403,6 @@ void SamplesApp::StepPhysics(JobSystem *inJobSystem)
 		JPH_PROFILE("PrePhysicsUpdate");
 		Test::PreUpdateParams pre_update;
 		pre_update.mDeltaTime = delta_time;
-		pre_update.mKeyboard = mKeyboard;
 		pre_update.mCameraState = GetCamera();
 	#ifdef JPH_DEBUG_RENDERER
 		pre_update.mPoseDrawSettings = &mPoseDrawSettings;
@@ -2147,26 +2410,27 @@ void SamplesApp::StepPhysics(JobSystem *inJobSystem)
 		mTest->PrePhysicsUpdate(pre_update);
 	}
 
-	// Remember start tick
-	uint64 start_tick = GetProcessorTickCount();
+	// Remember start time
+	chrono::high_resolution_clock::time_point clock_start = chrono::high_resolution_clock::now();
 
 	// Step the world (with fixed frequency)
-	mPhysicsSystem->Update(delta_time, mCollisionSteps, mIntegrationSubSteps, mTempAllocator, inJobSystem);
+	mPhysicsSystem->Update(delta_time, mCollisionSteps, mTempAllocator, inJobSystem);
 #ifndef JPH_DISABLE_TEMP_ALLOCATOR
 	JPH_ASSERT(static_cast<TempAllocatorImpl *>(mTempAllocator)->IsEmpty());
 #endif // JPH_DISABLE_TEMP_ALLOCATOR
 
 	// Accumulate time
-	mTotalTime += GetProcessorTickCount() - start_tick;
+	chrono::high_resolution_clock::time_point clock_end = chrono::high_resolution_clock::now();
+	chrono::microseconds duration = chrono::duration_cast<chrono::microseconds>(clock_end - clock_start);
+	mTotalTime += duration;
 	mStepNumber++;
 
 	// Print timing information
-	constexpr int cNumSteps = 60;
+	constexpr uint cNumSteps = 60;
 	if (mStepNumber % cNumSteps == 0)
 	{
-		double us_per_step = double(mTotalTime / cNumSteps) / double(GetProcessorTicksPerSecond()) * 1.0e6;
-		Trace("Timing: %d, %.0f", mStepNumber / cNumSteps, us_per_step);
-		mTotalTime = 0;
+		Trace("Timing: %u, %llu", mStepNumber / cNumSteps, static_cast<unsigned long long>(mTotalTime.count()) / cNumSteps);
+		mTotalTime = chrono::microseconds(0);
 	}
 
 #ifdef JPH_TRACK_BROADPHASE_STATS
@@ -2244,13 +2508,13 @@ void SamplesApp::GetInitialCamera(CameraState &ioState) const
 }
 
 RMat44 SamplesApp::GetCameraPivot(float inCameraHeading, float inCameraPitch) const
-{ 
-	return mTest->GetCameraPivot(inCameraHeading, inCameraPitch); 
+{
+	return mTest->GetCameraPivot(inCameraHeading, inCameraPitch);
 }
 
 float SamplesApp::GetWorldScale() const
-{ 
-	return mTest != nullptr? mTest->GetWorldScale() : 1.0f; 
+{
+	return mTest != nullptr? mTest->GetWorldScale() : 1.0f;
 }
 
 ENTRY_POINT(SamplesApp, RegisterCustomMemoryHook)

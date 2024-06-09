@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,7 +11,7 @@
 class BroadPhaseInsertionTest : public BroadPhaseTest
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(BroadPhaseInsertionTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, BroadPhaseInsertionTest)
 
 	// Initialize the test
 	virtual void			Initialize() override;

@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -48,7 +49,7 @@ JPH_INLINE float RayTriangle(Vec3Arg inOrigin, Vec3Arg inDirection, Vec3Arg inV0
 	Vec3 t = Vec3::sReplicate(e2.Dot(q)) / det;
 
 	// Check if there is an intersection
-	UVec4 no_intersection = 
+	UVec4 no_intersection =
 		UVec4::sOr
 		(
 			UVec4::sOr
@@ -60,10 +61,10 @@ JPH_INLINE float RayTriangle(Vec3Arg inOrigin, Vec3Arg inDirection, Vec3Arg inV0
 				),
 				UVec4::sOr
 				(
-					Vec3::sLess(v, zero), 
+					Vec3::sLess(v, zero),
 					Vec3::sGreater(u + v, one)
 				)
-			), 
+			),
 			Vec3::sLess(t, zero)
 		);
 

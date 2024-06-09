@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -35,8 +36,8 @@ TEST_SUITE("SensorTests")
 		c.SimulateSingleStep();
 		CHECK(listener.GetEntryCount() == 0);
 
-		// After half a second we should be touching the sensor
-		c.Simulate(0.5f);
+		// After half a second and one step we should be touching the sensor
+		c.Simulate(0.5f + c.GetStepDeltaTime());
 		CHECK(listener.Contains(EType::Add, dynamic.GetID(), sensor_id));
 		listener.Clear();
 
@@ -47,7 +48,7 @@ TEST_SUITE("SensorTests")
 		listener.Clear();
 
 		// After 3 more seconds we should have left the sensor at the bottom side
-		c.Simulate(3.0f + c.GetDeltaTime());
+		c.Simulate(3.0f);
 		CHECK(listener.Contains(EType::Remove, dynamic.GetID(), sensor_id));
 		CHECK_APPROX_EQUAL(dynamic.GetPosition(), RVec3(0, -1.5f - 3.0f * c.GetDeltaTime(), 0), 1.0e-4f);
 	}
@@ -73,8 +74,8 @@ TEST_SUITE("SensorTests")
 		c.SimulateSingleStep();
 		CHECK(listener.GetEntryCount() == 0);
 
-		// After half a second we should be touching the sensor
-		c.Simulate(0.5f);
+		// After half a second and one step we should be touching the sensor
+		c.Simulate(0.5f + c.GetStepDeltaTime());
 		CHECK(listener.Contains(EType::Add, kinematic.GetID(), sensor_id));
 		listener.Clear();
 
@@ -85,7 +86,7 @@ TEST_SUITE("SensorTests")
 		listener.Clear();
 
 		// After 3 more seconds we should have left the sensor at the bottom side
-		c.Simulate(3.0f + c.GetDeltaTime());
+		c.Simulate(3.0f);
 		CHECK(listener.Contains(EType::Remove, kinematic.GetID(), sensor_id));
 		CHECK_APPROX_EQUAL(kinematic.GetPosition(), RVec3(0, -1.5f - 3.0f * c.GetDeltaTime(), 0), 1.0e-4f);
 	}
@@ -113,8 +114,8 @@ TEST_SUITE("SensorTests")
 		c.SimulateSingleStep();
 		CHECK(listener.GetEntryCount() == 0);
 
-		// After half a second we should be touching the sensor
-		c.Simulate(0.5f);
+		// After half a second and one step we should be touching the sensor
+		c.Simulate(0.5f + c.GetStepDeltaTime());
 		CHECK(listener.Contains(EType::Add, kinematic.GetID(), sensor_id));
 		listener.Clear();
 
@@ -125,7 +126,7 @@ TEST_SUITE("SensorTests")
 		listener.Clear();
 
 		// After 3 more seconds we should have left the sensor at the bottom side
-		c.Simulate(3.0f + c.GetDeltaTime());
+		c.Simulate(3.0f);
 		CHECK(listener.Contains(EType::Remove, kinematic.GetID(), sensor_id));
 		CHECK_APPROX_EQUAL(kinematic.GetPosition(), RVec3(0, -1.5f - 3.0f * c.GetDeltaTime(), 0), 1.0e-4f);
 	}
@@ -153,8 +154,8 @@ TEST_SUITE("SensorTests")
 		c.SimulateSingleStep();
 		CHECK(listener.GetEntryCount() == 0);
 
-		// After half a second we should be touching the sensor
-		c.Simulate(0.5f);
+		// After half a second and one step we should be touching the sensor
+		c.Simulate(0.5f + c.GetStepDeltaTime());
 		CHECK(listener.Contains(EType::Add, kinematic.GetID(), sensor_id));
 		listener.Clear();
 
@@ -165,7 +166,7 @@ TEST_SUITE("SensorTests")
 		listener.Clear();
 
 		// After 3 more seconds we should have left the sensor at the bottom side
-		c.Simulate(3.0f + c.GetDeltaTime());
+		c.Simulate(3.0f);
 		CHECK(listener.Contains(EType::Remove, kinematic.GetID(), sensor_id));
 		CHECK_APPROX_EQUAL(kinematic.GetPosition(), RVec3(0, -1.5f - 3.0f * c.GetDeltaTime(), 0), 1.0e-4f);
 	}
@@ -335,8 +336,8 @@ TEST_SUITE("SensorTests")
 			c.SimulateSingleStep();
 			CHECK(listener.GetEntryCount() == 0);
 
-			// After half a second the sensors should be touching
-			c.Simulate(0.5f);
+			// After half a second and one step the sensors should be touching
+			c.Simulate(0.5f + c.GetDeltaTime());
 			if (sensor_detects_sensor)
 				CHECK(listener.Contains(EType::Add, sensor_id1, sensor_id2));
 			else
@@ -355,7 +356,7 @@ TEST_SUITE("SensorTests")
 			listener.Clear();
 
 			// After 2 more seconds we should have left the sensor at the bottom side
-			c.Simulate(2.0f + c.GetDeltaTime());
+			c.Simulate(2.0f);
 			if (sensor_detects_sensor)
 				CHECK(listener.Contains(EType::Remove, sensor_id1, sensor_id2));
 			else
@@ -436,6 +437,80 @@ TEST_SUITE("SensorTests")
 		CHECK(listener.Contains(EType::Remove, dynamic2.GetID(), static_id));
 		CHECK_APPROX_EQUAL(dynamic1.GetPosition(), RVec3(-2, 1.5f, 0), 5.0e-3f);
 		CHECK_APPROX_EQUAL(dynamic2.GetPosition(), RVec3(2, -1.5f - 3.0f * c.GetDeltaTime(), 0), 1.0e-4f);
+	}
+
+	TEST_CASE("TestContactListenerMakesSensorCCD")
+	{
+		PhysicsTestContext c;
+		c.ZeroGravity();
+
+		const float cPenetrationSlop = c.GetSystem()->GetPhysicsSettings().mPenetrationSlop;
+
+		class SensorOverridingListener : public LoggingContactListener
+		{
+		public:
+			virtual void		OnContactAdded(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
+			{
+				LoggingContactListener::OnContactAdded(inBody1, inBody2, inManifold, ioSettings);
+
+				JPH_ASSERT(ioSettings.mIsSensor == false);
+				if (inBody1.GetID() == mBodyThatBecomesSensor || inBody2.GetID() == mBodyThatBecomesSensor)
+					ioSettings.mIsSensor = true;
+			}
+
+			virtual void		OnContactPersisted(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
+			{
+				LoggingContactListener::OnContactPersisted(inBody1, inBody2, inManifold, ioSettings);
+
+				JPH_ASSERT(ioSettings.mIsSensor == false);
+				if (inBody1.GetID() == mBodyThatBecomesSensor || inBody2.GetID() == mBodyThatBecomesSensor)
+					ioSettings.mIsSensor = true;
+			}
+
+			BodyID				mBodyThatBecomesSensor;
+		};
+
+		// Register listener
+		SensorOverridingListener listener;
+		c.GetSystem()->SetContactListener(&listener);
+
+		// Body that blocks the path
+		BodyID static_id = c.GetBodyInterface().CreateAndAddBody(BodyCreationSettings(new BoxShape(Vec3(0.1f, 10, 10)), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING), EActivation::DontActivate);
+
+		// Dynamic body moving to the static object that will do a normal CCD collision
+		RVec3 dynamic1_pos(-0.5f, 2, 0);
+		Vec3 initial_velocity(500, 0, 0);
+		Body &dynamic1 = c.CreateBox(dynamic1_pos, Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::LinearCast, Layers::MOVING, Vec3::sReplicate(0.1f));
+		dynamic1.SetAllowSleeping(false);
+		dynamic1.SetLinearVelocity(initial_velocity);
+		dynamic1.SetRestitution(1.0f);
+
+		// Dynamic body moving through the static object that will become a sensor an thus pass through
+		RVec3 dynamic2_pos(-0.5f, -2, 0);
+		Body &dynamic2 = c.CreateBox(dynamic2_pos, Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::LinearCast, Layers::MOVING, Vec3::sReplicate(0.1f));
+		dynamic2.SetAllowSleeping(false);
+		dynamic2.SetLinearVelocity(initial_velocity);
+		dynamic2.SetRestitution(1.0f);
+		listener.mBodyThatBecomesSensor = dynamic2.GetID();
+
+		// After a single step the we should have contact added callbacks for both bodies
+		c.SimulateSingleStep();
+		CHECK(listener.Contains(EType::Add, dynamic1.GetID(), static_id));
+		CHECK(listener.Contains(EType::Add, dynamic2.GetID(), static_id));
+		listener.Clear();
+		CHECK_APPROX_EQUAL(dynamic1.GetPosition(), dynamic1_pos + RVec3(0.3f + cPenetrationSlop, 0, 0), 1.0e-4f); // Dynamic 1 should have moved to the surface of the static body
+		CHECK_APPROX_EQUAL(dynamic2.GetPosition(), dynamic2_pos + initial_velocity * c.GetDeltaTime(), 1.0e-4f); // Dynamic 2 should have passed through the static body because it became a sensor
+
+		// The next step the sensor should have its contact removed and the CCD body should have its contact persisted because it starts penetrating
+		c.SimulateSingleStep();
+		CHECK(listener.Contains(EType::Persist, dynamic1.GetID(), static_id));
+		CHECK(listener.Contains(EType::Remove, dynamic2.GetID(), static_id));
+		listener.Clear();
+
+		// The next step all contacts have been removed
+		c.SimulateSingleStep();
+		CHECK(listener.Contains(EType::Remove, dynamic1.GetID(), static_id));
+		listener.Clear();
 	}
 
 	TEST_CASE("TestSensorVsSubShapes")
@@ -527,5 +602,52 @@ TEST_SUITE("SensorTests")
 
 		// Check all expected events received
 		CHECK(next == end);
+	}
+
+	TEST_CASE("TestSensorVsStatic")
+	{
+		PhysicsTestContext c;
+
+		// Register listener
+		LoggingContactListener listener;
+		c.GetSystem()->SetContactListener(&listener);
+
+		// Static body 1
+		Body &static1 = c.CreateSphere(RVec3::sZero(), 1.0f, EMotionType::Static, EMotionQuality::Discrete, Layers::NON_MOVING, EActivation::DontActivate);
+
+		// Sensor
+		BodyCreationSettings sensor_settings(new BoxShape(Vec3::sReplicate(1)), RVec3::sZero(), Quat::sIdentity(), EMotionType::Kinematic, Layers::MOVING); // Put in layer that collides with static
+		sensor_settings.mIsSensor = true;
+		Body &sensor = *c.GetBodyInterface().CreateBody(sensor_settings);
+		BodyID sensor_id = sensor.GetID();
+		c.GetBodyInterface().AddBody(sensor_id, EActivation::Activate);
+
+		// Static body 2 (created after sensor to force higher body ID)
+		Body &static2 = c.CreateSphere(RVec3::sZero(), 1.0f, EMotionType::Static, EMotionQuality::Discrete, Layers::NON_MOVING, EActivation::DontActivate);
+
+		// After a step we should not detect the static bodies
+		c.SimulateSingleStep();
+		CHECK(listener.GetEntryCount() == 0);
+		listener.Clear();
+
+		// Start detecting static
+		sensor.SetCollideKinematicVsNonDynamic(true);
+
+		// After a single step we should detect both static bodies
+		c.SimulateSingleStep();
+		CHECK(listener.GetEntryCount() == 4); // Should also contain validates
+		CHECK(listener.Contains(EType::Add, static1.GetID(), sensor_id));
+		CHECK(listener.Contains(EType::Add, static2.GetID(), sensor_id));
+		listener.Clear();
+
+		// Stop detecting static
+		sensor.SetCollideKinematicVsNonDynamic(false);
+
+		// After a single step we should stop detecting both static bodies
+		c.SimulateSingleStep();
+		CHECK(listener.GetEntryCount() == 2);
+		CHECK(listener.Contains(EType::Remove, static1.GetID(), sensor_id));
+		CHECK(listener.Contains(EType::Remove, static2.GetID(), sensor_id));
+		listener.Clear();
 	}
 }

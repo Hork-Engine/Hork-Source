@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -11,8 +12,10 @@
 
 ValidateResult ContactListenerImpl::OnContactValidate(const Body &inBody1, const Body &inBody2, RVec3Arg inBaseOffset, const CollideShapeResult &inCollisionResult)
 {
-	// Expect body 1 to be dynamic (or one of the bodies must be a sensor)
-	if (!inBody1.IsDynamic() && !inBody1.IsSensor() && !inBody2.IsSensor())
+	// Check ordering contract between body 1 and body 2
+	bool contract = inBody1.GetMotionType() >= inBody2.GetMotionType()
+		|| (inBody1.GetMotionType() == inBody2.GetMotionType() && inBody1.GetID() < inBody2.GetID());
+	if (!contract)
 		JPH_BREAKPOINT;
 
 	ValidateResult result;
@@ -24,7 +27,7 @@ ValidateResult ContactListenerImpl::OnContactValidate(const Body &inBody1, const
 	RVec3 contact_point = inBaseOffset + inCollisionResult.mContactPointOn1;
 	DebugRenderer::sInstance->DrawArrow(contact_point, contact_point - inCollisionResult.mPenetrationAxis.NormalizedOr(Vec3::sZero()), Color::sBlue, 0.05f);
 
-	Trace("Validate %d and %d result %d", inBody1.GetID().GetIndex(), inBody2.GetID().GetIndex(), (int)result);
+	Trace("Validate %u and %u result %d", inBody1.GetID().GetIndex(), inBody2.GetID().GetIndex(), (int)result);
 
 	return result;
 }
@@ -35,7 +38,7 @@ void ContactListenerImpl::OnContactAdded(const Body &inBody1, const Body &inBody
 	if (!(inBody1.GetID() < inBody2.GetID()))
 		JPH_BREAKPOINT;
 
-	Trace("Contact added %d (%08x) and %d (%08x)", inBody1.GetID().GetIndex(), inManifold.mSubShapeID1.GetValue(), inBody2.GetID().GetIndex(), inManifold.mSubShapeID2.GetValue());
+	Trace("Contact added %u (%08x) and %u (%08x)", inBody1.GetID().GetIndex(), inManifold.mSubShapeID1.GetValue(), inBody2.GetID().GetIndex(), inManifold.mSubShapeID2.GetValue());
 
 	DebugRenderer::sInstance->DrawWirePolygon(RMat44::sTranslation(inManifold.mBaseOffset), inManifold.mRelativeContactPointsOn1, Color::sGreen, 0.05f);
 	DebugRenderer::sInstance->DrawWirePolygon(RMat44::sTranslation(inManifold.mBaseOffset), inManifold.mRelativeContactPointsOn2, Color::sGreen, 0.05f);
@@ -60,7 +63,7 @@ void ContactListenerImpl::OnContactPersisted(const Body &inBody1, const Body &in
 	if (!(inBody1.GetID() < inBody2.GetID()))
 		JPH_BREAKPOINT;
 
-	Trace("Contact persisted %d (%08x) and %d (%08x)", inBody1.GetID().GetIndex(), inManifold.mSubShapeID1.GetValue(), inBody2.GetID().GetIndex(), inManifold.mSubShapeID2.GetValue());
+	Trace("Contact persisted %u (%08x) and %u (%08x)", inBody1.GetID().GetIndex(), inManifold.mSubShapeID1.GetValue(), inBody2.GetID().GetIndex(), inManifold.mSubShapeID2.GetValue());
 
 	DebugRenderer::sInstance->DrawWirePolygon(RMat44::sTranslation(inManifold.mBaseOffset), inManifold.mRelativeContactPointsOn1, Color::sYellow, 0.05f);
 	DebugRenderer::sInstance->DrawWirePolygon(RMat44::sTranslation(inManifold.mBaseOffset), inManifold.mRelativeContactPointsOn2, Color::sYellow, 0.05f);
@@ -87,7 +90,7 @@ void ContactListenerImpl::OnContactRemoved(const SubShapeIDPair &inSubShapePair)
 	if (!(inSubShapePair.GetBody1ID() < inSubShapePair.GetBody2ID()))
 		JPH_BREAKPOINT;
 
-	Trace("Contact removed %d (%08x) and %d (%08x)", inSubShapePair.GetBody1ID().GetIndex(), inSubShapePair.GetSubShapeID1().GetValue(), inSubShapePair.GetBody2ID().GetIndex(), inSubShapePair.GetSubShapeID2().GetValue());
+	Trace("Contact removed %u (%08x) and %u (%08x)", inSubShapePair.GetBody1ID().GetIndex(), inSubShapePair.GetSubShapeID1().GetValue(), inSubShapePair.GetBody2ID().GetIndex(), inSubShapePair.GetSubShapeID2().GetValue());
 
 	// Update existing manifold in state map
 	{
@@ -153,10 +156,10 @@ void ContactListenerImpl::RestoreState(StateRecorder &inStream)
 		QuickSort(keys.begin(), keys.end());
 	}
 
-	// Ensure we have the corect size
+	// Ensure we have the correct size
 	keys.resize(length);
 
-	for (size_t i = 0; i < length; ++i)	
+	for (size_t i = 0; i < length; ++i)
 	{
 		// Read key
 		SubShapeIDPair key;

@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -16,7 +17,7 @@ ObjectStreamTextOut::ObjectStreamTextOut(ostream &inStream) :
 
 void ObjectStreamTextOut::WriteDataType(EOSDataType inType)
 {
-	switch (inType) 
+	switch (inType)
 	{
 	case EOSDataType::Declare:		WriteWord("declare ");		break;
 	case EOSDataType::Object:		WriteWord("object ");		break;

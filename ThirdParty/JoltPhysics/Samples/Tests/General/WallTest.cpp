@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -8,12 +9,12 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Layers.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(WallTest) 
-{ 
-	JPH_ADD_BASE_CLASS(WallTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(WallTest)
+{
+	JPH_ADD_BASE_CLASS(WallTest, Test)
 }
 
-void WallTest::Initialize() 
+void WallTest::Initialize()
 {
 	// Floor
 	CreateFloor();

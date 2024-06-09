@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -13,12 +14,12 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Layers.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(ManifoldReductionTest) 
-{ 
-	JPH_ADD_BASE_CLASS(ManifoldReductionTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(ManifoldReductionTest)
+{
+	JPH_ADD_BASE_CLASS(ManifoldReductionTest, Test)
 }
 
-void ManifoldReductionTest::Initialize() 
+void ManifoldReductionTest::Initialize()
 {
 	constexpr float cPerturbance = 0.02f;
 
@@ -42,7 +43,7 @@ void ManifoldReductionTest::Initialize()
 		}
 	PhysicsMaterialList materials;
 	materials.push_back(new PhysicsMaterialSimple());
-	Ref<ShapeSettings> mesh_shape = new MeshShapeSettings(triangles, materials);
+	Ref<ShapeSettings> mesh_shape = new MeshShapeSettings(triangles, std::move(materials));
 
 	// Floor
 	Body &floor = *mBodyInterface->CreateBody(BodyCreationSettings(new ScaledShapeSettings(mesh_shape, Vec3::sReplicate(20)), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING));

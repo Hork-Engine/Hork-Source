@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -36,7 +37,7 @@ public:
 	/// Allocate memory
 	inline pointer			allocate(size_type inN)
 	{
-		return (pointer)mAllocator.Allocate(uint(inN * sizeof(value_type)));
+		return pointer(mAllocator.Allocate(uint(inN * sizeof(value_type))));
 	}
 
 	/// Free memory

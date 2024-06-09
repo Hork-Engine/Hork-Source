@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -14,7 +15,7 @@
 class KinematicRigTest : public Test
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(KinematicRigTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, KinematicRigTest)
 
 	// Destructor
 	virtual					~KinematicRigTest() override;

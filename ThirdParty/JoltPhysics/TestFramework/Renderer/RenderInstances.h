@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -29,7 +30,7 @@ public:
 
 private:
 	Renderer *				mRenderer;
-	
+
 	ComPtr<ID3D12Resource>	mInstanceBuffer;
 	int						mInstanceBufferSize = 0;
 	int						mInstanceSize = 0;

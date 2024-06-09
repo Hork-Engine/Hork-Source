@@ -1,12 +1,15 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
+#include <Jolt/Core/NonCopyable.h>
+
 JPH_NAMESPACE_BEGIN
 
 /// Simple binary output stream
-class StreamOut
+class JPH_EXPORT StreamOut : public NonCopyable
 {
 public:
 	/// Virtual destructor
@@ -25,7 +28,7 @@ public:
 		WriteBytes(&inT, sizeof(inT));
 	}
 
-	/// Write a vector of primitives from the binary stream
+	/// Write a vector of primitives to the binary stream
 	template <class T, class A>
 	void				Write(const std::vector<T, A> &inT)
 	{
@@ -44,6 +47,17 @@ public:
 		Write(len);
 		if (!IsFailed())
 			WriteBytes(inString.data(), len * sizeof(Type));
+	}
+
+	/// Write a vector of primitives to the binary stream using a custom write function
+	template <class T, class A, typename F>
+	void				Write(const std::vector<T, A> &inT, const F &inWriteElement)
+	{
+		typename Array<T>::size_type len = inT.size();
+		Write(len);
+		if (!IsFailed())
+			for (typename Array<T>::size_type i = 0; i < len; ++i)
+				inWriteElement(inT[i], *this);
 	}
 
 	/// Write a Vec3 (don't write W)

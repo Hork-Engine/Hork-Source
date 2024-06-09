@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -11,7 +12,6 @@
 #include <Jolt/Physics/Collision/CollideConvexVsTriangles.h>
 #include <Jolt/Physics/Collision/CollideSphereVsTriangles.h>
 #include "Layers.h"
-#include "PhysicsTestContext.h"
 
 TEST_SUITE("ConvexVsTrianglesTest")
 {
@@ -27,7 +27,7 @@ TEST_SUITE("ConvexVsTrianglesTest")
 		Vec3 v1(0, 0, 0);
 		Vec3 v2(0, 0, cEdgeLength);
 		Vec3 v3(cEdgeLength, 0, 0);
-				
+
 		{
 			// Collide sphere
 			AllHitCollisionCollector<CollideShapeCollector> collector;
@@ -84,7 +84,7 @@ TEST_SUITE("ConvexVsTrianglesTest")
 
 		// The transform for the sphere
 		Mat44 sphere_transform = transform * Mat44::sTranslation(inCenter);
-		
+
 		// Transform incoming settings
 		CollideShapeSettings settings = inSettings;
 		settings.mActiveEdgeMovementDirection = transform.Multiply3x3(inSettings.mActiveEdgeMovementDirection);
@@ -196,7 +196,7 @@ TEST_SUITE("ConvexVsTrianglesTest")
 			CollideShapeSettings settings_no_bf;
 			settings_no_bf.mBackFaceMode = EBackFaceMode::IgnoreBackFaces;
 
-			// Settings with max seperation distance
+			// Settings with max separation distance
 			CollideShapeSettings settings_max_distance;
 			settings_max_distance.mBackFaceMode = EBackFaceMode::CollideWithBackFaces;
 			settings_max_distance.mMaxSeparationDistance = cMaxSeparationDistance;
@@ -265,7 +265,7 @@ TEST_SUITE("ConvexVsTrianglesTest")
 				sCheckCollisionNoHit<Collider>(settings_no_bf, sphere_center, cRadius, active_edges);
 			}
 
-			// Loop over possibel active edge movement direction permutations
+			// Loop over possible active edge movement direction permutations
 			for (int movement_direction = 0; movement_direction < 3; ++movement_direction)
 			{
 				switch (movement_direction)
@@ -285,7 +285,7 @@ TEST_SUITE("ConvexVsTrianglesTest")
 					settings.mActiveEdgeMovementDirection = Vec3(0, 1, 0);
 					break;
 				}
-		
+
 				{
 					// Hit edge 1
 					Vec3 expected2(0, 0, 0.5f * cEdgeLength);

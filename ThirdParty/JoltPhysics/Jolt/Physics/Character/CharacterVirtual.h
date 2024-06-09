@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -15,7 +16,7 @@ JPH_NAMESPACE_BEGIN
 class CharacterVirtual;
 
 /// Contains the configuration of a character
-class CharacterVirtualSettings : public CharacterBaseSettings
+class JPH_EXPORT CharacterVirtualSettings : public CharacterBaseSettings
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
@@ -31,7 +32,7 @@ public:
 
 	///@name Movement settings
 	EBackFaceMode						mBackFaceMode = EBackFaceMode::CollideWithBackFaces;	///< When colliding with back faces, the character will not be able to move through back facing triangles. Use this if you have triangles that need to collide on both sides.
-	float								mPredictiveContactDistance = 0.1f;						///< How far to scan outside of the shape for predictive contacts. A value of 0 will most likely cause the character to get stuck as it properly calculate a sliding direction anymore. A value that's too high will cause ghost collisions.
+	float								mPredictiveContactDistance = 0.1f;						///< How far to scan outside of the shape for predictive contacts. A value of 0 will most likely cause the character to get stuck as it cannot properly calculate a sliding direction anymore. A value that's too high will cause ghost collisions.
 	uint								mMaxCollisionIterations = 5;							///< Max amount of collision loops
 	uint								mMaxConstraintIterations = 15;							///< How often to try stepping in the constraint solving
 	float								mMinTimeRemaining = 1.0e-4f;							///< Early out condition: If this much time is left to simulate we are done
@@ -51,7 +52,7 @@ public:
 };
 
 /// This class receives callbacks when a virtual character hits something.
-class CharacterContactListener
+class JPH_EXPORT CharacterContactListener
 {
 public:
 	/// Destructor
@@ -64,7 +65,7 @@ public:
 	/// Checks if a character can collide with specified body. Return true if the contact is valid.
 	virtual bool						OnContactValidate(const CharacterVirtual *inCharacter, const BodyID &inBodyID2, const SubShapeID &inSubShapeID2) { return true; }
 
-	/// Called whenever the character collides with a body. Returns true if the contact can push the character.
+	/// Called whenever the character collides with a body.
 	/// @param inCharacter Character that is being solved
 	/// @param inBodyID2 Body ID of body that is being hit
 	/// @param inSubShapeID2 Sub shape ID of shape that is being hit
@@ -91,7 +92,7 @@ public:
 /// The advantage of this is that you can determine when the character moves in the frame (usually this has to happen at a very particular point in the frame)
 /// but the downside is that other objects don't see this virtual character. In order to make this work it is recommended to pair a CharacterVirtual with a Character that
 /// moves along. This Character should be keyframed (or at least have no gravity) and move along with the CharacterVirtual so that other rigid bodies can collide with it.
-class CharacterVirtual : public CharacterBase
+class JPH_EXPORT CharacterVirtual : public CharacterBase
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
@@ -100,8 +101,12 @@ public:
 	/// @param inSettings The settings for the character
 	/// @param inPosition Initial position for the character
 	/// @param inRotation Initial rotation for the character (usually only around the up-axis)
+	/// @param inUserData Application specific value
 	/// @param inSystem Physics system that this character will be added to later
-										CharacterVirtual(const CharacterVirtualSettings *inSettings, RVec3Arg inPosition, QuatArg inRotation, PhysicsSystem *inSystem);
+										CharacterVirtual(const CharacterVirtualSettings *inSettings, RVec3Arg inPosition, QuatArg inRotation, uint64 inUserData, PhysicsSystem *inSystem);
+
+	/// Constructor without user data
+										CharacterVirtual(const CharacterVirtualSettings *inSettings, RVec3Arg inPosition, QuatArg inRotation, PhysicsSystem *inSystem) : CharacterVirtual(inSettings, inPosition, inRotation, 0, inSystem) { }
 
 	/// Set the contact listener
 	void								SetListener(CharacterContactListener *inListener)		{ mListener = inListener; }
@@ -166,6 +171,10 @@ public:
 	Vec3								GetShapeOffset() const									{ return mShapeOffset; }
 	void								SetShapeOffset(Vec3Arg inShapeOffset)					{ mShapeOffset = inShapeOffset; }
 
+	/// Access to the user data, can be used for anything by the application
+	uint64								GetUserData() const										{ return mUserData; }
+	void								SetUserData(uint64 inUserData)							{ mUserData = inUserData; }
+
 	/// This function can be called prior to calling Update() to convert a desired velocity into a velocity that won't make the character move further onto steep slopes.
 	/// This velocity can then be set on the character using SetLinearVelocity()
 	/// @param inDesiredVelocity Velocity to clamp against steep walls
@@ -186,7 +195,7 @@ public:
 
 	/// This function will return true if the character has moved into a slope that is too steep (e.g. a vertical wall).
 	/// You would call WalkStairs to attempt to step up stairs.
-	/// @param inLinearVelocity The linear velocity that the player desired. This is used to determine if we're pusing into a step.
+	/// @param inLinearVelocity The linear velocity that the player desired. This is used to determine if we're pushing into a step.
 	bool								CanWalkStairs(Vec3Arg inLinearVelocity) const;
 
 	/// When stair walking is needed, you can call the WalkStairs function to cast up, forward and down again to try to find a valid position
@@ -243,6 +252,10 @@ public:
 	/// This function can be used after a character has teleported to determine the new contacts with the world.
 	void								RefreshContacts(const BroadPhaseLayerFilter &inBroadPhaseLayerFilter, const ObjectLayerFilter &inObjectLayerFilter, const BodyFilter &inBodyFilter, const ShapeFilter &inShapeFilter, TempAllocator &inAllocator);
 
+	/// Use the ground body ID to get an updated estimate of the ground velocity. This function can be used if the ground body has moved / changed velocity and you want a new estimate of the ground velocity.
+	/// It will not perform collision detection, so is less accurate than RefreshContacts but a lot faster.
+	void								UpdateGroundVelocity();
+
 	/// Switch the shape of the character (e.g. for stance).
 	/// @param inShape The shape to switch to.
 	/// @param inMaxPenetrationDepth When inMaxPenetrationDepth is not FLT_MAX, it checks if the new shape collides before switching shape. This is the max penetration we're willing to accept after the switch.
@@ -294,6 +307,7 @@ public:
 		BodyID							mBodyB;													///< ID of body we're colliding with
 		SubShapeID						mSubShapeIDB;											///< Sub shape ID of body we're colliding with
 		EMotionType						mMotionTypeB;											///< Motion type of B, used to determine the priority of the contact
+		bool							mIsSensorB;												///< If B is a sensor
 		uint64							mUserData;												///< User data of B
 		const PhysicsMaterial *			mMaterial;												///< Material of B
 		bool							mHadCollision = false;									///< If the character actually collided with the contact (can be false if a predictive contact never becomes a real one)
@@ -308,6 +322,18 @@ public:
 	const ContactList &					GetActiveContacts() const								{ return mActiveContacts; }
 
 private:
+	// Sorting predicate for making contact order deterministic
+	struct ContactOrderingPredicate
+	{
+		inline bool						operator () (const Contact &inLHS, const Contact &inRHS) const
+		{
+			if (inLHS.mBodyB != inRHS.mBodyB)
+				return inLHS.mBodyB < inRHS.mBodyB;
+
+			return inLHS.mSubShapeIDB.GetValue() < inRHS.mSubShapeIDB.GetValue();
+		}
+	};
+
 	// A contact that needs to be ignored
 	struct IgnoredContact
 	{
@@ -328,6 +354,7 @@ private:
 		float							mProjectedVelocity;										///< Velocity of the contact projected on the contact normal (negative if separating)
 		Vec3							mLinearVelocity;										///< Velocity of the contact (can contain a corrective velocity to resolve penetration)
 		Plane							mPlane;													///< Plane around the origin that describes how far we can displace (from the origin)
+		bool							mIsSteepSlope = false;									///< If this constraint belongs to a steep slope
 	};
 
 	using ConstraintList = std::vector<Constraint, STLTempAllocator<Constraint>>;
@@ -388,7 +415,7 @@ private:
 	void								RemoveConflictingContacts(TempContactList &ioContacts, IgnoredContactList &outIgnoredContacts) const;
 
 	// Convert contacts into constraints. The character is assumed to start at the origin and the constraints are planes around the origin that confine the movement of the character.
-	void								DetermineConstraints(TempContactList &inContacts, ConstraintList &outConstraints) const;
+	void								DetermineConstraints(TempContactList &inContacts, float inDeltaTime, ConstraintList &outConstraints) const;
 
 	// Use the constraints to solve the displacement of the character. This will slide the character on the planes around the origin for as far as possible.
 	void								SolveConstraints(Vec3Arg inVelocity, float inDeltaTime, float inTimeRemaining, ConstraintList &ioConstraints, IgnoredContactList &ioIgnoredContacts, float &outTimeSimulated, Vec3 &outDisplacement, TempAllocator &inAllocator
@@ -399,6 +426,11 @@ private:
 
 	// Get the velocity of a body adjusted by the contact listener
 	void								GetAdjustedBodyVelocity(const Body& inBody, Vec3 &outLinearVelocity, Vec3 &outAngularVelocity) const;
+
+	// Calculate the ground velocity of the character assuming it's standing on an object with specified linear and angular velocity and with specified center of mass.
+	// Note that we don't just take the point velocity because a point on an object with angular velocity traces an arc,
+	// so if you just take point velocity * delta time you get an error that accumulates over time
+	Vec3								CalculateCharacterGroundVelocity(RVec3Arg inCenterOfMass, Vec3Arg inLinearVelocity, Vec3Arg inAngularVelocity, float inDeltaTime) const;
 
 	// Handle contact with physics object that we're colliding against
 	bool								HandleContact(Vec3Arg inVelocity, Constraint &ioConstraint, float inDeltaTime) const;
@@ -426,7 +458,7 @@ private:
 
 	// Movement settings
 	EBackFaceMode						mBackFaceMode;											// When colliding with back faces, the character will not be able to move through back facing triangles. Use this if you have triangles that need to collide on both sides.
-	float								mPredictiveContactDistance;								// How far to scan outside of the shape for predictive contacts. A value of 0 will most likely cause the character to get stuck as it properly calculate a sliding direction anymore. A value that's too high will cause ghost collisions.
+	float								mPredictiveContactDistance;								// How far to scan outside of the shape for predictive contacts. A value of 0 will most likely cause the character to get stuck as it cannot properly calculate a sliding direction anymore. A value that's too high will cause ghost collisions.
 	uint								mMaxCollisionIterations;								// Max amount of collision loops
 	uint								mMaxConstraintIterations;								// How often to try stepping in the constraint solving
 	float								mMinTimeRemaining;										// Early out condition: If this much time is left to simulate we are done
@@ -462,6 +494,9 @@ private:
 
 	// Remember if we exceeded the maximum number of hits and had to remove similar contacts
 	mutable bool						mMaxHitsExceeded = false;
+
+	// User data, can be used for anything by the application
+	uint64								mUserData = 0;
 };
 
 JPH_NAMESPACE_END

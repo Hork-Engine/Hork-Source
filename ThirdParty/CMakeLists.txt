@@ -39,6 +39,7 @@ set(TARGET_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
 set(TARGET_SAMPLES OFF CACHE BOOL "" FORCE)
 set(TARGET_VIEWER OFF CACHE BOOL "" FORCE)
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF)
 add_subdirectory_with_folder("ThirdParty/JoltPhysics" JoltPhysics/Build)
 install_thirdparty_includes(JoltPhysics/Jolt/ Jolt)
 

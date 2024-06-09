@@ -1,12 +1,15 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
+#include <Jolt/Core/NonCopyable.h>
+
 JPH_NAMESPACE_BEGIN
 
 /// Simple binary input stream
-class StreamIn
+class JPH_EXPORT StreamIn : public NonCopyable
 {
 public:
 	/// Virtual destructor
@@ -27,7 +30,7 @@ public:
 	{
 		ReadBytes(&outT, sizeof(outT));
 	}
-	
+
 	/// Read a vector of primitives from the binary stream
 	template <class T, class A>
 	void				Read(std::vector<T, A> &outT)
@@ -57,6 +60,22 @@ public:
 		}
 		else
 			outString.clear();
+	}
+
+	/// Read a vector of primitives from the binary stream using a custom function to read the elements
+	template <class T, class A, typename F>
+	void				Read(std::vector<T, A> &outT, const F &inReadElement)
+	{
+		typename Array<T>::size_type len = outT.size(); // Initialize to previous array size, this is used for validation in the StateRecorder class
+		Read(len);
+		if (!IsEOF() && !IsFailed())
+		{
+			outT.resize(len);
+			for (typename Array<T>::size_type i = 0; i < len; ++i)
+				inReadElement(*this, outT[i]);
+		}
+		else
+			outT.clear();
 	}
 
 	/// Read a Vec3 (don't read W)

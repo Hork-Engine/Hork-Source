@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -28,6 +29,14 @@ public:
 	bool							IsKeyPressed(int inKey) const		{ return mKeyPressed[inKey] != 0; }
 	bool							IsKeyDoubleClicked(int inKey) const	{ return mKeyDoubleClicked[inKey] != 0; }
 
+	/// Checks if a key is pressed and was not pressed the last time this function was called (state is stored in ioPrevState)
+	bool							IsKeyPressedAndTriggered(int inKey, bool &ioPrevState) const
+	{
+		bool prev_state = ioPrevState;
+		ioPrevState = IsKeyPressed(inKey);
+		return ioPrevState && !prev_state;
+	}
+
 	/// Buffered keyboard input, returns 0 for none or one of the DIK_* constants
 	int								GetFirstKey();
 	int								GetNextKey();
@@ -38,8 +47,8 @@ private:
 	void							Reset();
 	void							ResetKeyboard();
 
-	enum 
-	{ 
+	enum
+	{
 		BUFFERSIZE					= 64,								///< Number of keys cached
 		DCLICKTIME					= 300								///< Minimum time between key release and key down to make it a double click
 	};

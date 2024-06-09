@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -18,10 +19,10 @@ class StreamOut;
 /// to decide which sound or particle effects to play.
 ///
 /// If you inherit from this material, don't forget to create a suitable default material in sDefault
-class PhysicsMaterial : public SerializableObject, public RefTarget<PhysicsMaterial>
+class JPH_EXPORT PhysicsMaterial : public SerializableObject, public RefTarget<PhysicsMaterial>
 {
 public:
-	JPH_DECLARE_SERIALIZABLE_VIRTUAL(PhysicsMaterial)
+	JPH_DECLARE_SERIALIZABLE_VIRTUAL(JPH_EXPORT, PhysicsMaterial)
 
 	/// Virtual destructor
 	virtual									~PhysicsMaterial() override = default;

@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -19,9 +20,9 @@
 #include <Utils/Log.h>
 #include <Renderer/DebugRendererImp.h>
 
-JPH_IMPLEMENT_RTTI_ABSTRACT(CharacterBaseTest) 
-{ 
-	JPH_ADD_BASE_CLASS(CharacterBaseTest, Test) 
+JPH_IMPLEMENT_RTTI_ABSTRACT(CharacterBaseTest)
+{
+	JPH_ADD_BASE_CLASS(CharacterBaseTest, Test)
 }
 
 const char *CharacterBaseTest::sScenes[] =
@@ -29,6 +30,7 @@ const char *CharacterBaseTest::sScenes[] =
 	"PerlinMesh",
 	"PerlinHeightField",
 	"ObstacleCourse",
+	"InitiallyIntersecting",
 	"Terrain1",
 	"Terrain2",
 };
@@ -38,8 +40,14 @@ const char *CharacterBaseTest::sSceneName = "ObstacleCourse";
 // Scene constants
 static const RVec3 cRotatingPosition(-5, 0.15f, 15);
 static const Quat cRotatingOrientation = Quat::sIdentity();
-static const RVec3 cVerticallyMovingPosition(0, 2.0f, 15);
-static const Quat cVerticallyMovingOrientation = Quat::sIdentity();
+static const RVec3 cRotatingWallPosition(5, 1.0f, 25.0f);
+static const Quat cRotatingWallOrientation = Quat::sIdentity();
+static const RVec3 cRotatingAndTranslatingPosition(-10, 0.15f, 27.5f);
+static const Quat cRotatingAndTranslatingOrientation = Quat::sIdentity();
+static const RVec3 cSmoothVerticallyMovingPosition(0, 2.0f, 15);
+static const Quat cSmoothVerticallyMovingOrientation = Quat::sIdentity();
+static const RVec3 cReversingVerticallyMovingPosition(0, 0.15f, 25);
+static const Quat cReversingVerticallyMovingOrientation = Quat::sIdentity();
 static const RVec3 cHorizontallyMovingPosition(5, 1, 15);
 static const Quat cHorizontallyMovingOrientation = Quat::sRotation(Vec3::sAxisZ(), 0.5f * JPH_PI);
 static const RVec3 cConveyorBeltPosition(-10, 0.15f, 15);
@@ -85,6 +93,21 @@ void CharacterBaseTest::Initialize()
 		// Default terrain
 		CreateHeightFieldTerrain();
 	}
+	else if (strcmp(sSceneName, "InitiallyIntersecting") == 0)
+	{
+		CreateFloor();
+
+		// Create a grid of boxes that are initially intersecting with the character
+		RefConst<Shape> box = new BoxShape(Vec3(0.1f, 0.1f, 0.1f));
+		BodyCreationSettings settings(box, RVec3(0, 0.5f, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		for (int x = 0; x < 4; ++x)
+			for (int y = 0; y <= 10; ++y)
+				for (int z = 0; z <= 10; ++z)
+				{
+					settings.mPosition = RVec3(-0.5f + 0.1f * x, 0.1f + 0.1f * y, -0.5f + 0.1f * z);
+					mBodyInterface->CreateAndAddBody(settings, EActivation::DontActivate);
+				}
+	}
 	else if (strcmp(sSceneName, "ObstacleCourse") == 0)
 	{
 		// Default terrain
@@ -98,9 +121,20 @@ void CharacterBaseTest::Initialize()
 		}
 
 		{
+			// Create ramps with different inclinations intersecting with a steep slope
+			Ref<Shape> ramp = RotatedTranslatedShapeSettings(Vec3(0, 0, -2.5f), Quat::sIdentity(), new BoxShape(Vec3(1.0f, 0.05f, 2.5f))).Create().Get();
+			Ref<Shape> ramp2 = RotatedTranslatedShapeSettings(Vec3(0, 2.0f, 0), Quat::sIdentity(), new BoxShape(Vec3(0.05f, 2.0f, 1.0f))).Create().Get();
+			for (int angle = 0; angle < 9; ++angle)
+			{
+				mBodyInterface->CreateAndAddBody(BodyCreationSettings(ramp, RVec3(-15.0f + angle * 2.0f, 0, -20.0f - angle * 0.1f), Quat::sRotation(Vec3::sAxisX(), DegreesToRadians(10.0f * angle)), EMotionType::Static, Layers::NON_MOVING), EActivation::DontActivate);
+				mBodyInterface->CreateAndAddBody(BodyCreationSettings(ramp2, RVec3(-15.0f + angle * 2.0f, 0, -21.0f), Quat::sRotation(Vec3::sAxisZ(), DegreesToRadians(20.0f)), EMotionType::Static, Layers::NON_MOVING), EActivation::DontActivate);
+			}
+		}
+
+		{
 			// Create wall consisting of vertical pillars
 			// Note: Convex radius 0 because otherwise it will be a bumpy wall
-			Ref<Shape> wall = new BoxShape(Vec3(0.1f, 2.5f, 0.1f), 0.0f); 
+			Ref<Shape> wall = new BoxShape(Vec3(0.1f, 2.5f, 0.1f), 0.0f);
 			for (int z = 0; z < 30; ++z)
 				mBodyInterface->CreateAndAddBody(BodyCreationSettings(wall, RVec3(0.0f, 2.5f, 2.0f + 0.2f * z), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING), EActivation::DontActivate);
 		}
@@ -109,7 +143,10 @@ void CharacterBaseTest::Initialize()
 			// Kinematic blocks to test interacting with moving objects
 			Ref<Shape> kinematic = new BoxShape(Vec3(1, 0.15f, 3.0f));
 			mRotatingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cRotatingPosition, cRotatingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
-			mVerticallyMovingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cVerticallyMovingPosition, cVerticallyMovingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
+			mRotatingWallBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(new BoxShape(Vec3(3.0f, 1, 0.15f)), cRotatingWallPosition, cRotatingWallOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
+			mRotatingAndTranslatingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cRotatingAndTranslatingPosition, cRotatingAndTranslatingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
+			mSmoothVerticallyMovingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cSmoothVerticallyMovingPosition, cSmoothVerticallyMovingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
+			mReversingVerticallyMovingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cReversingVerticallyMovingPosition, cReversingVerticallyMovingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
 			mHorizontallyMovingBody = mBodyInterface->CreateAndAddBody(BodyCreationSettings(kinematic, cHorizontallyMovingPosition, cHorizontallyMovingOrientation, EMotionType::Kinematic, Layers::MOVING), EActivation::Activate);
 		}
 
@@ -409,7 +446,7 @@ void CharacterBaseTest::Initialize()
 				triangles.push_back(IndexedTriangle(end, end + angle, end + angle + 1));
 			}
 
-			MeshShapeSettings mesh(vertices, triangles);
+			MeshShapeSettings mesh(std::move(vertices), std::move(triangles));
 			mesh.SetEmbedded();
 			BodyCreationSettings mesh_cylinder(&mesh, cHalfCylinderPosition, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 			mBodyInterface->CreateAndAddBody(mesh_cylinder, EActivation::DontActivate);
@@ -443,13 +480,13 @@ void CharacterBaseTest::Initialize()
 				IndexedTriangle(0, 5, 4)
 			};
 
-			MeshShapeSettings mesh(vertices, triangles);
+			MeshShapeSettings mesh(std::move(vertices), std::move(triangles));
 			mesh.SetEmbedded();
 			BodyCreationSettings box(&mesh, cMeshBoxPosition, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 			mBodyInterface->CreateAndAddBody(box, EActivation::DontActivate);
 		}
 
-		// Create a sensor. 
+		// Create a sensor.
 		// Note that the CharacterVirtual doesn't interact with sensors, you should pair it with a Character object (see CharacterVirtual class comments)
 		{
 			BodyCreationSettings sensor(new BoxShape(Vec3::sReplicate(1.0f)), cSensorPosition, Quat::sIdentity(), EMotionType::Kinematic, Layers::SENSOR);
@@ -492,47 +529,57 @@ void CharacterBaseTest::Initialize()
 	}
 }
 
-void CharacterBaseTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
+void CharacterBaseTest::ProcessInput(const ProcessInputParams &inParams)
 {
-	// Update scene time
-	mTime += inParams.mDeltaTime;
-
 	// Determine controller input
-	Vec3 control_input = Vec3::sZero();
-	if (inParams.mKeyboard->IsKeyPressed(DIK_LEFT))		control_input.SetZ(-1);
-	if (inParams.mKeyboard->IsKeyPressed(DIK_RIGHT))	control_input.SetZ(1);
-	if (inParams.mKeyboard->IsKeyPressed(DIK_UP))		control_input.SetX(1);
-	if (inParams.mKeyboard->IsKeyPressed(DIK_DOWN))		control_input.SetX(-1);
-	if (control_input != Vec3::sZero())
-		control_input = control_input.Normalized();
+	mControlInput = Vec3::sZero();
+	if (inParams.mKeyboard->IsKeyPressed(DIK_LEFT))		mControlInput.SetZ(-1);
+	if (inParams.mKeyboard->IsKeyPressed(DIK_RIGHT))	mControlInput.SetZ(1);
+	if (inParams.mKeyboard->IsKeyPressed(DIK_UP))		mControlInput.SetX(1);
+	if (inParams.mKeyboard->IsKeyPressed(DIK_DOWN))		mControlInput.SetX(-1);
+	if (mControlInput != Vec3::sZero())
+		mControlInput = mControlInput.Normalized();
 
 	// Rotate controls to align with the camera
 	Vec3 cam_fwd = inParams.mCameraState.mForward;
 	cam_fwd.SetY(0.0f);
 	cam_fwd = cam_fwd.NormalizedOr(Vec3::sAxisX());
 	Quat rotation = Quat::sFromTo(Vec3::sAxisX(), cam_fwd);
-	control_input = rotation * control_input;
+	mControlInput = rotation * mControlInput;
 
 	// Check actions
-	bool jump = false;
-	bool switch_stance = false;
-	for (int key = inParams.mKeyboard->GetFirstKey(); key != 0; key = inParams.mKeyboard->GetNextKey())
-	{
-		if (key == DIK_RSHIFT)
-			switch_stance = true;
-		else if (key == DIK_RCONTROL)
-			jump = true;
-	}
+	mJump = inParams.mKeyboard->IsKeyPressedAndTriggered(DIK_RCONTROL, mWasJump);
+	mSwitchStance = inParams.mKeyboard->IsKeyPressedAndTriggered(DIK_RSHIFT, mWasSwitchStance);
+}
 
-	HandleInput(control_input, jump, switch_stance, inParams.mDeltaTime);
+void CharacterBaseTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
+{
+	// Update scene time
+	mTime += inParams.mDeltaTime;
+
+	// Update camera pivot
+	mCameraPivot = GetCharacterPosition();
 
 	// Animate bodies
 	if (!mRotatingBody.IsInvalid())
 		mBodyInterface->MoveKinematic(mRotatingBody, cRotatingPosition, Quat::sRotation(Vec3::sAxisY(), JPH_PI * Sin(mTime)), inParams.mDeltaTime);
+	if (!mRotatingWallBody.IsInvalid())
+		mBodyInterface->MoveKinematic(mRotatingWallBody, cRotatingWallPosition, Quat::sRotation(Vec3::sAxisY(), JPH_PI * Sin(mTime)), inParams.mDeltaTime);
+	if (!mRotatingAndTranslatingBody.IsInvalid())
+		mBodyInterface->MoveKinematic(mRotatingAndTranslatingBody, cRotatingAndTranslatingPosition + 5.0f * Vec3(Sin(JPH_PI * mTime), 0, Cos(JPH_PI * mTime)), Quat::sRotation(Vec3::sAxisY(), JPH_PI * Sin(mTime)), inParams.mDeltaTime);
 	if (!mHorizontallyMovingBody.IsInvalid())
 		mBodyInterface->MoveKinematic(mHorizontallyMovingBody, cHorizontallyMovingPosition + Vec3(3.0f * Sin(mTime), 0, 0), cHorizontallyMovingOrientation, inParams.mDeltaTime);
-	if (!mVerticallyMovingBody.IsInvalid())
-		mBodyInterface->MoveKinematic(mVerticallyMovingBody, cVerticallyMovingPosition + Vec3(0, 1.75f * Sin(mTime), 0), cVerticallyMovingOrientation, inParams.mDeltaTime);
+	if (!mSmoothVerticallyMovingBody.IsInvalid())
+		mBodyInterface->MoveKinematic(mSmoothVerticallyMovingBody, cSmoothVerticallyMovingPosition + Vec3(0, 1.75f * Sin(mTime), 0), cSmoothVerticallyMovingOrientation, inParams.mDeltaTime);
+	if (!mReversingVerticallyMovingBody.IsInvalid())
+	{
+		RVec3 pos = mBodyInterface->GetPosition(mReversingVerticallyMovingBody);
+		if (pos.GetY() < cReversingVerticallyMovingPosition.GetY())
+			mReversingVerticallyMovingVelocity = 1.0f;
+		else if (pos.GetY() > cReversingVerticallyMovingPosition.GetY() + 5.0f)
+			mReversingVerticallyMovingVelocity = -1.0f;
+		mBodyInterface->MoveKinematic(mReversingVerticallyMovingBody, pos + Vec3(0, mReversingVerticallyMovingVelocity * 3.0f * inParams.mDeltaTime, 0), cReversingVerticallyMovingOrientation, inParams.mDeltaTime);
+	}
 
 	// Reset ramp blocks
 	mRampBlocksTimeLeft -= inParams.mDeltaTime;
@@ -545,32 +592,36 @@ void CharacterBaseTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 		}
 		mRampBlocksTimeLeft = cRampBlocksTime;
 	}
+
+	// Call handle input after new velocities have been set to avoid frame delay
+	HandleInput(mControlInput, mJump, mSwitchStance, inParams.mDeltaTime);
 }
 
 void CharacterBaseTest::CreateSettingsMenu(DebugUI *inUI, UIElement *inSubMenu)
 {
-	inUI->CreateTextButton(inSubMenu, "Select Scene", [this, inUI]() { 
+	inUI->CreateTextButton(inSubMenu, "Select Scene", [this, inUI]() {
 		UIElement *scene_name = inUI->CreateMenu();
 		for (uint i = 0; i < size(sScenes); ++i)
 			inUI->CreateTextButton(scene_name, sScenes[i], [this, i]() { sSceneName = sScenes[i]; RestartTest(); });
 		inUI->ShowMenu(scene_name);
 	});
 
-	inUI->CreateTextButton(inSubMenu, "Character Movement Settings", [=]() {
+	inUI->CreateTextButton(inSubMenu, "Character Movement Settings", [this, inUI]() {
 		UIElement *movement_settings = inUI->CreateMenu();
 
 		inUI->CreateCheckBox(movement_settings, "Control Movement During Jump", sControlMovementDuringJump, [](UICheckBox::EState inState) { sControlMovementDuringJump = inState == UICheckBox::STATE_CHECKED; });
 		inUI->CreateSlider(movement_settings, "Character Speed", sCharacterSpeed, 0.1f, 10.0f, 0.1f, [](float inValue) { sCharacterSpeed = inValue; });
 		inUI->CreateSlider(movement_settings, "Character Jump Speed", sJumpSpeed, 0.1f, 10.0f, 0.1f, [](float inValue) { sJumpSpeed = inValue; });
+		AddCharacterMovementSettings(inUI, movement_settings);
 		inUI->ShowMenu(movement_settings);
 	});
 
-	inUI->CreateTextButton(inSubMenu, "Configuration Settings", [=]() {
+	inUI->CreateTextButton(inSubMenu, "Configuration Settings", [this, inUI]() {
 		UIElement *configuration_settings = inUI->CreateMenu();
 
 		inUI->CreateComboBox(configuration_settings, "Shape Type", { "Capsule", "Cylinder", "Box" }, (int)sShapeType, [](int inItem) { sShapeType = (EType)inItem; });
 		AddConfigurationSettings(inUI, configuration_settings);
-		inUI->CreateTextButton(configuration_settings, "Accept Changes", [=]() { RestartTest(); });
+		inUI->CreateTextButton(configuration_settings, "Accept Changes", [this]() { RestartTest(); });
 		inUI->ShowMenu(configuration_settings);
 	});
 }
@@ -582,23 +633,39 @@ void CharacterBaseTest::GetInitialCamera(CameraState& ioState) const
 	ioState.mForward = Vec3(10.0f, -2.0f, 0).Normalized();
 }
 
-RMat44 CharacterBaseTest::GetCameraPivot(float inCameraHeading, float inCameraPitch) const 
+RMat44 CharacterBaseTest::GetCameraPivot(float inCameraHeading, float inCameraPitch) const
 {
 	// Pivot is center of character + distance behind based on the heading and pitch of the camera
 	Vec3 fwd = Vec3(Cos(inCameraPitch) * Cos(inCameraHeading), Sin(inCameraPitch), Cos(inCameraPitch) * Sin(inCameraHeading));
-	return RMat44::sTranslation(GetCharacterPosition() + Vec3(0, cCharacterHeightStanding + cCharacterRadiusStanding, 0) - 5.0f * fwd);
+	return RMat44::sTranslation(mCameraPivot + Vec3(0, cCharacterHeightStanding + cCharacterRadiusStanding, 0) - 5.0f * fwd);
 }
 
 void CharacterBaseTest::SaveState(StateRecorder &inStream) const
 {
 	inStream.Write(mTime);
 	inStream.Write(mRampBlocksTimeLeft);
+	inStream.Write(mReversingVerticallyMovingVelocity);
 }
 
 void CharacterBaseTest::RestoreState(StateRecorder &inStream)
 {
 	inStream.Read(mTime);
 	inStream.Read(mRampBlocksTimeLeft);
+	inStream.Read(mReversingVerticallyMovingVelocity);
+}
+
+void CharacterBaseTest::SaveInputState(StateRecorder &inStream) const
+{
+	inStream.Write(mControlInput);
+	inStream.Write(mJump);
+	inStream.Write(mSwitchStance);
+}
+
+void CharacterBaseTest::RestoreInputState(StateRecorder &inStream)
+{
+	inStream.Read(mControlInput);
+	inStream.Read(mJump);
+	inStream.Read(mSwitchStance);
 }
 
 void CharacterBaseTest::DrawCharacterState(const CharacterBase *inCharacter, RMat44Arg inCharacterTransform, Vec3Arg inCharacterVelocity)
@@ -607,27 +674,8 @@ void CharacterBaseTest::DrawCharacterState(const CharacterBase *inCharacter, RMa
 	// Drawing prior to update since the physics system state is also that prior to the simulation step (so that all detected collisions etc. make sense)
 	mDebugRenderer->DrawCoordinateSystem(inCharacterTransform, 0.1f);
 
-	// Determine color
-	CharacterBase::EGroundState ground_state = inCharacter->GetGroundState();
-	Color color;
-	switch (ground_state)
-	{
-	case CharacterBase::EGroundState::OnGround:
-		color = Color::sGreen;
-		break;
-	case CharacterBase::EGroundState::OnSteepGround:
-		color = Color::sYellow;
-		break;
-	case CharacterBase::EGroundState::NotSupported:
-		color = Color::sOrange;
-		break;
-	case CharacterBase::EGroundState::InAir:
-	default:
-		color = Color::sRed;
-		break;
-	}
-
 	// Draw the state of the ground contact
+	CharacterBase::EGroundState ground_state = inCharacter->GetGroundState();
 	if (ground_state != CharacterBase::EGroundState::InAir)
 	{
 		RVec3 ground_position = inCharacter->GetGroundPosition();
@@ -651,5 +699,5 @@ void CharacterBaseTest::DrawCharacterState(const CharacterBase *inCharacter, RMa
 	const PhysicsMaterial *ground_material = inCharacter->GetGroundMaterial();
 	Vec3 horizontal_velocity = inCharacterVelocity;
 	horizontal_velocity.SetY(0);
-	mDebugRenderer->DrawText3D(inCharacterTransform.GetTranslation(), StringFormat("Mat: %s\nHorizontal Vel: %.1f m/s\nVertical Vel: %.1f m/s", ground_material->GetDebugName(), (double)horizontal_velocity.Length(), (double)inCharacterVelocity.GetY()), color, 0.25f);
+	mDebugRenderer->DrawText3D(inCharacterTransform.GetTranslation(), StringFormat("State: %s\nMat: %s\nHorizontal Vel: %.1f m/s\nVertical Vel: %.1f m/s", CharacterBase::sToString(ground_state), ground_material->GetDebugName(), (double)horizontal_velocity.Length(), (double)inCharacterVelocity.GetY()), Color::sWhite, 0.25f);
 }

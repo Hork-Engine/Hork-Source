@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2022 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -15,7 +16,7 @@
 class SkeletonMapperTest : public Test
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(SkeletonMapperTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, SkeletonMapperTest)
 
 	// Destructor
 	virtual					~SkeletonMapperTest() override;
@@ -36,7 +37,7 @@ public:
 
 private:
 	inline static bool		sLockTranslations = false;
-	
+
 	void					CalculateRagdollPose();
 
 	float					mTime = 0.0f;

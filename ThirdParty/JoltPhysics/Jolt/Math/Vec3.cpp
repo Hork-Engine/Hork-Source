@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -28,12 +29,12 @@ static void sCreateVertices(std::unordered_set<Vec3> &ioVertices, Vec3Arg inDir1
 	}
 }
 
-const std::vector<Vec3> Vec3::sUnitSphere = []() { 
+const std::vector<Vec3> Vec3::sUnitSphere = []() {
 
 	const int level = 3;
 
 	std::unordered_set<Vec3> verts;
-	
+
 	// Add unit axis
 	verts.insert(Vec3::sAxisX());
 	verts.insert(-Vec3::sAxisX());

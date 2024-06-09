@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -29,7 +30,7 @@ void CharacterVirtualTest::Initialize()
 	settings->mPenetrationRecoverySpeed = sPenetrationRecoverySpeed;
 	settings->mPredictiveContactDistance = sPredictiveContactDistance;
 	settings->mSupportingVolume = Plane(Vec3::sAxisY(), -cCharacterRadiusStanding); // Accept contacts that touch the lower sphere of the capsule
-	mCharacter = new CharacterVirtual(settings, RVec3::sZero(), Quat::sIdentity(), mPhysicsSystem);
+	mCharacter = new CharacterVirtual(settings, RVec3::sZero(), Quat::sIdentity(), 0, mPhysicsSystem);
 	mCharacter->SetListener(this);
 }
 
@@ -39,6 +40,7 @@ void CharacterVirtualTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 
 	// Draw character pre update (the sim is also drawn pre update)
 	RMat44 com = mCharacter->GetCenterOfMassTransform();
+	RMat44 world_transform = mCharacter->GetWorldTransform();
 #ifdef JPH_DEBUG_RENDERER
 	mCharacter->GetShape()->Draw(mDebugRenderer, com, Vec3::sReplicate(1.0f), Color::sGreen, false, true);
 #endif // JPH_DEBUG_RENDERER
@@ -81,7 +83,7 @@ void CharacterVirtualTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 	Vec3 velocity = Vec3(new_position - old_position) / inParams.mDeltaTime;
 
 	// Draw state of character
-	DrawCharacterState(mCharacter, mCharacter->GetWorldTransform(), velocity);
+	DrawCharacterState(mCharacter, world_transform, velocity);
 
 	// Draw labels on ramp blocks
 	for (size_t i = 0; i < mRampBlocks.size(); ++i)
@@ -94,7 +96,7 @@ void CharacterVirtualTest::HandleInput(Vec3Arg inMovementDirection, bool inJump,
 	if (player_controls_horizontal_velocity)
 	{
 		// Smooth the player input
-		mDesiredVelocity = 0.25f * inMovementDirection * sCharacterSpeed + 0.75f * mDesiredVelocity;
+		mDesiredVelocity = sEnableCharacterInertia? 0.25f * inMovementDirection * sCharacterSpeed + 0.75f * mDesiredVelocity : inMovementDirection * sCharacterSpeed;
 
 		// True if the player intended to move
 		mAllowSliding = !inMovementDirection.IsNearZero();
@@ -110,18 +112,25 @@ void CharacterVirtualTest::HandleInput(Vec3Arg inMovementDirection, bool inJump,
 	mCharacter->SetUp(character_up_rotation.RotateAxisY());
 	mCharacter->SetRotation(character_up_rotation);
 
+	// A cheaper way to update the character's ground velocity,
+	// the platforms that the character is standing on may have changed velocity
+	mCharacter->UpdateGroundVelocity();
+
 	// Determine new basic velocity
 	Vec3 current_vertical_velocity = mCharacter->GetLinearVelocity().Dot(mCharacter->GetUp()) * mCharacter->GetUp();
 	Vec3 ground_velocity = mCharacter->GetGroundVelocity();
 	Vec3 new_velocity;
-	if (mCharacter->GetGroundState() == CharacterVirtual::EGroundState::OnGround // If on ground
-		&& (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.1f) // And not moving away from ground
+	bool moving_towards_ground = (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.1f;
+	if (mCharacter->GetGroundState() == CharacterVirtual::EGroundState::OnGround	// If on ground
+		&& (sEnableCharacterInertia?
+			moving_towards_ground													// Inertia enabled: And not moving away from ground
+			: !mCharacter->IsSlopeTooSteep(mCharacter->GetGroundNormal())))			// Inertia disabled: And not on a slope that is too steep
 	{
 		// Assume velocity of ground when on ground
 		new_velocity = ground_velocity;
 
 		// Jump
-		if (inJump)
+		if (inJump && moving_towards_ground)
 			new_velocity += sJumpSpeed * mCharacter->GetUp();
 	}
 	else
@@ -148,6 +157,11 @@ void CharacterVirtualTest::HandleInput(Vec3Arg inMovementDirection, bool inJump,
 	// Stance switch
 	if (inSwitchStance)
 		mCharacter->SetShape(mCharacter->GetShape() == mStandingShape? mCrouchingShape : mStandingShape, 1.5f * mPhysicsSystem->GetPhysicsSettings().mPenetrationSlop, mPhysicsSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING), mPhysicsSystem->GetDefaultLayerFilter(Layers::MOVING), { }, { }, *mTempAllocator);
+}
+
+void CharacterVirtualTest::AddCharacterMovementSettings(DebugUI* inUI, UIElement* inSubMenu)
+{
+	inUI->CreateCheckBox(inSubMenu, "Enable Character Inertia", sEnableCharacterInertia, [](UICheckBox::EState inState) { sEnableCharacterInertia = inState == UICheckBox::STATE_CHECKED; });
 }
 
 void CharacterVirtualTest::AddConfigurationSettings(DebugUI *inUI, UIElement *inSubMenu)
@@ -200,6 +214,13 @@ void CharacterVirtualTest::OnAdjustBodyVelocity(const CharacterVirtual *inCharac
 
 void CharacterVirtualTest::OnContactAdded(const CharacterVirtual *inCharacter, const BodyID &inBodyID2, const SubShapeID &inSubShapeID2, RVec3Arg inContactPosition, Vec3Arg inContactNormal, CharacterContactSettings &ioSettings)
 {
+	// Draw a box around the character when it enters the sensor
+	if (inBodyID2 == mSensorBody)
+	{
+		AABox box = inCharacter->GetShape()->GetWorldSpaceBounds(inCharacter->GetCenterOfMassTransform(), Vec3::sReplicate(1.0f));
+		mDebugRenderer->DrawBox(box, Color::sGreen, DebugRenderer::ECastShadow::Off, DebugRenderer::EDrawMode::Wireframe);
+	}
+
 	// Dynamic boxes on the ramp go through all permutations
 	Array<BodyID>::const_iterator i = find(mRampBlocks.begin(), mRampBlocks.end(), inBodyID2);
 	if (i != mRampBlocks.end())

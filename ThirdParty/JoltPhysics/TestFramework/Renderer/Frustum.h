@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -13,7 +14,7 @@ public:
 	/// Empty constructor
 					Frustum() = default;
 
-	/// Construct frustom from position, forward, up, field of view x and y and near and far plane. 
+	/// Construct frustum from position, forward, up, field of view x and y and near and far plane.
 	/// Note that inUp does not need to be perpendicular to inForward but cannot be collinear.
 	inline			Frustum(Vec3Arg inPosition, Vec3Arg inForward, Vec3Arg inUp, float inFOVX, float inFOVY, float inNear, float inFar)
 	{

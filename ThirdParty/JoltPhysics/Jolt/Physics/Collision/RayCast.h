@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -24,6 +25,12 @@ struct RayCastT
 		Vec ray_origin = inTransform * mOrigin;
 		Vec3 ray_direction(inTransform * (mOrigin + mDirection) - ray_origin);
 		return { ray_origin, ray_direction };
+	}
+
+	/// Translate ray using inTranslation
+	RayCastType					Translated(typename Vec::ArgType inTranslation) const
+	{
+		return { inTranslation + mOrigin, mDirection };
 	}
 
 	/// Get point with fraction inFraction on ray (0 = start of ray, 1 = end of ray)

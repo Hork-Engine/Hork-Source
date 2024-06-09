@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -179,7 +180,7 @@ TEST_SUITE("Vec3Tests")
 		CHECK(Vec3(2, 4, 8).Reciprocal() == Vec3(0.5f, 0.25f, 0.125f));
 	}
 
-	TEST_CASE("TestVec3Swizzle")	
+	TEST_CASE("TestVec3Swizzle")
 	{
 		Vec3 v(1, 2, 3);
 
@@ -230,7 +231,7 @@ TEST_SUITE("Vec3Tests")
 		CHECK(Vec3(1, 2, 3).DotV(Vec3(4, 5, 6)) == Vec3::sReplicate(1 * 4 + 2 * 5 + 3 * 6));
 		CHECK(Vec3(1, 2, 3).DotV4(Vec3(4, 5, 6)) == Vec4::sReplicate(1 * 4 + 2 * 5 + 3 * 6));
 	}
-		
+
 	TEST_CASE("TestVec3Length")
 	{
 		CHECK(Vec3(1, 2, 3).LengthSq() == float(1 + 4 + 9));
@@ -261,8 +262,8 @@ TEST_SUITE("Vec3Tests")
 
 	TEST_CASE("TestVec3Cast")
 	{
-		CHECK(Vec3(1, 2, 3).ToInt() == UVec4(1, 2, 3, 3));
-		CHECK(Vec3(1, 2, 3).ReinterpretAsInt() == UVec4(0x3f800000U, 0x40000000U, 0x40400000U, 0x40400000U));
+		CHECK(UVec4::sEquals(Vec3(1, 2, 3).ToInt(), UVec4(1, 2, 3, 0)).TestAllXYZTrue());
+		CHECK(UVec4::sEquals(Vec3(1, 2, 3).ReinterpretAsInt(), UVec4(0x3f800000U, 0x40000000U, 0x40400000U, 0)).TestAllXYZTrue());
 	}
 
 	TEST_CASE("TestVec3NormalizedPerpendicular")

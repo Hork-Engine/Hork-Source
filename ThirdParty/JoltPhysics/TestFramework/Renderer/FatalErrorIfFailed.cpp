@@ -1,7 +1,10 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
 #include <TestFramework.h>
+
+#include <system_error>
 
 #include <Renderer/FatalErrorIfFailed.h>
 #include <Jolt/Core/StringTools.h>
@@ -10,5 +13,8 @@
 void FatalErrorIfFailed(HRESULT inHResult)
 {
 	if (FAILED(inHResult))
-		FatalError("DirectX exception thrown: %s", ConvertToString(inHResult).c_str());
+	{
+		string message = system_category().message(inHResult);
+		FatalError("DirectX error returned: %s (%s)", ConvertToString(inHResult).c_str(), message.c_str());
+	}
 }

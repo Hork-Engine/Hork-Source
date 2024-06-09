@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -7,8 +8,12 @@
 #include "LoggingBodyActivationListener.h"
 #include "LoggingContactListener.h"
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Body/BodyLockMulti.h>
+#include <Jolt/Physics/Constraints/PointConstraint.h>
+#include <Jolt/Physics/StateRecorderImpl.h>
 
 TEST_SUITE("PhysicsTests")
 {
@@ -110,7 +115,7 @@ TEST_SUITE("PhysicsTests")
 			CHECK_FALSE(lock1.Succeeded());
 			CHECK_FALSE(lock1.SucceededAndIsInBroadPhase());
 		}
-	}		
+	}
 
 	TEST_CASE("TestPhysicsBodyLockMulti")
 	{
@@ -167,7 +172,7 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsBodyIDSequenceNumber")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		// Create a body and check it's id
@@ -190,7 +195,7 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsBodyIDOverride")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		// Dummy creation settings
@@ -251,7 +256,7 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsBodyUserData")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		// Create a body and pass user data through the creation settings
@@ -263,11 +268,37 @@ TEST_SUITE("PhysicsTests")
 		// Change the user data
 		body->SetUserData(0x5678123443218765);
 		CHECK(body->GetUserData() == 0x5678123443218765);
+
+		// Convert back to body settings
+		BodyCreationSettings body_settings2 = body->GetBodyCreationSettings();
+		CHECK(body_settings2.mUserData == 0x5678123443218765);
+	}
+
+	TEST_CASE("TestPhysicsConstraintUserData")
+	{
+		PhysicsTestContext c;
+
+		// Create a body
+		Body &body = c.CreateBox(RVec3::sZero(), Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3::sReplicate(1.0f));
+
+		// Create constraint with user data
+		PointConstraintSettings constraint_settings;
+		constraint_settings.mUserData = 0x1234567887654321;
+		Ref<Constraint> constraint = constraint_settings.Create(body, Body::sFixedToWorld);
+		CHECK(constraint->GetUserData() == 0x1234567887654321);
+
+		// Change the user data
+		constraint->SetUserData(0x5678123443218765);
+		CHECK(constraint->GetUserData() == 0x5678123443218765);
+
+		// Convert back to constraint settings
+		Ref<ConstraintSettings> constraint_settings2 = constraint->GetConstraintSettings();
+		CHECK(constraint_settings2->mUserData == 0x5678123443218765);
 	}
 
 	TEST_CASE("TestPhysicsPosition")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		// Translate / rotate the box
@@ -295,7 +326,7 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsOverrideMassAndInertia")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		const float cDensity = 1234.0f;
@@ -349,12 +380,12 @@ TEST_SUITE("PhysicsTests")
 		Body &body = ioContext.CreateBox(cInitialPos, Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3(1, 1, 1));
 		CHECK_APPROX_EQUAL(cInitialPos, body.GetPosition());
 		CHECK_APPROX_EQUAL(Vec3::sZero(), body.GetLinearVelocity());
-			
+
 		ioContext.Simulate(cSimulationTime);
-			
+
 		// Test resulting velocity (due to gravity)
 		CHECK_APPROX_EQUAL(cSimulationTime * cGravity, body.GetLinearVelocity(), 1.0e-4f);
-			
+
 		// Test resulting position
 		RVec3 expected_pos = ioContext.PredictPosition(cInitialPos, Vec3::sZero(), cGravity, cSimulationTime);
 		CHECK_APPROX_EQUAL(expected_pos, body.GetPosition());
@@ -362,29 +393,17 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsFreeFall")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsFreeFall(c);
 	}
 
-	TEST_CASE("TestPhysicsFreeFallSubStep")
+	TEST_CASE("TestPhysicsFreeFallStep")
 	{
-		PhysicsTestContext c1(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c1(2.0f / 60.0f, 2);
 		TestPhysicsFreeFall(c1);
 
-		PhysicsTestContext c2(4.0f / 60.0f, 1, 4);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsFreeFall(c2);
-
-		PhysicsTestContext c3(4.0f / 60.0f, 2, 2);
-		TestPhysicsFreeFall(c3);
-
-		PhysicsTestContext c4(2.0f / 60.0f, 2, 1);
-		TestPhysicsFreeFall(c4);
-
-		PhysicsTestContext c5(8.0f / 60.0f, 4, 2);
-		TestPhysicsFreeFall(c5);
-
-		PhysicsTestContext c6(4.0f / 60.0f, 4, 1);
-		TestPhysicsFreeFall(c6);
 	}
 
 	// Test acceleration of a box with force applied
@@ -405,10 +424,10 @@ TEST_SUITE("PhysicsTests")
 
 		// Simulate while applying force
 		ioContext.Simulate(cSimulationTime, [&]() { body.AddForce(mass * cAcceleration); });
-			
+
 		// Test resulting velocity (due to gravity and applied force)
 		CHECK_APPROX_EQUAL(cSimulationTime * (cGravity + cAcceleration), body.GetLinearVelocity(), 1.0e-4f);
-			
+
 		// Test resulting position
 		RVec3 expected_pos = ioContext.PredictPosition(cInitialPos, Vec3::sZero(), cGravity + cAcceleration, cSimulationTime);
 		CHECK_APPROX_EQUAL(expected_pos, body.GetPosition());
@@ -416,32 +435,20 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsApplyForce")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsApplyForce(c);
 	}
 
-	TEST_CASE("TestPhysicsApplyForceSubStep")
+	TEST_CASE("TestPhysicsApplyForceStep")
 	{
-		PhysicsTestContext c1(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c1(2.0f / 60.0f, 2);
 		TestPhysicsApplyForce(c1);
 
-		PhysicsTestContext c2(4.0f / 60.0f, 1, 4);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsApplyForce(c2);
-
-		PhysicsTestContext c3(4.0f / 60.0f, 2, 2);
-		TestPhysicsApplyForce(c3);
-
-		PhysicsTestContext c4(2.0f / 60.0f, 2, 1);
-		TestPhysicsApplyForce(c4);
-
-		PhysicsTestContext c5(8.0f / 60.0f, 4, 2);
-		TestPhysicsApplyForce(c5);
-
-		PhysicsTestContext c6(4.0f / 60.0f, 4, 1);
-		TestPhysicsApplyForce(c6);
 	}
 
-	// Test angular accelartion for a box by applying torque every frame
+	// Test angular acceleration for a box by applying torque every frame
 	static void TestPhysicsApplyTorque(PhysicsTestContext &ioContext)
 	{
 		const RVec3 cInitialPos(0.0f, 10.0f, 0.0f);
@@ -458,13 +465,13 @@ TEST_SUITE("PhysicsTests")
 		CHECK_APPROX_EQUAL(1.0f / mass, body.GetMotionProperties()->GetInverseMass());
 		constexpr float inertia = mass * 8.0f / 12.0f; // See: https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 		CHECK_APPROX_EQUAL(Mat44::sScale(1.0f / inertia), body.GetMotionProperties()->GetLocalSpaceInverseInertia());
-			
+
 		// Simulate while applying torque
 		ioContext.Simulate(cSimulationTime, [&]() { body.AddTorque(inertia * cAngularAcceleration); });
-			
+
 		// Get resulting angular velocity
 		CHECK_APPROX_EQUAL(cSimulationTime * cAngularAcceleration, body.GetAngularVelocity(), 1.0e-4f);
-			
+
 		// Test resulting rotation
 		Quat expected_rot = ioContext.PredictOrientation(Quat::sIdentity(), Vec3::sZero(), cAngularAcceleration, cSimulationTime);
 		CHECK_APPROX_EQUAL(expected_rot, body.GetRotation(), 1.0e-4f);
@@ -472,32 +479,20 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsApplyTorque")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsApplyTorque(c);
 	}
 
-	TEST_CASE("TestPhysicsApplyTorqueSubStep")
+	TEST_CASE("TestPhysicsApplyTorqueStep")
 	{
-		PhysicsTestContext c1(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c1(2.0f / 60.0f, 2);
 		TestPhysicsApplyTorque(c1);
 
-		PhysicsTestContext c2(4.0f / 60.0f, 1, 4);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsApplyTorque(c2);
+	}
 
-		PhysicsTestContext c3(4.0f / 60.0f, 2, 2);
-		TestPhysicsApplyTorque(c3);
-
-		PhysicsTestContext c4(2.0f / 60.0f, 2, 1);
-		TestPhysicsApplyTorque(c4);
-
-		PhysicsTestContext c5(8.0f / 60.0f, 4, 2);
-		TestPhysicsApplyTorque(c5);
-
-		PhysicsTestContext c6(4.0f / 60.0f, 4, 1);
-		TestPhysicsApplyTorque(c6);
-	}		
-
-	// Let a sphere bounce on the floor with restition = 1
+	// Let a sphere bounce on the floor with restitution = 1
 	static void TestPhysicsCollisionElastic(PhysicsTestContext &ioContext)
 	{
 		const float cSimulationTime = 1.0f;
@@ -516,17 +511,17 @@ TEST_SUITE("PhysicsTests")
 		CHECK_APPROX_EQUAL(cFloorHitPos, body.GetPosition());
 
 		// Assert collision not yet processed
-		CHECK_APPROX_EQUAL(cSimulationTime * cGravity, body.GetLinearVelocity(), 1.0e-4f); 
+		CHECK_APPROX_EQUAL(cSimulationTime * cGravity, body.GetLinearVelocity(), 1.0e-4f);
 
 		// Simulate one more step to process the collision
 		ioContext.Simulate(ioContext.GetDeltaTime());
 
-		// Assert that collision is processed and velocity is reversed (which is required for a fully elastic collision). 
-		// Note that the physics engine will first apply gravity for the time step and then do collision detection, 
-		// hence the reflected velocity is actually 1 sub-step times gravity bigger than it would be in reality
+		// Assert that collision is processed and velocity is reversed (which is required for a fully elastic collision).
+		// Note that the physics engine will first apply gravity for the time step and then do collision detection,
+		// hence the reflected velocity is actually 1 step times gravity bigger than it would be in reality
 		// For the remainder of cDeltaTime normal gravity will be applied
-		float sub_step_delta_time = ioContext.GetSubStepDeltaTime();
-		float remaining_step_time = ioContext.GetDeltaTime() - ioContext.GetSubStepDeltaTime();
+		float sub_step_delta_time = ioContext.GetStepDeltaTime();
+		float remaining_step_time = ioContext.GetDeltaTime() - ioContext.GetStepDeltaTime();
 		Vec3 reflected_velocity_after_sub_step = -(cSimulationTime + sub_step_delta_time) * cGravity;
 		Vec3 reflected_velocity_after_full_step = reflected_velocity_after_sub_step + remaining_step_time * cGravity;
 		CHECK_APPROX_EQUAL(reflected_velocity_after_full_step, body.GetLinearVelocity(), 1.0e-4f);
@@ -546,27 +541,18 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsCollisionElastic")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsCollisionElastic(c);
 	}
 
-	TEST_CASE("TestPhysicsCollisionElasticSubStep")
+	TEST_CASE("TestPhysicsCollisionElasticStep")
 	{
-		PhysicsTestContext c1(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c1(2.0f / 60.0f, 2);
 		TestPhysicsCollisionElastic(c1);
 
-		PhysicsTestContext c2(4.0f / 60.0f, 1, 4);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsCollisionElastic(c2);
-
-		PhysicsTestContext c3(4.0f / 60.0f, 2, 2);
-		TestPhysicsCollisionElastic(c3);
-
-		PhysicsTestContext c4(2.0f / 60.0f, 2, 1);
-		TestPhysicsCollisionElastic(c4);
-
-		PhysicsTestContext c5(4.0f / 60.0f, 4, 1);
-		TestPhysicsCollisionElastic(c5);
-	}		
+	}
 
 	// Let a sphere bounce on the floor with restitution = 0
 	static void TestPhysicsCollisionInelastic(PhysicsTestContext &ioContext)
@@ -587,7 +573,7 @@ TEST_SUITE("PhysicsTests")
 		CHECK_APPROX_EQUAL(cFloorHitPos, body.GetPosition());
 
 		// Assert collision not yet processed
-		CHECK_APPROX_EQUAL(cSimulationTime * cGravity, body.GetLinearVelocity(), 1.0e-4f); 
+		CHECK_APPROX_EQUAL(cSimulationTime * cGravity, body.GetLinearVelocity(), 1.0e-4f);
 
 		// Simulate one more step to process the collision
 		ioContext.Simulate(ioContext.GetDeltaTime());
@@ -606,28 +592,19 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsCollisionInelastic")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsCollisionInelastic(c);
 	}
 
-	TEST_CASE("TestPhysicsCollisionInelasticSubStep")
+	TEST_CASE("TestPhysicsCollisionInelasticStep")
 	{
-		PhysicsTestContext c1(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c1(2.0f / 60.0f, 2);
 		TestPhysicsCollisionInelastic(c1);
 
-		PhysicsTestContext c2(4.0f / 60.0f, 1, 4);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsCollisionInelastic(c2);
+	}
 
-		PhysicsTestContext c3(4.0f / 60.0f, 2, 2);
-		TestPhysicsCollisionInelastic(c3);
-
-		PhysicsTestContext c4(2.0f / 60.0f, 2, 1);
-		TestPhysicsCollisionInelastic(c4);
-
-		PhysicsTestContext c5(4.0f / 60.0f, 4, 1);
-		TestPhysicsCollisionInelastic(c5);
-	}		
-		
 	// Let box intersect with floor by cPenetrationSlop. It should not move, this is the maximum penetration allowed.
 	static void TestPhysicsPenetrationSlop1(PhysicsTestContext &ioContext)
 	{
@@ -650,18 +627,18 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsPenetrationSlop1")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsPenetrationSlop1(c);
 	}
 
-	TEST_CASE("TestPhysicsPenetrationSlop1SubStep")
+	TEST_CASE("TestPhysicsPenetrationSlop1Step")
 	{
-		PhysicsTestContext c(1.0f / 30.0f, 1, 2);
+		PhysicsTestContext c(2.0f / 60.0f, 2);
 		TestPhysicsPenetrationSlop1(c);
 
-		PhysicsTestContext c2(1.0f / 30.0f, 2, 1);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsPenetrationSlop1(c2);
-	}		
+	}
 
 	// Let box intersect with floor with more than cPenetrationSlop. It should be resolved by SolvePositionConstraint until interpenetration is cPenetrationSlop.
 	static void TestPhysicsPenetrationSlop2(PhysicsTestContext &ioContext)
@@ -686,18 +663,18 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsPenetrationSlop2")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsPenetrationSlop2(c);
 	}
 
-	TEST_CASE("TestPhysicsPenetrationSlop2SubStep")
+	TEST_CASE("TestPhysicsPenetrationSlop2Step")
 	{
-		PhysicsTestContext c(1.0f / 30.0f, 1, 2);
+		PhysicsTestContext c(2.0f / 60.0f, 2);
 		TestPhysicsPenetrationSlop2(c);
 
-		PhysicsTestContext c2(1.0f / 30.0f, 2, 1);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsPenetrationSlop2(c2);
-	}		
+	}
 
 	// Let box intersect with floor with less than cPenetrationSlop. Body should not move because SolveVelocityConstraint should reset velocity.
 	static void TestPhysicsPenetrationSlop3(PhysicsTestContext &ioContext)
@@ -721,22 +698,22 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsPenetrationSlop3")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsPenetrationSlop3(c);
 	}
 
-	TEST_CASE("TestPhysicsPenetrationSlop3SubStep")
+	TEST_CASE("TestPhysicsPenetrationSlop3Step")
 	{
-		PhysicsTestContext c(1.0f / 30.0f, 1, 2);
+		PhysicsTestContext c(2.0f / 60.0f, 2);
 		TestPhysicsPenetrationSlop3(c);
 
-		PhysicsTestContext c2(1.0f / 30.0f, 2, 1);
+		PhysicsTestContext c2(4.0f / 60.0f, 4);
 		TestPhysicsPenetrationSlop3(c2);
 	}
 
 	TEST_CASE("TestPhysicsOutsideOfSpeculativeContactDistance")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		Body &floor = c.CreateFloor();
 		c.ZeroGravity();
 
@@ -779,7 +756,7 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsInsideSpeculativeContactDistanceNoRestitution")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		Body &floor = c.CreateFloor();
 		c.ZeroGravity();
 
@@ -822,7 +799,7 @@ TEST_SUITE("PhysicsTests")
 
 		// Sphere has only 1 contact point so is much more accurate
 		CHECK_APPROX_EQUAL(sphere.GetPosition(), RVec3(5, 1, 0));
-		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), cExpectedVelocity, 1.0e-4f); 
+		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), cExpectedVelocity, 1.0e-4f);
 		CHECK_APPROX_EQUAL(sphere.GetAngularVelocity(), Vec3::sZero(), 1.0e-4f);
 
 		// Simulate a step
@@ -840,13 +817,13 @@ TEST_SUITE("PhysicsTests")
 
 		// Sphere should have come to rest
 		CHECK_APPROX_EQUAL(sphere.GetPosition(), RVec3(5, 1, 0), 1.0e-4f);
-		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), Vec3::sZero(), 1.0e-4f); 
+		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), Vec3::sZero(), 1.0e-4f);
 		CHECK_APPROX_EQUAL(sphere.GetAngularVelocity(), Vec3::sZero(), 1.0e-4f);
 	}
 
 	TEST_CASE("TestPhysicsInsideSpeculativeContactDistanceWithRestitution")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		Body &floor = c.CreateFloor();
 		c.ZeroGravity();
 
@@ -873,7 +850,7 @@ TEST_SUITE("PhysicsTests")
 		// Simulate a step
 		c.SimulateSingleStep();
 
-		// Check that it has triggered contact points and has bounced from it's initial position (effectively travelling the extra distance to the floor and back for free)
+		// Check that it has triggered contact points and has bounced from it's initial position (effectively traveling the extra distance to the floor and back for free)
 		CHECK(contact_listener.GetEntryCount() == 4); // 2 validates and 2 contacts
 		CHECK(contact_listener.Contains(LoggingContactListener::EType::Validate, box.GetID(), floor.GetID()));
 		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, box.GetID(), floor.GetID()));
@@ -883,12 +860,12 @@ TEST_SUITE("PhysicsTests")
 
 		// Box collision is less accurate than sphere as it hits with 4 corners so there's some floating point precision loss in the calculation
 		CHECK_APPROX_EQUAL(box.GetPosition(), cInitialPosBox - cVelocity * c.GetDeltaTime(), 0.01f);
-		CHECK_APPROX_EQUAL(box.GetLinearVelocity(), -cVelocity, 0.1f); 
+		CHECK_APPROX_EQUAL(box.GetLinearVelocity(), -cVelocity, 0.1f);
 		CHECK_APPROX_EQUAL(box.GetAngularVelocity(), Vec3::sZero(), 0.02f);
 
 		// Sphere has only 1 contact point so is much more accurate
 		CHECK_APPROX_EQUAL(sphere.GetPosition(), cInitialPosSphere - cVelocity * c.GetDeltaTime(), 1.0e-5f);
-		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), -cVelocity, 2.0e-4f); 
+		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), -cVelocity, 2.0e-4f);
 		CHECK_APPROX_EQUAL(sphere.GetAngularVelocity(), Vec3::sZero(), 2.0e-4f);
 
 		// Simulate a step
@@ -900,9 +877,104 @@ TEST_SUITE("PhysicsTests")
 		CHECK(contact_listener.Contains(LoggingContactListener::EType::Remove, sphere.GetID(), floor.GetID()));
 	}
 
+	TEST_CASE("TestPhysicsInsideSpeculativeContactDistanceNoHit")
+	{
+		PhysicsTestContext c;
+		Body &floor = c.CreateFloor();
+		floor.SetRestitution(1.0f);
+		c.ZeroGravity();
+
+		// Turn off the minimum velocity for restitution, our velocity is lower than the default
+		PhysicsSettings settings = c.GetSystem()->GetPhysicsSettings();
+		settings.mMinVelocityForRestitution = 0.0f;
+		c.GetSystem()->SetPhysicsSettings(settings);
+
+		LoggingContactListener contact_listener;
+		c.GetSystem()->SetContactListener(&contact_listener);
+
+		// Create a sphere inside speculative contact distance from the ground
+		const float cSpeculativeContactDistance = c.GetSystem()->GetPhysicsSettings().mSpeculativeContactDistance;
+		const float cDistanceAboveFloor = 0.9f * cSpeculativeContactDistance;
+		const RVec3 cInitialPosSphere(0, 1.0f + cDistanceAboveFloor, 0.0f);
+
+		// Make it move slow enough so that it will not touch the floor in 1 time step
+		const Vec3 cVelocity(0, -0.9f * cDistanceAboveFloor / c.GetDeltaTime(), 0);
+
+		Body &sphere = c.CreateSphere(cInitialPosSphere, 1.0f, EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING);
+		sphere.SetLinearVelocity(cVelocity);
+		sphere.SetRestitution(1.0f);
+		sphere.GetMotionProperties()->SetLinearDamping(0.0f);
+
+		// Simulate a step
+		c.SimulateSingleStep();
+
+		// Check that it has triggered contact points from the speculative contacts
+		CHECK(contact_listener.GetEntryCount() == 2);
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Validate, sphere.GetID(), floor.GetID()));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, sphere.GetID(), floor.GetID()));
+		contact_listener.Clear();
+
+		// Check that sphere didn't actually change velocity (it hasn't actually interacted with the floor, the speculative contact was not an actual contact)
+		CHECK(sphere.GetLinearVelocity() == cVelocity);
+
+		// Simulate a step
+		c.SimulateSingleStep();
+
+		// Check again that it triggered contact points
+		CHECK(contact_listener.GetEntryCount() == 2);
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Validate, sphere.GetID(), floor.GetID()));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Persist, sphere.GetID(), floor.GetID()));
+		contact_listener.Clear();
+
+		// It should have bounced back up and inverted velocity due to restitution being 1
+		CHECK_APPROX_EQUAL(-sphere.GetLinearVelocity(), cVelocity);
+	}
+
+	TEST_CASE("TestPhysicsInsideSpeculativeContactDistanceSensor")
+	{
+		PhysicsTestContext c;
+		Body &floor = c.CreateFloor();
+		c.ZeroGravity();
+
+		LoggingContactListener contact_listener;
+		c.GetSystem()->SetContactListener(&contact_listener);
+
+		// Create a sphere sensor just inside the speculative contact distance
+		const float cSpeculativeContactDistance = c.GetSystem()->GetPhysicsSettings().mSpeculativeContactDistance;
+		const float cRadius = 1.0f;
+		const float cDistanceAboveFloor = 0.9f * cSpeculativeContactDistance;
+		const RVec3 cInitialPosSphere(5, cRadius + cDistanceAboveFloor, 0);
+
+		// Make it move 1 m per step down
+		const Vec3 cVelocity(0, -1.0f / c.GetDeltaTime(), 0);
+
+		Body &sphere = c.CreateSphere(cInitialPosSphere, cRadius, EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING);
+		sphere.SetIsSensor(true);
+		sphere.SetLinearVelocity(cVelocity);
+
+		// Simulate a step
+		c.SimulateSingleStep();
+
+		CHECK(contact_listener.GetEntryCount() == 0); // We're inside the speculative contact distance but we're a sensor so we shouldn't trigger any contacts
+
+		// Simulate a step
+		c.SimulateSingleStep();
+
+		// Check that we're now actually intersecting
+		CHECK(contact_listener.GetEntryCount() == 2); // 1 validates and 1 contact
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Validate, sphere.GetID(), floor.GetID()));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, sphere.GetID(), floor.GetID()));
+		contact_listener.Clear();
+
+		// Sensor should not be affected by the floor
+		CHECK_APPROX_EQUAL(sphere.GetPosition(), cInitialPosSphere + 2.0f * c.GetDeltaTime() * cVelocity);
+		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), cVelocity);
+		CHECK_APPROX_EQUAL(sphere.GetAngularVelocity(), Vec3::sZero());
+	}
+
 	TEST_CASE("TestPhysicsInsideSpeculativeContactDistanceMovingAway")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		Body &floor = c.CreateFloor();
 		c.ZeroGravity();
 
@@ -939,12 +1011,12 @@ TEST_SUITE("PhysicsTests")
 
 		// Box should have moved unimpeded
 		CHECK_APPROX_EQUAL(box.GetPosition(), cInitialPosBox + cVelocity * c.GetDeltaTime());
-		CHECK_APPROX_EQUAL(box.GetLinearVelocity(), cVelocity); 
+		CHECK_APPROX_EQUAL(box.GetLinearVelocity(), cVelocity);
 		CHECK_APPROX_EQUAL(box.GetAngularVelocity(), Vec3::sZero());
 
 		// Sphere should have moved unimpeded
 		CHECK_APPROX_EQUAL(sphere.GetPosition(), cInitialPosSphere + cVelocity * c.GetDeltaTime());
-		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), cVelocity); 
+		CHECK_APPROX_EQUAL(sphere.GetLinearVelocity(), cVelocity);
 		CHECK_APPROX_EQUAL(sphere.GetAngularVelocity(), Vec3::sZero());
 
 		// Simulate a step
@@ -1005,20 +1077,14 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsActivationDeactivation")
 	{
-		PhysicsTestContext c1(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c1(1.0f / 60.0f, 1);
 		TestPhysicsActivationDeactivation(c1);
 
-		PhysicsTestContext c2(2.0f / 60.0f, 1, 2);
+		PhysicsTestContext c2(2.0f / 60.0f, 2);
 		TestPhysicsActivationDeactivation(c2);
 
-		PhysicsTestContext c3(2.0f / 60.0f, 2, 1);
+		PhysicsTestContext c3(4.0f / 60.0f, 4);
 		TestPhysicsActivationDeactivation(c3);
-
-		PhysicsTestContext c4(4.0f / 60.0f, 4, 1);
-		TestPhysicsActivationDeactivation(c4);
-
-		PhysicsTestContext c5(8.0f / 60.0f, 4, 2);
-		TestPhysicsActivationDeactivation(c5);
 	}
 
 	// A test that checks that a row of penetrating boxes will all activate and handle collision in 1 frame so that active bodies cannot tunnel through inactive bodies
@@ -1066,8 +1132,8 @@ TEST_SUITE("PhysicsTests")
 
 		// Step the world
 		ioContext.SimulateSingleStep();
-		
-		// Other bodies should now be awake and each body should only collide with its neighbour
+
+		// Other bodies should now be awake and each body should only collide with its neighbor
 		CHECK(activation_listener.GetEntryCount() == cNumBodies - 1);
 		CHECK(contact_listener.GetEntryCount() == 2 * (cNumBodies - 1));
 
@@ -1104,16 +1170,16 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestPhysicsActivateDuringStep")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		TestPhysicsActivateDuringStep(c, false);
 
-		PhysicsTestContext c2(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c2;
 		TestPhysicsActivateDuringStep(c2, true);
 	}
 
 	TEST_CASE("TestPhysicsBroadPhaseLayers")
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 		BodyInterface &bi = c.GetBodyInterface();
 
 		// Reduce slop
@@ -1263,9 +1329,9 @@ TEST_SUITE("PhysicsTests")
 
 	TEST_CASE("TestMultiplePhysicsSystems")
 	{
-		PhysicsTestContext c1(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c1;
 		c1.ZeroGravity();
-		PhysicsTestContext c2(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c2;
 		c2.ZeroGravity();
 
 		const RVec3 cBox1Position(1.0f, 2.0f, 3.0f);
@@ -1299,6 +1365,474 @@ TEST_SUITE("PhysicsTests")
 			// Check that the bodies in the different systems updated correctly
 			CHECK_APPROX_EQUAL(lock1.GetBody().GetPosition(), cBox1Position + cBox1Velocity * cTime, 1.0e-5f);
 			CHECK_APPROX_EQUAL(lock2.GetBody().GetPosition(), cBox2Position + cBox2Velocity * cTime, 1.0e-5f);
-		}		
+		}
+	}
+
+	TEST_CASE("TestOutOfBodies")
+	{
+		// Create a context with space for a single body
+		PhysicsTestContext c(1.0f / 60.0f, 1, 0, 1);
+
+		BodyInterface& bi = c.GetBodyInterface();
+
+		// First body
+		Body *b1 = bi.CreateBody(BodyCreationSettings(new SphereShape(1.0f), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING));
+		CHECK(b1 != nullptr);
+
+		// Second body should fail
+		Body *b2 = bi.CreateBody(BodyCreationSettings(new SphereShape(1.0f), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING));
+		CHECK(b2 == nullptr);
+
+		// Free first body
+		bi.DestroyBody(b1->GetID());
+
+		// Second body creation should succeed
+		b2 = bi.CreateBody(BodyCreationSettings(new SphereShape(1.0f), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING));
+		CHECK(b2 != nullptr);
+
+		// Clean up
+		bi.DestroyBody(b2->GetID());
+	}
+
+	TEST_CASE("TestOutOfContactConstraints")
+	{
+		// Create a context with space for 8 constraints
+		PhysicsTestContext c(1.0f / 60.0f, 1, 0, 1024, 4096, 8);
+
+		c.CreateFloor();
+
+		// The first 8 boxes should be fine
+		for (int i = 0; i < 8; ++i)
+			c.CreateBox(RVec3(3.0_r * i, 0.9_r, 0), Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3::sReplicate(1.0f), EActivation::Activate);
+
+		// Step
+		EPhysicsUpdateError errors = c.SimulateSingleStep();
+		CHECK(errors == EPhysicsUpdateError::None);
+
+		// Adding one more box should introduce an error
+		c.CreateBox(RVec3(24.0_r, 0.9_r, 0), Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3::sReplicate(1.0f), EActivation::Activate);
+
+		// Step
+		{
+			JPH_IF_ENABLE_ASSERTS(ExpectAssert expect_assert(1);)
+			errors = c.SimulateSingleStep();
+		}
+		CHECK((errors & EPhysicsUpdateError::ContactConstraintsFull) != EPhysicsUpdateError::None);
+	}
+
+	TEST_CASE("TestFriction")
+	{
+		const float friction_floor = 0.9f;
+		const float friction_box = 0.8f;
+		const float combined_friction = sqrt(friction_floor * friction_box);
+
+		for (float angle = 0; angle < 360.0f; angle += 30.0f)
+		{
+			// Create a context with space for 8 constraints
+			PhysicsTestContext c(1.0f / 60.0f, 1, 0, 1024, 4096, 8);
+
+			// Create floor
+			Body &floor = c.CreateFloor();
+			floor.SetFriction(friction_floor);
+
+			// Create box with a velocity that will make it slide over the floor (making sure it intersects a little bit initially)
+			BodyCreationSettings box_settings(new BoxShape(Vec3::sReplicate(1.0f)), RVec3(0, 0.999_r, 0), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+			box_settings.mFriction = friction_box;
+			box_settings.mLinearDamping = 0;
+			box_settings.mLinearVelocity = Vec3(Sin(DegreesToRadians(angle)), 0, Cos(DegreesToRadians(angle))) * 20.0f;
+			Body &box = *c.GetBodyInterface().CreateBody(box_settings);
+			c.GetBodyInterface().AddBody(box.GetID(), EActivation::Activate);
+
+			// We know that the friction force equals the normal force times the friction coefficient
+			float friction_acceleration = combined_friction * c.GetSystem()->GetGravity().Length();
+
+			// Simulate
+			Vec3 velocity = box_settings.mLinearVelocity;
+			RVec3 position = box_settings.mPosition;
+			for (int i = 0; i < 60; ++i)
+			{
+				c.SimulateSingleStep();
+
+				// Integrate our own simulation
+				velocity -= velocity.Normalized() * friction_acceleration * c.GetDeltaTime();
+				position += velocity * c.GetDeltaTime();
+			}
+
+			// Note that the result is not very accurate so we need quite a high tolerance
+			CHECK_APPROX_EQUAL(box.GetCenterOfMassPosition(), position, 1.0e-2f);
+			CHECK_APPROX_EQUAL(box.GetRotation(), box_settings.mRotation, 1.0e-2f);
+			CHECK_APPROX_EQUAL(box.GetLinearVelocity(), velocity, 2.0e-2f);
+			CHECK_APPROX_EQUAL(box.GetAngularVelocity(), Vec3::sZero(), 1.0e-2f);
+		}
+	}
+
+	TEST_CASE("TestAllowedDOFs")
+	{
+		for (uint allowed_dofs = 1; allowed_dofs <= 0b111111; ++allowed_dofs)
+		{
+			// Create a context
+			PhysicsTestContext c;
+			c.ZeroGravity();
+
+			// Create box
+			RVec3 initial_position(1, 2, 3);
+			Quat initial_rotation = Quat::sRotation(Vec3::sReplicate(sqrt(1.0f / 3.0f)), DegreesToRadians(20.0f));
+			ShapeRefC box_shape = new BoxShape(Vec3(0.3f, 0.5f, 0.7f));
+			BodyCreationSettings box_settings(box_shape, initial_position, initial_rotation, EMotionType::Dynamic, Layers::MOVING);
+			box_settings.mLinearDamping = 0;
+			box_settings.mAngularDamping = 0;
+			box_settings.mAllowedDOFs = (EAllowedDOFs)allowed_dofs;
+			Body &box = *c.GetBodyInterface().CreateBody(box_settings);
+			c.GetBodyInterface().AddBody(box.GetID(), EActivation::Activate);
+
+			// Apply a force and torque in 3D
+			Vec3 force(100000, 110000, 120000);
+			box.AddForce(force);
+			Vec3 torque(13000, 14000, 15000);
+			box.AddTorque(torque);
+
+			// Simulate
+			c.SimulateSingleStep();
+
+			// Cancel components that should not be allowed by the allowed DOFs
+			Vec3 linear_lock = Vec3::sReplicate(1.0f), angular_lock = Vec3::sReplicate(1.0f);
+			for (uint axis = 0; axis < 3; ++axis)
+			{
+				if ((allowed_dofs & (1 << axis)) == 0)
+					linear_lock.SetComponent(axis, 0.0f);
+
+				if ((allowed_dofs & (0b1000 << axis)) == 0)
+					angular_lock.SetComponent(axis, 0.0f);
+			}
+
+			// Check resulting linear velocity
+			MassProperties mp = box_shape->GetMassProperties();
+			Vec3 expected_linear_velocity = linear_lock * (force / mp.mMass * c.GetDeltaTime());
+			CHECK((linear_lock == Vec3::sZero() || expected_linear_velocity.Length() > 1.0f)); // Just to check that we applied a high enough force
+			CHECK_APPROX_EQUAL(box.GetLinearVelocity(), expected_linear_velocity);
+			RVec3 expected_position = initial_position + expected_linear_velocity * c.GetDeltaTime();
+			CHECK_APPROX_EQUAL(box.GetPosition(), expected_position);
+
+			// Check resulting angular velocity
+			Mat44 inv_inertia = Mat44::sRotation(initial_rotation) * mp.mInertia.Inversed3x3() * Mat44::sRotation(initial_rotation.Conjugated());
+			inv_inertia = Mat44::sScale(angular_lock) * inv_inertia * Mat44::sScale(angular_lock); // Clear row and column for locked axes
+			Vec3 expected_angular_velocity = inv_inertia * torque * c.GetDeltaTime();
+			CHECK((angular_lock == Vec3::sZero() || expected_angular_velocity.Length() > 1.0f)); // Just to check that we applied a high enough torque
+			CHECK_APPROX_EQUAL(box.GetAngularVelocity(), expected_angular_velocity);
+			float expected_angular_velocity_len = expected_angular_velocity.Length();
+			Quat expected_rotation = expected_angular_velocity_len > 0.0f? Quat::sRotation(expected_angular_velocity / expected_angular_velocity_len, expected_angular_velocity_len * c.GetDeltaTime()) * initial_rotation : initial_rotation;
+			CHECK_APPROX_EQUAL(box.GetRotation(), expected_rotation);
+		}
+	}
+
+	TEST_CASE("TestAllowedDOFsVsCollision")
+	{
+		PhysicsTestContext c;
+		Body &floor = c.CreateFloor();
+		floor.SetFriction(1.0f);
+
+		LoggingContactListener contact_listener;
+		c.GetSystem()->SetContactListener(&contact_listener);
+
+		// Create box that can only rotate around Y that intersects with the floor
+		RVec3 initial_position(0, 0.99f, 0);
+		BodyCreationSettings box_settings(new BoxShape(Vec3::sReplicate(1.0f)), initial_position, Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+		box_settings.mAllowedDOFs = EAllowedDOFs::RotationY;
+		box_settings.mAngularDamping = 0.0f; // No damping to make the calculation for expected angular velocity simple
+		box_settings.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+		box_settings.mMassPropertiesOverride.mMass = 1.0f;
+		box_settings.mFriction = 1.0f; // High friction so that if the collision is processed, we'll slow down the rotation
+		Body *body = c.GetBodyInterface().CreateBody(box_settings);
+		c.GetBodyInterface().AddBody(body->GetID(), EActivation::Activate);
+
+		// Make the box rotate around Y
+		const Vec3 torque(0, 100.0f, 0);
+		body->AddTorque(torque);
+
+		// Simulate a step, this will make the box collide with the floor but should not result in the floor stopping the body
+		// but will cause the effective mass of the contact to become infinite so is a test if we are properly ignoring the contact in this case
+		c.SimulateSingleStep();
+
+		// Check that we did detect the collision
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, floor.GetID(), body->GetID()));
+
+		// Check that we have the correct angular velocity
+		Vec3 expected_angular_velocity = torque * c.GetDeltaTime() * body->GetInverseInertia()(1, 1);
+		CHECK_APPROX_EQUAL(body->GetAngularVelocity(), expected_angular_velocity);
+		CHECK(body->GetLinearVelocity() == Vec3::sZero());
+		CHECK(body->GetPosition() == initial_position);
+	}
+
+	TEST_CASE("TestSelectiveStateSaveAndRestore")
+	{
+		class MyFilter : public StateRecorderFilter
+		{
+		public:
+			bool						ShouldSaveBody(const BodyID &inBodyID) const
+			{
+				return find(mIgnoreBodies.cbegin(), mIgnoreBodies.cend(), inBodyID) == mIgnoreBodies.cend();
+			}
+
+			virtual bool				ShouldSaveBody(const Body &inBody) const override
+			{
+				return ShouldSaveBody(inBody.GetID());
+			}
+
+			virtual bool				ShouldSaveContact(const BodyID &inBody1, const BodyID &inBody2) const override
+			{
+				return ShouldSaveBody(inBody1) && ShouldSaveBody(inBody2);
+			}
+
+			Array<BodyID>				mIgnoreBodies;
+		};
+
+		for (int mode = 0; mode < 2; mode++)
+		{
+			PhysicsTestContext c;
+
+			Vec3 gravity = c.GetSystem()->GetGravity();
+			Vec3 upside_down_gravity = -gravity;
+
+  			// Create the ground.
+			Body &ground = c.CreateFloor();
+
+			// Create two sets of bodies that each overlap
+			Body &box1 = c.CreateBox(RVec3(0, 1, 0), Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3::sReplicate(1.0f), EActivation::Activate);
+			Body &sphere1 = c.CreateSphere(RVec3(0, 1, 0.1f), 1.0f, EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, EActivation::Activate);
+
+			Body &box2 = c.CreateBox(RVec3(5, 1, 0), Quat::sIdentity(), EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, Vec3::sReplicate(1.0f), EActivation::Activate);
+			Body &sphere2 = c.CreateSphere(RVec3(5, 1, 0.1f), 1.0f, EMotionType::Dynamic, EMotionQuality::Discrete, Layers::MOVING, EActivation::Activate);
+
+			// Store the absolute initial state, that will be used for the final test.
+			StateRecorderImpl absolute_initial_state;
+			c.GetSystem()->SaveState(absolute_initial_state);
+
+			EStateRecorderState state_to_save = EStateRecorderState::All;
+			MyFilter filter;
+			if (mode == 1)
+			{
+				// Don't save the global state
+				state_to_save = EStateRecorderState(uint(EStateRecorderState::All) ^ uint(EStateRecorderState::Global));
+
+				// Don't save some bodies
+				filter.mIgnoreBodies.push_back(ground.GetID());
+				filter.mIgnoreBodies.push_back(box2.GetID());
+				filter.mIgnoreBodies.push_back(sphere2.GetID());
+			}
+
+			// Store the initial transform.
+			const RMat44 initial_box1_transform = box1.GetWorldTransform();
+			const RMat44 initial_sphere1_transform = sphere1.GetWorldTransform();
+			const RMat44 initial_box2_transform = box2.GetWorldTransform();
+			const RMat44 initial_sphere2_transform = sphere2.GetWorldTransform();
+
+			// Save partial state
+			StateRecorderImpl initial_state;
+			c.GetSystem()->SaveState(initial_state, state_to_save, &filter);
+
+			// Simulate for 2 seconds
+			c.Simulate(2.0f);
+
+			// The bodies should have moved and come to rest
+			const RMat44 intermediate_box1_transform = box1.GetWorldTransform();
+			const RMat44 intermediate_sphere1_transform = sphere1.GetWorldTransform();
+			const RMat44 intermediate_box2_transform = box2.GetWorldTransform();
+			const RMat44 intermediate_sphere2_transform = sphere2.GetWorldTransform();
+			CHECK(intermediate_box1_transform != initial_box1_transform);
+			CHECK(intermediate_sphere1_transform != initial_sphere1_transform);
+			CHECK(intermediate_box2_transform != initial_box2_transform);
+			CHECK(intermediate_sphere2_transform != initial_sphere2_transform);
+			CHECK(!box1.IsActive());
+			CHECK(!sphere1.IsActive());
+			CHECK(!box2.IsActive());
+			CHECK(!sphere2.IsActive());
+
+			// Save the intermediate state.
+			StateRecorderImpl intermediate_state;
+			c.GetSystem()->SaveState(intermediate_state, state_to_save, &filter);
+
+			// Change the gravity.
+			c.GetSystem()->SetGravity(upside_down_gravity);
+
+			// Restore the initial state.
+			c.GetSystem()->RestoreState(initial_state);
+
+			// Make sure the state is properly set back to the initial state.
+			CHECK(box1.GetWorldTransform() == initial_box1_transform);
+			CHECK(sphere1.GetWorldTransform() == initial_sphere1_transform);
+			CHECK(box1.IsActive());
+			CHECK(sphere1.IsActive());
+			if (mode == 0)
+			{
+				// Make sure the gravity is restored.
+				CHECK(c.GetSystem()->GetGravity() == gravity);
+
+				// The second set of bodies should have been restored as well
+				CHECK(box2.GetWorldTransform() == initial_box2_transform);
+				CHECK(sphere2.GetWorldTransform() == initial_sphere2_transform);
+				CHECK(box2.IsActive());
+				CHECK(sphere2.IsActive());
+			}
+			else
+			{
+				// Make sure the gravity is NOT restored.
+				CHECK(c.GetSystem()->GetGravity() == upside_down_gravity);
+				c.GetSystem()->SetGravity(gravity);
+
+				// The second set of bodies should NOT have been restored
+				CHECK(box2.GetWorldTransform() == intermediate_box2_transform);
+				CHECK(sphere2.GetWorldTransform() == intermediate_sphere2_transform);
+				CHECK(!box2.IsActive());
+				CHECK(!sphere2.IsActive());
+
+				// Apply a velocity to the second set of bodies to make sure they are active again
+				c.GetBodyInterface().SetLinearVelocity(box2.GetID(), Vec3(0, 0, 0.1f));
+				c.GetBodyInterface().SetLinearVelocity(sphere2.GetID(), Vec3(0, 0, 0.1f));
+			}
+
+			// Simulate for 2 seconds - again
+			c.Simulate(2.0f);
+
+			// The first set of bodies have been saved and should have returned to the same positions again
+			CHECK(box1.GetWorldTransform() == intermediate_box1_transform);
+			CHECK(sphere1.GetWorldTransform() == intermediate_sphere1_transform);
+			CHECK(!box1.IsActive());
+			CHECK(!sphere1.IsActive());
+			if (mode == 0)
+			{
+				// The second set of bodies have been saved and should have returned to the same positions again
+				CHECK(box2.GetWorldTransform() == intermediate_box2_transform);
+				CHECK(sphere2.GetWorldTransform() == intermediate_sphere2_transform);
+				CHECK(!box2.IsActive());
+				CHECK(!sphere2.IsActive());
+			}
+			else
+			{
+				// The second set of bodies have not been saved and should have moved on
+				CHECK(box2.GetWorldTransform() != intermediate_box2_transform);
+				CHECK(sphere2.GetWorldTransform() != intermediate_sphere2_transform);
+				CHECK(!box2.IsActive());
+				CHECK(sphere2.IsActive()); // The sphere keeps rolling
+			}
+
+			// Save the final state
+			StateRecorderImpl final_state;
+			c.GetSystem()->SaveState(final_state, state_to_save, &filter);
+
+			// Compare the states to make sure they are the same
+			CHECK(final_state.IsEqual(intermediate_state));
+
+			// Now restore the absolute initial state and make sure all the
+			// bodies are being active and ready to be processed again
+			c.GetSystem()->RestoreState(absolute_initial_state);
+
+			CHECK(box1.GetWorldTransform() == initial_box1_transform);
+			CHECK(sphere1.GetWorldTransform() == initial_sphere1_transform);
+			CHECK(box2.GetWorldTransform() == initial_box2_transform);
+			CHECK(sphere2.GetWorldTransform() == initial_sphere2_transform);
+			CHECK(box1.IsActive());
+			CHECK(sphere1.IsActive());
+			CHECK(box2.IsActive());
+			CHECK(sphere2.IsActive());
+
+			// Save the state of a single body
+			StateRecorderImpl single_body;
+			c.GetSystem()->SaveBodyState(box2, single_body);
+
+			// Simulate for 2 seconds - again
+			c.Simulate(2.0f);
+
+			// We should have reached the same state as before
+			CHECK(box1.GetWorldTransform() == intermediate_box1_transform);
+			CHECK(sphere1.GetWorldTransform() == intermediate_sphere1_transform);
+			CHECK(box2.GetWorldTransform() == intermediate_box2_transform);
+			CHECK(sphere2.GetWorldTransform() == intermediate_sphere2_transform);
+			CHECK(!box1.IsActive());
+			CHECK(!sphere1.IsActive());
+			CHECK(!box2.IsActive());
+			CHECK(!sphere2.IsActive());
+
+			// Restore the single body
+			c.GetSystem()->RestoreBodyState(box2, single_body);
+
+			// Only that body should have been restored
+			CHECK(box1.GetWorldTransform() == intermediate_box1_transform);
+			CHECK(sphere1.GetWorldTransform() == intermediate_sphere1_transform);
+			CHECK(box2.GetWorldTransform() == initial_box2_transform);
+			CHECK(sphere2.GetWorldTransform() == intermediate_sphere2_transform);
+			CHECK(!box1.IsActive());
+			CHECK(!sphere1.IsActive());
+			CHECK(box2.IsActive());
+			CHECK(!sphere2.IsActive());
+		}
+	}
+
+	// This tests that when switching UseManifoldReduction on/off we get the correct contact callbacks
+	TEST_CASE("TestSwitchUseManifoldReduction")
+	{
+		PhysicsTestContext c;
+
+		// Install listener
+		LoggingContactListener contact_listener;
+		c.GetSystem()->SetContactListener(&contact_listener);
+
+		// Create floor
+		Body &floor = c.CreateFloor();
+
+		// Create a compound with 4 boxes
+		Ref<BoxShape> box_shape = new BoxShape(Vec3::sReplicate(2));
+		Ref<StaticCompoundShapeSettings> shape_settings = new StaticCompoundShapeSettings();
+		shape_settings->AddShape(Vec3(5, 0, 0), Quat::sIdentity(), box_shape);
+		shape_settings->AddShape(Vec3(-5, 0, 0), Quat::sIdentity(), box_shape);
+		shape_settings->AddShape(Vec3(0, 0, 5), Quat::sIdentity(), box_shape);
+		shape_settings->AddShape(Vec3(0, 0, -5), Quat::sIdentity(), box_shape);
+		RefConst<StaticCompoundShape> compound_shape = static_cast<const StaticCompoundShape *>(shape_settings->Create().Get().GetPtr());
+		SubShapeID sub_shape_ids[] = {
+			compound_shape->GetSubShapeIDFromIndex(0, SubShapeIDCreator()).GetID(),
+			compound_shape->GetSubShapeIDFromIndex(1, SubShapeIDCreator()).GetID(),
+			compound_shape->GetSubShapeIDFromIndex(2, SubShapeIDCreator()).GetID(),
+			compound_shape->GetSubShapeIDFromIndex(3, SubShapeIDCreator()).GetID()
+		};
+
+		// Embed body a little bit into the floor so we immediately get contact callbacks
+		BodyCreationSettings body_settings(compound_shape, RVec3(0, 1.99_r, 0), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+		body_settings.mUseManifoldReduction = true;
+		BodyID body_id = c.GetBodyInterface().CreateAndAddBody(body_settings, EActivation::Activate);
+
+		// Trigger contact callbacks
+		c.SimulateSingleStep();
+
+		// Since manifold reduction is on and the contacts will be coplanar we should only get 1 contact with the floor
+		// Note that which sub shape ID we get is deterministic but not guaranteed to be a particular value, sub_shape_ids[3] is the one it currently returns!!
+		CHECK(contact_listener.GetEntryCount() == 5); // 4x validate + 1x add
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[3]));
+		contact_listener.Clear();
+
+		// Now disable manifold reduction
+		c.GetBodyInterface().SetUseManifoldReduction(body_id, false);
+
+		// Trigger contact callbacks
+		c.SimulateSingleStep();
+
+		// Now manifold reduction is off so we should get collisions with each of the sub shapes
+		CHECK(contact_listener.GetEntryCount() == 8); // 4x validate + 1x persist + 3x add
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Persist, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[3]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[0]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[1]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Add, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[2]));
+		contact_listener.Clear();
+
+		// Now enable manifold reduction again
+		c.GetBodyInterface().SetUseManifoldReduction(body_id, true);
+
+		// Trigger contact callbacks
+		c.SimulateSingleStep();
+
+		// We should be back to the first state now where we only have 1 contact
+		CHECK(contact_listener.GetEntryCount() == 8); // 4x validate + 1x persist + 3x remove
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Persist, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[3]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Remove, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[0]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Remove, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[1]));
+		CHECK(contact_listener.Contains(LoggingContactListener::EType::Remove, floor.GetID(), SubShapeID(), body_id, sub_shape_ids[2]));
 	}
 }

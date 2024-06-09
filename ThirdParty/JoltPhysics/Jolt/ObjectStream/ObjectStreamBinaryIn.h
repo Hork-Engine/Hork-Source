@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -8,7 +9,7 @@
 JPH_NAMESPACE_BEGIN
 
 /// Implementation of ObjectStream binary input stream.
-class ObjectStreamBinaryIn : public ObjectStreamIn
+class JPH_EXPORT ObjectStreamBinaryIn : public ObjectStreamIn
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE

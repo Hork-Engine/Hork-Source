@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -7,11 +8,11 @@
 #include <Jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Collision/Shape/Shape.h>
 
-// This test will make a dynamic body cyle through various shapes
+// This test will make a dynamic body cycle through various shapes
 class ChangeShapeTest : public Test
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(ChangeShapeTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, ChangeShapeTest)
 
 	// Initialize the test
 	virtual void			Initialize() override;

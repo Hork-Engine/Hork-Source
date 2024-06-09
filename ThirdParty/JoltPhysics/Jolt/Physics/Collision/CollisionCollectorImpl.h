@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -18,7 +19,7 @@ public:
 
 	// See: CollectorType::Reset
 	virtual void		Reset() override
-	{ 
+	{
 		CollectorType::Reset();
 
 		mHits.clear();
@@ -55,7 +56,7 @@ public:
 
 	// See: CollectorType::Reset
 	virtual void		Reset() override
-	{ 
+	{
 		CollectorType::Reset();
 
 		mHadHit = false;
@@ -98,7 +99,7 @@ public:
 
 	// See: CollectorType::Reset
 	virtual void		Reset() override
-	{ 
+	{
 		CollectorType::Reset();
 
 		mHadHit = false;

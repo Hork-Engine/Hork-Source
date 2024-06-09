@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -8,9 +9,9 @@
 
 JPH_NAMESPACE_BEGIN
 
-/// An object layer can be mapped to a broadphase layer. Objects with the same broadphase layer will end up in the same sub structure (usually a tree) of the broadphase. 
-/// When there are many layers, this reduces the total amount of sub structures the broad phase needs to manage. Usually you want objects that don't collide with each other 
-/// in different broad phase layers, but there could be exceptions if objects layers only contain a minor amount of objects so it is not beneficial to give each layer its 
+/// An object layer can be mapped to a broadphase layer. Objects with the same broadphase layer will end up in the same sub structure (usually a tree) of the broadphase.
+/// When there are many layers, this reduces the total amount of sub structures the broad phase needs to manage. Usually you want objects that don't collide with each other
+/// in different broad phase layers, but there could be exceptions if objects layers only contain a minor amount of objects so it is not beneficial to give each layer its
 /// own sub structure in the broadphase.
 /// Note: This class requires explicit casting from and to Type to avoid confusion with ObjectLayer
 class BroadPhaseLayer
@@ -39,6 +40,11 @@ public:
 	}
 
 	JPH_INLINE explicit constexpr	operator Type() const
+	{
+		return mValue;
+	}
+
+	JPH_INLINE Type					GetValue() const
 	{
 		return mValue;
 	}
@@ -77,7 +83,7 @@ public:
 	virtual							~ObjectVsBroadPhaseLayerFilter() = default;
 
 	/// Returns true if an object layer should collide with a broadphase layer
-	virtual bool					ShouldCollide(ObjectLayer inLayer1, BroadPhaseLayer inLayer2) const
+	virtual bool					ShouldCollide([[maybe_unused]] ObjectLayer inLayer1, [[maybe_unused]] BroadPhaseLayer inLayer2) const
 	{
 		return true;
 	}
@@ -91,7 +97,7 @@ public:
 	virtual							~BroadPhaseLayerFilter() = default;
 
 	/// Function to filter out broadphase layers when doing collision query test (return true to allow testing against objects with this layer)
-	virtual bool					ShouldCollide(BroadPhaseLayer inLayer) const
+	virtual bool					ShouldCollide([[maybe_unused]] BroadPhaseLayer inLayer) const
 	{
 		return true;
 	}

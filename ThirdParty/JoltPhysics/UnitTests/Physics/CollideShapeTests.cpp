@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,9 +11,11 @@
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 #include <Jolt/Physics/Collision/Shape/TriangleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/CollideShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollisionDispatch.h>
+#include <Jolt/Physics/Collision/CollideConvexVsTriangles.h>
 #include <Jolt/Geometry/EPAPenetrationDepth.h>
 #include "Layers.h"
 
@@ -92,9 +95,9 @@ TEST_SUITE("CollideShapeTests")
 		class PositionACollideShapeCollector : public CollideShapeCollector
 		{
 		public:
-							PositionACollideShapeCollector(const Body &inBody2) : 
+							PositionACollideShapeCollector(const Body &inBody2) :
 				mBody2(inBody2)
-			{ 
+			{
 			}
 
 			virtual void	AddHit(const CollideShapeResult &inResult) override
@@ -132,9 +135,9 @@ TEST_SUITE("CollideShapeTests")
 		class PositionBCollideShapeCollector : public CollideShapeCollector
 		{
 		public:
-							PositionBCollideShapeCollector(const Body &inBody2) : 
+							PositionBCollideShapeCollector(const Body &inBody2) :
 				mBody2(inBody2)
-			{ 
+			{
 			}
 
 			virtual void	Reset() override
@@ -229,7 +232,7 @@ TEST_SUITE("CollideShapeTests")
 		}
 	}
 
-	// Test colliding a very long capsule vs a box that is intersecting with the linesegment inside the capsule
+	// Test colliding a very long capsule vs a box that is intersecting with the line segment inside the capsule
 	// This particular config reported the wrong penetration due to accuracy problems before
 	TEST_CASE("TestCollideShapeLongCapsuleVsEmbeddedBox")
 	{
@@ -256,11 +259,11 @@ TEST_SUITE("CollideShapeTests")
 		// Collide the two shapes
 		AllHitCollisionCollector<CollideShapeCollector> collector;
 		CollisionDispatch::sCollideShapeVsShape(capsule_shape, box_shape, Vec3::sReplicate(1.0f), Vec3::sReplicate(1.0f), capsule_transform, box_transform, SubShapeIDCreator(), SubShapeIDCreator(), settings, collector);
-		
+
 		// Check that there was a hit
 		CHECK(collector.mHits.size() == 1);
 		const CollideShapeResult &result = collector.mHits.front();
-		
+
 		// Now move the box 1% further than the returned penetration depth and check that it is no longer in collision
 		Vec3 distance_to_move_box = result.mPenetrationAxis.Normalized() * result.mPenetrationDepth;
 		collector.Reset();
@@ -375,5 +378,109 @@ TEST_SUITE("CollideShapeTests")
 
 		CHECK_APPROX_EQUAL(actual_penetration_axis, expected_penetration_axis);
 		CHECK_APPROX_EQUAL(actual_penetration_depth, expected_penetration_depth);
+	}
+
+	// A test case of a triangle that's nearly parallel to a capsule and almost penetrating it. This one was causing numerical issues.
+	TEST_CASE("TestCollideParallelTriangleVsCapsule3")
+	{
+		Vec3 v1(-0.474807739f, 17.2921791f, 0.212532043f);
+		Vec3 v2(-0.474807739f, -2.70782185f, 0.212535858f);
+		Vec3 v3(-0.857490540f, -2.70782185f, -0.711341858f);
+		TriangleShape triangle(v1, v2, v3);
+		triangle.SetEmbedded();
+
+		float capsule_radius = 0.5f;
+		float capsule_half_height = 0.649999976f;
+		CapsuleShape capsule(capsule_half_height, capsule_radius);
+		capsule.SetEmbedded();
+
+		CollideShapeSettings settings;
+		settings.mMaxSeparationDistance = 0.120000005f;
+		ClosestHitCollisionCollector<CollideShapeCollector> collector;
+		CollisionDispatch::sCollideShapeVsShape(&capsule, &triangle, Vec3::sReplicate(1.0f), Vec3::sReplicate(1.0f), Mat44::sIdentity(), Mat44::sIdentity(), SubShapeIDCreator(), SubShapeIDCreator(), settings, collector);
+
+		CHECK(collector.HadHit());
+		Vec3 expected_normal = (v2 - v1).Cross(v3 - v1).Normalized();
+		Vec3 actual_normal = -collector.mHit.mPenetrationAxis.Normalized();
+		CHECK_APPROX_EQUAL(actual_normal, expected_normal, 1.0e-6f);
+		float expected_penetration_depth = capsule.GetRadius() + v1.Dot(expected_normal);
+		CHECK_APPROX_EQUAL(collector.mHit.mPenetrationDepth, expected_penetration_depth, 1.0e-6f);
+	}
+
+	// A test case of a triangle that's nearly parallel to a cylinder and is just penetrating it. This one was causing numerical issues. See issue #1008.
+	TEST_CASE("TestCollideParallelTriangleVsCylinder")
+	{
+		CylinderShape cylinder(0.85f, 0.25f, 0.02f);
+		cylinder.SetEmbedded();
+
+		Mat44 cylinder_transform = Mat44::sTranslation(Vec3(-42.8155518f, -4.32299995f, 12.1734285f));
+
+		CollideShapeSettings settings;
+		settings.mMaxSeparationDistance = 0.001f;
+		ClosestHitCollisionCollector<CollideShapeCollector> collector;
+		CollideConvexVsTriangles c(&cylinder, Vec3::sReplicate(1.0f), Vec3::sReplicate(1.0f), cylinder_transform, Mat44::sIdentity(), SubShapeID(), settings, collector);
+
+		Vec3 v0(-42.7954292f, -0.647318780f, 12.4227943f);
+		Vec3 v1(-29.9111290f, -0.647318780f, 12.4227943f);
+		Vec3 v2(-42.7954292f, -4.86970234f, 12.4227943f);
+		c.Collide(v0, v1, v2, 0, SubShapeID());
+
+		// Check there was a hit
+		CHECK(collector.HadHit());
+		CHECK(collector.mHit.mPenetrationDepth < 1.0e-4f);
+		CHECK(collector.mHit.mPenetrationAxis.Normalized().IsClose(Vec3::sAxisZ()));
+	}
+
+	// A test case of a box and a convex hull that are nearly touching and that should return a contact with correct normal because the collision settings specify a max separation distance. This was producing the wrong normal.
+	TEST_CASE("BoxVsConvexHullNoConvexRadius")
+	{
+		const float separation_distance = 0.001f;
+		const float box_separation_from_hull = 0.5f * separation_distance;
+		const float hull_height = 0.25f;
+
+		// Box with no convex radius
+		Ref<BoxShapeSettings> box_settings = new BoxShapeSettings(Vec3(0.25f, 0.75f, 0.375f), 0.0f);
+		Ref<Shape> box_shape = box_settings->Create().Get();
+
+		// Convex hull (also a box) with no convex radius
+		Vec3 hull_points[] =
+		{
+			Vec3(-2.5f, -hull_height, -1.5f),
+			Vec3(-2.5f, hull_height, -1.5f),
+			Vec3(2.5f, -hull_height, -1.5f),
+			Vec3(-2.5f, -hull_height, 1.5f),
+			Vec3(-2.5f, hull_height, 1.5f),
+			Vec3(2.5f, hull_height, -1.5f),
+			Vec3(2.5f, -hull_height, 1.5f),
+			Vec3(2.5f, hull_height, 1.5f)
+		};
+		Ref<ConvexHullShapeSettings> hull_settings = new ConvexHullShapeSettings(hull_points, 8, 0.0f);
+		Ref<Shape> hull_shape = hull_settings->Create().Get();
+
+		float angle = 0.0f;
+		for (int i = 0; i < 481; ++i)
+		{
+			// Slowly rotate both box and convex hull
+			angle += DegreesToRadians(45.0f) / 60.0f;
+			Mat44 hull_transform = Mat44::sRotationY(angle);
+			const Mat44 box_local_translation = Mat44::sTranslation(Vec3(0.1f, 1.0f + box_separation_from_hull, -0.5f));
+			const Mat44 box_local_rotation = Mat44::sRotationY(DegreesToRadians(-45.0f));
+			const Mat44 box_local_transform = box_local_translation * box_local_rotation;
+			const Mat44 box_transform = hull_transform * box_local_transform;
+
+			CollideShapeSettings settings;
+			settings.mMaxSeparationDistance = separation_distance;
+			ClosestHitCollisionCollector<CollideShapeCollector> collector;
+			CollisionDispatch::sCollideShapeVsShape(box_shape, hull_shape, Vec3::sReplicate(1.0f), Vec3::sReplicate(1.0f), box_transform, hull_transform, SubShapeIDCreator(), SubShapeIDCreator(), settings, collector);
+
+			// Check that there was a hit and that the contact normal is correct
+			CHECK(collector.HadHit());
+			const CollideShapeResult &hit = collector.mHit;
+			CHECK_APPROX_EQUAL(hit.mContactPointOn1.GetY(), hull_height + box_separation_from_hull, 1.0e-3f);
+			CHECK_APPROX_EQUAL(hit.mContactPointOn2.GetY(), hull_height);
+			CHECK_APPROX_EQUAL(hit.mPenetrationAxis.NormalizedOr(Vec3::sZero()), -Vec3::sAxisY(), 1.0e-3f);
+		}
+
+		CHECK(angle >= 2.0f * JPH_PI);
 	}
 }

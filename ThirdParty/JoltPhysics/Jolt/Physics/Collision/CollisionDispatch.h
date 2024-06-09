@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -14,7 +15,7 @@ JPH_NAMESPACE_BEGIN
 class CollideShapeSettings;
 
 /// Dispatch function, main function to handle collisions between shapes
-class CollisionDispatch
+class JPH_EXPORT CollisionDispatch
 {
 public:
 	/// Collide 2 shapes and pass any collision on to ioCollector
@@ -34,11 +35,11 @@ public:
 		JPH_IF_TRACK_NARROWPHASE_STATS(TrackNarrowPhaseStat track(NarrowPhaseStat::sCollideShape[(int)inShape1->GetSubType()][(int)inShape2->GetSubType()]);)
 
 		// Only test shape if it passes the shape filter
-		if (inShapeFilter.ShouldCollide(inSubShapeIDCreator1.GetID(), inSubShapeIDCreator2.GetID()))
+		if (inShapeFilter.ShouldCollide(inShape1, inSubShapeIDCreator1.GetID(), inShape2, inSubShapeIDCreator2.GetID()))
 			sCollideShape[(int)inShape1->GetSubType()][(int)inShape2->GetSubType()](inShape1, inShape2, inScale1, inScale2, inCenterOfMassTransform1, inCenterOfMassTransform2, inSubShapeIDCreator1, inSubShapeIDCreator2, inCollideShapeSettings, ioCollector, inShapeFilter);
 	}
 
-	/// Cast a shape againt this shape, passes any hits found to ioCollector.
+	/// Cast a shape against this shape, passes any hits found to ioCollector.
 	/// Note: This version takes the shape cast in local space relative to the center of mass of inShape, take a look at sCastShapeVsShapeWorldSpace if you have a shape cast in world space.
 	/// @param inShapeCastLocal The shape to cast against the other shape and its start and direction.
 	/// @param inShapeCastSettings Settings for performing the cast
@@ -51,10 +52,10 @@ public:
 	/// @param ioCollector The collector that receives the results.
 	static inline void		sCastShapeVsShapeLocalSpace(const ShapeCast &inShapeCastLocal, const ShapeCastSettings &inShapeCastSettings, const Shape *inShape, Vec3Arg inScale, const ShapeFilter &inShapeFilter, Mat44Arg inCenterOfMassTransform2, const SubShapeIDCreator &inSubShapeIDCreator1, const SubShapeIDCreator &inSubShapeIDCreator2, CastShapeCollector &ioCollector)
 	{
-		JPH_IF_TRACK_NARROWPHASE_STATS(TrackNarrowPhaseStat track(NarrowPhaseStat::sCastShape[(int)inShapeCast.mShape->GetSubType()][(int)inShape->GetSubType()]);)
+		JPH_IF_TRACK_NARROWPHASE_STATS(TrackNarrowPhaseStat track(NarrowPhaseStat::sCastShape[(int)inShapeCastLocal.mShape->GetSubType()][(int)inShape->GetSubType()]);)
 
 		// Only test shape if it passes the shape filter
-		if (inShapeFilter.ShouldCollide(inSubShapeIDCreator1.GetID(), inSubShapeIDCreator2.GetID()))
+		if (inShapeFilter.ShouldCollide(inShapeCastLocal.mShape, inSubShapeIDCreator1.GetID(), inShape, inSubShapeIDCreator2.GetID()))
 			sCastShape[(int)inShapeCastLocal.mShape->GetSubType()][(int)inShape->GetSubType()](inShapeCastLocal, inShapeCastSettings, inShape, inScale, inShapeFilter, inCenterOfMassTransform2, inSubShapeIDCreator1, inSubShapeIDCreator2, ioCollector);
 	}
 
@@ -67,7 +68,7 @@ public:
 		sCastShapeVsShapeLocalSpace(local_shape_cast, inShapeCastSettings, inShape, inScale, inShapeFilter, inCenterOfMassTransform2, inSubShapeIDCreator1, inSubShapeIDCreator2, ioCollector);
 	}
 
-	/// Function that collides 2 shapes (see sCollideShapeVsShape) 
+	/// Function that collides 2 shapes (see sCollideShapeVsShape)
 	using CollideShape = void (*)(const Shape *inShape1, const Shape *inShape2, Vec3Arg inScale1, Vec3Arg inScale2, Mat44Arg inCenterOfMassTransform1, Mat44Arg inCenterOfMassTransform2, const SubShapeIDCreator &inSubShapeIDCreator1, const SubShapeIDCreator &inSubShapeIDCreator2, const CollideShapeSettings &inCollideShapeSettings, CollideShapeCollector &ioCollector, const ShapeFilter &inShapeFilter);
 
 	/// Function that casts a shape vs another shape (see sCastShapeVsShapeLocalSpace)

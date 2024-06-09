@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -24,12 +25,12 @@ TEST_SUITE("ActiveEdgesTest")
 	static Ref<Shape> sCreateProbeCapsule()
 	{
 		// Ensure capsule is long enough so that when active edges mode is on, we will always get a horizontal penetration axis rather than a vertical one
-		CapsuleShapeSettings capsule(1.0f, cCapsuleRadius); 
+		CapsuleShapeSettings capsule(1.0f, cCapsuleRadius);
 		capsule.SetEmbedded();
 		return capsule.Create().Get();
 	}
 
-	// Create a flat mesh shape consting of 7 x 7 quads, we know that only the outer edges of this shape are active
+	// Create a flat mesh shape consisting of 7 x 7 quads, we know that only the outer edges of this shape are active
 	static Ref<ShapeSettings> sCreateMeshShape()
 	{
 		TriangleList triangles;
@@ -69,7 +70,7 @@ TEST_SUITE("ActiveEdgesTest")
 		{
 			bool found = false;
 			for (const ResultType &result : inResult)
-				if (result.mContactPointOn2.IsClose(hit.mPosition, inAccuracySq) 
+				if (result.mContactPointOn2.IsClose(hit.mPosition, inAccuracySq)
 					&& result.mPenetrationAxis.Normalized().IsClose(hit.mPenetrationAxis, inAccuracySq))
 				{
 					found = true;
@@ -197,7 +198,7 @@ TEST_SUITE("ActiveEdgesTest")
 	// Tests a discrete cube sliding over a mesh / heightfield shape
 	static void sDiscreteCubeSlide(Ref<ShapeSettings> inShape, bool inCheckActiveEdges)
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 
 		const float cPenetrationSlop = c.GetSystem()->GetPhysicsSettings().mPenetrationSlop;
 
@@ -268,7 +269,7 @@ TEST_SUITE("ActiveEdgesTest")
 	// Tests a linear cast cube sliding over a mesh / heightfield shape
 	static void sLinearCastCubeSlide(Ref<ShapeSettings> inShape, bool inCheckActiveEdges)
 	{
-		PhysicsTestContext c(1.0f / 60.0f, 1, 1);
+		PhysicsTestContext c;
 
 		const float cPenetrationSlop = c.GetSystem()->GetPhysicsSettings().mPenetrationSlop;
 

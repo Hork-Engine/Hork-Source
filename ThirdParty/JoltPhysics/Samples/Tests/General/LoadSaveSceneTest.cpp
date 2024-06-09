@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -25,10 +26,11 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Layers.h>
 #include <Utils/Log.h>
+#include <Utils/SoftBodyCreator.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(LoadSaveSceneTest) 
-{ 
-	JPH_ADD_BASE_CLASS(LoadSaveSceneTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(LoadSaveSceneTest)
+{
+	JPH_ADD_BASE_CLASS(LoadSaveSceneTest, Test)
 }
 
 static const float cMaxHeight = 4.0f;
@@ -86,7 +88,7 @@ static MeshShapeSettings *sCreateMesh()
 	for (uint i = 0; i <= max_material_index; ++i)
 		materials.push_back(new PhysicsMaterialSimple("Mesh Material " + ConvertToString(i), Color::sGetDistinctColor(i)));
 
-	return new MeshShapeSettings(triangles, materials);
+	return new MeshShapeSettings(triangles, std::move(materials));
 }
 
 static HeightFieldShapeSettings *sCreateHeightField()
@@ -175,6 +177,23 @@ Ref<PhysicsScene> LoadSaveSceneTest::sCreateScene()
 	DistanceConstraintSettings *dist_constraint = new DistanceConstraintSettings();
 	dist_constraint->mSpace = EConstraintSpace::LocalToBodyCOM;
 	scene->AddConstraint(dist_constraint, 3, 4);
+
+	// Add soft body cube
+	Ref<SoftBodySharedSettings> sb_cube_settings = SoftBodyCreator::CreateCube(5, 0.2f);
+	sb_cube_settings->mMaterials = { new PhysicsMaterialSimple("Soft Body Cube Material", Color::sGetDistinctColor(13)) };
+	SoftBodyCreationSettings sb_cube(sb_cube_settings, RVec3(0, cMaxHeight + 10.0f, 0), Quat::sIdentity(), Layers::MOVING);
+	scene->AddSoftBody(sb_cube);
+
+	// Add the same shape again to test sharing
+	sb_cube.mPosition = RVec3(0, cMaxHeight + 11.0f, 0);
+	scene->AddSoftBody(sb_cube);
+
+	// Add soft body sphere
+	Ref<SoftBodySharedSettings> sb_sphere_settings = SoftBodyCreator::CreateSphere(0.5f);
+	sb_sphere_settings->mMaterials = { new PhysicsMaterialSimple("Soft Body Sphere Material", Color::sGetDistinctColor(14)) };
+	SoftBodyCreationSettings sb_sphere(sb_sphere_settings, RVec3(0, cMaxHeight + 12.0f, 0), Quat::sIdentity(), Layers::MOVING);
+	sb_sphere.mPressure = 2000.0f;
+	scene->AddSoftBody(sb_sphere);
 
 	return scene;
 }

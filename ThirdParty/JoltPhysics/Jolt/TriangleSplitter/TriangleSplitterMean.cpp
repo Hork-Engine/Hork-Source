@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -13,7 +14,7 @@ TriangleSplitterMean::TriangleSplitterMean(const VertexList &inVertices, const I
 }
 
 bool TriangleSplitterMean::Split(const Range &inTriangles, Range &outLeft, Range &outRight)
-{	
+{
 	// Calculate mean value for these triangles
 	Vec3 mean = Vec3::sZero();
 	for (uint t = inTriangles.mBegin; t < inTriangles.mEnd; ++t)

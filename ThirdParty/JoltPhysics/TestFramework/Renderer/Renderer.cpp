@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -180,7 +181,7 @@ void Renderer::Initialize()
 	// Create window
 	RECT rc = { 0, 0, mWindowWidth, mWindowHeight };
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-	mhWnd = CreateWindow(TEXT("TestFrameworkClass"), TEXT("TestFramework"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 
+	mhWnd = CreateWindow(TEXT("TestFrameworkClass"), TEXT("TestFramework"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, wcex.hInstance, nullptr);
 	if (!mhWnd)
 		FatalError("Failed to create window");
@@ -201,9 +202,10 @@ void Renderer::Initialize()
 	// Find adapter
 	ComPtr<IDXGIAdapter1> adapter;
 
+	HRESULT result = E_FAIL;
+
 	// First check if we have the Windows 1803 IDXGIFactory6 interface
 	ComPtr<IDXGIFactory6> factory6;
-
 	if (SUCCEEDED(mDXGIFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
 	{
 		for (UINT index = 0; DXGI_ERROR_NOT_FOUND != factory6->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)); ++index)
@@ -216,7 +218,8 @@ void Renderer::Initialize()
 				continue;
 
 			// Check to see whether the adapter supports Direct3D 12
-			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mDevice))))
+			result = D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mDevice));
+			if (SUCCEEDED(result))
 				break;
 		}
 	}
@@ -233,11 +236,15 @@ void Renderer::Initialize()
 				continue;
 
 			// Check to see whether the adapter supports Direct3D 12
-			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mDevice))))
+			result = D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&mDevice));
+			if (SUCCEEDED(result))
 				break;
 		}
 	}
-	
+
+	// Check if we managed to obtain a device
+	FatalErrorIfFailed(result);
+
 #ifdef _DEBUG
 	// Enable breaking on errors
 	ComPtr<ID3D12InfoQueue> info_queue;
@@ -301,7 +308,7 @@ void Renderer::Initialize()
 
 	// Create a root signature suitable for all our shaders
 	D3D12_ROOT_PARAMETER params[3] = {};
-		
+
 	// Mapping a constant buffer to slot 0 for the vertex shader
 	params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	params[0].Descriptor.ShaderRegister = 0;
@@ -362,13 +369,13 @@ void Renderer::Initialize()
 	ComPtr<ID3DBlob> error;
 	FatalErrorIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
 	FatalErrorIfFailed(mDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
-		
+
 	// Create the command list
 	FatalErrorIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocators[mFrameIndex].Get(), nullptr, IID_PPV_ARGS(&mCommandList)));
 
 	// Command lists are created in the recording state, but there is nothing to record yet. The main loop expects it to be closed, so close it now
 	FatalErrorIfFailed(mCommandList->Close());
-		
+
 	// Create synchronization object
 	FatalErrorIfFailed(mDevice->CreateFence(mFenceValues[mFrameIndex], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 
@@ -397,6 +404,8 @@ void Renderer::Initialize()
 
 void Renderer::OnWindowResize()
 {
+	JPH_ASSERT(!mInFrame);
+
 	// Wait for the previous frame to be rendered
 	WaitForGpu();
 
@@ -431,19 +440,13 @@ void Renderer::OnWindowResize()
 	CreateDepthBuffer();
 }
 
-/// Construct a perspective matrix
-static inline Mat44 sPerspective(float inFovY, float inAspect, float inNear, float inFar)
-{
-    float height = 1.0f / Tan(0.5f * inFovY);
-    float width = height / inAspect;
-    float range = inFar / (inNear - inFar);
-
-    return Mat44(Vec4(width, 0.0f, 0.0f, 0.0f), Vec4(0.0f, height, 0.0f, 0.0f), Vec4(0.0f, 0.0f, range, -1.0f), Vec4(0.0f, 0.0f, range * inNear, 0.0f));
-}
-
 void Renderer::BeginFrame(const CameraState &inCamera, float inWorldScale)
 {
 	JPH_PROFILE_FUNCTION();
+
+	// Mark that we're in the frame
+	JPH_ASSERT(!mInFrame);
+	mInFrame = true;
 
 	// Store state
 	mCameraState = inCamera;
@@ -499,13 +502,13 @@ void Renderer::BeginFrame(const CameraState &inCamera, float inWorldScale)
 	VertexShaderConstantBuffer *vs = mVertexShaderConstantBufferProjection[mFrameIndex]->Map<VertexShaderConstantBuffer>();
 
 	// Camera projection and view
-	vs->mProjection = sPerspective(camera_fovy, camera_aspect, camera_near, camera_far);
+	vs->mProjection = Mat44::sPerspective(camera_fovy, camera_aspect, camera_near, camera_far);
 	Vec3 cam_pos = Vec3(inCamera.mPos - mBaseOffset);
 	Vec3 tgt = cam_pos + inCamera.mForward;
 	vs->mView = Mat44::sLookAt(cam_pos, tgt, inCamera.mUp);
 
 	// Light projection and view
-	vs->mLightProjection = sPerspective(light_fov, 1.0f, light_near, light_far);
+	vs->mLightProjection = Mat44::sPerspective(light_fov, 1.0f, light_near, light_far);
 	vs->mLightView = Mat44::sLookAt(light_pos, light_tgt, light_up);
 
 	mVertexShaderConstantBufferProjection[mFrameIndex]->Unmap();
@@ -525,7 +528,7 @@ void Renderer::BeginFrame(const CameraState &inCamera, float inWorldScale)
 
 	// Switch to 3d projection mode
 	SetProjectionMode();
-	
+
 	// Set constants for pixel shader
 	PixelShaderConstantBuffer *ps = mPixelShaderConstantBuffer[mFrameIndex]->Map<PixelShaderConstantBuffer>();
 	ps->mCameraPos = Vec4(cam_pos, 0);
@@ -545,6 +548,10 @@ void Renderer::BeginFrame(const CameraState &inCamera, float inWorldScale)
 void Renderer::EndFrame()
 {
 	JPH_PROFILE_FUNCTION();
+
+	// Mark that we're no longer in the frame
+	JPH_ASSERT(mInFrame);
+	mInFrame = false;
 
 	// Indicate that the back buffer will now be used to present.
 	D3D12_RESOURCE_BARRIER barrier;
@@ -593,12 +600,16 @@ void Renderer::EndFrame()
 }
 
 void Renderer::SetProjectionMode()
-{ 
+{
+	JPH_ASSERT(mInFrame);
+
 	mVertexShaderConstantBufferProjection[mFrameIndex]->Bind(0);
 }
 
 void Renderer::SetOrthoMode()
-{ 
+{
+	JPH_ASSERT(mInFrame);
+
 	mVertexShaderConstantBufferOrtho[mFrameIndex]->Bind(0);
 }
 
@@ -614,6 +625,8 @@ Ref<Texture> Renderer::CreateRenderTarget(int inWidth, int inHeight)
 
 void Renderer::SetRenderTarget(Texture *inRenderTarget)
 {
+	JPH_ASSERT(mInFrame);
+
 	// Unset the previous render target
 	if (mRenderTargetTexture != nullptr)
 		mRenderTargetTexture->SetAsRenderTarget(false);
@@ -647,7 +660,7 @@ ComPtr<ID3DBlob> Renderer::CreateVertexShader(const char *inFileName)
 	flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-	const D3D_SHADER_MACRO defines[] = 
+	const D3D_SHADER_MACRO defines[] =
 	{
 		{ nullptr, nullptr }
 	};
@@ -659,14 +672,14 @@ ComPtr<ID3DBlob> Renderer::CreateVertexShader(const char *inFileName)
 	ComPtr<ID3DBlob> shader_blob, error_blob;
 	HRESULT hr = D3DCompile(&data[0],
 							(uint)data.size(),
-							inFileName, 
-							defines, 
+							inFileName,
+							defines,
 							D3D_COMPILE_STANDARD_FILE_INCLUDE,
-							"main", 
+							"main",
 							"vs_5_0",
-							flags, 
-							0, 
-							shader_blob.GetAddressOf(), 
+							flags,
+							0,
+							shader_blob.GetAddressOf(),
 							error_blob.GetAddressOf());
 	if (FAILED(hr))
 	{
@@ -674,7 +687,7 @@ ComPtr<ID3DBlob> Renderer::CreateVertexShader(const char *inFileName)
 		if (error_blob)
 			OutputDebugStringA((const char *)error_blob->GetBufferPointer());
 		FatalError("Failed to compile vertex shader");
-	}	
+	}
 
 	return shader_blob;
 }
@@ -686,7 +699,7 @@ ComPtr<ID3DBlob> Renderer::CreatePixelShader(const char *inFileName)
 	flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-	const D3D_SHADER_MACRO defines[] = 
+	const D3D_SHADER_MACRO defines[] =
 	{
 		{ nullptr, nullptr }
 	};
@@ -698,14 +711,14 @@ ComPtr<ID3DBlob> Renderer::CreatePixelShader(const char *inFileName)
 	ComPtr<ID3DBlob> shader_blob, error_blob;
 	HRESULT hr = D3DCompile(&data[0],
 							(uint)data.size(),
-							inFileName, 
-							defines, 
+							inFileName,
+							defines,
 							D3D_COMPILE_STANDARD_FILE_INCLUDE,
-							"main", 
+							"main",
 							"ps_5_0",
-							flags, 
-							0, 
-							shader_blob.GetAddressOf(), 
+							flags,
+							0,
+							shader_blob.GetAddressOf(),
 							error_blob.GetAddressOf());
 	if (FAILED(hr))
 	{
@@ -713,7 +726,7 @@ ComPtr<ID3DBlob> Renderer::CreatePixelShader(const char *inFileName)
 		if (error_blob)
 			OutputDebugStringA((const char *)error_blob->GetBufferPointer());
 		FatalError("Failed to compile pixel shader");
-	}	
+	}
 
 	return shader_blob;
 }
@@ -767,7 +780,7 @@ void Renderer::CopyD3DResource(ID3D12Resource *inDest, const void *inSrc, uint64
 }
 
 void Renderer::CopyD3DResource(ID3D12Resource *inDest, ID3D12Resource *inSrc, uint64 inSize)
-{	
+{
 	// Start a commandlist for the upload
 	ID3D12GraphicsCommandList *list = mUploadQueue.Start();
 
@@ -798,8 +811,8 @@ ComPtr<ID3D12Resource> Renderer::CreateD3DResourceOnDefaultHeap(const void *inDa
 	return resource;
 }
 
-ComPtr<ID3D12Resource> Renderer::CreateD3DResourceOnUploadHeap(uint64 inSize) 
-{ 
+ComPtr<ID3D12Resource> Renderer::CreateD3DResourceOnUploadHeap(uint64 inSize)
+{
 	// Try cache first
 	ResourceCache::iterator i = mResourceCache.find(inSize);
 	if (i != mResourceCache.end() && !i->second.empty())
@@ -809,7 +822,7 @@ ComPtr<ID3D12Resource> Renderer::CreateD3DResourceOnUploadHeap(uint64 inSize)
 		return resource;
 	}
 
-	return CreateD3DResource(D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, inSize); 
+	return CreateD3DResource(D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, inSize);
 }
 
 void Renderer::RecycleD3DResourceOnUploadHeap(ID3D12Resource *inResource, uint64 inSize)
@@ -818,8 +831,8 @@ void Renderer::RecycleD3DResourceOnUploadHeap(ID3D12Resource *inResource, uint64
 		mDelayCached[mFrameIndex][inSize].push_back(inResource);
 }
 
-void Renderer::RecycleD3DObject(ID3D12Object *inResource) 
-{ 
-	if (!mIsExiting) 
-		mDelayReleased[mFrameIndex].push_back(inResource); 
+void Renderer::RecycleD3DObject(ID3D12Object *inResource)
+{
+	if (!mIsExiting)
+		mDelayReleased[mFrameIndex].push_back(inResource);
 }

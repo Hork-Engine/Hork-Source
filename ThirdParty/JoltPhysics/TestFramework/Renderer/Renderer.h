@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -50,7 +51,7 @@ public:
 	/// Access to the most important DirectX structures
 	ID3D12Device *					GetDevice()							{ return mDevice.Get(); }
 	ID3D12RootSignature *			GetRootSignature()					{ return mRootSignature.Get(); }
-	ID3D12GraphicsCommandList *		GetCommandList()					{ return mCommandList.Get(); }
+	ID3D12GraphicsCommandList *		GetCommandList()					{ JPH_ASSERT(mInFrame); return mCommandList.Get(); }
 	CommandQueue &					GetUploadQueue()					{ return mUploadQueue; }
 	DescriptorHeap &				GetDSVHeap()						{ return mDSVHeap; }
 	DescriptorHeap &				GetSRVHeap()						{ return mSRVHeap; }
@@ -70,7 +71,7 @@ public:
 	Ref<Texture>					CreateRenderTarget(int inWidth, int inHeight);
 
 	/// Change the render target to a texture. Use nullptr to set back to the main render target.
-	void							SetRenderTarget(Texture *inRenderTarget); 
+	void							SetRenderTarget(Texture *inRenderTarget);
 
 	/// Compile a vertex shader
 	ComPtr<ID3DBlob>				CreateVertexShader(const char *inFileName);
@@ -85,21 +86,21 @@ public:
 	unique_ptr<PipelineState>		CreatePipelineState(ID3DBlob *inVertexShader, const D3D12_INPUT_ELEMENT_DESC *inInputDescription, uint inInputDescriptionCount, ID3DBlob *inPixelShader, D3D12_FILL_MODE inFillMode, D3D12_PRIMITIVE_TOPOLOGY_TYPE inTopology, PipelineState::EDepthTest inDepthTest, PipelineState::EBlendMode inBlendMode, PipelineState::ECullMode inCullMode);
 
 	/// Get the camera state / frustum (only valid between BeginFrame() / EndFrame())
-	const CameraState &				GetCameraState() const				{ return mCameraState; }
-	const Frustum &					GetCameraFrustum() const			{ return mCameraFrustum; }
+	const CameraState &				GetCameraState() const				{ JPH_ASSERT(mInFrame); return mCameraState; }
+	const Frustum &					GetCameraFrustum() const			{ JPH_ASSERT(mInFrame); return mCameraFrustum; }
 
 	/// Offset relative to which the world is rendered, helps avoiding rendering artifacts at big distances
 	RVec3							GetBaseOffset() const				{ return mBaseOffset; }
 	void							SetBaseOffset(RVec3 inOffset)		{ mBaseOffset = inOffset; }
 
 	/// Get the light frustum (only valid between BeginFrame() / EndFrame())
-	const Frustum &					GetLightFrustum() const				{ return mLightFrustum; }
+	const Frustum &					GetLightFrustum() const				{ JPH_ASSERT(mInFrame); return mLightFrustum; }
 
 	/// How many frames our pipeline is
 	static const uint				cFrameCount = 2;
 
 	/// Which frame is currently rendering (to keep track of which buffers are free to overwrite)
-	uint							GetCurrentFrameIndex() const		{ return mFrameIndex; }
+	uint							GetCurrentFrameIndex() const		{ JPH_ASSERT(mInFrame); return mFrameIndex; }
 
 	/// Create a buffer on the default heap (usable for permanent buffers)
 	ComPtr<ID3D12Resource>			CreateD3DResourceOnDefaultHeap(const void *inData, uint64 inSize);
@@ -138,6 +139,7 @@ private:
 	unique_ptr<ConstantBuffer>		mVertexShaderConstantBufferProjection[cFrameCount];
 	unique_ptr<ConstantBuffer>		mVertexShaderConstantBufferOrtho[cFrameCount];
 	unique_ptr<ConstantBuffer>		mPixelShaderConstantBuffer[cFrameCount];
+	bool							mInFrame = false;					///< If we're within a BeginFrame() / EndFrame() pair
 	CameraState						mCameraState;
 	RVec3							mBaseOffset { RVec3::sZero() };		///< Offset to subtract from the camera position to deal with large worlds
 	Frustum							mCameraFrustum;

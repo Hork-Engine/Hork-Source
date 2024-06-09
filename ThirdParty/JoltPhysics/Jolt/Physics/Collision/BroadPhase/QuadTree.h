@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -16,7 +17,7 @@ JPH_NAMESPACE_BEGIN
 /// Internal tree structure in broadphase, is essentially a quad AABB tree.
 /// Tree is lockless (except for UpdatePrepare/Finalize() function), modifying objects in the tree will widen the aabbs of parent nodes to make the node fit.
 /// During the UpdatePrepare/Finalize() call the tree is rebuilt to achieve a tight fit again.
-class QuadTree : public NonCopyable
+class JPH_EXPORT QuadTree : public NonCopyable
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
@@ -196,6 +197,9 @@ public:
 	/// Will throw away the previous frame's nodes so that we can start building a new tree in the background
 	void						DiscardOldTree();
 
+	/// Get the bounding box for this tree
+	AABox						GetBounds() const;
+
 	/// Update the broadphase, needs to be called regularly to achieve a tight fit of the tree when bodies have been modified.
 	/// UpdatePrepare() will build the tree, UpdateFinalize() will lock the root of the tree shortly and swap the trees and afterwards clean up temporary data structures.
 	void						UpdatePrepare(const BodyVector &inBodies, TrackingVector &ioTracking, UpdateState &outUpdateState, bool inFullRebuild);
@@ -237,7 +241,7 @@ public:
 
 	/// Get bodies intersecting with a point and any hits to ioCollector
 	void						CollidePoint(Vec3Arg inPoint, CollideShapeBodyCollector &ioCollector, const ObjectLayerFilter &inObjectLayerFilter, const TrackingVector &inTracking) const;
-	
+
 	/// Get bodies intersecting with an oriented box and any hits to ioCollector
 	void						CollideOrientedBox(const OrientedBox &inBox, CollideShapeBodyCollector &ioCollector, const ObjectLayerFilter &inObjectLayerFilter, const TrackingVector &inTracking) const;
 
@@ -248,8 +252,11 @@ public:
 	void						FindCollidingPairs(const BodyVector &inBodies, const BodyID *inActiveBodies, int inNumActiveBodies, float inSpeculativeContactDistance, BodyPairCollector &ioPairCollector, const ObjectLayerPairFilter &inObjectLayerPairFilter) const;
 
 #ifdef JPH_TRACK_BROADPHASE_STATS
+	/// Sum up all the ticks spent in the various layers
+	uint64						GetTicks100Pct() const;
+
 	/// Trace the stats of this tree to the TTY
-	void						ReportStats() const;
+	void						ReportStats(uint64 inTicks100Pct) const;
 #endif // JPH_TRACK_BROADPHASE_STATS
 
 private:
@@ -302,7 +309,7 @@ private:
 	/// After the function returns ioNodeIDs and ioNodeCenters will be shuffled
 	static void					sPartition(NodeID *ioNodeIDs, Vec3 *ioNodeCenters, int inNumber, int &outMidPoint);
 
-	/// Sorts ioNodeIDs from inBegin to (but excluding) inEnd spatially into 4 groups. 
+	/// Sorts ioNodeIDs from inBegin to (but excluding) inEnd spatially into 4 groups.
 	/// outSplit needs to be 5 ints long, when the function returns each group runs from outSplit[i] to (but excluding) outSplit[i + 1]
 	/// After the function returns ioNodeIDs and ioNodeCenters will be shuffled
 	static void					sPartition4(NodeID *ioNodeIDs, Vec3 *ioNodeCenters, int inBegin, int inEnd, int *outSplit);
@@ -331,12 +338,15 @@ private:
 		uint64					mTotalTicks = 0;
 		uint64					mCollectorTicks = 0;
 	};
-	
+
 	using LayerToStats = UnorderedMap<String, Stat>;
 
+	/// Sum up all the ticks in a layer
+	uint64						GetTicks100Pct(const LayerToStats &inLayer) const;
+
 	/// Trace the stats of a single query type to the TTY
-	void						ReportStats(const char *inName, const LayerToStats &inLayer) const;
-	
+	void						ReportStats(const char *inName, const LayerToStats &inLayer, uint64 inTicks100Pct) const;
+
 	mutable LayerToStats		mCastRayStats;
 	mutable LayerToStats		mCollideAABoxStats;
 	mutable LayerToStats		mCollideSphereStats;

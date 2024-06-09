@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -8,7 +9,7 @@
 JPH_NAMESPACE_BEGIN
 
 /// Implementation of ObjectStream text input stream.
-class ObjectStreamTextIn : public ObjectStreamIn
+class JPH_EXPORT ObjectStreamTextIn : public ObjectStreamIn
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE

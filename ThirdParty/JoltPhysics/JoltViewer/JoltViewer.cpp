@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -14,7 +15,7 @@ JPH_SUPPRESS_WARNINGS_STD_BEGIN
 #include <fstream>
 JPH_SUPPRESS_WARNINGS_STD_END
 
-#ifndef JPH_DEBUG_RENDERER	
+#ifndef JPH_DEBUG_RENDERER
 	// Hack to still compile DebugRenderer inside the test framework when Jolt is compiled without
 	#define JPH_DEBUG_RENDERER
 	#include <Jolt/Renderer/DebugRendererRecorder.cpp>
@@ -28,7 +29,7 @@ JoltViewer::JoltViewer()
 	String cmd_line = GetCommandLineA();
 	Array<String> args;
 	StringToVector(cmd_line, args, " ");
-	
+
 	// Check arguments
 	if (args.size() != 2 || args[1].empty())
 	{
@@ -78,7 +79,7 @@ JoltViewer::JoltViewer()
 	mDebugUI->ShowMenu(main_menu);
 }
 
-bool JoltViewer::RenderFrame(float inDeltaTime)
+bool JoltViewer::UpdateFrame(float inDeltaTime)
 {
 	// If no frames were read, abort
 	if (mRendererPlayback.GetNumFrames() == 0)

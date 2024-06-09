@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -73,7 +74,7 @@ TEST_SUITE("UVec4Tests")
 		CHECK(UVec4::sMax(v1, v2) == UVec4(5, 6, 7, 8));
 	}
 
-	TEST_CASE("TestUVec4omparisons")
+	TEST_CASE("TestUVec4Comparisons")
 	{
 		CHECK(UVec4::sEquals(UVec4(1, 2, 3, 4), UVec4(2, 1, 3, 4)) == UVec4(0, 0, 0xffffffffU, 0xffffffffU));
 
@@ -110,6 +111,74 @@ TEST_SUITE("UVec4Tests")
 		CHECK(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU).CountTrues() == 3);
 		CHECK(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU).CountTrues() == 3);
 		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU).CountTrues() == 4);
+
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAllTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAllTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAllTrue());
+
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAllXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAllXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAllXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAllXYZTrue());
+
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAnyTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAnyTrue());
+
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0x00000000U).TestAnyXYZTrue());
+		CHECK(!UVec4(0x00000000U, 0x00000000U, 0x00000000U, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0x00000000U, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0x00000000U, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAnyXYZTrue());
+		CHECK(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU).TestAnyXYZTrue());
 	}
 
 	TEST_CASE("TestUVec4Select")
@@ -147,7 +216,7 @@ TEST_SUITE("UVec4Tests")
 		CHECK(v == UVec4(6, 8, 10, 12));
 	}
 
-	TEST_CASE("TestUVec4Swizzle")	
+	TEST_CASE("TestUVec4Swizzle")
 	{
 		UVec4 v(1, 2, 3, 4);
 
@@ -430,7 +499,7 @@ TEST_SUITE("UVec4Tests")
 
 		CHECK(vector.Expand4Uint16Lo()  == UVec4(1, 2, 3, 4));
 		CHECK(vector.Expand4Uint16Hi()  == UVec4(5, 6, 7, 8));
-	}		
+	}
 
 	TEST_CASE("TestUVec4ExtractBytes")
 	{
@@ -441,7 +510,7 @@ TEST_SUITE("UVec4Tests")
 		CHECK(vector.Expand4Byte4()  == UVec4(0x21, 0x22, 0x23, 0x24));
 		CHECK(vector.Expand4Byte8()  == UVec4(0x31, 0x32, 0x33, 0x34));
 		CHECK(vector.Expand4Byte12() == UVec4(0x41, 0x42, 0x43, 0x44));
-	}		
+	}
 
 	TEST_CASE("TestUVec4ShiftComponents")
 	{
@@ -452,7 +521,7 @@ TEST_SUITE("UVec4Tests")
 		CHECK(v.ShiftComponents4Minus(2) == UVec4(3, 4, 0, 0));
 		CHECK(v.ShiftComponents4Minus(1) == UVec4(4, 0, 0, 0));
 		CHECK(v.ShiftComponents4Minus(0) == UVec4(0, 0, 0, 0));
-	}		
+	}
 
 	TEST_CASE("TestUVec4Sort4True")
 	{
@@ -472,5 +541,5 @@ TEST_SUITE("UVec4Tests")
 		CHECK(UVec4::sSort4True(UVec4(0xffffffffU, 0x00000000U, 0xffffffffU, 0xffffffffU), UVec4(1, 2, 3, 4)) == UVec4(1, 3, 4, 4));
 		CHECK(UVec4::sSort4True(UVec4(0x00000000U, 0xffffffffU, 0xffffffffU, 0xffffffffU), UVec4(1, 2, 3, 4)) == UVec4(2, 3, 4, 4));
 		CHECK(UVec4::sSort4True(UVec4(0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU), UVec4(1, 2, 3, 4)) == UVec4(1, 2, 3, 4));
-	}		
+	}
 }

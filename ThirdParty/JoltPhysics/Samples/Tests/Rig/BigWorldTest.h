@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2022 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,7 +11,7 @@
 class BigWorldTest : public Test
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(BigWorldTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, BigWorldTest)
 
 	// Destructor
 	virtual					~BigWorldTest() override;

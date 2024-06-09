@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -47,8 +48,8 @@ private:
 	Renderer *				mRenderer;
 
 	D3D_PRIMITIVE_TOPOLOGY	mType;
-	
-	ComPtr<ID3D12Resource>	mVtxBuffer;	
+
+	ComPtr<ID3D12Resource>	mVtxBuffer;
 	int						mNumVtx = 0;
 	int						mNumVtxToDraw = 0;
 	int						mVtxSize = 0;

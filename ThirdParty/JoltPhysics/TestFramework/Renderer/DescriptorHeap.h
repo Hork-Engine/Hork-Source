@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -38,7 +39,7 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE			Allocate()
 	{
 		JPH_ASSERT(!mFreeList.empty());
-		
+
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = mHeap->GetCPUDescriptorHandleForHeapStart();
 
 		uint index = mFreeList.back();

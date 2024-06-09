@@ -585,12 +585,14 @@ void GatherGeometry(JPH::CapsuleShape const* shape, Vector<Float3>& vertices, Ve
 
 void GatherGeometry(JPH::ConvexHullShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
 {
-    int vertexCount = shape->mPoints.size();
+    int vertexCount = shape->GetNumPoints();
 
     int indexCount = 0;
-    for (const auto& f : shape->mFaces)
+
+    uint32_t faceCount = shape->GetNumFaces();
+    for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
     {
-        indexCount += (f.mNumVertices - 2) * 3;
+        indexCount += (shape->GetNumVerticesInFace(faceIndex) - 2) * 3;
     }
 
     int firstVertex = vertices.Size();
@@ -604,14 +606,15 @@ void GatherGeometry(JPH::ConvexHullShape const* shape, Vector<Float3>& vertices,
 
     for (int i = 0; i < vertexCount; i++)
     {
-        pVertices[i] = ConvertVector(shape->mPoints[i].mPosition);
+        pVertices[i] = ConvertVector(shape->GetPoint(i));
     }
 
-    for (const auto& f : shape->mFaces)
+    for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
     {
-        const JPH::uint8* indexData = shape->mVertexIdx.data() + f.mFirstVertex;
+        const JPH::uint8* indexData = shape->GetFaceVertices(faceIndex);
+        int triangleCount = shape->GetNumVerticesInFace(faceIndex) - 2;
 
-        for (int i = 0; i < f.mNumVertices - 2; i++)
+        for (int i = 0; i < triangleCount; i++)
         {
             pIndices[0] = firstVertex + indexData[0];
             pIndices[1] = firstVertex + indexData[i + 1];
@@ -789,14 +792,17 @@ void DrawCapsule(DebugRenderer& renderer, JPH::CapsuleShape const* shape)
 void DrawConvexHull(DebugRenderer& renderer, JPH::ConvexHullShape const* shape)
 {
     SmallVector<Float3, 32> verts;
-    for (auto& face : shape->mFaces)
+
+    uint32_t faceCount = shape->GetNumFaces();
+    for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
     {
         verts.Clear();
-        for (uint16_t v = 0; v < face.mNumVertices; v++)
-        {
-            auto index = shape->mVertexIdx[face.mFirstVertex + v];
-            verts.Add(ConvertVector(shape->mPoints[index].mPosition));
-        }
+ 
+        uint32_t vertexCount = shape->GetNumVerticesInFace(faceIndex);
+        const JPH::uint8* indexData = shape->GetFaceVertices(faceIndex);
+        for (uint32_t v = 0; v < vertexCount; ++v)
+            verts.Add(ConvertVector(shape->GetPoint(indexData[v])));
+
         renderer.DrawLine(verts, true);
     }
 }

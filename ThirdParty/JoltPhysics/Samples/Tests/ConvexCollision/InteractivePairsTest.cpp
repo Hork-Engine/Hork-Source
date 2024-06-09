@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -11,12 +12,12 @@
 #include <Jolt/Geometry/EPAPenetrationDepth.h>
 #include <Utils/DebugRendererSP.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(InteractivePairsTest) 
-{ 
-	JPH_ADD_BASE_CLASS(InteractivePairsTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(InteractivePairsTest)
+{
+	JPH_ADD_BASE_CLASS(InteractivePairsTest, Test)
 }
 
-void InteractivePairsTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
+void InteractivePairsTest::ProcessInput(const ProcessInputParams &inParams)
 {
 	// Keyboard controls
 	if (inParams.mKeyboard->IsKeyPressed(DIK_Z))
@@ -43,7 +44,10 @@ void InteractivePairsTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 		mDistance = 4.0f;
 	if (mDistance > 4.0f)
 		mDistance = -4.0f;
+}
 
+void InteractivePairsTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
+{
 	float z = 0.0f;
 
 	const float r1 = 0.25f * JPH_PI;
@@ -86,13 +90,13 @@ void InteractivePairsTest::PrePhysicsUpdate(const PreUpdateParams &inParams)
 		z += 4;
 		TestSphereVsBox(Vec3(0, 0, z), 1.0f, Vec3(mDistance, 0, z), Vec3(r1, 0, 0), cvx_radius, b);
 		z += 4;
-		
+
 		// Sphere vs edge
 		TestSphereVsBox(Vec3(0, 0, z), 1.0f, Vec3(mDistance, 0, z), Vec3(0, r1, 0), cvx_radius, b);
 		z += 4;
 		TestSphereVsBox(Vec3(0, 0, z), 1.0f, Vec3(mDistance, 0, z), Vec3(0, 0, r1), cvx_radius, b);
 		z += 4;
-		
+
 		// Sphere vs vertex
 		TestSphereVsBox(Vec3(0, 0, z), 1.0f, Vec3(mDistance, 0, z), Vec3(0, r2, r1), cvx_radius, b);
 		z += 4;

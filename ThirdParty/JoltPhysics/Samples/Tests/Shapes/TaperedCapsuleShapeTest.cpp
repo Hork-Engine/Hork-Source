@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -8,16 +9,16 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Layers.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(TaperedCapsuleShapeTest) 
-{ 
-	JPH_ADD_BASE_CLASS(TaperedCapsuleShapeTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(TaperedCapsuleShapeTest)
+{
+	JPH_ADD_BASE_CLASS(TaperedCapsuleShapeTest, Test)
 }
 
-void TaperedCapsuleShapeTest::Initialize() 
+void TaperedCapsuleShapeTest::Initialize()
 {
 	// Floor
 	CreateFloor();
-		
+
 	RefConst<ShapeSettings> big_taperedcapsule = new TaperedCapsuleShapeSettings(2.0f, 1.0f, 3.0f);
 	RefConst<ShapeSettings> big_taperedcapsule2 = new TaperedCapsuleShapeSettings(2.0f, 3.0f, 1.0f);
 

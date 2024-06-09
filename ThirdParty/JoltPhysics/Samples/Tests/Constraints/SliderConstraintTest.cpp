@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,16 +11,16 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Layers.h>
 
-JPH_IMPLEMENT_RTTI_VIRTUAL(SliderConstraintTest) 
-{ 
-	JPH_ADD_BASE_CLASS(SliderConstraintTest, Test) 
+JPH_IMPLEMENT_RTTI_VIRTUAL(SliderConstraintTest)
+{
+	JPH_ADD_BASE_CLASS(SliderConstraintTest, Test)
 }
 
 void SliderConstraintTest::Initialize()
 {
 	// Floor
 	CreateFloor();
-		
+
 	const int cChainLength = 10;
 
 	// Create group filter
@@ -141,8 +142,8 @@ void SliderConstraintTest::Initialize()
 		slider.SetSliderAxis(Vec3::sAxisY());
 		slider.mLimitsMin = 0.0f;
 		slider.mLimitsMax = 2.0f;
-		slider.mFrequency = 1.0f;
-		slider.mDamping = 0.5f;
+		slider.mLimitsSpringSettings.mFrequency = 1.0f;
+		slider.mLimitsSpringSettings.mDamping = 0.5f;
 		mPhysicsSystem->AddConstraint(slider.Create(*vert1, *vert2));
 	}
 }

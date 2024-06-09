@@ -1,9 +1,10 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
-namespace JPH { 
+namespace JPH {
 	class RagdollSettings;
 	enum class EMotionType : uint8;
 }

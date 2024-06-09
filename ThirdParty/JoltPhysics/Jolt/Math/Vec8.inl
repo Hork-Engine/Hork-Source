@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -7,9 +8,9 @@ JPH_NAMESPACE_BEGIN
 
 Vec8::Vec8(Vec4Arg inLo, Vec4Arg inHi) :
 	mValue(_mm256_insertf128_ps(_mm256_castps128_ps256(inLo.mValue), inHi.mValue, 1))
-{		
+{
 }
-	
+
 Vec8 Vec8::sZero()
 {
 	return _mm256_setzero_ps();
@@ -128,7 +129,7 @@ Vec8 Vec8::Abs() const
 	return _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), mValue), mValue);
 #endif
 }
-	
+
 Vec4 Vec8::LowerVec4() const
 {
 	return _mm256_castps256_ps128(mValue);

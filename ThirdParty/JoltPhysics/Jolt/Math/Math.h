@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -117,6 +118,8 @@ inline uint CountTrailingZeros(uint32 inValue)
 	#else
 		return __builtin_clz(__builtin_bitreverse32(inValue));
 	#endif
+#elif defined(JPH_CPU_E2K)
+		return inValue ? __builtin_ctz(inValue) : 32;
 #else
 	#error Undefined
 #endif
@@ -145,6 +148,8 @@ inline uint CountLeadingZeros(uint32 inValue)
 	#else
 		return __builtin_clz(inValue);
 	#endif
+#elif defined(JPH_CPU_E2K)
+		return inValue ? __builtin_clz(inValue) : 32;
 #else
 	#error Undefined
 #endif
@@ -158,7 +163,7 @@ inline uint CountBits(uint32 inValue)
 #elif defined(JPH_COMPILER_MSVC)
 	#if defined(JPH_USE_SSE4_2)
 		return _mm_popcnt_u32(inValue);
-	#elif defined(JPH_USE_NEON)
+	#elif defined(JPH_USE_NEON) && (_MSC_VER >= 1930) // _CountOneBits not available on MSVC2019
 		return _CountOneBits(inValue);
 	#else
 		inValue = inValue - ((inValue >> 1) & 0x55555555);

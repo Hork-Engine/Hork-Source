@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -26,6 +27,7 @@ using namespace JPH;
 #define DOCTEST_CONFIG_NO_WINDOWS_SEH
 
 JPH_SUPPRESS_WARNINGS_STD_BEGIN
+JPH_CLANG_16_PLUS_SUPPRESS_WARNING("-Wunsafe-buffer-usage")
 #include "doctest.h"
 JPH_SUPPRESS_WARNINGS_STD_END
 
@@ -147,6 +149,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		// Run the tests
 		int rv = Context().run();
 
+		// Unregisters all types with the factory and cleans up the default material
+		UnregisterTypes();
+
 		// Destroy the factory
 		delete Factory::sInstance;
 		Factory::sInstance = nullptr;
@@ -200,6 +205,9 @@ int main(int argc, char** argv)
 	RegisterTypes();
 
 	int rv = Context(argc, argv).run();
+
+	// Unregisters all types with the factory and cleans up the default material
+	UnregisterTypes();
 
 	// Destroy the factory
 	delete Factory::sInstance;
@@ -314,6 +322,9 @@ void AndroidInitialize(android_app *inApp)
 	}
 	ANativeWindow_unlockAndPost(inApp->window);
 	ANativeWindow_release(inApp->window);
+
+	// Unregisters all types with the factory and cleans up the default material
+	UnregisterTypes();
 
 	// Destroy the factory
 	delete Factory::sInstance;

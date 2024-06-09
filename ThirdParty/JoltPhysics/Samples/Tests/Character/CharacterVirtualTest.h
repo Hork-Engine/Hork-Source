@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -10,7 +11,7 @@
 class CharacterVirtualTest : public CharacterBaseTest, public CharacterContactListener
 {
 public:
-	JPH_DECLARE_RTTI_VIRTUAL(CharacterVirtualTest)
+	JPH_DECLARE_RTTI_VIRTUAL(JPH_NO_EXPORT, CharacterVirtualTest)
 
 	// Initialize the test
 	virtual void			Initialize() override;
@@ -38,14 +39,20 @@ protected:
 	// Handle user input to the character
 	virtual void			HandleInput(Vec3Arg inMovementDirection, bool inJump, bool inSwitchStance, float inDeltaTime) override;
 
+	// Add character movement settings
+	virtual void			AddCharacterMovementSettings(DebugUI* inUI, UIElement* inSubMenu) override;
+
 	// Add test configuration settings
 	virtual void			AddConfigurationSettings(DebugUI *inUI, UIElement *inSubMenu) override;
 
 private:
-	// Test settings
+	// Character movement settings
+	static inline bool		sEnableCharacterInertia = true;
+
+	// Test configuration settings
 	static inline EBackFaceMode sBackFaceMode = EBackFaceMode::CollideWithBackFaces;
 	static inline float		sUpRotationX = 0;
-	static inline float		sUpRotationZ = 0;	
+	static inline float		sUpRotationZ = 0;
 	static inline float		sMaxSlopeAngle = DegreesToRadians(45.0f);
 	static inline float		sMaxStrength = 100.0f;
 	static inline float		sCharacterPadding = 0.02f;

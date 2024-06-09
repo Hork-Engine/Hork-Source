@@ -1,3 +1,4 @@
+// Jolt Physics Library (https://github.com/jrouwe/JoltPhysics)
 // SPDX-FileCopyrightText: 2021 Jorrit Rouwe
 // SPDX-License-Identifier: MIT
 
@@ -6,12 +7,15 @@
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/TriangleShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/ShapeFilter.h>
 #include <Jolt/Physics/Collision/CollisionDispatch.h>
+#include <Jolt/Physics/Collision/CastSphereVsTriangles.h>
 #include "PhysicsTestContext.h"
 #include "Layers.h"
 
@@ -35,7 +39,7 @@ TEST_SUITE("CastShapeTests")
 		CHECK_APPROX_EQUAL(result.mContactPointOn2, inPosition, 1.0e-3f);
 	}
 
-	/// Helper function that tests a shere against a triangle centered on the origin with normal Z
+	/// Helper function that tests a sphere against a triangle centered on the origin with normal Z
 	static void sTestCastSphereTriangle(const Shape *inTriangle)
 	{
 		// Create sphere
@@ -263,9 +267,96 @@ TEST_SUITE("CastShapeTests")
 			CHECK_APPROX_EQUAL(result.mFraction, 0.0f);
 			CHECK(result.mPenetrationAxis.Normalized().Dot(Vec3(1, 0, 0)) > Cos(DegreesToRadians(1.0f)));
 			CHECK_APPROX_EQUAL(result.mPenetrationDepth, 1.05f);
-			CHECK_APPROX_EQUAL(result.mContactPointOn1, Vec3(2.05f, 0, 0), 1.0e-5f); // Box starts at 1.0, center of sphere adds 0.05, radius of sphere is 1
-			CHECK_APPROX_EQUAL(result.mContactPointOn2, Vec3(1.0f, 0, 0), 1.0e-5f); // Box starts at 1.0
+			CHECK_APPROX_EQUAL(result.mContactPointOn1, Vec3(2.05f, 0, 0), 2.0e-5f); // Box starts at 1.0, center of sphere adds 0.05, radius of sphere is 1
+			CHECK_APPROX_EQUAL(result.mContactPointOn2, Vec3(1.0f, 0, 0), 2.0e-5f); // Box starts at 1.0
 			CHECK(!result.mIsBackFaceHit);
 		}
+	}
+
+	// Test casting a capsule against a mesh that is intersecting at fraction 0 and test that it returns the deepest penetration
+	TEST_CASE("TestDeepestPenetrationAtFraction0")
+	{
+		// Create an n x n grid of triangles
+		const int n = 10;
+		const float s = 0.1f;
+		TriangleList triangles;
+		for (int z = 0; z < n; ++z)
+			for (int x = 0; x < n; ++x)
+			{
+				float fx = s * x - s * n / 2, fz = s * z - s * n / 2;
+				triangles.push_back(Triangle(Vec3(fx, 0, fz), Vec3(fx, 0, fz + s), Vec3(fx + s, 0, fz + s)));
+				triangles.push_back(Triangle(Vec3(fx, 0, fz), Vec3(fx + s, 0, fz + s), Vec3(fx + s, 0, fz)));
+			}
+		MeshShapeSettings mesh_settings(triangles);
+		mesh_settings.SetEmbedded();
+
+		// Create a compound shape with two copies of the mesh
+		StaticCompoundShapeSettings compound_settings;
+		compound_settings.AddShape(Vec3::sZero(), Quat::sIdentity(), &mesh_settings);
+		compound_settings.AddShape(Vec3(0, -0.01f, 0), Quat::sIdentity(), &mesh_settings); // This will not result in the deepest penetration
+		compound_settings.SetEmbedded();
+
+		// Add it to the scene
+		PhysicsTestContext c;
+		c.CreateBody(&compound_settings, RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, EMotionQuality::Discrete, Layers::NON_MOVING, EActivation::DontActivate);
+
+		// Add the same compound a little bit lower (this will not result in the deepest penetration)
+		c.CreateBody(&compound_settings, RVec3(0, -0.1_r, 0), Quat::sIdentity(), EMotionType::Static, EMotionQuality::Discrete, Layers::NON_MOVING, EActivation::DontActivate);
+
+		// We want the deepest hit
+		ShapeCastSettings cast_settings;
+		cast_settings.mReturnDeepestPoint = true;
+
+		// Create capsule to test
+		const float capsule_half_height = 2.0f;
+		const float capsule_radius = 1.0f;
+		RefConst<Shape> cast_shape = new CapsuleShape(capsule_half_height, capsule_radius);
+
+		// Cast the shape starting inside the mesh with a long distance so that internally in the mesh shape the RayAABox4 test will return a low negative fraction.
+		// This used to be confused with the penetration depth and would cause an early out and return the wrong result.
+		const float capsule_offset = 0.1f;
+		RShapeCast shape_cast(cast_shape, Vec3::sReplicate(1.0f), RMat44::sTranslation(RVec3(0, capsule_half_height + capsule_offset, 0)), Vec3(0, -100, 0));
+
+		// Cast first using the closest hit collector
+		ClosestHitCollisionCollector<CastShapeCollector> collector;
+		c.GetSystem()->GetNarrowPhaseQuery().CastShape(shape_cast, cast_settings, RVec3::sZero(), collector);
+
+		// Check that it indeed found a hit at fraction 0 with the deepest penetration of all triangles
+		CHECK(collector.HadHit());
+		CHECK(collector.mHit.mFraction == 0.0f);
+		CHECK_APPROX_EQUAL(collector.mHit.mPenetrationDepth, capsule_radius - capsule_offset, 1.0e-4f);
+		CHECK_APPROX_EQUAL(collector.mHit.mPenetrationAxis.Normalized(), Vec3(0, -1, 0));
+		CHECK_APPROX_EQUAL(collector.mHit.mContactPointOn2, Vec3::sZero());
+
+		// Cast again while triggering a force early out after the first hit
+		class MyCollector : public CastShapeCollector
+		{
+		public:
+			virtual void	AddHit(const ShapeCastResult &inResult) override
+			{
+				++mNumHits;
+				ForceEarlyOut();
+			}
+
+			int				mNumHits = 0;
+		};
+		MyCollector collector2;
+		c.GetSystem()->GetNarrowPhaseQuery().CastShape(shape_cast, cast_settings, RVec3::sZero(), collector2);
+
+		// Ensure that we indeed stopped after the first hit
+		CHECK(collector2.mNumHits == 1);
+	}
+
+	// Test a problem case where a sphere cast would incorrectly hit a degenerate triangle (see: https://github.com/jrouwe/JoltPhysics/issues/886)
+	TEST_CASE("TestCastSphereVsDegenerateTriangle")
+	{
+		AllHitCollisionCollector<CastShapeCollector> collector;
+		SphereShape sphere(0.2f);
+		sphere.SetEmbedded();
+		ShapeCast cast(&sphere, Vec3::sReplicate(1.0f), Mat44::sTranslation(Vec3(14.8314590f, 8.19055080f, -4.30825043f)), Vec3(-0.0988006592f, 5.96046448e-08f, 0.000732421875f));
+		ShapeCastSettings settings;
+		CastSphereVsTriangles caster(cast, settings, Vec3::sReplicate(1.0f), Mat44::sIdentity(), { }, collector);
+		caster.Cast(Vec3(14.5536213f, 10.5973721f, -0.00600051880f), Vec3(14.5536213f, 10.5969315f, -3.18638134f), Vec3(14.5536213f, 10.5969315f, -5.18637228f), 0b111, SubShapeID());
+		CHECK(!collector.HadHit());
 	}
 }
