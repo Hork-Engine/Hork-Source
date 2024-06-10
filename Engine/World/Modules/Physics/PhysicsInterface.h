@@ -42,8 +42,8 @@ namespace CollisionLayer
     static constexpr uint8_t Default             = 0;
     static constexpr uint8_t Character           = 1;
     static constexpr uint8_t Platform            = 2;
-    static constexpr uint8_t TriggerCharacter    = 3;
-    static constexpr uint8_t Water               = 4;
+    static constexpr uint8_t Water               = 3;
+    static constexpr uint8_t Door                = 4;
 };
 
 /// Broadphase layers

@@ -271,7 +271,7 @@ void ContactListener::OnContactAdded(const JPH::Body &inBody1, const JPH::Body &
             ++contact.Count;
             if (contact.Count == 1)
             {
-                auto& event = m_TriggerEvents.EmplaceBack();
+                auto& event = m_pTriggerEvents->EmplaceBack();
                 event.Type = TriggerEvent::OnBeginOverlap;
                 event.Trigger = contact.Trigger;
                 event.Target = contact.Target;
@@ -298,7 +298,7 @@ void ContactListener::OnContactPersisted(const JPH::Body &inBody1, const JPH::Bo
     {
         TriggerContact& contact = it->second;
 
-        auto& event = m_TriggerEvents.EmplaceBack();
+        auto& event = m_pTriggerEvents->EmplaceBack();
         event.Type = TriggerEvent::OnUpdateOverlap;
         event.Trigger = contact.Trigger;
         event.Target = contact.Target;
@@ -326,7 +326,7 @@ void ContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair
         contact.Count--;
         if (contact.Count == 0)
         {
-            auto& event = m_TriggerEvents.EmplaceBack();
+            auto& event = m_pTriggerEvents->EmplaceBack();
             event.Type = TriggerEvent::OnEndOverlap;
             event.Trigger = contact.Trigger;
             event.Target = contact.Target;
@@ -337,6 +337,71 @@ void ContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair
         return;
     }
 }
+
+void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings)
+{
+    CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(character);
+    BodyUserData* userData = nullptr;
+    bool isSensor = false;
+
+    {
+        JPH::BodyLockRead lock(m_PhysSystem->GetBodyLockInterface(), inBodyID2);
+        if (lock.Succeeded())
+        {
+            auto& body = lock.GetBody();
+
+            userData = (BodyUserData*)body.GetUserData();
+            isSensor = body.IsSensor();
+        }
+    }
+
+    if (isSensor)
+    {
+        if (auto trigger = userData->TryGetComponent<TriggerComponent>(m_World))
+        {
+            ContactID contactID = inBodyID2.GetIndexAndSequenceNumber() | (static_cast<uint64_t>(characterImpl->m_Component.ToUInt32()) << 32);
+
+            TriggerContact& contact = m_Triggers[contactID];
+            contact.Trigger = Handle32<TriggerComponent>(trigger->GetHandle());
+            if (contact.FrameIndex == 0)
+            {
+                auto& event = m_pTriggerEvents->EmplaceBack();
+                event.Type = TriggerEvent::OnBeginOverlap;
+                event.Trigger = contact.Trigger;
+                event.Target.Handle = characterImpl->m_Component;
+                event.Target.TypeID = ComponentTypeRegistry::GetComponentTypeID<CharacterControllerComponent>();
+                m_UpdateOverlap.Add(contactID);
+            }
+            else
+            {
+                // TODO: Generate OnUpdateOverlap?
+            }
+            contact.FrameIndex = m_World->GetTick().FixedFrameNum;
+        }
+        return;
+    }
+
+    {
+        // If we encounter an object that can push us, enable sliding
+        if (ioSettings.mCanPushCharacter && m_PhysSystem->GetBodyInterface().GetMotionType(inBodyID2) != JPH::EMotionType::Static)
+            const_cast<CharacterControllerImpl*>(characterImpl)->m_AllowSliding = true;
+    }
+}
+
+void CharacterContactListener::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
+{
+    CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(character);
+
+    // Don't allow the player to slide down static not-too-steep surfaces when not actively moving and when not on a moving platform
+    if (!characterImpl->m_AllowSliding && inContactVelocity.IsNearZero() && !character->IsSlopeTooSteep(inContactNormal))
+        ioNewCharacterVelocity = JPH::Vec3::sZero();
+}
+
+CharacterControllerImpl::CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem) :
+    JPH::CharacterVirtual(inSettings, inPosition, inRotation, inSystem)
+{
+}
+
 
 
 PhysicsInterface::PhysicsInterface() :
@@ -364,10 +429,10 @@ void PhysicsInterface::Initialize()
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Character, true);
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Default, true);
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Platform, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::TriggerCharacter, true);
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Default,   CollisionLayer::Default, true);
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Platform,  CollisionLayer::Default, true);
     m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Water,     CollisionLayer::Default, true);
+    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Door,      CollisionLayer::Character, true);
 
     // Now we can create the actual physics system.
     m_pImpl->m_PhysSystem.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, m_pImpl->m_BroadPhaseLayerInterface, m_pImpl->m_ObjectVsBroadPhaseLayerFilter, m_pImpl->m_ObjectVsObjectLayerFilter);
@@ -379,6 +444,11 @@ void PhysicsInterface::Initialize()
     m_pImpl->m_PhysSystem.SetContactListener(&m_pImpl->m_ContactListener);
 
     m_pImpl->m_ContactListener.m_World = GetWorld();
+    m_pImpl->m_ContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
+
+    m_pImpl->m_CharacterContactListener.m_World = GetWorld();
+    m_pImpl->m_CharacterContactListener.m_PhysSystem = &m_pImpl->m_PhysSystem;
+    m_pImpl->m_CharacterContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
 
     {
         TickFunction f;
@@ -422,6 +492,7 @@ HK_FORCEINLINE bool IsNearZero(Float3 const& vec, float inMaxDistSq = 1.0e-12f)
 
 void PhysicsInterface::Update()
 {
+    auto& tick = GetWorld()->GetTick();
     auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
     auto& dynamicBodyManager = GetWorld()->GetComponentManager<DynamicBodyComponent>();
     auto& triggerManager = GetWorld()->GetComponentManager<TriggerComponent>();
@@ -437,12 +508,12 @@ void PhysicsInterface::Update()
         }
     }
 
-    if (GetWorld()->GetTick().IsPaused)
+    if (tick.IsPaused)
         return;
 
     // Update character controller
     {
-        float timeStep = GetWorld()->GetTick().FixedTimeStep;
+        float timeStep = tick.FixedTimeStep;
 
         auto& characterControllerManager = GetWorld()->GetComponentManager<CharacterControllerComponent>();
 
@@ -472,7 +543,7 @@ void PhysicsInterface::Update()
                 character.DesiredVelocity = 0.25f * character.MovementDirection * character.MoveSpeed + 0.75f * character.DesiredVelocity;
 
                 // True if the player intended to move
-                phys_character->m_bAllowSliding = !IsNearZero(character.MovementDirection);
+                phys_character->m_AllowSliding = !IsNearZero(character.MovementDirection);
 
                 // Determine new basic velocity
                 JPH::Vec3 current_vertical_velocity = JPH::Vec3(0, phys_character->GetLinearVelocity().GetY(), 0);
@@ -530,6 +601,7 @@ void PhysicsInterface::Update()
                 BroadphaseLayerFilter broadphase_filter(
                     HK_BIT(uint32_t(BroadphaseLayer::Static)) |
                     HK_BIT(uint32_t(BroadphaseLayer::Dynamic)) |
+                    HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
                     HK_BIT(uint32_t(BroadphaseLayer::Character)));
 
                 ObjectLayerFilter layer_filter(m_CollisionFilter, character.m_CollisionLayer);
@@ -549,16 +621,16 @@ void PhysicsInterface::Update()
                     //    m_ObjectFilterIDToIgnore = 0xFFFFFFFF - 1;
                     //}
 
-                    JPH::BodyID m_IgoreBodyID;
+                    //JPH::BodyID m_IgoreBodyID;
 
                     bool ShouldCollideLocked(const JPH::Body& body) const override
                     {
-                        return body.GetID() != m_IgoreBodyID;
+                        return true;//body.GetID() != m_IgoreBodyID;
                     }
                 };
 
                 BodyFilter body_filter;
-                body_filter.m_IgoreBodyID = JPH::BodyID(character.m_BodyID.ID);
+                //body_filter.m_IgoreBodyID = JPH::BodyID(character.m_BodyID.ID);
 
                 // Update the character position
                 phys_character->ExtendedUpdate(m_TimeStep,
@@ -570,14 +642,40 @@ void PhysicsInterface::Update()
                     {},
                     temp_allocator);
 
-                m_BodyInterface.MoveKinematic(body_filter.m_IgoreBodyID, phys_character->GetPosition(), phys_character->GetRotation(), m_TimeStep);
-
                 owner->SetWorldPositionAndRotation(ConvertVector(phys_character->GetPosition()), ConvertQuaternion(phys_character->GetRotation()));
             }
         };
 
         Visitor visitor(timeStep, m_pImpl->m_PhysSystem.GetGravity(), m_pImpl->m_CollisionFilter, bodyInterface);
         characterControllerManager.IterateComponents(visitor);
+
+        for (auto contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.begin(); contactIt != m_pImpl->m_CharacterContactListener.m_UpdateOverlap.end();)
+        {
+            auto contactID = *contactIt;
+            bool removeContact = false;
+
+            auto it = m_pImpl->m_CharacterContactListener.m_Triggers.Find(contactID);
+            if (it != m_pImpl->m_CharacterContactListener.m_Triggers.End())
+            {
+                auto& contact = it->second;
+                if (contact.FrameIndex != tick.FixedFrameNum)
+                {
+                    auto& event = m_pImpl->m_CharacterContactListener.m_pTriggerEvents->EmplaceBack();
+                    event.Type = TriggerEvent::OnEndOverlap;
+                    event.Trigger = contact.Trigger;
+                    event.Target.Handle = ComponentHandle(contactID >> 32);
+                    event.Target.TypeID = ComponentTypeRegistry::GetComponentTypeID<CharacterControllerComponent>();
+
+                    m_pImpl->m_CharacterContactListener.m_Triggers.Erase(it);
+                    removeContact = true;
+                }
+            }
+
+            if (removeContact)
+                contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.Erase(contactIt);
+            else
+                ++contactIt;
+        }
     }
 
     // Update dynmaic scaling
@@ -622,7 +720,7 @@ void PhysicsInterface::Update()
 
     // Move kinematic bodies
     {
-        float timeStep = GetWorld()->GetTick().FixedTimeStep;
+        float timeStep = tick.FixedTimeStep;
 
         for (auto& kinematicBody : m_pImpl->m_KinematicBodies)
         {
@@ -684,7 +782,7 @@ void PhysicsInterface::Update()
 
     // Update water bodies
     {
-        float timeStep = GetWorld()->GetTick().FixedTimeStep;
+        float timeStep = tick.FixedTimeStep;
 
         // Broadphase results, will apply buoyancy to any body that intersects with the water volume
         class Collector : public JPH::CollideShapeBodyCollector
@@ -771,7 +869,7 @@ void PhysicsInterface::Update()
         const int numCollisionSteps = 1;
         auto& physicsModule = PhysicsModule::Get();
 
-        m_pImpl->m_PhysSystem.Update(GetWorld()->GetTick().FixedTimeStep, numCollisionSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
+        m_pImpl->m_PhysSystem.Update(tick.FixedTimeStep, numCollisionSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
     }
 
     // Capture active bodies transform
@@ -813,13 +911,13 @@ void PhysicsInterface::Update()
 
 void PhysicsInterface::PostTransform()
 {
-    for (auto& event : m_pImpl->m_ContactListener.m_TriggerEvents)
+    for (auto& event : m_pImpl->m_TriggerEvents)
     {
         TriggerComponent* trigger = GetWorld()->GetComponent(event.Trigger);
 
         switch (event.Type)
         {
-            case ContactListener::TriggerEvent::OnBeginOverlap:
+            case TriggerEvent::OnBeginOverlap:
             {
                 if (auto componentManager = GetWorld()->TryGetComponentManager(event.Target.TypeID))
                 {
@@ -831,7 +929,7 @@ void PhysicsInterface::PostTransform()
                 }
                 break;
             }
-            case ContactListener::TriggerEvent::OnEndOverlap:
+            case TriggerEvent::OnEndOverlap:
             {
                 if (auto componentManager = GetWorld()->TryGetComponentManager(event.Target.TypeID))
                 {
@@ -845,15 +943,13 @@ void PhysicsInterface::PostTransform()
             }
         }
     }
-    m_pImpl->m_ContactListener.m_TriggerEvents.Clear();
+    m_pImpl->m_TriggerEvents.Clear();
 }
 
 template <typename T>
 void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID, T* rigidBody)
 {
     auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
-
-    GameObject* owner = rigidBody->GetOwner();
 
     m_DebugDrawVertices.Clear();
     m_DebugDrawIndices.Clear();
@@ -867,7 +963,7 @@ void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID,
     Float3x4 transform_matrix;
     transform_matrix.Compose(ConvertVector(position),
         ConvertQuaternion(rotation).ToMatrix3x3(),
-        rigidBody->m_CollisionModel->GetValidScale(owner->GetWorldScale())); // TODO: Use m_CachedScale
+        rigidBody->m_CollisionModel->GetValidScale(rigidBody->m_CachedScale));
 
     renderer.PushTransform(transform_matrix);
     renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
@@ -905,7 +1001,7 @@ void PhysicsInterface::DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyI
 
 void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
 {
-    const float visibilityHalfSize = 100;// 5;
+    const float visibilityHalfSize = 5;
 
     if (com_DrawCollisionModel)
     {
@@ -964,7 +1060,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             if (auto staticBody = userData->TryGetComponent<StaticBodyComponent>(GetWorld()))
             {
                 model = staticBody->m_CollisionModel;
-                scale = Float3(1);
+                scale = staticBody->m_CachedScale;
             }
             else if (auto dynamicBody = userData->TryGetComponent<DynamicBodyComponent>(GetWorld()))
             {
@@ -1124,7 +1220,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
                     Float3x4 transform;
                     transform.Compose(owner->GetWorldPosition(),
                         owner->GetWorldRotation().ToMatrix3x3(),
-                        model->GetValidScale(owner->GetWorldScale())); // TODO: Use m_CachedScale
+                        model->GetValidScale(body.m_CachedScale));
 
                     Float3 center_of_mass_pos = transform * model->GetCenterOfMass();
                     Float3 center_of_mass_pos2 = ConvertVector(m_BodyInterface.GetCenterOfMassPosition(JPH::BodyID(body.m_BodyID.ID)));

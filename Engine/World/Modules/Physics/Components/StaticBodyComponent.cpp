@@ -41,9 +41,11 @@ void StaticBodyComponent::BeginPlay()
 
     m_UserData = physics->CreateUserData();
     m_UserData->Initialize(this);
+
+    m_CachedScale = owner->GetWorldScale();
     
     JPH::BodyCreationSettings settings;
-    settings.SetShape(m_CollisionModel->Instatiate(owner->GetWorldScale()));
+    settings.SetShape(m_CollisionModel->Instatiate(m_CachedScale));
     settings.mPosition = ConvertVector(owner->GetWorldPosition());
     settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
     settings.mUserData = (size_t)m_UserData;

@@ -41,6 +41,8 @@ class CollisionModel;
 
 class StaticBodyComponent final : public BodyComponent
 {
+    friend class PhysicsInterface;
+
 public:
     //
     // Meta info
@@ -56,7 +58,7 @@ public:
     Ref<CollisionModel>     m_CollisionModel;
 
     /// The collision layer this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer;
+    uint8_t                 m_CollisionLayer = CollisionLayer::Default;
 
     //uint32_t              m_ObjectFilterID = ~0u;
 
@@ -67,7 +69,7 @@ public:
 
 private:
     PhysBodyID              m_BodyID;
-
+    Float3                  m_CachedScale;
     class BodyUserData*     m_UserData = nullptr;
 };
 

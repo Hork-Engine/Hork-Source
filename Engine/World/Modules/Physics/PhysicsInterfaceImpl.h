@@ -85,7 +85,7 @@ public:
     ComponentType* TryGetComponent(World* world)
     {
         if (TypeID == ComponentTypeRegistry::GetComponentTypeID<ComponentType>())
-            return world->GetComponentManager<ComponentType>().GetComponent(Handle32<ComponentType>(Component));
+            return world->GetComponent<ComponentType>(Handle32<ComponentType>(Component));
         return nullptr;
     }
 };
@@ -169,13 +169,28 @@ public:
     }
 };
 
+class TriggerComponent;
+
+struct TriggerEvent
+{
+    enum EventType
+    {
+        OnBeginOverlap,
+        OnEndOverlap
+    };
+
+    EventType                   Type;
+    Handle32<TriggerComponent>  Trigger;
+    ComponentExtendedHandle     Target;
+};
+
 class BodyActivationListener final : public JPH::BodyActivationListener
 {
 public:
     // FIXME: Use set?
     Mutex                   m_Mutex;
-    Vector<uint32_t>       m_ActiveBodies;
-    Vector<uint32_t>       m_JustDeactivated;
+    Vector<uint32_t>        m_ActiveBodies;
+    Vector<uint32_t>        m_JustDeactivated;
 
     virtual void			OnBodyActivated(const JPH::BodyID &inBodyID, JPH::uint64 inBodyUserData) override;
 
@@ -185,35 +200,19 @@ public:
 class ContactListener final : public JPH::ContactListener
 {
 public:
-    World*                  m_World;
-
-    JPH::Mutex              m_Mutex;
-
     struct TriggerContact
     {
-        Handle32<class TriggerComponent>    Trigger;
-        ComponentExtendedHandle             Target;
-        uint32_t                            Count;
+        Handle32<TriggerComponent>  Trigger;
+        ComponentExtendedHandle     Target;
+        uint32_t                    Count;
     };
-    HashMap<uint64_t, TriggerContact> m_Triggers;
+    using ContactID = uint64_t;
+    using TriggerContacts = HashMap<ContactID, TriggerContact>;
 
-  
-
-    struct TriggerEvent
-    {
-        enum EventType
-        {
-            OnBeginOverlap,
-            OnUpdateOverlap,
-            OnEndOverlap
-        };
-
-        EventType                           Type;
-        Handle32<class TriggerComponent>    Trigger;
-        ComponentExtendedHandle             Target;
-    };
-
-    Vector<TriggerEvent> m_TriggerEvents;
+    World*                  m_World;
+    TriggerContacts         m_Triggers;
+    Vector<TriggerEvent>*   m_pTriggerEvents;
+    JPH::Mutex              m_Mutex;
 
     virtual JPH::ValidateResult	OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override;
 
@@ -222,6 +221,30 @@ public:
     virtual void			OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override;
 
     virtual void			OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override;
+};
+
+class CharacterContactListener final : public JPH::CharacterContactListener
+{
+public:
+    struct TriggerContact
+    {
+        Handle32<TriggerComponent>  Trigger;
+        uint32_t                    FrameIndex;
+    };
+    using ContactID = uint64_t;
+    using TriggerContacts = HashMap<ContactID, TriggerContact>;
+
+    World*                  m_World;
+    JPH::PhysicsSystem*     m_PhysSystem;
+    TriggerContacts         m_Triggers;
+    Vector<TriggerEvent>*   m_pTriggerEvents;
+    Vector<ContactID>       m_UpdateOverlap;
+
+    // Called whenever the character collides with a body. Returns true if the contact can push the character.
+    void                    OnContactAdded(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings) override;
+
+    // Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
+    void                    OnContactSolve(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity);
 };
 
 class DynamicBodyComponent;
@@ -275,12 +298,15 @@ public:
 
     BodyActivationListener              m_BodyActivationListener;
     ContactListener                     m_ContactListener;
+    CharacterContactListener            m_CharacterContactListener;
+
+    Vector<TriggerEvent>                m_TriggerEvents;
 
     Vector<Handle32<class DynamicBodyComponent>> m_KinematicBodies;
     Vector<Handle32<class DynamicBodyComponent>> m_DynamicScaling;
     Vector<Handle32<class TriggerComponent>>     m_MovableTriggers;
 
-    Vector<DynamicBodyMessage>         m_DynamicBodyMessageQueue;
+    Vector<DynamicBodyMessage>          m_DynamicBodyMessageQueue;
 
     CollisionFilter                     m_CollisionFilter;
 
@@ -295,58 +321,27 @@ public:
 
     JPH::GroupFilter*                   m_GroupFilter;
 
-    Vector<JPH::BodyID>                m_QueueToAdd[2];
+    Vector<JPH::BodyID>                 m_QueueToAdd[2];
 
-    PoolAllocator<BodyUserData>        m_UserDataAllocator;
+    PoolAllocator<BodyUserData>         m_UserDataAllocator;
+};
+
+class CharacterControllerImpl : public JPH::CharacterVirtual
+{
+public:
+    JPH_OVERRIDE_NEW_DELETE
+
+    ComponentHandle             m_Component;
+    //JPH::RefConst<JPH::Shape>   m_StandingShape;
+    //JPH::RefConst<JPH::Shape>   m_CrouchingShape;
+    bool                        m_AllowSliding = false;
+
+    CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem);
 };
 
 HK_FORCEINLINE JPH::ObjectLayer MakeObjectLayer(uint32_t group, BroadphaseLayer broadphase)
 {
     return (uint32_t(broadphase) << 8) | (group & 0xff);
 }
-
-class CharacterControllerImpl : public JPH::CharacterVirtual, public JPH::CharacterContactListener
-{
-public:
-    JPH_OVERRIDE_NEW_DELETE
-
-    JPH::RefConst<JPH::Shape>   m_StandingShape;
-    JPH::RefConst<JPH::Shape>   m_CrouchingShape;
-    bool                        m_bAllowSliding = false;
-
-    CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem) :
-        JPH::CharacterVirtual(inSettings, inPosition, inRotation, inSystem)
-    {
-        SetListener(this);
-    }
-
-    // Called whenever the character collides with a body. Returns true if the contact can push the character.
-    void OnContactAdded(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings)
-    {
-        {
-#if 0
-            // Dynamic boxes on the ramp go through all permutations
-            JPH::Array<JPH::BodyID>::const_iterator i = std::find(mRampBlocks.begin(), mRampBlocks.end(), inBodyID2);
-            if (i != mRampBlocks.end())
-            {
-                size_t index = i - mRampBlocks.begin();
-                ioSettings.mCanPushCharacter = (index & 1) != 0;
-                ioSettings.mCanReceiveImpulses = (index & 2) != 0;
-            }
-#endif
-            // If we encounter an object that can push us, enable sliding
-            if (ioSettings.mCanPushCharacter && mSystem->GetBodyInterface().GetMotionType(inBodyID2) != JPH::EMotionType::Static)
-                m_bAllowSliding = true;
-        }
-    }
-
-    // Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
-    void OnContactSolve(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
-    {
-        // Don't allow the player to slide down static not-too-steep surfaces when not actively moving and when not on a moving platform
-        if (!m_bAllowSliding && inContactVelocity.IsNearZero() && !IsSlopeTooSteep(inContactNormal))
-            ioNewCharacterVelocity = JPH::Vec3::sZero();
-    }
-};
 
 HK_NAMESPACE_END

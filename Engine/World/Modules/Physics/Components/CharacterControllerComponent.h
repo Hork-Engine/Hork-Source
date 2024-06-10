@@ -48,7 +48,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
     /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t     m_CollisionLayer = CollisionLayer::Character;
+    uint8_t    m_CollisionLayer = CollisionLayer::Character;
 
     float      HeightStanding = 1.35f;
     float      RadiusStanding = 0.3f;
@@ -90,10 +90,7 @@ public:
     void                    EndPlay();
 
 private:
-    PhysBodyID              m_BodyID;
     class CharacterControllerImpl* m_pImpl;
-
-    class BodyUserData*     m_UserData = nullptr;
 };
 
 namespace ComponentMeta
