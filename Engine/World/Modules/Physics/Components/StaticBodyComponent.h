@@ -58,7 +58,7 @@ public:
     Ref<CollisionModel>     m_CollisionModel;
 
     /// The collision layer this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = CollisionLayer::Default;
+    uint8_t                 m_CollisionLayer = 0;
 
     //uint32_t              m_ObjectFilterID = ~0u;
 

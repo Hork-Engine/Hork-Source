@@ -36,16 +36,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-/// Layer that objects can be in, determines which other objects it can collide with
-namespace CollisionLayer
-{
-    static constexpr uint8_t Default             = 0;
-    static constexpr uint8_t Character           = 1;
-    static constexpr uint8_t Platform            = 2;
-    static constexpr uint8_t Water               = 3;
-    static constexpr uint8_t Door                = 4;
-};
-
 /// Broadphase layers
 enum class BroadphaseLayer : uint8_t
 {
@@ -165,6 +155,8 @@ struct ShapeOverlapFilter
     BroadphaseLayerMask    BroadphaseLayers;
 };
 
+class CollisionFilter;
+
 class PhysicsInterface : public WorldInterfaceBase
 {
 public:
@@ -210,6 +202,9 @@ public:
     void                    SetGravity(Float3 const inGravity);
     Float3                  GetGravity() const;
 
+    void                    SetCollisionFilter(CollisionFilter const& inCollisionFilter);
+    CollisionFilter const&  GetCollisionFilter() const;
+
     class PhysicsInterfaceImpl* GetImpl() { return m_pImpl.RawPtr(); }
 
 protected:
@@ -228,9 +223,9 @@ private:
     UniqueRef<class PhysicsInterfaceImpl> m_pImpl;
 
     // Used for debug draw
-    Vector<PhysBodyID>     m_BodyQueryResult;
-    Vector<Float3>         m_DebugDrawVertices;
-    Vector<unsigned int>   m_DebugDrawIndices;
+    Vector<PhysBodyID>      m_BodyQueryResult;
+    Vector<Float3>          m_DebugDrawVertices;
+    Vector<unsigned int>    m_DebugDrawIndices;
 };
 
 HK_NAMESPACE_END

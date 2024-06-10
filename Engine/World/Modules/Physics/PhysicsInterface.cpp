@@ -425,14 +425,7 @@ void PhysicsInterface::Initialize()
     // number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
     const JPH::uint cMaxContactConstraints = 10240;
 
-    // TODO: Move to game setup/config/resource
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Character, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Default, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Character, CollisionLayer::Platform, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Default,   CollisionLayer::Default, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Platform,  CollisionLayer::Default, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Water,     CollisionLayer::Default, true);
-    m_pImpl->m_CollisionFilter.SetShouldCollide(CollisionLayer::Door,      CollisionLayer::Character, true);
+    m_pImpl->m_CollisionFilter.SetShouldCollide(0, 0, true);
 
     // Now we can create the actual physics system.
     m_pImpl->m_PhysSystem.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, m_pImpl->m_BroadPhaseLayerInterface, m_pImpl->m_ObjectVsBroadPhaseLayerFilter, m_pImpl->m_ObjectVsObjectLayerFilter);
@@ -1946,6 +1939,16 @@ void PhysicsInterface::SetGravity(Float3 const inGravity)
 Float3 PhysicsInterface::GetGravity() const
 {
     return ConvertVector(m_pImpl->m_PhysSystem.GetGravity());
+}
+
+void PhysicsInterface::SetCollisionFilter(CollisionFilter const& inCollisionFilter)
+{
+    m_pImpl->m_CollisionFilter = inCollisionFilter;
+}
+
+CollisionFilter const& PhysicsInterface::GetCollisionFilter() const
+{
+    return m_pImpl->m_CollisionFilter;
 }
 
 HK_NAMESPACE_END

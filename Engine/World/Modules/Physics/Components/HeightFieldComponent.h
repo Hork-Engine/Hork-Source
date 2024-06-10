@@ -55,7 +55,7 @@ public:
     //PhysicsMaterial       Material;
 
     /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = CollisionLayer::Default;
+    uint8_t                 m_CollisionLayer = 0;
 
     //uint32_t              ObjectFilterID = ~0u;
     
