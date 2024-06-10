@@ -203,14 +203,47 @@ GameObject::ConstChildIterator GameObject::GetChildren() const
     return ConstChildIterator(world->GetObjectUnsafe(m_FirstChild), world);
 }
 
+void GameObject::ChildIterator::operator++()
+{
+    m_Object = m_Object->GetWorld()->GetObjectUnsafe(m_Object->m_NextSibling);
+}
+
 void GameObject::UpdateWorldTransform()
 {
     m_TransformData->UpdateWorldTransform_r();
 }
 
-void GameObject::ChildIterator::operator++()
+void GameObject::UpdateChildrenWorldTransform()
 {
-    m_Object = m_Object->GetWorld()->GetObjectUnsafe(m_Object->m_NextSibling);
+    for (auto it = GetChildren(); it.IsValid(); ++it)
+    {
+        it->m_TransformData->UpdateWorldTransform();
+        it->UpdateChildrenWorldTransform();
+    }
 }
+
+GameObject* GameObject::FindChildren(StringID name)
+{
+    for (auto it = GetChildren(); it.IsValid(); ++it)
+        if (it->GetName() == name)
+            return &(*it);
+    return nullptr;
+}
+
+GameObject* GameObject::FindChildrenRecursive(StringID name)
+{
+    for (auto it = GetChildren(); it.IsValid(); ++it)
+    {
+        if (it->GetName() == name)
+            return it;
+
+        if (auto child = it->FindChildrenRecursive(name))
+            return child;
+    }
+
+    return nullptr;
+}
+
+
 
 HK_NAMESPACE_END

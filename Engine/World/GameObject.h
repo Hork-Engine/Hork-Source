@@ -216,8 +216,12 @@ public:
     void                    Move(Float3 const& dir);
 
     void                    UpdateWorldTransform();
+    void                    UpdateChildrenWorldTransform();
 
     void                    SetLockWorldPositionAndRotation(bool lock);
+
+    GameObject*             FindChildren(StringID name);
+    GameObject*             FindChildrenRecursive(StringID name);
     
 private:
                             GameObject() = default;
