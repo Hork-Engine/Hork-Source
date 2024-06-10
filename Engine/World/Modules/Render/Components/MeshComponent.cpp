@@ -40,14 +40,6 @@ HK_NAMESPACE_BEGIN
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
 
-void MeshComponent::BeginPlay()
-{
-}
-
-void MeshComponent::EndPlay()
-{
-}
-
 void MeshComponent::UpdateBoundingBox()
 {
     // TODO

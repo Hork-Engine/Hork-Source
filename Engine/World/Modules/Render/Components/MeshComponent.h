@@ -35,17 +35,14 @@ SOFTWARE.
 #include <Engine/World/Resources/Resource_Mesh.h>
 #include <Engine/World/Resources/Resource_MaterialInstance.h>
 
+#include <Engine/World/GameObject.h>
+#include <Engine/World/World.h>
+
 HK_NAMESPACE_BEGIN
 
 class MeshComponent : public Component
 {
 public:
-    //
-    // Meta info
-    //
-
-    static constexpr ComponentMode Mode = ComponentMode::Static;
-
     struct Surface
     {
         Vector<MaterialInstance*>  Materials;
@@ -54,31 +51,141 @@ public:
     };
 
     MeshHandle              m_Resource;
-    Vector<Surface>        m_Surfaces;
-    Ref<SkeletonPose>      m_Pose;
+    Vector<Surface>         m_Surfaces;
+    Ref<SkeletonPose>       m_Pose;
     bool                    m_Outline = false;
     bool                    m_CastShadow = true;
     uint32_t                m_CascadeMask = 0;
 
-    // Transform from current and previous fixed state
-    Float3                  m_Position[2];
-    Quat                    m_Rotation[2];
-    Float3                  m_Scale[2];
-    // Interpolated transform
-    Float3                  m_LerpPosition;
-    Quat                    m_LerpRotation;
-    Float3                  m_LerpScale;
-    // Transform from previous frame
-    Float3                  m_PrevPosition;
-    Quat                    m_PrevRotation;
-    Float3                  m_PrevScale;
-
-    void                    BeginPlay();
-    void                    EndPlay();
-
     void                    UpdateBoundingBox();
 
     void                    DrawDebug(DebugRenderer& renderer);
+};
+
+struct PreRenderContext
+{
+    uint32_t FrameNum;
+    uint32_t Prev;
+    uint32_t Cur;
+    float    Frac;
+};
+
+class StaticMeshComponent : public MeshComponent
+{
+public:
+    //
+    // Meta info
+    //
+
+    static constexpr ComponentMode Mode = ComponentMode::Static;
+
+    void BeginPlay()
+    {
+        m_RenderTransform = GetOwner()->GetWorldTransformMatrix();
+        m_RotationMatrix = GetOwner()->GetWorldRotation().ToMatrix3x3();
+    }
+
+    void PreRender(PreRenderContext const& context)
+    {}
+
+    Float3x4 const& GetRenderTransform() const
+    {
+        return m_RenderTransform;
+    }
+
+    Float3x4 const& GetRenderTransformPrev() const
+    {
+        return m_RenderTransform;
+    }
+
+    Float3x3 const& GetRotationMatrix() const
+    {
+        return m_RotationMatrix;
+    }
+
+private:
+    Float3x4 m_RenderTransform;
+    Float3x3 m_RotationMatrix;
+};
+
+class DynamicMeshComponent : public MeshComponent
+{
+public:
+    //
+    // Meta info
+    //
+
+    static constexpr ComponentMode Mode = ComponentMode::Static;
+
+    // Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
+    void SkipInterpolation()
+    {
+        m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
+        m_Transform[0].Rotation = m_Transform[1].Rotation = GetOwner()->GetWorldRotation();
+        m_Transform[0].Scale    = m_Transform[1].Scale    = GetOwner()->GetWorldScale();
+
+        m_LastFrame = 0;
+    }
+
+    void PostTransform()
+    {
+        auto index = GetWorld()->GetTick().StateIndex;
+
+        m_Transform[index].Position = GetOwner()->GetWorldPosition();
+        m_Transform[index].Rotation = GetOwner()->GetWorldRotation();
+        m_Transform[index].Scale    = GetOwner()->GetWorldScale();
+    }
+
+    void BeginPlay()
+    {
+        m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
+        m_Transform[0].Rotation = m_Transform[1].Rotation = GetOwner()->GetWorldRotation();
+        m_Transform[0].Scale    = m_Transform[1].Scale    = GetOwner()->GetWorldScale();
+
+        m_RenderTransform[0].Compose(m_Transform[0].Position, m_Transform[0].Rotation.ToMatrix3x3(), m_Transform[0].Scale);
+        m_RenderTransform[1] = m_RenderTransform[0];
+    }
+
+    // Update before rendering once per frame
+    void PreRender(PreRenderContext const& context)
+    {
+        if (m_LastFrame == context.FrameNum)
+            return;  // already called for this frame
+
+        Float3 position = Math::Lerp (m_Transform[context.Prev].Position, m_Transform[context.Cur].Position, context.Frac);
+        Quat   rotation = Math::Slerp(m_Transform[context.Prev].Rotation, m_Transform[context.Cur].Rotation, context.Frac);
+        Float3 scale    = Math::Lerp (m_Transform[context.Prev].Scale,    m_Transform[context.Cur].Scale,    context.Frac);
+
+        m_RotationMatrix = rotation.ToMatrix3x3();
+
+        m_RenderTransform[context.FrameNum & 1].Compose(position, m_RotationMatrix, scale);
+
+        if (m_LastFrame + 1 != context.FrameNum)
+            m_RenderTransform[(context.FrameNum + 1) & 1] = m_RenderTransform[context.FrameNum & 1];
+
+        m_LastFrame = context.FrameNum;
+    }
+
+    Float3x4 const& GetRenderTransform() const
+    {
+        return m_RenderTransform[m_LastFrame & 1];
+    }
+
+    Float3x4 const& GetRenderTransformPrev() const
+    {
+        return m_RenderTransform[(m_LastFrame + 1) & 1];
+    }
+
+    Float3x3 const& GetRotationMatrix() const
+    {
+        return m_RotationMatrix;
+    }
+
+private:
+    Transform m_Transform[2];
+    Float3x4  m_RenderTransform[2];
+    Float3x3  m_RotationMatrix;
+    uint32_t  m_LastFrame{0};
 };
 
 class ProceduralMeshComponent : public Component

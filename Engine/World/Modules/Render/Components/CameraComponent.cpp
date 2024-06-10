@@ -31,6 +31,7 @@ SOFTWARE.
 #include "CameraComponent.h"
 
 #include <Engine/Renderer/RenderDefs.h>
+#include <Engine/World/World.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -302,6 +303,26 @@ void CameraComponent::MakeRay(Float4x4 const& modelViewProjectionInversed, float
 //
 //    return m_BillboardMatrix;
 //}
+
+void CameraComponent::SkipInterpolation()
+{
+    m_Position[0] = m_Position[1] = GetOwner()->GetWorldPosition();
+    m_Rotation[0] = m_Rotation[1] = GetOwner()->GetWorldRotation();
+}
+
+void CameraComponent::PostTransform()
+{
+    auto index = GetWorld()->GetTick().StateIndex;
+
+    m_Position[index] = GetOwner()->GetWorldPosition();
+    m_Rotation[index] = GetOwner()->GetWorldRotation();
+}
+
+void CameraComponent::BeginPlay()
+{
+    m_Position[0] = m_Position[1] = GetOwner()->GetWorldPosition();
+    m_Rotation[0] = m_Rotation[1] = GetOwner()->GetWorldRotation();
+}
 
 #if 0
 void CameraComponent::DrawDebug(DebugRenderer* InRenderer)

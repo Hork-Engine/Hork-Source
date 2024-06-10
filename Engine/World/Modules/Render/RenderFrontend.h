@@ -94,12 +94,19 @@ private:
     void AddMeshShadow(MeshComponent& mesh, struct SkeletonPose* pose, uint32_t cascadeMask, LightShadowmap* shadowmap);
     void AddProceduralMeshShadow(ProceduralMeshComponent& mesh, uint32_t cascadeMask, LightShadowmap* shadowmap);
 
+    template <typename MeshComponentType>
+    void AddMeshes();
+
+    template <typename MeshComponentType>
+    void AddMeshesShadow(LightShadowmap* shadowMap);
+
     //bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
     DebugRenderer m_DebugDraw;
     int m_FrameNumber = 0;
     World* m_World;
+    RenderViewData* m_View;
 
     RenderFrontendStat m_Stat;
 

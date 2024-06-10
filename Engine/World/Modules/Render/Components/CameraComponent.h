@@ -124,6 +124,18 @@ public:
 
     void                    MakeClusterProjectionMatrix(Float4x4& projectionMatrix /*, float clusterZNear, float clusterZFar*/) const;
 
+
+    // Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
+    void                    SkipInterpolation();
+
+    void                    PostTransform();
+
+    void                    BeginPlay();
+
+    Float3 const&           GetPosition(int index) const {        return m_Position[index];    }
+
+    Quat const&             GetRotation(int index) const {        return m_Rotation[index];    }
+
 private:
     CameraProjection        m_Projection = CameraProjection::PerspectiveFovYWithAspectRatio;
     float                   m_FovX = 90.0f;
@@ -136,6 +148,9 @@ private:
     float                   m_OrthoZoom = 30;
 
     // Cache
+
+    Float3                  m_Position[2];
+    Quat                    m_Rotation[2];
 
     //mutable Float4x4      m_ViewMatrix;
     //mutable Float3x3      m_BillboardMatrix;
