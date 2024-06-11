@@ -67,24 +67,14 @@ void MeshComponent::DrawDebug(DebugRenderer& renderer)
     {
         // TODO
         //renderer.SetDepthTest(false);
-        //renderer.SetColor(m_Pose ? Color4(0.5f, 0.5f, 1, 1) : Color4(1, 1, 1, 1));
-        //renderer.DrawAABB(m_WorldBoundingBox);
-    }
-}
-
-void ProceduralMeshComponent::UpdateBoundingBox()
-{
-    // TODO
-    //m_WorldBoundingBox = BoundingBox.Transform(GetOwner()->GetWorldTransformMatrix());
-}
-
-void ProceduralMeshComponent::DrawDebug(DebugRenderer& renderer)
-{
-    if (com_DrawMeshBounds)
-    {
-        // TODO
-        //renderer.SetDepthTest(false);
-        //renderer.SetColor(Color4(0.5f, 1, 0.5f, 1));
+        //if (m_Pose)
+        //    renderer.SetColor(Color4(0.5f, 0.5f, 1, 1));
+        //else if (m_Resource)
+        //    renderer.SetColor(Color4(1, 1, 1, 1));
+        //else if (m_ProceduralData)
+        //    renderer.SetColor(Color4(0.5f, 1, 0.5f, 1));
+        //else
+        //    renderer.SetColor(Color4(1, 0, 0, 1));
         //renderer.DrawAABB(m_WorldBoundingBox);
     }
 }

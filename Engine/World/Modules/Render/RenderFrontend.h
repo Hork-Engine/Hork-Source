@@ -39,8 +39,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class MeshComponent;
-class ProceduralMeshComponent;
 class DirectionalLightComponent;
 
 struct RenderFrontendStat
@@ -90,9 +88,6 @@ private:
 
     void AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
     void AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef);
-
-    void AddMeshShadow(MeshComponent& mesh, struct SkeletonPose* pose, uint32_t cascadeMask, LightShadowmap* shadowmap);
-    void AddProceduralMeshShadow(ProceduralMeshComponent& mesh, uint32_t cascadeMask, LightShadowmap* shadowmap);
 
     template <typename MeshComponentType>
     void AddMeshes();

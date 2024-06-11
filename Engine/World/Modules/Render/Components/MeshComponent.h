@@ -53,6 +53,7 @@ public:
     MeshHandle              m_Resource;
     Vector<Surface>         m_Surfaces;
     Ref<SkeletonPose>       m_Pose;
+    Ref<ProceduralMesh_ECS> m_ProceduralData;
     bool                    m_Outline = false;
     bool                    m_CastShadow = true;
     uint32_t                m_CascadeMask = 0;
@@ -186,45 +187,6 @@ private:
     Float3x4  m_RenderTransform[2];
     Float3x3  m_RotationMatrix;
     uint32_t  m_LastFrame{0};
-};
-
-class ProceduralMeshComponent : public Component
-{
-public:
-    //
-    // Meta info
-    //
-
-    static constexpr ComponentMode Mode = ComponentMode::Static;
-
-    struct Surface
-    {
-        Vector<MaterialInstance*>  Materials;
-        //BvAxisAlignedBox            BoundingBox;
-        //BvAxisAlignedBox            WorldBoundingBox;
-    };
-
-    Ref<ProceduralMesh_ECS> m_Mesh;
-    Surface                 m_Surface;
-    bool                    m_Outline = false;
-    bool                    m_CastShadow = true;
-
-    // Transform from current and previous fixed state
-    Float3                  m_Position[2];
-    Quat                    m_Rotation[2];
-    Float3                  m_Scale[2];
-    // Interpolated transform
-    Float3                  m_LerpPosition;
-    Quat                    m_LerpRotation;
-    Float3                  m_LerpScale;
-    // Transform from previous frame
-    Float3                  m_PrevPosition;
-    Quat                    m_PrevRotation;
-    Float3                  m_PrevScale;
-
-    void                    UpdateBoundingBox();
-
-    void                    DrawDebug(DebugRenderer& renderer);
 };
 
 HK_NAMESPACE_END
