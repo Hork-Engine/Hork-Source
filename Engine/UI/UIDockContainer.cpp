@@ -507,7 +507,7 @@ bool UIDockContainer::OnChildrenMouseButtonEvent(MouseButtonEvent const& event)
 
     GUILockViewportScaling = false;
 
-    if (event.Action == IA_PRESS && event.Button == 0)
+    if (event.Action == InputAction::Pressed && event.Button == VirtualKey::MouseLeftBtn)
     {
         m_DragPos = GUIManager->CursorPosition;
 

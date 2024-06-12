@@ -131,7 +131,7 @@ void UIWidget::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
 }
 
-void UIWidget::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime)
+void UIWidget::OnDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime)
 {
 }
 
@@ -440,7 +440,7 @@ void UIWidget::ForwardMouseButtonEvent(MouseButtonEvent const& event)
     }
 }
 
-void UIWidget::ForwardDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime)
+void UIWidget::ForwardDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime)
 {
     OnDblClickEvent(buttonKey, clickPos, clickTime);
 

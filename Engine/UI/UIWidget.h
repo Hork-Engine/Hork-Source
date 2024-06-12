@@ -36,6 +36,7 @@ SOFTWARE.
 #include "UICursor.h"
 
 #include <Engine/Core/Delegate.h>
+#include <Engine/GameApplication/VirtualKey.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -425,7 +426,7 @@ public:
 
     void ForwardMouseButtonEvent(struct MouseButtonEvent const& event);
 
-    void ForwardDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime);
+    void ForwardDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime);
 
     void ForwardMouseWheelEvent(struct MouseWheelEvent const& event);
 
@@ -454,7 +455,7 @@ protected:
 
     virtual bool OnChildrenMouseButtonEvent(MouseButtonEvent const& event);
 
-    virtual void OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime);
+    virtual void OnDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime);
 
     virtual void OnMouseWheelEvent(struct MouseWheelEvent const& event);
 

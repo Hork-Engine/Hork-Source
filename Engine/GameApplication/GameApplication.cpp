@@ -550,7 +550,7 @@ void GameApplication::OnKeyEvent(KeyEvent const& event)
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if (bToggleFullscreenAltEnter)
     {
-        if (event.Action == IA_PRESS && event.Key == KEY_ENTER && (HAS_MODIFIER(event.ModMask, KEY_MOD_ALT)))
+        if (event.Action == InputAction::Pressed && event.Key == VirtualKey::Enter && event.ModMask.Alt)
         {
             DisplayVideoMode videoMode  = m_Window->GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;

@@ -219,7 +219,7 @@ void UIDesktop::SetFocusWidget(UIWidget* widget)
     {
         //MouseButtonEvent event;
         //event.ModMask = 0;
-        //event.Action  = IA_RELEASE;
+        //event.Action  = InputAction::Released;
 
         //for (int i = 0; i < 8; i++)
         //{
@@ -285,7 +285,7 @@ void UIDesktop::GenerateKeyEvents(KeyEvent const& event)
 {
     if (m_DraggingWidget)
     {
-        if (event.Key == KEY_ESCAPE && event.Action == IA_PRESS)
+        if (event.Key == VirtualKey::Escape && event.Action == InputAction::Pressed)
         {
             CancelDragging();
         }
@@ -295,7 +295,7 @@ void UIDesktop::GenerateKeyEvents(KeyEvent const& event)
     #if 0
     if (m_Popup)
     {
-        if (event.Action == IA_PRESS || event.Action == IA_REPEAT)
+        if (event.Action == InputAction::Pressed || event.Action == InputAction::Repeat)
         {
             if (event.Key == KEY_ESCAPE)
             {
@@ -345,7 +345,7 @@ void UIDesktop::GenerateKeyEvents(KeyEvent const& event)
 
     bool bPassFocusWidgetEvent = m_FocusWidget && m_FocusWidget->IsVisible() && !m_FocusWidget->IsDisabled();
 
-    if (m_ShortcutContainer && event.Action == IA_PRESS)
+    if (m_ShortcutContainer && event.Action == InputAction::Pressed)
     {
         if (!bPassFocusWidgetEvent || m_FocusWidget->bShortcutsAllowed)
         {
@@ -369,13 +369,13 @@ void UIDesktop::GenerateKeyEvents(KeyEvent const& event)
 void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
 {
     UIWidget* widget = nullptr;
-    const int DraggingButton = 0;
+    const VirtualKey DraggingButton = VirtualKey::MouseLeftBtn;
 
     m_MouseFocusWidget.Reset();
 
     if (m_DraggingWidget)
     {
-        if (event.Button == DraggingButton && event.Action == IA_RELEASE)
+        if (event.Button == DraggingButton && event.Action == InputAction::Released)
         {
             // Stop dragging
 
@@ -400,7 +400,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
         return;
     }
 
-    if (event.Action == IA_PRESS)
+    if (event.Action == InputAction::Pressed)
     {
         if (m_Popup)
         {
@@ -439,7 +439,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
             {
                 if (!widget->IsDisabled())
                 {
-                    if (event.Button == 0 && !widget->GetParent())
+                    if (event.Button == VirtualKey::MouseLeftBtn && !widget->GetParent())
                     {
                         UIWindow* window = dynamic_cast<UIWindow*>(widget);
 

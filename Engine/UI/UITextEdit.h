@@ -163,7 +163,7 @@ protected:
 
     void OnMouseButtonEvent(struct MouseButtonEvent const& event) override;
 
-    void OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime) override;
+    void OnDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime) override;
 
     void OnMouseWheelEvent(struct MouseWheelEvent const& event) override;
 

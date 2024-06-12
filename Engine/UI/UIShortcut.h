@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Delegate.h>
+#include <Engine/GameApplication/VirtualKey.h>
 
 #include "UIObject.h"
 
@@ -38,9 +39,9 @@ HK_NAMESPACE_BEGIN
 
 struct UIShortcutInfo
 {
-    int              Key;
-    int              ModMask;
-    Delegate<void()> Binding;
+    VirtualKey          Key;
+    KeyModifierMask     ModMask;
+    Delegate<void()>    Binding;
 };
 
 class UIShortcutContainer : public UIObject
@@ -48,23 +49,11 @@ class UIShortcutContainer : public UIObject
     UI_CLASS(UIShortcutContainer, UIObject)
 
 public:
-    void Clear()
-    {
-        m_Shortcuts.Clear();
-    }
+    void                            Clear();
 
-    UIShortcutContainer& AddShortcut(int Key, int ModMask, Delegate<void()> Binding)
-    {
-        UIShortcutInfo& shortcut = m_Shortcuts.Add();
+    UIShortcutContainer&            AddShortcut(VirtualKey key, KeyModifierMask modMask, Delegate<void()> binding);
 
-        shortcut.Key     = Key;
-        shortcut.ModMask = ModMask;
-        shortcut.Binding = Binding;
-
-        return *this;
-    }
-
-    Vector<UIShortcutInfo> const& GetShortcuts() const { return m_Shortcuts; }
+    Vector<UIShortcutInfo> const&   GetShortcuts() const { return m_Shortcuts; }
 
 private:
     Vector<UIShortcutInfo> m_Shortcuts;

@@ -31,7 +31,6 @@ SOFTWARE.
 #include "UISlider.h"
 #include "UIManager.h"
 #include <Engine/GameApplication/FrameLoop.h>
-#include <Engine/GameApplication/InputDefs.h>
 #include <Engine/Geometry/BV/BvIntersect.h>
 
 HK_NAMESPACE_BEGIN
@@ -157,7 +156,7 @@ void UISlider::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
     m_Action = A_NONE;
 
-    if (event.Button != MOUSE_BUTTON_LEFT || event.Action != IA_PRESS)
+    if (event.Button != VirtualKey::MouseLeftBtn || event.Action != InputAction::Pressed)
     {
         return;
     }

@@ -784,8 +784,8 @@ Shadowmap render instance
 */
 struct ShadowRenderInstance
 {
-    MaterialGPU*        Material;
-    MaterialFrameData*  MaterialInstance;
+    MaterialGPU*         Material;
+    MaterialFrameData*   MaterialInstance;
     RenderCore::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
     RenderCore::IBuffer* IndexBuffer;

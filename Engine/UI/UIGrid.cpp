@@ -31,7 +31,6 @@ SOFTWARE.
 #include "UIGrid.h"
 #include "UIManager.h"
 #include <Engine/GameApplication/FrameLoop.h>
-#include <Engine/GameApplication/InputDefs.h>
 #include <Engine/Geometry/BV/BvIntersect.h>
 
 HK_NAMESPACE_BEGIN
@@ -127,9 +126,9 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
 
 void UIGrid::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
-    if (event.Button == 0)
+    if (event.Button == VirtualKey::MouseLeftBtn)
     {
-        if (event.Action == IA_PRESS)
+        if (event.Action == InputAction::Pressed)
         {
             m_Splitter  = UIGrid::TraceSplitter(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
             if (m_Splitter)

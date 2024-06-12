@@ -33,7 +33,6 @@ SOFTWARE.
 #include "UIManager.h"
 
 #include <Engine/GameApplication/FrameLoop.h>
-#include <Engine/GameApplication/InputDefs.h>
 #include <Engine/GameApplication/GameApplication.h>
 
 #include <Engine/Core/Platform.h>
@@ -998,26 +997,26 @@ UITextEdit& UITextEdit::WithWordWrap(bool bWordWrap)
 
 void UITextEdit::OnKeyEvent(KeyEvent const& event)
 {
-    if (event.Action != IA_RELEASE)
+    if (event.Action != InputAction::Released)
     {
         int key = 0;
 
         // OS X style: Shortcuts using Cmd/Super instead of Ctrl
-        const bool bShortcutKey = (bOSX ? ((event.ModMask & MOD_MASK_SUPER) && !(event.ModMask & MOD_MASK_CONTROL)) : ((event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_SUPER))) && !(event.ModMask & MOD_MASK_ALT) && !(event.ModMask & MOD_MASK_SHIFT);
+        const bool bShortcutKey = (bOSX ? ((event.ModMask.Super) && !(event.ModMask.Control)) : ((event.ModMask.Control) && !(event.ModMask.Super))) && !(event.ModMask.Alt) && !(event.ModMask.Shift);
 
-        const bool bShiftShortcutOSX = bOSX && (event.ModMask & MOD_MASK_SUPER) && (event.ModMask & MOD_MASK_SHIFT) && !(event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_ALT);
+        const bool bShiftShortcutOSX = bOSX && (event.ModMask.Super) && (event.ModMask.Shift) && !(event.ModMask.Control) && !(event.ModMask.Alt);
 
         // OS X style: Text editing cursor movement using Alt instead of Ctrl
-        const bool bWordmoveKeyDown = bOSX ? !!(event.ModMask & MOD_MASK_ALT) : !!(event.ModMask & MOD_MASK_CONTROL);
+        const bool bWordmoveKeyDown = bOSX ? !!(event.ModMask.Alt) : !!(event.ModMask.Control);
 
         // OS X style: Line/Text Start and End using Cmd+Arrows instead of Home/End
-        const bool bStartEndKeyDown = bOSX && (event.ModMask & MOD_MASK_SUPER) && !(event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_ALT);
+        const bool bStartEndKeyDown = bOSX && (event.ModMask.Super) && !(event.ModMask.Control) && !(event.ModMask.Alt);
 
-        const int KeyMask = (event.ModMask & MOD_MASK_SHIFT) ? STB_TEXTEDIT_K_SHIFT : 0;
+        const int KeyMask = (event.ModMask.Shift) ? STB_TEXTEDIT_K_SHIFT : 0;
 
         switch (event.Key)
         {
-            case KEY_LEFT:
+            case VirtualKey::Left:
                 if (bStartEndKeyDown)
                 {
                     key = STB_TEXTEDIT_K_LINESTART;
@@ -1035,7 +1034,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 ScrollToCursor();
                 break;
 
-            case KEY_RIGHT:
+            case VirtualKey::Right:
                 if (bStartEndKeyDown)
                 {
                     key = STB_TEXTEDIT_K_LINEEND;
@@ -1053,10 +1052,10 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 ScrollToCursor();
                 break;
 
-            case KEY_UP:
+            case VirtualKey::Up:
                 if (!m_bSingleLine)
                 {
-                    if (event.ModMask & MOD_MASK_CONTROL)
+                    if (event.ModMask.Control)
                     {
                         ScrollLineUp();
                     }
@@ -1077,10 +1076,10 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 }
                 break;
 
-            case KEY_DOWN:
+            case VirtualKey::Down:
                 if (!m_bSingleLine)
                 {
-                    if (event.ModMask & MOD_MASK_CONTROL)
+                    if (event.ModMask.Control)
                     {
                         ScrollLineDown();
                     }
@@ -1102,8 +1101,8 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
 
                 break;
 
-            case KEY_HOME:
-                if (event.ModMask & MOD_MASK_CONTROL)
+            case VirtualKey::Home:
+                if (event.ModMask.Control)
                 {
                     key = STB_TEXTEDIT_K_TEXTSTART | KeyMask;
 
@@ -1118,8 +1117,8 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 PressKey(key);
                 break;
 
-            case KEY_END:
-                if (event.ModMask & MOD_MASK_CONTROL)
+            case VirtualKey::End:
+                if (event.ModMask.Control)
                 {
                     key = STB_TEXTEDIT_K_TEXTEND | KeyMask;
 
@@ -1136,15 +1135,15 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 }
                 break;
 
-            case KEY_PAGE_UP:
+            case VirtualKey::PageUp:
                 ScrollPageUp(true);
                 break;
 
-            case KEY_PAGE_DOWN:
+            case VirtualKey::PageDown:
                 ScrollPageDown(true);
                 break;
 
-            case KEY_DELETE:
+            case VirtualKey::Delete:
                 if (!m_bReadOnly)
                 {
                     key = STB_TEXTEDIT_K_DELETE | KeyMask;
@@ -1152,7 +1151,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 }
                 break;
 
-            case KEY_BACKSPACE:
+            case VirtualKey::Backspace:
                 if (!m_bReadOnly)
                 {
                     if (!HasSelection())
@@ -1161,7 +1160,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                         {
                             PressKey(STB_TEXTEDIT_K_WORDLEFT | STB_TEXTEDIT_K_SHIFT);
                         }
-                        else if (bOSX && (event.ModMask & MOD_MASK_SUPER) && !(event.ModMask & MOD_MASK_ALT) && !(event.ModMask & MOD_MASK_CONTROL))
+                        else if (bOSX && (event.ModMask.Super) && !(event.ModMask.Alt) && !(event.ModMask.Control))
                         {
                             PressKey(STB_TEXTEDIT_K_LINESTART | STB_TEXTEDIT_K_SHIFT);
                         }
@@ -1171,8 +1170,8 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 }
                 break;
 
-            case KEY_ENTER: {
-                const bool bCtrl = !!(event.ModMask & MOD_MASK_CONTROL);
+            case VirtualKey::Enter: {
+                const bool bCtrl = !!(event.ModMask.Control);
 
                 if (m_bSingleLine || (m_bCtrlEnterForNewLine && !bCtrl) || (!m_bCtrlEnterForNewLine && bCtrl))
                 {
@@ -1191,10 +1190,10 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 break;
             }
 
-            case KEY_TAB: {
-                bool bCtrl  = !!(event.ModMask & MOD_MASK_CONTROL);
-                bool bShift = !!(event.ModMask & MOD_MASK_SHIFT);
-                bool bAlt   = !!(event.ModMask & MOD_MASK_ALT);
+            case VirtualKey::Tab: {
+                bool bCtrl  = !!(event.ModMask.Control);
+                bool bShift = !!(event.ModMask.Shift);
+                bool bAlt   = !!(event.ModMask.Alt);
 
                 if (m_bAllowTabInput && !m_bReadOnly && !bCtrl && !bShift && !bAlt)
                 {
@@ -1224,11 +1223,11 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 break;
             }
 
-            case KEY_ESCAPE:
+            case VirtualKey::Escape:
                 E_OnEscapePress.Invoke();
                 break;
 
-            case KEY_Z:
+            case VirtualKey::Z:
                 if (m_bAllowUndo && !m_bReadOnly)
                 {
                     if (bShortcutKey)
@@ -1238,7 +1237,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                         ClearSelection();
                         ScrollToCursor();
                     }
-                    else if (bShiftShortcutOSX || (event.ModMask & (MOD_MASK_SHIFT | MOD_MASK_CONTROL)) == (MOD_MASK_SHIFT | MOD_MASK_CONTROL))
+                    else if (bShiftShortcutOSX || (event.ModMask.Shift && event.ModMask.Control))
                     {
                         PressKey(STB_TEXTEDIT_K_REDO);
 
@@ -1248,7 +1247,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 }
                 break;
 
-            case KEY_Y:
+            case VirtualKey::Y:
 
                 if (m_bAllowUndo && !m_bReadOnly)
                 {
@@ -1263,14 +1262,14 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
 
                 break;
 
-            case KEY_A:
+            case VirtualKey::A:
                 if (bShortcutKey)
                 {
                     SelectAll();
                 }
                 break;
 
-            case KEY_INSERT:
+            case VirtualKey::Insert:
                 if (event.ModMask == 0)
                 {
                     GUIManager->SetInsertMode(!GUIManager->IsInsertMode());
@@ -1278,20 +1277,20 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
                 break;
         }
 
-        const bool bCtrlOnly  = (event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_SHIFT) && !(event.ModMask & MOD_MASK_ALT) && !(event.ModMask & MOD_MASK_SUPER);
-        const bool bShiftOnly = (event.ModMask & MOD_MASK_SHIFT) && !(event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_ALT) && !(event.ModMask & MOD_MASK_SUPER);
+        const bool bCtrlOnly  = (event.ModMask.Control) && !(event.ModMask.Shift) && !(event.ModMask.Alt) && !(event.ModMask.Super);
+        const bool bShiftOnly = (event.ModMask.Shift) && !(event.ModMask.Control) && !(event.ModMask.Alt) && !(event.ModMask.Super);
 
-        if ((bShortcutKey && event.Key == KEY_X) || (bShiftOnly && event.Key == KEY_DELETE))
+        if ((bShortcutKey && event.Key == VirtualKey::X) || (bShiftOnly && event.Key == VirtualKey::Delete))
         {
             Cut();
             ScrollToCursor();
         }
-        else if ((bShortcutKey && event.Key == KEY_C) || (bCtrlOnly && event.Key == KEY_INSERT))
+        else if ((bShortcutKey && event.Key == VirtualKey::C) || (bCtrlOnly && event.Key == VirtualKey::Insert))
         {
             Copy();
             ScrollToCursor();
         }
-        else if ((bShortcutKey && event.Key == KEY_V) || (bShiftOnly && event.Key == KEY_INSERT))
+        else if ((bShortcutKey && event.Key == VirtualKey::V) || (bShiftOnly && event.Key == VirtualKey::Insert))
         {
             Paste();
             ScrollToCursor();
@@ -1301,12 +1300,12 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
 
 void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
-    if (event.Button != MOUSE_BUTTON_1 && event.Button != MOUSE_BUTTON_2)
+    if (event.Button != VirtualKey::MouseLeftBtn && event.Button != VirtualKey::MouseRightBtn)
     {
         return;
     }
 
-    if (event.Action == IA_PRESS)
+    if (event.Action == InputAction::Pressed)
     {
         Float2 CursorPos = GUIManager->CursorPosition;
 
@@ -1315,7 +1314,7 @@ void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
             m_TempCursor = m_State->cursor;
         }
 
-        if (event.Button == MOUSE_BUTTON_1 && (event.ModMask & MOD_MASK_SHIFT))
+        if (event.Button == VirtualKey::MouseLeftBtn && (event.ModMask.Shift))
         {
             stb_textedit_click(this, m_State, CursorPos.X, CursorPos.Y);
 
@@ -1335,12 +1334,12 @@ void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
         }
     }
 
-    m_bStartDragging = (event.Action == IA_PRESS) && event.Button == MOUSE_BUTTON_1;
+    m_bStartDragging = (event.Action == InputAction::Pressed) && event.Button == VirtualKey::MouseLeftBtn;
 }
 
-void UITextEdit::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t clickTime)
+void UITextEdit::OnDblClickEvent(VirtualKey buttonKey, Float2 const& clickPos, uint64_t clickTime)
 {
-    if (buttonKey == 0)
+    if (buttonKey == VirtualKey::MouseLeftBtn)
     {
         PressKey(STB_TEXTEDIT_K_WORDLEFT);
         PressKey(STB_TEXTEDIT_K_WORDRIGHT | STB_TEXTEDIT_K_SHIFT);
@@ -1397,12 +1396,12 @@ void UITextEdit::OnCharEvent(CharEvent const& event)
     }
 
     // We ignore CTRL inputs, but need to allow ALT+CTRL as some keyboards (e.g. German) use AltGR (which _is_ Alt+Ctrl) to input certain characters.
-    if ((event.ModMask & MOD_MASK_CONTROL) && !(event.ModMask & MOD_MASK_ALT))
+    if ((event.ModMask.Control) && !(event.ModMask.Alt))
     {
         return;
     }
 
-    if (bOSX && (event.ModMask & MOD_MASK_SUPER))
+    if (bOSX && (event.ModMask.Super))
     {
         return;
     }

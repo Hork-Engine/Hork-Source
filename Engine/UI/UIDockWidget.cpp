@@ -49,7 +49,7 @@ UIDockWidget::UIDockWidget(UIDockContainer* container) :
 
 bool UIDockWidget::OnChildrenMouseButtonEvent(MouseButtonEvent const& event, double timeStamp)
 {
-    if (event.Button == 0 && event.Action == IA_PRESS)
+    if (event.Button == VirtualKey::MouseLeftBtn && event.Action == InputAction::Pressed)
     {
         UIDesktop* desktop = GetDesktop();
         if (desktop)

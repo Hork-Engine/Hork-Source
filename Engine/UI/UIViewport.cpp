@@ -67,12 +67,19 @@ UIViewport& UIViewport::WithComposite(CANVAS_COMPOSITE composite)
 
 void UIViewport::OnKeyEvent(KeyEvent const& event)
 {
-    GameApplication::GetInputSystem().SetButtonState({ID_KEYBOARD, uint16_t(event.Key)}, event.Action, event.ModMask);
+    VirtualKey virtualKey = VirtualKey(event.Key);
+    if (event.Action == InputAction::Pressed)
+        GameApplication::GetInputSystem().SetKeyState(virtualKey, InputEvent::OnPress, event.ModMask);
+    else if (event.Action == InputAction::Released)
+        GameApplication::GetInputSystem().SetKeyState(virtualKey, InputEvent::OnRelease, event.ModMask);
 }
 
 void UIViewport::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
-    GameApplication::GetInputSystem().SetButtonState({ID_MOUSE, uint16_t(event.Button)}, event.Action, event.ModMask);
+    if (event.Action == InputAction::Pressed)
+        GameApplication::GetInputSystem().SetKeyState(event.Button, InputEvent::OnPress, event.ModMask);
+    else if (event.Action == InputAction::Released)
+        GameApplication::GetInputSystem().SetKeyState(event.Button, InputEvent::OnRelease, event.ModMask);
 }
 
 void UIViewport::OnMouseWheelEvent(MouseWheelEvent const& event)
@@ -94,12 +101,12 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
 
 void UIViewport::OnJoystickButtonEvent(JoystickButtonEvent const& event)
 {
-    GameApplication::GetInputSystem().SetButtonState({uint16_t(ID_JOYSTICK_1 + event.Joystick), uint16_t(event.Button)}, event.Action, 0);
+    // TODO
 }
 
 void UIViewport::OnJoystickAxisEvent(JoystickAxisEvent const& event)
 {
-    InputSystem::SetJoystickAxisState(event.Joystick, event.Axis, event.Value);
+    // TODO
 }
 
 void UIViewport::OnCharEvent(CharEvent const& event)
@@ -109,7 +116,7 @@ void UIViewport::OnCharEvent(CharEvent const& event)
 
 void UIViewport::OnFocusLost()
 {
-    GameApplication::GetInputSystem().UnpressButtons();
+    GameApplication::GetInputSystem().ResetKeyState();
 }
 
 void UIViewport::OnFocusReceive()

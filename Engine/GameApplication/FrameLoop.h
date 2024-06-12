@@ -34,99 +34,88 @@ SOFTWARE.
 #include <Engine/Core/Containers/ArrayView.h>
 #include <Engine/RenderCore/VertexMemoryGPU.h>
 
-#include "InputDefs.h"
+#include "VirtualKey.h"
 
 HK_NAMESPACE_BEGIN
 
-//struct Joystick
-//{
-//    int NumAxes;
-//    int NumButtons;
-//    bool bGamePad;
-//    bool bConnected;
-//    int Id;
-//};
+enum InputAction
+{
+    Released,
+    Pressed,
+    Repeat
+};
 
 struct KeyEvent
 {
-    int Key;
-    int Scancode; // Not used, reserved for future
-    int ModMask;
-    int Action; // INPUT_ACTION
+    VirtualKey  Key;
+    int         Scancode; // Not used, reserved for future
+    KeyModifierMask ModMask;
+    InputAction Action;
 };
 
 struct MouseButtonEvent
 {
-    int Button;
-    int ModMask;
-    int Action; // INPUT_ACTION
+    VirtualKey  Button;
+    KeyModifierMask ModMask;
+    InputAction Action;
 };
 
 struct MouseWheelEvent
 {
-    double WheelX;
-    double WheelY;
+    double      WheelX;
+    double      WheelY;
 };
 
 struct MouseMoveEvent
 {
-    float X;
-    float Y;
+    float       X;
+    float       Y;
 };
 
 struct JoystickAxisEvent
 {
-    int Joystick;
-    int Axis;
-    float Value;
+    int         Joystick;
+    int         Axis;
+    float       Value;
 };
 
 struct JoystickButtonEvent
 {
-    int Joystick;
-    int Button;
-    int Action; // INPUT_ACTION
+    int         Joystick;
+    VirtualKey  Button;
+    InputAction Action;
 };
-
-//struct JoystickStateEvent
-//{
-//    int Joystick;
-//    int NumAxes;
-//    int NumButtons;
-//    bool bGamePad;
-//    bool bConnected;
-//};
 
 struct CharEvent
 {
-    WideChar UnicodeCharacter;
-    int ModMask;
+    WideChar    UnicodeCharacter;
+    KeyModifierMask ModMask;
 };
 
 class IEventListener
 {
 public:
-    virtual ~IEventListener() {}
+    virtual         ~IEventListener() {}
 
-    virtual void OnKeyEvent(struct KeyEvent const& event) = 0;
+    virtual void    OnKeyEvent(struct KeyEvent const& event) = 0;
 
-    virtual void OnMouseButtonEvent(struct MouseButtonEvent const& event) = 0;
+    virtual void    OnMouseButtonEvent(struct MouseButtonEvent const& event) = 0;
 
-    virtual void OnMouseWheelEvent(struct MouseWheelEvent const& event) = 0;
+    virtual void    OnMouseWheelEvent(struct MouseWheelEvent const& event) = 0;
 
-    virtual void OnMouseMoveEvent(struct MouseMoveEvent const& event) = 0;
+    virtual void    OnMouseMoveEvent(struct MouseMoveEvent const& event) = 0;
 
-    virtual void OnJoystickAxisEvent(struct JoystickAxisEvent const& event) = 0;
+    virtual void    OnJoystickAxisEvent(struct JoystickAxisEvent const& event) = 0;
 
-    virtual void OnJoystickButtonEvent(struct JoystickButtonEvent const& event) = 0;
+    virtual void    OnJoystickButtonEvent(struct JoystickButtonEvent const& event) = 0;
 
-    virtual void OnCharEvent(struct CharEvent const& event) = 0;
+    virtual void    OnCharEvent(struct CharEvent const& event) = 0;
 
-    virtual void OnWindowVisible(bool bVisible) = 0;
+    virtual void    OnWindowVisible(bool bVisible) = 0;
 
-    virtual void OnCloseEvent() = 0;
+    virtual void    OnCloseEvent() = 0;
 
-    virtual void OnResize() = 0;
+    virtual void    OnResize() = 0;
 };
 
 class WorldRenderView;
@@ -176,7 +165,7 @@ public:
 
     Vector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
 
-    StreamedMemoryGPU*              GetStreamedMemoryGPU() { return m_StreamedMemoryGPU.RawPtr(); }
+    StreamedMemoryGPU* GetStreamedMemoryGPU() { return m_StreamedMemoryGPU.RawPtr(); }
 
 private:
     void            ClearViews();
@@ -184,9 +173,9 @@ private:
     void            UnpressKeysAndButtons(IEventListener* Listener);
     void            UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum);
         
-    int64_t m_FrameTimeStamp;
-    int64_t m_FrameDuration;
-    int     m_FrameNumber;
+    int64_t             m_FrameTimeStamp;
+    int64_t             m_FrameDuration;
+    int                 m_FrameNumber;
 
     LinearAllocator<>&  m_FrameMemory;
     size_t              m_FrameMemoryUsedPrev = 0;
@@ -197,11 +186,9 @@ private:
 
     Ref<RenderCore::IDevice> m_RenderDevice;
 
-    Array<int, KEY_LAST + 1>           m_PressedKeys;
-    Array<bool, MOUSE_BUTTON_8 + 1>    m_PressedMouseButtons;
-    Array<Array<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT>    m_JoystickButtonState;
-    Array<Array<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
-    Array<bool, MAX_JOYSTICKS_COUNT>    m_JoystickAdded;
+    Array<int, VirtualKeyTableSize>     m_PressedKeys;
+    //Array<Array<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
+    //Array<bool, MAX_JOYSTICKS_COUNT>    m_JoystickAdded;
     bool                                m_bShouldGenerateInputEvents{true};
 
     Vector<WorldRenderView*>   m_Views;

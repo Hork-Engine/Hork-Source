@@ -57,11 +57,9 @@ FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
     m_FrameDuration = 1000000.0 / 60;
     m_FrameNumber = 0;
 
-    Core::ZeroMem(m_PressedKeys.ToPtr(), sizeof(m_PressedKeys));
-    Core::ZeroMem(m_PressedMouseButtons.ToPtr(), sizeof(m_PressedMouseButtons));
-    Core::ZeroMem(m_JoystickButtonState.ToPtr(), sizeof(m_JoystickButtonState));
-    Core::ZeroMem(m_JoystickAxisState.ToPtr(), sizeof(m_JoystickAxisState));
-    Core::ZeroMem(m_JoystickAdded.ToPtr(), sizeof(m_JoystickAdded));
+    m_PressedKeys.ZeroMem();
+    //Core::ZeroMem(m_JoystickAxisState.ToPtr(), sizeof(m_JoystickAxisState));
+    //Core::ZeroMem(m_JoystickAdded.ToPtr(), sizeof(m_JoystickAdded));
 
     m_FontStash = GetSharedInstance<FontStash>();
 }
@@ -204,195 +202,198 @@ void FrameLoop::RegisterView(WorldRenderView* pView)
     pView->AddRef();
 }
 
-struct KeyMappingsSDL : public Array<unsigned short, SDL_NUM_SCANCODES>
+static const VirtualKey InvalidKey = VirtualKey(0xffff);
+
+struct KeyMappingsSDL : public Array<VirtualKey, SDL_NUM_SCANCODES>
 {
     KeyMappingsSDL()
     {
         KeyMappingsSDL& self = *this;
 
-        Core::ZeroMem(ToPtr(), sizeof(*this));
+        for (size_t n = 0; n < SDL_NUM_SCANCODES; ++n)
+            self[n] = InvalidKey;
 
-        self[SDL_SCANCODE_A]            = KEY_A;
-        self[SDL_SCANCODE_B]            = KEY_B;
-        self[SDL_SCANCODE_C]            = KEY_C;
-        self[SDL_SCANCODE_D]            = KEY_D;
-        self[SDL_SCANCODE_E]            = KEY_E;
-        self[SDL_SCANCODE_F]            = KEY_F;
-        self[SDL_SCANCODE_G]            = KEY_G;
-        self[SDL_SCANCODE_H]            = KEY_H;
-        self[SDL_SCANCODE_I]            = KEY_I;
-        self[SDL_SCANCODE_J]            = KEY_J;
-        self[SDL_SCANCODE_K]            = KEY_K;
-        self[SDL_SCANCODE_L]            = KEY_L;
-        self[SDL_SCANCODE_M]            = KEY_M;
-        self[SDL_SCANCODE_N]            = KEY_N;
-        self[SDL_SCANCODE_O]            = KEY_O;
-        self[SDL_SCANCODE_P]            = KEY_P;
-        self[SDL_SCANCODE_Q]            = KEY_Q;
-        self[SDL_SCANCODE_R]            = KEY_R;
-        self[SDL_SCANCODE_S]            = KEY_S;
-        self[SDL_SCANCODE_T]            = KEY_T;
-        self[SDL_SCANCODE_U]            = KEY_U;
-        self[SDL_SCANCODE_V]            = KEY_V;
-        self[SDL_SCANCODE_W]            = KEY_W;
-        self[SDL_SCANCODE_X]            = KEY_X;
-        self[SDL_SCANCODE_Y]            = KEY_Y;
-        self[SDL_SCANCODE_Z]            = KEY_Z;
-        self[SDL_SCANCODE_1]            = KEY_1;
-        self[SDL_SCANCODE_2]            = KEY_2;
-        self[SDL_SCANCODE_3]            = KEY_3;
-        self[SDL_SCANCODE_4]            = KEY_4;
-        self[SDL_SCANCODE_5]            = KEY_5;
-        self[SDL_SCANCODE_6]            = KEY_6;
-        self[SDL_SCANCODE_7]            = KEY_7;
-        self[SDL_SCANCODE_8]            = KEY_8;
-        self[SDL_SCANCODE_9]            = KEY_9;
-        self[SDL_SCANCODE_0]            = KEY_0;
-        self[SDL_SCANCODE_RETURN]       = KEY_ENTER;
-        self[SDL_SCANCODE_ESCAPE]       = KEY_ESCAPE;
-        self[SDL_SCANCODE_BACKSPACE]    = KEY_BACKSPACE;
-        self[SDL_SCANCODE_TAB]          = KEY_TAB;
-        self[SDL_SCANCODE_SPACE]        = KEY_SPACE;
-        self[SDL_SCANCODE_MINUS]        = KEY_MINUS;
-        self[SDL_SCANCODE_EQUALS]       = KEY_EQUAL;
-        self[SDL_SCANCODE_LEFTBRACKET]  = KEY_LEFT_BRACKET;
-        self[SDL_SCANCODE_RIGHTBRACKET] = KEY_RIGHT_BRACKET;
-        self[SDL_SCANCODE_BACKSLASH]    = KEY_BACKSLASH;
-        self[SDL_SCANCODE_SEMICOLON]    = KEY_SEMICOLON;
-        self[SDL_SCANCODE_APOSTROPHE]   = KEY_APOSTROPHE;
-        self[SDL_SCANCODE_GRAVE]        = KEY_GRAVE_ACCENT;
-        self[SDL_SCANCODE_COMMA]        = KEY_COMMA;
-        self[SDL_SCANCODE_PERIOD]       = KEY_PERIOD;
-        self[SDL_SCANCODE_SLASH]        = KEY_SLASH;
-        self[SDL_SCANCODE_CAPSLOCK]     = KEY_CAPS_LOCK;
-        self[SDL_SCANCODE_F1]           = KEY_F1;
-        self[SDL_SCANCODE_F2]           = KEY_F2;
-        self[SDL_SCANCODE_F3]           = KEY_F3;
-        self[SDL_SCANCODE_F4]           = KEY_F4;
-        self[SDL_SCANCODE_F5]           = KEY_F5;
-        self[SDL_SCANCODE_F6]           = KEY_F6;
-        self[SDL_SCANCODE_F7]           = KEY_F7;
-        self[SDL_SCANCODE_F8]           = KEY_F8;
-        self[SDL_SCANCODE_F9]           = KEY_F9;
-        self[SDL_SCANCODE_F10]          = KEY_F10;
-        self[SDL_SCANCODE_F11]          = KEY_F11;
-        self[SDL_SCANCODE_F12]          = KEY_F12;
-        self[SDL_SCANCODE_PRINTSCREEN]  = KEY_PRINT_SCREEN;
-        self[SDL_SCANCODE_SCROLLLOCK]   = KEY_SCROLL_LOCK;
-        self[SDL_SCANCODE_PAUSE]        = KEY_PAUSE;
-        self[SDL_SCANCODE_INSERT]       = KEY_INSERT;
-        self[SDL_SCANCODE_HOME]         = KEY_HOME;
-        self[SDL_SCANCODE_PAGEUP]       = KEY_PAGE_UP;
-        self[SDL_SCANCODE_DELETE]       = KEY_DELETE;
-        self[SDL_SCANCODE_END]          = KEY_END;
-        self[SDL_SCANCODE_PAGEDOWN]     = KEY_PAGE_DOWN;
-        self[SDL_SCANCODE_RIGHT]        = KEY_RIGHT;
-        self[SDL_SCANCODE_LEFT]         = KEY_LEFT;
-        self[SDL_SCANCODE_DOWN]         = KEY_DOWN;
-        self[SDL_SCANCODE_UP]           = KEY_UP;
-        self[SDL_SCANCODE_NUMLOCKCLEAR] = KEY_NUM_LOCK;
-        self[SDL_SCANCODE_KP_DIVIDE]    = KEY_KP_DIVIDE;
-        self[SDL_SCANCODE_KP_MULTIPLY]  = KEY_KP_MULTIPLY;
-        self[SDL_SCANCODE_KP_MINUS]     = KEY_KP_SUBTRACT;
-        self[SDL_SCANCODE_KP_PLUS]      = KEY_KP_ADD;
-        self[SDL_SCANCODE_KP_ENTER]     = KEY_KP_ENTER;
-        self[SDL_SCANCODE_KP_1]         = KEY_KP_1;
-        self[SDL_SCANCODE_KP_2]         = KEY_KP_2;
-        self[SDL_SCANCODE_KP_3]         = KEY_KP_3;
-        self[SDL_SCANCODE_KP_4]         = KEY_KP_4;
-        self[SDL_SCANCODE_KP_5]         = KEY_KP_5;
-        self[SDL_SCANCODE_KP_6]         = KEY_KP_6;
-        self[SDL_SCANCODE_KP_7]         = KEY_KP_7;
-        self[SDL_SCANCODE_KP_8]         = KEY_KP_8;
-        self[SDL_SCANCODE_KP_9]         = KEY_KP_9;
-        self[SDL_SCANCODE_KP_0]         = KEY_KP_0;
-        self[SDL_SCANCODE_KP_PERIOD]    = KEY_KP_DECIMAL;
-        self[SDL_SCANCODE_KP_EQUALS]    = KEY_KP_EQUAL;
-        self[SDL_SCANCODE_F13]          = KEY_F13;
-        self[SDL_SCANCODE_F14]          = KEY_F14;
-        self[SDL_SCANCODE_F15]          = KEY_F15;
-        self[SDL_SCANCODE_F16]          = KEY_F16;
-        self[SDL_SCANCODE_F17]          = KEY_F17;
-        self[SDL_SCANCODE_F18]          = KEY_F18;
-        self[SDL_SCANCODE_F19]          = KEY_F19;
-        self[SDL_SCANCODE_F20]          = KEY_F20;
-        self[SDL_SCANCODE_F21]          = KEY_F21;
-        self[SDL_SCANCODE_F22]          = KEY_F22;
-        self[SDL_SCANCODE_F23]          = KEY_F23;
-        self[SDL_SCANCODE_F24]          = KEY_F24;
-        self[SDL_SCANCODE_MENU]         = KEY_MENU;
-        self[SDL_SCANCODE_LCTRL]        = KEY_LEFT_CONTROL;
-        self[SDL_SCANCODE_LSHIFT]       = KEY_LEFT_SHIFT;
-        self[SDL_SCANCODE_LALT]         = KEY_LEFT_ALT;
-        self[SDL_SCANCODE_LGUI]         = KEY_LEFT_SUPER;
-        self[SDL_SCANCODE_RCTRL]        = KEY_RIGHT_CONTROL;
-        self[SDL_SCANCODE_RSHIFT]       = KEY_RIGHT_SHIFT;
-        self[SDL_SCANCODE_RALT]         = KEY_RIGHT_ALT;
-        self[SDL_SCANCODE_RGUI]         = KEY_RIGHT_SUPER;
+        self[SDL_SCANCODE_A]            = VirtualKey::A;
+        self[SDL_SCANCODE_B]            = VirtualKey::B;
+        self[SDL_SCANCODE_C]            = VirtualKey::C;
+        self[SDL_SCANCODE_D]            = VirtualKey::D;
+        self[SDL_SCANCODE_E]            = VirtualKey::E;
+        self[SDL_SCANCODE_F]            = VirtualKey::F;
+        self[SDL_SCANCODE_G]            = VirtualKey::G;
+        self[SDL_SCANCODE_H]            = VirtualKey::H;
+        self[SDL_SCANCODE_I]            = VirtualKey::I;
+        self[SDL_SCANCODE_J]            = VirtualKey::J;
+        self[SDL_SCANCODE_K]            = VirtualKey::K;
+        self[SDL_SCANCODE_L]            = VirtualKey::L;
+        self[SDL_SCANCODE_M]            = VirtualKey::M;
+        self[SDL_SCANCODE_N]            = VirtualKey::N;
+        self[SDL_SCANCODE_O]            = VirtualKey::O;
+        self[SDL_SCANCODE_P]            = VirtualKey::P;
+        self[SDL_SCANCODE_Q]            = VirtualKey::Q;
+        self[SDL_SCANCODE_R]            = VirtualKey::R;
+        self[SDL_SCANCODE_S]            = VirtualKey::S;
+        self[SDL_SCANCODE_T]            = VirtualKey::T;
+        self[SDL_SCANCODE_U]            = VirtualKey::U;
+        self[SDL_SCANCODE_V]            = VirtualKey::V;
+        self[SDL_SCANCODE_W]            = VirtualKey::W;
+        self[SDL_SCANCODE_X]            = VirtualKey::X;
+        self[SDL_SCANCODE_Y]            = VirtualKey::Y;
+        self[SDL_SCANCODE_Z]            = VirtualKey::Z;
+        self[SDL_SCANCODE_1]            = VirtualKey::_1;
+        self[SDL_SCANCODE_2]            = VirtualKey::_2;
+        self[SDL_SCANCODE_3]            = VirtualKey::_3;
+        self[SDL_SCANCODE_4]            = VirtualKey::_4;
+        self[SDL_SCANCODE_5]            = VirtualKey::_5;
+        self[SDL_SCANCODE_6]            = VirtualKey::_6;
+        self[SDL_SCANCODE_7]            = VirtualKey::_7;
+        self[SDL_SCANCODE_8]            = VirtualKey::_8;
+        self[SDL_SCANCODE_9]            = VirtualKey::_9;
+        self[SDL_SCANCODE_0]            = VirtualKey::_0;
+        self[SDL_SCANCODE_RETURN]       = VirtualKey::Enter;
+        self[SDL_SCANCODE_ESCAPE]       = VirtualKey::Escape;
+        self[SDL_SCANCODE_BACKSPACE]    = VirtualKey::Backspace;
+        self[SDL_SCANCODE_TAB]          = VirtualKey::Tab;
+        self[SDL_SCANCODE_SPACE]        = VirtualKey::Space;
+        self[SDL_SCANCODE_MINUS]        = VirtualKey::Minus;
+        self[SDL_SCANCODE_EQUALS]       = VirtualKey::Equal;
+        self[SDL_SCANCODE_LEFTBRACKET]  = VirtualKey::LeftBracket;
+        self[SDL_SCANCODE_RIGHTBRACKET] = VirtualKey::RightBracket;
+        self[SDL_SCANCODE_BACKSLASH]    = VirtualKey::Backslash;
+        self[SDL_SCANCODE_SEMICOLON]    = VirtualKey::Semicolon;
+        self[SDL_SCANCODE_APOSTROPHE]   = VirtualKey::Apostrophe;
+        self[SDL_SCANCODE_GRAVE]        = VirtualKey::GraveAccent;
+        self[SDL_SCANCODE_COMMA]        = VirtualKey::Comma;
+        self[SDL_SCANCODE_PERIOD]       = VirtualKey::Period;
+        self[SDL_SCANCODE_SLASH]        = VirtualKey::Slash;
+        self[SDL_SCANCODE_CAPSLOCK]     = VirtualKey::CapsLock;
+        self[SDL_SCANCODE_F1]           = VirtualKey::F1;
+        self[SDL_SCANCODE_F2]           = VirtualKey::F2;
+        self[SDL_SCANCODE_F3]           = VirtualKey::F3;
+        self[SDL_SCANCODE_F4]           = VirtualKey::F4;
+        self[SDL_SCANCODE_F5]           = VirtualKey::F5;
+        self[SDL_SCANCODE_F6]           = VirtualKey::F6;
+        self[SDL_SCANCODE_F7]           = VirtualKey::F7;
+        self[SDL_SCANCODE_F8]           = VirtualKey::F8;
+        self[SDL_SCANCODE_F9]           = VirtualKey::F9;
+        self[SDL_SCANCODE_F10]          = VirtualKey::F10;
+        self[SDL_SCANCODE_F11]          = VirtualKey::F11;
+        self[SDL_SCANCODE_F12]          = VirtualKey::F12;
+        self[SDL_SCANCODE_PRINTSCREEN]  = VirtualKey::PrintScreen;
+        self[SDL_SCANCODE_SCROLLLOCK]   = VirtualKey::ScrollLock;
+        self[SDL_SCANCODE_PAUSE]        = VirtualKey::Pause;
+        self[SDL_SCANCODE_INSERT]       = VirtualKey::Insert;
+        self[SDL_SCANCODE_HOME]         = VirtualKey::Home;
+        self[SDL_SCANCODE_PAGEUP]       = VirtualKey::PageUp;
+        self[SDL_SCANCODE_DELETE]       = VirtualKey::Delete;
+        self[SDL_SCANCODE_END]          = VirtualKey::End;
+        self[SDL_SCANCODE_PAGEDOWN]     = VirtualKey::PageDown;
+        self[SDL_SCANCODE_RIGHT]        = VirtualKey::Right;
+        self[SDL_SCANCODE_LEFT]         = VirtualKey::Left;
+        self[SDL_SCANCODE_DOWN]         = VirtualKey::Down;
+        self[SDL_SCANCODE_UP]           = VirtualKey::Up;
+        self[SDL_SCANCODE_NUMLOCKCLEAR] = VirtualKey::NumLock;
+        self[SDL_SCANCODE_KP_DIVIDE]    = VirtualKey::KP_Divide;
+        self[SDL_SCANCODE_KP_MULTIPLY]  = VirtualKey::KP_Multiply;
+        self[SDL_SCANCODE_KP_MINUS]     = VirtualKey::KP_Subtract;
+        self[SDL_SCANCODE_KP_PLUS]      = VirtualKey::KP_Add;
+        self[SDL_SCANCODE_KP_ENTER]     = VirtualKey::KP_Enter;
+        self[SDL_SCANCODE_KP_1]         = VirtualKey::KP_1;
+        self[SDL_SCANCODE_KP_2]         = VirtualKey::KP_2;
+        self[SDL_SCANCODE_KP_3]         = VirtualKey::KP_3;
+        self[SDL_SCANCODE_KP_4]         = VirtualKey::KP_4;
+        self[SDL_SCANCODE_KP_5]         = VirtualKey::KP_5;
+        self[SDL_SCANCODE_KP_6]         = VirtualKey::KP_6;
+        self[SDL_SCANCODE_KP_7]         = VirtualKey::KP_7;
+        self[SDL_SCANCODE_KP_8]         = VirtualKey::KP_8;
+        self[SDL_SCANCODE_KP_9]         = VirtualKey::KP_9;
+        self[SDL_SCANCODE_KP_0]         = VirtualKey::KP_0;
+        self[SDL_SCANCODE_KP_PERIOD]    = VirtualKey::KP_Decimal;
+        self[SDL_SCANCODE_KP_EQUALS]    = VirtualKey::KP_Equal;
+        self[SDL_SCANCODE_F13]          = VirtualKey::F13;
+        self[SDL_SCANCODE_F14]          = VirtualKey::F14;
+        self[SDL_SCANCODE_F15]          = VirtualKey::F15;
+        self[SDL_SCANCODE_F16]          = VirtualKey::F16;
+        self[SDL_SCANCODE_F17]          = VirtualKey::F17;
+        self[SDL_SCANCODE_F18]          = VirtualKey::F18;
+        self[SDL_SCANCODE_F19]          = VirtualKey::F19;
+        self[SDL_SCANCODE_F20]          = VirtualKey::F20;
+        self[SDL_SCANCODE_F21]          = VirtualKey::F21;
+        self[SDL_SCANCODE_F22]          = VirtualKey::F22;
+        self[SDL_SCANCODE_F23]          = VirtualKey::F23;
+        self[SDL_SCANCODE_F24]          = VirtualKey::F24;
+        self[SDL_SCANCODE_MENU]         = VirtualKey::Menu;
+        self[SDL_SCANCODE_LCTRL]        = VirtualKey::LeftControl;
+        self[SDL_SCANCODE_LSHIFT]       = VirtualKey::LeftShift;
+        self[SDL_SCANCODE_LALT]         = VirtualKey::LeftAlt;
+        self[SDL_SCANCODE_LGUI]         = VirtualKey::LeftSuper;
+        self[SDL_SCANCODE_RCTRL]        = VirtualKey::RightControl;
+        self[SDL_SCANCODE_RSHIFT]       = VirtualKey::RightShift;
+        self[SDL_SCANCODE_RALT]         = VirtualKey::RightAlt;
+        self[SDL_SCANCODE_RGUI]         = VirtualKey::RightSuper;
     }
 };
 
 static const KeyMappingsSDL SDLKeyMappings;
 
-static HK_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
+static HK_FORCEINLINE KeyModifierMask FromKeymodSDL(Uint16 Mod)
 {
-    int modMask = 0;
+    KeyModifierMask modMask;
 
     if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
-        modMask |= MOD_MASK_SHIFT;
+        modMask.Shift = true;
     }
 
     if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
-        modMask |= MOD_MASK_CONTROL;
+        modMask.Control = true;
     }
 
     if (Mod & (KMOD_LALT | KMOD_RALT))
     {
-        modMask |= MOD_MASK_ALT;
+        modMask.Alt = true;
     }
 
     if (Mod & (KMOD_LGUI | KMOD_RGUI))
     {
-        modMask |= MOD_MASK_SUPER;
+        modMask.Super = true;
     }
 
     return modMask;
 }
 
-static HK_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
+static HK_FORCEINLINE KeyModifierMask FromKeymodSDL_Char(Uint16 Mod)
 {
-    int modMask = 0;
+    KeyModifierMask modMask;
 
     if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
-        modMask |= MOD_MASK_SHIFT;
+        modMask.Shift = true;
     }
 
     if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
-        modMask |= MOD_MASK_CONTROL;
+        modMask.Control = true;
     }
 
     if (Mod & (KMOD_LALT | KMOD_RALT))
     {
-        modMask |= MOD_MASK_ALT;
+        modMask.Alt = true;
     }
 
     if (Mod & (KMOD_LGUI | KMOD_RGUI))
     {
-        modMask |= MOD_MASK_SUPER;
+        modMask.Super = true;
     }
 
     if (Mod & KMOD_CAPS)
     {
-        modMask |= MOD_MASK_CAPS_LOCK;
+        modMask.CapsLock = true;
     }
 
     if (Mod & KMOD_NUM)
     {
-        modMask |= MOD_MASK_NUM_LOCK;
+        modMask.NumLock = true;
     }
 
     return modMask;
@@ -400,26 +401,30 @@ static HK_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
 
 void FrameLoop::UnpressJoystickButtons(IEventListener* Listener, int JoystickNum)
 {
-    JoystickButtonEvent buttonEvent;
-    buttonEvent.Joystick = JoystickNum;
-    buttonEvent.Action   = IA_RELEASE;
-    for (int i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
+#if 0
+    JoystickButtonEvent joystickEvent;
+    joystickEvent.Joystick = JoystickNum;
+    joystickEvent.Action   = InputAction::Released;
+    for (VirtualKey virtualKey = VirtualKey::JoyBtn1; virtualKey <= VirtualKey::JoyBtn32; virtualKey = VirtualKey(ToUnderlying(virtualKey) + 1))
     {
-        if (m_JoystickButtonState[JoystickNum][i])
+        uint32_t index = ToUnderlying(virtualKey);
+        if (m_PressedKeys[index]) // TODO: Keep pressed keys per joystick device!!!
         {
-            m_JoystickButtonState[JoystickNum][i] = SDL_RELEASED;
+            m_PressedKeys[index] = 0;
 
             if (m_bShouldGenerateInputEvents)
             {
-                buttonEvent.Button = JOY_BUTTON_1 + i;
-                Listener->OnJoystickButtonEvent(buttonEvent);
+                joystickEvent.Button = virtualKey;
+                Listener->OnJoystickButtonEvent(joystickEvent);
             }
         }
     }
+#endif
 }
 
 void FrameLoop::ClearJoystickAxes(IEventListener* Listener, int JoystickNum)
 {
+#if 0
     JoystickAxisEvent axisEvent;
     axisEvent.Joystick = JoystickNum;
     axisEvent.Value    = 0;
@@ -436,50 +441,61 @@ void FrameLoop::ClearJoystickAxes(IEventListener* Listener, int JoystickNum)
             }
         }
     }
+#endif
 }
 
 void FrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
 {
     KeyEvent         keyEvent;
     MouseButtonEvent mouseEvent;
+    //JoystickButtonEvent joystickEvent;
 
-    keyEvent.Action  = IA_RELEASE;
-    keyEvent.ModMask = 0;
+    keyEvent.Action  = InputAction::Released;
 
-    mouseEvent.Action  = IA_RELEASE;
-    mouseEvent.ModMask = 0;
+    mouseEvent.Action  = InputAction::Released;
 
-    for (int i = 0; i <= KEY_LAST; i++)
+    //joystickEvent.Action = InputAction::Released;
+
+    for (uint32_t i = 0; i <= VirtualKeyTableSize; ++i)
     {
         if (m_PressedKeys[i])
         {
-            keyEvent.Key      = i;
-            keyEvent.Scancode = m_PressedKeys[i] - 1;
-
             m_PressedKeys[i] = 0;
 
             if (m_bShouldGenerateInputEvents)
-                Listener->OnKeyEvent(keyEvent);
+            {
+                VirtualKey virtualKey = VirtualKey(i);
+                if (virtualKey >= VirtualKey::MouseLeftBtn && virtualKey <= VirtualKey::Mouse8/*MouseWheelRight*/)
+                {
+                    mouseEvent.Button = virtualKey;
+
+                    Listener->OnMouseButtonEvent(mouseEvent);
+                }
+                else if (virtualKey >= VirtualKey::JoyBtn1 && virtualKey >= VirtualKey::JoyBtn32)
+                {
+                    //joystickEvent.Button = virtualKey;
+
+                    //for (int joystickNum = 0; joystickNum < MAX_JOYSTICKS_COUNT; ++joystickNum)
+                    //{
+                    //    joystickEvent.Joystick = joystickNum;
+                    //    Listener->OnJoystickButtonEvent(joystickEvent);
+                    //}
+                }
+                else
+                {
+                    keyEvent.Key      = virtualKey;
+                    keyEvent.Scancode = m_PressedKeys[i] - 1;
+
+                    Listener->OnKeyEvent(keyEvent);
+                }
+            }
         }
     }
-    for (int i = MOUSE_BUTTON_1; i <= MOUSE_BUTTON_8; i++)
-    {
-        if (m_PressedMouseButtons[i])
-        {
-            mouseEvent.Button = i;
 
-            m_PressedMouseButtons[i] = 0;
-
-            if (m_bShouldGenerateInputEvents)
-                Listener->OnMouseButtonEvent(mouseEvent);
-        }
-    }
-
-    for (int i = 0; i < MAX_JOYSTICKS_COUNT; i++)
-    {
-        UnpressJoystickButtons(Listener, i);
-        ClearJoystickAxes(Listener, i);
-    }
+    //for (int i = 0; i < MAX_JOYSTICKS_COUNT; i++)
+    //{
+    //    ClearJoystickAxes(Listener, i);
+    //}
 }
 
 void FrameLoop::PollEvents(IEventListener* Listener)
@@ -666,17 +682,17 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                 KeyEvent keyEvent;
                 keyEvent.Key      = SDLKeyMappings[event.key.keysym.scancode];
                 keyEvent.Scancode = event.key.keysym.scancode;
-                keyEvent.Action = (event.type == SDL_KEYDOWN) ? (m_PressedKeys[keyEvent.Key] ? IA_REPEAT : IA_PRESS) : IA_RELEASE;
+                keyEvent.Action = (event.type == SDL_KEYDOWN) ? (m_PressedKeys[ToUnderlying(keyEvent.Key)] ? InputAction::Repeat : InputAction::Pressed) : InputAction::Released;
                 keyEvent.ModMask  = FromKeymodSDL(event.key.keysym.mod);
-                if (keyEvent.Key)
+                if (keyEvent.Key != InvalidKey)
                 {
-                    if ((keyEvent.Action == IA_RELEASE && !m_PressedKeys[keyEvent.Key]) || (keyEvent.Action == IA_PRESS && m_PressedKeys[keyEvent.Key]))
+                    if ((keyEvent.Action == InputAction::Released && !m_PressedKeys[ToUnderlying(keyEvent.Key)]) || (keyEvent.Action == InputAction::Pressed && m_PressedKeys[ToUnderlying(keyEvent.Key)]))
                     {
                         // State does not changed
                     }
                     else
                     {
-                        m_PressedKeys[keyEvent.Key] = (keyEvent.Action == IA_RELEASE) ? 0 : keyEvent.Scancode + 1;
+                        m_PressedKeys[ToUnderlying(keyEvent.Key)] = (keyEvent.Action == InputAction::Released) ? 0 : keyEvent.Scancode + 1;
 
                         if (m_bShouldGenerateInputEvents)
                             Listener->OnKeyEvent(keyEvent);
@@ -736,28 +752,27 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                 switch (event.button.button)
                 {
                     case 2:
-                        mouseEvent.Button = MOUSE_BUTTON_3;
+                        mouseEvent.Button = VirtualKey::MouseMidBtn;
                         break;
                     case 3:
-                        mouseEvent.Button = MOUSE_BUTTON_2;
+                        mouseEvent.Button = VirtualKey::MouseRightBtn;
                         break;
                     default:
-                        mouseEvent.Button = MOUSE_BUTTON_1 + event.button.button - 1;
+                        mouseEvent.Button = VirtualKey(ToUnderlying(VirtualKey::MouseLeftBtn) + event.button.button - 1);
                         break;
                 }
-                mouseEvent.Action  = event.type == SDL_MOUSEBUTTONDOWN ? IA_PRESS : IA_RELEASE;
+                mouseEvent.Action  = event.type == SDL_MOUSEBUTTONDOWN ? InputAction::Pressed : InputAction::Released;
                 mouseEvent.ModMask = FromKeymodSDL(SDL_GetModState());
 
-                if (mouseEvent.Button >= MOUSE_BUTTON_1 && mouseEvent.Button <= MOUSE_BUTTON_8)
+                if (mouseEvent.Button >= VirtualKey::MouseLeftBtn && mouseEvent.Button <= VirtualKey::Mouse8)
                 {
-                    if (mouseEvent.Action == (int)m_PressedMouseButtons[mouseEvent.Button])
+                    if (mouseEvent.Action == (int)m_PressedKeys[ToUnderlying(mouseEvent.Button)])
                     {
-
                         // State does not changed
                     }
                     else
                     {
-                        m_PressedMouseButtons[mouseEvent.Button] = mouseEvent.Action != IA_RELEASE;
+                        m_PressedKeys[ToUnderlying(mouseEvent.Button)] = mouseEvent.Action != InputAction::Released;
 
                         if (m_bShouldGenerateInputEvents)
                             Listener->OnMouseButtonEvent(mouseEvent);
@@ -780,42 +795,42 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 
                     if (wheelEvent.WheelX < 0.0)
                     {
-                        mouseEvent.Button = MOUSE_WHEEL_LEFT;
+                        mouseEvent.Button = VirtualKey::MouseWheelLeft;
 
-                        mouseEvent.Action = IA_PRESS;
+                        mouseEvent.Action = InputAction::Pressed;
                         Listener->OnMouseButtonEvent(mouseEvent);
 
-                        mouseEvent.Action = IA_RELEASE;
+                        mouseEvent.Action = InputAction::Released;
                         Listener->OnMouseButtonEvent(mouseEvent);
                     }
                     else if (wheelEvent.WheelX > 0.0)
                     {
-                        mouseEvent.Button = MOUSE_WHEEL_RIGHT;
+                        mouseEvent.Button = VirtualKey::MouseWheelRight;
 
-                        mouseEvent.Action = IA_PRESS;
+                        mouseEvent.Action = InputAction::Pressed;
                         Listener->OnMouseButtonEvent(mouseEvent);
 
-                        mouseEvent.Action = IA_RELEASE;
+                        mouseEvent.Action = InputAction::Released;
                         Listener->OnMouseButtonEvent(mouseEvent);
                     }
                     if (wheelEvent.WheelY < 0.0)
                     {
-                        mouseEvent.Button = MOUSE_WHEEL_DOWN;
+                        mouseEvent.Button = VirtualKey::MouseWheelDown;
 
-                        mouseEvent.Action = IA_PRESS;
+                        mouseEvent.Action = InputAction::Pressed;
                         Listener->OnMouseButtonEvent(mouseEvent);
 
-                        mouseEvent.Action = IA_RELEASE;
+                        mouseEvent.Action = InputAction::Released;
                         Listener->OnMouseButtonEvent(mouseEvent);
                     }
                     else if (wheelEvent.WheelY > 0.0)
                     {
-                        mouseEvent.Button = MOUSE_WHEEL_UP;
+                        mouseEvent.Button = VirtualKey::MouseWheelUp;
 
-                        mouseEvent.Action = IA_PRESS;
+                        mouseEvent.Action = InputAction::Pressed;
                         Listener->OnMouseButtonEvent(mouseEvent);
 
-                        mouseEvent.Action = IA_RELEASE;
+                        mouseEvent.Action = InputAction::Released;
                         Listener->OnMouseButtonEvent(mouseEvent);
                     }
                 }
@@ -824,33 +839,33 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 
             // Joystick axis motion
             case SDL_JOYAXISMOTION: {
-                if (m_bShouldGenerateInputEvents)
-                {
-                    if (event.jaxis.which >= 0 && event.jaxis.which < MAX_JOYSTICKS_COUNT)
-                    {
-                        HK_ASSERT(m_JoystickAdded[event.jaxis.which]);
-                        if (event.jaxis.axis >= 0 && event.jaxis.axis < MAX_JOYSTICK_AXES)
-                        {
-                            if (m_JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
-                            {
-                                JoystickAxisEvent axisEvent;
-                                axisEvent.Joystick = event.jaxis.which;
-                                axisEvent.Axis     = JOY_AXIS_1 + event.jaxis.axis;
-                                axisEvent.Value    = ((float)event.jaxis.value + 32768.0f) / 0xffff * 2.0f - 1.0f; // scale to -1.0f ... 1.0f
+            //    if (m_bShouldGenerateInputEvents)
+            //    {
+            //        if (event.jaxis.which >= 0 && event.jaxis.which < MAX_JOYSTICKS_COUNT)
+            //        {
+            //            HK_ASSERT(m_JoystickAdded[event.jaxis.which]);
+            //            if (event.jaxis.axis >= 0 && event.jaxis.axis < MAX_JOYSTICK_AXES)
+            //            {
+            //                if (m_JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
+            //                {
+            //                    JoystickAxisEvent axisEvent;
+            //                    axisEvent.Joystick = event.jaxis.which;
+            //                    axisEvent.Axis     = JOY_AXIS_1 + event.jaxis.axis;
+            //                    axisEvent.Value    = ((float)event.jaxis.value + 32768.0f) / 0xffff * 2.0f - 1.0f; // scale to -1.0f ... 1.0f
 
-                                Listener->OnJoystickAxisEvent(axisEvent);
-                            }
-                        }
-                        else
-                        {
-                            HK_ASSERT_(0, "Invalid joystick axis num");
-                        }
-                    }
-                    else
-                    {
-                        HK_ASSERT_(0, "Invalid joystick id");
-                    }
-                }
+            //                    Listener->OnJoystickAxisEvent(axisEvent);
+            //                }
+            //            }
+            //            else
+            //            {
+            //                HK_ASSERT_(0, "Invalid joystick axis num");
+            //            }
+            //        }
+            //        else
+            //        {
+            //            HK_ASSERT_(0, "Invalid joystick id");
+            //        }
+            //    }
                 break;
             }
 
@@ -868,70 +883,70 @@ void FrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYBUTTONDOWN:
             // Joystick button released
             case SDL_JOYBUTTONUP: {
-                if (event.jbutton.which >= 0 && event.jbutton.which < MAX_JOYSTICKS_COUNT)
-                {
-                    HK_ASSERT(m_JoystickAdded[event.jbutton.which]);
-                    if (event.jbutton.button >= 0 && event.jbutton.button < MAX_JOYSTICK_BUTTONS)
-                    {
-                        if (m_JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
-                        {
-                            m_JoystickButtonState[event.jbutton.which][event.jbutton.button] = event.jbutton.state;
+                //if (event.jbutton.which >= 0 && event.jbutton.which < MAX_JOYSTICKS_COUNT)
+                //{
+                //    HK_ASSERT(m_JoystickAdded[event.jbutton.which]);
+                //    if (event.jbutton.button >= 0 && event.jbutton.button < MAX_JOYSTICK_BUTTONS)
+                //    {
+                //        if (m_JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
+                //        {
+                //            m_JoystickButtonState[event.jbutton.which][event.jbutton.button] = event.jbutton.state;
 
-                            if (m_bShouldGenerateInputEvents)
-                            {
-                                JoystickButtonEvent buttonEvent;
-                                buttonEvent.Joystick = event.jbutton.which;
-                                buttonEvent.Button   = JOY_BUTTON_1 + event.jbutton.button;
-                                buttonEvent.Action   = event.jbutton.state == SDL_PRESSED ? IA_PRESS : IA_RELEASE;
-                                Listener->OnJoystickButtonEvent(buttonEvent);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        HK_ASSERT_(0, "Invalid joystick button num");
-                    }
-                }
-                else
-                {
-                    HK_ASSERT_(0, "Invalid joystick id");
-                }
+                //            if (m_bShouldGenerateInputEvents)
+                //            {
+                //                JoystickButtonEvent buttonEvent;
+                //                buttonEvent.Joystick = event.jbutton.which;
+                //                buttonEvent.Button   = JOY_BUTTON_1 + event.jbutton.button;
+                //                buttonEvent.Action   = event.jbutton.state == SDL_PRESSED ? InputAction::Pressed : InputAction::Released;
+                //                Listener->OnJoystickButtonEvent(buttonEvent);
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        HK_ASSERT_(0, "Invalid joystick button num");
+                //    }
+                //}
+                //else
+                //{
+                //    HK_ASSERT_(0, "Invalid joystick id");
+                //}
                 break;
             }
 
             // A new joystick has been inserted into the system
             case SDL_JOYDEVICEADDED:
-                if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
-                {
-                    HK_ASSERT(!m_JoystickAdded[event.jdevice.which]);
-                    m_JoystickAdded[event.jdevice.which] = true;
+                //if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
+                //{
+                //    HK_ASSERT(!m_JoystickAdded[event.jdevice.which]);
+                //    m_JoystickAdded[event.jdevice.which] = true;
 
-                    Core::ZeroMem(m_JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(m_JoystickButtonState[0]));
-                    Core::ZeroMem(m_JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(m_JoystickAxisState[0]));
-                }
-                else
-                {
-                    HK_ASSERT_(0, "Invalid joystick id");
-                }
-                LOG("PollEvent: Joystick added\n");
+                //    Core::ZeroMem(m_JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(m_JoystickButtonState[0]));
+                //    Core::ZeroMem(m_JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(m_JoystickAxisState[0]));
+                //}
+                //else
+                //{
+                //    HK_ASSERT_(0, "Invalid joystick id");
+                //}
+                //LOG("PollEvent: Joystick added\n");
                 break;
 
             // An opened joystick has been removed
             case SDL_JOYDEVICEREMOVED: {
-                if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
-                {
-                    UnpressJoystickButtons(Listener, event.jdevice.which);
-                    ClearJoystickAxes(Listener, event.jdevice.which);
+                //if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
+                //{
+                //    UnpressJoystickButtons(Listener, event.jdevice.which);
+                //    ClearJoystickAxes(Listener, event.jdevice.which);
 
-                    HK_ASSERT(m_JoystickAdded[event.jdevice.which]);
-                    m_JoystickAdded[event.jdevice.which] = false;
-                }
-                else
-                {
-                    HK_ASSERT_(0, "Invalid joystick id");
-                }
+                //    HK_ASSERT(m_JoystickAdded[event.jdevice.which]);
+                //    m_JoystickAdded[event.jdevice.which] = false;
+                //}
+                //else
+                //{
+                //    HK_ASSERT_(0, "Invalid joystick id");
+                //}
 
-                LOG("PollEvent: Joystick removed\n");
+                //LOG("PollEvent: Joystick removed\n");
                 break;
             }
 

@@ -274,14 +274,14 @@ void UIManager::GenerateKeyEvents(KeyEvent const& event, CommandContext& command
 {
     if (bAllowConsole)
     {
-        if (event.Action == IA_PRESS)
+        if (event.Action == InputAction::Pressed)
         {
-            if (event.Key == KEY_GRAVE_ACCENT)
+            if (event.Key == VirtualKey::GraveAccent)
             {
                 m_Console.Toggle();
                 return;
             }
-            if (event.Key == KEY_ESCAPE)
+            if (event.Key == VirtualKey::Escape)
             {
                 if (m_Console.IsActive())
                 {
@@ -301,7 +301,7 @@ void UIManager::GenerateKeyEvents(KeyEvent const& event, CommandContext& command
         m_Console.Up();
     }
 
-    if (m_Console.IsActive() && event.Action != IA_RELEASE)
+    if (m_Console.IsActive() && event.Action != InputAction::Released)
     {
         return;
     }
@@ -312,7 +312,7 @@ void UIManager::GenerateKeyEvents(KeyEvent const& event, CommandContext& command
 
 void UIManager::GenerateMouseButtonEvents(MouseButtonEvent const& event)
 {
-    if (m_Console.IsActive() && event.Action != IA_RELEASE)
+    if (m_Console.IsActive() && event.Action != InputAction::Released)
     {
         return;
     }
@@ -373,7 +373,7 @@ void UIManager::GenerateMouseMoveEvents(MouseMoveEvent const& event)
 
 void UIManager::GenerateJoystickButtonEvents(JoystickButtonEvent const& event)
 {
-    if (m_Console.IsActive() && event.Action != IA_RELEASE)
+    if (m_Console.IsActive() && event.Action != InputAction::Released)
     {
         return;
     }

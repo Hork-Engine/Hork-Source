@@ -28,25 +28,42 @@ SOFTWARE.
 
 */
 
-#include "UIShortcut.h"
+#include "InputMappings.h"
 
 HK_NAMESPACE_BEGIN
 
-void UIShortcutContainer::Clear()
+void InputMappings::Clear()
 {
-    m_Shortcuts.Clear();
+    m_VirtMapping.Clear();
 }
 
-UIShortcutContainer& UIShortcutContainer::AddShortcut(VirtualKey key, KeyModifierMask modMask, Delegate<void()> binding)
+void InputMappings::MapAxis(StringView name, VirtualKeyOrAxis virtualKey, float power, PlayerController owner)
 {
-    UIShortcutInfo& shortcut = m_Shortcuts.Add();
+    VirtualMapping& mapping = m_VirtMapping[VirtualInput{virtualKey, 0}];
 
-    shortcut.Key     = key;
-    shortcut.ModMask = modMask;
-    shortcut.Binding = binding;
-
-    return *this;
+    mapping.Name.FromString(name);
+    mapping.IsAction = false;
+    mapping.Power = power;
+    mapping.Owner = owner;
 }
 
+void InputMappings::MapAction(StringView name, VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, PlayerController owner)
+{
+    VirtualMapping& mapping = m_VirtMapping[VirtualInput{virtualKey, modMask.m_Flags}];
+
+    mapping.Name.FromString(name);
+    mapping.IsAction = true;
+    mapping.Power = 0;
+    mapping.Owner = owner;
+}
+
+bool InputMappings::GetMapping(VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, VirtualMapping& virtMapping)
+{
+    auto it = m_VirtMapping.find(VirtualInput{virtualKey, modMask.m_Flags});
+    if (it == m_VirtMapping.end())
+        return false;
+    virtMapping = it->second;
+    return true;
+}
 
 HK_NAMESPACE_END

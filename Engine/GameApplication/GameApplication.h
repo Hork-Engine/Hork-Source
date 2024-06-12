@@ -218,13 +218,13 @@ private:
     void OnResize() override final;
 
 private:
-    Archive                          m_EmbeddedArchive;
+    Archive                         m_EmbeddedArchive;
     UniqueRef<AsyncJobManager>      m_AsyncJobManager;
-    AsyncJobList*                    m_RenderFrontendJobList{};
+    AsyncJobList*                   m_RenderFrontendJobList{};
     UniqueRef<ResourceManager>      m_ResourceManager;
     UniqueRef<MaterialManager>      m_MaterialManager;
-    String                           m_Title;
-    String                           m_ApplicationLocalData;
+    String                          m_Title;
+    String                          m_ApplicationLocalData;
     UniqueRef<FrameLoop>            m_FrameLoop;
     Ref<RenderCore::IDevice>        m_RenderDevice;
     Ref<RenderCore::IGenericWindow> m_Window;
@@ -236,19 +236,19 @@ private:
     UniqueRef<RenderBackend>        m_RenderBackend;
     Ref<AudioDevice>                m_AudioDevice;
     UniqueRef<AudioMixer>           m_AudioMixer;
-    InputSystem                      m_InputSystem;
-    CommandProcessor                 m_CommandProcessor;
-    CommandContext                   m_CommandContext;
-    StateMachine                     m_StateMachine;
+    InputSystem                     m_InputSystem;
+    CommandProcessor                m_CommandProcessor;
+    CommandContext                  m_CommandContext;
+    StateMachine                    m_StateMachine;
     Vector<World*>                  m_Worlds; 
-    DisplayVideoMode                 m_DesiredMode;
-    MersenneTwisterRand              m_Random;
-    String                           m_Screenshot;
-    float                            m_FrameDurationInSeconds{};
-    bool                             m_bIsWindowVisible{};
-    bool                             m_bPostChangeVideoMode{};
-    bool                             m_bPostTerminateEvent{};
-    bool                             m_bPostTakeScreenshot{};
+    DisplayVideoMode                m_DesiredMode;
+    MersenneTwisterRand             m_Random;
+    String                          m_Screenshot;
+    float                           m_FrameDurationInSeconds{};
+    bool                            m_bIsWindowVisible{};
+    bool                            m_bPostChangeVideoMode{};
+    bool                            m_bPostTerminateEvent{};
+    bool                            m_bPostTakeScreenshot{};
 };
 
 namespace Global

@@ -168,16 +168,16 @@ void UIConsole::CompleteString(CommandContext& commandCtx, StringView _Str)
 
 void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, CommandProcessor& commandProcessor)
 {
-    if (event.Action == IA_PRESS || event.Action == IA_REPEAT)
+    if (event.Action == InputAction::Pressed || event.Action == InputAction::Repeat)
     {
         int scrollDelta = 1;
-        if (event.ModMask & MOD_MASK_CONTROL)
+        if (event.ModMask.Control)
         {
-            if (event.Key == KEY_HOME)
+            if (event.Key == VirtualKey::Home)
             {
                 m_ConsoleBuffer.ScrollStart();
             }
-            else if (event.Key == KEY_END)
+            else if (event.Key == VirtualKey::End)
             {
                 m_ConsoleBuffer.ScrollEnd();
             }
@@ -186,13 +186,13 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
 
         switch (event.Key)
         {
-            case KEY_PAGE_UP:
+            case VirtualKey::PageUp:
                 m_ConsoleBuffer.ScrollDelta(scrollDelta);
                 break;
-            case KEY_PAGE_DOWN:
+            case VirtualKey::PageDown:
                 m_ConsoleBuffer.ScrollDelta(-scrollDelta);
                 break;
-                //case KEY_ENTER:
+                //case VirtualKey::ENTER:
                 //    m_ConsoleBuffer.ScrollEnd();
                 //    break;
         }
@@ -200,8 +200,8 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
         // Command line keys
         switch (event.Key)
         {
-            case KEY_LEFT:
-                if (event.ModMask & MOD_MASK_CONTROL)
+            case VirtualKey::Left:
+                if (event.ModMask.Control)
                 {
                     while (m_CmdLinePos > 0 && m_CmdLinePos <= m_CmdLineLength && m_CmdLine[m_CmdLinePos - 1] == ' ')
                     {
@@ -221,8 +221,8 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                     }
                 }
                 break;
-            case KEY_RIGHT:
-                if (event.ModMask & MOD_MASK_CONTROL)
+            case VirtualKey::Right:
+                if (event.ModMask.Control)
                 {
                     while (m_CmdLinePos < m_CmdLineLength && m_CmdLine[m_CmdLinePos] != ' ')
                     {
@@ -241,13 +241,13 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                     }
                 }
                 break;
-            case KEY_END:
+            case VirtualKey::End:
                 m_CmdLinePos = m_CmdLineLength;
                 break;
-            case KEY_HOME:
+            case VirtualKey::Home:
                 m_CmdLinePos = 0;
                 break;
-            case KEY_BACKSPACE:
+            case VirtualKey::Backspace:
                 if (m_CmdLinePos > 0)
                 {
                     Core::Memmove(m_CmdLine + m_CmdLinePos - 1, m_CmdLine + m_CmdLinePos, sizeof(m_CmdLine[0]) * (m_CmdLineLength - m_CmdLinePos));
@@ -255,14 +255,14 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                     m_CmdLinePos--;
                 }
                 break;
-            case KEY_DELETE:
+            case VirtualKey::Delete:
                 if (m_CmdLinePos < m_CmdLineLength)
                 {
                     Core::Memmove(m_CmdLine + m_CmdLinePos, m_CmdLine + m_CmdLinePos + 1, sizeof(m_CmdLine[0]) * (m_CmdLineLength - m_CmdLinePos - 1));
                     m_CmdLineLength--;
                 }
                 break;
-            case KEY_ENTER: {
+            case VirtualKey::Enter: {
                 char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case WideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
@@ -282,7 +282,7 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                 m_CmdLinePos    = 0;
                 break;
             }
-            case KEY_DOWN:
+            case VirtualKey::Down:
                 m_CmdLineLength = 0;
                 m_CmdLinePos    = 0;
 
@@ -297,7 +297,7 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                     m_CurStoryLine = m_NumStoryLines;
                 }
                 break;
-            case KEY_UP: {
+            case VirtualKey::Up: {
                 m_CmdLineLength = 0;
                 m_CmdLinePos    = 0;
 
@@ -316,13 +316,13 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                 }
                 break;
             }
-            case KEY_V:
-                if (event.ModMask & MOD_MASK_CONTROL)
+            case VirtualKey::V:
+                if (event.ModMask.Control)
                 {
                     InsertClipboardText();
                 }
                 break;
-            case KEY_TAB: {
+            case VirtualKey::Tab: {
                 char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case WideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
@@ -331,8 +331,8 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
                 CompleteString(commandCtx, result);
                 break;
             }
-            case KEY_INSERT:
-                if (event.ModMask == 0)
+            case VirtualKey::Insert:
+                if (event.ModMask.IsEmpty())
                 {
                     GUIManager->SetInsertMode(!GUIManager->IsInsertMode());
                 }

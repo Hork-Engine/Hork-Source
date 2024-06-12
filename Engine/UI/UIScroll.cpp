@@ -362,10 +362,10 @@ bool UIScroll::CanScroll() const
 
 void UIScroll::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
-    if (IsDisabled() || event.Button != 0)
+    if (IsDisabled() || event.Button != VirtualKey::MouseLeftBtn)
         return;
 
-    if (event.Action == IA_PRESS)
+    if (event.Action == InputAction::Pressed)
     {
         if (BvPointInRect(m_VerticalSliderMins, m_VerticalSliderMaxs, GUIManager->CursorPosition))
         {
@@ -411,7 +411,7 @@ void UIScroll::OnMouseButtonEvent(MouseButtonEvent const& event)
             }
         }        
     }
-    else if (event.Action == IA_RELEASE)
+    else if (event.Action == InputAction::Released)
     {
         m_PressButton = -1;
         m_State       = STATE_IDLE;

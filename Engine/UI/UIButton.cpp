@@ -106,10 +106,10 @@ void UIButton::Draw(Canvas& canvas)
 
 void UIButton::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
-    if (IsDisabled() || !m_Action || event.Button != 0)
+    if (IsDisabled() || !m_Action || event.Button != VirtualKey::MouseLeftBtn)
         return;
 
-    if (event.Action == IA_PRESS)
+    if (event.Action == InputAction::Pressed)
     {
         if (m_bTriggerOnPress)
         {
@@ -118,7 +118,7 @@ void UIButton::OnMouseButtonEvent(MouseButtonEvent const& event)
         else
             m_bTryPress = true;
     }
-    else if (event.Action == IA_RELEASE)
+    else if (event.Action == InputAction::Released)
     {
         if (GUIManager->HoveredWidget.RawPtr() == this && m_bTryPress && !m_bTriggerOnPress)
         {
