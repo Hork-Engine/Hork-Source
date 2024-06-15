@@ -503,19 +503,6 @@ void World::Tick(float timeStep)
 
     m_Tick.Interpolate = m_TimeAccumulator / fixedTimeStep;
 
-    //m_TransformHistorySystem->Update(m_Tick);
-
-    //if (com_InterpolateTransform)
-    //{
-    //    m_TransformSystem->InterpolateTransformState(m_Tick);
-    //    m_SceneGraph.InterpolateTransformState(m_Tick.PrevStateIndex, m_Tick.StateIndex, m_Tick.Interpolate);
-    //}
-    //else
-    //{
-    //    m_TransformSystem->CopyTransformState(m_Tick);
-    //    m_SceneGraph.CopyTransformState(m_Tick.PrevStateIndex, m_Tick.StateIndex);
-    //}
-
     //m_LightingSystem->Update(m_Tick);
 
     //m_SkinningSystem->InterpolatePoses(m_Tick);
