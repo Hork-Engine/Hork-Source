@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -54,9 +54,9 @@ public:
     ITexture* GetDepthBuffer() override;
 
 private:
-    TRef<GenericWindowGLImpl> pWindow;
-    TRef<TextureGLImpl> BackBuffer;
-    TRef<TextureGLImpl> DepthBuffer;
+    Ref<GenericWindowGLImpl> pWindow;
+    Ref<TextureGLImpl> BackBuffer;
+    Ref<TextureGLImpl> DepthBuffer;
 };
 
 } // namespace RenderCore

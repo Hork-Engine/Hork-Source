@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Geometry/BV/BvFrustum.h>
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Logger.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -307,6 +307,7 @@ void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* r
     int*         pCullingResult   = &result[0];
     int          i, j;
 
+    HK_ASSERT(IsAligned<4>(count));
     HK_ASSERT(IsAlignedPtr(result, 16));
 
     __m128 zero = _mm_setzero_ps();

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -43,7 +43,7 @@ BRDFGenerator::BRDFGenerator()
     ShaderFactory::CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
-void BRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
+void BRDFGenerator::Render(Ref<RenderCore::ITexture>* ppTexture)
 {
     FrameGraph  frameGraph(GDevice);
     RenderPass& pass = frameGraph.AddTask<RenderPass>("BRDF generation pass");

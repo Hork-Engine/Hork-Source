@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -37,7 +37,7 @@ SOFTWARE.
 
 #ifdef HK_OS_WIN32
 
-#    include <Engine/Core/Platform/WindowsDefs.h>
+#    include <Engine/Core/WindowsDefs.h>
 
 #    include <io.h>
 
@@ -208,22 +208,22 @@ VirtualTexturePIT::VirtualTexturePIT()
 
 VirtualTexturePIT::~VirtualTexturePIT()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(Data);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(Data);
 }
 
 void VirtualTexturePIT::Create(unsigned int InNumPages)
 {
     HK_ASSERT_(InNumPages > 0, "VirtualTexturePIT::create");
     NumPages = InNumPages;
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(Data);
-    Data = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(NumPages);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(Data);
+    Data = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(NumPages);
     WritePages = NumPages;
 }
 
 void VirtualTexturePIT::Clear()
 {
     HK_ASSERT_(Data != NULL, "VirtualTexturePIT::clear");
-    Platform::ZeroMem(Data, sizeof(Data[0]) * NumPages);
+    Core::ZeroMem(Data, sizeof(Data[0]) * NumPages);
 }
 
 void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods)
@@ -235,7 +235,7 @@ void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods
 
     int numLods = QuadTreeCalcLod64(NumPages);
 
-    Platform::ZeroMem(lodPagesCount, sizeof(lodPagesCount[0]) * numLods);
+    Core::ZeroMem(lodPagesCount, sizeof(lodPagesCount[0]) * numLods);
 
     // Parse bits
     for (unsigned int i = 0; i < NumPages; i++)
@@ -325,22 +325,22 @@ VirtualTextureAddressTable::VirtualTextureAddressTable()
 
 VirtualTextureAddressTable::~VirtualTextureAddressTable()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(Table);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(Table);
 }
 
 void VirtualTextureAddressTable::Create(int _NumLods)
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(Table);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(Table);
 
     NumLods = _NumLods;
     TotalPages = QuadTreeCalcQuadTreeNodes(_NumLods);
     TableSize = _NumLods > 4 ? QuadTreeCalcQuadTreeNodes(_NumLods - 4) : 0;
-    ByteOffsets = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(TotalPages);
+    ByteOffsets = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(TotalPages);
     if (TableSize > 0)
     {
-        Table = (uint32_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Table[0]) * TableSize);
+        Table = (uint32_t*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Table[0]) * TableSize);
     }
     else
     {
@@ -352,10 +352,10 @@ void VirtualTextureAddressTable::Clear()
 {
     HK_ASSERT_(ByteOffsets != NULL, "VirtualTextureAddressTable::clear");
 
-    Platform::ZeroMem(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages);
+    Core::ZeroMem(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages);
     if (Table)
     {
-        Platform::ZeroMem(Table, sizeof(Table[0]) * TableSize);
+        Core::ZeroMem(Table, sizeof(Table[0]) * TableSize);
     }
 }
 
@@ -422,7 +422,7 @@ void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
 #if 0
         int * addrTableByteOffsets = new int[ AddrTableSize ];
 
-        Platform::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
+        Core::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
 
         for ( unsigned int i = 85 ; i < TotalPages ; i++) {
             //Заполняем byte offsets для LOD'ов > 4

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -35,10 +35,10 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T, size_t ArraySize>
-struct TArray
+struct Array
 {
 public:
-    using ThisType             = TArray<T, ArraySize>;
+    using ThisType             = Array<T, ArraySize>;
     using ValueType            = T;
     using Reference            = ValueType&;
     using ConstReference       = const ValueType&;
@@ -230,7 +230,7 @@ public:
 
     HK_FORCEINLINE void ZeroMem()
     {
-        Platform::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
+        Core::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
     }
 
     HK_FORCEINLINE ConstIterator Find(ValueType const& value) const
@@ -268,37 +268,37 @@ public:
 
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator==(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator==(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return eastl::equal(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
 }
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator<(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator<(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return eastl::lexicographical_compare(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0], &b.m_Data[ArraySize]);
 }
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator!=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator!=(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return !eastl::equal(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
 }
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator>(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator>(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return eastl::lexicographical_compare(&b.m_Data[0], &b.m_Data[ArraySize], &a.m_Data[0], &a.m_Data[ArraySize]);
 }
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator<=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator<=(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return !eastl::lexicographical_compare(&b.m_Data[0], &b.m_Data[ArraySize], &a.m_Data[0], &a.m_Data[ArraySize]);
 }
 
 template <typename T, size_t ArraySize>
-constexpr inline bool operator>=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+constexpr inline bool operator>=(Array<T, ArraySize> const& a, Array<T, ArraySize> const& b)
 {
     return !eastl::lexicographical_compare(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0], &b.m_Data[ArraySize]);
 }
@@ -308,7 +308,7 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <typename T, size_t ArraySize>
-inline void swap(Hk::TArray<T, ArraySize>& a, Hk::TArray<T, ArraySize>& b)
+inline void swap(Hk::Array<T, ArraySize>& a, Hk::Array<T, ArraySize>& b)
 {
     eastl::swap_ranges(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
 }

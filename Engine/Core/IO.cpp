@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/IO.h>
-#include <Engine/Core/BaseMath.h>
-#include <Engine/Core/Platform/WindowsDefs.h>
-#include <Engine/Core/Platform/Logger.h>
+#include "IO.h"
+#include "BaseMath.h"
+#include "WindowsDefs.h"
+#include "Logger.h"
 
 #ifdef HK_OS_WIN32
 #    include <direct.h> // _mkdir
@@ -197,13 +197,13 @@ size_t File::Read(void* pBuffer, size_t SizeInBytes)
         else
         {
             bytesToRead = std::min(SizeInBytes, m_FileSize - m_RWOffset);
-            Platform::Memcpy(pBuffer, m_pHeapPtr + m_RWOffset, bytesToRead);
+            Core::Memcpy(pBuffer, m_pHeapPtr + m_RWOffset, bytesToRead);
         }
     }
 
     SizeInBytes -= bytesToRead;
     if (SizeInBytes)
-        Platform::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
+        Core::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
 
     m_RWOffset += bytesToRead;
     return bytesToRead;
@@ -237,7 +237,7 @@ size_t File::Write(const void* pBuffer, size_t SizeInBytes)
             m_ReservedSize = mod ? requiredSize + m_Granularity - mod : requiredSize;
             m_pHeapPtr     = (byte*)Realloc(m_pHeapPtr, m_ReservedSize);
         }
-        Platform::Memcpy(m_pHeapPtr + m_RWOffset, pBuffer, SizeInBytes);
+        Core::Memcpy(m_pHeapPtr + m_RWOffset, pBuffer, SizeInBytes);
         bytesToWrite = SizeInBytes;
     }
 
@@ -467,7 +467,7 @@ size_t File::SizeInBytes() const
     return m_FileSize;
 }
 
-bool File::Eof() const
+bool File::IsEOF() const
 {
     if (!IsOpened())
         return false;
@@ -480,17 +480,17 @@ bool File::Eof() const
 
 void* File::Alloc(size_t SizeInBytes)
 {
-    return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
 }
 
 void* File::Realloc(void* pMemory, size_t SizeInBytes)
 {
-    return Platform::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
 }
 
 void File::Free(void* pMemory)
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
 }
 
 File File::OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
@@ -506,7 +506,7 @@ File File::OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeI
 
     return f;
 }
-
+#if 0
 File File::OpenRead(StringView FileName, BlobRef Blob)
 {
     File f;
@@ -518,16 +518,16 @@ File File::OpenRead(StringView FileName, BlobRef Blob)
     f.m_ReservedSize = Blob.Size();
     f.m_bMemoryBufferOwner = true;
 
-    Platform::Memcpy(f.m_pHeapPtr, Blob.GetData(), Blob.Size());
+    Core::Memcpy(f.m_pHeapPtr, Blob.GetData(), Blob.Size());
 
     return f;
 }
-
+#endif
 File File::OpenRead(StringView FileName, Archive const& Archive)
 {
     File f;
 
-    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
+    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", FileName);
         return {};
@@ -547,7 +547,7 @@ File File::OpenRead(FileHandle FileHandle, Archive const& Archive)
 
     Archive.GetFileName(FileHandle, f.m_Name);
 
-    if (!Archive.ExtractFileToHeapMemory(FileHandle, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
+    if (!Archive.ExtractFileToHeapMemory(FileHandle, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", f.m_Name);
         return {};
@@ -631,7 +631,7 @@ Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
         archiveSize = f.SizeInBytes() - fileStartOffset;
     }
 
-    Platform::ZeroMem(&arch, sizeof(arch));
+    Core::ZeroMem(&arch, sizeof(arch));
 
     mz_bool status = mz_zip_reader_init_file_v2(&arch, ArchiveName.IsNullTerminated() ? ArchiveName.Begin() : String(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
@@ -641,8 +641,8 @@ Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
     }
 
     Archive archive;
-    archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
-    Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
+    archive.m_Handle = Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
+    Core::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
     ((mz_zip_archive*)archive.m_Handle)->m_pIO_opaque = archive.m_Handle;
@@ -654,7 +654,7 @@ Archive Archive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
 {
     mz_zip_archive arch;
 
-    Platform::ZeroMem(&arch, sizeof(arch));
+    Core::ZeroMem(&arch, sizeof(arch));
 
     mz_bool status = mz_zip_reader_init_mem(&arch, pMemory, SizeInBytes, 0);
     if (!status)
@@ -664,8 +664,8 @@ Archive Archive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
     }
 
     Archive archive;
-    archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
-    Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
+    archive.m_Handle = Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
+    Core::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
     ((mz_zip_archive*)archive.m_Handle)->m_pIO_opaque = archive.m_Handle;
@@ -682,7 +682,7 @@ void Archive::Close()
 
     mz_zip_reader_end((mz_zip_archive*)m_Handle);
 
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_Handle);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(m_Handle);
     m_Handle = nullptr;
 }
 
@@ -740,7 +740,7 @@ bool Archive::GetFileName(FileHandle FileHandle, String& FileName) const
     }
 
     FileName.Resize(filename_len);
-    Platform::Memcpy(FileName.ToPtr(), pFilename, filename_len);
+    Core::Memcpy(FileName.ToPtr(), pFilename, filename_len);
 
     return true;
 }
@@ -825,8 +825,8 @@ void CreateDirectory(StringView Directory, bool bFileName)
         return;
     }
     const char* dir    = Directory.ToPtr();
-    char*       tmpStr = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(len + 1);
-    Platform::Memcpy(tmpStr, dir, len + 1);
+    char*       tmpStr = (char*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(len + 1);
+    Core::Memcpy(tmpStr, dir, len + 1);
     char* p = tmpStr;
 #ifdef HK_OS_WIN32
     if (len >= 3 && dir[1] == ':')
@@ -837,7 +837,7 @@ void CreateDirectory(StringView Directory, bool bFileName)
 #endif
     for (; dir < Directory.End(); p++, dir++)
     {
-        if (Platform::IsPathSeparator(*p))
+        if (IsPathSeparator(*p))
         {
             *p = 0;
 #ifdef HK_COMPILER_MSVC
@@ -856,7 +856,7 @@ void CreateDirectory(StringView Directory, bool bFileName)
         mkdir(tmpStr, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif
     }
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(tmpStr);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(tmpStr);
 }
 
 bool IsFileExists(StringView FileName)
@@ -991,12 +991,12 @@ bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
     }
 
     uint64_t magic;
-    Platform::Memcpy(&magic, "ARESPACK", sizeof(magic));
+    Core::Memcpy(&magic, "ARESPACK", sizeof(magic));
     magic = Core::LittleDDWord(magic);
     fwrite(&magic, 1, sizeof(magic), file);
 
     mz_zip_archive zip;
-    Platform::ZeroMem(&zip, sizeof(zip));
+    Core::ZeroMem(&zip, sizeof(zip));
 
     if (mz_zip_writer_init_cfile(&zip, file, 0))
     {
@@ -1013,7 +1013,7 @@ bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
                                   return;
                               }
 
-                              String fn = FileName.TruncateHead(path.Length() + 1);
+                              String fn(FileName.TruncateHead(path.Length() + 1));
 
                               LOG("Writing '{}'\n", fn);
 

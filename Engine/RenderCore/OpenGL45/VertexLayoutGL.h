@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -93,7 +93,7 @@ public:
 private:
     HK_NODISCARD std::unique_ptr<VertexArrayObjectGL> CreateVAO();
 
-    THashMap<uint32_t /* context id */, std::unique_ptr<VertexArrayObjectGL>> VaoHandles;
+    HashMap<uint32_t /* context id */, std::unique_ptr<VertexArrayObjectGL>> VaoHandles;
     std::unique_ptr<VertexArrayObjectGL>                                      VaoHandleMainContext;
     VertexLayoutDescGL                                                        Desc;
     uint32_t                                                                  VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};

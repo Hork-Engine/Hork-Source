@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "CommandProcessor.h"
-#include <Engine/Core/Platform/Logger.h>
+#include "Logger.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -45,17 +45,17 @@ void CommandProcessor::ClearBuffer()
     m_ArgsCount = 0;
 }
 
-void CommandProcessor::Add(StringView _Text)
+void CommandProcessor::Add(StringView text)
 {
-    m_Cmdbuf += _Text;
+    m_Cmdbuf += text;
 }
 
-void CommandProcessor::Insert(StringView _Text)
+void CommandProcessor::Insert(StringView text)
 {
-    m_Cmdbuf.InsertAt(m_CmdbufPos, _Text);
+    m_Cmdbuf.InsertAt(m_CmdbufPos, text);
 }
 
-void CommandProcessor::Execute(ICommandContext& _Ctx)
+void CommandProcessor::Execute(ICommandContext& ctx)
 {
     if (m_Cmdbuf.IsEmpty())
     {
@@ -107,7 +107,7 @@ void CommandProcessor::Execute(ICommandContext& _Ctx)
             m_CmdbufPos++;
             if (m_ArgsCount > 0)
             {
-                _Ctx.ExecuteCommand(*this);
+                ctx.ExecuteCommand(*this);
                 m_ArgsCount = 0;
             }
             continue;
@@ -187,7 +187,7 @@ void CommandProcessor::Execute(ICommandContext& _Ctx)
 
     if (m_ArgsCount > 0)
     {
-        _Ctx.ExecuteCommand(*this);
+        ctx.ExecuteCommand(*this);
         m_ArgsCount = 0;
     }
 
@@ -196,16 +196,16 @@ void CommandProcessor::Execute(ICommandContext& _Ctx)
     m_Cmdbuf.Clear();
 }
 
-bool CommandProcessor::IsValidCommandName(const char* _Name)
+bool CommandProcessor::IsValidCommandName(const char* name)
 {
-    if (!_Name || !*_Name)
+    if (!name || !*name)
     {
         return false;
     }
 
-    while (*_Name)
+    while (*name)
     {
-        const char c = *_Name++;
+        const char c = *name++;
 
         const bool bLiteral = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         const bool bNumeric = (c >= '0' && c <= '9');

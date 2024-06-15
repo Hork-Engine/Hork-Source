@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "FGResource.h"
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Core/Platform/Memory/LinearAllocator.h>
+#include <Engine/Core/Allocators/LinearAllocator.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -52,7 +52,7 @@ class FGRenderTaskBase : public AFrameResource
 {
 public:
     template <typename T>
-    using TFrameVector = TVector<T, Allocators::FrameMemoryAllocator>;
+    using TFrameVector = Vector<T, Allocators::FrameMemoryAllocator>;
 
     explicit FGRenderTaskBase(FrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
         pFrameGraph(pFrameGraph), Name(Name), ResourceRefs(0), bCulled(false), ProxyType(ProxyType)

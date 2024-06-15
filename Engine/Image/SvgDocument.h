@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -39,11 +39,11 @@ class LayoutSymbol;
 
 HK_NAMESPACE_BEGIN
 
-class SvgDocument
+class SvgDocument final
 {
 public:
     SvgDocument() = default;
-    virtual ~SvgDocument();
+    ~SvgDocument();
 
     SvgDocument(SvgDocument const& Rhs) = delete;
     SvgDocument& operator=(SvgDocument const& Rhs) = delete;

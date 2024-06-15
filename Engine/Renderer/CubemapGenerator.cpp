@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -106,7 +106,7 @@ CubemapGenerator::CubemapGenerator()
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void CubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
+void CubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, Ref< RenderCore::ITexture > * ppTextureArray )
 {
     GDevice->CreateTexture(RenderCore::TextureDesc()
                                .SetFormat(_Format)
@@ -117,7 +117,7 @@ void CubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, i
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
 
-    TRef< IResourceTable > resourceTbl;
+    Ref< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
@@ -155,7 +155,7 @@ void CubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, i
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture)
+void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, Ref<RenderCore::ITexture>* ppTexture)
 {
     GDevice->CreateTexture(TextureDesc()
                                .SetFormat(_Format)
@@ -166,7 +166,7 @@ void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITextur
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
 
-    TRef< IResourceTable > resourceTbl;
+    Ref< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );

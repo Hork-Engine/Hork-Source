@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,11 +30,11 @@ SOFTWARE.
 
 #include "HRTF.h"
 
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/Platform.h>
-#include <Engine/Geometry/BV/BvIntersect.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/Platform.h>
 #include <Engine/Core/ConsoleVar.h>
-#include <Engine/Runtime/EmbeddedResources.h>
+#include <Engine/Geometry/BV/BvIntersect.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 // Use miniaudio for resampling
 #include <miniaudio/miniaudio.h>
@@ -49,11 +49,11 @@ ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
 
 AudioHRTF::AudioHRTF(int SampleRate)
 {
-    File f = File::OpenRead("HRTF/IRC_1002_C.bin", Runtime::GetEmbeddedResources());
+    File f = File::OpenRead("HRTF/IRC_1002_C.bin", GameApplication::GetEmbeddedArchive());
     if (!f)
     {
         // An error occurred...
-        CriticalError("Failed to open HRTF data\n");
+        CoreApplication::TerminateWithError("Failed to open HRTF data\n");
     }
 
     /*
@@ -70,7 +70,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
     const char* MAGIC = "HRIR";
     if (std::memcmp(&magic, MAGIC, sizeof(uint32_t)) != 0)
     {
-        CriticalError("Invalid HRTF data\n");
+        CoreApplication::TerminateWithError("Invalid HRTF data\n");
     }
 
     int sampleRateHRIR = (int)f.ReadUInt32();
@@ -81,7 +81,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
 
     if (indexCount % 3)
     {
-        CriticalError("Invalid index count for HRTF geometry\n");
+        CoreApplication::TerminateWithError("Invalid index count for HRTF geometry\n");
     }
 
     /*
@@ -111,7 +111,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
     {
         // There is no need for resampling, so we just read it as is
 
-        TVector<float> framesIn;
+        Vector<float> framesIn;
         framesIn.Resize(m_FrameCount);
 
         m_FilterSize = m_FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
@@ -143,16 +143,16 @@ AudioHRTF::AudioHRTF(int SampleRate)
         ma_result result = ma_resampler_init(&config, &resampler);
         if (result != MA_SUCCESS)
         {
-            CriticalError("Failed to resample HRTF data\n");
+            CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
         }
 
         ma_uint64 frameCountIn = m_FrameCount;
         ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count(&resampler, m_FrameCount);
 
-        TVector<float> framesIn;
+        Vector<float> framesIn;
         framesIn.Resize(frameCountIn);
 
-        TVector<float> framesOut;
+        Vector<float> framesOut;
         framesOut.Resize(frameCountOut);
 
         m_FrameCount = frameCountOut;
@@ -179,7 +179,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
             result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
-                CriticalError("Failed to resample HRTF data\n");
+                CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 
@@ -193,7 +193,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
             result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
-                CriticalError("Failed to resample HRTF data\n");
+                CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 
@@ -265,7 +265,7 @@ void AudioHRTF::GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pH
 
     FFT(hrirComplex, temp);
 
-    Platform::Memcpy(pHRTF, temp, sizeof(Complex) * m_FilterSize);
+    Core::Memcpy(pHRTF, temp, sizeof(Complex) * m_FilterSize);
 
     mufft_free(temp);
     mufft_free(hrirComplex);
@@ -314,8 +314,8 @@ void AudioHRTF::SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRigh
         }
     }
 
-    Platform::ZeroMem(pLeftHRTF, m_FilterSize * sizeof(Complex));
-    Platform::ZeroMem(pRightHRTF, m_FilterSize * sizeof(Complex));
+    Core::ZeroMem(pLeftHRTF, m_FilterSize * sizeof(Complex));
+    Core::ZeroMem(pRightHRTF, m_FilterSize * sizeof(Complex));
 }
 
 void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int InFrameCount, float* pStream, Float3& Dir)
@@ -430,8 +430,8 @@ void AudioHRTF::ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const floa
 void DrawHRTF( DebugRenderer * InRenderer )
 {
     static bool binit = false;
-    static TVector< Float3 > sphereVerts;
-    static TVector< uint32_t > sphereIndices;
+    static Vector< Float3 > sphereVerts;
+    static Vector< uint32_t > sphereIndices;
     if ( !binit ) {
         binit = true;
 

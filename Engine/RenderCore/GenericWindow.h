@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -72,8 +72,6 @@ struct DisplayVideoMode
     bool bFullscreen;
     /** Move window to center of the screen. WindowedX and WindowedY will be ignored. */
     bool bCentrized;
-    /** Render backend name */
-    char Backend[32];
     /** Window title */
     char Title[128];
 };
@@ -99,7 +97,7 @@ public:
 
 protected:
     DisplayVideoMode  VideoMode;
-    TWeakRef<ISwapChain> SwapChain;
+    WeakRef<ISwapChain> SwapChain;
 };
 
 } // namespace RenderCore

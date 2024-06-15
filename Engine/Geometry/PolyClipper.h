@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/Core/Ref.h>
-#include "VectorMath.h"
+#include <Engine/Math/VectorMath.h>
 
 namespace ClipperLib
 {
@@ -41,12 +41,12 @@ class Clipper;
 
 HK_NAMESPACE_BEGIN
 
-using ClipperContour = TVector<Double2>;
+using ClipperContour = Vector<Double2>;
 
 struct ClipperPolygon
 {
     ClipperContour          Outer;
-    TVector<ClipperContour> Holes;
+    Vector<ClipperContour>  Holes;
 };
 
 enum POLY_CLIP_TYPE
@@ -57,11 +57,11 @@ enum POLY_CLIP_TYPE
     POLY_CLIP_TYPE_XOR
 };
 
-class PolyClipper
+class PolyClipper final : public Noncopyable
 {
 public:
     PolyClipper();
-    virtual ~PolyClipper();
+    ~PolyClipper();
 
     /** Transform matrix for 2D <-> 3D conversion */
     void SetTransform(Float3x3 const& transform3D);
@@ -88,13 +88,13 @@ public:
     void AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
     /** Execute and build polygons */
-    bool Execute(POLY_CLIP_TYPE clipType, TVector<ClipperPolygon>& polygons);
+    bool Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons);
 
     /** Execute and build contours */
-    bool Execute(POLY_CLIP_TYPE clipType, TVector<ClipperContour>& contours);
+    bool Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours);
 
 private:
-    TUniqueRef<ClipperLib::Clipper> m_pImpl;
+    UniqueRef<ClipperLib::Clipper> m_pImpl;
     Float3x3                        m_Transform3D;
     Float3x3                        m_InvTransform3D;
 };

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "GenericWindow.h"
 
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Platform.h>
 #include <Engine/Core/BaseMath.h>
 
 #include <SDL/SDL.h>
@@ -50,7 +50,9 @@ void IGenericWindow::ParseEvent(SDL_Event const& event)
     if (event.type != SDL_WINDOWEVENT)
         return;
 
-    HK_ASSERT(SDL_GetWindowFromID(event.window.windowID) == GetHandle());
+    //HK_ASSERT(SDL_GetWindowFromID(event.window.windowID) == GetHandle());
+    if (SDL_GetWindowFromID(event.window.windowID) != GetHandle())
+        return;
 
     switch (event.window.event)
     {

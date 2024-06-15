@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,10 +31,11 @@ SOFTWARE.
 #include "Image.h"
 #include "ImageEncoders.h"
 
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/Color.h>
 
-#define STBIR_MALLOC(sz, context) Hk::Platform::GetHeapAllocator<Hk::HEAP_TEMP>().Alloc(sz)
-#define STBIR_FREE(p, context)    Hk::Platform::GetHeapAllocator<Hk::HEAP_TEMP>().Free(p)
+#define STBIR_MALLOC(sz, context) Hk::Core::GetHeapAllocator<Hk::HEAP_TEMP>().Alloc(sz)
+#define STBIR_FREE(p, context)    Hk::Core::GetHeapAllocator<Hk::HEAP_TEMP>().Free(p)
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_STATIC
 #define STBIR_MAX_CHANNELS 4
@@ -185,7 +186,7 @@ bool ImageSubresource::Write(uint32_t X, uint32_t Y, uint32_t Width, uint32_t He
 
     if (X == 0 && Y == 0 && viewWidth == Width && viewHeight == Height)
     {
-        Platform::Memcpy(m_pData, Bytes, Width * Height * blockSizeInBytes);
+        Core::Memcpy(m_pData, Bytes, Width * Height * blockSizeInBytes);
     }
     else
     {
@@ -195,7 +196,7 @@ bool ImageSubresource::Write(uint32_t X, uint32_t Y, uint32_t Width, uint32_t He
         uint8_t const* src = (uint8_t const*)Bytes;
         for (uint32_t y = 0; y < Height; ++y)
         {
-            Platform::Memcpy(ptr, src, Width * blockSizeInBytes);
+            Core::Memcpy(ptr, src, Width * blockSizeInBytes);
             ptr += viewWidth * blockSizeInBytes;
             src += Width * blockSizeInBytes;
         }
@@ -232,7 +233,7 @@ bool ImageSubresource::Read(uint32_t X, uint32_t Y, uint32_t Width, uint32_t Hei
 
     if (X == 0 && Y == 0 && viewWidth == Width && viewHeight == Height)
     {
-        Platform::Memcpy(Bytes, m_pData, Width * Height * blockSizeInBytes);
+        Core::Memcpy(Bytes, m_pData, Width * Height * blockSizeInBytes);
     }
     else
     {
@@ -240,7 +241,7 @@ bool ImageSubresource::Read(uint32_t X, uint32_t Y, uint32_t Width, uint32_t Hei
         uint8_t* dst = (uint8_t*)Bytes;
         for (uint32_t y = 0; y < Height; ++y)
         {
-            Platform::Memcpy(dst, ptr, Width * blockSizeInBytes);
+            Core::Memcpy(dst, ptr, Width * blockSizeInBytes);
             ptr += viewWidth * blockSizeInBytes;
             dst += Width * blockSizeInBytes;
         }
@@ -2575,5 +2576,177 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
 
     return true;
 }
+
+namespace
+{
+
+Color4 ApplyColorGrading(ColorGradingSettings const& Settings, Color4 const& Color)
+{
+    float lum = Color.GetLuminance();
+
+    Color4 mult;
+
+    mult.SetTemperature(Math::Clamp(Settings.ColorTemperature, 1000.0f, 40000.0f));
+
+    Color4 c;
+    c.R = Math::Lerp(Color.R, Color.R * mult.R, Settings.ColorTemperatureStrength.X);
+    c.G = Math::Lerp(Color.G, Color.G * mult.G, Settings.ColorTemperatureStrength.Y);
+    c.B = Math::Lerp(Color.B, Color.B * mult.B, Settings.ColorTemperatureStrength.Z);
+    c.A = 1;
+
+    float newLum = c.GetLuminance();
+    float scale = Math::Lerp(1.0f, (newLum > 1e-6) ? (lum / newLum) : 1.0f, Settings.ColorTemperatureBrightnessNormalization);
+
+    c *= scale;
+
+    lum = c.GetLuminance();
+
+    float r = Math::Lerp(lum, c.R, Settings.Presaturation.X);
+    float g = Math::Lerp(lum, c.G, Settings.Presaturation.Y);
+    float b = Math::Lerp(lum, c.B, Settings.Presaturation.Z);
+
+    r = 2.0f * Settings.Gain[0] * (r + ((Settings.Lift[0] * 2.0f - 1.0) * (1.0 - r)));
+    g = 2.0f * Settings.Gain[1] * (g + ((Settings.Lift[1] * 2.0f - 1.0) * (1.0 - g)));
+    b = 2.0f * Settings.Gain[2] * (b + ((Settings.Lift[2] * 2.0f - 1.0) * (1.0 - b)));
+
+    r = Math::Pow(r, 0.5f / Settings.Gamma.X);
+    g = Math::Pow(g, 0.5f / Settings.Gamma.Y);
+    b = Math::Pow(b, 0.5f / Settings.Gamma.Z);
+
+    return Color4(r, g, b, Color.A);
+}
+
+} // namespace
+
+ImageStorage CreateColorGradingLUT(ColorGradingSettings const& Settings)
+{
+    ImageStorageDesc desc;
+
+    desc.Type = TEXTURE_3D;
+    desc.Width = 16;
+    desc.Height = 16;
+    desc.Depth = 16;
+    desc.Format = TEXTURE_FORMAT_SBGRA8_UNORM;
+    desc.Flags = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage image(desc);
+
+    Color4 color;
+
+    const float scale = 1.0f / 15.0f;
+
+    for (uint32_t slice = 0; slice < image.GetDesc().SliceCount; ++slice)
+    {
+        ImageSubresourceDesc subresDesc;
+        subresDesc.SliceIndex = slice;
+        subresDesc.MipmapIndex = 0;
+
+        ImageSubresource subresource = image.GetSubresource(subresDesc);
+
+        color.B = scale * slice;
+
+        uint8_t* dest = (uint8_t*)subresource.GetData();
+
+        for (int y = 0; y < 16; y++)
+        {
+            color.G = scale * y;
+            for (int x = 0; x < 16; x++)
+            {
+                color.R = scale * x;
+
+                Color4 result = ApplyColorGrading(Settings, color);
+
+                dest[0] = Math::Clamp(result.B * 255.0f, 0.0f, 255.0f);
+                dest[1] = Math::Clamp(result.G * 255.0f, 0.0f, 255.0f);
+                dest[2] = Math::Clamp(result.R * 255.0f, 0.0f, 255.0f);
+                dest[3] = 255;
+                dest += 4;
+            }
+        }
+    }
+
+    return image;
+}
+
+ImageStorage CreateLuminanceColorGradingLUT()
+{
+    ImageStorageDesc desc;
+
+    desc.Type = TEXTURE_3D;
+    desc.Width = 16;
+    desc.Height = 16;
+    desc.Depth = 16;
+    desc.Format = TEXTURE_FORMAT_SBGRA8_UNORM;
+    desc.Flags = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage image(desc);
+
+    for (uint32_t slice = 0; slice < image.GetDesc().SliceCount; ++slice)
+    {
+        ImageSubresourceDesc subresDesc;
+        subresDesc.SliceIndex = slice;
+        subresDesc.MipmapIndex = 0;
+
+        ImageSubresource subresource = image.GetSubresource(subresDesc);
+
+        uint8_t* dest = (uint8_t*)subresource.GetData();
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                dest[0] = dest[1] = dest[2] = Math::Clamp(x * (0.2126f / 15.0f * 255.0f) + y * (0.7152f / 15.0f * 255.0f) + slice * (0.0722f / 15.0f * 255.0f), 0.0f, 255.0f);
+                dest[3] = 255;
+                dest += 4;
+            }
+        }
+    }
+
+    return image;
+}
+
+ImageStorage CreateColorGradingLUTFrom2DImage(IBinaryStreamReadInterface& Stream)
+{
+    ImageStorage source = CreateImage(Stream, nullptr, IMAGE_STORAGE_NO_ALPHA, TEXTURE_FORMAT_SBGRA8_UNORM);
+
+    if (source && source.GetDesc().Width == 16 * 16 && source.GetDesc().Height == 16)
+    {
+        ImageStorageDesc desc;
+
+        desc.Type = TEXTURE_3D;
+        desc.Width = 16;
+        desc.Height = 16;
+        desc.Depth = 16;
+        desc.Format = TEXTURE_FORMAT_SBGRA8_UNORM;
+        desc.Flags = IMAGE_STORAGE_NO_ALPHA;
+
+        ImageStorage image(desc);
+
+        const uint8_t* sourceData = (const uint8_t*)source.GetData();
+
+        for (uint32_t slice = 0; slice < image.GetDesc().SliceCount; ++slice)
+        {
+            ImageSubresourceDesc subresDesc;
+            subresDesc.SliceIndex = slice;
+            subresDesc.MipmapIndex = 0;
+
+            ImageSubresource subresource = image.GetSubresource(subresDesc);
+
+            uint8_t* dest = (uint8_t*)subresource.GetData();
+            for (int y = 0; y < 16; y++)
+            {
+                Core::Memcpy(dest, sourceData, 16 * 4);
+                sourceData += 16 * 16 * 4;
+                dest += 16 * 4;
+            }
+
+            sourceData -= 16 * 16 * 16 * 4 + 16 * 4;
+        }
+
+        return image;
+    }
+
+    return {};
+}
+
 
 HK_NAMESPACE_END

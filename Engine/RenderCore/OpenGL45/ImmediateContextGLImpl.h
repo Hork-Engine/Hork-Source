@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -98,8 +98,8 @@ private:
 
 struct FrameBufferHash
 {
-    TStaticVector<TWeakRef<ITextureView>, MAX_COLOR_ATTACHMENTS> ColorAttachments;
-    TWeakRef<ITextureView>                                       pDepthStencilAttachment;
+    StaticVector<WeakRef<ITextureView>, MAX_COLOR_ATTACHMENTS> ColorAttachments;
+    WeakRef<ITextureView>                                       pDepthStencilAttachment;
 
     void AddColorAttachment(ITextureView* pTexView)
     {
@@ -145,10 +145,10 @@ public:
 
     void CleanupOutdatedFramebuffers();
 
-    FramebufferGL* GetFramebuffer(const char* RenderPassName, TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments, TextureAttachment* DepthStencilAttachment);
+    FramebufferGL* GetFramebuffer(const char* RenderPassName, StaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments, TextureAttachment* DepthStencilAttachment);
 
 private:
-    THashMap<FrameBufferHash, std::unique_ptr<FramebufferGL>> Framebuffers;
+    HashMap<FrameBufferHash, std::unique_ptr<FramebufferGL>> Framebuffers;
 };
 
 struct RenderPassBeginGL
@@ -655,8 +655,8 @@ private:
     ptrdiff_t BufferBindingOffsets[MAX_BUFFER_SLOTS];
     ptrdiff_t BufferBindingSizes[MAX_BUFFER_SLOTS];
 
-    TRef<IResourceTable>       RootResourceTable;
-    TRef<ResourceTableGLImpl>  CurrentResourceTable;
+    Ref<IResourceTable>       RootResourceTable;
+    Ref<ResourceTableGLImpl>  CurrentResourceTable;
     PipelineGLImpl*            CurrentPipeline;
     class VertexLayoutGL*      CurrentVertexLayout;
     class VertexArrayObjectGL* CurrentVAO;
@@ -698,7 +698,7 @@ private:
     Rect2D               CurrentRenderPassRenderArea;
     FramebufferGL const* CurrentFramebuffer;
 
-    TArray<ClearColorValue, MAX_COLOR_ATTACHMENTS> ColorAttachmentClearValues;
+    Array<ClearColorValue, MAX_COLOR_ATTACHMENTS> ColorAttachmentClearValues;
     ClearDepthStencilValue                         DepthStencilAttachmentClearValue;
 
     struct AttachmentUse
@@ -706,7 +706,7 @@ private:
         int FirstSubpass;
         int LastSubpass;
     };
-    TArray<AttachmentUse, MAX_COLOR_ATTACHMENTS> ColorAttachmentSubpassUse;
+    Array<AttachmentUse, MAX_COLOR_ATTACHMENTS> ColorAttachmentSubpassUse;
     AttachmentUse                                DepthStencilAttachmentSubpassUse;
 
     float CurrentViewport[4];
@@ -714,9 +714,9 @@ private:
 
     Rect2D CurrentScissor;
 
-    TRef<FramebufferCacheGL> pFramebufferCache;
+    Ref<FramebufferCacheGL> pFramebufferCache;
 
-    THashMap<uint64_t, uint32_t> ProgramPipelines;
+    HashMap<uint64_t, uint32_t> ProgramPipelines;
 };
 
 struct ScopedContextGL

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -35,19 +35,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class ShaderLoader
-{
-public:
-    String LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined = {});
-    String LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined = {});
-
-protected:
-    virtual bool LoadFile(StringView FileName, String& Source);
-    bool LoadShaderFromString(StringView FileName, StringView Source, String& Out);
-    bool LoadShaderWithInclude(StringView FileName, String& Out);
-
-    /** Predefined shaders */
-    TArrayView<MaterialSource> m_Predefined;
-};
+String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined = {});
 
 HK_NAMESPACE_END

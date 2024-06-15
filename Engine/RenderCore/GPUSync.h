@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -41,10 +41,10 @@ GPUSync
 Sync GPU and CPU. Used to reduce input lag.
 
 */
-class GPUSync : public RefCounted
+class GPUSync final : public Noncopyable
 {
 public:
-    GPUSync(RenderCore::IImmediateContext* pImmediateContext);
+    explicit GPUSync(RenderCore::IImmediateContext* pImmediateContext);
     ~GPUSync();
 
     void SetEvent();
@@ -52,8 +52,8 @@ public:
 
 private:
     RenderCore::IImmediateContext* pImmediateContext;
-    TRef<RenderCore::ITexture>     Texture;
-    TRef<RenderCore::ITexture>     Staging;
+    Ref<RenderCore::ITexture>     Texture;
+    Ref<RenderCore::ITexture>     Staging;
 };
 
 HK_NAMESPACE_END

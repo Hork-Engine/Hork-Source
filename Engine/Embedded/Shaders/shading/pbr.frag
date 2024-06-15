@@ -109,8 +109,8 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
         }
     }
 
-    vec3 Irradiance = vec3( 0.0 );
-    vec3 PrefilteredColor = vec3( 0.0 );
+    vec3 Irradiance = vec3( 0.1 );
+    vec3 PrefilteredColor = vec3( 0.1 );
 
 // NOTE: there is an issue
 #ifndef ATI

@@ -53,7 +53,7 @@ void CalcVertex( out ivec2 VertexOffset, out ivec2 TexelOffset )
 //    VertexOffset = clamp( VertexOffset, TerrainClip.xy, TerrainClip.zw );
 //#endif
 
-    TexelOffset = (( VertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x) & ivec2(TILE_SIZE-1);
+    TexelOffset = (( VertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x) & ivec2(TERRAIN_CLIPMAP_SIZE-1);
 
     //TexelOffset = InPosition + (VertexTranslate + TexcoordOffset) / VertexScaleAndTranslate.x
     //                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ prebake into one variable TexcoordOffset
@@ -73,7 +73,7 @@ void main()
     float alpha = CalcTransitionAlpha3D( position, VertexScaleAndTranslate.x );
 
     position.y = mix( hf, hc, alpha );
-    
+  
     gl_Position = LocalViewProjection * vec4( position, 1.0 );
     
     // Position in view space
@@ -88,8 +88,8 @@ void main()
 
     VS_Color = QuadColor * VertexScaleAndTranslate.x;
     
-    VS_UVAlpha.xy = vec2((( vertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x)) * (1.0/(TILE_SIZE));
-    //VS_UVAlpha.xy = vec2(texelOffset) * (1.0/(TILE_SIZE));
+    VS_UVAlpha.xy = vec2((( vertexOffset + TexcoordOffset ) / VertexScaleAndTranslate.x)) * (1.0/(TERRAIN_CLIPMAP_SIZE));
+    //VS_UVAlpha.xy = vec2(texelOffset) * (1.0/(TERRAIN_CLIPMAP_SIZE));
     VS_UVAlpha.z = float(VertexScaleAndTranslate.y);
     VS_UVAlpha.w = alpha;
     
@@ -98,6 +98,7 @@ void main()
     vec4 temp = packedNormal * 2.0 - 1.0;
     vec2 normal_xz = mix( temp.xy, temp.zw, alpha );
     vec4 n = vec4( vec3( normal_xz, sqrt( 1.0 - dot( normal_xz, normal_xz ) ) ).xzy, 0.0 );
+	
     VS_N.x = dot( ModelNormalToViewSpace0, n );
     VS_N.y = dot( ModelNormalToViewSpace1, n );
     VS_N.z = dot( ModelNormalToViewSpace2, n );

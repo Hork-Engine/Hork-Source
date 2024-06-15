@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -33,11 +33,11 @@ SOFTWARE.
 #include <Engine/Core/Color.h>
 #include <Engine/Core/Compress.h>
 #include <Engine/Core/HeapBlob.h>
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Logger.h>
 
-#define STBI_MALLOC(sz)                     Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
-#define STBI_FREE(p)                        Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
-#define STBI_REALLOC(p, newsz)              Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
+#define STBI_MALLOC(sz)                     Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
+#define STBI_FREE(p)                        Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
+#define STBI_REALLOC(p, newsz)              Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) STBI_REALLOC(p, newsz)
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -45,9 +45,9 @@ SOFTWARE.
 #define STBI_NO_GIF // Maybe in future gif will be used, but not now
 #include <stb/stb_image.h>
 
-#define STBIW_MALLOC(sz)        Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
-#define STBIW_FREE(p)           Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
-#define STBIW_REALLOC(p, newsz) Hk::Platform::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
+#define STBIW_MALLOC(sz)        Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
+#define STBIW_FREE(p)           Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)
+#define STBIW_REALLOC(p, newsz) Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 //#define STBI_WRITE_NO_STDIO
@@ -120,7 +120,7 @@ static void Stbi_Skip(void* user, int n)
 static int Stbi_Eof(void* user)
 {
     Hk::IBinaryStreamReadInterface* stream = (Hk::IBinaryStreamReadInterface*)user;
-    return stream->Eof();
+    return stream->IsEOF();
 }
 
 static void Stbi_Write(void* context, void* data, int size)
@@ -237,7 +237,7 @@ static bool LoadImageEXR(Hk::IBinaryStreamReadInterface& Stream, uint32_t NumReq
         else
         {
             data = STBI_MALLOC((size_t)w * h * numChannels * sizeof(float));
-            Hk::Platform::Memcpy(data, source, (size_t)w * h * numChannels * sizeof(float));
+            Hk::Core::Memcpy(data, source, (size_t)w * h * numChannels * sizeof(float));
         }
     }
     else
@@ -534,14 +534,14 @@ void RawImage::Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, v
     if (!size)
         return;
 
-    m_pData  = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(size);
+    m_pData  = Core::GetHeapAllocator<HEAP_IMAGE>().Alloc(size);
     m_Width  = Width;
     m_Height = Height;
     m_Format = Format;
 
     if (pData)
     {
-        Platform::Memcpy(m_pData, pData, size);
+        Core::Memcpy(m_pData, pData, size);
     }
 }
 
@@ -550,7 +550,7 @@ void RawImage::Reset()
     if (!m_pData)
         return;
     
-    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
+    Core::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
     
     m_pData  = nullptr;
     m_Width  = 0;
@@ -595,7 +595,7 @@ void RawImage::Clear(Float4 const& Color)
     switch (m_Format)
     {
         case RAW_IMAGE_FORMAT_R8:
-            Platform::Memset(m_pData, unsignedInt8[0], pixCount);
+            Core::Memset(m_pData, unsignedInt8[0], pixCount);
             break;
         case RAW_IMAGE_FORMAT_R8_ALPHA:
             for (uint32_t n = 0; n < pixCount; ++n)
@@ -1245,18 +1245,18 @@ static void MemSwap(uint8_t* Block, size_t BlockSz, uint8_t* _Ptr1, uint8_t* _Pt
     size_t       i;
     for (i = 0; i < blockCount; i++)
     {
-        Platform::Memcpy(Block, _Ptr1, BlockSz);
-        Platform::Memcpy(_Ptr1, _Ptr2, BlockSz);
-        Platform::Memcpy(_Ptr2, Block, BlockSz);
+        Core::Memcpy(Block, _Ptr1, BlockSz);
+        Core::Memcpy(_Ptr1, _Ptr2, BlockSz);
+        Core::Memcpy(_Ptr2, Block, BlockSz);
         _Ptr2 += BlockSz;
         _Ptr1 += BlockSz;
     }
     i = _Size - i * BlockSz;
     if (i > 0)
     {
-        Platform::Memcpy(Block, _Ptr1, i);
-        Platform::Memcpy(_Ptr1, _Ptr2, i);
-        Platform::Memcpy(_Ptr2, Block, i);
+        Core::Memcpy(Block, _Ptr1, i);
+        Core::Memcpy(_Ptr1, _Ptr2, i);
+        Core::Memcpy(_Ptr2, Block, i);
     }
 }
 
@@ -1273,9 +1273,9 @@ void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPix
         for (size_t x = 0; x < halfWidth; x++)
         {
             e -= BytesPerPixel;
-            Platform::Memcpy(temp, s, BytesPerPixel);
-            Platform::Memcpy(s, e, BytesPerPixel);
-            Platform::Memcpy(e, temp, BytesPerPixel);
+            Core::Memcpy(temp, s, BytesPerPixel);
+            Core::Memcpy(s, e, BytesPerPixel);
+            Core::Memcpy(e, temp, BytesPerPixel);
             s += BytesPerPixel;
         }
         image += RowStride;
@@ -1467,32 +1467,32 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
         return false;
     }
 
-    Platform::ZeroMem(channels, sizeof(channels));
+    Core::ZeroMem(channels, sizeof(channels));
 
     switch (NumChannels)
     {
         case 1:
-            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            Core::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
             numWriteChannels = 1;
             break;
         case 2:
-            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
-            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
-            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
-            Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
+            Core::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            Core::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
+            Core::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
+            Core::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
             numWriteChannels = 4;
             break;
         case 3:
-            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "B");
-            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "G");
-            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "R");
+            Core::Strcpy(channels[0].name, sizeof(channels[0].name), "B");
+            Core::Strcpy(channels[1].name, sizeof(channels[1].name), "G");
+            Core::Strcpy(channels[2].name, sizeof(channels[2].name), "R");
             numWriteChannels = 3;
             break;
         case 4:
-            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
-            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
-            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
-            Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
+            Core::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            Core::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
+            Core::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
+            Core::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
             numWriteChannels = 4;
             break;
         default:

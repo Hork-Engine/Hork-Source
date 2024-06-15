@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/LinearAllocator.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Core/Allocators/LinearAllocator.h>
+#include <Engine/Math/VectorMath.h>
 #include <Engine/RenderCore/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
@@ -54,14 +54,14 @@ public:
     Float2 const& GetResolutionRatio() const { return ResolutionRatio; }
 
 private:
-    TRef<RenderCore::ITexture> FeedbackTexture;
-    TRef<RenderCore::ITexture> FeedbackDepth;
-    TRef<RenderCore::IBuffer> PixelBufferObject[2];
+    Ref<RenderCore::ITexture> FeedbackTexture;
+    Ref<RenderCore::ITexture> FeedbackDepth;
+    Ref<RenderCore::IBuffer> PixelBufferObject[2];
     const void* MappedData[2];
     int SwapIndex;
     Float2 ResolutionRatio;
     int FeedbackSize[2];
-    TRef<RenderCore::IPipeline> DrawFeedbackPipeline;
+    Ref<RenderCore::IPipeline> DrawFeedbackPipeline;
 };
 
 HK_NAMESPACE_END

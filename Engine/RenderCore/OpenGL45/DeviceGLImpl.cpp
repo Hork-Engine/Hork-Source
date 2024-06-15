@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Platform/Platform.h>
-#include <Engine/Core/Platform/WindowsDefs.h>
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Platform.h>
+#include <Engine/Core/WindowsDefs.h>
+#include <Engine/Core/Logger.h>
 #include <Engine/RenderCore/GenericWindow.h>
 
 #include "DeviceGLImpl.h"
@@ -137,7 +137,7 @@ static bool FindExtension(const char* _Extension)
     for (int i = 0; i < numExtensions; i++)
     {
         const char* ExtI = (const char*)glGetStringi(GL_EXTENSIONS, i);
-        if (ExtI && Platform::Strcmp(ExtI, _Extension) == 0)
+        if (ExtI && Core::Strcmp(ExtI, _Extension) == 0)
         {
             return true;
         }
@@ -147,17 +147,17 @@ static bool FindExtension(const char* _Extension)
 
 static void* Allocate(size_t _BytesCount)
 {
-    return Platform::GetHeapAllocator<HEAP_RHI>().Alloc(_BytesCount);
+    return Core::GetHeapAllocator<HEAP_RHI>().Alloc(_BytesCount);
 }
 
 static void Deallocate(void* _Bytes)
 {
-    Platform::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
+    Core::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
 }
 
 static constexpr AllocatorCallback DefaultAllocator = { Allocate, Deallocate };
 
-DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
+DeviceGLImpl::DeviceGLImpl()
 {
     BufferMemoryAllocated  = 0;
     TextureMemoryAllocated = 0;
@@ -165,7 +165,7 @@ DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
     MainWindowHandle = WindowPool.NewWindow();
 
     SDL_Window*   pWindow   = MainWindowHandle.Handle; //pMainWindow->GetNativeHandle();
-    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.GetObject())->GetGLContext();
+    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.RawPtr())->GetGLContext();
 
     SDL_GL_MakeCurrent(pWindow, windowCtx);
 
@@ -182,15 +182,15 @@ DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
     LOG("Graphics adapter: {}\n", adapterString);
     LOG("Driver version: {}\n", driverVersion);
 
-    if (Platform::SubstringIcmp(vendorString, "NVIDIA") != -1)
+    if (Core::SubstringIcmp(vendorString, "NVIDIA") != -1)
     {
         GraphicsVendor = VENDOR_NVIDIA;
     }
-    else if (Platform::SubstringIcmp(vendorString, "ATI") != -1)
+    else if (Core::SubstringIcmp(vendorString, "ATI") != -1)
     {
         GraphicsVendor = VENDOR_ATI;
     }
-    else if (Platform::SubstringIcmp(vendorString, "Intel") != -1)
+    else if (Core::SubstringIcmp(vendorString, "Intel") != -1)
     {
         GraphicsVendor = VENDOR_INTEL;
     }
@@ -219,14 +219,14 @@ DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
             {
                 const char* extName2 = (const char*)glGetStringi(GL_EXTENSIONS, i + 1);
 
-                int strLen1 = Platform::Strlen(extName1);
-                int strLen2 = Platform::Strlen(extName2);
+                int strLen1 = Core::Strlen(extName1);
+                int strLen2 = Core::Strlen(extName2);
 
                 if (strLen1 < MaxExtensionLength && strLen2 < MaxExtensionLength)
                 {
-                    Platform::Memset(&str[strLen1], ' ', MaxExtensionLength - strLen1);
-                    Platform::Memcpy(str, extName1, strLen1);
-                    Platform::Memcpy(&str[MaxExtensionLength], extName2, strLen2);
+                    Core::Memset(&str[strLen1], ' ', MaxExtensionLength - strLen1);
+                    Core::Memcpy(str, extName1, strLen1);
+                    Core::Memcpy(&str[MaxExtensionLength], extName2, strLen2);
                     str[MaxExtensionLength + strLen2] = '\0';
 
                     LOG(" {}\n", str);
@@ -388,7 +388,7 @@ DeviceGLImpl::DeviceGLImpl(AllocatorCallback const* pAllocator)
         LOG("\tEvicted memory: {} Megs\n", evictedMemory >> 10);
     }
 
-    Allocator = pAllocator ? *pAllocator : DefaultAllocator;
+    Allocator = DefaultAllocator;
 
     // Now device is initialized so we can initialize main window context here
     MainWindowHandle.ImmediateCtx = new ImmediateContextGLImpl(this, MainWindowHandle, true);
@@ -447,7 +447,7 @@ IImmediateContext* DeviceGLImpl::GetImmediateContext()
     return MainWindowHandle.ImmediateCtx;
 }
 
-void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
 {
     if (pMainWindow.IsExpired())
     {
@@ -460,59 +460,59 @@ void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef
     }
 }
 
-void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
 {
     WindowPoolGL::WindowGL dummyHandle = {};
 
     *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
 }
 
-void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain)
+void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain)
 {
     *ppSwapChain = MakeRef<SwapChainGLImpl>(this, static_cast<GenericWindowGLImpl*>(pWindow));
 }
 
-void DeviceGLImpl::CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline)
+void DeviceGLImpl::CreatePipeline(PipelineDesc const& Desc, Ref<IPipeline>* ppPipeline)
 {
     *ppPipeline = MakeRef<PipelineGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, Ref<IShaderModule>* ppShaderModule)
 {
     *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _BinaryData);
 }
 
-void DeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule)
+void DeviceGLImpl::CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, Ref<IShaderModule>* ppShaderModule)
 {
     *ppShaderModule = MakeRef<ShaderModuleGLImpl>(this, _ShaderType, _NumSources, _Sources);
 }
 
-void DeviceGLImpl::CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer)
+void DeviceGLImpl::CreateBuffer(BufferDesc const& Desc, const void* _SysMem, Ref<IBuffer>* ppBuffer)
 {
     *ppBuffer = MakeRef<BufferGLImpl>(this, Desc, _SysMem);
 }
 
-void DeviceGLImpl::CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture)
+void DeviceGLImpl::CreateTexture(TextureDesc const& Desc, Ref<ITexture>* ppTexture)
 {
     *ppTexture = MakeRef<TextureGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture)
+void DeviceGLImpl::CreateSparseTexture(SparseTextureDesc const& Desc, Ref<ISparseTexture>* ppTexture)
 {
     *ppTexture = MakeRef<SparseTextureGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback)
+void DeviceGLImpl::CreateTransformFeedback(TransformFeedbackDesc const& Desc, Ref<ITransformFeedback>* ppTransformFeedback)
 {
     *ppTransformFeedback = MakeRef<TransformFeedbackGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool)
+void DeviceGLImpl::CreateQueryPool(QueryPoolDesc const& Desc, Ref<IQueryPool>* ppQueryPool)
 {
     *ppQueryPool = MakeRef<QueryPoolGLImpl>(this, Desc);
 }
 
-void DeviceGLImpl::CreateResourceTable(TRef<IResourceTable>* ppResourceTable)
+void DeviceGLImpl::CreateResourceTable(Ref<IResourceTable>* ppResourceTable)
 {
     *ppResourceTable = MakeRef<ResourceTableGLImpl>(this);
 }
@@ -576,7 +576,7 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
 
         LOG("DeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
     }
-    Platform::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
+    Core::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
 
     desc.NumVertexAttribs = NumVertexAttribs;
     if (desc.NumVertexAttribs > MAX_VERTEX_ATTRIBS)
@@ -585,7 +585,7 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
 
         LOG("DeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
     }
-    Platform::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
+    Core::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
 
     // Clear semantic name to have proper hash key
     for (int i = 0; i < desc.NumVertexAttribs; i++)
@@ -625,7 +625,7 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
         }
     }
 
-    TRef<VertexLayoutGL> pVertexLayout;
+    Ref<VertexLayoutGL> pVertexLayout;
     pVertexLayout = MakeRef<VertexLayoutGL>(desc);
     pVertexLayout->AddRef();
     vertexLayout = pVertexLayout;
@@ -645,7 +645,7 @@ BlendingStateInfo const* DeviceGLImpl::CachedBlendingState(BlendingStateInfo con
     }
 
     state = static_cast<BlendingStateInfo*>(Allocator.Allocate(sizeof(BlendingStateInfo)));
-    Platform::Memcpy(state, &_BlendingState, sizeof(*state));
+    Core::Memcpy(state, &_BlendingState, sizeof(*state));
 
     //LOG( "Total blending states {}\n", BlendingStates.Size() );
 
@@ -662,7 +662,7 @@ RasterizerStateInfo const* DeviceGLImpl::CachedRasterizerState(RasterizerStateIn
     }
 
     state = static_cast<RasterizerStateInfo*>(Allocator.Allocate(sizeof(RasterizerStateInfo)));
-    Platform::Memcpy(state, &_RasterizerState, sizeof(*state));
+    Core::Memcpy(state, &_RasterizerState, sizeof(*state));
 
     //LOG( "Total rasterizer states {}\n", RasterizerStates.Size() );
 
@@ -679,7 +679,7 @@ DepthStencilStateInfo const* DeviceGLImpl::CachedDepthStencilState(DepthStencilS
     }
 
     state = static_cast<DepthStencilStateInfo*>(Allocator.Allocate(sizeof(DepthStencilStateInfo)));
-    Platform::Memcpy(state, &_DepthStencilState, sizeof(*state));
+    Core::Memcpy(state, &_DepthStencilState, sizeof(*state));
 
     //LOG( "Total depth stencil states {}\n", DepthStencilStates.Size() );
 
@@ -696,7 +696,7 @@ unsigned int DeviceGLImpl::CachedSampler(SamplerDesc const& SamplerDesc)
     }
 
     sampler = static_cast<SamplerInfo*>(Allocator.Allocate(sizeof(SamplerInfo)));
-    Platform::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
+    Core::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
 
     //LOG( "Total samplers {}\n", Samplers.Size() );
 
@@ -1045,13 +1045,13 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     window.Handle = SDL_CreateWindow("", 0, 0, 1, 1, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     if (!window.Handle)
     {
-        CriticalError("Failed to create window\n");
+        CoreApplication::TerminateWithError("Failed to create window\n");
     }
 
     window.GLContext = SDL_GL_CreateContext(window.Handle);
     if (!window.GLContext)
     {
-        CriticalError("Failed to initialize OpenGL context\n");
+        CoreApplication::TerminateWithError("Failed to initialize OpenGL context\n");
     }
 
     SDL_GL_MakeCurrent(window.Handle, window.GLContext);
@@ -1063,7 +1063,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     GLenum result = glewInit();
     if (result != GLEW_OK)
     {
-        CriticalError("Failed to load OpenGL functions\n");
+        CoreApplication::TerminateWithError("Failed to load OpenGL functions\n");
     }
 
     // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and

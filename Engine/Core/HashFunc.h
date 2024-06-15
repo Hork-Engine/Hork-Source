@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/BaseTypes.h>
+#include "BaseTypes.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -136,6 +136,22 @@ HK_FORCEINLINE uint32_t Murmur3Hash64(uint64_t key, uint32_t seed = 0)
 HK_FORCEINLINE uint32_t Hash(bool Key)
 {
     return std::hash<bool>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(int8_t Key)
+{
+    return std::hash<int8_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(int16_t Key)
+{
+    return std::hash<int16_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(int32_t Key)
+{
+    return std::hash<int32_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(int64_t Key)
+{
+    return std::hash<int64_t>()(Key);
 }
 HK_FORCEINLINE uint32_t Hash(uint8_t Key)
 {

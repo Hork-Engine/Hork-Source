@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/PoolAllocator.h>
+#include <Engine/Core/Allocators/PoolAllocator.h>
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/RenderCore/Device.h>
 
@@ -78,10 +78,8 @@ struct VertexHandle
     bool IsHuge() const { return Size > VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 };
 
-class VertexMemoryGPU : public RefCounted
+class VertexMemoryGPU final : public Noncopyable
 {
-    HK_FORBID_COPY(VertexMemoryGPU)
-
 public:
     /** Allow auto defragmentation */
     bool bAutoDefrag = true;
@@ -172,24 +170,21 @@ private:
         size_t UsedMemory;
     };
 
-    TRef<RenderCore::IDevice> m_pDevice;
-    TVector<VertexHandle*> m_Handles;
-    TVector<VertexHandle*> m_HugeHandles;
-    TVector<Block> m_Blocks;
-    TVector<TRef<RenderCore::IBuffer>> m_BufferHandles;
-    TPoolAllocator<VertexHandle> m_HandlePool;
+    Ref<RenderCore::IDevice> m_pDevice;
+    Vector<VertexHandle*> m_Handles;
+    Vector<VertexHandle*> m_HugeHandles;
+    Vector<Block> m_Blocks;
+    Vector<Ref<RenderCore::IBuffer>> m_BufferHandles;
+    PoolAllocator<VertexHandle> m_HandlePool;
 
     size_t m_UsedMemory;
     size_t m_UsedMemoryHuge;
 };
 
-class StreamedMemoryGPU : public RefCounted
+class StreamedMemoryGPU final : public Noncopyable
 {
-    HK_FORBID_COPY(StreamedMemoryGPU)
-
 public:
-    StreamedMemoryGPU(RenderCore::IDevice* Device);
-
+    explicit StreamedMemoryGPU(RenderCore::IDevice* Device);
     ~StreamedMemoryGPU();
 
     /** Allocate vertex data. Return stream handle. Stream handle is actual during current frame. */
@@ -255,10 +250,10 @@ private:
         RenderCore::SyncObject Sync;
     };
 
-    TRef<RenderCore::IDevice> m_pDevice;
+    Ref<RenderCore::IDevice>  m_pDevice;
     RenderCore::IImmediateContext* m_pImmediateContext;
     ChainBuffer               m_ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
-    TRef<RenderCore::IBuffer> m_Buffer;
+    Ref<RenderCore::IBuffer>  m_Buffer;
     void*                     m_pMappedMemory;
     int                       m_BufferIndex;
     size_t                    m_MaxMemoryUsage;

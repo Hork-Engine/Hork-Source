@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -112,29 +112,29 @@ public:
 
     virtual IImmediateContext* GetImmediateContext() = 0;
 
-    virtual void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+    virtual void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) = 0;
 
-    virtual void CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+    virtual void CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) = 0;
 
-    virtual void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) = 0;
+    virtual void CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain) = 0;
 
-    virtual void CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) = 0;
+    virtual void CreatePipeline(PipelineDesc const& Desc, Ref<IPipeline>* ppPipeline) = 0;
 
-    virtual void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)                                         = 0;
-    virtual void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) = 0;
+    virtual void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, Ref<IShaderModule>* ppShaderModule)                                         = 0;
+    virtual void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, Ref<IShaderModule>* ppShaderModule) = 0;
 
-    virtual void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) = 0;
+    virtual void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, Ref<IBuffer>* ppBuffer) = 0;
 
-    virtual void CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture) = 0;
+    virtual void CreateTexture(TextureDesc const& Desc, Ref<ITexture>* ppTexture) = 0;
 
     /** FEATURE_SPARSE_TEXTURES must be supported */
-    virtual void CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) = 0;
+    virtual void CreateSparseTexture(SparseTextureDesc const& Desc, Ref<ISparseTexture>* ppTexture) = 0;
 
-    virtual void CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) = 0;
+    virtual void CreateTransformFeedback(TransformFeedbackDesc const& Desc, Ref<ITransformFeedback>* ppTransformFeedback) = 0;
 
-    virtual void CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) = 0;
+    virtual void CreateQueryPool(QueryPoolDesc const& Desc, Ref<IQueryPool>* ppQueryPool) = 0;
 
-    virtual void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) = 0;
+    virtual void CreateResourceTable(Ref<IResourceTable>* ppResourceTable) = 0;
 
     virtual bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                         unsigned int       _NumSources,
@@ -197,11 +197,11 @@ public:
 protected:
     GRAPHICS_VENDOR GraphicsVendor = VENDOR_UNKNOWN;
 
-    TArray<unsigned int, DEVICE_CAPS_MAX> DeviceCaps = {};
-    TArray<bool, FEATURE_MAX>             FeatureSupport = {};
+    Array<unsigned int, DEVICE_CAPS_MAX> DeviceCaps = {};
+    Array<bool, FEATURE_MAX>             FeatureSupport = {};
 
 private:
-    TArray<int, DEVICE_OBJECT_TYPE_MAX> ObjectCounters = {};
+    Array<int, DEVICE_OBJECT_TYPE_MAX> ObjectCounters = {};
 
 #ifdef HK_DEBUG
     IDeviceObject* ListHead = nullptr;
@@ -210,9 +210,7 @@ private:
     friend class IDeviceObject;
 };
 
-void CreateLogicalDevice(const char*              Backend,
-                         AllocatorCallback const* Allocator,
-                         TRef<IDevice>*           ppDevice);
+void CreateLogicalDevice(const char* Backend, Ref<IDevice>* ppDevice);
 
 } // namespace RenderCore
 

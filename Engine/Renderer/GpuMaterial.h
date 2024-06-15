@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -37,7 +37,7 @@ HK_NAMESPACE_BEGIN
 class MaterialGPU : public RefCounted
 {
 public:
-    MaterialGPU(CompiledMaterial const* pCompiledMaterial);
+    MaterialGPU(CompiledMaterial const* pCompiledMaterial, String const& code);
 
     MaterialGPU(MaterialGPU&& Rhs) = default;
     MaterialGPU& operator=(MaterialGPU&& Rhs) = default;
@@ -54,7 +54,7 @@ public:
     int NormalsPassTextureCount{};
     int ShadowMapPassTextureCount{};
 
-    using PipelineRef = TRef<RenderCore::IPipeline>;
+    using PipelineRef = Ref<RenderCore::IPipeline>;
 
     // NOTE: 0 - Static geometry, 1 - Skinned geometry
 

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,10 +31,10 @@ SOFTWARE.
 #include "AssetImporter.h"
 #include "Asset.h"
 
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/Memory/LinearAllocator.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/Allocators/LinearAllocator.h>
 #include <Engine/Core/Containers/Hash.h>
-#include <Engine/Geometry/Transform.h>
+#include <Engine/Math/Transform.h>
 #include <Engine/Geometry/Skinning.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
@@ -81,14 +81,14 @@ private:
     {
         MaterialInfo()
         {
-            Platform::ZeroMem(Uniforms, sizeof(Uniforms));
+            Core::ZeroMem(Uniforms, sizeof(Uniforms));
         }
 
         String                          PathToWrite;
         const char*                     DefaultMaterial{""};
-        TVector<TextureInfo*>           Textures;
+        Vector<TextureInfo*>           Textures;
         float                           Uniforms[16];
-        THashMap<uint32_t, const char*> DefaultTexture;
+        HashMap<uint32_t, const char*> DefaultTexture;
     };
 
     struct AnimationInfo
@@ -96,9 +96,9 @@ private:
         String                    Name;
         float                     FrameDelta; // fixed time delta between frames
         uint32_t                  FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-        TVector<AnimationChannel> Channels;
-        TVector<Transform>        Transforms;
-        TVector<BvAxisAlignedBox> Bounds;
+        Vector<AnimationChannel> Channels;
+        Vector<Transform>        Transforms;
+        Vector<BvAxisAlignedBox> Bounds;
     };
 
     void         ReadGLTF(cgltf_data* Data);
@@ -107,8 +107,8 @@ private:
     void         ReadMesh(cgltf_node* Node);
     void         ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
     void         ReadAnimations(cgltf_data* Data);
-    void         ReadAnimation(cgltf_animation* Anim, AnimationInfo& _Animation);
-    void         ReadSkeleton(cgltf_node* node, int parentIndex = -1);
+    void         ReadAnimation(cgltf_animation* Anim, AnimationInfo& _Animation, int AnimIndex);
+    void         ReadSkeleton(cgltf_node* node, cgltf_skin* skin, int parentIndex = -1);
     bool         ReadOBJ(fastObjMesh* pMesh);
     void         WriteAssets();
     void         WriteTextures();
@@ -116,11 +116,14 @@ private:
     void         WriteMaterials();
     void         WriteMaterial(MaterialInfo& m);
     void         WriteSkeleton();
+    void         WriteSkeleton2();
     void         WriteAnimations();
     void         WriteAnimation(AnimationInfo const& Animation);
     void         WriteSingleModel();
+    void         WriteSingleModel2();
     void         WriteMeshes();
     void         WriteMesh(MeshInfo const& Mesh);
+    void         WriteMesh2(MeshInfo const& Mesh);
     void         WriteSkyboxMaterial(StringView SkyboxTexture);
     String       GeneratePhysicalPath(StringView DesiredName, StringView Extension);
     int          MapGltfMaterial(cgltf_material* Material);
@@ -131,18 +134,51 @@ private:
     String                  m_Path;
     cgltf_data*             m_Data;
     bool                    m_bSkeletal;
-    TVector<MeshVertex>     m_Vertices;
-    TVector<MeshVertexSkin> m_Weights;
-    TVector<unsigned int>   m_Indices;
-    TVector<MeshInfo>       m_Meshes;
-    TVector<TextureInfo>    m_Textures;
-    TVector<MaterialInfo>   m_Materials;
-    TVector<AnimationInfo>  m_Animations;
-    TVector<SkeletonJoint>  m_Joints;
+    Vector<MeshVertex>     m_Vertices;
+    Vector<MeshVertexSkin> m_Weights;
+    Vector<unsigned int>   m_Indices;
+    Vector<MeshInfo>       m_Meshes;
+    Vector<TextureInfo>    m_Textures;
+    Vector<MaterialInfo>   m_Materials;
+    Vector<AnimationInfo>  m_Animations;
+    Vector<SkeletonJoint>  m_Joints;
     MeshSkin                m_Skin;
     BvAxisAlignedBox        m_BindposeBounds;
     String                  m_SkeletonPath;
+    Float3x4                m_SkeletonTransform;
 };
+
+enum RESOURCE_TYPE : uint8_t
+{
+    RESOURCE_UNDEFINED,
+    RESOURCE_MESH, //ok
+    RESOURCE_SKELETON,
+    RESOURCE_SKELETAL_ANIMATION,
+    RESOURCE_TEXTURE,         //ok
+    RESOURCE_MATERIAL,        // combine compiledmaterial with material
+    RESOURCE_COLLISION,       // todo
+    RESOURCE_SOUND,           // todo
+    RESOURCE_FONT,            // todo
+    RESOURCE_PHOTOMETRIC,     // todo, make library?
+    RESOURCE_ENVMAP,          // todo
+    RESOURCE_TERRAIN,         // todo, rename to RESOURCE_HEIGHTFIELD?
+    RESOURCE_VIRTUAL_TEXTURE, // todo
+
+
+    // BAKE:
+    //
+    // Navigation Mesh
+    // Lightmaps
+    // Envmaps? - can be streamed lod by lod
+    // Collision models
+    // Areas and portals (spatial structure)
+
+    RESOURCE_TYPE_MAX
+};
+HK_FORCEINLINE uint32_t MakeResourceMagic(uint8_t type, uint8_t version)
+{
+    return (uint32_t('H')) | (uint32_t('k') << 8) | (uint32_t(type) << 16) | (uint32_t(version) << 24);
+}
 
 bool ImportGLTF(AssetImportSettings const& Settings)
 {
@@ -193,7 +229,7 @@ static void unpack_vec2_or_vec3(cgltf_accessor* acc, Float3* output, size_t stri
     {
         cgltf_accessor_read_float(acc, i, position, num_elements);
 
-        Platform::Memcpy(ptr, position, sizeof(float) * 3);
+        Core::Memcpy(ptr, position, sizeof(float) * 3);
 
         ptr += stride;
     }
@@ -383,7 +419,7 @@ static void unpack_mat4_to_mat3x4(cgltf_accessor* acc, Float3x4* output, size_t 
     {
         cgltf_accessor_read_float(acc, i, (float*)temp.ToPtr(), 16);
 
-        Platform::Memcpy(ptr, temp.Transposed().ToPtr(), sizeof(Float3x4));
+        Core::Memcpy(ptr, temp.Transposed().ToPtr(), sizeof(Float3x4));
 
         ptr += stride;
     }
@@ -728,13 +764,13 @@ bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
     HeapBlob blob = f.AsBlob();
 
     constexpr int MAX_MEMORY_GLTF = 16 << 20;
-    using ALinearAllocatorGLTF    = TLinearAllocator<MAX_MEMORY_GLTF>;
+    using ALinearAllocatorGLTF    = LinearAllocator<MAX_MEMORY_GLTF>;
 
     ALinearAllocatorGLTF allocator;
 
     cgltf_options options;
 
-    Platform::ZeroMem(&options, sizeof(options));
+    Core::ZeroMem(&options, sizeof(options));
 
     options.memory.alloc = [](void* user, cgltf_size size)
     {
@@ -775,22 +811,26 @@ bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
     return true;
 }
 
-void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
+void AssetImporter::ReadSkeleton(cgltf_node* node, cgltf_skin* skin, int parentIndex)
 {
     SkeletonJoint&  joint = m_Joints.Add();
     Float4x4 localTransform;
 
-    cgltf_node_transform_local(node, (float*)localTransform.ToPtr());
+    if (parentIndex == -1)
+        cgltf_node_transform_world(node, (float*)localTransform.ToPtr());
+    else
+        cgltf_node_transform_local(node, (float*)localTransform.ToPtr());
+
     joint.LocalTransform = Float3x4(localTransform.Transposed());
 
     if (node->name)
     {
-        Platform::Strcpy(joint.Name, sizeof(joint.Name), node->name);
+        Core::Strcpy(joint.Name, sizeof(joint.Name), node->name);
     }
     else
     {
-        String name = HK_FORMAT("unnamed_{}", m_Joints.Size() - 1);
-        Platform::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
+        String name(HK_FORMAT("unnamed_{}", m_Joints.Size() - 1));
+        Core::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
     }
 
     LOG("ReadSkeleton: {}\n", node->name ? node->name : "unnamed");
@@ -804,7 +844,7 @@ void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
 
     for (int i = 0; i < node->children_count; i++)
     {
-        ReadSkeleton(node->children[i], parentIndex);
+        ReadSkeleton(node->children[i], skin, parentIndex);
     }
 }
 
@@ -862,6 +902,71 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
         }
     }
 
+    if (m_bSkeletal)
+    {
+        if (Data->skins)
+        {
+            // FIXME: Only one skin per file supported now
+            // TODO: for ( int i = 0; i < Data->skins_count; i++ ) {
+            cgltf_skin* skin = &Data->skins[0];
+
+            m_Joints.Resize(skin->joints_count);
+
+            m_SkeletonTransform.SetIdentity();
+
+            for (int i = 0; i < skin->joints_count; i++)
+            {
+                SkeletonJoint& joint = m_Joints[i];
+
+                joint.Parent = -1;
+                for (int j = 0; j < skin->joints_count; j++)
+                {
+                    if (skin->joints[j] == skin->joints[i]->parent)
+                        joint.Parent = j;
+                }
+
+                Float4x4 localTransform;
+
+                if (joint.Parent == -1)
+                    cgltf_node_transform_world(skin->joints[i], (float*)localTransform.ToPtr());
+                else
+                    cgltf_node_transform_local(skin->joints[i], (float*)localTransform.ToPtr());
+
+                joint.LocalTransform = Float3x4(localTransform.Transposed());
+
+                if (joint.Parent == -1)
+                {
+                    if (skin->joints[i]->parent)
+                    {
+                        cgltf_node_transform_local(skin->joints[i]->parent, (float*)localTransform.ToPtr());
+                        m_SkeletonTransform = Float3x4(localTransform.Transposed());
+                    }
+                }
+
+                if (skin->joints[i]->name)
+                {
+                    Core::Strcpy(joint.Name, sizeof(joint.Name), skin->joints[i]->name);
+                }
+                else
+                {
+                    String name(HK_FORMAT("joint_{}", i));//m_Joints.Size() - 1);
+                    Core::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
+                }
+
+                // HACK: store joint index at camera pointer
+                skin->joints[i]->camera = (cgltf_camera*)(size_t)(i + 1);
+            }
+
+            //   std::sort(m_Joints.begin(), m_Joints.end(), [](SkeletonJoint const& a, SkeletonJoint const& b)
+            //           { return a.Parent < b.Parent; });
+
+            for (int i = 0; i < skin->joints_count; i++)
+            {
+                HK_ASSERT(m_Joints[i].Parent < i);
+            }
+        }
+    }
+
     for (int i = 0; i < Data->scenes_count; i++)
     {
         cgltf_scene* scene = &Data->scene[i];
@@ -884,43 +989,82 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
             // TODO: for ( int i = 0; i < Data->skins_count; i++ ) {
             cgltf_skin* skin = &Data->skins[0];
 
-            m_Joints.Clear();
-#if 0
-            ReadSkeleton( skin->skeleton );
+            
+#if 1
+         //   m_Joints.Resize(skin->joints_count);
+
+         //   for (int i = 0; i < skin->joints_count; i++)
+         //   {
+         //       SkeletonJoint& joint = m_Joints[i];
+
+         //       joint.Parent = -1;
+         //       for (int j = 0; j < skin->joints_count; j++)
+         //       {
+         //           if (skin->joints[j] == skin->joints[i]->parent)
+         //               joint.Parent = j;
+         //       }
+
+         //       //if (joint.Parent == -1)
+         //       //    cgltf_node_transform_world(skin->joints[i], (float*)joint.LocalTransform.ToPtr());
+         //       //else
+         //           cgltf_node_transform_local(skin->joints[i], (float*)joint.LocalTransform.ToPtr());
+
+         //       if (skin->joints[i]->name)
+         //       {
+         //           Core::Strcpy(joint.Name, sizeof(joint.Name), skin->joints[i]->name);
+         //       }
+         //       else
+         //       {
+         //           String name = HK_FORMAT("joint_{}", m_Joints.Size() - 1);
+         //           Core::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
+         //       }
+
+         //       // HACK: store joint index at camera pointer
+         //       skin->joints[i]->camera = (cgltf_camera*)(size_t)(i + 1);
+         //   }
+
+         ////   std::sort(m_Joints.begin(), m_Joints.end(), [](SkeletonJoint const& a, SkeletonJoint const& b)
+         //  //           { return a.Parent < b.Parent; });
+
+         //   for (int i = 0; i < skin->joints_count; i++)
+         //   {
+         //       int parent = m_Joints[i].Parent;
+         //       HK_ASSERT(parent < i);                
+         //   }
 #else
 
-            int rootsCount = 0;
-            for (int n = 0; n < Data->nodes_count; n++)
+            m_Joints.Clear();
+
+            Vector<cgltf_node*> roots;
+            for (int i = 0; i < skin->joints_count; i++)
             {
-                if (!Data->nodes[n].parent)
-                {
-                    rootsCount++;
-                }
+                cgltf_node* root = skin->joints[i];
+                while (root->parent)
+                    root = root->parent;
+
+                roots.AddUnique(root);
             }
 
             int parentIndex = -1;
 
-            if (rootsCount > 1)
+            if (roots.Size() > 1)
             {
                 // Add root node
 
                 SkeletonJoint& joint = m_Joints.Add();
 
                 joint.LocalTransform.SetIdentity();
-                Platform::Strcpy(joint.Name, sizeof(joint.Name), "generated_root");
+                Core::Strcpy(joint.Name, sizeof(joint.Name), "generated_root");
 
                 joint.Parent = -1;
 
                 parentIndex = 0;
             }
-
-            for (int n = 0; n < Data->nodes_count; n++)
+            for (cgltf_node* root : roots)
             {
-                if (!Data->nodes[n].parent)
-                {
-                    ReadSkeleton(&Data->nodes[n], parentIndex);
-                }
+                ReadSkeleton(root, skin, parentIndex);
             }
+
 #endif
 
             // Apply scaling by changing local joint position
@@ -978,6 +1122,7 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
                 {
                     m_Skin.JointIndices[i] = nodeIndex;
                 }
+                //m_Skin.JointIndices[i] = i;
             }
 
             for (int i = skin->joints_count; i < m_Joints.Size(); i++)
@@ -991,25 +1136,25 @@ void AssetImporter::ReadGLTF(cgltf_data* Data)
                 m_Skin.JointIndices[i] = i;
             }
 
-            for (auto& mesh : m_Meshes)
-            {
-                if (!mesh.bSkinned)
-                {
-                    int nodeIndex = mesh.NodeGltf->camera ? (size_t)mesh.NodeGltf->camera - 1 : 0;
+            //for (auto& mesh : m_Meshes)
+            //{
+            //    if (!mesh.bSkinned)
+            //    {
+            //        int nodeIndex = mesh.NodeGltf->camera ? (size_t)mesh.NodeGltf->camera - 1 : 0;
 
-                    for (int n = 0; n < mesh.VertexCount; n++)
-                    {
-                        m_Weights[mesh.BaseVertex + n].JointIndices[0] = nodeIndex;
-                        m_Weights[mesh.BaseVertex + n].JointIndices[1] = 0;
-                        m_Weights[mesh.BaseVertex + n].JointIndices[2] = 0;
-                        m_Weights[mesh.BaseVertex + n].JointIndices[3] = 0;
-                        m_Weights[mesh.BaseVertex + n].JointWeights[0] = 255;
-                        m_Weights[mesh.BaseVertex + n].JointWeights[1] = 0;
-                        m_Weights[mesh.BaseVertex + n].JointWeights[2] = 0;
-                        m_Weights[mesh.BaseVertex + n].JointWeights[3] = 0;
-                    }
-                }
-            }
+            //        for (int n = 0; n < mesh.VertexCount; n++)
+            //        {
+            //            m_Weights[mesh.BaseVertex + n].JointIndices[0] = nodeIndex;
+            //            m_Weights[mesh.BaseVertex + n].JointIndices[1] = 0;
+            //            m_Weights[mesh.BaseVertex + n].JointIndices[2] = 0;
+            //            m_Weights[mesh.BaseVertex + n].JointIndices[3] = 0;
+            //            m_Weights[mesh.BaseVertex + n].JointWeights[0] = 255;
+            //            m_Weights[mesh.BaseVertex + n].JointWeights[1] = 0;
+            //            m_Weights[mesh.BaseVertex + n].JointWeights[2] = 0;
+            //            m_Weights[mesh.BaseVertex + n].JointWeights[3] = 0;
+            //        }
+            //    }
+            //}
 
             m_BindposeBounds = Geometry::CalcBindposeBounds(m_Vertices.ToPtr(), m_Weights.ToPtr(), m_Vertices.Size(), &m_Skin, m_Joints.ToPtr(), m_Joints.Size());
 
@@ -1367,15 +1512,15 @@ void AssetImporter::ReadMesh(cgltf_node* Node)
 
 void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix)
 {
-    struct ASortFunction
-    {
-        bool operator()(cgltf_primitive const& _A, cgltf_primitive const& _B)
-        {
-            return (_A.material < _B.material);
-        }
-    } SortFunction;
+    //struct ASortFunction
+    //{
+    //    bool operator()(cgltf_primitive const& _A, cgltf_primitive const& _B)
+    //    {
+    //        return (_A.material < _B.material);
+    //    }
+    //} SortFunction;
 
-    std::sort(&Mesh->primitives[0], &Mesh->primitives[Mesh->primitives_count], SortFunction);
+    //std::sort(&Mesh->primitives[0], &Mesh->primitives[Mesh->primitives_count], SortFunction);
 
     cgltf_material* material = nullptr;
 
@@ -1452,6 +1597,9 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
             }
         }
 
+        //if (m_bSkeletal && (!weights || !joints))
+        //    continue;
+
         if (!position)
         {
             LOG("Warning: no positions\n");
@@ -1482,14 +1630,14 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
             texcoord = nullptr;
         }
 
-        if (!material || material != prim->material || !m_Settings.bMergePrimitives)
+        //if (!material || material != prim->material || !m_Settings.bMergePrimitives)
         {
             meshInfo              = &m_Meshes.Add();
             meshInfo->BaseVertex  = m_Vertices.Size();
             meshInfo->FirstIndex  = m_Indices.Size();
             meshInfo->VertexCount = 0;
             meshInfo->IndexCount  = 0;
-            meshInfo->UniqueName  = Mesh->name;
+            meshInfo->UniqueName = Mesh->name ? Mesh->name : "";
             meshInfo->MaterialNum = MapGltfMaterial(prim->material);
             meshInfo->BoundingBox.Clear();
 
@@ -1592,8 +1740,8 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
 
         MeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
 
-        if (/*m_Settings.bSingleModel && */ !m_bSkeletal)
-        {
+        //if (/*m_Settings.bSingleModel && */ !m_bSkeletal)
+        //{
             for (int v = 0; v < vertexCount; v++, pVert++)
             {
                 // Pretransform vertices
@@ -1604,20 +1752,20 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
                 // Calc bounding box
                 meshInfo->BoundingBox.AddPoint(pVert->Position);
             }
-        }
-        else
-        {
-            Float3x3 rotation = m_Settings.Rotation.ToMatrix3x3();
-            for (int v = 0; v < vertexCount; v++, pVert++)
-            {
-                pVert->Position = m_Settings.Scale * Float3(rotation * pVert->Position);
-                pVert->SetNormal(rotation * pVert->GetNormal());
-                pVert->SetTangent(rotation * pVert->GetTangent());
+        //}
+        //else
+        //{
+        //    Float3x3 rotation = m_Settings.Rotation.ToMatrix3x3();
+        //    for (int v = 0; v < vertexCount; v++, pVert++)
+        //    {
+        //        pVert->Position = m_Settings.Scale * Float3(rotation * pVert->Position);
+        //        pVert->SetNormal(rotation * pVert->GetNormal());
+        //        pVert->SetTangent(rotation * pVert->GetTangent());
 
-                // Calc bounding box
-                meshInfo->BoundingBox.AddPoint(pVert->Position);
-            }
-        }
+        //        // Calc bounding box
+        //        meshInfo->BoundingBox.AddPoint(pVert->Position);
+        //    }
+        //}
 
         meshInfo->VertexCount += vertexCount;
         meshInfo->IndexCount += indexCount;
@@ -1642,6 +1790,18 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
 
             m_Weights.Resize(numVertices);
 
+            int jointNum = 0;
+            cgltf_node* parent = Node;//->parent;
+            while (parent)
+            {
+                if (parent->camera && (size_t)parent->camera - 1 < m_Joints.Size())
+                {
+                    jointNum = (size_t)parent->camera - 1;
+                    break;
+                }
+                parent = parent->parent;
+            }
+
             // Clear
             int count = numVertices - numWeights;
             for (int i = 0; i < count; i++)
@@ -1651,6 +1811,7 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
                     m_Weights[numWeights + i].JointIndices[j] = 0;
                     m_Weights[numWeights + i].JointWeights[j] = 0;
                 }
+                m_Weights[numWeights + i].JointIndices[0] = jointNum;
                 m_Weights[numWeights + i].JointWeights[0] = 255;
             }
         }
@@ -1664,7 +1825,7 @@ void AssetImporter::ReadAnimations(cgltf_data* Data)
     {
         AnimationInfo& animation = m_Animations[animIndex];
 
-        ReadAnimation(&Data->animations[animIndex], animation);
+        ReadAnimation(&Data->animations[animIndex], animation, animIndex);
 
         Geometry::CalcBoundingBoxes(m_Vertices.ToPtr(),
                                     m_Weights.ToPtr(),
@@ -1680,7 +1841,7 @@ void AssetImporter::ReadAnimations(cgltf_data* Data)
     }
 }
 
-void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animation)
+void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animation, int AnimIndex)
 {
     const int framesPerSecond = 30;
     //    float gcd = 0;
@@ -1714,13 +1875,12 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
     float frameDelta = maxDuration / numFrames;
 
-    Animation.Name       = Anim->name ? Anim->name : "Animation";
+    Animation.Name       = Anim->name ? Anim->name : Core::ToString(AnimIndex);
     Animation.FrameDelta = frameDelta;
     Animation.FrameCount = numFrames; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
 
     for (int ch = 0; ch < Anim->channels_count; ch++)
     {
-
         cgltf_animation_channel* channel = &Anim->channels[ch];
         cgltf_animation_sampler* sampler = channel->sampler;
 
@@ -1793,6 +1953,11 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
 
                     sample_vec3(sampler, f * frameDelta, transform.Position);
 
+                    if (m_Joints[nodeIndex].Parent == -1)
+                    {
+                        transform.Position = m_SkeletonTransform * transform.Position;
+                    }
+
                     transform.Position *= m_Settings.Scale;
                 }
 
@@ -1805,6 +1970,13 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
                     Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                     sample_quat(sampler, f * frameDelta, transform.Rotation);
+
+                    if (m_Joints[nodeIndex].Parent == -1)
+                    {
+                        Quat q;
+                        q.FromMatrix(m_SkeletonTransform.DecomposeRotation());
+                        transform.Rotation = q * transform.Rotation;
+                    }
                 }
 
                 break;
@@ -1816,6 +1988,11 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
                     Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                     sample_vec3(sampler, f * frameDelta, transform.Scale);
+
+                    if (m_Joints[nodeIndex].Parent == -1)
+                    {
+                        transform.Scale = m_SkeletonTransform.DecomposeScale() * transform.Scale;
+                    }
                 }
 
                 break;
@@ -1824,30 +2001,30 @@ void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animatio
                 break;
         }
 
-        for (int f = 0; f < numFrames; f++)
-        {
-            Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
+        //for (int f = 0; f < numFrames; f++)
+        //{
+        //    Transform& transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
-            float frameTime = f * frameDelta;
+        //    float frameTime = f * frameDelta;
 
-            switch (channel->target_path)
-            {
-                case cgltf_animation_path_type_translation:
-                    sample_vec3(sampler, frameTime, transform.Position);
-                    transform.Position *= m_Settings.Scale;
-                    break;
-                case cgltf_animation_path_type_rotation:
-                    sample_quat(sampler, frameTime, transform.Rotation);
-                    break;
-                case cgltf_animation_path_type_scale:
-                    sample_vec3(sampler, frameTime, transform.Scale);
-                    break;
-                default:
-                    LOG("Warning: Unsupported target path\n");
-                    f = numFrames;
-                    break;
-            }
-        }
+        //    switch (channel->target_path)
+        //    {
+        //        case cgltf_animation_path_type_translation:
+        //            sample_vec3(sampler, frameTime, transform.Position);
+        //            transform.Position *= m_Settings.Scale;
+        //            break;
+        //        case cgltf_animation_path_type_rotation:
+        //            sample_quat(sampler, frameTime, transform.Rotation);
+        //            break;
+        //        case cgltf_animation_path_type_scale:
+        //            sample_vec3(sampler, frameTime, transform.Scale);
+        //            break;
+        //        default:
+        //            LOG("Warning: Unsupported target path\n");
+        //            f = numFrames;
+        //            break;
+        //    }
+        //}
     }
 
     for (int channel = 0; channel < Animation.Channels.Size(); channel++)
@@ -2000,7 +2177,7 @@ void AssetImporter::WriteMaterial(MaterialInfo& m)
 
 static String ValidateFileName(StringView FileName)
 {
-    String ValidatedName = FileName;
+    String ValidatedName(FileName);
 
     for (StringSizeType i = 0; i < ValidatedName.Size(); i++)
     {
@@ -2026,7 +2203,7 @@ static String ValidateFileName(StringView FileName)
 
 String AssetImporter::GeneratePhysicalPath(StringView DesiredName, StringView Extension)
 {
-    String sourceName    = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
+    String sourceName(PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile)));
     String validatedName = ValidateFileName(DesiredName);
 
     sourceName.ToLower();
@@ -2055,8 +2232,52 @@ int AssetImporter::MapGltfMaterial(cgltf_material* pMaterial)
     return -1;
 }
 
+void AssetImporter::WriteSkeleton2()
+{
+    String fileName = GeneratePhysicalPath("skeleton", ".skeleton");
+    String fileSystemPath = m_Settings.RootPath + fileName;
+
+    File stream = File::OpenWrite(fileSystemPath);
+    if (!stream)
+    {
+        LOG("Failed to write {}\n", fileName);
+        return;
+    }
+
+    m_SkeletonPath = "/Root/" + fileName;
+
+    stream.WriteUInt32(MakeResourceMagic(RESOURCE_SKELETON, 1));
+    stream.WriteArray(m_Joints);
+    stream.WriteObject(m_BindposeBounds);
+
+    if (m_Settings.bImportAnimations)
+    {
+        stream.WriteUInt32(m_Animations.Size());
+
+        for (auto& animation : m_Animations)
+        {
+            stream.WriteString(animation.Name);
+            stream.WriteFloat(animation.FrameDelta);
+            stream.WriteUInt32(animation.FrameCount);
+            stream.WriteArray(animation.Channels);
+            stream.WriteArray(animation.Transforms);
+            stream.WriteArray(animation.Bounds);
+        }
+    }
+    else
+    {
+        stream.WriteUInt32(0); // no animations
+    }
+}
+
 void AssetImporter::WriteSkeleton()
 {
+    if (m_Settings.bHork2Format)
+    {
+        WriteSkeleton2();
+        return;
+    }
+
     if (!m_Joints.IsEmpty())
     {
         String fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
@@ -2089,6 +2310,11 @@ void AssetImporter::WriteAnimations()
 
 void AssetImporter::WriteAnimation(AnimationInfo const& Animation)
 {
+    if (m_Settings.bHork2Format)
+    {
+        return;
+    }
+
     String fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
     String fileSystemPath = m_Settings.RootPath + fileName;
 
@@ -2111,6 +2337,12 @@ void AssetImporter::WriteAnimation(AnimationInfo const& Animation)
 
 void AssetImporter::WriteSingleModel()
 {
+    if (m_Settings.bHork2Format)
+    {
+        WriteSingleModel2();
+        return;
+    }
+
     if (m_Meshes.IsEmpty())
     {
         return;
@@ -2184,7 +2416,7 @@ void AssetImporter::WriteSingleModel()
         for (MeshInfo const& meshInfo : m_Meshes)
         {
             // Generate subpart BVH
-            BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
 
             // Write subpart BVH
             f.WriteObject(aabbTree);
@@ -2200,7 +2432,7 @@ void AssetImporter::WriteSingleModel()
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
-    //TVector< ACollisionTriangleSoupData::SSubpart > subparts;
+    //Vector< ACollisionTriangleSoupData::SSubpart > subparts;
 
     //subparts.Resize( m_Meshes.Size() );
     //for ( int i = 0 ; i < subparts.Size() ; i++ ) {
@@ -2246,10 +2478,100 @@ void AssetImporter::WriteSingleModel()
     String dummy;
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        String materialPath = meshInfo.MaterialNum >= 0 ? m_Materials[meshInfo.MaterialNum].PathToWrite : dummy;
-        f.FormattedPrint("\"{}\"\n", materialPath);
+        if (!m_Materials.IsEmpty())
+        {
+            String materialPath = meshInfo.MaterialNum >= 0 ? m_Materials[meshInfo.MaterialNum].PathToWrite : dummy;
+            f.FormattedPrint("\"{}\"\n", materialPath);
+        }
     }
     f.FormattedPrint("]\n");
+}
+
+void AssetImporter::WriteSingleModel2()
+{
+    if (m_Meshes.IsEmpty())
+    {
+        return;
+    }
+
+    String fileName = GeneratePhysicalPath("mesh", ".mesh");
+    String fileSystemPath = m_Settings.RootPath + fileName;
+
+    File stream = File::OpenWrite(fileSystemPath);
+    if (!stream)
+    {
+        LOG("Failed to write {}\n", fileName);
+        return;
+    }
+
+    BvAxisAlignedBox BoundingBox;
+    BoundingBox.Clear();
+    for (MeshInfo const& meshInfo : m_Meshes)
+    {
+        BoundingBox.AddAABB(meshInfo.BoundingBox);
+    }
+
+    bool bSkinnedMesh = m_bSkeletal;
+
+    bool bRaycastBVH = m_Settings.bGenerateRaycastBVH && !bSkinnedMesh;
+
+    stream.WriteUInt32(MakeResourceMagic(RESOURCE_MESH, 1));
+
+    stream.WriteArray(m_Vertices);
+
+    if (bSkinnedMesh)
+    {
+        stream.WriteArray(m_Weights);
+    }
+    else
+    {
+        stream.WriteUInt32(0); // weights count
+    }
+
+    Vector<MeshVertexUV> lightmapUVs;
+    stream.WriteArray(lightmapUVs);
+
+    stream.WriteArray(m_Indices);
+
+    stream.WriteUInt32(m_Meshes.Size()); // subparts count
+    for (MeshInfo const& meshInfo : m_Meshes)
+    {
+        stream.WriteUInt32(meshInfo.BaseVertex);
+        stream.WriteUInt32(meshInfo.FirstIndex);
+        stream.WriteUInt32(meshInfo.VertexCount);
+        stream.WriteUInt32(meshInfo.IndexCount);
+        stream.WriteObject(meshInfo.BoundingBox);
+
+        if (bRaycastBVH)
+        {
+            BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            stream.WriteObject(aabbTree);
+        }
+        else
+            stream.WriteObject(BvhTree());
+    }    
+
+    stream.WriteUInt32(0); // sockets count
+#if 0
+    uint32_t numMaterials = m_Materials.Size();
+    stream.WriteUInt32(numMaterials);
+    for (uint32_t i = 0; i < numMaterials; ++i)
+    {
+        resourcePath = resManager->GetProxy(m_Materials[i]).GetName();
+        stream.WriteString(resourcePath);
+    }
+#endif
+    stream.WriteArray(m_Skin.JointIndices);
+    stream.WriteArray(m_Skin.OffsetMatrices);
+    stream.WriteObject(BoundingBox);
+
+    if (bSkinnedMesh)
+        stream.WriteString(m_SkeletonPath);
+    else
+        stream.WriteString("");
+
+    stream.WriteBool(bSkinnedMesh);
+    stream.WriteUInt16(m_Settings.RaycastPrimitivesPerLeaf);
 }
 
 void AssetImporter::WriteMeshes()
@@ -2262,6 +2584,12 @@ void AssetImporter::WriteMeshes()
 
 void AssetImporter::WriteMesh(MeshInfo const& Mesh)
 {
+    if (m_Settings.bHork2Format)
+    {
+        WriteMesh2(Mesh);
+        return;
+    }
+
     String fileName       = GeneratePhysicalPath(!Mesh.UniqueName.IsEmpty() ? Mesh.UniqueName : "mesh", ".mesh_data");
     String fileSystemPath = m_Settings.RootPath + fileName;
 
@@ -2335,8 +2663,8 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     if (bRaycastBVH)
     {
         // Generate subpart BVH
-        BvhTree aabbTree(TArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
-                         TArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
+        BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+                         ArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
                          0,
                          m_Settings.RaycastPrimitivesPerLeaf);
 
@@ -2377,6 +2705,101 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     String const& materialPath = Mesh.MaterialNum >= 0 ? m_Materials[Mesh.MaterialNum].PathToWrite : dummy;
     f.FormattedPrint("\"{}\"\n", materialPath);
     f.FormattedPrint("]\n");
+}
+
+void AssetImporter::WriteMesh2(MeshInfo const& Mesh)
+{
+    String fileName = GeneratePhysicalPath(!Mesh.UniqueName.IsEmpty() ? Mesh.UniqueName : "mesh", ".mesh");
+    String fileSystemPath = m_Settings.RootPath + fileName;
+
+    File stream = File::OpenWrite(fileSystemPath);
+    if (!stream)
+    {
+        LOG("Failed to write {}\n", fileName);
+        return;
+    }
+
+    bool bSkinnedMesh = m_bSkeletal;
+    HK_ASSERT(bSkinnedMesh == false);
+
+    bool bRaycastBVH = m_Settings.bGenerateRaycastBVH;
+
+    stream.WriteUInt32(MakeResourceMagic(RESOURCE_MESH, 1));
+
+    stream.WriteUInt32(Mesh.VertexCount);
+    MeshVertex* verts = m_Vertices.ToPtr() + Mesh.BaseVertex;
+    for (int i = 0; i < Mesh.VertexCount; i++)
+    {
+        verts->Write(stream);
+        verts++;
+    }
+
+    if (bSkinnedMesh)
+    {
+        stream.WriteUInt32(Mesh.VertexCount); // weights count
+
+        MeshVertexSkin* weights = m_Weights.ToPtr() + Mesh.BaseVertex;
+        for (int i = 0; i < Mesh.VertexCount; i++)
+        {
+            weights->Write(stream);
+            weights++;
+        }
+    }
+    else
+    {
+        stream.WriteUInt32(0); // weights count
+    }
+
+    Vector<MeshVertexUV> lightmapUVs;
+    stream.WriteArray(lightmapUVs);
+
+    stream.WriteUInt32(Mesh.IndexCount);
+    unsigned int* indices = m_Indices.ToPtr() + Mesh.FirstIndex;
+    for (int i = 0; i < Mesh.IndexCount; i++)
+    {
+        stream.WriteUInt32(*indices++);
+    }
+    
+    stream.WriteUInt32(1); // subparts count
+    stream.WriteUInt32(0);// base vertex
+    stream.WriteUInt32(0);// first index
+    stream.WriteUInt32(Mesh.VertexCount);
+    stream.WriteUInt32(Mesh.IndexCount);
+    stream.WriteObject(Mesh.BoundingBox);
+
+    if (bRaycastBVH)
+    {
+        BvhTree aabbTree(ArrayView<MeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+                         ArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
+                         0,
+                         m_Settings.RaycastPrimitivesPerLeaf);
+
+        stream.WriteObject(aabbTree);
+    }
+    else
+        stream.WriteObject(BvhTree());
+
+    stream.WriteUInt32(0); // sockets count
+#if 0
+    uint32_t numMaterials = m_Materials.Size();
+    stream.WriteUInt32(numMaterials);
+    for (uint32_t i = 0; i < numMaterials; ++i)
+    {
+        resourcePath = resManager->GetProxy(m_Materials[i]).GetName();
+        stream.WriteString(resourcePath);
+    }
+#endif
+    stream.WriteArray(m_Skin.JointIndices);
+    stream.WriteArray(m_Skin.OffsetMatrices);
+    stream.WriteObject(Mesh.BoundingBox);
+
+    if (bSkinnedMesh)
+        stream.WriteString(m_SkeletonPath);
+    else
+        stream.WriteString("");
+
+    stream.WriteBool(bSkinnedMesh);
+    stream.WriteUInt16(m_Settings.RaycastPrimitivesPerLeaf);
 }
 
 bool SaveSkyboxTexture(StringView FileName, ImageStorage const& Image)
@@ -2517,8 +2940,8 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
         }
     };
 
-    THashMap<unsigned int, TVector<Vertex>> vertexList;
-    THashMap<Vertex, unsigned int>          vertexHash;
+    HashMap<unsigned int, Vector<Vertex>> vertexList;
+    HashMap<Vertex, unsigned int>          vertexHash;
     bool                                    bUnsupportedVertexCount = false;
 
     for (unsigned int groupIndex = 0; groupIndex < pMesh->group_count; ++groupIndex)
@@ -2532,7 +2955,7 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
             unsigned int vertexCount = pMesh->face_vertices[group->face_offset + faceIndex];
             unsigned int material    = pMesh->face_materials[group->face_offset + faceIndex];
 
-            TVector<Vertex>& vertices = vertexList[material];
+            Vector<Vertex>& vertices = vertexList[material];
 
             if (vertexCount == 3)
             {
@@ -2588,8 +3011,8 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
         LOG("AssetImporter::ReadOBJ: The mesh contains polygons with an unsupported number of vertices. Polygons are expected to have 3 or 4 vertices.\n");
     }
 
-    TStringHashMap<unsigned int> uniqueMaterials;
-    TVector<fastObjMaterial const*> materialList;
+    StringHashMap<unsigned int> uniqueMaterials;
+    Vector<fastObjMaterial const*> materialList;
 
     for (auto& it : vertexList)
     {
@@ -2627,7 +3050,7 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
     for (auto& it : vertexList)
     {
         unsigned int     materialNum = it.first;
-        TVector<Vertex>& vertices = it.second;
+        Vector<Vertex>& vertices = it.second;
 
         if (vertices.IsEmpty())
             continue;

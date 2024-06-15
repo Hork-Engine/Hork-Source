@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,13 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/Memory.h>
+#include "Memory.h"
 
 HK_NAMESPACE_BEGIN
 
 struct WeakRefCounter
 {
-    void* Object;
+    void* RawPtr;
     int   RefCount;
 
     void* operator new(size_t SizeInBytes)
@@ -63,7 +63,7 @@ public:
     {
         if (m_WeakRefCounter)
         {
-            m_WeakRefCounter->Object = nullptr;
+            m_WeakRefCounter->RawPtr = nullptr;
         }
     }
 
@@ -97,13 +97,13 @@ public:
         return m_RefCount;
     }
 
-    /** Set weakref counter. Used by TWeakRef */
+    /** Set weakref counter. Used by WeakRef */
     void SetWeakRefCounter(WeakRefCounter* _RefCounter)
     {
         m_WeakRefCounter = _RefCounter;
     }
 
-    /** Get weakref counter. Used by TWeakRef */
+    /** Get weakref counter. Used by WeakRef */
     WeakRefCounter* GetWeakRefCounter()
     {
         return m_WeakRefCounter;
@@ -118,10 +118,8 @@ InterlockedRef
 Reference counter is interlocked variable.
 
 */
-struct InterlockedRef
+struct InterlockedRef : public Noncopyable
 {
-    HK_FORBID_COPY(InterlockedRef)
-
 private:
     /** Reference counter */
     AtomicInt m_RefCount{1};
@@ -156,155 +154,158 @@ public:
 
 /**
 
-TRef
+Ref
 
 Shared pointer
 
 */
 template <typename T>
-class TRef final
+class Ref final
 {
 public:
     using ReferencedType = T;
 
-    TRef() = default;
+    Ref() = default;
 
-    TRef(TRef<T> const& rhs) :
-        m_Object(rhs.m_Object)
+    Ref(Ref<T> const& rhs) :
+        m_RawPtr(rhs.m_RawPtr)
     {
-        if (m_Object)
-        {
-            m_Object->AddRef();
-        }
+        if (m_RawPtr)
+            m_RawPtr->AddRef();
     }
 
-    explicit TRef(T* pObject) :
-        m_Object(pObject)
+    template <typename U>
+    Ref(Ref<U> const& rhs) :
+        m_RawPtr(rhs.m_RawPtr)
     {
-        if (m_Object)
-        {
-            m_Object->AddRef();
-        }
+        if (m_RawPtr)
+            m_RawPtr->AddRef();
     }
 
-    TRef(TRef&& rhs) :
-        m_Object(rhs.m_Object)
+    explicit Ref(T* rhs) :
+        m_RawPtr(rhs)
     {
-        rhs.m_Object = nullptr;
+        if (m_RawPtr)
+            m_RawPtr->AddRef();
     }
 
-    ~TRef()
+    Ref(Ref&& rhs) noexcept :
+        m_RawPtr(rhs.m_RawPtr)
     {
-        if (m_Object)
-        {
-            m_Object->RemoveRef();
-        }
+        rhs.m_RawPtr = nullptr;
     }
 
-    T* GetObject()
+    ~Ref()
     {
-        return m_Object;
+        if (m_RawPtr)
+            m_RawPtr->RemoveRef();
     }
 
-    T const* GetObject() const
+    T* RawPtr()
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
-    //    operator bool() const
-    //    {
-    //        return m_Object != nullptr;
-    //    }
+    T const* RawPtr() const
+    {
+        return m_RawPtr;
+    }
 
     operator T*() const
     {
-        return m_Object;
+        return m_RawPtr;
     }
 
     T& operator*() const
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return *m_Object;
+        HK_ASSERT(m_RawPtr);
+        return *m_RawPtr;
     }
 
     T* operator->()
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return m_Object;
+        HK_ASSERT(m_RawPtr);
+        return m_RawPtr;
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(m_Object, "TRef");
-        return m_Object;
+        HK_ASSERT(m_RawPtr);
+        return m_RawPtr;
     }
 
     void Reset()
     {
-        if (m_Object)
+        if (m_RawPtr)
         {
-            m_Object->RemoveRef();
-            m_Object = nullptr;
+            m_RawPtr->RemoveRef();
+            m_RawPtr = nullptr;
         }
     }
 
-    TRef<T>& operator=(TRef<T> const& rhs)
+    Ref<T>& operator=(Ref<T> const& rhs)
     {
-        this->operator=(rhs.m_Object);
+        this->operator=(rhs.m_RawPtr);
         return *this;
     }
 
-    TRef<T>& operator=(T* pObject)
+    template <typename U>
+    Ref<T>& operator=(Ref<U> const& rhs)
     {
-        if (m_Object == pObject)
-        {
+        this->operator=(rhs.m_RawPtr);
+        return *this;
+    }
+
+    Ref<T>& operator=(T* rhs)
+    {
+        if (m_RawPtr == rhs)
             return *this;
-        }
-        if (m_Object)
-        {
-            m_Object->RemoveRef();
-        }
-        m_Object = pObject;
-        if (m_Object)
-        {
-            m_Object->AddRef();
-        }
+        if (m_RawPtr)
+            m_RawPtr->RemoveRef();
+        m_RawPtr = rhs;
+        if (m_RawPtr)
+            m_RawPtr->AddRef();
         return *this;
     }
 
-    TRef<T>& operator=(TRef&& rhs)
+    Ref<T>& operator=(Ref&& rhs) noexcept
     {
-        if (m_Object == rhs.m_Object)
-        {
+        if (m_RawPtr == rhs.m_RawPtr)
             return *this;
-        }
-        if (m_Object)
-        {
-            m_Object->RemoveRef();
-        }
-        m_Object     = rhs.m_Object;
-        rhs.m_Object = nullptr;
+        if (m_RawPtr)
+            m_RawPtr->RemoveRef();
+        m_RawPtr = rhs.m_RawPtr;
+        rhs.m_RawPtr = nullptr;
         return *this;
     }
 
-    void Attach(T* rhs)
+    void Attach(T* ptr)
     {
-        if (m_Object == rhs)
+        if (m_RawPtr == ptr)
             return;
-        if (m_Object)
-            m_Object->RemoveRef();
-        m_Object = rhs;
+        if (m_RawPtr)
+            m_RawPtr->RemoveRef();
+        m_RawPtr = ptr;
     }
 
     T* Detach()
     {
-        T* ptr = m_Object;
-        m_Object = nullptr;
+        T* ptr = m_RawPtr;
+        m_RawPtr = nullptr;
+        return ptr;
+    }
+
+    static Ref<T> Create(T* rhs)
+    {
+        Ref<T> ptr;
+        ptr.Attach(rhs);
         return ptr;
     }
 
 private:
-    T* m_Object{};
+    T* m_RawPtr{};
+
+    template <typename U> friend class Ref;
 };
 
 
@@ -314,29 +315,25 @@ protected:
     WeakReference() = default;
 
     template <typename T>
-    void ResetWeakRef(T* pObject)
+    void ResetWeakRef(T* RawPtr)
     {
-        T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->Object : nullptr;
+        T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->RawPtr : nullptr;
 
-        if (Cur == pObject)
-        {
+        if (Cur == RawPtr)
             return;
-        }
 
         RemoveWeakRef<T>();
 
-        if (!pObject)
-        {
+        if (!RawPtr)
             return;
-        }
 
-        m_WeakRefCounter = pObject->GetWeakRefCounter();
+        m_WeakRefCounter = RawPtr->GetWeakRefCounter();
         if (!m_WeakRefCounter)
         {
-            m_WeakRefCounter           = AllocateWeakRefCounter();
-            m_WeakRefCounter->Object   = pObject;
+            m_WeakRefCounter = AllocateWeakRefCounter();
+            m_WeakRefCounter->RawPtr = RawPtr;
             m_WeakRefCounter->RefCount = 1;
-            pObject->SetWeakRefCounter(m_WeakRefCounter);
+            RawPtr->SetWeakRefCounter(m_WeakRefCounter);
         }
         else
         {
@@ -351,9 +348,9 @@ protected:
         {
             if (--m_WeakRefCounter->RefCount == 0)
             {
-                if (m_WeakRefCounter->Object)
+                if (m_WeakRefCounter->RawPtr)
                 {
-                    ((T*)m_WeakRefCounter->Object)->SetWeakRefCounter(nullptr);
+                    ((T*)m_WeakRefCounter->RawPtr)->SetWeakRefCounter(nullptr);
                 }
                 DeallocateWeakRefCounter(m_WeakRefCounter);
             }
@@ -371,89 +368,84 @@ private:
 
 /**
 
-TWeakRef
+WeakRef
 
 Weak pointer
 
 */
 template <typename T>
-class TWeakRef final : public WeakReference
+class WeakRef final : public WeakReference
 {
 public:
-    TWeakRef() = default;
+    WeakRef() = default;
 
-    TWeakRef(TWeakRef<T> const& rhs)
+    WeakRef(WeakRef<T> const& rhs)
     {
-        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.RawPtr()));
     }
 
-    TWeakRef(TRef<T> const& rhs)
+    WeakRef(Ref<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.RawPtr()));
     }
 
-    explicit TWeakRef(T* pObject)
+    explicit WeakRef(T* rhs)
     {
-        ResetWeakRef(pObject);
+        ResetWeakRef(rhs);
     }
 
-    TWeakRef(TWeakRef<T>&& rhs)
+    WeakRef(WeakRef<T>&& rhs) noexcept
     {
         m_WeakRefCounter      = rhs.m_WeakRefCounter;
         rhs.m_WeakRefCounter = nullptr;
     }
 
-    ~TWeakRef()
+    ~WeakRef()
     {
         RemoveWeakRef<T>();
     }
 
-    TRef<T> ToStrongRef() const
+    Ref<T> ToStrongRef() const
     {
-        return TRef<T>(const_cast<T*>(GetObject()));
+        return Ref<T>(const_cast<T*>(RawPtr()));
     }
 
-    T* GetObject()
+    T* RawPtr()
     {
-        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->RawPtr) : nullptr;
     }
 
-    T const* GetObject() const
+    T const* RawPtr() const
     {
-        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->RawPtr) : nullptr;
     }
-
-    //    operator bool() const
-    //    {
-    //        return !IsExpired();
-    //    }
 
     operator T*() const
     {
-        return const_cast<T*>(GetObject());
+        return const_cast<T*>(RawPtr());
     }
 
     T& operator*() const
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return *GetObject();
+        HK_ASSERT(!IsExpired());
+        return *RawPtr();
     }
 
     T* operator->()
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return GetObject();
+        HK_ASSERT(!IsExpired());
+        return RawPtr();
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(!IsExpired(), "TWeakRef");
-        return GetObject();
+        HK_ASSERT(!IsExpired());
+        return RawPtr();
     }
 
     bool IsExpired() const
     {
-        return !m_WeakRefCounter || static_cast<T*>(m_WeakRefCounter->Object) == nullptr;
+        return !m_WeakRefCounter || static_cast<T*>(m_WeakRefCounter->RawPtr) == nullptr;
     }
 
     void Reset()
@@ -461,27 +453,25 @@ public:
         RemoveWeakRef<T>();
     }
 
-    void operator=(T* pObject)
+    void operator=(T* rhs)
     {
-        ResetWeakRef(pObject);
+        ResetWeakRef(rhs);
     }
 
-    void operator=(TRef<T> const& rhs)
+    void operator=(Ref<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.RawPtr()));
     }
 
-    void operator=(TWeakRef<T> const& rhs)
+    void operator=(WeakRef<T> const& rhs)
     {
-        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.RawPtr()));
     }
 
-    TWeakRef<T>& operator=(TWeakRef<T>&& rhs)
+    WeakRef<T>& operator=(WeakRef<T>&& rhs) noexcept
     {
         if (*this == rhs)
-        {
             return *this;
-        }
 
         Reset();
 
@@ -494,46 +484,40 @@ public:
 
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(Ref<T> const& lhs, Ref<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(Ref<T> const& lhs, Ref<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(Ref<T> const& lhs, WeakRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(Ref<T> const& lhs, WeakRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(WeakRef<T> const& lhs, Ref<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(WeakRef<T> const& lhs, Ref<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(WeakRef<T> const& lhs, WeakRef<U> const& rhs) { return lhs.RawPtr() == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(WeakRef<T> const& lhs, WeakRef<U> const& rhs) { return lhs.RawPtr() != rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator==(T const* lhs, TWeakRef<U> const& rhs) { return lhs == rhs.GetObject(); }
+HK_FORCEINLINE bool operator==(T const* lhs, WeakRef<U> const& rhs) { return lhs == rhs.RawPtr(); }
 
 template <typename T, typename U>
-HK_FORCEINLINE bool operator!=(T const* lhs, TWeakRef<U> const& rhs) { return lhs != rhs.GetObject(); }
+HK_FORCEINLINE bool operator!=(T const* lhs, WeakRef<U> const& rhs) { return lhs != rhs.RawPtr(); }
 
 
 template <typename T, typename... Args>
-inline TRef<T> MakeRef(Args&&... args)
+inline Ref<T> MakeRef(Args&&... args)
 {
-    // create object (refcount=1)
-    T* x = new T(std::forward<Args>(args)...);
-    // handle reference (refcount=2)
-    TRef<T> ref(x);
-    // keep refcount=1
-    x->RemoveRef();
-    return ref;
+    return Ref<T>::Create(new T(std::forward<Args>(args)...));
 }
 
 template <typename T>
@@ -545,97 +529,103 @@ HK_FORCEINLINE void CheckedDelete(T* Ptr)
 }
 
 template <typename T>
-class TUniqueRef
+class UniqueRef
 {
 public:
-    TUniqueRef() = default;
+    UniqueRef() = default;
 
-    explicit TUniqueRef(T* InPtr) :
-        m_Object(InPtr)
+    explicit UniqueRef(T* InPtr) :
+        m_RawPtr(InPtr)
     {}
 
-    TUniqueRef(TUniqueRef<T> const&) = delete;
-    TUniqueRef& operator=(TUniqueRef<T> const&) = delete;
+    UniqueRef(UniqueRef<T> const&) = delete;
+    UniqueRef& operator=(UniqueRef<T> const&) = delete;
 
-    template <typename T2>
-    TUniqueRef(TUniqueRef<T2>&& rhs) :
-        m_Object(rhs.Detach())
+    template <typename U>
+    UniqueRef(UniqueRef<U>&& rhs) :
+        m_RawPtr(rhs.Detach())
     {}
 
-    ~TUniqueRef()
+    ~UniqueRef()
     {
-        Reset();
+        CheckedDelete(m_RawPtr);
     }
 
-    template <typename T2>
-    TUniqueRef& operator=(TUniqueRef<T2>&& rhs)
+    template <typename U>
+    UniqueRef& operator=(UniqueRef<U>&& rhs)
     {
-        Reset(rhs.Detach());
+        Attach(rhs.Detach());
         return *this;
     }
 
     T* operator->() const
     {
-        HK_ASSERT(m_Object);
-        return m_Object;
+        HK_ASSERT(m_RawPtr);
+        return m_RawPtr;
     }
 
     T& operator*() const
     {
-        HK_ASSERT(m_Object);
-        return *m_Object;
+        HK_ASSERT(m_RawPtr);
+        return *m_RawPtr;
     }
 
     template <typename U>
-    bool operator==(TUniqueRef<U> const& rhs)
+    bool operator==(UniqueRef<U> const& rhs)
     {
-        return m_Object == rhs.m_Object;
+        return m_RawPtr == rhs.m_RawPtr;
     }
 
     template <typename U>
-    bool operator!=(TUniqueRef<U> const& rhs)
+    bool operator!=(UniqueRef<U> const& rhs)
     {
-        return m_Object != rhs.m_Object;
+        return m_RawPtr != rhs.m_RawPtr;
     }
 
     operator bool() const
     {
-        return m_Object != nullptr;
+        return m_RawPtr != nullptr;
+    }
+
+    T* RawPtr() const
+    {
+        return m_RawPtr;
+    }
+
+    void Reset()
+    {
+        CheckedDelete(m_RawPtr);
+        m_RawPtr = nullptr;
+    }
+
+    void Attach(T* ptr)
+    {
+        CheckedDelete(m_RawPtr);
+        m_RawPtr = ptr;
     }
 
     T* Detach()
     {
-        T* ptr = m_Object;
-        m_Object = nullptr;
+        T* ptr = m_RawPtr;
+        m_RawPtr = nullptr;
         return ptr;
     }
 
-    T* GetObject() const
-    {
-        return m_Object;
-    }
-
-    void Reset(T* InPtr = nullptr)
-    {
-        CheckedDelete(m_Object);
-        m_Object = InPtr;
-    }
-
 private:
-    T* m_Object{};
+    T* m_RawPtr{};
 };
 
 template <typename T, typename... Args>
-TUniqueRef<T> MakeUnique(Args&&... args)
+UniqueRef<T> MakeUnique(Args&&... args)
 {
-    return TUniqueRef<T>(new T(std::forward<Args>(args)...));
+    return UniqueRef<T>(new T(std::forward<Args>(args)...));
 }
 
 template <typename T>
-TRef<T> GetSharedInstance()
+Ref<T> GetSharedInstance()
 {
-    static TWeakRef<T> weakPtr;
-    TRef<T>            strongPtr;
+    static WeakRef<T> weakPtr;
+    Ref<T>            strongPtr;
 
     if (weakPtr.IsExpired())
     {

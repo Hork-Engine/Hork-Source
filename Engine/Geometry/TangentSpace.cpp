@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "TangentSpace.h"
 #include <Engine/Core/Containers/Vector.h>
+#include <Engine/Core/Logger.h>
 
 #include <MikkTSpace/mikktspace.h>
 
@@ -42,8 +43,8 @@ void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsi
 {
     Float3 binormal, tangent;
 
-    TVector<Float3> binormals(NumVerts);
-    TVector<Float3> tangents(NumVerts);
+    Vector<Float3> binormals(NumVerts);
+    Vector<Float3> tangents(NumVerts);
 
     for (unsigned int i = 0; i < NumIndices; i += 3)
     {

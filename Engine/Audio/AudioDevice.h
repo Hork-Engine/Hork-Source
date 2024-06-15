@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,110 +30,82 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/BaseTypes.h>
 #include <Engine/Core/Ref.h>
 
 HK_NAMESPACE_BEGIN
 
-class AudioDevice : public RefCounted
+class AudioDevice final : public RefCounted
 {
 public:
-    AudioDevice(int sampleRate);
-    virtual ~AudioDevice();
+                        AudioDevice(int sampleRate);
+                        ~AudioDevice();
 
-    /** Playback frequency */
-    int GetSampleRate() const
-    {
-        return m_SampleRate;
-    }
+    /// Playback frequency
+    int                 GetSampleRate() const { return m_SampleRate; }
 
-    /** Bits per sample (8, 16 or 32) */
-    int GetSampleBits() const
-    {
-        return m_SampleBits;
-    }
+    /// Bits per sample (8, 16 or 32)
+    int                 GetSampleBits() const { return m_SampleBits; }
 
-    /** Sample size in bytes */
-    int GetSampleWidth() const
-    {
-        return m_SampleBits >> 3;
-    }
+    /// Sample size in bytes
+    int                 GetSampleWidth() const { return m_SampleBits >> 3; }
 
-    bool IsSigned8Bit() const
-    {
-        return m_bSigned8;
-    }
+    bool                IsSigned8Bit() const { return m_bSigned8; }
 
-    int GetChannels() const
-    {
-        return m_Channels;
-    }
+    int                 GetChannels() const { return m_Channels; }
 
-    bool IsMono() const
-    {
-        return m_Channels == 1;
-    }
+    bool                IsMono() const { return m_Channels == 1; }
 
-    bool IsStereo() const
-    {
-        return m_Channels == 2;
-    }
+    bool                IsStereo() const { return m_Channels == 2; }
 
-    int GetTransferBufferSizeInFrames() const
-    {
-        return m_NumFrames;
-    }
+    int                 GetTransferBufferSizeInFrames() const { return m_NumFrames; }
 
-    int GetTransferBufferSizeInBytes() const
-    {
-        return m_TransferBufferSizeInBytes;
-    }
+    int                 GetTransferBufferSizeInBytes() const { return m_TransferBufferSizeInBytes; }
 
-    void BlockSound();
+    void                BlockSound();
 
-    void UnblockSound();
+    void                UnblockSound();
 
-    /** Clear transfer buffer. It calls MapTransferBuffer() and UnmapTransferBuffer() internally. */
-    void ClearBuffer();
+    /// Clear transfer buffer. It calls MapTransferBuffer() and UnmapTransferBuffer() internally.
+    void                ClearBuffer();
 
-    /** Lock transfer buffer for writing */
-    uint8_t* MapTransferBuffer(int64_t* pFrameNum = nullptr);
+    /// Lock transfer buffer for writing
+    uint8_t*            MapTransferBuffer(int64_t* frameNum = nullptr);
 
-    /** Submit changes and unlock the buffer. */
-    void UnmapTransferBuffer();
+    /// Submit changes and unlock the buffer.
+    void                UnmapTransferBuffer();
 
-    /** Pass MixerCallback for async mixing */
-    void SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback);
+    /// Pass MixerCallback for async mixing
+    void                SetMixerCallback(std::function<void(uint8_t*, int, int, int)> MixerCallback);
 
 private:
-    void RenderAudio(uint8_t* pStream, int StreamLength);
+    void                RenderAudio(uint8_t* pStream, int StreamLength);
 
     // Internal device id
-    uint32_t m_AudioDeviceId;
+    uint32_t            m_AudioDeviceId;
     // Transfer buffer memory
-    uint8_t* m_pTransferBuffer;
+    uint8_t*            m_TransferBuffer;
     // Transfer buffer size in bytes
-    int m_TransferBufferSizeInBytes;
+    int                 m_TransferBufferSizeInBytes;
     // Transfer buffer size in frames * channels
-    int m_Samples;
+    int                 m_Samples;
     // Transfer buffer size in frames
-    int m_NumFrames;
+    int                 m_NumFrames;
     // Transfer buffer offset in samples
-    int m_TransferOffset;
+    int                 m_TransferOffset;
     // Transfer buffer previous offset in samples
-    int m_PrevTransferOffset;
+    int                 m_PrevTransferOffset;
     // Wraps count
-    int64_t m_BufferWraps;
+    int64_t             m_BufferWraps;
     // Playback frequency
-    int m_SampleRate;
+    int                 m_SampleRate;
     // Bits per sample (8 or 16)
-    int m_SampleBits;
+    int                 m_SampleBits;
     // Channels (1 or 2)
-    int m_Channels;
+    int                 m_Channels;
     // Is signed 8bit audio (desired is unsigned)
-    bool m_bSigned8;
+    bool                m_bSigned8;
     // Callback for async mixing
-    std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> m_MixerCallback;
+    std::function<void(uint8_t*, int, int, int)> m_MixerCallback;
 };
 
 HK_NAMESPACE_END

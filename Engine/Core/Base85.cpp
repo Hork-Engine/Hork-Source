@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Platform/Memory/Memory.h>
-#include <Engine/Core/Platform/String.h>
+#include "Memory.h"
+#include "String.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -49,7 +49,7 @@ namespace Core
 
 size_t DecodeBase85(byte const* _Base85, byte* _Dst)
 {
-    size_t size = ((Platform::Strlen((const char*)_Base85) + 4) / 5) * 4;
+    size_t size = ((Core::Strlen((const char*)_Base85) + 4) / 5) * 4;
 
     if (_Dst)
     {
@@ -107,7 +107,7 @@ size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85)
         {
             uint32_t d = 0;
 
-            Platform::Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
+            Core::Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
 
             *_Base85++ = Encode85Byte(d);
             d /= 85;

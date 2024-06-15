@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -58,7 +58,7 @@ void GPUSync::Wait()
     if (!Texture)
     {
         byte data[2 * 2 * 4];
-        Platform::Memset(data, 128, sizeof(data));
+        Core::Memset(data, 128, sizeof(data));
 
         IDevice* device = pImmediateContext->GetDevice();
 

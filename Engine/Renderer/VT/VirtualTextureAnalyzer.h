@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -89,7 +89,7 @@ public:
 private:
     void DecodePages();
     void ClearQueue();
-    void SubmitPages(TVector<VTPageDesc> const& Pages);
+    void SubmitPages(Vector<VTPageDesc> const& Pages);
     void WaitForNewPages();
     void StreamThreadMain();
 
@@ -102,11 +102,11 @@ private:
     int NumBindings;
 
     // Actually feedback data is from previous frame
-    TVector<VTFeedbackChain> Feedbacks;
+    Vector<VTFeedbackChain> Feedbacks;
 
     // Unique pages from feedback
-    THashMap<uint32_t, uint32_t> PendingPageSet;
-    TVector<VTPageDesc> PendingPages;
+    HashMap<uint32_t, uint32_t> PendingPageSet;
+    Vector<VTPageDesc> PendingPages;
 
     // Page queue for async loading
     enum

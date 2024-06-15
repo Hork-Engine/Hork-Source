@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/Memory.h>
+#include "../Memory.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -140,11 +140,11 @@ static constexpr size_t NPOS = (size_t)-1;
 
 
 template <typename T, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-class TVector : private eastl::vector<T, Allocator>
+class Vector : private eastl::vector<T, Allocator>
 {
 public:
     using Super                = eastl::vector<T, Allocator>;
-    using ThisType             = TVector<T, Allocator>;
+    using ThisType             = Vector<T, Allocator>;
     using ValueType            = T;
     using Pointer              = T*;
     using ConstPointer         = const T*;
@@ -158,43 +158,43 @@ public:
     using AllocatorType        = typename Super::allocator_type;
 
 public:
-    HK_FORCEINLINE TVector()
+    HK_FORCEINLINE Vector()
     {}
 
-    HK_FORCEINLINE explicit TVector(AllocatorType const& allocator) :
+    HK_FORCEINLINE explicit Vector(AllocatorType const& allocator) :
         Super(allocator)
     {}
 
-    HK_FORCEINLINE explicit TVector(SizeType n, AllocatorType const& allocator = AllocatorType("Vector")) :
+    HK_FORCEINLINE explicit Vector(SizeType n, AllocatorType const& allocator = AllocatorType("Vector")) :
         Super(n, allocator)
     {}
 
-    HK_FORCEINLINE TVector(SizeType n, ValueType const& value, AllocatorType const& allocator = AllocatorType("Vector")) :
+    HK_FORCEINLINE Vector(SizeType n, ValueType const& value, AllocatorType const& allocator = AllocatorType("Vector")) :
         Super(n, value, allocator)
     {}
 
-    HK_FORCEINLINE TVector(ThisType const& x) :
+    HK_FORCEINLINE Vector(ThisType const& x) :
         Super(x)
     {}
 
-    HK_FORCEINLINE TVector(ThisType const& x, AllocatorType const& allocator) :
+    HK_FORCEINLINE Vector(ThisType const& x, AllocatorType const& allocator) :
         Super(x, allocator)
     {}
 
-    HK_FORCEINLINE TVector(ThisType&& x) :
+    HK_FORCEINLINE Vector(ThisType&& x) :
         Super(std::forward<ThisType>(x))
     {}
 
-    HK_FORCEINLINE TVector(ThisType&& x, AllocatorType const& allocator) :
+    HK_FORCEINLINE Vector(ThisType&& x, AllocatorType const& allocator) :
         Super(std::forward<ThisType>(x), allocator)
     {}
 
-    HK_FORCEINLINE TVector(std::initializer_list<ValueType> ilist, AllocatorType const& allocator = AllocatorType("Vector")) :
+    HK_FORCEINLINE Vector(std::initializer_list<ValueType> ilist, AllocatorType const& allocator = AllocatorType("Vector")) :
         Super(ilist, allocator)
     {}
 
     template <typename InputIterator>
-    HK_FORCEINLINE TVector(InputIterator first, InputIterator last, AllocatorType const& allocator = AllocatorType("Vector")) :
+    HK_FORCEINLINE Vector(InputIterator first, InputIterator last, AllocatorType const& allocator = AllocatorType("Vector")) :
         Super(first, last, allocator)
     {}
 
@@ -268,6 +268,12 @@ public:
     HK_FORCEINLINE void Reserve(SizeType n)
     {
         Super::reserve(n);
+    }
+
+    HK_FORCEINLINE void Reserve(SizeType n, SizeType growGranularity)
+    {
+        SizeType mod = n % growGranularity;
+        Super::reserve(mod ? n + growGranularity - mod : n);
     }
 
     HK_FORCEINLINE void ShrinkToFit()
@@ -352,7 +358,7 @@ public:
     }
 
     template <typename RhsAllocator>
-    HK_FORCEINLINE void Add(TVector<T, RhsAllocator> const& vector)
+    HK_FORCEINLINE void Add(Vector<T, RhsAllocator> const& vector)
     {
         Super::insert(end(), vector.begin(), vector.end());
     }
@@ -453,6 +459,21 @@ public:
         Super::insert(begin() + index, std::forward<ValueType>(value));
     }
 
+    HK_FORCEINLINE void SortedInsert(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            return;
+        Super::insert(it, value);
+    }
+
+    HK_FORCEINLINE void SortedErase(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            Super::erase(it);
+    }
+
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
     {
         return Super::erase(position);
@@ -497,7 +518,7 @@ public:
 
     HK_FORCEINLINE void ZeroMem()
     {
-        Platform::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
+        Core::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
     }
 
     HK_FORCEINLINE ConstIterator Find(ValueType const& value) const
@@ -520,6 +541,17 @@ public:
     {
         auto it = eastl::find(begin(), end(), value);
         return it == end() ? Core::NPOS : (SizeType)(it - begin());
+    }
+
+    template <typename T, typename Predicate>
+    HK_FORCEINLINE SizeType IndexOf(T const& value, Predicate predicate) const
+    {
+        for (auto it = begin(); it != end(); it++)
+        {
+            if (predicate(*it, value))
+                return (SizeType)(it - begin());
+        }
+        return Core::NPOS;
     }
 
     HK_FORCEINLINE void Reverse()
@@ -595,7 +627,7 @@ namespace eastl
 {
 
 template <typename T, typename Allocator>
-HK_INLINE void swap(Hk::TVector<T, Allocator>& lhs, Hk::TVector<T, Allocator>& rhs)
+HK_INLINE void swap(Hk::Vector<T, Allocator>& lhs, Hk::Vector<T, Allocator>& rhs)
 {
     lhs.Swap(rhs);
 }
@@ -605,13 +637,13 @@ HK_INLINE void swap(Hk::TVector<T, Allocator>& lhs, Hk::TVector<T, Allocator>& r
 HK_NAMESPACE_BEGIN
 
 template <typename T, size_t BaseCapacity, bool bEnableOverflow = true, typename OverflowAllocator = typename eastl::type_select<bEnableOverflow, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, Allocators::EASTLDummyAllocator>::type>
-class TFixedVector : private eastl::fixed_vector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>
+class FixedVector : private eastl::fixed_vector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>
 {
 public:
     using Super                 = eastl::fixed_vector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>;
     using FixedAllocatorType    = eastl::fixed_vector_allocator<sizeof(T), BaseCapacity, alignof(T), 0, bEnableOverflow, OverflowAllocator>;
     using OverflowAllocatorType = OverflowAllocator;
-    using ThisType              = TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>;
+    using ThisType              = FixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>;
     using SizeType              = typename Super::size_type;
     using ValueType             = typename Super::value_type;
     using Pointer               = typename Super::pointer;
@@ -625,38 +657,38 @@ public:
     using AlignedBufferType     = eastl::aligned_buffer<BaseCapacity * sizeof(T), alignof(T)>;
 
 public:
-    TFixedVector() = default;
+    FixedVector() = default;
 
-    HK_FORCEINLINE explicit TFixedVector(OverflowAllocatorType const& overflowAllocator) :
+    HK_FORCEINLINE explicit FixedVector(OverflowAllocatorType const& overflowAllocator) :
         Super(overflowAllocator)
     {}
 
-    HK_FORCEINLINE explicit TFixedVector(SizeType n) :
+    HK_FORCEINLINE explicit FixedVector(SizeType n) :
         Super(n)
     {}
 
-    HK_FORCEINLINE TFixedVector(SizeType n, ValueType const& value) :
+    HK_FORCEINLINE FixedVector(SizeType n, ValueType const& value) :
         Super(n, value)
     {}
 
-    HK_FORCEINLINE TFixedVector(ThisType const& x) :
+    HK_FORCEINLINE FixedVector(ThisType const& x) :
         Super(x)
     {}
 
-    HK_FORCEINLINE TFixedVector(ThisType&& x) :
+    HK_FORCEINLINE FixedVector(ThisType&& x) :
         Super(std::forward<ThisType>(x))
     {}
 
-    HK_FORCEINLINE TFixedVector(ThisType&& x, OverflowAllocatorType const& overflowAllocator) :
+    HK_FORCEINLINE FixedVector(ThisType&& x, OverflowAllocatorType const& overflowAllocator) :
         Super(std::forward<ThisType>(x), overflowAllocator)
     {}
 
-    HK_FORCEINLINE TFixedVector(std::initializer_list<T> ilist, OverflowAllocatorType const& overflowAllocator = OverflowAllocatorType("FixedVector")) :
+    HK_FORCEINLINE FixedVector(std::initializer_list<T> ilist, OverflowAllocatorType const& overflowAllocator = OverflowAllocatorType("FixedVector")) :
         Super(ilist, overflowAllocator)
     {}
 
     template <typename InputIterator>
-    HK_FORCEINLINE TFixedVector(InputIterator first, InputIterator last) :
+    HK_FORCEINLINE FixedVector(InputIterator first, InputIterator last) :
         Super(first, last)
     {}
 
@@ -741,7 +773,7 @@ public:
     }
 
     template <size_t RhsBaseCapacity, bool RhsEnableOverflow, typename RhsAllocator>
-    HK_FORCEINLINE void Add(TFixedVector<T, RhsBaseCapacity, RhsEnableOverflow, RhsAllocator> const& vector)
+    HK_FORCEINLINE void Add(FixedVector<T, RhsBaseCapacity, RhsEnableOverflow, RhsAllocator> const& vector)
     {
         Super::insert(end(), vector.begin(), vector.end());
     }
@@ -844,6 +876,12 @@ public:
     HK_FORCEINLINE void Reserve(SizeType n)
     {
         Super::reserve(n);
+    }
+
+    HK_FORCEINLINE void Reserve(SizeType n, SizeType growGranularity)
+    {
+        SizeType mod = n % growGranularity;
+        Super::reserve(mod ? n + growGranularity - mod : n);
     }
 
     HK_FORCEINLINE void ShrinkToFit()
@@ -949,6 +987,21 @@ public:
         Super::insert(begin() + index, std::forward<ValueType>(value));
     }
 
+    HK_FORCEINLINE void SortedInsert(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            return;
+        Super::insert(it, value);
+    }
+
+    HK_FORCEINLINE void SortedErase(ValueType const& value)
+    {
+        auto it = eastl::lower_bound(begin(), end(), value);
+        if (it != end() && *it == value)
+            Super::erase(it);
+    }
+
     HK_FORCEINLINE Iterator Erase(ConstIterator position)
     {
         return Super::erase(position);
@@ -993,7 +1046,7 @@ public:
 
     HK_FORCEINLINE void ZeroMem()
     {
-        Platform::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
+        Core::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
     }
 
     HK_FORCEINLINE ConstIterator Find(ValueType const& value) const
@@ -1016,6 +1069,17 @@ public:
     {
         auto it = eastl::find(begin(), end(), value);
         return it == end() ? Core::NPOS : (SizeType)(it - begin());
+    }
+
+    template <typename T, typename Predicate>
+    HK_FORCEINLINE SizeType IndexOf(T const& value, Predicate predicate) const
+    {
+        for (auto it = begin(); it != end(); it++)
+        {
+            if (predicate(*it, value))
+                return (SizeType)(it - begin());
+        }
+        return Core::NPOS;
     }
 
     HK_FORCEINLINE void Reverse()
@@ -1105,8 +1169,8 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <typename T, size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
-HK_INLINE void swap(Hk::TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& lhs,
-                    Hk::TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& rhs)
+HK_INLINE void swap(Hk::FixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& lhs,
+                    Hk::FixedVector<T, BaseCapacity, bEnableOverflow, OverflowAllocator>& rhs)
 {
     // Fixed containers use lhs special swap that can deal with excessively large buffers.
     eastl::fixed_swap(lhs, rhs);
@@ -1116,9 +1180,9 @@ HK_INLINE void swap(Hk::TFixedVector<T, BaseCapacity, bEnableOverflow, OverflowA
 HK_NAMESPACE_BEGIN
 
 template <typename T, size_t MaxCapacity>
-using TStaticVector = TFixedVector<T, MaxCapacity, false, Allocators::EASTLDummyAllocator>;
+using StaticVector = FixedVector<T, MaxCapacity, false, Allocators::EASTLDummyAllocator>;
 
 template <typename T, size_t BaseCapacity, typename OverflowAllocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-using TSmallVector = TFixedVector<T, BaseCapacity, true, OverflowAllocator>;
+using SmallVector = FixedVector<T, BaseCapacity, true, OverflowAllocator>;
 
 HK_NAMESPACE_END

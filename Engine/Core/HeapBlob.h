@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -123,7 +123,7 @@ struct HeapBlob final
 
     HK_FORCEINLINE void ZeroMem()
     {
-        Platform::ZeroMem(m_HeapPtr, m_HeapSize);
+        Core::ZeroMem(m_HeapPtr, m_HeapSize);
     }
 
 private:
@@ -144,7 +144,7 @@ struct BlobRef
         m_HeapPtr(pData),
         m_HeapSize(Size)
     {
-        assert(m_HeapSize == 0 || m_HeapPtr);
+        HK_ASSERT(m_HeapSize == 0 || m_HeapPtr);
     }
 
     bool operator==(BlobRef const& Rhs) const

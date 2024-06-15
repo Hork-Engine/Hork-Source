@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 #include <Engine/Geometry/ConvexHull.h>
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/Platform.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -73,7 +73,7 @@ void ConvexHull::FromPlane(PlaneF const& plane, float maxExtents)
 void ConvexHull::FromPoints(Float3 const* points, size_t numPoints)
 {
     m_Points.Resize(numPoints);
-    Platform::Memcpy(m_Points.ToPtr(), points, numPoints * sizeof(Float3));
+    Core::Memcpy(m_Points.ToPtr(), points, numPoints * sizeof(Float3));
 }
 
 ConvexHull ConvexHull::Reversed() const
@@ -252,8 +252,8 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
 
     constexpr size_t MaxHullVerts = 128;
 
-    TSmallVector<float, MaxHullVerts>  distances(count + 1);
-    TSmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<float, MaxHullVerts>  distances(count + 1);
+    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
     backHull.Clear();
@@ -389,8 +389,8 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
 
     constexpr size_t MaxHullVerts = 128;
 
-    TSmallVector<float, MaxHullVerts> distances(count + 1);
-    TSmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<float, MaxHullVerts> distances(count + 1);
+    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
 

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/EndianSwap.h>
-#include <Engine/Core/Platform/Format.h>
+#include "EndianSwap.h"
+#include "Format.h"
 #include "String.h"
 #include "HeapBlob.h"
 #include "Ref.h"
@@ -60,9 +60,9 @@ public:
         SeekSet(0);
     }
 
-    virtual bool Eof() const = 0;
+    virtual bool IsEOF() const = 0;
 
-    virtual String const& GetName() const = 0;
+    virtual StringView GetName() const = 0;
 };
 
 

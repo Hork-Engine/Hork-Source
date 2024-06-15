@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -125,7 +125,7 @@ float PhotometricData::Sample2D(float x, float y) const
 
     float fractH = 0;
 
-    TVector<float> const *horizA, *horizB;
+    Vector<float> const *horizA, *horizB;
 
     if (m_HorzAngles.Size() > 1)
     {

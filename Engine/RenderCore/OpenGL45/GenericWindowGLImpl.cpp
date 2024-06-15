@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,8 +31,8 @@ SOFTWARE.
 #include "GenericWindowGLImpl.h"
 #include "DeviceGLImpl.h"
 
-#include <Engine/Core/Platform/Platform.h>
-#include <Engine/Core/Platform/WindowsDefs.h>
+#include <Engine/Core/Platform.h>
+#include <Engine/Core/WindowsDefs.h>
 #include <Engine/Core/BaseMath.h>
 
 #include "GL/glew.h"
@@ -104,7 +104,7 @@ void GenericWindowGLImpl::SetVideoMode(DisplayVideoMode const& DesiredMode)
 {
     SDL_Window* handle = (SDL_Window*)GetHandle();
 
-    Platform::Memcpy(&VideoMode, &DesiredMode, sizeof(VideoMode));
+    Core::Memcpy(&VideoMode, &DesiredMode, sizeof(VideoMode));
 
     SDL_SetWindowTitle(WindowGL.Handle, DesiredMode.Title);
     SDL_ShowWindow(handle);

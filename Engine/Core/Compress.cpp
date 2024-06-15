@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Platform/Logger.h>
+#include "Compress.h"
+#include "Logger.h"
+#include "BaseMath.h"
 
-#include <Engine/Core/Compress.h>
-#include <Engine/Core/BaseMath.h>
 #include <fastlz/fastlz.h>
 #include <miniz/miniz.h>
 
@@ -140,7 +140,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
     }
 
     mz_stream stream;
-    Platform::ZeroMem(&stream, sizeof(stream));
+    Core::ZeroMem(&stream, sizeof(stream));
     stream.next_in  = pCompressedData;
     stream.avail_in = (mz_uint32)CompressedSize;
 
@@ -165,7 +165,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
                 allocated <<= 1;
                 data = (byte*)Heap.Realloc(data, allocated, 16);
             }
-            Platform::Memcpy(data + size, chunk, stream.total_out - size);
+            Core::Memcpy(data + size, chunk, stream.total_out - size);
         }
         size = stream.total_out;
     } while (status == MZ_OK);

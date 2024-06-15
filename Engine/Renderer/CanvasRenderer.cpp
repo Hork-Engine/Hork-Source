@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "CanvasRenderer.h"
 #include "RenderLocal.h"
-#include <Engine/Runtime/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -431,7 +430,8 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 
     pass.SetColorAttachment(TextureAttachment(SwapChainColorBuffer)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
-    pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
+    //pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
+    pass.SetRenderArea(pBackBuffer->GetWidth(), pBackBuffer->GetHeight());
     pass.AddSubpass({0},
                     [this](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                     {
@@ -451,14 +451,21 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 
                         CanvasBinding canvasBinding;
 
-                        canvasBinding.Size            = sizeof(CanvasConstants);
-                        canvasBinding.Offset          = GStreamedMemory->AllocateConstant(canvasBinding.Size);
-                        void*             pMemory     = GStreamedMemory->Map(canvasBinding.Offset);
+                        canvasBinding.Size = sizeof(CanvasConstants);
+                        canvasBinding.Offset = GStreamedMemory->AllocateConstant(canvasBinding.Size);
+
+                        void* pMemory = GStreamedMemory->Map(canvasBinding.Offset);
                         CanvasConstants* pCanvasCBuf = (CanvasConstants*)pMemory;
 
-                        pCanvasCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
-                        pCanvasCBuf->ViewSize.X      = GFrameData->CanvasWidth;
-                        pCanvasCBuf->ViewSize.Y      = GFrameData->CanvasHeight;
+                        float w = float(RenderPassContext.RenderArea.Width);
+                        float h = float(RenderPassContext.RenderArea.Height);
+
+                        const Float2 orthoMins(0.0f, h);
+                        const Float2 orthoMaxs(w, 0.0f);
+                        pCanvasCBuf->OrthoProjection = Float4x4::Ortho2DCC(orthoMins, orthoMaxs);
+
+                        pCanvasCBuf->ViewSize.X = w;
+                        pCanvasCBuf->ViewSize.Y = h;
 
                         immediateCtx->BindResourceTable(rtbl);
                         rtbl->BindBuffer(0, GStreamBuffer, canvasBinding.Offset, canvasBinding.Size);
@@ -483,14 +490,14 @@ void CanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData co
         {
             ITexture* pTexture = nullptr;
 
-            if (drawCommand->pTextureView)
+            if (drawCommand->Texture)
             {
                 m_SamplerState = (drawCommand->TextureFlags & CANVAS_IMAGE_REPEATX ? 1 : 0) + (drawCommand->TextureFlags & CANVAS_IMAGE_REPEATY ? 2 : 0);
 
                 if (drawCommand->TextureFlags & CANVAS_IMAGE_NEAREST)
                     m_SamplerState += 4;
 
-                pTexture = drawCommand->pTextureView->GetResource();
+                pTexture = drawCommand->Texture;
             }
 
             m_BlendState   = drawCommand->Composite;
@@ -730,7 +737,7 @@ void CanvasRenderer::SetUniforms(int uniformOffset, RenderCore::ITexture* pTextu
     CanvasUniforms* frag = (CanvasUniforms*)&m_pDrawData->Uniforms[uniformOffset];
 
     CanvasUniforms* uniforms = MapDrawCallConstants<CanvasUniforms>();
-    Platform::Memcpy(uniforms, frag, sizeof(CanvasUniforms));
+    Core::Memcpy(uniforms, frag, sizeof(CanvasUniforms));
 
     if (pTexture)
     {

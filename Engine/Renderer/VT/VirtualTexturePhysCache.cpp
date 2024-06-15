@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include "../RenderLocal.h"
 
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Platform.h>
 
 #define PAGE_STREAM_PBO
 
@@ -177,11 +177,11 @@ VirtualTextureCache::~VirtualTextureCache()
     }
 }
 
-bool VirtualTextureCache::CreateTexture(const char* FileName, TRef<VirtualTexture>* ppTexture)
+bool VirtualTextureCache::CreateTexture(const char* FileName, Ref<VirtualTexture>* ppTexture)
 {
     ppTexture->Reset();
 
-    TRef<VirtualTexture> pTexture = MakeRef<VirtualTexture>(FileName, this);
+    Ref<VirtualTexture> pTexture = MakeRef<VirtualTexture>(FileName, this);
     if (!pTexture->IsLoaded())
     {
         return false;
@@ -191,12 +191,12 @@ bool VirtualTextureCache::CreateTexture(const char* FileName, TRef<VirtualTextur
 
     pTexture->AddRef();
 
-    m_VirtualTextures.Add(pTexture.GetObject());
+    m_VirtualTextures.Add(pTexture.RawPtr());
 
     return true;
 }
 
-//void VirtualTextureCache::DestroyTexture( TRef< VirtualTexture > * ppTexture ) {
+//void VirtualTextureCache::DestroyTexture( Ref< VirtualTexture > * ppTexture ) {
 //    VirtualTexture * pTexture = *ppTexture;
 
 //    HK_ASSERT( pTexture && pTexture->pCache == this );
@@ -240,7 +240,7 @@ VirtualTextureCache::PageTransfer* VirtualTextureCache::CreatePageTransfer()
 
 void VirtualTextureCache::MakePageTransferVisible(PageTransfer* Transfer)
 {
-    MutexGurad criticalSection(m_TransfersMutex);
+    MutexGuard criticalSection(m_TransfersMutex);
     m_Transfers.Add(Transfer);
 }
 
@@ -361,7 +361,7 @@ void VirtualTextureCache::Update()
 
     int fetchIndex = 0;
 
-    int64_t uploadStartTime = Platform::SysMicroseconds();
+    int64_t uploadStartTime = Core::SysMicroseconds();
 
     for (PhysPageInfoSorted* physPage = pFirstPhysPage;
          physPage < pLastPhysPage && fetchIndex < m_Transfers.Size(); ++fetchIndex)
@@ -421,7 +421,7 @@ void VirtualTextureCache::Update()
         LOG("Double streamed {} times\n", d_duplicates);
     }
 
-    LOG("Streamed per frame {}, uploaded {}, time {} microsec\n", m_Transfers.Size(), d_uploaded, Platform::SysMicroseconds() - uploadStartTime);
+    LOG("Streamed per frame {}, uploaded {}, time {} microsec\n", m_Transfers.Size(), d_uploaded, Core::SysMicroseconds() - uploadStartTime);
 
     UnlockTransfers();
 

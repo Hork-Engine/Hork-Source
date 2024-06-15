@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -87,13 +87,13 @@ private:
     RenderCore::IImmediateContext*  m_ImmediateCtx;
     CanvasDrawData const*           m_pDrawData;
     bool                            m_bEdgeAntialias;
-    TRef<RenderCore::IShaderModule> m_VertexShader;
-    TRef<RenderCore::IShaderModule> m_FragmentShader;
-    TRef<RenderCore::IBuffer>       m_pFanIndexBuffer;
-    TVector<uint32_t>               m_FanIndices;
-    TRef<RenderCore::IPipeline>     m_PipelinePermut[TOPOLOGY_MAX][RASTER_STATE_MAX][BLEND_STATE_MAX][DEPTH_STENCIL_MAX][SAMPLER_STATE_MAX];
-    TRef<RenderCore::IPipeline>     m_PipelineShapes;
-    TRef<RenderCore::IPipeline>     m_PipelineClearStencil;
+    Ref<RenderCore::IShaderModule> m_VertexShader;
+    Ref<RenderCore::IShaderModule> m_FragmentShader;
+    Ref<RenderCore::IBuffer>       m_pFanIndexBuffer;
+    Vector<uint32_t>               m_FanIndices;
+    Ref<RenderCore::IPipeline>     m_PipelinePermut[TOPOLOGY_MAX][RASTER_STATE_MAX][BLEND_STATE_MAX][DEPTH_STENCIL_MAX][SAMPLER_STATE_MAX];
+    Ref<RenderCore::IPipeline>     m_PipelineShapes;
+    Ref<RenderCore::IPipeline>     m_PipelineClearStencil;
 
     int m_RasterState  = RASTER_STATE_CULL;
     int m_BlendState   = CANVAS_COMPOSITE_SOURCE_OVER;

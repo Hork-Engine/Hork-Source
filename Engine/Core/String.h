@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,12 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/Memory.h>
-#include <Engine/Core/Platform/Path.h>
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/Utf8.h>
-#include <Engine/Core/Platform/String.h>
-
+#include "Memory.h"
+#include "Format.h"
+#include "Utf8.h"
 #include "BaseMath.h"
 
 HK_NAMESPACE_BEGIN
@@ -142,7 +139,7 @@ struct TGlobalStringView
 };
 
 using GlobalStringView = TGlobalStringView<char>;
-using AGlobalStringViewW = TGlobalStringView<WideChar>;
+using GlobalStringViewW = TGlobalStringView<WideChar>;
 
 HK_NAMESPACE_END
 
@@ -462,7 +459,7 @@ public:
     TString();
     TString(TString const& Rhs);
     TString(TString&& Rhs) noexcept;
-    TString(TStringView<CharT> Rhs);
+    explicit TString(TStringView<CharT> Rhs);
     TString(const CharT* pRawString);
     TString(const CharT* pRawStringBegin, const CharT* pRawStringEnd);
     ~TString();
@@ -676,7 +673,7 @@ void TString<CharT, Allocator>::Construct(const CharT* pRawString, SizeType Size
 
     GrowCapacity(Size + 1, false);
 
-    Platform::Memcpy(m_pData, pRawString, Size * sizeof(CharT));
+    Core::Memcpy(m_pData, pRawString, Size * sizeof(CharT));
 
     m_pData[Size] = 0;
     m_Size        = Size;
@@ -699,7 +696,7 @@ HK_INLINE TString<CharT, Allocator>::TString(TString<CharT, Allocator>&& Rhs) no
 {
     if (Rhs.m_pData == &Rhs.m_Base[0])
     {
-        Platform::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
+        Core::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
         m_pData        = m_Base;
         m_Capacity     = Rhs.m_Capacity;
         m_Size         = Rhs.m_Size;
@@ -773,7 +770,7 @@ HK_INLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TStrin
 
     if (Rhs.m_pData == &Rhs.m_Base[0])
     {
-        Platform::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
+        Core::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
         m_pData        = m_Base;
         m_Capacity     = Rhs.m_Capacity;
         m_Size         = Rhs.m_Size;
@@ -1068,7 +1065,7 @@ HK_INLINE void TString<CharT, Allocator>::Resize(SizeType Size, STRING_RESIZE_FL
             }
             else
             {
-                Platform::Memset(&m_pData[m_Size], ' ', Size - m_Size);
+                Core::Memset(&m_pData[m_Size], ' ', Size - m_Size);
             }
         }
     }
@@ -1144,7 +1141,7 @@ void TString<CharT, Allocator>::GrowCapacity(SizeType _Capacity, bool bCopyOld)
     {
         m_pData = (CharT*)Allocator().allocate(m_Capacity * sizeof(CharT));
         if (bCopyOld)
-            Platform::Memcpy(m_pData, m_Base, (m_Size + 1) * sizeof(CharT));
+            Core::Memcpy(m_pData, m_Base, (m_Size + 1) * sizeof(CharT));
     }
     else
         m_pData = (CharT*)Allocator().reallocate(m_pData, m_Capacity * sizeof(CharT), bCopyOld);
@@ -1161,7 +1158,7 @@ void TString<CharT, Allocator>::Concat(TStringView<CharT> Rhs)
     }
     SizeType size = m_Size + rhsSize;
     Reserve(size);
-    Platform::Memcpy(&m_pData[m_Size], Rhs.ToPtr(), rhsSize * sizeof(CharT));
+    Core::Memcpy(&m_pData[m_Size], Rhs.ToPtr(), rhsSize * sizeof(CharT));
     m_Size          = size;
     m_pData[m_Size] = 0;
 }
@@ -1189,7 +1186,7 @@ void TString<CharT, Allocator>::InsertAt(SizeType Index, TStringView<CharT> Str)
     CharT*   p         = &m_pData[m_Size];
     for (SizeType i = 0; i < moveCount; ++i, --p)
         *(p + n) = *p;
-    Platform::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
+    Core::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
     m_Size += n;
 }
 
@@ -1217,7 +1214,7 @@ void TString<CharT, Allocator>::ReplaceAt(SizeType Index, TStringView<CharT> Str
     SizeType n    = Str.Size();
     SizeType size = Index + n;
     Reserve(size);
-    Platform::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
+    Core::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
     m_Size          = size;
     m_pData[m_Size] = 0;
 }
@@ -1253,7 +1250,7 @@ void TString<CharT, Allocator>::Cut(SizeType Index, SizeType Count)
         Count = m_Size - Index;
 
     SizeType srcIndex = Index + Count;
-    Platform::Memcpy(m_pData + Index, m_pData + srcIndex, (m_Size - srcIndex + 1) * sizeof(CharT));
+    Core::Memcpy(m_pData + Index, m_pData + srcIndex, (m_Size - srcIndex + 1) * sizeof(CharT));
 
     m_Size = m_Size - Count;
 }
@@ -1414,7 +1411,7 @@ struct TSprintfBuffer
         HK_ASSERT(Format);
         va_list VaList;
         va_start(VaList, Format);
-        Platform::VSprintf(Data, Size, Format, VaList);
+        Core::VSprintf(Data, Size, Format, VaList);
         va_end(VaList);
         return Data;
     }
@@ -1469,7 +1466,7 @@ HK_INLINE String GetString(WideStringView wideStr)
     return str;
 }
 
-HK_INLINE String GetString(AGlobalStringViewW wideStr)
+HK_INLINE String GetString(GlobalStringViewW wideStr)
 {
     const WideChar* s = wideStr.CStr();
     const WideChar* e = s + StringLength(wideStr);
@@ -1531,7 +1528,7 @@ HK_INLINE WideString GetWideString(GlobalStringView utfStr)
 template <typename T>
 HK_INLINE String ToString(T const& Val)
 {
-    return Formatter().ToString(Val);
+    return String(Formatter().ToString(Val));
 }
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
@@ -1634,6 +1631,111 @@ template <> struct fmt::formatter<Hk::TGlobalStringView<Hk::WideChar>>
 
 HK_NAMESPACE_BEGIN
 
+namespace Core
+{
+
+/** Case insensitive string comparision */
+int Stricmp(const char* _S1, const char* _S2);
+
+/** Case insensitive string comparision */
+int StricmpN(const char* _S1, const char* _S2, int _Num);
+
+/** Case sensitive string comparision */
+int Strcmp(const char* _S1, const char* _S2);
+
+/** Case sensitive string comparision */
+int StrcmpN(const char* _S1, const char* _S2, int _Num);
+
+/** The output is always null-terminated and truncated if necessary.
+The return value is either the number of characters stored or -1 if truncation occurs. */
+int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...);
+
+/** The output is always null-terminated and truncated if necessary.
+The return value is either the number of characters stored or -1 if truncation occurs. */
+int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList);
+
+/** Concatenate strings */
+void Strcat(char* _Dest, size_t _Size, const char* _Src);
+
+/** Concatenate strings */
+void StrcatN(char* _Dest, size_t _Size, const char* _Src, int _Num);
+
+/** Copy string */
+void Strcpy(char* _Dest, size_t _Size, const char* _Src);
+
+/** Copy string */
+void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num);
+
+/** Convert string to lowercase */
+char* ToLower(char* _Str);
+
+/** Convert char to lowercase */
+char ToLower(char Ch);
+
+/** Convert string to uppercase */
+char* ToUpper(char* _Str);
+
+/** Convert char to uppercase */
+char ToUpper(char Ch);
+
+/** Calc string length */
+int Strlen(const char* _Str);
+
+/** Find char in string */
+int StrContains(const char* _String, char _Ch);
+
+/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+int Substring(const char* _Str, const char* _SubStr);
+
+/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+int SubstringIcmp(const char* _Str, const char* _SubStr);
+
+/** Convert hex string to uint32 */
+uint32_t HexToUInt32(const char* _Str, int _Len);
+
+/** Convert hex string to uint64 */
+uint64_t HexToUInt64(const char* _Str, int _Len);
+
+/** Check char is a path separator */
+template <typename CharT>
+HK_FORCEINLINE bool IsPathSeparator(CharT Ch)
+{
+#ifdef HK_OS_WIN32
+    return Ch == '/' || Ch == '\\';
+#else
+    return Ch == '/';
+#endif
+}
+
+/** Replace separator \\ to / */
+HK_INLINE void FixSeparatorInplace(char* path)
+{
+    if (!path)
+        return;
+    while (*path)
+    {
+        if (*path == '\\')
+            *path = '/';
+        path++;
+    }
+}
+
+/**
+Fix path string insitu: replace separator \\ to /, skip series of /,
+skip redunant sequences of dir/../dir2 -> dir2.
+Return length of optimized path.
+*/
+int FixPathInplace(char* path, int length);
+
+/**
+Fix path string insitu: replace separator \\ to /, skip series of /,
+skip redunant sequences of dir/../dir2 -> dir2.
+Return length of optimized path.
+*/
+int FixPathInplace(char* path);
+
+}
+
 template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
 struct TPathUtils
 {
@@ -1644,7 +1746,7 @@ struct TPathUtils
     {
         const CharT* p = Path.End();
         while (--p >= Path.Begin())
-            if (Platform::IsPathSeparator(*p))
+            if (Core::IsPathSeparator(*p))
                 return (StringSizeType)(p - Path.Begin() + 1);
         return 0;
     }
@@ -1654,7 +1756,7 @@ struct TPathUtils
     {
         const CharT* e = Path.End();
         const CharT* p = e;
-        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+        while (--p >= Path.Begin() && !Core::IsPathSeparator(*p))
         {}
         ++p;
         return TStringView<CharT>(p, (StringSizeType)(e - p), Path.IsNullTerminated());
@@ -1672,7 +1774,7 @@ struct TPathUtils
                 size = (StringSizeType)(p - Path.Begin());
                 break;
             }
-            if (Platform::IsPathSeparator(*p))
+            if (Core::IsPathSeparator(*p))
                 break; // no extension
         }
         return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
@@ -1682,7 +1784,7 @@ struct TPathUtils
     static TStringView<CharT> GetFilePath(TStringView<CharT> Path)
     {
         const CharT* p = Path.End();
-        while (--p > Path.Begin() && !Platform::IsPathSeparator(*p))
+        while (--p > Path.Begin() && !Core::IsPathSeparator(*p))
         {}
         StringSizeType size = (StringSizeType)(p - Path.Begin());
         return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
@@ -1732,7 +1834,7 @@ struct TPathUtils
     {
         StringSizeType size = Path.Size();
         const CharT*   p    = Path.Begin() + size;
-        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+        while (--p >= Path.Begin() && !Core::IsPathSeparator(*p))
             if (*p == '.')
                 return (StringSizeType)(p - Path.Begin());
         return size;
@@ -1743,7 +1845,7 @@ struct TPathUtils
     {
         StringSizeType size = Path.Size();
         const CharT*   p    = Path.Begin() + size;
-        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+        while (--p >= Path.Begin() && !Core::IsPathSeparator(*p))
             if (*p == '.')
                 return (StringSizeType)(p - Path.Begin() + 1);
         return size;
@@ -1788,7 +1890,7 @@ struct TPathUtils
     skip redunant sequences of dir/../dir2 -> dir. */
     static void FixPathInplace(TString<CharT, Allocator>& Path)
     {
-        StringSizeType newSize = Platform::FixPath(Path.ToPtr(), Path.Size());
+        StringSizeType newSize = Core::FixPathInplace(Path.ToPtr(), Path.Size());
         Path.Resize(newSize);
     }
 
@@ -1798,7 +1900,7 @@ struct TPathUtils
     static TString<CharT, Allocator> FixPath(TStringView<CharT> Path)
     {
         TString<CharT, Allocator> fixedPath(Path);
-        StringSizeType            newSize = Platform::FixPath(fixedPath.ToPtr(), fixedPath.Size());
+        StringSizeType newSize = Core::FixPathInplace(fixedPath.ToPtr(), fixedPath.Size());
         fixedPath.Resize(newSize);
         return fixedPath;
     }
@@ -1849,7 +1951,7 @@ struct TPathUtils
             return newPath;
         }
 
-        return Path;
+        return TString<CharT, Allocator>(Path);
     }
 };
 

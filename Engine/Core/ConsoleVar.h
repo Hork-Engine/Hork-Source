@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -59,10 +59,8 @@ enum CVAR_ENVIRONMENT_FLAGS
     CVAR_INGAME_STATUS  = HK_BIT(2)
 };
 
-class ConsoleVar final
+class ConsoleVar final : public Noncopyable
 {
-    HK_FORBID_COPY(ConsoleVar)
-
 public:
     static int EnvironmentFlags;
 
@@ -87,9 +85,9 @@ public:
 
     const char* GetDefaultValue() const { return m_DefaultValue; }
 
-    String const& GetValue() const { return m_Value; }
-
     String const& GetLatchedValue() const { return m_LatchedValue; }
+
+    String const& GetString() const { return m_Value; }
 
     bool GetBool() const { return !!m_I32; }
 
@@ -133,24 +131,26 @@ public:
 
     void Print();
 
-    ConsoleVar const& operator=(StringView _String)
+    ConsoleVar const& operator=(StringView s)
     {
-        SetString(_String);
+        SetString(s);
         return *this;
     }
-    ConsoleVar const& operator=(bool _Bool)
+    ConsoleVar const& operator=(bool b)
     {
-        SetBool(_Bool);
+        SetBool(b);
         return *this;
     }
-    ConsoleVar const& operator=(int32_t _Integer)
+    template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+    ConsoleVar const& operator=(T i)
     {
-        SetInteger(_Integer);
+        SetInteger(i);
         return *this;
     }
-    ConsoleVar const& operator=(float _Float)
+    template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+    ConsoleVar const& operator=(T f)
     {
-        SetFloat(_Float);
+        SetFloat(f);
         return *this;
     }
     operator bool() const { return GetBool(); }

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -206,7 +206,7 @@ ITextureView* TextureGLImpl::GetTextureView(TextureViewDesc const& TextureViewDe
     auto it = Views.Find(TextureViewDesc);
     if (it == Views.End())
     {
-        TRef<TextureViewGLImpl> textureView;
+        Ref<TextureViewGLImpl> textureView;
 
         textureView = MakeRef<TextureViewGLImpl>(TextureViewDesc, this);
         Views[TextureViewDesc] = textureView;

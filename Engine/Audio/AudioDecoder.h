@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,8 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/BinaryStream.h>
-
-#include "AudioBuffer.h"
+#include "AudioSource.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -43,9 +42,14 @@ struct AudioFileInfo
     int SampleBits;
 };
 
-/** Open audio file and read PCM frames to heap memory */
-bool LoadAudioFile(IBinaryStreamReadInterface& File, AudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void** ppFrames = nullptr);
+struct AudioResample
+{
+    int  SampleRate;
+    bool bForceMono;
+    bool bForce8Bit;
+};
 
-bool CreateAudioBuffer(IBinaryStreamReadInterface& File, AudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef<AudioBuffer>* ppBuffer);
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource);
+bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo);
 
 HK_NAMESPACE_END

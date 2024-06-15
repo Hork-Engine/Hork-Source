@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Platform/BaseTypes.h>
+#include <Engine/Core/BaseTypes.h>
 
 #include <vector>
 

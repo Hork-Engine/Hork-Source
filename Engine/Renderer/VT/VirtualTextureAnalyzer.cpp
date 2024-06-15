@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -40,8 +40,8 @@ VirtualTextureFeedbackAnalyzer::VirtualTextureFeedbackAnalyzer() :
     SwapIndex(0), Bindings(nullptr), NumBindings(0), QueueLoadPos(0), bStopStreamThread(false)
 
 {
-    Platform::ZeroMem(Textures, sizeof(Textures));
-    Platform::ZeroMem(QuedPages, sizeof(QuedPages));
+    Core::ZeroMem(Textures, sizeof(Textures));
+    Core::ZeroMem(QuedPages, sizeof(QuedPages));
 
     StreamThread = Thread(
         [this]()
@@ -87,14 +87,14 @@ void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
     {
         // Fetch page
         {
-            MutexGurad criticalSection(EnqueLock);
+            MutexGuard criticalSection(EnqueLock);
 
             //LOG("Fetch page\n");
 
             QueueLoadPos = QueueLoadPos & (MAX_QUEUE_LENGTH - 1);
             quedPage = QuedPages[QueueLoadPos];
 
-            Platform::ZeroMem(&QuedPages[QueueLoadPos], sizeof(VTPageDesc));
+            Core::ZeroMem(&QuedPages[QueueLoadPos], sizeof(VTPageDesc));
 
             QueueLoadPos++;
         }
@@ -114,9 +114,9 @@ void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
         //    continue;
         //}
 
-        int64_t time = Platform::SysMilliseconds();
+        int64_t time = Core::SysMilliseconds();
 
-        THashMap<uint32_t, int64_t>& streamedPages = pTexture->StreamedPages;
+        HashMap<uint32_t, int64_t>& streamedPages = pTexture->StreamedPages;
         auto it = streamedPages.Find(quedPage.PageIndex);
         if (it != streamedPages.End())
         {
@@ -150,7 +150,7 @@ void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         pTexture->ReadPage(physAddress, transfer->Layers);
 
-        //int32_t pagePayLoad = Platform::SysMilliseconds() - time;
+        //int32_t pagePayLoad = Core::SysMilliseconds() - time;
 
         //LOG( "pagePayLoad {} msec\n", pagePayLoad );
 
@@ -185,16 +185,16 @@ void VirtualTextureFeedbackAnalyzer::ClearQueue()
     QueueLoadPos = 0;
 }
 
-void VirtualTextureFeedbackAnalyzer::SubmitPages(TVector<VTPageDesc> const& Pages)
+void VirtualTextureFeedbackAnalyzer::SubmitPages(Vector<VTPageDesc> const& Pages)
 {
     HK_ASSERT(Pages.Size() < MAX_QUEUE_LENGTH);
 
-    MutexGurad criticalSection(EnqueLock);
+    MutexGuard criticalSection(EnqueLock);
 
     ClearQueue();
 
     // Refresh queue
-    Platform::Memcpy(QuedPages, Pages.ToPtr(), Pages.Size() * sizeof(QuedPages[0]));
+    Core::Memcpy(QuedPages, Pages.ToPtr(), Pages.Size() * sizeof(QuedPages[0]));
     for (int i = 0; i < Pages.Size(); i++)
     {
         VTPageDesc* quedPage = &QuedPages[i];

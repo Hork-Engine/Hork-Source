@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -77,10 +77,10 @@ VirtualTexture::VirtualTexture(const char* FileName, VirtualTextureCache* Cache)
     GDevice->CreateBuffer(bufferCI, nullptr, &IndirectionData);
     IndirectionData->SetDebugName("Virtual texture indirection data");
 #else
-    pIndirectionData = (uint16_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(pIndirectionData[0]) * AddressTable.TotalPages, 0, true);
+    pIndirectionData = (uint16_t*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(pIndirectionData[0]) * AddressTable.TotalPages, 0, true);
 #endif
 
-    Platform::ZeroMem(bDirtyLods, sizeof(bDirtyLods));
+    Core::ZeroMem(bDirtyLods, sizeof(bDirtyLods));
 
     // Init indirection table
     if (NumLods > 0)
@@ -111,7 +111,7 @@ VirtualTexture::~VirtualTexture()
 #ifdef USE_PBO
     UnmapIndirectionData();
 #else
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(pIndirectionData);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(pIndirectionData);
     pIndirectionData = nullptr;
 #endif
 }

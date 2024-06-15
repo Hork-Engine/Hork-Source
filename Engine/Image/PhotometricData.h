@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -63,11 +63,11 @@ public:
     // Input watts
     float m_ElecInputWatts{};
     // Vertical angles
-    TVector<float> m_VertAngles;
+    Vector<float> m_VertAngles;
     // Horizontal angles
-    TVector<float> m_HorzAngles;
+    Vector<float> m_HorzAngles;
     // Candela values
-    TVector<TVector<float>> m_Candela;
+    Vector<Vector<float>> m_Candela;
 
     operator bool() const
     {

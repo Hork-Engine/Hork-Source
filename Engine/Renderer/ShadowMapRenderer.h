@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/RenderCore/FrameGraph.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 #include "RenderDefs.h"
 #include "OmnidirectionalShadowMapPool.h"
 
@@ -27,9 +27,9 @@ private:
     bool BindMaterialShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
     bool BindMaterialOmniShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
 
-    TRef<RenderCore::IPipeline> StaticShadowCasterPipeline;
-    TRef<RenderCore::IPipeline> LightPortalPipeline;
-    TRef<RenderCore::ITexture>  DummyShadowMap;
+    Ref<RenderCore::IPipeline> StaticShadowCasterPipeline;
+    Ref<RenderCore::IPipeline> LightPortalPipeline;
+    Ref<RenderCore::ITexture>  DummyShadowMap;
 };
 
 extern const Float4 EVSM_ClearValue;

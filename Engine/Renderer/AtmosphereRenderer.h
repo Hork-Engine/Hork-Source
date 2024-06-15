@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/RenderCore/ImmediateContext.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -40,7 +40,7 @@ class AtmosphereRenderer
 public:
     AtmosphereRenderer();
 
-    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
+    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -48,9 +48,9 @@ private:
         Float4x4 Transform[6];
         Float4   LightDir;
     };
-    TRef<RenderCore::IBuffer>   ConstantBuffer;
+    Ref<RenderCore::IBuffer>   ConstantBuffer;
     ConstantData                ConstantBufferData;
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

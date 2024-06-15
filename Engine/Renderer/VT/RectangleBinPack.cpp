@@ -1,6 +1,6 @@
 #include "RectangleBinPack.h"
 #include <Engine/Core/BaseMath.h>
-#include <Engine/Core/Platform/Memory/Memory.h>
+#include <Engine/Core/Memory.h>
 
 #include <limits>
 
@@ -434,7 +434,7 @@ RectangleBinBack_RectNode RectangleBinPack::FindPositionForNewNode(int _Width, i
 {
     RectangleBinBack_RectNode bestNode;
 
-    Platform::ZeroMem(&bestNode, sizeof(RectangleBinBack_RectNode));
+    Core::ZeroMem(&bestNode, sizeof(RectangleBinBack_RectNode));
 
     int bestScore = std::numeric_limits<int>::max();
 

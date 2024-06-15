@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/IO.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -62,7 +62,7 @@ struct RawImageFormatInfo
 
 RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format);
 
-class RawImage
+class RawImage final
 {
 public:
     RawImage() = default;
@@ -78,7 +78,7 @@ public:
         Clear(Color);
     }
 
-    virtual ~RawImage()
+    ~RawImage()
     {
         Reset();
     }

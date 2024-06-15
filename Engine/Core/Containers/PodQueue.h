@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,31 +30,31 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/Memory/Memory.h>
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Memory.h>
+#include <Engine/Core/Logger.h>
 
 HK_NAMESPACE_BEGIN
 
 /**
 
-TPodQueue
+PodQueue
 
 Queue for POD types
 
 */
 template <typename T, int BaseCapacity = 256, bool bEnableOverflow = false, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-class TPodQueue final
+class PodQueue final
 {
 public:
     static constexpr size_t TYPE_SIZE = sizeof(T);
 
-    TPodQueue() :
+    PodQueue() :
         m_pQueue(StaticData), m_QueueHead(0), m_QueueTail(0), m_MaxQueueLength(BaseCapacity)
     {
         static_assert(IsPowerOfTwo(BaseCapacity), "Queue length must be power of two");
     }
 
-    TPodQueue(TPodQueue const& _Queue)
+    PodQueue(PodQueue const& _Queue)
     {
         if (_Queue.m_MaxQueueLength > BaseCapacity)
         {
@@ -70,7 +70,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.m_MaxQueueLength || _Queue.m_QueueTail == 0)
         {
-            Platform::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
+            Core::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
             m_QueueHead = _Queue.m_QueueHead;
             m_QueueTail = _Queue.m_QueueTail;
         }
@@ -86,7 +86,7 @@ public:
         }
     }
 
-    ~TPodQueue()
+    ~PodQueue()
     {
         if (m_pQueue != StaticData)
         {
@@ -122,7 +122,7 @@ public:
 
         if (!bEnableOverflow)
         {
-            LOG("TPodQueue::Push: queue overflow\n");
+            LOG("PodQueue::Push: queue overflow\n");
             m_QueueTail++;
             m_QueueHead++;
             return &m_pQueue[(m_QueueHead - 1) & (m_MaxQueueLength - 1)];
@@ -138,7 +138,7 @@ public:
             if (m_pQueue == StaticData)
             {
                 m_pQueue = (T*)Allocator().allocate(TYPE_SIZE * m_MaxQueueLength);
-                Platform::Memcpy(m_pQueue, StaticData, TYPE_SIZE * queueLength);
+                Core::Memcpy(m_pQueue, StaticData, TYPE_SIZE * queueLength);
             }
             else
             {
@@ -216,7 +216,7 @@ public:
         return m_MaxQueueLength;
     }
 
-    TPodQueue& operator=(TPodQueue const& _Queue)
+    PodQueue& operator=(PodQueue const& _Queue)
     {
         // Resize queue
         if (_Queue.Size() > m_MaxQueueLength)
@@ -241,7 +241,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.m_MaxQueueLength || _Queue.m_QueueTail == 0)
         {
-            Platform::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
+            Core::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
             m_QueueHead = _Queue.m_QueueHead;
             m_QueueTail = _Queue.m_QueueTail;
         }

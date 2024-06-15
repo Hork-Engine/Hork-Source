@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -45,7 +45,7 @@ IDevice::~IDevice()
     }
     HK_ASSERT(ListHead == nullptr);
 
-    TArray<const char*, DEVICE_OBJECT_TYPE_MAX> name =
+    Array<const char*, DEVICE_OBJECT_TYPE_MAX> name =
         {
             "DEVICE_OBJECT_TYPE_UNKNOWN",
 
@@ -77,12 +77,11 @@ IDevice::~IDevice()
 }
 
 void CreateLogicalDevice(const char*              Backend,
-                         AllocatorCallback const* pAllocator,
-                         TRef<IDevice>*           ppDevice)
+                         Ref<IDevice>*           ppDevice)
 {
-    if (!Platform::Stricmp(Backend, "OpenGL 4.5"))
+    if (!Core::Stricmp(Backend, "OpenGL 4.5"))
     {
-        *ppDevice = MakeRef<DeviceGLImpl>(pAllocator);
+        *ppDevice = MakeRef<DeviceGLImpl>();
     }
     else
     {

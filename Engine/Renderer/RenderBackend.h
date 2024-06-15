@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -43,15 +43,15 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class RenderBackend : public RefCounted
+class RenderBackend final : public Noncopyable
 {
 public:
     RenderBackend(RenderCore::IDevice* pDevice);
     ~RenderBackend();
 
-    void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
-    void GenerateReflectionMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
-    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
+    void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
+    void GenerateReflectionMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
+    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
 
     bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile);
     bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile);
@@ -68,25 +68,25 @@ private:
     void SetViewConstants(int ViewportIndex);
     void UploadShaderResources(int ViewportIndex);
 
-    TRef<RenderCore::FrameGraph>       m_FrameGraph;
+    Ref<RenderCore::FrameGraph>       m_FrameGraph;
 
-    TRef<CanvasRenderer> m_CanvasRenderer;
-    TRef<FrameRenderer> m_FrameRenderer;
+    Ref<CanvasRenderer> m_CanvasRenderer;
+    Ref<FrameRenderer> m_FrameRenderer;
 
-    TRef<RenderCore::IQueryPool> m_TimeQuery;
+    Ref<RenderCore::IQueryPool> m_TimeQuery;
 
-    TRef<RenderCore::IQueryPool> m_TimeStamp1;
-    TRef<RenderCore::IQueryPool> m_TimeStamp2;
+    Ref<RenderCore::IQueryPool> m_TimeStamp1;
+    Ref<RenderCore::IQueryPool> m_TimeStamp2;
 
-    TRef<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
-    TRef<VirtualTextureCache> m_PhysCacheVT;
+    Ref<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
+    Ref<VirtualTextureCache> m_PhysCacheVT;
 
-    TRef<RenderCore::IPipeline> m_TerrainDepthPipeline;
-    TRef<RenderCore::IPipeline> m_TerrainLightPipeline;
-    TRef<RenderCore::IPipeline> m_TerrainWireframePipeline;
+    Ref<RenderCore::IPipeline> m_TerrainDepthPipeline;
+    Ref<RenderCore::IPipeline> m_TerrainLightPipeline;
+    Ref<RenderCore::IPipeline> m_TerrainWireframePipeline;
 
     // Just for test
-    TRef<VirtualTexture> m_TestVT;
+    Ref<VirtualTexture> m_TestVT;
 };
 
 HK_NAMESPACE_END

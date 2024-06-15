@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -126,7 +126,7 @@ BufferGLImpl::~BufferGLImpl()
     static_cast<DeviceGLImpl*>(GetDevice())->BufferMemoryAllocated -= GetDesc().SizeInBytes;
 }
 
-bool BufferGLImpl::CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView)
+bool BufferGLImpl::CreateView(BufferViewDesc const& BufferViewDesc, Ref<IBufferView>* ppBufferView)
 {
     *ppBufferView = MakeRef<BufferViewGLImpl>(BufferViewDesc, this);
     return true;

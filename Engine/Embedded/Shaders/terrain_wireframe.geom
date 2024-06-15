@@ -51,23 +51,26 @@ layout( triangle_strip, max_vertices = 3 ) out;
 layout( location = 0 ) out vec3 GS_Barycentric;
 
 void main() {
-    gl_Position = gl_in[ 0 ].gl_Position;
-    GS_Barycentric = vec3( 1, 0, 0 );
+    if (gl_in[ 0 ].gl_Position.w != 0.0 && gl_in[ 1 ].gl_Position.w != 0.0 && gl_in[ 2 ].gl_Position.w != 0.0)
+    {
+        gl_Position = gl_in[ 0 ].gl_Position;
+        GS_Barycentric = vec3( 1, 0, 0 );
 #ifdef TERRAIN_CLIP_BOUNDS
-    for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 0 ].gl_ClipDistance[i];
+        for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 0 ].gl_ClipDistance[i];
 #endif
-    EmitVertex();
-    gl_Position = gl_in[ 1 ].gl_Position;
-    GS_Barycentric = vec3( 0, 1, 0 );
+        EmitVertex();
+        gl_Position = gl_in[ 1 ].gl_Position;
+        GS_Barycentric = vec3( 0, 1, 0 );
 #ifdef TERRAIN_CLIP_BOUNDS
-    for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 1 ].gl_ClipDistance[i];
+        for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 1 ].gl_ClipDistance[i];
 #endif
-    EmitVertex();
-    gl_Position = gl_in[ 2 ].gl_Position;
-    GS_Barycentric = vec3( 0, 0, 1 );
+        EmitVertex();
+        gl_Position = gl_in[ 2 ].gl_Position;
+        GS_Barycentric = vec3( 0, 0, 1 );
 #ifdef TERRAIN_CLIP_BOUNDS
-    for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 2 ].gl_ClipDistance[i];
+        for ( int i = 0 ; i < 4 ; i++ ) gl_ClipDistance[i] = gl_in[ 2 ].gl_ClipDistance[i];
 #endif
-    EmitVertex();
-    EndPrimitive();
+        EmitVertex();
+        EndPrimitive();
+    }
 }

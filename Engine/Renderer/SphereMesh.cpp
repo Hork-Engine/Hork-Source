@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -46,8 +46,8 @@ SphereMesh::SphereMesh(int _HDiv, int _VDiv)
 
     HK_ASSERT_(numVerts < 65536, "Too many vertices");
 
-    TVector<Float3> vertices;
-    TVector<unsigned short> indices;
+    Vector<Float3> vertices;
+    Vector<unsigned short> indices;
 
     vertices.Resize(numVerts);
     indices.Resize(numIndices);

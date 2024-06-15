@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Image/Image.h>
 #include <Engine/Core/Color.h>
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
 
@@ -121,6 +121,7 @@ constexpr int MAX_PROBES = 256;
 /** Total max items per view. */
 constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
+constexpr int TERRAIN_CLIPMAP_SIZE = 256;
 
 struct TerrainVertex
 {
@@ -279,6 +280,11 @@ struct MaterialSource
 
     /** Source code */
     String Code;
+
+    MaterialSource() = default;
+    MaterialSource(StringView inSourceName, StringView inCode) :
+        SourceName(inSourceName), Code(inCode)
+    {}
 };
 
 class CompiledMaterial : public RefCounted
@@ -308,10 +314,10 @@ public:
     int NumUniformVectors{};
 
     /** Material samplers */
-    TStaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
+    StaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
 
     /** Material shaders */
-    TVector<MaterialSource> Shaders;
+    Vector<MaterialSource> Shaders;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
@@ -366,7 +372,7 @@ public:
 
     void AddShader(StringView SourceName, StringView SourceCode)
     {
-        Shaders.Add({SourceName, SourceCode});
+        Shaders.EmplaceBack(SourceName, SourceCode);
     }
 
     void Read(IBinaryStreamReadInterface& Stream)
@@ -425,8 +431,8 @@ public:
     {
         Stream.WriteUInt8(Type);
         Stream.WriteUInt8(Blending);
-        Stream.WriteUInt8(RenderingPriority);
         Stream.WriteUInt8(TessellationMethod);
+        Stream.WriteUInt8(RenderingPriority);        
         Stream.WriteUInt16(LightmapSlot);
         Stream.WriteUInt8(DepthPassTextureCount);
         Stream.WriteUInt8(LightPassTextureCount);
@@ -457,7 +463,7 @@ public:
             Stream.WriteFloat(sampler.MaxLod);
         }
 
-        Stream.WriteUInt16(Samplers.Size());
+        Stream.WriteUInt16(Shaders.Size());
 
         for (MaterialSource const& s : Shaders)
         {
@@ -476,7 +482,7 @@ struct MaterialFrameData
     int                            NumTextures;
     Float4                         UniformVectors[4];
     int                            NumUniformVectors;
-    class VirtualTextureResource* VirtualTexture;
+    //class VirtualTextureResource* VirtualTexture;
 };
 
 
@@ -649,7 +655,7 @@ class TextureView;
 
 struct CanvasDrawCmd
 {
-    TextureView* pTextureView;
+    RenderCore::ITexture* Texture;
     CANVAS_DRAW_COMMAND   Type;
     CANVAS_COMPOSITE      Composite;
     CANVAS_IMAGE_FLAGS    TextureFlags;
@@ -778,8 +784,8 @@ Shadowmap render instance
 */
 struct ShadowRenderInstance
 {
-    MaterialGPU*        Material;
-    MaterialFrameData*  MaterialInstance;
+    MaterialGPU*         Material;
+    MaterialFrameData*   MaterialInstance;
     RenderCore::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
     RenderCore::IBuffer* IndexBuffer;
@@ -989,9 +995,6 @@ Keep it POD
 */
 struct RenderViewData
 {
-    /** Current view index */
-    int ViewIndex;
-
     /** Local frame number */
     int FrameNumber;
 
@@ -1167,34 +1170,27 @@ struct RenderFrameData
     /** Game tick */
     int FrameNumber;
 
-    /** Canvas resolution */
-    int CanvasWidth;
-    /** Canvas resolution */
-    int CanvasHeight;
-    /** Canvas projection matrix */
-    Float4x4 CanvasOrthoProjection;
-
     /** Render views */
     RenderViewData* RenderViews;
     /** Render view count */
     int NumViews;
 
     /** Opaque instances */
-    TVector<RenderInstance*> Instances;
+    Vector<RenderInstance*> Instances;
     /** Translucent instances */
-    TVector<RenderInstance*> TranslucentInstances;
+    Vector<RenderInstance*> TranslucentInstances;
     /** Outline instances */
-    TVector<RenderInstance*> OutlineInstances;
+    Vector<RenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TVector<ShadowRenderInstance*> ShadowInstances;
+    Vector<ShadowRenderInstance*> ShadowInstances;
     /** Light portal instances */
-    TVector<LightPortalRenderInstance*> LightPortals;
+    Vector<LightPortalRenderInstance*> LightPortals;
     /** Directional light instances */
-    TVector<DirectionalLightInstance*> DirectionalLights;
+    Vector<DirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */
-    TVector<LightShadowmap> LightShadowmaps;
+    Vector<LightShadowmap> LightShadowmaps;
     /** Terrain instances */
-    TVector<TerrainRenderInstance*> TerrainInstances;
+    Vector<TerrainRenderInstance*> TerrainInstances;
 
     /** Canvas draw commands */
     CanvasDrawData const* pCanvasDrawData;
@@ -1202,8 +1198,8 @@ struct RenderFrameData
 
     /** Debug draw commands */
     DebugDrawCmd const* DbgCmds;
-    size_t               DbgVertexStreamOffset;
-    size_t               DbgIndexStreamOffset;
+    size_t DbgVertexStreamOffset;
+    size_t DbgIndexStreamOffset;
 };
 
 HK_NAMESPACE_END

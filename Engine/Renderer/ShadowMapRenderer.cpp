@@ -188,7 +188,7 @@ bool ShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, S
     }
     else
     {
-        immediateCtx->BindPipeline(StaticShadowCasterPipeline.GetObject());
+        immediateCtx->BindPipeline(StaticShadowCasterPipeline);
         immediateCtx->BindVertexBuffer(1, nullptr, 0);
     }
 
@@ -226,7 +226,7 @@ bool ShadowMapRenderer::BindMaterialOmniShadowMap(IImmediateContext* immediateCt
     }
     else
     {
-        immediateCtx->BindPipeline(StaticShadowCasterPipeline.GetObject());
+        immediateCtx->BindPipeline(StaticShadowCasterPipeline);
         immediateCtx->BindVertexBuffer(1, nullptr, 0);
     }
 
@@ -371,7 +371,7 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, DirectionalLightInstance
                         {
                             LightPortalRenderInstance const* instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
 
-                            immediateCtx->BindPipeline(LightPortalPipeline.GetObject());
+                            immediateCtx->BindPipeline(LightPortalPipeline);
 
                             BindVertexAndIndexBuffers(immediateCtx, instance);
 

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/RenderCore/ImmediateContext.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -40,8 +40,8 @@ class EnvProbeGenerator
 public:
     EnvProbeGenerator();
 
-    void GenerateArray(int _MaxLod, int _CubemapsCount, RenderCore::ITexture** _Cubemaps, TRef<RenderCore::ITexture>* ppTextureArray);
-    void Generate(int _MaxLod, RenderCore::ITexture* _SourceCubemap, TRef<RenderCore::ITexture>* ppTexture);
+    void GenerateArray(int _MaxLod, int _CubemapsCount, RenderCore::ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray);
+    void Generate(int _MaxLod, RenderCore::ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -49,9 +49,9 @@ private:
         Float4x4 Transform[6];
         Float4 Roughness;
     };
-    TRef<RenderCore::IBuffer> ConstantBuffer;
+    Ref<RenderCore::IBuffer> ConstantBuffer;
     ConstantData ConstantBufferData;
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

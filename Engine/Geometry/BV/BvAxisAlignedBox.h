@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -122,8 +122,8 @@ struct BvAxisAlignedBox
 
     HK_FORCEINLINE void Clear()
     {
-        Mins = Float3(9999999999.0f);
-        Maxs = Float3(-9999999999.0f);
+        Mins = Float3(FLT_MAX);
+        Maxs = Float3(-FLT_MAX);
     }
 
     HK_FORCEINLINE void AddPoint(Float3 const& p)
@@ -319,8 +319,13 @@ struct BvAxisAlignedBox
 
     static BvAxisAlignedBox const& Empty()
     {
-        static BvAxisAlignedBox EmptyBox(Float3(9999999999.0f), Float3(-9999999999.0f));
+        static BvAxisAlignedBox EmptyBox(Float3(FLT_MAX), Float3(-FLT_MAX));
         return EmptyBox;
+    }
+
+    static HK_FORCEINLINE BvAxisAlignedBox Biggest()
+    {
+        return BvAxisAlignedBox(Float3(-FLT_MAX), Float3(-FLT_MAX));
     }
 
     // Byte serialization

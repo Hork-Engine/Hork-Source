@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,8 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 
-#include <Engine/Core/Platform/Platform.h>
-#include <Engine/Runtime/EmbeddedResources.h>
+#include <Engine/Core/Platform.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -61,30 +60,30 @@ StreamedMemoryGPU* GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-TRef<CircularBuffer> GCircularBuffer;
+Ref<CircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-TRef<SphereMesh> GSphereMesh;
+Ref<SphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
-TRef<IBuffer> GSaq;
+Ref<IBuffer> GSaq;
 
 /** Simple white texture */
-TRef<ITexture> GWhiteTexture;
+Ref<ITexture> GWhiteTexture;
 
 /** Cluster lookcup 3D texture */
-TRef<ITexture> GLookupBRDF;
+Ref<ITexture> GLookupBRDF;
 
 /** Cluster lookcup 3D texture */
-TRef<ITexture> GClusterLookup;
+Ref<ITexture> GClusterLookup;
 
 /** Cluster item references */
-TRef<IBuffer> GClusterItemBuffer;
+Ref<IBuffer> GClusterItemBuffer;
 
 /** Cluster item references view */
-TRef<IBufferView> GClusterItemTBO;
+Ref<IBufferView> GClusterItemTBO;
 
-TVector<RenderViewContext> GRenderViewContext;
+Vector<RenderViewContext> GRenderViewContext;
 
 VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
 VirtualTextureCache*            GPhysCacheVT{};
@@ -178,11 +177,11 @@ void BindInstanceConstants(RenderInstance const* Instance)
 
     InstanceConstantBuffer* pConstantBuf = reinterpret_cast<InstanceConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
-    Platform::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
-    Platform::Memcpy(&pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof(pConstantBuf->TransformMatrixP));
+    Core::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
+    Core::Memcpy(&pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof(pConstantBuf->TransformMatrixP));
     StoreFloat3x3AsFloat3x4Transposed(Instance->ModelNormalToViewSpace, pConstantBuf->ModelNormalToViewSpace);
-    Platform::Memcpy(&pConstantBuf->LightmapOffset, &Instance->LightmapOffset, sizeof(pConstantBuf->LightmapOffset));
-    Platform::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
+    Core::Memcpy(&pConstantBuf->LightmapOffset, &Instance->LightmapOffset, sizeof(pConstantBuf->LightmapOffset));
+    Core::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
 
     // TODO:
     pConstantBuf->VTOffset = Float2(0.0f); //Instance->VTOffset;
@@ -198,7 +197,7 @@ void BindInstanceConstantsFB(RenderInstance const* Instance)
 
     FeedbackConstantBuffer* pConstantBuf = reinterpret_cast<FeedbackConstantBuffer*>(GCircularBuffer->GetMappedMemory() + offset);
 
-    Platform::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
+    Core::Memcpy(&pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof(pConstantBuf->TransformMatrix));
 
     // TODO:
     pConstantBuf->VTOffset = Float2(0.0f); //Instance->VTOffset;
@@ -218,7 +217,7 @@ void BindShadowInstanceConstants(ShadowRenderInstance const* Instance)
 
     if (Instance->MaterialInstance)
     {
-        Platform::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
+        Core::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
     }
 
     pConstantBuf->CascadeMask = Instance->CascadeMask;
@@ -242,7 +241,7 @@ void BindShadowInstanceConstants(ShadowRenderInstance const* Instance, int FaceI
 
     if (Instance->MaterialInstance)
     {
-        Platform::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
+        Core::Memcpy(&pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof(Float4) * Instance->MaterialInstance->NumUniformVectors);
     }
 
     pConstantBuf->CascadeMask = Instance->CascadeMask;
@@ -282,12 +281,12 @@ void SaveSnapshot(ITexture& _Texture)
     const int numchannels = 3;
     const int size        = w * h * numchannels;
 
-    byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
+    byte* data = (byte*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
 
 #if 0
     _Texture.Read( 0, PIXEL_FORMAT_BYTE_RGB, size, 1, data );
 #else
-    float* fdata = (float*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size * sizeof(float));
+    float* fdata = (float*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(size * sizeof(float));
     _Texture.Read(0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
     // to sRGB
     for (int i = 0; i < size; i++)
@@ -305,8 +304,8 @@ void SaveSnapshot(ITexture& _Texture)
         WritePNG(f, w, h, numchannels, data, w * numchannels);
     }
 
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(fdata);
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(fdata);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(data);
     #endif
 }
 

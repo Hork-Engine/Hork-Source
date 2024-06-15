@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "ConvexDecomposition.h"
 
-#include <Engine/Core/Platform/Logger.h>
+#include <Engine/Core/Logger.h>
 
 #include <HACD/hacdHACD.h>
 
@@ -73,7 +73,7 @@ static bool AreVerticesBehindPlane(PlaneF const& plane, Float3 const* vertices, 
 namespace Geometry
 {
 
-void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVector<PlaneF>& planes)
+void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, Vector<PlaneF>& planes)
 {
     PlaneF plane;
     Float3 edge0, edge1;
@@ -124,7 +124,7 @@ void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVect
     }
 }
 
-void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<Float3>& vertices)
+void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, Vector<Float3>& vertices)
 {
     constexpr float tolerance = 0.0001f;
     constexpr float quotientTolerance = 0.000001f;
@@ -172,9 +172,9 @@ void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<
     }
 }
 
-void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, TVector<Float3>& outVertices, float margin)
+void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vector<Float3>& outVertices, float margin)
 {
-    TVector<PlaneF> planes;
+    Vector<PlaneF> planes;
 
     ConvexHullPlanesFromVertices(vertices, vertexCount, planes);
 
@@ -193,9 +193,9 @@ bool PerformConvexDecomposition(Float3 const* vertices,
                                 int vertexStride,
                                 unsigned int const* indices,
                                 int indexCount,
-                                TVector<Float3>& outVertices,
-                                TVector<unsigned int>& outIndices,
-                                TVector<ConvexHullDesc>& outHulls)
+                                Vector<Float3>& outVertices,
+                                Vector<unsigned int>& outIndices,
+                                Vector<ConvexHullDesc>& outHulls)
 {
     outVertices.Clear();
     outIndices.Clear();
@@ -203,8 +203,8 @@ bool PerformConvexDecomposition(Float3 const* vertices,
 
     HK_VERIFY_R(indexCount % 3 == 0, "PerformConvexDecomposition: The number of indices must be a multiple of 3");
 
-    TVector<HACD::Vec3<HACD::Real>> points(vertexCount);
-    TVector<HACD::Vec3<long>> triangles(indexCount / 3);
+    Vector<HACD::Vec3<HACD::Real>> points(vertexCount);
+    Vector<HACD::Vec3<long>> triangles(indexCount / 3);
 
     byte const* srcVertices = (byte const*)vertices;
     for (int i = 0; i < vertexCount; i++)
@@ -265,8 +265,8 @@ bool PerformConvexDecomposition(Float3 const* vertices,
         maxTrianglesPerCluster = Math::Max(maxTrianglesPerCluster, numTriangles);
     }
 
-    TVector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
-    TVector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
+    Vector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
+    Vector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
 
     outHulls.Resize(numClusters);
     outVertices.Resize(totalPoints);
@@ -329,9 +329,9 @@ bool PerformConvexDecompositionVHACD(Float3 const* vertices,
                                      int vertexStride,
                                      unsigned int const* indices,
                                      int indexCount,
-                                     TVector<Float3>& outVertices,
-                                     TVector<unsigned int>& outIndices,
-                                     TVector<ConvexHullDesc>& outHulls,
+                                     Vector<Float3>& outVertices,
+                                     Vector<unsigned int>& outIndices,
+                                     Vector<ConvexHullDesc>& outHulls,
                                      Float3& centerOfMass)
 {
     class Callback : public VHACD::IVHACD::IUserCallback
@@ -380,7 +380,7 @@ bool PerformConvexDecompositionVHACD(Float3 const* vertices,
 
     HK_VERIFY_R(indexCount % 3 == 0, "PerformConvexDecompositionVHACD: The number of indices must be a multiple of 3");
 
-    TVector<Double3> tempVertices(vertexCount);
+    Vector<Double3> tempVertices(vertexCount);
     byte const* srcVertices = (byte const*)vertices;
     for (int i = 0; i < vertexCount; i++)
     {

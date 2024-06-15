@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -40,14 +40,13 @@ class CommandProcessor;
 class ICommandContext
 {
 public:
-    virtual void ExecuteCommand(CommandProcessor const& _Proc) = 0;
+    virtual ~ICommandContext() {}
+    virtual void ExecuteCommand(CommandProcessor const& proc) = 0;
 };
 
 /** Command buffer parser */
-class CommandProcessor final
+class CommandProcessor final : public Noncopyable
 {
-    HK_FORBID_COPY(CommandProcessor)
-
 public:
     static constexpr int MAX_ARGS    = 256;
     static constexpr int MAX_ARG_LEN = 256;
@@ -58,13 +57,13 @@ public:
     void ClearBuffer();
 
     /** Add text to the end of command buffer */
-    void Add(StringView _Text);
+    void Add(StringView text);
 
     /** Insert text to current command buffer offset */
-    void Insert(StringView _Text);
+    void Insert(StringView text);
 
     /** Execute with command context */
-    void Execute(ICommandContext& _Ctx);
+    void Execute(ICommandContext& ctx);
 
     /** Get argument by index */
     const char* GetArg(int i) const { return m_Args[i]; }
@@ -73,13 +72,13 @@ public:
     int GetArgsCount() const { return m_ArgsCount; }
 
     /** Helper. Check is command name valid. */
-    static bool IsValidCommandName(const char* _Name);
+    static bool IsValidCommandName(const char* name);
 
 private:
     String m_Cmdbuf;
-    int m_CmdbufPos;
-    char m_Args[MAX_ARGS][MAX_ARG_LEN];
-    int m_ArgsCount;
+    int    m_CmdbufPos;
+    char   m_Args[MAX_ARGS][MAX_ARG_LEN];
+    int    m_ArgsCount;
 };
 
 HK_NAMESPACE_END

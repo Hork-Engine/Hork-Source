@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -41,9 +41,9 @@ SOFTWARE.
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/Core/ScopedTimer.h>
 
-#include <Engine/Core/Platform/WindowsDefs.h>
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/Profiler.h>
+#include <Engine/Core/WindowsDefs.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/Profiler.h>
 
 #include <Engine/Assets/Asset.h>
 #include <Engine/Image/ImageEncoders.h>
@@ -80,9 +80,9 @@ static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
     *BinarySize = 0;
 }
 
-TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth();
-TRef<RenderCore::IPipeline> CreateTerrainMaterialLight();
-TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
+Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth();
+Ref<RenderCore::IPipeline> CreateTerrainMaterialLight();
+Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
 
 RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
 {
@@ -204,7 +204,7 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
 #    if 0
     {
     SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8_UNORM, TextureResolution2D( 2048, 2048 ) );
-    TRef< ISparseTexture > sparseTexture;
+    Ref< ISparseTexture > sparseTexture;
     GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
 
     int pageSizeX = sparseTexture->GetPageSizeX();
@@ -212,7 +212,7 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     int sz = pageSizeX*pageSizeY*4;
 
     byte * mem = (byte*)StackAlloc( sz );
-    Platform::ZeroMem( mem, sz );
+    Core::ZeroMem( mem, sz );
 
     sparseTexture->CommitPage( 0,0,0,0, FORMAT_UBYTE4, sz, 1, mem );
     }
@@ -220,9 +220,9 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     {
     int numPageSizes = 0;
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, nullptr, nullptr, nullptr );
-    TVector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
-    TVector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
-    TVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
+    Vector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
+    Vector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
+    Vector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
     for ( int i = 0 ; i < numPageSizes ; i++ ) {
         LOG( "Sparse page size {} {} {}\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
@@ -239,7 +239,7 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     }
     SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8_UNORM, TextureResolution2DArray(texSize, texSize, maxLayers), TextureSwizzle(), numLods);
 
-    TRef<ISparseTexture> sparseTexture;
+    Ref<ISparseTexture> sparseTexture;
     GDevice->CreateSparseTexture(sparseTextureCI, &sparseTexture);
 
 #    if 0
@@ -248,14 +248,14 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     int sz = pageSizeX*pageSizeY*4;
 
     byte * mem = (byte*)StackAlloc( sz );
-    Platform::ZeroMem( mem, sz );
+    Core::ZeroMem( mem, sz );
 
     sparseTexture->CommitPage( 0, 0, 0, 0, FORMAT_UBYTE4, sz, 1, mem );
 #    else
     int sz = texSize * texSize * 4;
 
     byte* mem = (byte*)malloc(sz);
-    Platform::ZeroMem(mem, sz);
+    Core::ZeroMem(mem, sz);
 
     LOG("\tTotal available after create: {} Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
 
@@ -280,7 +280,7 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
 
     #if 0
     // Test SPIR-V
-    TRef<IShaderModule> shaderModule;
+    Ref<IShaderModule> shaderModule;
     ShaderBinaryData   binaryData;
     binaryData.ShaderType   = VERTEX_SHADER;
     binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
@@ -304,7 +304,7 @@ RenderBackend::~RenderBackend()
     LOG("Deinitializing render backend...\n");
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
-    //VirtualTexture * vt = TestVT.GetObject();
+    //VirtualTexture * vt = TestVT.RawPtr();
     //TestVT.Reset();
     m_PhysCacheVT.Reset();
     m_FeedbackAnalyzerVT.Reset();
@@ -320,26 +320,26 @@ RenderBackend::~RenderBackend()
     GClusterItemBuffer.Reset();
 }
 
-void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture)
 {
     IrradianceGenerator irradianceGenerator;
     irradianceGenerator.Generate(pCubemap, ppTexture);
 }
 
-void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture)
 {
     EnvProbeGenerator envProbeGenerator;
     envProbeGenerator.Generate(7, pCubemap, ppTexture);
 }
 
-void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture)
 {
     AtmosphereRenderer atmosphereRenderer;
     atmosphereRenderer.Render(Format, Resolution, LightDir, ppTexture);
 }
 
 #if 0
-void RenderBackend::InitializeBuffer( TRef< IBuffer > * ppBuffer, size_t _SizeInBytes )
+void RenderBackend::InitializeBuffer( Ref< IBuffer > * ppBuffer, size_t _SizeInBytes )
 {
     BufferDesc bufferCI = {};
 
@@ -452,6 +452,9 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
     for (int i = 0; i < GFrameData->NumViews; i++)
     {
         RenderViewData* pRenderView = &GFrameData->RenderViews[i];
+
+        if (pRenderView->Width == 0 || pRenderView->Height == 0)
+            continue;
 
         RenderView(i, pRenderView);
 
@@ -737,7 +740,7 @@ void RenderBackend::RenderView(int ViewportIndex, RenderViewData* pRenderView)
 
 bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile)
 {
-    TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
+    Ref<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
 
     if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
     {
@@ -810,7 +813,7 @@ bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, St
     // Choose max width for memory allocation
     int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
 
-    TVector<uint32_t> buffer(maxSize * maxSize * 6);
+    Vector<uint32_t> buffer(maxSize * maxSize * 6);
 
     uint32_t* data = buffer.ToPtr();
 
@@ -877,7 +880,7 @@ ImageStorage RenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMA
         return {};
     }
 
-    TRef<RenderCore::ITexture> skybox;
+    Ref<RenderCore::ITexture> skybox;
     GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
 
     RenderCore::TextureRect rect;

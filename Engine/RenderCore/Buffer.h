@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -152,7 +152,7 @@ public:
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
-    virtual bool CreateView(BufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;
+    virtual bool CreateView(BufferViewDesc const& BufferViewDesc, Ref<IBufferView>* ppBufferView) = 0;
 
     BufferDesc const& GetDesc() const { return Desc; }
 

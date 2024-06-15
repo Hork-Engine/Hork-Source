@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -73,12 +73,12 @@ private:
     int                          NumBuffers;
     unsigned int                 PrimitiveTopology;
     int                          NumPatchVertices;
-    TRef<IShaderModule>          pVS;
-    TRef<IShaderModule>          pTCS;
-    TRef<IShaderModule>          pTES;
-    TRef<IShaderModule>          pGS;
-    TRef<IShaderModule>          pFS;
-    TRef<IShaderModule>          pCS;
+    Ref<IShaderModule>          pVS;
+    Ref<IShaderModule>          pTCS;
+    Ref<IShaderModule>          pTES;
+    Ref<IShaderModule>          pGS;
+    Ref<IShaderModule>          pFS;
+    Ref<IShaderModule>          pCS;
 };
 
 } // namespace RenderCore

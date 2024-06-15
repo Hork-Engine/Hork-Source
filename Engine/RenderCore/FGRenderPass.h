@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -269,7 +269,7 @@ public:
     {
     }
 
-    TStaticVector<AttachmentRef, MAX_COLOR_ATTACHMENTS> Refs;
+    StaticVector<AttachmentRef, MAX_COLOR_ATTACHMENTS> Refs;
     FGRecordFunction                                      Function;
 };
 
@@ -278,8 +278,8 @@ class RenderPass : public FGRenderTask<RenderPass>
     using Super = FGRenderTask<RenderPass>;
 
 public:
-    using ColorAttachments = TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>;
-    using SubpassArray = TSmallVector<FGSubpassInfo, 1, Allocators::FrameMemoryAllocator>;
+    using ColorAttachments = StaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>;
+    using SubpassArray = SmallVector<FGSubpassInfo, 1, Allocators::FrameMemoryAllocator>;
 
     RenderPass(FrameGraph* pFrameGraph, const char* Name) :
         FGRenderTask(pFrameGraph, Name, FG_RENDER_TASK_PROXY_TYPE_RENDER_PASS)

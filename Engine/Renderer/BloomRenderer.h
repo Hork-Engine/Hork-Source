@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -50,9 +50,9 @@ public:
     void AddPasses(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult);
 
 private:
-    TRef<RenderCore::IPipeline> BrightPipeline;
-    TRef<RenderCore::IPipeline> BlurPipeline;
-    TRef<RenderCore::IPipeline> CopyPipeline;
+    Ref<RenderCore::IPipeline> BrightPipeline;
+    Ref<RenderCore::IPipeline> BlurPipeline;
+    Ref<RenderCore::IPipeline> CopyPipeline;
 };
 
 HK_NAMESPACE_END

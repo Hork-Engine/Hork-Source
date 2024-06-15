@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -61,14 +61,14 @@ private:
         HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE
     };
 
-    TRef<RenderCore::IPipeline> Pipe;
-    TRef<RenderCore::IPipeline> Pipe_ORTHO;
-    TRef<RenderCore::IPipeline> CacheAwarePipe;
-    TRef<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
-    TRef<RenderCore::IPipeline> BlurPipe;
-    TRef<RenderCore::ITexture>  RandomMap;
-    TRef<RenderCore::IPipeline> DeinterleavePipe;
-    TRef<RenderCore::IPipeline> ReinterleavePipe;
+    Ref<RenderCore::IPipeline> Pipe;
+    Ref<RenderCore::IPipeline> Pipe_ORTHO;
+    Ref<RenderCore::IPipeline> CacheAwarePipe;
+    Ref<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
+    Ref<RenderCore::IPipeline> BlurPipe;
+    Ref<RenderCore::ITexture>  RandomMap;
+    Ref<RenderCore::IPipeline> DeinterleavePipe;
+    Ref<RenderCore::IPipeline> ReinterleavePipe;
 };
 
 HK_NAMESPACE_END

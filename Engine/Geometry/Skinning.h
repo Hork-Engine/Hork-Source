@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 #include <Engine/Geometry/VertexFormat.h>
-#include <Engine/Geometry/Transform.h>
+#include <Engine/Math/Transform.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,10 +47,10 @@ MeshSkin
 struct MeshSkin
 {
     /** Index of the joint in skeleton */
-    TVector<int32_t> JointIndices;
+    Vector<int32_t> JointIndices;
 
     /** Transform vertex to joint-space */
-    TVector<Float3x4> OffsetMatrices;
+    Vector<Float3x4> OffsetMatrices;
 };
 
 /**
@@ -145,7 +145,7 @@ void CalcBoundingBoxes(MeshVertex const*         Vertices,
                        AnimationChannel const*    Channels,
                        int                        ChannelsCount,
                        Transform const*          Transforms,
-                       TVector<BvAxisAlignedBox>& Bounds);
+                       Vector<BvAxisAlignedBox>& Bounds);
 
 } // namespace Geometry
 

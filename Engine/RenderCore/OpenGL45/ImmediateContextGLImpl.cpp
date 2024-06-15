@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -40,7 +40,7 @@ SOFTWARE.
 
 #include "../FrameGraph.h"
 
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Platform.h>
 #include <Engine/RenderCore/GenericWindow.h>
 
 #include "GL/glew.h"
@@ -61,17 +61,17 @@ ImmediateContextGLImpl* ImmediateContextGLImpl::Current = nullptr;
 ResourceTableGLImpl::ResourceTableGLImpl(DeviceGLImpl* pDevice, bool bIsRoot) :
     IResourceTable(pDevice, bIsRoot)
 {
-    Platform::ZeroMem(TextureBindings, sizeof(TextureBindings));
-    Platform::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
-    Platform::ZeroMem(ImageBindings, sizeof(ImageBindings));
-    Platform::ZeroMem(ImageBindingUIDs, sizeof(ImageBindingUIDs));
-    Platform::ZeroMem(ImageMipLevel, sizeof(ImageMipLevel));
-    Platform::ZeroMem(ImageLayerIndex, sizeof(ImageLayerIndex));
-    Platform::ZeroMem(ImageLayered, sizeof(ImageLayered));
-    Platform::ZeroMem(BufferBindings, sizeof(BufferBindings));
-    Platform::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
-    Platform::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
-    Platform::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
+    Core::ZeroMem(TextureBindings, sizeof(TextureBindings));
+    Core::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
+    Core::ZeroMem(ImageBindings, sizeof(ImageBindings));
+    Core::ZeroMem(ImageBindingUIDs, sizeof(ImageBindingUIDs));
+    Core::ZeroMem(ImageMipLevel, sizeof(ImageMipLevel));
+    Core::ZeroMem(ImageLayerIndex, sizeof(ImageLayerIndex));
+    Core::ZeroMem(ImageLayered, sizeof(ImageLayered));
+    Core::ZeroMem(BufferBindings, sizeof(BufferBindings));
+    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 }
 
 ResourceTableGLImpl::~ResourceTableGLImpl()
@@ -186,7 +186,7 @@ void FramebufferCacheGL::CleanupOutdatedFramebuffers()
         }
         else
         {
-            for (TWeakRef<ITextureView> const& att : fbHash.ColorAttachments)
+            for (WeakRef<ITextureView> const& att : fbHash.ColorAttachments)
             {
                 if (att.IsExpired())
                 {
@@ -222,11 +222,11 @@ void FramebufferCacheGL::CleanupOutdatedFramebuffers()
 }
 
 FramebufferGL* FramebufferCacheGL::GetFramebuffer(const char*                  RenderPassName,
-                                                    TStaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments,
+                                                    StaticVector<TextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments,
                                                     TextureAttachment*          pDepthStencilAttachment)
 {
     FramebufferDescGL                           framebufferDesc;
-    TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
+    Array<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
 
     FrameBufferHash fbHash;
  
@@ -340,9 +340,9 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
 {
     ScopedContextGL scopedContext(this);
 
-    Platform::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
-    Platform::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
-    Platform::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
+    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 
     CurrentPipeline       = nullptr;
     CurrentVertexLayout   = nullptr;
@@ -353,13 +353,13 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     IndexBufferOffset     = 0;
     IndexBufferUID        = 0;
     IndexBufferHandle     = 0;
-    Platform::ZeroMem(VertexBufferUIDs, sizeof(VertexBufferUIDs));
-    Platform::ZeroMem(VertexBufferHandles, sizeof(VertexBufferHandles));
-    Platform::ZeroMem(VertexBufferOffsets, sizeof(VertexBufferOffsets));
+    Core::ZeroMem(VertexBufferUIDs, sizeof(VertexBufferUIDs));
+    Core::ZeroMem(VertexBufferHandles, sizeof(VertexBufferHandles));
+    Core::ZeroMem(VertexBufferOffsets, sizeof(VertexBufferOffsets));
 
     //CurrentQueryTarget = 0;
     //CurrentQueryObject = 0;
-    Platform::ZeroMem(CurrentQueryUID, sizeof(CurrentQueryUID));
+    Core::ZeroMem(CurrentQueryUID, sizeof(CurrentQueryUID));
 
     // GL_NICEST, GL_FASTEST and GL_DONT_CARE
 
@@ -385,7 +385,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     PixelStore.UnpackAlignment = 4;
     glPixelStorei(GL_UNPACK_ALIGNMENT, PixelStore.UnpackAlignment);
 
-    Platform::ZeroMem(&Binding, sizeof(Binding));
+    Core::ZeroMem(&Binding, sizeof(Binding));
 
     // Init default blending state
     bLogicOpEnabled = false;
@@ -397,7 +397,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     glBlendColor(0, 0, 0, 0);
     glDisable(GL_COLOR_LOGIC_OP);
     glLogicOp(GL_COPY);
-    Platform::ZeroMem(BlendColor, sizeof(BlendColor));
+    Core::ZeroMem(BlendColor, sizeof(BlendColor));
 
     GLint maxSampleMaskWords = 0;
     glGetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords);
@@ -497,7 +497,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     RootResourceTable = MakeRef<ResourceTableGLImpl>(pDevice, true);
     RootResourceTable->SetDebugName("Root");
 
-    CurrentResourceTable = static_cast<ResourceTableGLImpl*>(RootResourceTable.GetObject());
+    CurrentResourceTable = static_cast<ResourceTableGLImpl*>(RootResourceTable.RawPtr());
 
     pFramebufferCache = MakeRef<FramebufferCacheGL>();
 }
@@ -854,7 +854,7 @@ void ImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             {
                 RenderTargetBlendingInfo const& rtDesc = desc.RenderTargetSlots[i];
                 SetRenderTargetSlotBlending(i, BlendState.RenderTargetSlots[i], rtDesc);
-                Platform::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
         else
@@ -864,7 +864,7 @@ void ImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             SetRenderTargetSlotsBlending(BlendState.RenderTargetSlots[0], rtDesc, needReset);
             for (int i = 0; i < MAX_COLOR_ATTACHMENTS; i++)
             {
-                Platform::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
 
@@ -1164,8 +1164,8 @@ void ImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                     StencilOpLUT[desc.FrontFace.DepthFailOp],
                                     StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                Platform::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
-                Platform::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
             }
             else
             {
@@ -1177,7 +1177,7 @@ void ImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.FrontFace.DepthFailOp],
                                         StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                    Platform::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                    Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
                 }
 
                 if (backStencilChanged)
@@ -1187,7 +1187,7 @@ void ImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.BackFace.DepthFailOp],
                                         StencilOpLUT[desc.BackFace.DepthPassOp]);
 
-                    Platform::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                    Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
                 }
             }
         }
@@ -1356,7 +1356,7 @@ IResourceTable* ImmediateContextGLImpl::GetRootResourceTable()
 
 void ImmediateContextGLImpl::BindResourceTable(IResourceTable* _ResourceTable)
 {
-    IResourceTable* tbl = _ResourceTable ? _ResourceTable : RootResourceTable.GetObject();
+    IResourceTable* tbl = _ResourceTable ? _ResourceTable : RootResourceTable.RawPtr();
 
     CurrentResourceTable = static_cast<ResourceTableGLImpl*>(tbl);
 }
@@ -1640,14 +1640,14 @@ void ImmediateContextGLImpl::SetViewport(Viewport const& _Viewport)
                    (GLint)INVERT_VIEWPORT_Y(&_Viewport),
                    (GLsizei)_Viewport.Width,
                    (GLsizei)_Viewport.Height);
-        Platform::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
+        Core::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
     }
 
     if (std::memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
     {
         glDepthRangef(_Viewport.MinDepth, _Viewport.MaxDepth); // Since GL v4.1
 
-        Platform::Memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
+        Core::Memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
     }
 }
 
@@ -2618,7 +2618,7 @@ void ImmediateContextGLImpl::BeginSubpass()
     bool bScissorEnabled    = RasterizerState.bScissorEnable;
     bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
 
-    TWeakRef<ITextureView> const* framebufferColorAttachments = CurrentFramebuffer->GetColorAttachments();
+    WeakRef<ITextureView> const* framebufferColorAttachments = CurrentFramebuffer->GetColorAttachments();
 
     FGSubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
 
@@ -2797,7 +2797,7 @@ void ImmediateContextGLImpl::EndSubpass()
 
     HK_ASSERT(CurrentRenderPass != nullptr);
 
-    TArray<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
+    Array<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
     int                                       numAttachments = 0;
 
     FGSubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
@@ -3031,7 +3031,7 @@ void ImmediateContextGLImpl::DynamicState_BlendingColor(const float _ConstantCol
     if (isColorChanged)
     {
         glBlendColor(_ConstantColor[0], _ConstantColor[1], _ConstantColor[2], _ConstantColor[3]);
-        Platform::Memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
+        Core::Memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
     }
 }
 
@@ -5459,7 +5459,7 @@ void ImmediateContextGLImpl::ExecuteRenderPass(RenderPass* pRenderPass)
 
     if (pFramebuffer->IsDefault())
     {
-        ImmediateContextGLImpl* curContext = static_cast<TextureGLImpl*>(const_cast<TWeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
+        ImmediateContextGLImpl* curContext = static_cast<TextureGLImpl*>(const_cast<WeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
         if (curContext != this)
         {
             MakeCurrent(curContext);

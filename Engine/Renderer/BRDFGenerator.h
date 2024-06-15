@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -39,10 +39,10 @@ class BRDFGenerator
 public:
     BRDFGenerator();
 
-    void Render(TRef<RenderCore::ITexture>* ppTexture);
+    void Render(Ref<RenderCore::ITexture>* ppTexture);
 
 private:
-    TRef<RenderCore::IPipeline> Pipeline;
+    Ref<RenderCore::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

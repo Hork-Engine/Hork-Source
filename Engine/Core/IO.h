@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "BinaryStream.h"
-#include "String.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -80,10 +79,8 @@ Archive
 Read file from archive
 
 */
-class Archive final
+class Archive final : public Noncopyable
 {
-    HK_FORBID_COPY(Archive)
-
 public:
     Archive() = default;
     ~Archive();
@@ -155,7 +152,7 @@ public:
     static File OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Read from specified memory buffer. */
-    static File OpenRead(StringView FileName, BlobRef Blob);
+    //static File OpenRead(StringView FileName, BlobRef Blob);
 
     /** Read file from archive by file name. */
     static File OpenRead(StringView FileName, Archive const& Archive);
@@ -275,7 +272,7 @@ public:
 
     void SetMemoryGrowGranularity(uint32_t Granularity) { m_Granularity = Granularity; }
 
-    String const& GetName() const override
+    StringView GetName() const override
     {
         return m_Name;
     }
@@ -289,7 +286,7 @@ public:
     bool   SeekCur(int32_t Offset) override;
     bool   SeekEnd(int32_t Offset) override;
     size_t SizeInBytes() const override;
-    bool   Eof() const override;
+    bool   IsEOF() const override;
 
 private:
     enum FILE_TYPE : uint8_t

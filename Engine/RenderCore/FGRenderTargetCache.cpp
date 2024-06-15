@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -56,7 +56,7 @@ ITexture* FGRenderTargetCache::Acquire(TextureDesc const& TextureDesc)
 
     // Create new texture
     //LOG( "Create new texture ( in use {}, free {} )\n", Textures.Size()+1, FreeTextures.Size() );
-    TRef<ITexture> texture;
+    Ref<ITexture> texture;
     pDevice->CreateTexture(TextureDesc, &texture);
     #ifdef HK_DEBUG
     texture->SetDebugName("Render Target");

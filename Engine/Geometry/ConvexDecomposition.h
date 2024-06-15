@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Containers/Vector.h>
-#include <Engine/Geometry/Plane.h>
+#include <Engine/Math/Plane.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -47,30 +47,30 @@ struct ConvexHullDesc
 namespace Geometry
 {
 
-void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, TVector<Float3>& outVertices, float margin = 0.01f);
+void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vector<Float3>& outVertices, float margin = 0.01f);
 
 bool PerformConvexDecomposition(Float3 const* vertices,
                                 int vertexCount,
                                 int vertexStride,
                                 unsigned int const* indices,
                                 int indexCount,
-                                TVector<Float3>& outVertices,
-                                TVector<unsigned int>& outIndices,
-                                TVector<ConvexHullDesc>& outHulls);
+                                Vector<Float3>& outVertices,
+                                Vector<unsigned int>& outIndices,
+                                Vector<ConvexHullDesc>& outHulls);
 
 bool PerformConvexDecompositionVHACD(Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
                                      unsigned int const* indices,
                                      int indexCount,
-                                     TVector<Float3>& outVertices,
-                                     TVector<unsigned int>& outIndices,
-                                     TVector<ConvexHullDesc>& outHulls,
+                                     Vector<Float3>& outVertices,
+                                     Vector<unsigned int>& outIndices,
+                                     Vector<ConvexHullDesc>& outHulls,
                                      Float3& centerOfMass);
 
-void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, TVector<PlaneF>& planes);
+void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, Vector<PlaneF>& planes);
 
-void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, TVector<Float3>& vertices);
+void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, Vector<Float3>& vertices);
 
 } // namespace Geometry
 

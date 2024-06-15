@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "VertexMemoryGPU.h"
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Platform.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -238,7 +238,7 @@ VertexHandle* VertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, 
 
         if (!bAllowHugeAllocs)
         {
-            CriticalError("VertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
+            CoreApplication::TerminateWithError("VertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
         }
 
         return AllocateHuge(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
@@ -267,7 +267,7 @@ VertexHandle* VertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, 
 
         if (MaxBlocks && m_Blocks.Size() >= MaxBlocks)
         {
-            CriticalError("VertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
+            CoreApplication::TerminateWithError("VertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
         }
 
         Block newBlock;
@@ -322,11 +322,11 @@ VertexHandle* VertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _Da
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
-    TRef<RenderCore::IBuffer> buffer;
+    Ref<RenderCore::IBuffer> buffer;
     m_pDevice->CreateBuffer(bufferCI, _Data, &buffer);
     buffer->SetDebugName("Vertex memory HUGE buffer");
 
-    RenderCore::IBuffer* pBuffer = buffer.GetObject();
+    RenderCore::IBuffer* pBuffer = buffer.RawPtr();
     pBuffer->AddRef();
 
     handle->Address = (size_t)pBuffer;
@@ -384,7 +384,7 @@ void VertexMemoryGPU::AddGPUBuffer()
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage        = RenderCore::MUTABLE_STORAGE_STATIC;
 
-    TRef<RenderCore::IBuffer> buffer;
+    Ref<RenderCore::IBuffer> buffer;
     m_pDevice->CreateBuffer(bufferCI, nullptr, &buffer);
 
     buffer->SetDebugName("Vertex memory block buffer");
@@ -432,10 +432,10 @@ StreamedMemoryGPU::StreamedMemoryGPU(RenderCore::IDevice* pDevice) :
 
     if (!m_pMappedMemory)
     {
-        CriticalError("StreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
+        CoreApplication::TerminateWithError("StreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
-    Platform::ZeroMem(m_ChainBuffer, sizeof(m_ChainBuffer));
+    Core::ZeroMem(m_ChainBuffer, sizeof(m_ChainBuffer));
 
     m_BufferIndex = 0;
     m_MaxMemoryUsage = 0;
@@ -549,7 +549,7 @@ size_t StreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const vo
 
     if (alignedOffset + _SizeInBytes > STREAMED_MEMORY_GPU_BLOCK_SIZE)
     {
-        CriticalError("StreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
+        CoreApplication::TerminateWithError("StreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
     }
 
     m_LastAllocatedBlockSize = _SizeInBytes;
@@ -561,7 +561,7 @@ size_t StreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const vo
 
     if (_Data)
     {
-        Platform::Memcpy((byte*)m_pMappedMemory + alignedOffset, _Data, _SizeInBytes);
+        Core::Memcpy((byte*)m_pMappedMemory + alignedOffset, _Data, _SizeInBytes);
     }
 
     return alignedOffset;

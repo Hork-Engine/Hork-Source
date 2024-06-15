@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "CircularBuffer.h"
 #include "RenderLocal.h"
-#include <Engine/Core/Platform/Platform.h>
+#include <Engine/Core/Platform.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -57,7 +57,7 @@ CircularBuffer::CircularBuffer(size_t InBufferSize) :
 
     if (!m_pMappedMemory)
     {
-        CriticalError("CircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
+        CoreApplication::TerminateWithError("CircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
     for (int i = 0; i < SWAP_CHAIN_SIZE; i++)

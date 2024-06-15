@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,101 +30,30 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Ref.h>
+#include "AudioSource.h"
 
 struct ma_decoder;
 
 HK_NAMESPACE_BEGIN
 
-/** Immutable structure that holds heap pointer and size in bytes. Owns the heap pointer. */
-struct FileInMemory : InterlockedRef
-{
-private:
-    void* pHeapPtr;
-
-    size_t SizeInBytes;
-
-public:
-    FileInMemory(void* _pHeapPtr, size_t _SizeInBytes)
-    {
-        pHeapPtr = _pHeapPtr;
-        SizeInBytes = _SizeInBytes;
-    }
-
-    ~FileInMemory()
-    {
-        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pHeapPtr);
-    }
-
-    const void* GetHeapPtr() const
-    {
-        return pHeapPtr;
-    }
-
-    size_t GetSizeInBytes() const
-    {
-        return SizeInBytes;
-    }
-};
-
-/** AudioStream
-Designed as immutable structure, so we can use it from several threads.
-NOTE: SeekToFrame and ReadFrames are not thread safe without your own synchronization. */
-class AudioStream : public InterlockedRef
+class AudioStream final : public InterlockedRef
 {
 public:
-    AudioStream(FileInMemory* pFileInMemory, int FrameCount, int SampleRate, int SampleBits, int Channels);
+                        AudioStream(AudioSource* inSource);
+                        ~AudioStream();
 
-    ~AudioStream();
+    AudioSource*        GetSource() const { return m_Source; }
 
-    /** Frame count */
-    HK_FORCEINLINE int GetFrameCount() const
-    {
-        return m_FrameCount;
-    }
+    /// Seeks to a PCM frame based on it's absolute index.
+    void                SeekToFrame(int inFrameNum);
 
-    /** Channels count */
-    HK_FORCEINLINE int GetChannels() const
-    {
-        return m_Channels;
-    }
-
-    /** Bits per sample */
-    HK_FORCEINLINE int GetSampleBits() const
-    {
-        return m_SampleBits;
-    }
-
-    /** Stride between frames in bytes */
-    HK_FORCEINLINE int GetSampleStride() const
-    {
-        return m_SampleStride;
-    }
-
-    /** Seeks to a PCM frame based on it's absolute index. */
-    void SeekToFrame(int FrameNum);
-
-    /** Reads PCM frames from the stream. */
-    int ReadFrames(void* pFrames, int FrameCount, size_t SizeInBytes);
+    /// Reads PCM frames from the stream.
+    int                 ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
 
 private:
-    /** Audio decoder */
-    ma_decoder* m_Decoder;
-
-    /** Audio source */
-    TRef<FileInMemory> m_pFileInMemory;
-
-    /** Frame count */
-    int m_FrameCount;
-
-    /** Channels count */
-    int m_Channels;
-
-    /** Bits per sample */
-    int m_SampleBits;
-
-    /** Stride between frames in bytes */
-    int m_SampleStride;
+    Ref<AudioSource>    m_Source;
+    ma_decoder*         m_Decoder = nullptr;
+    int                 m_FrameIndex = 0;
 };
 
 HK_NAMESPACE_END

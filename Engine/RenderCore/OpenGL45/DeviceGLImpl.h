@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -58,7 +58,7 @@ public:
 
     WindowGL NewWindow();
 
-    TSmallVector<WindowGL, 8> Pool;
+    SmallVector<WindowGL, 8> Pool;
 };
 
 struct VertexLayoutDescGL
@@ -102,33 +102,33 @@ struct VertexLayoutDescGL
 class DeviceGLImpl final : public IDevice
 {
 public:
-    DeviceGLImpl(AllocatorCallback const* pAllocator);
+    DeviceGLImpl();
     ~DeviceGLImpl();
 
     IImmediateContext* GetImmediateContext() override;
 
-    void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+    void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) override;
 
-    void CreateGenericWindow(DisplayVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+    void CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) override;
 
-    void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) override;
+    void CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain) override;
 
-    void CreatePipeline(PipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) override;
+    void CreatePipeline(PipelineDesc const& Desc, Ref<IPipeline>* ppPipeline) override;
 
-    void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule) override;
-    void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) override;
+    void CreateShaderFromBinary(ShaderBinaryData const* _BinaryData, Ref<IShaderModule>* ppShaderModule) override;
+    void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, Ref<IShaderModule>* ppShaderModule) override;
 
-    void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) override;
+    void CreateBuffer(BufferDesc const& Desc, const void* _SysMem, Ref<IBuffer>* ppBuffer) override;
 
-    void CreateTexture(TextureDesc const& Desc, TRef<ITexture>* ppTexture) override;
+    void CreateTexture(TextureDesc const& Desc, Ref<ITexture>* ppTexture) override;
 
-    void CreateSparseTexture(SparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) override;
+    void CreateSparseTexture(SparseTextureDesc const& Desc, Ref<ISparseTexture>* ppTexture) override;
 
-    void CreateTransformFeedback(TransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) override;
+    void CreateTransformFeedback(TransformFeedbackDesc const& Desc, Ref<ITransformFeedback>* ppTransformFeedback) override;
 
-    void CreateQueryPool(QueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) override;
+    void CreateQueryPool(QueryPoolDesc const& Desc, Ref<IQueryPool>* ppQueryPool) override;
 
-    void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) override;
+    void CreateResourceTable(Ref<IResourceTable>* ppResourceTable) override;
 
     bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                 unsigned int       _NumSources,
@@ -155,7 +155,7 @@ public:
                                            VertexAttribInfo const* pVertexAttribs,
                                            uint32_t                NumVertexAttribs);
 
-    THashMap<VertexLayoutDescGL, VertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
+    HashMap<VertexLayoutDescGL, VertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
 
     BlendingStateInfo const*     CachedBlendingState(BlendingStateInfo const& _BlendingState);
     RasterizerStateInfo const*   CachedRasterizerState(RasterizerStateInfo const& _RasterizerState);
@@ -168,15 +168,15 @@ public:
 private:
     AllocatorCallback Allocator;
 
-    TWeakRef<IGenericWindow> pMainWindow;
+    WeakRef<IGenericWindow> pMainWindow;
 
-    THashMap<VertexLayoutDescGL, VertexLayoutGL*> VertexLayouts;
+    HashMap<VertexLayoutDescGL, VertexLayoutGL*> VertexLayouts;
 
-    THashMap<SamplerDesc, struct SamplerInfo*> Samplers;
+    HashMap<SamplerDesc, struct SamplerInfo*> Samplers;
 
-    THashMap<BlendingStateInfo, BlendingStateInfo*>         BlendingStates;
-    THashMap<RasterizerStateInfo, RasterizerStateInfo*>     RasterizerStates;
-    THashMap<DepthStencilStateInfo, DepthStencilStateInfo*> DepthStencilStates;
+    HashMap<BlendingStateInfo, BlendingStateInfo*>         BlendingStates;
+    HashMap<RasterizerStateInfo, RasterizerStateInfo*>     RasterizerStates;
+    HashMap<DepthStencilStateInfo, DepthStencilStateInfo*> DepthStencilStates;
 
     WindowPoolGL WindowPool;
     WindowPoolGL::WindowGL MainWindowHandle;

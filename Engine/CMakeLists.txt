@@ -45,10 +45,10 @@ target_link_libraries(${PROJECT_NAME}
 	lunasvg
 	webp
 	OptickCore
-    BulletSoftBody
-    BulletDynamics
-    BulletCollision
-    LinearMath
+#    BulletSoftBody
+#    BulletDynamics
+#    BulletCollision
+#    LinearMath
 #    Bullet2FileLoader
 #    BulletFileLoader
 #    Bullet3Collision
@@ -56,19 +56,24 @@ target_link_libraries(${PROJECT_NAME}
 #    Bullet3Dynamics
 #    Bullet3Geometry
 #    Bullet3OpenCL_clew
-    BulletInverseDynamics
+#    BulletInverseDynamics
 #    BulletInverseDynamicsUtils
 #    BulletWorldImporter
 #    BulletXmlWorldImporter
 #    ConvexDecomposition
 #    GIMPACTUtils
+    Jolt
     OpenGL::GL
     Recast
     muFFT
     miniaudio
-    ${ANGELSCRIPT_LIBRARY_NAME}
-    angelscript_addon
+#    ${ANGELSCRIPT_LIBRARY_NAME}
+#    angelscript_addon
 )
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} shcore)
+endif()
 
 if(UNIX)
     target_link_libraries(${PROJECT_NAME} OpenGL::GLX uuid)
@@ -77,4 +82,6 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../Binary/Win64")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${HK_COMPILER_DEFINES})
+#target_compile_definitions(${PROJECT_NAME} PRIVATE VULKAN_HPP_STORAGE_SHARED VULKAN_HPP_STORAGE_SHARED_EXPORT)
+
 target_compile_options(${PROJECT_NAME} PUBLIC ${HK_COMPILER_FLAGS})

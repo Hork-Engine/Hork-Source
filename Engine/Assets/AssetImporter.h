@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Image/Image.h>
-#include <Engine/Geometry/Quat.h>
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -102,6 +102,8 @@ struct AssetImportSettings
     Quat Rotation;
 
     SkyboxImportSettings SkyboxImport;
+
+    bool bHork2Format{};
 };
 
 bool ImportGLTF(AssetImportSettings const& Settings);

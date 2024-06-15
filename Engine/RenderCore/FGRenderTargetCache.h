@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -47,9 +47,9 @@ public:
     void Release(ITexture* pTexture);
 
 private:
-    TRef<IDevice>           pDevice;
-    TVector<TRef<ITexture>> Textures;     // All textures
-    TVector<ITexture*>      FreeTextures; // Free list
+    Ref<IDevice>           pDevice;
+    Vector<Ref<ITexture>> Textures;     // All textures
+    Vector<ITexture*>      FreeTextures; // Free list
 };
 
 } // namespace RenderCore

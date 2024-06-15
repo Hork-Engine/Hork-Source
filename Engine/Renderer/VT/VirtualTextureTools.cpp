@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,9 +31,9 @@ SOFTWARE.
 #include "VirtualTextureTools.h"
 #include "QuadTree.h"
 
-#include <Engine/Core/Platform/Logger.h>
-#include <Engine/Core/Platform/WindowsDefs.h>
-#include <Engine/Geometry/VectorMath.h>
+#include <Engine/Core/Logger.h>
+#include <Engine/Core/WindowsDefs.h>
+#include <Engine/Math/VectorMath.h>
 
 #include <Engine/Image/Image.h>
 
@@ -55,7 +55,7 @@ VirtualTextureImage::VirtualTextureImage()
 }
 VirtualTextureImage::~VirtualTextureImage()
 {
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(Data);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(Data);
 }
 
 bool VirtualTextureImage::OpenImage(const char* FileName, int InWidth, int InHeight, int InNumChannels)
@@ -89,7 +89,7 @@ void VirtualTextureImage::CreateEmpty(int InWidth, int InHeight, int InNumChanne
 {
     if (Data == NULL || Width * Height * NumChannels != InWidth * InHeight * InNumChannels)
     {
-        Data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Realloc(Data, InWidth * InHeight * InNumChannels, 16, MALLOC_DISCARD);
+        Data = (byte*)Core::GetHeapAllocator<HEAP_TEMP>().Realloc(Data, InWidth * InHeight * InNumChannels, 16, MALLOC_DISCARD);
     }
 
     Width = InWidth;
@@ -206,7 +206,7 @@ bool VT_MakeStructure(VirtualTextureStructure& _Struct,
 
 String VT_FileNameFromRelative(const char* _OutputPath, unsigned int _RelativeIndex, int _Lod)
 {
-    return HK_FORMAT("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION);
+    return String(HK_FORMAT("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION));
 }
 
 VirtualTextureLayer::CachedPage* VT_FindInCache(VirtualTextureLayer& Layer, unsigned int _AbsoluteIndex)
@@ -303,7 +303,7 @@ VirtualTextureLayer::CachedPage* VT_OpenCachedPage(const VirtualTextureStructure
         // create empty page
         cachedPage->Image.CreateEmpty(_Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels);
         int ImageByteSize = _Struct.PageResolutionB * _Struct.PageResolutionB * Layer.NumChannels;
-        Platform::ZeroMem(cachedPage->Image.GetData(), ImageByteSize);
+        Core::ZeroMem(cachedPage->Image.GetData(), ImageByteSize);
     }
     else if (_OpenMode == VirtualTextureLayer::OpenActual)
     {
@@ -381,7 +381,7 @@ void CopyRect(const PageRect& _Rect,
 
     for (int y = 0; y < _Rect.height; y++)
     {
-        Platform::Memcpy(pDest, pSource, rectLineSize);
+        Core::Memcpy(pDest, pSource, rectLineSize);
         pDest += destStep;
         pSource += sourceStep;
     }
@@ -709,7 +709,7 @@ static void VT_SynchronizePageBitfieldWithHDD_Lod(VTPageBitfield& BitField, int 
                 continue;
             }
 
-            if (!Platform::Stricmp(&fd.cFileName[len - 4], ".png"))
+            if (!Core::Stricmp(&fd.cFileName[len - 4], ".png"))
             {
                 // extension is not .png
                 HK_ASSERT_(0, "Never reached");
@@ -835,7 +835,7 @@ void VT_GenerateBorder_U(VirtualTextureStructure& _Struct, VirtualTextureLayer& 
 
         for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
         {
-            Platform::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
+            Core::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
         }
         return;
     }
@@ -888,7 +888,7 @@ void VT_GenerateBorder_D(VirtualTextureStructure& _Struct, VirtualTextureLayer& 
 
         for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
         {
-            Platform::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
+            Core::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
         }
         return;
     }
@@ -942,7 +942,7 @@ void VT_GenerateBorder_L(VirtualTextureStructure& _Struct, VirtualTextureLayer& 
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
             }
             PageData += _Struct.PageResolutionB * Layer.NumChannels;
             srcData += _Struct.PageResolutionB * Layer.NumChannels;
@@ -1001,7 +1001,7 @@ void VT_GenerateBorder_R(VirtualTextureStructure& _Struct, VirtualTextureLayer& 
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
             }
             PageData += _Struct.PageResolutionB * Layer.NumChannels;
             srcData += _Struct.PageResolutionB * Layer.NumChannels;
@@ -1056,7 +1056,7 @@ void VT_GenerateBorder_UL(VirtualTextureStructure& _Struct, VirtualTextureLayer&
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1113,7 +1113,7 @@ void VT_GenerateBorder_UR(VirtualTextureStructure& _Struct, VirtualTextureLayer&
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1170,7 +1170,7 @@ void VT_GenerateBorder_DL(VirtualTextureStructure& _Struct, VirtualTextureLayer&
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1227,7 +1227,7 @@ void VT_GenerateBorder_DR(VirtualTextureStructure& _Struct, VirtualTextureLayer&
         {
             for (int i = 0; i < VT_PAGE_BORDER_WIDTH; i++)
             {
-                Platform::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1333,14 +1333,14 @@ SFileOffset VT_WritePage(VTFileHandle* File, SFileOffset Offset, const VirtualTe
 
             if (!CompressedData)
             {
-                CompressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(CompressedDataSize);
+                CompressedData = (byte*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(CompressedDataSize);
             }
 
             _Layers[Layer].PageCompressionMethod(cachedPage->Image.GetData(), CompressedData);
 
             File->Write(CompressedData, _Layers[Layer].SizeInBytes, Offset);
 
-            //Platform::ZeroMem( CompressedData, _Layers[Layer].SizeInBytes );
+            //Core::ZeroMem( CompressedData, _Layers[Layer].SizeInBytes );
             //File->Read( CompressedData, _Layers[Layer].SizeInBytes, Offset );
 
             //WriteImage( HK_FORMAT("page_{}_{}.bmp", Layer, Offset), 128, 128, 3, CompressedData );
@@ -1356,7 +1356,7 @@ SFileOffset VT_WritePage(VTFileHandle* File, SFileOffset Offset, const VirtualTe
         VT_CloseCachedPage(cachedPage);
     }
 
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(CompressedData);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(CompressedData);
 
     return Offset;
 }
@@ -1681,7 +1681,7 @@ bool VT_CreateVirtualTexture(const VirtualTextureLayerDesc* _Layers,
 
     for (int LayerIndex = 0; LayerIndex < _NumLayers; LayerIndex++)
     {
-        String layerPath = HK_FORMAT("{}/layer{}/", _TempDir, LayerIndex);
+        String layerPath(HK_FORMAT("{}/layer{}/", _TempDir, LayerIndex));
 
         for (int lodIndex = 0; lodIndex < _MaxLods; lodIndex++)
         {
@@ -1830,7 +1830,7 @@ void* LoadDiffuseImage(void* _RectUserData, int Width, int Height)
         return nullptr;
     }
 
-    void* pScaledImage = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(Width * Height * 4);
+    void* pScaledImage = Core::GetHeapAllocator<HEAP_TEMP>().Alloc(Width * Height * 4);
 
     // Scale source image to match required width and height
     ImageResampleParams resample;
@@ -1853,7 +1853,7 @@ void* LoadDiffuseImage(void* _RectUserData, int Width, int Height)
 
 void FreeImage(void* ImageData)
 {
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(ImageData);
+    Core::GetHeapAllocator<HEAP_TEMP>().Free(ImageData);
 }
 
 #define VT_PAGE_SIZE_LOG2 7 // page size 128x128
@@ -1861,7 +1861,7 @@ void FreeImage(void* ImageData)
 
 void CompressDiffusePage(const void* _InputData, void* _OutputData)
 {
-    Platform::Memcpy(_OutputData, _InputData, VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 4);
+    Core::Memcpy(_OutputData, _InputData, VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 4);
 }
 
 enum VIRTUAL_TEXTURE_PAGE_FORMAT

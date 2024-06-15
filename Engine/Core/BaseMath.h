@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/BaseTypes.h>
+#include <Engine/Core/BaseTypes.h>
 
 #include <emmintrin.h>
 
@@ -45,30 +45,6 @@ HK_NAMESPACE_BEGIN
 
 namespace Math
 {
-
-template <typename T>
-constexpr bool IsSigned()
-{
-    return std::is_signed<T>::value;
-}
-
-template <typename T>
-constexpr bool IsUnsigned()
-{
-    return std::is_unsigned<T>::value;
-}
-
-template <typename T>
-constexpr bool IsIntegral()
-{
-    return std::is_integral<T>::value;
-}
-
-template <typename T>
-constexpr bool IsReal()
-{
-    return std::is_floating_point<T>::value;
-}
 
 template <typename T>
 constexpr int BitsCount()
@@ -91,14 +67,14 @@ constexpr int FloatingPointPrecision<double>()
     return DBL_DIG;
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 T Abs(T Value)
 {
     const T Mask = Value >> (BitsCount<T>() - 1);
     return ((Value ^ Mask) - Mask);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 constexpr T Dist(T A, T B)
 {
     // NOTE: We don't use Abs() to control value overflow
@@ -133,10 +109,10 @@ constexpr T MinValue() { return std::numeric_limits<T>::min(); }
 template <typename T>
 constexpr T MaxValue() { return std::numeric_limits<T>::max(); }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 constexpr int SignBits(T Value)
 {
-    return IsSigned<T>() ? static_cast<uint64_t>(Value) >> (BitsCount<T>() - 1) : 0;
+    return std::is_signed<T>::value ? static_cast<uint64_t>(Value) >> (BitsCount<T>() - 1) : 0;
 }
 
 HK_FORCEINLINE int SignBits(float Value)
@@ -612,7 +588,9 @@ struct Half
 
     Half(Half const&) = default;
 
-    Half(uint16_t v) = delete;
+    Half(float f) :
+        v(f32tof16(f))
+    {}
 
     static Half MakeHalf(uint16_t val)
     {
@@ -620,10 +598,6 @@ struct Half
         f.v = val;
         return f;
     }
-
-    Half(float f) :
-        v(f32tof16(f))
-    {}
 
     Half& operator=(Half const&) = default;
 
@@ -844,37 +818,37 @@ constexpr float _RAD2DEG        = static_cast<float>(_RAD2DEG_DBL);
 constexpr float _INFINITY       = 1e30f;
 constexpr float _ZERO_TOLERANCE = 1.1754944e-038f;
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Min(T a, T b)
 {
     return std::min(a, b);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Min3(T a, T b, T c)
 {
     return Min(Min(a, b), c);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Max(T a, T b)
 {
     return std::max(a, b);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Max3(T a, T b, T c)
 {
     return Max(Max(a, b), c);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Clamp(T val, T a, T b)
 {
     return std::min(std::max(val, a), b);
 }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 HK_FORCEINLINE T Saturate(T val)
 {
     return Clamp(val, T(0), T(1));
@@ -1116,16 +1090,16 @@ constexpr bool CompareEps(T const& A, T const& B, T const& Epsilon)
 
 // Trigonometric
 
-template <typename T, typename = TStdEnableIf<IsReal<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
 constexpr T Degrees(T _Rad) { return _Rad * T(_RAD2DEG_DBL); }
 
-template <typename T, typename = TStdEnableIf<IsReal<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
 constexpr T Radians(T _Deg) { return _Deg * T(_DEG2RAD_DBL); }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 constexpr float Degrees(T _Rad) { return static_cast<float>(_Rad) * _RAD2DEG; }
 
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 constexpr float Radians(T _Deg) { return static_cast<float>(_Deg) * _DEG2RAD; }
 
 template <typename T>

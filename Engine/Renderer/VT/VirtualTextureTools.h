@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -84,12 +84,12 @@ struct VirtualTextureLayer
 
         void* operator new(size_t size)
         {
-            return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(size);
+            return Core::GetHeapAllocator<HEAP_MISC>().Alloc(size);
         }
 
         void operator delete(void* p)
         {
-            Platform::GetHeapAllocator<HEAP_MISC>().Free(p);
+            Core::GetHeapAllocator<HEAP_MISC>().Free(p);
         }
 
         VirtualTextureImage Image;
@@ -112,7 +112,7 @@ struct VirtualTextureLayer
 
     void (*PageCompressionMethod)(const void* _InputData, void* _OutputData);
 
-    THashMap<unsigned int, CachedPage*> Pages;
+    HashMap<unsigned int, CachedPage*> Pages;
 };
 
 // Создает структуру виртуальной текстуры, на выходе _struct и binRects

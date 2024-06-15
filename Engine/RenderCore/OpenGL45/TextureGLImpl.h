@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -89,9 +89,9 @@ public:
 private:
     void CreateDefaultViews();
 
-    THashMap<TextureViewDesc, TRef<TextureViewGLImpl>> Views;
+    HashMap<TextureViewDesc, Ref<TextureViewGLImpl>> Views;
 
-    THashSet<uint64_t> BindlessSamplers;
+    HashSet<uint64_t> BindlessSamplers;
 
     // Dummy texture is used for default color and depth buffers
     bool bDummyTexture{};

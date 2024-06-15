@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseMath.h"
-#include <Engine/Core/Platform/Format.h>
+#include "Format.h"
 
 extern float stbir__srgb_uchar_to_linear_float[256];
 

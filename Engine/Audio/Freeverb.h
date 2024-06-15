@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -32,7 +32,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Platform/BaseTypes.h>
+#include <Engine/Core/BaseTypes.h>
 #include <Engine/Core/HeapBlob.h>
 
 HK_NAMESPACE_BEGIN
@@ -116,10 +116,8 @@ struct Freeverb_FilterAllPass
 
 #undef freeverb_Undenormalise
 
-class Freeverb
+class Freeverb final : public Noncopyable
 {
-    HK_FORBID_COPY(Freeverb)
-
 public:
     const float MutedGain = 0;
     const float FixedGain = 0.015f;

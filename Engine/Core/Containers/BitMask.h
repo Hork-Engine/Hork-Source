@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -38,13 +38,13 @@ HK_NAMESPACE_BEGIN
 
 /**
 
-TBitMask
+BitMask
 
 Variable size bit mask
 
 */
 template <size_t BaseCapacityInBits = 1024, typename OverflowAllocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-class TBitMask
+class BitMask
 {
 public:
     using T                                     = uint32_t;
@@ -53,10 +53,10 @@ public:
     static constexpr size_t BitExponent         = 5;
     static constexpr size_t BaseCapacityInBytes = (BaseCapacityInBits & BitWrapMask) ? BaseCapacityInBits / BitCount + 1 : BaseCapacityInBits / BitCount;
 
-    TBitMask()                = default;
-    TBitMask(TBitMask const&) = default;
+    BitMask()               = default;
+    BitMask(BitMask const&) = default;
 
-    TBitMask(TBitMask&& Rhs) :
+    BitMask(BitMask&& Rhs) :
         m_Bits(std::move(Rhs.m_Bits)),
         m_NumBits(Rhs.m_NumBits)
     {
@@ -96,9 +96,9 @@ public:
     HK_FORCEINLINE T*       ToPtr() { return m_Bits.ToPtr(); }
     HK_FORCEINLINE T const* ToPtr() const { return m_Bits.ToPtr(); }
 
-    TBitMask& operator=(TBitMask const&) = default;
+    BitMask& operator=(BitMask const&) = default;
 
-    TBitMask& operator=(TBitMask&& Rhs)
+    BitMask& operator=(BitMask&& Rhs)
     {
         m_Bits = std::move(Rhs.m_Bits);
         m_NumBits = Rhs.m_NumBits;
@@ -114,7 +114,7 @@ public:
 
         if (_NumBits > m_NumBits)
         {
-            Platform::ZeroMem(m_Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
+            Core::ZeroMem(m_Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
 
             const size_t clearBitsInWord = oldsize * BitCount;
             for (size_t i = m_NumBits; i < clearBitsInWord; i++)
@@ -143,7 +143,7 @@ public:
 
     HK_FORCEINLINE void MarkAll()
     {
-        Platform::Memset(m_Bits.ToPtr(), 0xff, m_Bits.Size() * sizeof(m_Bits[0]));
+        Core::Memset(m_Bits.ToPtr(), 0xff, m_Bits.Size() * sizeof(m_Bits[0]));
     }
 
     HK_FORCEINLINE void UnmarkAll()
@@ -173,7 +173,7 @@ public:
         return _BitIndex < Size() && (m_Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
     }
 
-    HK_FORCEINLINE void Swap(TBitMask& x)
+    HK_FORCEINLINE void Swap(BitMask& x)
     {
         Swap(m_Bits, x.m_Bits);
         std::swap(m_NumBits, x.m_NumBits);
@@ -193,7 +193,7 @@ public:
     }
 
 private:
-    TSmallVector<T, BaseCapacityInBytes, OverflowAllocator> m_Bits;
+    SmallVector<T, BaseCapacityInBytes, OverflowAllocator> m_Bits;
     size_t                                                  m_NumBits{};
 };
 
@@ -202,7 +202,7 @@ HK_NAMESPACE_END
 namespace eastl
 {
 template <size_t BaseCapacityInBits, typename OverflowAllocator>
-HK_INLINE void swap(Hk::TBitMask<BaseCapacityInBits, OverflowAllocator>& lhs, Hk::TBitMask<BaseCapacityInBits, OverflowAllocator>& rhs)
+HK_INLINE void swap(Hk::BitMask<BaseCapacityInBits, OverflowAllocator>& lhs, Hk::BitMask<BaseCapacityInBits, OverflowAllocator>& rhs)
 {
     lhs.Swap(rhs);
 }

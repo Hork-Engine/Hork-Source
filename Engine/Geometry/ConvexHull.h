@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "Plane.h"
 #include "BV/BvAxisAlignedBox.h"
+
+#include <Engine/Math/Plane.h>
 #include <Engine/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN
@@ -77,8 +78,8 @@ public:
 
     bool IsEmpty() const { return m_Points.IsEmpty(); }
 
-    TVector<Float3>&       GetVector() { return m_Points; }
-    TVector<Float3> const& GetVector() const { return m_Points; }
+    Vector<Float3>&       GetVector() { return m_Points; }
+    Vector<Float3> const& GetVector() const { return m_Points; }
 
     Float3* GetPoints()
     {
@@ -120,7 +121,7 @@ public:
     PLANE_SIDE Clip(PlaneF const& plane, float epsilon, ConvexHull& front) const;
 
 private:
-    TVector<Float3> m_Points;
+    Vector<Float3> m_Points;
 };
 
 HK_NAMESPACE_END

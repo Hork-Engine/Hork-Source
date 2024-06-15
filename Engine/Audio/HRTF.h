@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,42 +30,40 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/VectorMath.h>
-#include <Engine/Geometry/Complex.h>
+#include <Engine/Math/VectorMath.h>
+#include <Engine/Math/Complex.h>
 #include <Engine/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
-class AudioHRTF
+class AudioHRTF final : public Noncopyable
 {
-    HK_FORBID_COPY(AudioHRTF)
-
 public:
     AudioHRTF(int SampleRate);
-    virtual ~AudioHRTF();
+    ~AudioHRTF();
 
-    /** Gets a bilinearly interpolated HRTF */
+    /// Gets a bilinearly interpolated HRTF
     void SampleHRTF(Float3 const& Dir, Complex* pLeftHRTF, Complex* pRightHRTF) const;
 
-    /** Applies HRTF to input frames. Frames must also contain GetFrameCount()-1 of the previous frames.
-    FrameCount must be multiples of HRTF_BLOCK_LENGTH */
+    /// Applies HRTF to input frames. Frames must also contain GetFrameCount()-1 of the previous frames.
+    /// FrameCount must be multiples of HRTF_BLOCK_LENGTH
     void ApplyHRTF(Float3 const& CurDir, Float3 const& NewDir, const float* pFrames, int FrameCount, float* pStream, Float3& Dir);
 
-    /** Sphere geometry vertics */
-    TVector<Float3> const& GetVertices() const { return m_Vertices; }
+    /// Sphere geometry vertics
+    Vector<Float3> const& GetVertices() const { return m_Vertices; }
 
-    /** Sphere geometry indices */
-    TVector<uint32_t> const& GetIndices() const { return m_Indices; }
+    /// Sphere geometry indices
+    Vector<uint32_t> const& GetIndices() const { return m_Indices; }
 
-    /** Length of Head-Related Impulse Response (HRIR) */
+    /// Length of Head-Related Impulse Response (HRIR)
     int GetFrameCount() const
     {
         return m_FrameCount;
     }
 
-    /** HRTF FFT filter size in frames */
+    /// HRTF FFT filter size in frames
     int GetFilterSize() const
     {
         // Computed as power of two of FrameCount - 1 + HRTF_BLOCK_LENGTH
@@ -75,22 +73,22 @@ public:
 private:
     void GenerateHRTF(const float* pFrames, int InFrameCount, Complex* pHRTF);
 
-    /** Fast fourier transform (forward) */
+    // Fast fourier transform (forward)
     void FFT(Complex const* pIn, Complex* pOut);
 
-    /** Fast fourier transform (inverse) */
+    // Fast fourier transform (inverse)
     void IFFT(Complex const* pIn, Complex* pOut);
 
-    /** Length of Head-Related Impulse Response (HRIR) */
+    // Length of Head-Related Impulse Response (HRIR)
     int m_FrameCount = 0;
 
-    /** HRTF FFT filter size in frames */
+    // HRTF FFT filter size in frames
     int m_FilterSize = 0;
 
-    TVector<uint32_t> m_Indices;
-    TVector<Float3> m_Vertices;
-    TVector<Complex> m_hrtfL;
-    TVector<Complex> m_hrtfR;
+    Vector<uint32_t> m_Indices;
+    Vector<Float3> m_Vertices;
+    Vector<Complex> m_hrtfL;
+    Vector<Complex> m_hrtfR;
 
     void* m_ForwardFFT = nullptr;
     void* m_InverseFFT = nullptr;

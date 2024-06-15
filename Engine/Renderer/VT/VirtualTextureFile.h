@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -79,7 +79,7 @@ protected:
         int Offset; // Layers[i].Offset = Layers[ i - 1 ].Offset + Layers[ i - 1 ].SizeInBytes
     };
 
-    TVector<Layer> Layers;
+    Vector<Layer> Layers;
     size_t PageSizeInBytes; // PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[Layers.size()-1].SizeInBytes
 
     /** Resolution of virtual texture in pixels */

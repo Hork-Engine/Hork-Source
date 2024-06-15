@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -83,14 +83,14 @@ private:
 
     OmnidirectionalShadowMapPool m_OmniShadowMapPool;
 
-    TRef<RenderCore::IPipeline> m_LinearDepthPipe;
-    TRef<RenderCore::IPipeline> m_LinearDepthPipe_ORTHO;
-    TRef<RenderCore::IPipeline> m_ReconstructNormalPipe;
-    TRef<RenderCore::IPipeline> m_ReconstructNormalPipe_ORTHO;
-    TRef<RenderCore::IPipeline> m_MotionBlurPipeline;
-    TRef<RenderCore::IPipeline> m_OutlineBlurPipe;
-    TRef<RenderCore::IPipeline> m_OutlineApplyPipe;
-    TRef<RenderCore::IPipeline> m_CopyPipeline;
+    Ref<RenderCore::IPipeline> m_LinearDepthPipe;
+    Ref<RenderCore::IPipeline> m_LinearDepthPipe_ORTHO;
+    Ref<RenderCore::IPipeline> m_ReconstructNormalPipe;
+    Ref<RenderCore::IPipeline> m_ReconstructNormalPipe_ORTHO;
+    Ref<RenderCore::IPipeline> m_MotionBlurPipeline;
+    Ref<RenderCore::IPipeline> m_OutlineBlurPipe;
+    Ref<RenderCore::IPipeline> m_OutlineApplyPipe;
+    Ref<RenderCore::IPipeline> m_CopyPipeline;
 };
 
 HK_NAMESPACE_END

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -248,7 +248,7 @@ struct ImageSubresourceDesc
     uint32_t MipmapIndex{};
 };
 
-class ImageSubresource
+class ImageSubresource final
 {
 public:
     ImageSubresource() = default;
@@ -368,7 +368,7 @@ struct ImageMipmapConfig
     IMAGE_RESAMPLE_FILTER_3D Filter3D = IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
 };
 
-class ImageStorage
+class ImageStorage final
 {
 public:
     ImageStorage() = default;
@@ -378,7 +378,7 @@ public:
         Reset(_Desc);
     }
 
-    virtual ~ImageStorage() = default;
+    ~ImageStorage() = default;
 
     ImageStorage(ImageStorage const& Rhs) = delete;
     ImageStorage& operator=(ImageStorage const& Rhs) = delete;
@@ -608,7 +608,7 @@ enum SKYBOX_IMPORT_TEXTURE_FORMAT
 struct SkyboxImportSettings
 {
     /** Source files for skybox */
-    TArray<String, 6> Faces;
+    Array<String, 6> Faces;
 
     SKYBOX_IMPORT_TEXTURE_FORMAT Format{SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT};
 
@@ -619,5 +619,20 @@ struct SkyboxImportSettings
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings);
 
 uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth = 1);
+
+struct ColorGradingSettings
+{
+    Float3 Gain;
+    Float3 Gamma;
+    Float3 Lift;
+    Float3 Presaturation;
+    Float3 ColorTemperatureStrength;
+    float ColorTemperature; // in K
+    float ColorTemperatureBrightnessNormalization;
+};
+
+ImageStorage CreateColorGradingLUT(ColorGradingSettings const& Settings);
+ImageStorage CreateLuminanceColorGradingLUT();
+ImageStorage CreateColorGradingLUTFrom2DImage(IBinaryStreamReadInterface& Stream);
 
 HK_NAMESPACE_END

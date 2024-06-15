@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -74,7 +74,7 @@ public:
 
     uint16_t GetNumColorAttachments() const { return NumColorAttachments; }
 
-    TWeakRef<ITextureView> const* GetColorAttachments() const { return &RTVs[0]; }
+    WeakRef<ITextureView> const* GetColorAttachments() const { return &RTVs[0]; }
 
     bool HasDepthStencilAttachment() const { return bHasDepthStencilAttachment; }
 
@@ -123,10 +123,10 @@ private:
     uint16_t Height;
 
     uint16_t               NumColorAttachments;
-    TWeakRef<ITextureView> RTVs[MAX_COLOR_ATTACHMENTS];
+    WeakRef<ITextureView> RTVs[MAX_COLOR_ATTACHMENTS];
 
     bool                   bHasDepthStencilAttachment;
-    TWeakRef<ITextureView> pDSV;
+    WeakRef<ITextureView> pDSV;
 };
 
 } // namespace RenderCore

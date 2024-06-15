@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -358,7 +358,7 @@ struct RasterizerStateInfo
     RasterizerStateInfo()
     {
         // NOTE: Call ZeroMem to clear the garbage int the paddings for the correct hashing.
-        Platform::ZeroMem(this, sizeof(*this));
+        Core::ZeroMem(this, sizeof(*this));
     }
 
     bool operator==(RasterizerStateInfo const& Rhs) const
@@ -437,7 +437,7 @@ struct DepthStencilStateInfo
     DepthStencilStateInfo()
     {
         // NOTE: Call ZeroMem to clear the garbage in the paddings for the correct hashing.
-        Platform::ZeroMem(this, sizeof(*this));
+        Core::ZeroMem(this, sizeof(*this));
 
         bDepthEnable            = true;
         bDepthWrite             = true;
@@ -824,12 +824,12 @@ struct PipelineDesc
     RasterizerStateInfo       RS;
     DepthStencilStateInfo     DSS;
     PipelineResourceLayout    ResourceLayout;
-    TRef<IShaderModule>       pVS;
-    TRef<IShaderModule>       pTCS;
-    TRef<IShaderModule>       pTES;
-    TRef<IShaderModule>       pGS;
-    TRef<IShaderModule>       pFS;
-    TRef<IShaderModule>       pCS;
+    Ref<IShaderModule>       pVS;
+    Ref<IShaderModule>       pTCS;
+    Ref<IShaderModule>       pTES;
+    Ref<IShaderModule>       pGS;
+    Ref<IShaderModule>       pFS;
+    Ref<IShaderModule>       pCS;
     uint32_t                  NumVertexBindings = 0;
     VertexBindingInfo const*  pVertexBindings = nullptr;
     uint32_t                  NumVertexAttribs = 0;

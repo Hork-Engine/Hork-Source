@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.16.3)
 # Only generate Debug and Release configuration types.
 set( CMAKE_CONFIGURATION_TYPES Debug Release )
 
+set(CMAKE_CXX_STANDARD 17)
+
 if (NOT DEFINED HK_PROJECT_BUILD_PATH)
     set(HK_PROJECT_BUILD_PATH ${CMAKE_BINARY_DIR}/Build)
 endif()
@@ -172,7 +174,7 @@ endfunction()
 
 # Recursive scan current source directory and group by folders. Store result in SRC.
 function(make_source_list SRC)
-	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "*.h" "*.hpp" "*.c" "*.cpp")
+	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "*.h" "*.hpp" "*.c" "*.cpp" "*.inl")
 
 	foreach(FILE ${SOURCE_LIST}) 
 	  get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
@@ -190,7 +192,7 @@ endfunction()
 
 # Recursive scan specified source directory and group by folders. Store result in SRC.
 function(make_source_list_for_directory DIR SRC)
-	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "${DIR}/*.h" "${DIR}/*.hpp" "${DIR}/*.c" "${DIR}/*.cpp")
+	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "${DIR}/*.h" "${DIR}/*.hpp" "${DIR}/*.c" "${DIR}/*.cpp"  "${DIR}/*.inl")
 	
 	set(BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${DIR})
 

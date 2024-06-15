@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -43,7 +43,7 @@ constexpr int VT_MAX_LAYERS = 8;
 
 typedef size_t SFileOffset;
 
-using VTPageBitfield = TBitMask<>;
+using VTPageBitfield = BitMask<>;
 
 enum VT_PAGE_FLAGS_4BIT
 {

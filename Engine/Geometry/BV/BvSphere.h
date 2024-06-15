@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/Plane.h>
+#include <Engine/Math/Plane.h>
 #include "BvAxisAlignedBox.h"
 
 HK_NAMESPACE_BEGIN

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -31,7 +31,7 @@ SOFTWARE.
 #include "ShaderLoader.h"
 
 #include <Engine/Core/ConsoleVar.h>
-#include <Engine/Runtime/EmbeddedResources.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -55,7 +55,7 @@ struct IncludeInfo
 
 static void AddInclude(IncludeInfo*& list, IncludeInfo*& prev, int offset, int end, const char* filename, int len, int next_line)
 {
-    IncludeInfo* z  = (IncludeInfo*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(IncludeInfo));
+    IncludeInfo* z  = (IncludeInfo*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(IncludeInfo));
     z->Offset        = offset;
     z->End           = end;
     z->FileName      = filename;
@@ -79,7 +79,7 @@ static void FreeIncludes(IncludeInfo* list)
     for (IncludeInfo* includeInfo = list; includeInfo; includeInfo = next)
     {
         next = includeInfo->pNext;
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(includeInfo);
+        Core::GetHeapAllocator<HEAP_MISC>().Free(includeInfo);
     }
 }
 
@@ -108,7 +108,7 @@ static IncludeInfo* FindIncludes(StringView text)
             ++s;
             while ((*s == ' ' || *s == '\t') && s < e)
                 ++s;
-            if (e - s > 7 && !Platform::StrcmpN(s, "include", 7) && IsSpace(s[7]))
+            if (e - s > 7 && !Core::StrcmpN(s, "include", 7) && IsSpace(s[7]))
             {
                 s += 7;
                 while ((*s == ' ' || *s == '\t') && s < e)
@@ -186,7 +186,22 @@ start:
     }
 }
 
-String ShaderLoader::LoadShader(StringView FileName, TArrayView<MaterialSource> Predefined)
+class ShaderLoader
+{
+public:
+    String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined = {});
+    String LoadShaderFromString(StringView FileName, StringView Source, ArrayView<MaterialSource> Predefined = {});
+
+protected:
+    virtual bool LoadFile(StringView FileName, String& Source);
+    bool LoadShaderFromString(StringView FileName, StringView Source, String& Out);
+    bool LoadShaderWithInclude(StringView FileName, String& Out);
+
+    /** Predefined shaders */
+    ArrayView<MaterialSource> m_Predefined;
+};
+
+String ShaderLoader::LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
@@ -201,13 +216,13 @@ String ShaderLoader::LoadShader(StringView FileName, TArrayView<MaterialSource> 
 
     if (!LoadShaderWithInclude(FileName, result))
     {
-        CriticalError("LoadShader: failed to open {}\n", FileName);
+        CoreApplication::TerminateWithError("LoadShader: failed to open {}\n", FileName);
     }
 
     return result;
 }
 
-String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, TArrayView<MaterialSource> Predefined)
+String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, ArrayView<MaterialSource> Predefined)
 {
     m_Predefined = Predefined;
 
@@ -220,13 +235,13 @@ String ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source
     result += "#line 1\n";
 #endif
 
-    String source = Source;
+    String source(Source);
 
     CleanComments(source.ToPtr());
 
     if (!LoadShaderFromString(FileName, source, result))
     {
-        CriticalError("LoadShader: failed to open {}\n", FileName);
+        CoreApplication::TerminateWithError("LoadShader: failed to open {}\n", FileName);
     }
 
     return result;
@@ -237,12 +252,12 @@ bool ShaderLoader::LoadFile(StringView FileName, String& Source)
     File f;
     if (r_EmbeddedShaders)
     {
-        f = File::OpenRead("Shaders/" + FileName, Runtime::GetEmbeddedResources());
+        f = File::OpenRead("Shaders/" + FileName, GameApplication::GetEmbeddedArchive());
     }
     else
     {
         // Load shaders from sources
-        String fn = PathUtils::GetFilePath(__FILE__);
+        String fn(PathUtils::GetFilePath(__FILE__));
         fn += "/../Embedded/Shaders/";
         fn += FileName;
         PathUtils::FixPathInplace(fn);
@@ -257,9 +272,9 @@ bool ShaderLoader::LoadFile(StringView FileName, String& Source)
 
 bool ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, String& Out)
 {
-    char          temp[4096];
+    char         temp[4096];
     IncludeInfo* includeList  = FindIncludes(Source);
-    size_t        sourceOffset = 0;
+    size_t       sourceOffset = 0;
 
     for (IncludeInfo* includeInfo = includeList; includeInfo; includeInfo = includeInfo->pNext)
     {
@@ -303,7 +318,7 @@ bool ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, 
             Out += "#line 1\n";
 #endif
             temp[0] = 0;
-            Platform::StrcatN(temp, sizeof(temp), includeInfo->FileName, includeInfo->Length);
+            Core::StrcatN(temp, sizeof(temp), includeInfo->FileName, includeInfo->Length);
             if (!LoadShaderWithInclude(temp, Out))
             {
                 FreeIncludes(includeList);
@@ -312,9 +327,9 @@ bool ShaderLoader::LoadShaderFromString(StringView FileName, StringView Source, 
         }
 
 #ifdef CSTYLE_LINE_DIRECTIVE
-        Platform::Sprintf(temp, sizeof(temp), "\n#line %d \"%s\"", includeInfo->NextLineAfter, FileName.ToString().CStr());
+        Core::Sprintf(temp, sizeof(temp), "\n#line %d \"%s\"", includeInfo->NextLineAfter, FileName.ToString().CStr());
 #else
-        Platform::Sprintf(temp, sizeof(temp), "\n#line %d", includeInfo->NextLineAfter);
+        Core::Sprintf(temp, sizeof(temp), "\n#line %d", includeInfo->NextLineAfter);
 #endif
         Out += temp;
 
@@ -341,6 +356,11 @@ bool ShaderLoader::LoadShaderWithInclude(StringView FileName, String& Out)
     CleanComments(source.ToPtr());
 
     return LoadShaderFromString(FileName, source, Out);
+}
+
+String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined)
+{
+    return ShaderLoader{}.LoadShader(FileName, Predefined);
 }
 
 HK_NAMESPACE_END

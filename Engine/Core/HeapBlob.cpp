@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -34,7 +34,7 @@ HK_NAMESPACE_BEGIN
 
 HeapBlob::~HeapBlob()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 }
 
 void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
@@ -42,21 +42,21 @@ void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
     if (m_HeapSize == SizeInBytes)
     {
         if (pData && m_HeapSize > 0)
-            Platform::Memcpy(m_HeapPtr, pData, m_HeapSize);
+            Core::Memcpy(m_HeapPtr, pData, m_HeapSize);
         return;
     }
 
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 
     m_HeapSize = SizeInBytes;
 
     if (SizeInBytes > 0)
     {
-        m_HeapPtr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1, 16, Flags);
+        m_HeapPtr = Core::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1, 16, Flags);
         if (m_HeapPtr)
         {
             if (pData)
-                Platform::Memcpy(m_HeapPtr, pData, SizeInBytes);
+                Core::Memcpy(m_HeapPtr, pData, SizeInBytes);
             ((uint8_t*)m_HeapPtr)[SizeInBytes] = 0;
         }
         else
@@ -70,7 +70,7 @@ void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
 
 void HeapBlob::Reset()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
     m_HeapPtr  = nullptr;
     m_HeapSize = 0;
 }

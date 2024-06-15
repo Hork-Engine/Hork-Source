@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -39,10 +39,10 @@ class SphereMesh : public RefCounted
 public:
     SphereMesh(int _HDiv = 128, int _VDiv = 128);
 
-    TRef<RenderCore::IBuffer> VertexBuffer;
+    Ref<RenderCore::IBuffer> VertexBuffer;
 
     // Indices format unsigned short
-    TRef<RenderCore::IBuffer> IndexBuffer;
+    Ref<RenderCore::IBuffer> IndexBuffer;
 
     unsigned int IndexCount;
 };

@@ -4,7 +4,7 @@ Hork Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2023 Alexander Samusev.
+Copyright (C) 2017-2024 Alexander Samusev.
 
 This file is part of the Hork Engine Source Code.
 
@@ -308,7 +308,7 @@ bool ShaderModuleGLImpl::CreateShaderBinaryData(DeviceGLImpl*     _Device,
     GLenum   format;
     uint8_t* binary;
 
-    Platform::ZeroMem(_BinaryData, sizeof(*_BinaryData));
+    Core::ZeroMem(_BinaryData, sizeof(*_BinaryData));
 
     id = CreateShaderProgram(_ShaderType, _NumSources, _Sources, true);
     if (!id)
@@ -349,7 +349,7 @@ void ShaderModuleGLImpl::DestroyShaderBinaryData(DeviceGLImpl* _Device, ShaderBi
     uint8_t* binary = (uint8_t*)_BinaryData->BinaryCode;
     _Device->GetAllocator().Deallocate(binary);
 
-    Platform::ZeroMem(_BinaryData, sizeof(*_BinaryData));
+    Core::ZeroMem(_BinaryData, sizeof(*_BinaryData));
 }
 
 } // namespace RenderCore
