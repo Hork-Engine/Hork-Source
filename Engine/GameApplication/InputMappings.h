@@ -44,6 +44,10 @@ enum class PlayerController : uint8_t
     _2,
     _3,
     _4,
+    _5,
+    _6,
+    _7,
+    _8,
 
     MAX_PLAYER_CONTROLLERS
 };
@@ -58,37 +62,23 @@ struct VirtualMapping
 
 class InputMappings : public RefCounted
 {
-    struct VirtualInput
-    {
-        VirtualKeyOrAxis VirtKey;
-        uint16_t         ModMask;
-
-        bool operator==(VirtualInput const& rhs) const
-        {
-            return VirtKey == rhs.VirtKey && ModMask == rhs.ModMask;
-        }
-
-        bool operator!=(VirtualInput const& rhs) const
-        {
-            return !operator==(rhs);
-        }
-
-        uint32_t Hash() const
-        {
-            return HashTraits::Hash(uint32_t(VirtKey.GetData()) | (uint32_t(ModMask) << 16));
-        }
-    };
-
 public:
     void                    Clear();
 
-    void                    MapAxis(StringView name, VirtualKeyOrAxis virtualKey, float power, PlayerController owner);
+    void                    MapAxis(PlayerController owner, StringView name, VirtualKeyOrAxis keyOrAxis, float power = 1);
 
-    void                    MapAction(StringView name, VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, PlayerController owner);
+    void                    MapAction(PlayerController owner, StringView name, VirtualKey key, KeyModifierMask modMask = {});
 
-    bool                    GetMapping(VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, VirtualMapping& virtMapping);
+    void                    MapGamepadAxis(PlayerController owner, StringView name, GamepadKeyOrAxis keyOrAxis, float power = 1);
 
-    HashMap<VirtualInput, VirtualMapping> m_VirtMapping;
+    void                    MapGamepadAction(PlayerController owner, StringView name, GamepadKey key, KeyModifierMask modMask = {});
+
+    bool                    GetMapping(VirtualKeyOrAxis keyOrAxis, KeyModifierMask modMask, VirtualMapping& virtMapping);
+
+    bool                    GetGamepadMapping(PlayerController owner, GamepadKeyOrAxis keyOrAxis, VirtualMapping& virtMapping);
+
+    HashMap<uint32_t, VirtualMapping> m_VirtMapping;
+    HashMap<uint32_t, VirtualMapping> m_GamepadMapping;
 };
 
 HK_NAMESPACE_END

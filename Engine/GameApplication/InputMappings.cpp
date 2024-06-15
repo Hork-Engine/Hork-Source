@@ -32,14 +32,27 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+namespace
+{
+    uint32_t MakeHash(VirtualKeyOrAxis keyOrAxis, uint32_t modMask)
+    {
+        return HashTraits::Hash(uint32_t(keyOrAxis.GetData()) | (modMask << 16));
+    }
+
+    uint32_t MakeHash(GamepadKeyOrAxis keyOrAxis, PlayerController player)
+    {
+        return HashTraits::Hash(uint32_t(keyOrAxis.GetData()) | (uint32_t(player) << 16));
+    }
+}
+
 void InputMappings::Clear()
 {
     m_VirtMapping.Clear();
 }
 
-void InputMappings::MapAxis(StringView name, VirtualKeyOrAxis virtualKey, float power, PlayerController owner)
+void InputMappings::MapAxis(PlayerController owner, StringView name, VirtualKeyOrAxis keyOrAxis, float power)
 {
-    VirtualMapping& mapping = m_VirtMapping[VirtualInput{virtualKey, 0}];
+    VirtualMapping& mapping = m_VirtMapping[MakeHash(keyOrAxis, 0)];
 
     mapping.Name.FromString(name);
     mapping.IsAction = false;
@@ -47,9 +60,9 @@ void InputMappings::MapAxis(StringView name, VirtualKeyOrAxis virtualKey, float 
     mapping.Owner = owner;
 }
 
-void InputMappings::MapAction(StringView name, VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, PlayerController owner)
+void InputMappings::MapAction(PlayerController owner, StringView name, VirtualKey key, KeyModifierMask modMask)
 {
-    VirtualMapping& mapping = m_VirtMapping[VirtualInput{virtualKey, modMask.m_Flags}];
+    VirtualMapping& mapping = m_VirtMapping[MakeHash(key, modMask.m_Flags)];
 
     mapping.Name.FromString(name);
     mapping.IsAction = true;
@@ -57,10 +70,39 @@ void InputMappings::MapAction(StringView name, VirtualKeyOrAxis virtualKey, KeyM
     mapping.Owner = owner;
 }
 
-bool InputMappings::GetMapping(VirtualKeyOrAxis virtualKey, KeyModifierMask modMask, VirtualMapping& virtMapping)
+bool InputMappings::GetMapping(VirtualKeyOrAxis keyOrAxis, KeyModifierMask modMask, VirtualMapping& virtMapping)
 {
-    auto it = m_VirtMapping.find(VirtualInput{virtualKey, modMask.m_Flags});
+    auto it = m_VirtMapping.find(MakeHash(keyOrAxis, modMask.m_Flags));
     if (it == m_VirtMapping.end())
+        return false;
+    virtMapping = it->second;
+    return true;
+}
+
+void InputMappings::MapGamepadAxis(PlayerController owner, StringView name, GamepadKeyOrAxis keyOrAxis, float power)
+{
+    VirtualMapping& mapping = m_GamepadMapping[MakeHash(keyOrAxis, owner)];
+
+    mapping.Name.FromString(name);
+    mapping.IsAction = false;
+    mapping.Power = power;
+    mapping.Owner = owner;
+}
+
+void InputMappings::MapGamepadAction(PlayerController owner, StringView name, GamepadKey key, KeyModifierMask modMask)
+{
+    VirtualMapping& mapping = m_GamepadMapping[MakeHash(key, owner)];
+
+    mapping.Name.FromString(name);
+    mapping.IsAction = true;
+    mapping.Power = 0;
+    mapping.Owner = owner;
+}
+
+bool InputMappings::GetGamepadMapping(PlayerController owner, GamepadKeyOrAxis keyOrAxis, VirtualMapping& virtMapping)
+{
+    auto it = m_GamepadMapping.find(MakeHash(keyOrAxis, owner));
+    if (it == m_GamepadMapping.end())
         return false;
     virtMapping = it->second;
     return true;

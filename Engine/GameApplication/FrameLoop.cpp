@@ -45,10 +45,11 @@ HK_NAMESPACE_BEGIN
 ConsoleVar com_SyncGPU("com_SyncGPU"s, "0"s);
 ConsoleVar com_MaxFPS("com_MaxFPS"s, "120"s);
 ConsoleVar com_FrameSleep("com_FrameSleep"s, "0"s);
+ConsoleVar in_StickDeadZone("in_StickDeadZone"s, "0.23"s);
 
-FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
+FrameLoop::FrameLoop(RenderCore::IDevice* renderDevice) :
     m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
-    m_RenderDevice(RenderDevice)
+    m_RenderDevice(renderDevice)
 {
     m_GPUSync = MakeUnique<GPUSync>(m_RenderDevice->GetImmediateContext());
     m_StreamedMemoryGPU = MakeUnique<StreamedMemoryGPU>(m_RenderDevice);
@@ -56,10 +57,6 @@ FrameLoop::FrameLoop(RenderCore::IDevice* RenderDevice) :
     m_FrameTimeStamp = Core::SysStartMicroseconds();
     m_FrameDuration = 1000000.0 / 60;
     m_FrameNumber = 0;
-
-    m_PressedKeys.ZeroMem();
-    //Core::ZeroMem(m_JoystickAxisState.ToPtr(), sizeof(m_JoystickAxisState));
-    //Core::ZeroMem(m_JoystickAdded.ToPtr(), sizeof(m_JoystickAdded));
 
     m_FontStash = GetSharedInstance<FontStash>();
 }
@@ -69,9 +66,9 @@ FrameLoop::~FrameLoop()
     ClearViews();
 }
 
-void* FrameLoop::AllocFrameMem(size_t _SizeInBytes)
+void* FrameLoop::AllocFrameMem(size_t sizeInBytes)
 {
-    return m_FrameMemory.Allocate(_SizeInBytes);
+    return m_FrameMemory.Allocate(sizeInBytes);
 }
 
 size_t FrameLoop::GetFrameMemorySize() const
@@ -109,12 +106,12 @@ int FrameLoop::SysFrameNumber() const
     return m_FrameNumber;
 }
 
-void FrameLoop::SetGenerateInputEvents(bool bShouldGenerateInputEvents)
+void FrameLoop::SetGenerateInputEvents(bool shouldGenerateInputEvents)
 {
-    m_bShouldGenerateInputEvents = bShouldGenerateInputEvents;
+    m_ShouldGenerateInputEvents = shouldGenerateInputEvents;
 }
 
-void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, ResourceManager* resourceManager)
+void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceManager)
 {
     HK_PROFILER_EVENT("Setup new frame");
 
@@ -126,9 +123,9 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int Swap
     m_StreamedMemoryGPU->Swap();
 
     // Swap window
-    for (auto* swapChain : SwapChains)
+    for (auto* swapChain : swapChains)
     {
-        swapChain->Present(SwapInterval);
+        swapChain->Present(swapInterval);
     }
 
     // Wait for free streamed buffer
@@ -141,7 +138,7 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int Swap
 
     int64_t prevTimeStamp = m_FrameTimeStamp;
 
-    int64_t maxFrameRate = (SwapInterval == 0 && com_MaxFPS.GetInteger() > 0) ? 1000000.0 / com_MaxFPS.GetInteger() : 0;
+    int64_t maxFrameRate = (swapInterval == 0 && com_MaxFPS.GetInteger() > 0) ? 1000000.0 / com_MaxFPS.GetInteger() : 0;
 
     m_FrameTimeStamp = Core::SysMicroseconds();
 
@@ -196,10 +193,10 @@ void FrameLoop::ClearViews()
     m_Views.Clear();
 }
 
-void FrameLoop::RegisterView(WorldRenderView* pView)
+void FrameLoop::RegisterView(WorldRenderView* view)
 {
-    m_Views.Add(pView);
-    pView->AddRef();
+    m_Views.Add(view);
+    view->AddRef();
 }
 
 static const VirtualKey InvalidKey = VirtualKey(0xffff);
@@ -335,26 +332,26 @@ struct KeyMappingsSDL : public Array<VirtualKey, SDL_NUM_SCANCODES>
 
 static const KeyMappingsSDL SDLKeyMappings;
 
-static HK_FORCEINLINE KeyModifierMask FromKeymodSDL(Uint16 Mod)
+static KeyModifierMask FromKeymodSDL(Uint16 mod)
 {
     KeyModifierMask modMask;
 
-    if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
+    if (mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
         modMask.Shift = true;
     }
 
-    if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
+    if (mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
         modMask.Control = true;
     }
 
-    if (Mod & (KMOD_LALT | KMOD_RALT))
+    if (mod & (KMOD_LALT | KMOD_RALT))
     {
         modMask.Alt = true;
     }
 
-    if (Mod & (KMOD_LGUI | KMOD_RGUI))
+    if (mod & (KMOD_LGUI | KMOD_RGUI))
     {
         modMask.Super = true;
     }
@@ -362,36 +359,36 @@ static HK_FORCEINLINE KeyModifierMask FromKeymodSDL(Uint16 Mod)
     return modMask;
 }
 
-static HK_FORCEINLINE KeyModifierMask FromKeymodSDL_Char(Uint16 Mod)
+static KeyModifierMask FromKeymodSDL_Char(Uint16 mod)
 {
     KeyModifierMask modMask;
 
-    if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
+    if (mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
         modMask.Shift = true;
     }
 
-    if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
+    if (mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
         modMask.Control = true;
     }
 
-    if (Mod & (KMOD_LALT | KMOD_RALT))
+    if (mod & (KMOD_LALT | KMOD_RALT))
     {
         modMask.Alt = true;
     }
 
-    if (Mod & (KMOD_LGUI | KMOD_RGUI))
+    if (mod & (KMOD_LGUI | KMOD_RGUI))
     {
         modMask.Super = true;
     }
 
-    if (Mod & KMOD_CAPS)
+    if (mod & KMOD_CAPS)
     {
         modMask.CapsLock = true;
     }
 
-    if (Mod & KMOD_NUM)
+    if (mod & KMOD_NUM)
     {
         modMask.NumLock = true;
     }
@@ -399,109 +396,10 @@ static HK_FORCEINLINE KeyModifierMask FromKeymodSDL_Char(Uint16 Mod)
     return modMask;
 }
 
-void FrameLoop::UnpressJoystickButtons(IEventListener* Listener, int JoystickNum)
-{
-#if 0
-    JoystickButtonEvent joystickEvent;
-    joystickEvent.Joystick = JoystickNum;
-    joystickEvent.Action   = InputAction::Released;
-    for (VirtualKey virtualKey = VirtualKey::JoyBtn1; virtualKey <= VirtualKey::JoyBtn32; virtualKey = VirtualKey(ToUnderlying(virtualKey) + 1))
-    {
-        uint32_t index = ToUnderlying(virtualKey);
-        if (m_PressedKeys[index]) // TODO: Keep pressed keys per joystick device!!!
-        {
-            m_PressedKeys[index] = 0;
-
-            if (m_bShouldGenerateInputEvents)
-            {
-                joystickEvent.Button = virtualKey;
-                Listener->OnJoystickButtonEvent(joystickEvent);
-            }
-        }
-    }
-#endif
-}
-
-void FrameLoop::ClearJoystickAxes(IEventListener* Listener, int JoystickNum)
-{
-#if 0
-    JoystickAxisEvent axisEvent;
-    axisEvent.Joystick = JoystickNum;
-    axisEvent.Value    = 0;
-    for (int i = 0; i < MAX_JOYSTICK_AXES; i++)
-    {
-        if (m_JoystickAxisState[JoystickNum][i] != 0)
-        {
-            m_JoystickAxisState[JoystickNum][i] = 0;
-
-            if (m_bShouldGenerateInputEvents)
-            {
-                axisEvent.Axis = JOY_AXIS_1 + i;
-                Listener->OnJoystickAxisEvent(axisEvent);
-            }
-        }
-    }
-#endif
-}
-
-void FrameLoop::UnpressKeysAndButtons(IEventListener* Listener)
-{
-    KeyEvent         keyEvent;
-    MouseButtonEvent mouseEvent;
-    //JoystickButtonEvent joystickEvent;
-
-    keyEvent.Action  = InputAction::Released;
-
-    mouseEvent.Action  = InputAction::Released;
-
-    //joystickEvent.Action = InputAction::Released;
-
-    for (uint32_t i = 0; i <= VirtualKeyTableSize; ++i)
-    {
-        if (m_PressedKeys[i])
-        {
-            m_PressedKeys[i] = 0;
-
-            if (m_bShouldGenerateInputEvents)
-            {
-                VirtualKey virtualKey = VirtualKey(i);
-                if (virtualKey >= VirtualKey::MouseLeftBtn && virtualKey <= VirtualKey::Mouse8/*MouseWheelRight*/)
-                {
-                    mouseEvent.Button = virtualKey;
-
-                    Listener->OnMouseButtonEvent(mouseEvent);
-                }
-                else if (virtualKey >= VirtualKey::JoyBtn1 && virtualKey >= VirtualKey::JoyBtn32)
-                {
-                    //joystickEvent.Button = virtualKey;
-
-                    //for (int joystickNum = 0; joystickNum < MAX_JOYSTICKS_COUNT; ++joystickNum)
-                    //{
-                    //    joystickEvent.Joystick = joystickNum;
-                    //    Listener->OnJoystickButtonEvent(joystickEvent);
-                    //}
-                }
-                else
-                {
-                    keyEvent.Key      = virtualKey;
-                    keyEvent.Scancode = m_PressedKeys[i] - 1;
-
-                    Listener->OnKeyEvent(keyEvent);
-                }
-            }
-        }
-    }
-
-    //for (int i = 0; i < MAX_JOYSTICKS_COUNT; i++)
-    //{
-    //    ClearJoystickAxes(Listener, i);
-    //}
-}
-
-void FrameLoop::PollEvents(IEventListener* Listener)
+void FrameLoop::PollEvents(IEventListener* listener)
 {
     // NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
-    static bool bIgnoreFalseMouseMotionHack = false;
+    static bool IgnoreFalseMouseMotionHack = false;
 
     HK_PROFILER_EVENT("Frame Poll Events");
 
@@ -518,7 +416,7 @@ void FrameLoop::PollEvents(IEventListener* Listener)
         {
             // User-requested quit
             case SDL_QUIT:
-                Listener->OnCloseEvent();
+                listener->OnCloseEvent();
                 break;
 
             // The application is being terminated by the OS
@@ -593,6 +491,7 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                                 LOG("PollEvent: The display orientation can't be determined\n");
                                 break;
                         }
+                        break;
                     default:
                         LOG("PollEvent: Unknown display event type\n");
                         break;
@@ -610,11 +509,11 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                     {
                         // Window has been shown
                         case SDL_WINDOWEVENT_SHOWN:
-                            Listener->OnWindowVisible(true);
+                            listener->OnWindowVisible(true);
                             break;
                         // Window has been hidden
                         case SDL_WINDOWEVENT_HIDDEN:
-                            Listener->OnWindowVisible(false);
+                            listener->OnWindowVisible(false);
                             break;
                         // Window has been exposed and should be redrawn
                         case SDL_WINDOWEVENT_EXPOSED:
@@ -630,19 +529,19 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                         case SDL_WINDOWEVENT_SIZE_CHANGED: {
                             auto& videoMode = window->GetVideoMode();
                             CoreApplication::GetConsoleBuffer().Resize(videoMode.FramebufferWidth);
-                            Listener->OnResize();
+                            listener->OnResize();
                             break;
                         }
                         // Window has been minimized
                         case SDL_WINDOWEVENT_MINIMIZED:
-                            Listener->OnWindowVisible(false);
+                            listener->OnWindowVisible(false);
                             break;
                         // Window has been maximized
                         case SDL_WINDOWEVENT_MAXIMIZED:
                             break;
                         // Window has been restored to normal size and position
                         case SDL_WINDOWEVENT_RESTORED:
-                            Listener->OnWindowVisible(true);
+                            listener->OnWindowVisible(true);
                             break;
                         // Window has gained mouse focus
                         case SDL_WINDOWEVENT_ENTER:
@@ -652,11 +551,10 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                             break;
                         // Window has gained keyboard focus
                         case SDL_WINDOWEVENT_FOCUS_GAINED:
-                            bIgnoreFalseMouseMotionHack = true;
+                            IgnoreFalseMouseMotionHack = true;
                             break;
                         // Window has lost keyboard focus
                         case SDL_WINDOWEVENT_FOCUS_LOST:
-                            UnpressKeysAndButtons(Listener);
                             break;
                         // The window manager requests that the window be closed
                         case SDL_WINDOWEVENT_CLOSE:
@@ -679,24 +577,15 @@ void FrameLoop::PollEvents(IEventListener* Listener)
             // Key pressed/released
             case SDL_KEYDOWN:
             case SDL_KEYUP: {
-                KeyEvent keyEvent;
-                keyEvent.Key      = SDLKeyMappings[event.key.keysym.scancode];
-                keyEvent.Scancode = event.key.keysym.scancode;
-                keyEvent.Action = (event.type == SDL_KEYDOWN) ? (m_PressedKeys[ToUnderlying(keyEvent.Key)] ? InputAction::Repeat : InputAction::Pressed) : InputAction::Released;
-                keyEvent.ModMask  = FromKeymodSDL(event.key.keysym.mod);
-                if (keyEvent.Key != InvalidKey)
+                if (m_ShouldGenerateInputEvents)
                 {
-                    if ((keyEvent.Action == InputAction::Released && !m_PressedKeys[ToUnderlying(keyEvent.Key)]) || (keyEvent.Action == InputAction::Pressed && m_PressedKeys[ToUnderlying(keyEvent.Key)]))
-                    {
-                        // State does not changed
-                    }
-                    else
-                    {
-                        m_PressedKeys[ToUnderlying(keyEvent.Key)] = (keyEvent.Action == InputAction::Released) ? 0 : keyEvent.Scancode + 1;
-
-                        if (m_bShouldGenerateInputEvents)
-                            Listener->OnKeyEvent(keyEvent);
-                    }
+                    KeyEvent keyEvent;
+                    keyEvent.Key      = SDLKeyMappings[event.key.keysym.scancode];
+                    keyEvent.Scancode = event.key.keysym.scancode;
+                    keyEvent.Action   = (event.key.state == SDL_PRESSED) ? (event.key.repeat ? InputAction::Repeat : InputAction::Pressed) : InputAction::Released;
+                    keyEvent.ModMask  = FromKeymodSDL(event.key.keysym.mod);
+                    if (keyEvent.Key != InvalidKey)
+                        listener->OnKeyEvent(keyEvent);
                 }
                 break;
             }
@@ -707,7 +596,7 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 
             // Keyboard text input
             case SDL_TEXTINPUT: {
-                if (m_bShouldGenerateInputEvents)
+                if (m_ShouldGenerateInputEvents)
                 {
                     CharEvent charEvent;
                     charEvent.ModMask = FromKeymodSDL_Char(SDL_GetModState());
@@ -721,7 +610,7 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                             break;
                         }
                         unicode += byteLen;
-                        Listener->OnCharEvent(charEvent);
+                        listener->OnCharEvent(charEvent);
                     }
                 }
                 break;
@@ -734,48 +623,41 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 
             // Mouse moved
             case SDL_MOUSEMOTION: {
-                if (!bIgnoreFalseMouseMotionHack && m_bShouldGenerateInputEvents)
+                if (!IgnoreFalseMouseMotionHack && m_ShouldGenerateInputEvents)
                 {
                     MouseMoveEvent moveEvent;
                     moveEvent.X = event.motion.xrel;
                     moveEvent.Y = -event.motion.yrel;
-                    Listener->OnMouseMoveEvent(moveEvent);
+                    listener->OnMouseMoveEvent(moveEvent);
                 }
-                bIgnoreFalseMouseMotionHack = false;
+                IgnoreFalseMouseMotionHack = false;
                 break;
             }
 
-            // Mouse button pressed
+            // Mouse button pressed/released
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                MouseButtonEvent mouseEvent;
-                switch (event.button.button)
+                if (m_ShouldGenerateInputEvents)
                 {
-                    case 2:
-                        mouseEvent.Button = VirtualKey::MouseMidBtn;
-                        break;
-                    case 3:
-                        mouseEvent.Button = VirtualKey::MouseRightBtn;
-                        break;
-                    default:
-                        mouseEvent.Button = VirtualKey(ToUnderlying(VirtualKey::MouseLeftBtn) + event.button.button - 1);
-                        break;
-                }
-                mouseEvent.Action  = event.type == SDL_MOUSEBUTTONDOWN ? InputAction::Pressed : InputAction::Released;
-                mouseEvent.ModMask = FromKeymodSDL(SDL_GetModState());
-
-                if (mouseEvent.Button >= VirtualKey::MouseLeftBtn && mouseEvent.Button <= VirtualKey::Mouse8)
-                {
-                    if (mouseEvent.Action == (int)m_PressedKeys[ToUnderlying(mouseEvent.Button)])
+                    MouseButtonEvent mouseEvent;
+                    switch (event.button.button)
                     {
-                        // State does not changed
+                        case 2:
+                            mouseEvent.Button = VirtualKey::MouseMidBtn;
+                            break;
+                        case 3:
+                            mouseEvent.Button = VirtualKey::MouseRightBtn;
+                            break;
+                        default:
+                            mouseEvent.Button = VirtualKey(ToUnderlying(VirtualKey::MouseLeftBtn) + event.button.button - 1);
+                            break;
                     }
-                    else
-                    {
-                        m_PressedKeys[ToUnderlying(mouseEvent.Button)] = mouseEvent.Action != InputAction::Released;
+                    mouseEvent.Action  = event.button.state == SDL_PRESSED ? InputAction::Pressed : InputAction::Released;
+                    mouseEvent.ModMask = FromKeymodSDL(SDL_GetModState());
 
-                        if (m_bShouldGenerateInputEvents)
-                            Listener->OnMouseButtonEvent(mouseEvent);
+                    if (mouseEvent.Button >= VirtualKey::MouseLeftBtn && mouseEvent.Button <= VirtualKey::Mouse8)
+                    {
+                        listener->OnMouseButtonEvent(mouseEvent);
                     }
                 }
                 break;
@@ -783,12 +665,12 @@ void FrameLoop::PollEvents(IEventListener* Listener)
 
             // Mouse wheel motion
             case SDL_MOUSEWHEEL: {
-                if (m_bShouldGenerateInputEvents)
+                if (m_ShouldGenerateInputEvents)
                 {
                     MouseWheelEvent wheelEvent;
                     wheelEvent.WheelX = event.wheel.x;
                     wheelEvent.WheelY = event.wheel.y;
-                    Listener->OnMouseWheelEvent(wheelEvent);
+                    listener->OnMouseWheelEvent(wheelEvent);
 
                     MouseButtonEvent mouseEvent;
                     mouseEvent.ModMask = FromKeymodSDL(SDL_GetModState());
@@ -798,178 +680,204 @@ void FrameLoop::PollEvents(IEventListener* Listener)
                         mouseEvent.Button = VirtualKey::MouseWheelLeft;
 
                         mouseEvent.Action = InputAction::Pressed;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
 
                         mouseEvent.Action = InputAction::Released;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
                     }
                     else if (wheelEvent.WheelX > 0.0)
                     {
                         mouseEvent.Button = VirtualKey::MouseWheelRight;
 
                         mouseEvent.Action = InputAction::Pressed;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
 
                         mouseEvent.Action = InputAction::Released;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
                     }
                     if (wheelEvent.WheelY < 0.0)
                     {
                         mouseEvent.Button = VirtualKey::MouseWheelDown;
 
                         mouseEvent.Action = InputAction::Pressed;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
 
                         mouseEvent.Action = InputAction::Released;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
                     }
                     else if (wheelEvent.WheelY > 0.0)
                     {
                         mouseEvent.Button = VirtualKey::MouseWheelUp;
 
                         mouseEvent.Action = InputAction::Pressed;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
 
                         mouseEvent.Action = InputAction::Released;
-                        Listener->OnMouseButtonEvent(mouseEvent);
+                        listener->OnMouseButtonEvent(mouseEvent);
                     }
                 }
                 break;
             }
 
             // Joystick axis motion
-            case SDL_JOYAXISMOTION: {
-            //    if (m_bShouldGenerateInputEvents)
-            //    {
-            //        if (event.jaxis.which >= 0 && event.jaxis.which < MAX_JOYSTICKS_COUNT)
-            //        {
-            //            HK_ASSERT(m_JoystickAdded[event.jaxis.which]);
-            //            if (event.jaxis.axis >= 0 && event.jaxis.axis < MAX_JOYSTICK_AXES)
-            //            {
-            //                if (m_JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
-            //                {
-            //                    JoystickAxisEvent axisEvent;
-            //                    axisEvent.Joystick = event.jaxis.which;
-            //                    axisEvent.Axis     = JOY_AXIS_1 + event.jaxis.axis;
-            //                    axisEvent.Value    = ((float)event.jaxis.value + 32768.0f) / 0xffff * 2.0f - 1.0f; // scale to -1.0f ... 1.0f
-
-            //                    Listener->OnJoystickAxisEvent(axisEvent);
-            //                }
-            //            }
-            //            else
-            //            {
-            //                HK_ASSERT_(0, "Invalid joystick axis num");
-            //            }
-            //        }
-            //        else
-            //        {
-            //            HK_ASSERT_(0, "Invalid joystick id");
-            //        }
-            //    }
+            case SDL_JOYAXISMOTION:
                 break;
-            }
 
             // Joystick trackball motion
             case SDL_JOYBALLMOTION:
-                LOG("PollEvent: Joystick ball move\n");
                 break;
 
             // Joystick hat position change
             case SDL_JOYHATMOTION:
-                LOG("PollEvent: Joystick hat move\n");
                 break;
 
-            // Joystick button pressed
+            // Joystick button pressed/released
             case SDL_JOYBUTTONDOWN:
-            // Joystick button released
-            case SDL_JOYBUTTONUP: {
-                //if (event.jbutton.which >= 0 && event.jbutton.which < MAX_JOYSTICKS_COUNT)
-                //{
-                //    HK_ASSERT(m_JoystickAdded[event.jbutton.which]);
-                //    if (event.jbutton.button >= 0 && event.jbutton.button < MAX_JOYSTICK_BUTTONS)
-                //    {
-                //        if (m_JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
-                //        {
-                //            m_JoystickButtonState[event.jbutton.which][event.jbutton.button] = event.jbutton.state;
-
-                //            if (m_bShouldGenerateInputEvents)
-                //            {
-                //                JoystickButtonEvent buttonEvent;
-                //                buttonEvent.Joystick = event.jbutton.which;
-                //                buttonEvent.Button   = JOY_BUTTON_1 + event.jbutton.button;
-                //                buttonEvent.Action   = event.jbutton.state == SDL_PRESSED ? InputAction::Pressed : InputAction::Released;
-                //                Listener->OnJoystickButtonEvent(buttonEvent);
-                //            }
-                //        }
-                //    }
-                //    else
-                //    {
-                //        HK_ASSERT_(0, "Invalid joystick button num");
-                //    }
-                //}
-                //else
-                //{
-                //    HK_ASSERT_(0, "Invalid joystick id");
-                //}
+            case SDL_JOYBUTTONUP:
                 break;
-            }
 
             // A new joystick has been inserted into the system
             case SDL_JOYDEVICEADDED:
-                //if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
-                //{
-                //    HK_ASSERT(!m_JoystickAdded[event.jdevice.which]);
-                //    m_JoystickAdded[event.jdevice.which] = true;
-
-                //    Core::ZeroMem(m_JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(m_JoystickButtonState[0]));
-                //    Core::ZeroMem(m_JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(m_JoystickAxisState[0]));
-                //}
-                //else
-                //{
-                //    HK_ASSERT_(0, "Invalid joystick id");
-                //}
-                //LOG("PollEvent: Joystick added\n");
                 break;
 
             // An opened joystick has been removed
-            case SDL_JOYDEVICEREMOVED: {
-                //if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
-                //{
-                //    UnpressJoystickButtons(Listener, event.jdevice.which);
-                //    ClearJoystickAxes(Listener, event.jdevice.which);
+            case SDL_JOYDEVICEREMOVED:
+                break;
 
-                //    HK_ASSERT(m_JoystickAdded[event.jdevice.which]);
-                //    m_JoystickAdded[event.jdevice.which] = false;
-                //}
-                //else
-                //{
-                //    HK_ASSERT_(0, "Invalid joystick id");
-                //}
+            // Game controller axis motion
+            case SDL_CONTROLLERAXISMOTION: {
+                if (m_ShouldGenerateInputEvents)
+                {
+                    float deadzone = Math::Clamp(in_StickDeadZone.GetFloat(), 0.0f, 0.999f);
+                    float value = static_cast<float>(event.caxis.value) / 32767;
 
-                //LOG("PollEvent: Joystick removed\n");
+                    value = value > 0.0f ? Math::Max(0.0f, value - deadzone)
+                                         : Math::Min(0.0f, value + deadzone);
+
+                    GamepadAxisMotionEvent gamepadEvent;
+                    gamepadEvent.GamepadID = event.caxis.which;
+                    gamepadEvent.AssignedPlayerIndex = SDL_GameControllerGetPlayerIndex(SDL_GameControllerFromInstanceID(event.caxis.which));
+                    gamepadEvent.Axis = GamepadAxis(event.caxis.axis);
+                    gamepadEvent.Value = Math::Clamp(value / (1.0f - deadzone), -1.0f, 1.0f);
+
+                    // Invert Y axis
+                    if (gamepadEvent.Value != 0.0f && (gamepadEvent.Axis == GamepadAxis::LeftY || gamepadEvent.Axis == GamepadAxis::RightY))
+                    {
+                        gamepadEvent.Value = -gamepadEvent.Value;
+                    }
+
+                    // Fix player index
+                    if (gamepadEvent.AssignedPlayerIndex == -1)
+                    {
+                        auto it = m_GamepadIDToPlayerIndex.Find(gamepadEvent.GamepadID);
+                        if (it != m_GamepadIDToPlayerIndex.End())
+                        {
+                            gamepadEvent.AssignedPlayerIndex = it->second;
+                        }
+                    }
+                    else
+                    {
+                        m_GamepadIDToPlayerIndex[gamepadEvent.GamepadID] = gamepadEvent.AssignedPlayerIndex;
+                    }
+
+                    listener->OnGamepadAxisMotionEvent(gamepadEvent);
+                }
                 break;
             }
 
-            // Game controller axis motion
-            case SDL_CONTROLLERAXISMOTION:
-                LOG("PollEvent: Gamepad axis move\n");
-                break;
-            // Game controller button pressed
+            // Game controller button pressed / released
             case SDL_CONTROLLERBUTTONDOWN:
-                LOG("PollEvent: Gamepad button press\n");
+            case SDL_CONTROLLERBUTTONUP: {
+                if (m_ShouldGenerateInputEvents)
+                {
+                    GamepadKeyEvent gamepadEvent;
+                    gamepadEvent.GamepadID = event.cbutton.which;
+                    gamepadEvent.AssignedPlayerIndex = SDL_GameControllerGetPlayerIndex(SDL_GameControllerFromInstanceID(event.cbutton.which));
+                    gamepadEvent.Key = GamepadKey(event.cbutton.button);
+                    gamepadEvent.Action = (event.cbutton.state == SDL_PRESSED) ? InputAction::Pressed : InputAction::Released;
+
+                    // Fix player index
+                    if (gamepadEvent.AssignedPlayerIndex == -1)
+                    {
+                        auto it = m_GamepadIDToPlayerIndex.Find(gamepadEvent.GamepadID);
+                        if (it != m_GamepadIDToPlayerIndex.End())
+                        {
+                            gamepadEvent.AssignedPlayerIndex = it->second;
+                        }
+                    }
+                    else
+                    {
+                        m_GamepadIDToPlayerIndex[gamepadEvent.GamepadID] = gamepadEvent.AssignedPlayerIndex;
+                    }
+
+                    listener->OnGamepadButtonEvent(gamepadEvent);
+                }
                 break;
-            // Game controller button released
-            case SDL_CONTROLLERBUTTONUP:
-                LOG("PollEvent: Gamepad button release\n");
-                break;
+            }
+
             // A new Game controller has been inserted into the system
-            case SDL_CONTROLLERDEVICEADDED:
-                LOG("PollEvent: Gamepad added\n");
+            case SDL_CONTROLLERDEVICEADDED: {
+                SDL_GameController* controller = SDL_GameControllerOpen(event.cdevice.which);
+                LOG("Input device added: {}\n", SDL_GameControllerName(controller));
                 break;
+            }
+
             // An opened Game controller has been removed
-            case SDL_CONTROLLERDEVICEREMOVED:
-                LOG("PollEvent: Gamepad removed\n");
+            case SDL_CONTROLLERDEVICEREMOVED: {
+                SDL_GameController* controller = SDL_GameControllerFromInstanceID(event.cdevice.which);
+
+                if (m_ShouldGenerateInputEvents)
+                {
+                    int assignedPlayerIndex = SDL_GameControllerGetPlayerIndex(controller);
+
+                    // Try to restore player index from last event
+                    auto it = m_GamepadIDToPlayerIndex.Find(event.cdevice.which);
+                    if (it != m_GamepadIDToPlayerIndex.End())
+                    {
+                        if (assignedPlayerIndex == -1)
+                            assignedPlayerIndex = it->second;
+                        m_GamepadIDToPlayerIndex.Erase(it);
+                    }
+
+                    if (assignedPlayerIndex != -1)
+                    {
+                        {
+                            GamepadKeyEvent gamepadEvent;
+                            gamepadEvent.GamepadID = event.cdevice.which;
+                            gamepadEvent.AssignedPlayerIndex = assignedPlayerIndex;
+                            gamepadEvent.Action = InputAction::Released;
+
+                            for (int button = 0; button < SDL_CONTROLLER_BUTTON_MAX; ++button)
+                            {                   
+                                if (SDL_GameControllerGetButton(controller, (SDL_GameControllerButton)button) == SDL_PRESSED)
+                                {
+                                    gamepadEvent.Key = GamepadKey(button);                            
+                                    listener->OnGamepadButtonEvent(gamepadEvent);
+                                }
+                            }
+                        }
+
+                        {
+                            GamepadAxisMotionEvent gamepadEvent;
+                            gamepadEvent.GamepadID = event.cdevice.which;
+                            gamepadEvent.AssignedPlayerIndex = assignedPlayerIndex;
+                            gamepadEvent.Value = 0;
+                            for (int axis = 0; axis < SDL_CONTROLLER_AXIS_MAX; ++axis)
+                            {                   
+                                if (SDL_GameControllerGetAxis(controller, (SDL_GameControllerAxis)axis))
+                                {
+                                    gamepadEvent.Axis = GamepadAxis(axis);
+                                    listener->OnGamepadAxisMotionEvent(gamepadEvent);
+                                }
+                            }
+                        }
+                    }
+                }
+                LOG("Input device removed: {}\n", SDL_GameControllerName(controller));
+                SDL_GameControllerClose(controller);                
                 break;
+            }
+
             // The controller mapping was updated
             case SDL_CONTROLLERDEVICEREMAPPED:
                 LOG("PollEvent: Gamepad device mapped\n");

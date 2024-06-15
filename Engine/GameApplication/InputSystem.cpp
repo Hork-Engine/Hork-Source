@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "InputSystem.h"
+#include "GameApplication.h"
 
 #include <Engine/Core/Logger.h>
 
@@ -45,6 +46,12 @@ InputSystem::InputSystem()
 {
     for (int i = 0; i < m_KeyStateMap.Size(); ++i)
         m_KeyStateMap[i] = -1;
+}
+
+InputSystem::~InputSystem()
+{
+    for (auto* gamepadState : m_PlayerGamepadState)
+        delete gamepadState;
 }
 
 void InputSystem::SetInputMappings(InputMappings* mappings)
@@ -103,6 +110,12 @@ void InputSystem::SetKeyState(VirtualKey virtualKey, InputEvent event, KeyModifi
             action.IsPressed = false;
         }
 
+        if (pressedKey.IsBinded && !pressedKey.VirtMapping.IsAction)
+        {
+            // Add one-frame empty axis for released button
+            AddAxis(pressedKey.VirtMapping.Name, pressedKey.VirtMapping.Owner, 0);
+        }
+
         m_KeyStateMap[virtualKeyNum] = -1;
 
         if (index != m_NumPressedKeys - 1)
@@ -118,8 +131,17 @@ void InputSystem::SetKeyState(VirtualKey virtualKey, InputEvent event, KeyModifi
 
 void InputSystem::ResetKeyState()
 {
-    for (uint32_t i = 0; i < VirtualKeyTableSize; ++i)
+    for (uint32_t i = 0; i < VIRTUAL_KEY_COUNT; ++i)
         SetKeyState(VirtualKey(i), InputEvent::OnRelease, {});
+
+    for (int playerIndex = 0; playerIndex < int(m_PlayerGamepadState.Size()); ++playerIndex)
+    {
+        if (m_PlayerGamepadState[playerIndex])
+        {
+            for (uint32_t i = 0; i < GAMEPAD_KEY_COUNT; ++i)
+                SetGamepadButtonState(GamepadKey(i), InputEvent::OnRelease, PlayerController(playerIndex));
+        }
+    }
 }
 
 bool InputSystem::IsKeyDown(VirtualKey virtualKey) const
@@ -133,11 +155,87 @@ void InputSystem::SetMouseAxisState(float x, float y)
     m_MouseAxisState[m_MouseIndex].Y += y;
 }
 
-void InputSystem::NotifyUnicodeCharacter(WideChar unicodeCharacter, KeyModifierMask modMask)
+InputSystem::PlayerGamepadState* InputSystem::GetPlayerGamepadState(PlayerController player)
 {
-    auto& ch = m_Chars.EmplaceBack();
-    ch.Char = unicodeCharacter;
-    ch.ModMask = modMask;
+    using PlayerIndex = std::make_signed_t<std::underlying_type_t<PlayerController>>;
+
+    auto playerIndex = PlayerIndex(player);
+    HK_ASSERT(playerIndex >= 0);
+    if (playerIndex < 0)
+        return nullptr;
+
+    while (m_PlayerGamepadState.Size() <= playerIndex)
+        m_PlayerGamepadState.Add(nullptr);
+
+    if (!m_PlayerGamepadState[playerIndex])
+        m_PlayerGamepadState[playerIndex] = new PlayerGamepadState;
+
+    return m_PlayerGamepadState[playerIndex];
+}
+
+void InputSystem::SetGamepadButtonState(GamepadKey key, InputEvent event, PlayerController player)
+{
+    PlayerGamepadState* state = GetPlayerGamepadState(player);
+    if (!state)
+        return;
+
+    auto& buttonState = state->m_ButtonState[ToUnderlying(key)];
+    bool wasPressed = buttonState.IsPressed;
+
+    if ((event == InputEvent::OnPress && wasPressed) || (event == InputEvent::OnRelease && !wasPressed))
+        return;
+
+    if (event == InputEvent::OnPress)
+    {
+        buttonState.IsPressed = true;
+
+        if (m_InputMappings)
+        {
+            buttonState.IsBinded = m_InputMappings->GetGamepadMapping(player, key, buttonState.VirtMapping);
+        }
+        else
+            buttonState.IsBinded = false;
+
+        if (buttonState.IsBinded && buttonState.VirtMapping.IsAction)
+        {
+            auto& action = m_ActionPool.EmplaceBack();
+            action.Name = buttonState.VirtMapping.Name;
+            action.Owner = buttonState.VirtMapping.Owner;
+            action.IsPressed = true;
+        }
+    }
+    else if (event == InputEvent::OnRelease)
+    {
+        buttonState.IsPressed = false;
+
+        if (buttonState.IsBinded && buttonState.VirtMapping.IsAction)
+        {
+            auto& action = m_ActionPool.EmplaceBack();
+            action.Name = buttonState.VirtMapping.Name;
+            action.Owner = buttonState.VirtMapping.Owner;
+            action.IsPressed = false;
+        }
+
+        if (buttonState.IsBinded && !buttonState.VirtMapping.IsAction)
+        {
+            // Add one-frame empty axis for released button
+            AddAxis(buttonState.VirtMapping.Name, buttonState.VirtMapping.Owner, 0);
+        }
+    }
+}
+
+void InputSystem::SetGamepadAxis(GamepadAxis axis, float value, PlayerController player)
+{
+    PlayerGamepadState* state = GetPlayerGamepadState(player);
+    if (!state)
+        return;
+
+    state->m_AxisState[ToUnderlying(axis)] = value;
+}
+
+void InputSystem::AddCharacter(WideChar ch, KeyModifierMask modMask)
+{
+    m_Chars.Add({ch, modMask});
 }
 
 void InputSystem::NewFrame()
@@ -153,17 +251,16 @@ void InputSystem::Tick(float timeStep)
         return;
 
     // Apply keyboard
+
     for (PressedKey* key = m_PressedKeys.ToPtr(); key < &m_PressedKeys[m_NumPressedKeys]; key++)
     {
         if (key->IsBinded && !key->VirtMapping.IsAction)
-        {
             AddAxis(key->VirtMapping.Name, key->VirtMapping.Owner, key->VirtMapping.Power * timeStep);
-        }
     }
 
     // Apply mouse
-    Float2 mouseDelta;
 
+    Float2 mouseDelta;
     if (in_MouseFilter)
         mouseDelta = (m_MouseAxisState[0] + m_MouseAxisState[1]) * 0.5f;
     else
@@ -181,21 +278,47 @@ void InputSystem::Tick(float timeStep)
     const VirtualAxis mouseVirtualAxis[2] = {VirtualAxis::MouseHorizontal, VirtualAxis::MouseVertical};
     for (int mouseAxis = 0; mouseAxis < 2; ++mouseAxis)
     {
-        if (m_InputMappings->GetMapping(mouseVirtualAxis[mouseAxis], {}, virtMapping))
-        {
-            float delta = mouseDelta[mouseAxis];
+        float delta = mouseDelta[mouseAxis];
 
-            if (delta)
-            {
-                AddAxis(virtMapping.Name, virtMapping.Owner, delta * virtMapping.Power * mouseSens[mouseAxis]);
-            }
-        }
+        if (delta == 0 && m_MousePrevDelta[mouseAxis] == 0)
+            continue;
+
+        if (m_InputMappings->GetMapping(mouseVirtualAxis[mouseAxis], {}, virtMapping))
+            AddAxis(virtMapping.Name, virtMapping.Owner, delta * virtMapping.Power * mouseSens[mouseAxis]);
     }
+
+    m_MousePrevDelta = mouseDelta;
 
     m_MouseIndex ^= 1;
     m_MouseAxisState[m_MouseIndex].Clear();
 
-    // TODO: Apply gamepad
+    // Apply gamepad
+
+    int playerIndex = 0;
+    for (auto* gamepadState : m_PlayerGamepadState)
+    {
+        if (gamepadState)
+        {
+            for (auto* buttonState = gamepadState->m_ButtonState; buttonState < &gamepadState->m_ButtonState[GAMEPAD_KEY_COUNT]; ++buttonState)
+            {
+                if (buttonState->IsPressed && buttonState->IsBinded && !buttonState->VirtMapping.IsAction)
+                    AddAxis(buttonState->VirtMapping.Name, buttonState->VirtMapping.Owner, buttonState->VirtMapping.Power * timeStep);
+            }
+
+            for (int axis = 0; axis < GAMEPAD_AXIS_COUNT; ++axis)
+            {
+                float delta = gamepadState->m_AxisState[axis];
+                if (delta == 0 && gamepadState->m_PrevAxisState[axis] == 0)
+                    continue;
+
+                if (m_InputMappings->GetGamepadMapping(PlayerController(playerIndex), GamepadAxis(axis), virtMapping))
+                    AddAxis(virtMapping.Name, virtMapping.Owner, delta * virtMapping.Power/* * timeStep*/);
+
+                gamepadState->m_PrevAxisState[axis] = delta;
+            }
+        }
+        ++playerIndex;
+    }
 }
 
 void InputSystem::AddAxis(StringID name, PlayerController owner, float power)

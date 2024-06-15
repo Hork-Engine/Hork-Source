@@ -590,7 +590,7 @@ void UIDesktop::GenerateMouseMoveEvents(MouseMoveEvent const& event)
     }
 }
 
-void UIDesktop::GenerateJoystickButtonEvents(JoystickButtonEvent const& event)
+void UIDesktop::GeneratenGamepadButtonEvents(GamepadKeyEvent const& event)
 {
     if (m_DraggingWidget)
     {
@@ -598,55 +598,23 @@ void UIDesktop::GenerateJoystickButtonEvents(JoystickButtonEvent const& event)
         return;
     }
 
-    #if 0
-    if (m_Popup)
-    {
-        // TODO: Use joystick/gamepad buttons to control popup menu
-#if 0
-        if ( event.Action == IE_Press || event.Action ==  IE_Repeat ) {
-            if ( event.Key == KEY_ESCAPE ) {
-                ClosePopupMenu();
-            } else if ( event.Key == KEY_DOWN ) {
-                m_Popup->SelectNextItem();
-            } else if ( event.Key == KEY_UP ) {
-                m_Popup->SelectPrevItem();
-            } else if ( event.Key == KEY_RIGHT ) {
-                m_Popup->SelectNextSubMenu();
-            } else if ( event.Key == KEY_LEFT ) {
-                m_Popup->SelectPrevSubMenu();
-            } else if ( event.Key == KEY_HOME ) {
-                m_Popup->SelectFirstItem();
-            } else if ( event.Key == KEY_END ) {
-                m_Popup->SelectLastItem();
-            }
-        }
-#endif
-        return;
-    }
-    #endif
-
     if (m_FocusWidget && m_FocusWidget->IsVisible() && !m_FocusWidget->IsDisabled())
     {
-        m_FocusWidget->ForwardJoystickButtonEvent(event);
+        m_FocusWidget->ForwardGamepadButtonEvent(event);
     }
 }
 
-void UIDesktop::GenerateJoystickAxisEvents(JoystickAxisEvent const& event)
+void UIDesktop::GenerateGamepadAxisMotionEvents(GamepadAxisMotionEvent const& event)
 {
     if (m_DraggingWidget)
     {
         // Don't allow joystick buttons when dragging
         return;
     }
-    #if 0
-    if (m_Popup)
-    {
-        return;
-    }
-    #endif
+
     if (m_FocusWidget && m_FocusWidget->IsVisible() && !m_FocusWidget->IsDisabled())
     {
-        m_FocusWidget->ForwardJoystickAxisEvent(event);
+        m_FocusWidget->ForwardGamepadAxisMotionEvent(event);
     }
 }
 

@@ -55,8 +55,8 @@ public:
     void            BindAction(StringView name, T* component, void (T::*method)(), InputEvent event, ExecuteMode mode = ExecuteMode::Default);
 
     template <typename T>
-    void            BindCharacterCallback(T* component, void (T::*method)(WideChar, KeyModifierMask), ExecuteMode mode = ExecuteMode::Default);
-    void            UnbindCharacterCallback();
+    void            BindCharacterInput(T* component, void (T::*method)(WideChar, KeyModifierMask), ExecuteMode mode = ExecuteMode::Default);
+    void            UnbindCharacterInput();
 
 private:
     struct Binding
@@ -97,13 +97,13 @@ HK_INLINE void InputBindings::BindAction(StringView name, T* component, void (T:
 }
 
 template <typename T>
-HK_INLINE void InputBindings::BindCharacterCallback(T* component, void (T::*method)(WideChar, KeyModifierMask), ExecuteMode mode)
+HK_INLINE void InputBindings::BindCharacterInput(T* component, void (T::*method)(WideChar, KeyModifierMask), ExecuteMode mode)
 {
     m_CharacterCallback.Bind(component, method);
     m_CharacterCallbackExecuteEvenWhenPaused = mode == ExecuteMode::ExecuteEvenWhenPaused;
 }
 
-HK_INLINE void InputBindings::UnbindCharacterCallback()
+HK_INLINE void InputBindings::UnbindCharacterInput()
 {
     m_CharacterCallback.Clear();
 }

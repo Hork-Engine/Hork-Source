@@ -68,18 +68,24 @@ void InputInterface::Update()
         auto& chars = GameApplication::GetInputSystem().GetChars();
         for (auto& ch : chars)
         {
-            for (int controller = 0; controller < int(PlayerController::MAX_PLAYER_CONTROLLERS); ++controller)
+            for (int playerIndex = 0; playerIndex < int(PlayerController::MAX_PLAYER_CONTROLLERS); ++playerIndex)
             {
-                if (m_Bindings[controller].m_CharacterCallbackExecuteEvenWhenPaused || !GetWorld()->GetTick().IsPaused)
-                    m_Bindings[controller].m_CharacterCallback.Invoke(GetWorld(), ch.Char, ch.ModMask);
+                if (m_Bindings[playerIndex].m_CharacterCallbackExecuteEvenWhenPaused || !GetWorld()->GetTick().IsPaused)
+                    m_Bindings[playerIndex].m_CharacterCallback.Invoke(GetWorld(), ch.Char, ch.ModMask);
             }
         }
     }
 }
 
-void InputInterface::InvokeAction(StringID name, InputEvent event, PlayerController controller)
+void InputInterface::InvokeAction(StringID name, InputEvent event, PlayerController player)
 {
-    auto& bindings = m_Bindings[ToUnderlying(controller)].m_Bindings;
+    if (player >= PlayerController::MAX_PLAYER_CONTROLLERS)
+    {
+        LOG("MAX_PLAYER_CONTROLLERS hit\n");
+        return;
+    }
+
+    auto& bindings = m_Bindings[ToUnderlying(player)].m_Bindings;
     auto it = bindings.Find(name);
     if (it == bindings.End())
         return;
@@ -91,9 +97,15 @@ void InputInterface::InvokeAction(StringID name, InputEvent event, PlayerControl
     binding.ActionBinding[ToUnderlying(event)].Invoke(GetWorld());
 }
 
-void InputInterface::InvokeAxis(StringID name, float power, PlayerController controller)
+void InputInterface::InvokeAxis(StringID name, float power, PlayerController player)
 {
-    auto& bindings = m_Bindings[ToUnderlying(controller)].m_Bindings;
+    if (player >= PlayerController::MAX_PLAYER_CONTROLLERS)
+    {
+        LOG("MAX_PLAYER_CONTROLLERS hit\n");
+        return;
+    }
+
+    auto& bindings = m_Bindings[ToUnderlying(player)].m_Bindings;
     auto it = bindings.Find(name);
     if (it == bindings.End())
         return;
@@ -105,9 +117,15 @@ void InputInterface::InvokeAxis(StringID name, float power, PlayerController con
     binding.AxisBinding.Invoke(GetWorld(), power);
 }
 
-void InputInterface::UnbindAll(PlayerController controller)
+void InputInterface::UnbindAll(PlayerController player)
 {
-    m_Bindings[ToUnderlying(controller)].Clear();
+    if (player >= PlayerController::MAX_PLAYER_CONTROLLERS)
+    {
+        LOG("MAX_PLAYER_CONTROLLERS hit\n");
+        return;
+    }
+
+    m_Bindings[ToUnderlying(player)].Clear();
 }
 
 HK_NAMESPACE_END

@@ -432,9 +432,9 @@ public:
 
     void ForwardMouseMoveEvent(struct MouseMoveEvent const& event);
 
-    void ForwardJoystickButtonEvent(struct JoystickButtonEvent const& event);
+    void ForwardGamepadButtonEvent(struct GamepadKeyEvent const& event);
 
-    void ForwardJoystickAxisEvent(struct JoystickAxisEvent const& event);
+    void ForwardGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event);
 
     void ForwardCharEvent(struct CharEvent const& event);
 
@@ -461,9 +461,9 @@ protected:
 
     virtual void OnMouseMoveEvent(struct MouseMoveEvent const& event);
 
-    virtual void OnJoystickButtonEvent(struct JoystickButtonEvent const& event);
+    virtual void OnGamepadButtonEvent(struct GamepadKeyEvent const& event);
 
-    virtual void OnJoystickAxisEvent(struct JoystickAxisEvent const& event);
+    virtual void OnGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event);
 
     virtual void OnCharEvent(struct CharEvent const& event);
 

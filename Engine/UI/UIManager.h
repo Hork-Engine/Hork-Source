@@ -98,9 +98,9 @@ public:
 
     void GenerateMouseMoveEvents(struct MouseMoveEvent const& event);
 
-    void GenerateJoystickButtonEvents(struct JoystickButtonEvent const& event);
+    void GeneratenGamepadButtonEvents(struct GamepadKeyEvent const& event);
 
-    void GenerateJoystickAxisEvents(struct JoystickAxisEvent const& event);
+    void GenerateGamepadAxisMotionEvents(struct GamepadAxisMotionEvent const& event);
 
     void GenerateCharEvents(struct CharEvent const& event);
 

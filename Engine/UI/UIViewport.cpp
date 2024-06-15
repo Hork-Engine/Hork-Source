@@ -99,19 +99,22 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
     GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
 }
 
-void UIViewport::OnJoystickButtonEvent(JoystickButtonEvent const& event)
+void UIViewport::OnGamepadButtonEvent(GamepadKeyEvent const& event)
 {
-    // TODO
+    if (event.Action == InputAction::Pressed)
+        GameApplication::GetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnPress, PlayerController(event.AssignedPlayerIndex));
+    else if (event.Action == InputAction::Released)
+        GameApplication::GetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnRelease, PlayerController(event.AssignedPlayerIndex));
 }
 
-void UIViewport::OnJoystickAxisEvent(JoystickAxisEvent const& event)
+void UIViewport::OnGamepadAxisMotionEvent(GamepadAxisMotionEvent const& event)
 {
-    // TODO
+    GameApplication::GetInputSystem().SetGamepadAxis(event.Axis, event.Value, PlayerController(event.AssignedPlayerIndex));
 }
 
 void UIViewport::OnCharEvent(CharEvent const& event)
 {
-    GameApplication::GetInputSystem().NotifyUnicodeCharacter(event.UnicodeCharacter, event.ModMask);
+    GameApplication::GetInputSystem().AddCharacter(event.UnicodeCharacter, event.ModMask);
 }
 
 void UIViewport::OnFocusLost()

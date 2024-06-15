@@ -44,10 +44,11 @@ enum class InputEvent : uint8_t
     OnRelease
 };
 
-class InputSystem
+class InputSystem final
 {
 public:
                             InputSystem();
+                            ~InputSystem();
 
     void                    SetInputMappings(InputMappings* mappings);
 
@@ -61,10 +62,13 @@ public:
     float                   GetMouseMoveX() const { return m_MouseAxisState[m_MouseIndex].X; }
     float                   GetMouseMoveY() const { return m_MouseAxisState[m_MouseIndex].Y; }
 
+    void                    SetGamepadButtonState(GamepadKey key, InputEvent event, PlayerController player);
+    void                    SetGamepadAxis(GamepadAxis axis, float value, PlayerController player);
+
     void                    SetCursorPosition(Float2 const& position)   { m_CursorPosition = position; }
     Float2 const&           GetCursorPosition() const                   { return m_CursorPosition; }
 
-    void                    NotifyUnicodeCharacter(WideChar unicodeCharacter, KeyModifierMask modMask);
+    void                    AddCharacter(WideChar ch, KeyModifierMask modMask);
 
     void                    NewFrame();
     void                    Tick(float timeStep);
@@ -94,7 +98,29 @@ public:
     Vector<Char> const&     GetChars() const        { return m_Chars; }
 
 private:
+    struct PlayerGamepadState
+    {
+        struct ButtonState
+        {
+            bool            IsPressed = false;
+            bool            IsBinded = false;
+            VirtualMapping  VirtMapping;        
+        };
+
+        ButtonState         m_ButtonState[GAMEPAD_KEY_COUNT];
+        float               m_AxisState[GAMEPAD_AXIS_COUNT];
+        float               m_PrevAxisState[GAMEPAD_AXIS_COUNT];
+
+        PlayerGamepadState()
+        {
+            Core::ZeroMem(m_AxisState, sizeof(m_AxisState));
+            Core::ZeroMem(m_PrevAxisState, sizeof(m_PrevAxisState));
+        }
+    };
+
     void                    AddAxis(StringID name, PlayerController owner, float value);
+
+    PlayerGamepadState*     GetPlayerGamepadState(PlayerController player);
 
     Ref<InputMappings>      m_InputMappings;
 
@@ -111,12 +137,15 @@ private:
     PressedKeysArray        m_PressedKeys;
     int                     m_NumPressedKeys = 0;
 
-    using KeyStateArray     = Array<int8_t, VirtualKeyTableSize>;
+    using KeyStateArray     = Array<int8_t, VIRTUAL_KEY_COUNT>;
     KeyStateArray           m_KeyStateMap;
 
     Array<Float2, 2>        m_MouseAxisState;
     int                     m_MouseIndex = 0;
+    Float2                  m_MousePrevDelta;
     Float2                  m_CursorPosition;
+
+    Vector<PlayerGamepadState*> m_PlayerGamepadState;
 
     Vector<Action>          m_ActionPool;
     Vector<Axis>            m_AxisPool;

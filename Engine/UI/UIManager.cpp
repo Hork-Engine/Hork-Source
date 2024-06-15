@@ -371,21 +371,16 @@ void UIManager::GenerateMouseMoveEvents(MouseMoveEvent const& event)
         m_ActiveDesktop->GenerateMouseMoveEvents(event);
 }
 
-void UIManager::GenerateJoystickButtonEvents(JoystickButtonEvent const& event)
+void UIManager::GeneratenGamepadButtonEvents(GamepadKeyEvent const& event)
 {
-    if (m_Console.IsActive() && event.Action != InputAction::Released)
-    {
-        return;
-    }
-
     if (m_ActiveDesktop)
-        m_ActiveDesktop->GenerateJoystickButtonEvents(event);
+        m_ActiveDesktop->GeneratenGamepadButtonEvents(event);
 }
 
-void UIManager::GenerateJoystickAxisEvents(JoystickAxisEvent const& event)
+void UIManager::GenerateGamepadAxisMotionEvents(GamepadAxisMotionEvent const& event)
 {
     if (m_ActiveDesktop)
-        m_ActiveDesktop->GenerateJoystickAxisEvents(event);
+        m_ActiveDesktop->GenerateGamepadAxisMotionEvents(event);
 }
 
 void UIManager::GenerateCharEvents(CharEvent const& event)

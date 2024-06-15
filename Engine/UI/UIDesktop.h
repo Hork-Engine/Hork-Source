@@ -84,9 +84,9 @@ private:
 
     void GenerateMouseMoveEvents(struct MouseMoveEvent const& event);
 
-    void GenerateJoystickButtonEvents(struct JoystickButtonEvent const& event);
+    void GeneratenGamepadButtonEvents(GamepadKeyEvent const& event);
 
-    void GenerateJoystickAxisEvents(struct JoystickAxisEvent const& event);
+    void GenerateGamepadAxisMotionEvents(GamepadAxisMotionEvent const& event);
 
     void GenerateCharEvents(struct CharEvent const& event);
 

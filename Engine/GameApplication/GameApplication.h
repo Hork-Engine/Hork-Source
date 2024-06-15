@@ -200,10 +200,10 @@ private:
     void OnMouseMoveEvent(MouseMoveEvent const& event) override final;
 
     /// IEventListener interface.
-    void OnJoystickAxisEvent(JoystickAxisEvent const& event) override final;
+    void OnGamepadButtonEvent(struct GamepadKeyEvent const& event) override final;
 
     /// IEventListener interface.
-    void OnJoystickButtonEvent(JoystickButtonEvent const& event) override final;
+    void OnGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event)  override final;
 
     /// IEventListener interface.
     void OnCharEvent(CharEvent const& event) override final;

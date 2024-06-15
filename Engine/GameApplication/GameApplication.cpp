@@ -576,14 +576,14 @@ void GameApplication::OnMouseMoveEvent(MouseMoveEvent const& event)
     m_UIManager->GenerateMouseMoveEvents(event);
 }
 
-void GameApplication::OnJoystickButtonEvent(JoystickButtonEvent const& event)
+void GameApplication::OnGamepadButtonEvent(struct GamepadKeyEvent const& event)
 {
-    m_UIManager->GenerateJoystickButtonEvents(event);
+    m_UIManager->GeneratenGamepadButtonEvents(event);
 }
 
-void GameApplication::OnJoystickAxisEvent(JoystickAxisEvent const& event)
+void GameApplication::OnGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event)
 {
-    m_UIManager->GenerateJoystickAxisEvents(event);
+    m_UIManager->GenerateGamepadAxisMotionEvents(event);
 }
 
 void GameApplication::OnCharEvent(CharEvent const& event)

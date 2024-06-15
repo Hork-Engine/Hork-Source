@@ -45,9 +45,9 @@ public:
     bool                        IsActive() const { return m_IsActive; }
 
     template <typename ComponentType>
-    void                        BindInput(Handle32<ComponentType> component, PlayerController controller);
+    void                        BindInput(Handle32<ComponentType> component, PlayerController player);
 
-    void                        UnbindAll(PlayerController controller);
+    void                        UnbindAll(PlayerController player);
 
 protected:
     virtual void                Initialize() override;
@@ -56,8 +56,8 @@ protected:
 private:
     void                        Update();
 
-    void                        InvokeAction(StringID name, InputEvent event, PlayerController controller);
-    void                        InvokeAxis(StringID name, float power, PlayerController controller);
+    void                        InvokeAction(StringID name, InputEvent event, PlayerController player);
+    void                        InvokeAxis(StringID name, float power, PlayerController player);
 
     InputBindings               m_Bindings[ToUnderlying(PlayerController::MAX_PLAYER_CONTROLLERS)];
     bool                        m_IsActive = false;
@@ -66,9 +66,9 @@ private:
 HK_FIND_METHOD(BindInput)
 
 template <typename ComponentType>
-HK_INLINE void InputInterface::BindInput(Handle32<ComponentType> component, PlayerController controller)
+HK_INLINE void InputInterface::BindInput(Handle32<ComponentType> component, PlayerController player)
 {
-    UnbindAll(controller);
+    UnbindAll(player);
 
     if constexpr (!HK_HAS_METHOD(ComponentType, BindInput))
     {
@@ -77,7 +77,7 @@ HK_INLINE void InputInterface::BindInput(Handle32<ComponentType> component, Play
     else
     {
         if (auto* componentPtr = GetWorld()->GetComponent(component))
-            componentPtr->BindInput(m_Bindings[int(controller)]);
+            componentPtr->BindInput(m_Bindings[ToUnderlying(player)]);
     }
 }
 

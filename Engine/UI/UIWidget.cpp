@@ -160,11 +160,11 @@ void UIWidget::OnMouseMoveEvent(MouseMoveEvent const& event)
 {
 }
 
-void UIWidget::OnJoystickButtonEvent(JoystickButtonEvent const& event)
+void UIWidget::OnGamepadButtonEvent(GamepadKeyEvent const& event)
 {
 }
 
-void UIWidget::OnJoystickAxisEvent(JoystickAxisEvent const& event)
+void UIWidget::OnGamepadAxisMotionEvent(GamepadAxisMotionEvent const& event)
 {
 }
 
@@ -476,27 +476,27 @@ void UIWidget::ForwardMouseMoveEvent(MouseMoveEvent const& event)
     }
 }
 
-void UIWidget::ForwardJoystickButtonEvent(JoystickButtonEvent const& event)
+void UIWidget::ForwardGamepadButtonEvent(GamepadKeyEvent const& event)
 {
-    OnJoystickButtonEvent(event);
+    OnGamepadButtonEvent(event);
 
     if (ShareInputs)
     {
         for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<WeakRef<UIWidget>&>(w)->OnJoystickButtonEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnGamepadButtonEvent(event);
     }
 }
 
-void UIWidget::ForwardJoystickAxisEvent(JoystickAxisEvent const& event)
+void UIWidget::ForwardGamepadAxisMotionEvent(GamepadAxisMotionEvent const& event)
 {
-    OnJoystickAxisEvent(event);
+    OnGamepadAxisMotionEvent(event);
 
     if (ShareInputs)
     {
         for (WeakRef<UIWidget> const& w : ShareInputs->GetWidgets())
             if (w && w != this)
-                const_cast<WeakRef<UIWidget>&>(w)->OnJoystickAxisEvent(event);
+                const_cast<WeakRef<UIWidget>&>(w)->OnGamepadAxisMotionEvent(event);
     }
 }
 

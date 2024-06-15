@@ -165,85 +165,55 @@ const VirtualKeyDesc VirtualKeyTable[] =
 { "R. Ctrl" },
 { "R. Alt" },
 { "R. Super" },
-{ "Menu" },
-
-// Joystick
-{ "JoyBtn1" },
-{ "JoyBtn2" },
-{ "JoyBtn3" },
-{ "JoyBtn4" },
-{ "JoyBtn5" },
-{ "JoyBtn6" },
-{ "JoyBtn7" },
-{ "JoyBtn8" },
-{ "JoyBtn9" },
-{ "JoyBtn10" },
-{ "JoyBtn11" },
-{ "JoyBtn12" },
-{ "JoyBtn13" },
-{ "JoyBtn14" },
-{ "JoyBtn15" },
-{ "JoyBtn16" },
-{ "JoyBtn17" },
-{ "JoyBtn18" },
-{ "JoyBtn19" },
-{ "JoyBtn20" },
-{ "JoyBtn21" },
-{ "JoyBtn22" },
-{ "JoyBtn23" },
-{ "JoyBtn24" },
-{ "JoyBtn25" },
-{ "JoyBtn26" },
-{ "JoyBtn27" },
-{ "JoyBtn28" },
-{ "JoyBtn29" },
-{ "JoyBtn30" },
-{ "JoyBtn31" },
-{ "JoyBtn32" }
+{ "Menu" }
 };
 
 const VirtualAxisDesc VirtualAxisTable[] =
 {
 // Mouse
 {"Mouse Horizontal"},
-{"Mouse Vertical"},
-
-// Joystick
-{"JoyAxis1"},
-{"JoyAxis2"},
-{"JoyAxis3"},
-{"JoyAxis4"},
-{"JoyAxis5"},
-{"JoyAxis6"},
-{"JoyAxis7"},
-{"JoyAxis8"},
-{"JoyAxis9"},
-{"JoyAxis10"},
-{"JoyAxis11"},
-{"JoyAxis12"},
-{"JoyAxis13"},
-{"JoyAxis14"},
-{"JoyAxis15"},
-{"JoyAxis16"},
-{"JoyAxis17"},
-{"JoyAxis18"},
-{"JoyAxis19"},
-{"JoyAxis20"},
-{"JoyAxis21"},
-{"JoyAxis22"},
-{"JoyAxis23"},
-{"JoyAxis24"},
-{"JoyAxis25"},
-{"JoyAxis26"},
-{"JoyAxis27"},
-{"JoyAxis28"},
-{"JoyAxis29"},
-{"JoyAxis30"},
-{"JoyAxis31"},
-{"JoyAxis32"}
+{"Mouse Vertical"}
 };
 
-static_assert(VirtualKeyTableSize == HK_ARRAY_SIZE(VirtualKeyTable), "Size mismatch");
-static_assert(VirtualAxisTableSize == HK_ARRAY_SIZE(VirtualAxisTable), "Size mismatch");
+static_assert(VIRTUAL_KEY_COUNT == HK_ARRAY_SIZE(VirtualKeyTable), "Size mismatch");
+static_assert(VIRTUAL_AXIS_COUNT == HK_ARRAY_SIZE(VirtualAxisTable), "Size mismatch");
+
+const GamepadKeyDesc GamepadKeyTable[] =
+{
+{ "Gamepad A" },
+{ "Gamepad B" },
+{ "Gamepad X" },
+{ "Gamepad Y" },
+{ "Gamepad Back" },
+{ "Gamepad Guide" },
+{ "Gamepad Start" },
+{ "Gamepad Left Stick" },
+{ "Gamepad Right Stick" },
+{ "Gamepad Left Shoulder" },
+{ "Gamepad Right Shoulder" },
+{ "Gamepad DPad Up" },
+{ "Gamepad DPad Down" },
+{ "Gamepad DPad Left" },
+{ "Gamepad DPad Right" },
+{ "Gamepad Misc1" },
+{ "Gamepad Paddle1" },
+{ "Gamepad Paddle2" },
+{ "Gamepad Paddle3" },
+{ "Gamepad Paddle4" },
+{ "Gamepad Touchpad" }
+};
+
+const GamepadAxisDesc GamepadAxisTable[] =
+{
+{ "Gamepad Left X" },
+{ "Gamepad Left Y" },
+{ "Gamepad Right X" },
+{ "Gamepad Right Y" },
+{ "Gamepad Trigger Left" },
+{ "Gamepad Trigger Right" }
+};
+
+static_assert(GAMEPAD_KEY_COUNT == HK_ARRAY_SIZE(GamepadKeyTable), "Size mismatch");
+static_assert(GAMEPAD_AXIS_COUNT == HK_ARRAY_SIZE(GamepadAxisTable), "Size mismatch");
 
 HK_NAMESPACE_END

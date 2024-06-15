@@ -66,9 +66,9 @@ protected:
 
     void OnMouseMoveEvent(struct MouseMoveEvent const& event) override;
 
-    void OnJoystickButtonEvent(struct JoystickButtonEvent const& event) override;
+    void OnGamepadButtonEvent(struct GamepadKeyEvent const& event) override;
 
-    void OnJoystickAxisEvent(struct JoystickAxisEvent const& event) override;
+    void OnGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event) override;
 
     void OnCharEvent(struct CharEvent const& event) override;
 

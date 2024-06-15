@@ -168,40 +168,6 @@ enum class VirtualKey : uint16_t
     RightAlt,
     RightSuper,
     Menu,
-
-    // Joystick
-    JoyBtn1,
-    JoyBtn2,
-    JoyBtn3,
-    JoyBtn4,
-    JoyBtn5,
-    JoyBtn6,
-    JoyBtn7,
-    JoyBtn8,
-    JoyBtn9,
-    JoyBtn10,
-    JoyBtn11,
-    JoyBtn12,
-    JoyBtn13,
-    JoyBtn14,
-    JoyBtn15,
-    JoyBtn16,
-    JoyBtn17,
-    JoyBtn18,
-    JoyBtn19,
-    JoyBtn20,
-    JoyBtn21,
-    JoyBtn22,
-    JoyBtn23,
-    JoyBtn24,
-    JoyBtn25,
-    JoyBtn26,
-    JoyBtn27,
-    JoyBtn28,
-    JoyBtn29,
-    JoyBtn30,
-    JoyBtn31,
-    JoyBtn32,
 };
 
 enum class VirtualAxis : uint16_t
@@ -209,40 +175,6 @@ enum class VirtualAxis : uint16_t
     // Mouse
     MouseHorizontal,
     MouseVertical,
-
-    // Joystick
-    JoyAxis1,
-    JoyAxis2,
-    JoyAxis3,
-    JoyAxis4,
-    JoyAxis5,
-    JoyAxis6,
-    JoyAxis7,
-    JoyAxis8,
-    JoyAxis9,
-    JoyAxis10,
-    JoyAxis11,
-    JoyAxis12,
-    JoyAxis13,
-    JoyAxis14,
-    JoyAxis15,
-    JoyAxis16,
-    JoyAxis17,
-    JoyAxis18,
-    JoyAxis19,
-    JoyAxis20,
-    JoyAxis21,
-    JoyAxis22,
-    JoyAxis23,
-    JoyAxis24,
-    JoyAxis25,
-    JoyAxis26,
-    JoyAxis27,
-    JoyAxis28,
-    JoyAxis29,
-    JoyAxis30,
-    JoyAxis31,
-    JoyAxis32,
 };
 
 struct VirtualKeyDesc
@@ -258,8 +190,8 @@ struct VirtualAxisDesc
 extern const VirtualKeyDesc VirtualKeyTable[];
 extern const VirtualAxisDesc VirtualAxisTable[];
 
-constexpr uint32_t VirtualKeyTableSize = 161;
-constexpr uint32_t VirtualAxisTableSize = 34;
+constexpr uint32_t VIRTUAL_KEY_COUNT = 129;
+constexpr uint32_t VIRTUAL_AXIS_COUNT = 2;
 
 struct VirtualKeyOrAxis
 {
@@ -363,6 +295,128 @@ struct KeyModifierMask
             bool NumLock : 1;
         };
     };
+};
+
+enum class GamepadKey : uint16_t
+{
+    A,
+    B,
+    X,
+    Y,
+    Back,
+    Guide,
+    Start,
+    LeftStick,
+    RightStick,
+    LeftShoulder,
+    RightShoulder,
+    DPad_Up,
+    DPad_Down,
+    DPad_Left,
+    DPad_Right,
+    Misc1,    // Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button
+    Paddle1,  // Xbox Elite paddle P1
+    Paddle2,  // Xbox Elite paddle P3
+    Paddle3,  // Xbox Elite paddle P2
+    Paddle4,  // Xbox Elite paddle P4
+    Touchpad  // PS4/PS5 touchpad button
+};
+
+enum class GamepadAxis : uint16_t
+{
+    LeftX,
+    LeftY,
+    RightX,
+    RightY,
+    TriggerLeft,
+    TriggerRight
+};
+
+struct GamepadKeyDesc
+{
+    const char* Name;
+};
+
+struct GamepadAxisDesc
+{
+    const char* Name;
+};
+
+extern const GamepadKeyDesc GamepadKeyTable[];
+extern const GamepadAxisDesc GamepadAxisTable[];
+
+constexpr uint32_t GAMEPAD_KEY_COUNT = 21;
+constexpr uint32_t GAMEPAD_AXIS_COUNT = 6;
+
+struct GamepadKeyOrAxis
+{
+    GamepadKeyOrAxis() = default;
+
+    GamepadKeyOrAxis(GamepadKey key) :
+        m_Data(uint16_t(key))
+    {}
+
+    GamepadKeyOrAxis(GamepadAxis axis) :
+        m_Data(uint16_t(axis) | (1 << 15))
+    {}
+
+    GamepadKeyOrAxis(GamepadKeyOrAxis const& rhs) = default;
+
+    GamepadKeyOrAxis& operator=(GamepadKeyOrAxis const& rhs) = default;
+
+    GamepadKeyOrAxis& operator=(GamepadKey key)
+    {
+        m_Data = uint16_t(key);
+        return *this;
+    }
+
+    GamepadKeyOrAxis& operator=(GamepadAxis axis)
+    {
+        m_Data = uint16_t(axis) | (1 << 15);
+        return *this;
+    }
+
+    bool operator==(GamepadKeyOrAxis const& rhs) const
+    {
+        return m_Data == rhs.m_Data;
+    }
+
+    bool operator!=(GamepadKeyOrAxis const& rhs) const
+    {
+        return m_Data != rhs.m_Data;
+    }
+
+    bool IsAxis() const
+    {
+        return (m_Data >> 15) == 1;
+    }
+
+    GamepadKey AsKey() const
+    {
+        if (IsAxis())
+            return GamepadKey(0);
+        return GamepadKey(m_Data);
+    }
+
+    GamepadAxis AsAxis() const
+    {
+        if (!IsAxis())
+            return GamepadAxis(0);
+        return GamepadAxis(m_Data & ~(1 << 15));
+    }
+
+    const char* GetName() const
+    {
+        return IsAxis() ? GamepadAxisTable[ToUnderlying(AsAxis())].Name : GamepadKeyTable[ToUnderlying(AsKey())].Name;
+    }
+
+    uint16_t GetData() const
+    {
+        return m_Data;
+    }
+
+private:
+    uint16_t        m_Data = 0;
 };
 
 HK_NAMESPACE_END

@@ -38,7 +38,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-enum InputAction
+enum class InputAction : uint8_t
 {
     Released,
     Pressed,
@@ -47,48 +47,50 @@ enum InputAction
 
 struct KeyEvent
 {
-    VirtualKey  Key;
-    int         Scancode; // Not used, reserved for future
+    VirtualKey      Key;
     KeyModifierMask ModMask;
-    InputAction Action;
+    int             Scancode; // Not used, reserved for future
+    InputAction     Action;
 };
 
 struct MouseButtonEvent
 {
-    VirtualKey  Button;
+    VirtualKey      Button;
     KeyModifierMask ModMask;
-    InputAction Action;
+    InputAction     Action;
 };
 
 struct MouseWheelEvent
 {
-    double      WheelX;
-    double      WheelY;
+    double          WheelX;
+    double          WheelY;
 };
 
 struct MouseMoveEvent
 {
-    float       X;
-    float       Y;
+    float           X;
+    float           Y;
 };
 
-struct JoystickAxisEvent
+struct GamepadKeyEvent
 {
-    int         Joystick;
-    int         Axis;
-    float       Value;
+    int             GamepadID;
+    int             AssignedPlayerIndex;
+    GamepadKey      Key;
+    InputAction     Action;
 };
 
-struct JoystickButtonEvent
+struct GamepadAxisMotionEvent
 {
-    int         Joystick;
-    VirtualKey  Button;
-    InputAction Action;
+    int             GamepadID;
+    int             AssignedPlayerIndex;
+    GamepadAxis     Axis;
+    float           Value;
 };
 
 struct CharEvent
 {
-    WideChar    UnicodeCharacter;
+    WideChar        UnicodeCharacter;
     KeyModifierMask ModMask;
 };
 
@@ -105,9 +107,9 @@ public:
 
     virtual void    OnMouseMoveEvent(struct MouseMoveEvent const& event) = 0;
 
-    virtual void    OnJoystickAxisEvent(struct JoystickAxisEvent const& event) = 0;
+    virtual void    OnGamepadButtonEvent(struct GamepadKeyEvent const& event) = 0;
 
-    virtual void    OnJoystickButtonEvent(struct JoystickButtonEvent const& event) = 0;
+    virtual void    OnGamepadAxisMotionEvent(struct GamepadAxisMotionEvent const& event) = 0;
 
     virtual void    OnCharEvent(struct CharEvent const& event) = 0;
 
@@ -123,11 +125,11 @@ class WorldRenderView;
 class FrameLoop final : public Noncopyable
 {
 public:
-                    FrameLoop(RenderCore::IDevice* RenderDevice);
+                    FrameLoop(RenderCore::IDevice* renderDevice);
                     ~FrameLoop();
 
     /** Allocate frame memory */
-    void*           AllocFrameMem(size_t _SizeInBytes);
+    void*           AllocFrameMem(size_t sizeInBytes);
 
     template <typename T>
     T*              AllocFrameMem() { return m_FrameMemory.Allocate<T>(); }
@@ -153,15 +155,15 @@ public:
     /** Get current frame number */
     int             SysFrameNumber() const;
 
-    void            SetGenerateInputEvents(bool bShouldGenerateInputEvents);
+    void            SetGenerateInputEvents(bool shouldGenerateInputEvents);
 
     /** Begin a new frame */
-    void            NewFrame(ArrayView<RenderCore::ISwapChain*> SwapChains, int SwapInterval, class ResourceManager* resourceManager);
+    void            NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swapInterval, class ResourceManager* resourceManager);
 
     /** Poll runtime events */
-    void            PollEvents(IEventListener* Listener);
+    void            PollEvents(IEventListener* listener);
 
-    void            RegisterView(WorldRenderView* pView);
+    void            RegisterView(WorldRenderView* view);
 
     Vector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
 
@@ -169,9 +171,6 @@ public:
 
 private:
     void            ClearViews();
-    void            ClearJoystickAxes(IEventListener* Listener, int _JoystickNum);
-    void            UnpressKeysAndButtons(IEventListener* Listener);
-    void            UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum);
         
     int64_t             m_FrameTimeStamp;
     int64_t             m_FrameDuration;
@@ -181,15 +180,13 @@ private:
     size_t              m_FrameMemoryUsedPrev = 0;
     size_t              m_MaxFrameMemoryUsage = 0;
 
-    UniqueRef<class GPUSync>     m_GPUSync;
-    UniqueRef<StreamedMemoryGPU> m_StreamedMemoryGPU;
+    Ref<RenderCore::IDevice>        m_RenderDevice;
+    UniqueRef<class GPUSync>        m_GPUSync;
+    UniqueRef<StreamedMemoryGPU>    m_StreamedMemoryGPU;
 
-    Ref<RenderCore::IDevice> m_RenderDevice;
+    HashMap<int, int>   m_GamepadIDToPlayerIndex;
 
-    Array<int, VirtualKeyTableSize>     m_PressedKeys;
-    //Array<Array<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>               m_JoystickAxisState;
-    //Array<bool, MAX_JOYSTICKS_COUNT>    m_JoystickAdded;
-    bool                                m_bShouldGenerateInputEvents{true};
+    bool                m_ShouldGenerateInputEvents{true};
 
     Vector<WorldRenderView*>   m_Views;
     Ref<class FontStash>       m_FontStash;
