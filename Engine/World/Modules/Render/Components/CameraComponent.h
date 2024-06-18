@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Component.h>
+#include <Engine/World/TickFunction.h>
 
 #include <Engine/Math/Quat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
@@ -160,5 +161,14 @@ private:
     mutable bool            m_ProjectionDirty = true;
     mutable bool            m_FrustumDirty = true;
 };
+
+namespace TickGroup_PostTransform
+{
+    template <>
+    HK_INLINE void InitializeTickFunction<CameraComponent>(TickFunctionDesc& desc)
+    {
+        desc.TickEvenWhenPaused = true;
+    }
+}
 
 HK_NAMESPACE_END

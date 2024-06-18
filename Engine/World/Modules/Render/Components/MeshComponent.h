@@ -189,4 +189,13 @@ private:
     uint32_t  m_LastFrame{0};
 };
 
+namespace TickGroup_PostTransform
+{
+    template <>
+    HK_INLINE void InitializeTickFunction<DynamicMeshComponent>(TickFunctionDesc& desc)
+    {
+        desc.TickEvenWhenPaused = true;
+    }
+}
+
 HK_NAMESPACE_END
