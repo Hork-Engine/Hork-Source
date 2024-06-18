@@ -125,7 +125,7 @@ using CollisionInstanceRef = JPH::Ref<JPH::Shape>;
 class CollisionModel : public RefCounted
 {
 public:
-    static Ref<CollisionModel>     Create(CollisionModelCreateInfo const& inCreateInfo);
+    static Ref<CollisionModel>      Create(CollisionModelCreateInfo const& inCreateInfo);
 
     Float3 const&                   GetCenterOfMass() const;
 
@@ -138,10 +138,10 @@ public:
     void                            DrawDebug(DebugRenderer& inRenderer, Float3x4 const& inTransform) const;
 
 private:
-    CollisionModel() = default;
+                                    CollisionModel() = default;
 
-    JPH::Ref<JPH::Shape> m_Shape;
-    Float3 m_CenterOfMass;
+    JPH::Ref<JPH::Shape>            m_Shape;
+    Float3                          m_CenterOfMass;
 
     enum SCALE_MODE : uint8_t
     {
@@ -149,13 +149,13 @@ private:
         UNIFORM_XZ,
         UNIFORM
     };
-    SCALE_MODE m_AllowedScalingMode{NON_UNIFORM};
+    SCALE_MODE                      m_AllowedScalingMode{NON_UNIFORM};
 };
 
 class TerrainCollision : public RefCounted
 {
 public:
-    static Ref<TerrainCollision>   Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
+    static Ref<TerrainCollision>    Create(const float* inSamples, uint32_t inSampleCount, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList());
 
     CollisionInstanceRef            Instatiate();
 
@@ -176,7 +176,7 @@ public:
     void                            GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
 
 private:
-    TerrainCollision() = default;
+                                    TerrainCollision() = default;
 
     JPH::Ref<JPH::HeightFieldShape> m_Shape;
 };

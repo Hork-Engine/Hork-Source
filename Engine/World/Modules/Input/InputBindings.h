@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/ComponentBinding.h>
-#include <Engine/GameApplication/VirtualKey.h>
+#include <Engine/GameApplication/InputSystem.h>
 
 HK_NAMESPACE_BEGIN
 

@@ -55,7 +55,7 @@ public:
     //
 
     /// Collision model of the body
-    Ref<CollisionModel>    m_CollisionModel;
+    Ref<CollisionModel>     m_CollisionModel;
 
     /// The collision layer this body belongs to (determines if two objects can collide)
     uint8_t                 m_CollisionLayer = 0;
