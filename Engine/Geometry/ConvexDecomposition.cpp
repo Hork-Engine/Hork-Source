@@ -41,7 +41,7 @@ HK_NAMESPACE_BEGIN
 namespace
 {
 
-HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& p, PlaneF const* planes, int planeCount, float margin)
+bool IsPointInsideConvexHull(Float3 const& p, PlaneF const* planes, int planeCount, float margin)
 {
     for (int i = 0; i < planeCount; i++)
         if (Math::Dot(planes[i].Normal, p) + planes[i].D - margin > 0)
@@ -49,7 +49,7 @@ HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& p, PlaneF const* plane
     return true;
 }
 
-static int FindPlane(PlaneF const& plane, PlaneF const* planes, int planeCount)
+int FindPlane(PlaneF const& plane, PlaneF const* planes, int planeCount)
 {
     for (int i = 0; i < planeCount; i++)
         if (Math::Dot(plane.Normal, planes[i].Normal) > 0.999f)
@@ -57,7 +57,7 @@ static int FindPlane(PlaneF const& plane, PlaneF const* planes, int planeCount)
     return -1;
 }
 
-static bool AreVerticesBehindPlane(PlaneF const& plane, Float3 const* vertices, int vertexCount, float margin)
+bool AreVerticesBehindPlane(PlaneF const& plane, Float3 const* vertices, int vertexCount, float margin)
 {
     for (int i = 0; i < vertexCount; i++)
     {
@@ -80,7 +80,7 @@ void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, Vecto
 
     const float margin = 0.01f;
 
-    planes.Clear();
+    auto firstPlane = planes.Size();
 
     for (int i = 0; i < vertexCount; i++)
     {
@@ -107,7 +107,7 @@ void ConvexHullPlanesFromVertices(Float3 const* vertices, int vertexCount, Vecto
                     {
                         plane.Normal.NormalizeSelf();
 
-                        if (FindPlane(plane, planes.ToPtr(), planes.Size()) == -1)
+                        if (FindPlane(plane, planes.ToPtr() + firstPlane, planes.Size() - firstPlane) == -1)
                         {
                             plane.D = -Math::Dot(plane.Normal, normal1);
 
@@ -128,8 +128,6 @@ void ConvexHullVerticesFromPlanes(PlaneF const* planes, int planeCount, Vector<F
 {
     constexpr float tolerance = 0.0001f;
     constexpr float quotientTolerance = 0.000001f;
-
-    vertices.Clear();
 
     for (int i = 0; i < planeCount; i++)
     {
