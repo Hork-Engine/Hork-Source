@@ -105,7 +105,7 @@ public:
     template <typename T>
     ResourceHandle<T> CreateResourceFromFile(StringView path);
 
-    File OpenResource(StringView path);
+    File OpenFile(StringView path);
 
     bool IsAreaReady(ResourceAreaID area);
 
@@ -243,8 +243,7 @@ ResourceHandle<T> ResourceManager::CreateResource(StringView name, Args&&... arg
 template <typename T>
 ResourceHandle<T> ResourceManager::CreateResourceFromFile(StringView path)
 {
-    File file = OpenResource(path);
-    if (file)
+    if (auto file = OpenFile(path))
         return CreateResource<T>(path, file, this);
     return CreateResource<T>(path);
 }

@@ -253,7 +253,7 @@ void CreateDefaultResources(ResourceManager* resManager)
     }
 
     {
-        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resManager->OpenResource("/Root/materials/sample_material_graph.mgraph").ReadInterface());
+        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resManager->OpenFile("/Root/materials/sample_material_graph.mgraph").ReadInterface());
 
         MaterialResource data;
 
@@ -356,7 +356,7 @@ bool ResourceManager::FindFile(StringView fileName, int* pResourcePackIndex, Fil
     return false;
 }
 
-File ResourceManager::OpenResource(StringView path)
+File ResourceManager::OpenFile(StringView path)
 {
     if (!path.IcmpN("/Root/", 6))
     {
@@ -364,7 +364,7 @@ File ResourceManager::OpenResource(StringView path)
         #if 0
         for (auto& factory : m_ResourceFactories)
         {
-            File file = factory->OpenResource(path);
+            File file = factory->OpenFile(path);
             if (file)
                 return file;
         }
@@ -436,7 +436,7 @@ ResourceProxy* ResourceManager::FindResource(StringView resourcePath)
 
 UniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, StringView name)
 {
-    File f = OpenResource(name);
+    File f = OpenFile(name);
     if (!f)
         return {};
 
