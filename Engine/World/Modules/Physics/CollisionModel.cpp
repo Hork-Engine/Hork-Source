@@ -717,52 +717,55 @@ void GatherGeometrySimpleShape(JPH::Shape const* shape, Vector<Float3>& vertices
 void CollisionModel::GatherGeometry(Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
 {
     JPH::Shape const* shape = m_Shape.GetPtr();
-
-    auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
-
-    //if (shape->GetSubType() == JPH::EShapeSubType::OffsetCenterOfMass)
-    //{
-    //    JPH::OffsetCenterOfMassShape const* offsetShape = CheckedStaticCast<JPH::OffsetCenterOfMassShape const*>(shape);
-    //    shape = offsetShape->GetInnerShape();
-    //}
-
-    Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
-
     auto first_vert = outVertices.Size();
 
-    Float3x4 local_transform;
-
-    if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
-    {
-        JPH::StaticCompoundShape const* compoundShape = CheckedStaticCast<JPH::StaticCompoundShape const*>(shape);
-
-        JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
-        for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
-        {
-            auto position = ConvertVector(subShape.GetPositionCOM());
-            auto rotation = ConvertQuaternion(subShape.GetRotation());
-
-            local_transform.Compose(position, rotation.ToMatrix3x3());
-
-            first_vert = outVertices.Size();
-
-            GatherGeometrySimpleShape(subShape.mShape, outVertices, outIndices);
-            TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix * local_transform);
-        }
-    }
-    else if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
+    if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
     {
         JPH::RotatedTranslatedShape const* transformedShape = CheckedStaticCast<JPH::RotatedTranslatedShape const*>(shape);
 
+        Float3x4 local_transform;
         local_transform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
 
         GatherGeometrySimpleShape(transformedShape->GetInnerShape(), outVertices, outIndices);
-        TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix * local_transform);
+        TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, local_transform);
     }
     else
     {
-        GatherGeometrySimpleShape(shape, outVertices, outIndices);
-        TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix);
+        auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
+
+        //if (shape->GetSubType() == JPH::EShapeSubType::OffsetCenterOfMass)
+        //{
+        //    JPH::OffsetCenterOfMassShape const* offsetShape = CheckedStaticCast<JPH::OffsetCenterOfMassShape const*>(shape);
+        //    shape = offsetShape->GetInnerShape();
+        //}
+
+        Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
+
+        Float3x4 local_transform;
+
+        if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
+        {
+            JPH::StaticCompoundShape const* compoundShape = CheckedStaticCast<JPH::StaticCompoundShape const*>(shape);
+
+            JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
+            for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
+            {
+                auto position = ConvertVector(subShape.GetPositionCOM());
+                auto rotation = ConvertQuaternion(subShape.GetRotation());
+
+                local_transform.Compose(position, rotation.ToMatrix3x3());
+
+                first_vert = outVertices.Size();
+
+                GatherGeometrySimpleShape(subShape.mShape, outVertices, outIndices);
+                TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix * local_transform);
+            }
+        }
+        else
+        {
+            GatherGeometrySimpleShape(shape, outVertices, outIndices);
+            TransformVertices(outVertices.ToPtr() + first_vert, outVertices.Size() - first_vert, center_of_mass_offset_matrix);
+        }
     }
 }
 
@@ -848,39 +851,42 @@ void DrawSimpleShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 
 
 void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
 {
-    auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
-
-    Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
-    Float3x4 final_transform = transform * center_of_mass_offset_matrix;
-
-    if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
-    {
-        JPH::StaticCompoundShape const* compoundShape = CheckedStaticCast<JPH::StaticCompoundShape const*>(shape);
-
-        JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
-        for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
-        {
-            auto position = ConvertVector(subShape.GetPositionCOM());
-            auto rotation = ConvertQuaternion(subShape.GetRotation());
-
-            Float3x4 local_tranform;
-            local_tranform.Compose(position, rotation.ToMatrix3x3());
-
-            DrawSimpleShape(renderer, subShape.mShape, final_transform * local_tranform);
-        }
-    }
-    else if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
+    if (shape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
     {
         JPH::RotatedTranslatedShape const* transformedShape = CheckedStaticCast<JPH::RotatedTranslatedShape const*>(shape);
 
         Float3x4 local_tranform;
         local_tranform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
 
-        DrawSimpleShape(renderer, transformedShape->GetInnerShape(), final_transform * local_tranform);
+        DrawSimpleShape(renderer, transformedShape->GetInnerShape(), transform * local_tranform);
     }
     else
     {
-        DrawSimpleShape(renderer, shape, final_transform);
+        auto center_of_mass = ConvertVector(shape->GetCenterOfMass());
+
+        Float3x4 center_of_mass_offset_matrix = Float3x4::Translation(center_of_mass);
+        Float3x4 final_transform = transform * center_of_mass_offset_matrix;
+
+        if (shape->GetSubType() == JPH::EShapeSubType::StaticCompound)
+        {
+            JPH::StaticCompoundShape const* compoundShape = CheckedStaticCast<JPH::StaticCompoundShape const*>(shape);
+
+            JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
+            for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
+            {
+                auto position = ConvertVector(subShape.GetPositionCOM());
+                auto rotation = ConvertQuaternion(subShape.GetRotation());
+
+                Float3x4 local_tranform;
+                local_tranform.Compose(position, rotation.ToMatrix3x3());
+
+                DrawSimpleShape(renderer, subShape.mShape, final_transform * local_tranform);
+            }
+        }
+        else
+        {
+            DrawSimpleShape(renderer, shape, final_transform);
+        }
     }
 }
 
