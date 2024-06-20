@@ -84,7 +84,7 @@ public:
     {
         StringID            Name;
         PlayerController    Owner;
-        float               Power;
+        float               Amount;
     };
 
     struct Char

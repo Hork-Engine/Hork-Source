@@ -230,7 +230,38 @@ void InputSystem::SetGamepadAxis(GamepadAxis axis, float value, PlayerController
     if (!state)
         return;
 
+    float oldValue = state->m_AxisState[ToUnderlying(axis)];
     state->m_AxisState[ToUnderlying(axis)] = value;
+
+    if (m_InputMappings)
+    {
+        if (value == 1.0f && oldValue != 1.0f)
+        {
+            VirtualMapping virtMapping;
+            bool isBinded = m_InputMappings->GetGamepadMapping(player, axis, virtMapping);
+
+            if (isBinded && virtMapping.IsAction)
+            {
+                auto& action = m_ActionPool.EmplaceBack();
+                action.Name = virtMapping.Name;
+                action.Owner = virtMapping.Owner;
+                action.IsPressed = true;
+            }
+        }
+        else if (value != 1.0f && oldValue == 1.0f)
+        {
+            VirtualMapping virtMapping;
+            bool isBinded = m_InputMappings->GetGamepadMapping(player, axis, virtMapping);
+
+            if (isBinded && virtMapping.IsAction)
+            {
+                auto& action = m_ActionPool.EmplaceBack();
+                action.Name = virtMapping.Name;
+                action.Owner = virtMapping.Owner;
+                action.IsPressed = false;
+            }
+        }
+    }
 }
 
 void InputSystem::AddCharacter(WideChar ch, KeyModifierMask modMask)
@@ -255,7 +286,7 @@ void InputSystem::Tick(float timeStep)
     for (PressedKey* key = m_PressedKeys.ToPtr(); key < &m_PressedKeys[m_NumPressedKeys]; key++)
     {
         if (key->IsBinded && !key->VirtMapping.IsAction)
-            AddAxis(key->VirtMapping.Name, key->VirtMapping.Owner, key->VirtMapping.Power * timeStep);
+            AddAxis(key->VirtMapping.Name, key->VirtMapping.Owner, key->VirtMapping.Power);
     }
 
     // Apply mouse
@@ -302,7 +333,7 @@ void InputSystem::Tick(float timeStep)
             for (auto* buttonState = gamepadState->m_ButtonState; buttonState < &gamepadState->m_ButtonState[GAMEPAD_KEY_COUNT]; ++buttonState)
             {
                 if (buttonState->IsPressed && buttonState->IsBinded && !buttonState->VirtMapping.IsAction)
-                    AddAxis(buttonState->VirtMapping.Name, buttonState->VirtMapping.Owner, buttonState->VirtMapping.Power * timeStep);
+                    AddAxis(buttonState->VirtMapping.Name, buttonState->VirtMapping.Owner, buttonState->VirtMapping.Power);
             }
 
             for (int axis = 0; axis < GAMEPAD_AXIS_COUNT; ++axis)
@@ -312,7 +343,7 @@ void InputSystem::Tick(float timeStep)
                     continue;
 
                 if (m_InputMappings->GetGamepadMapping(PlayerController(playerIndex), GamepadAxis(axis), virtMapping))
-                    AddAxis(virtMapping.Name, virtMapping.Owner, delta * virtMapping.Power/* * timeStep*/);
+                    AddAxis(virtMapping.Name, virtMapping.Owner, delta * virtMapping.Power);
 
                 gamepadState->m_PrevAxisState[axis] = delta;
             }
@@ -327,14 +358,14 @@ void InputSystem::AddAxis(StringID name, PlayerController owner, float power)
     {
         if (axis.Name == name && axis.Owner == owner)
         {
-            axis.Power += power;
+            axis.Amount += power;
             return;
         }
     }
     Axis& axis = m_AxisPool.EmplaceBack();
     axis.Name = name;
     axis.Owner = owner;
-    axis.Power = power;
+    axis.Amount = power;
 }
 
 HK_NAMESPACE_END

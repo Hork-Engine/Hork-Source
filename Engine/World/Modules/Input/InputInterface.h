@@ -57,7 +57,7 @@ private:
     void                        Update();
 
     void                        InvokeAction(StringID name, InputEvent event, PlayerController player);
-    void                        InvokeAxis(StringID name, float power, PlayerController player);
+    void                        InvokeAxis(StringID name, float amount, PlayerController player);
 
     InputBindings               m_Bindings[ToUnderlying(PlayerController::MAX_PLAYER_CONTROLLERS)];
     bool                        m_IsActive = false;

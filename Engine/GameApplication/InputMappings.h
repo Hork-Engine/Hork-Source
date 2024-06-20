@@ -71,7 +71,7 @@ public:
 
     void                    MapGamepadAxis(PlayerController owner, StringView name, GamepadKeyOrAxis keyOrAxis, float power = 1);
 
-    void                    MapGamepadAction(PlayerController owner, StringView name, GamepadKey key, KeyModifierMask modMask = {});
+    void                    MapGamepadAction(PlayerController owner, StringView name, GamepadKeyOrAxis keyOrAxis);
 
     bool                    GetMapping(VirtualKeyOrAxis keyOrAxis, KeyModifierMask modMask, VirtualMapping& virtMapping);
 

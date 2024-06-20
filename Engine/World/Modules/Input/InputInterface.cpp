@@ -62,7 +62,7 @@ void InputInterface::Update()
         auto& axisPool = GameApplication::GetInputSystem().GetAxisPool();
         for (auto& axis : axisPool)
         {
-            InvokeAxis(axis.Name, axis.Power, axis.Owner);
+            InvokeAxis(axis.Name, axis.Amount, axis.Owner);
         }
 
         auto& chars = GameApplication::GetInputSystem().GetChars();
@@ -97,7 +97,7 @@ void InputInterface::InvokeAction(StringID name, InputEvent event, PlayerControl
     binding.ActionBinding[ToUnderlying(event)].Invoke(GetWorld());
 }
 
-void InputInterface::InvokeAxis(StringID name, float power, PlayerController player)
+void InputInterface::InvokeAxis(StringID name, float amount, PlayerController player)
 {
     if (player >= PlayerController::MAX_PLAYER_CONTROLLERS)
     {
@@ -114,7 +114,7 @@ void InputInterface::InvokeAxis(StringID name, float power, PlayerController pla
     if (!binding.ExecuteEvenWhenPaused[0] && GetWorld()->GetTick().IsPaused)
         return;
 
-    binding.AxisBinding.Invoke(GetWorld(), power);
+    binding.AxisBinding.Invoke(GetWorld(), amount);
 }
 
 void InputInterface::UnbindAll(PlayerController player)

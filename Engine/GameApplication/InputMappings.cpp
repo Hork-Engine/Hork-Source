@@ -89,9 +89,9 @@ void InputMappings::MapGamepadAxis(PlayerController owner, StringView name, Game
     mapping.Owner = owner;
 }
 
-void InputMappings::MapGamepadAction(PlayerController owner, StringView name, GamepadKey key, KeyModifierMask modMask)
+void InputMappings::MapGamepadAction(PlayerController owner, StringView name, GamepadKeyOrAxis keyOrAxis)
 {
-    VirtualMapping& mapping = m_GamepadMapping[MakeHash(key, owner)];
+    VirtualMapping& mapping = m_GamepadMapping[MakeHash(keyOrAxis, owner)];
 
     mapping.Name.FromString(name);
     mapping.IsAction = true;
