@@ -78,6 +78,7 @@ HK_FIND_METHOD(BeginPlay)
 HK_FIND_METHOD(EndPlay)
 HK_FIND_METHOD(Update)
 HK_FIND_METHOD(FixedUpdate)
+HK_FIND_METHOD(PhysicsUpdate)
 HK_FIND_METHOD(PostTransform)
 HK_FIND_METHOD(LateUpdate)
 HK_FIND_METHOD(DrawDebug)
@@ -115,6 +116,17 @@ HK_FORCEINLINE ComponentManager<ComponentType>::ComponentManager(World* world) :
         TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(f.Desc);
         f.Group = TickGroup::FixedUpdate;
         f.Delegate.Bind(this, &ComponentManager<ComponentType>::FixedUpdate);
+        f.OwnerTypeID = GetComponentTypeID();
+
+        RegisterTickFunction(f);
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, PhysicsUpdate))
+    {
+        TickFunction f;
+        TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(f.Desc);
+        f.Group = TickGroup::PhysicsUpdate;
+        f.Delegate.Bind(this, &ComponentManager<ComponentType>::PhysicsUpdate);
         f.OwnerTypeID = GetComponentTypeID();
 
         RegisterTickFunction(f);
@@ -320,6 +332,25 @@ HK_INLINE void ComponentManager<ComponentType>::FixedUpdate()
             {
                 if (component.IsInitialized())
                     component.FixedUpdate();
+            }
+        };
+
+        Visitor visitor;
+        m_ComponentStorage.Iterate(visitor);
+    }
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::PhysicsUpdate()
+{
+    if constexpr (HK_HAS_METHOD(ComponentType, PhysicsUpdate))
+    {
+        struct Visitor
+        {
+            HK_FORCEINLINE void Visit(ComponentType& component)
+            {
+                if (component.IsInitialized())
+                    component.PhysicsUpdate();
             }
         };
 

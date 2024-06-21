@@ -140,6 +140,7 @@ private:
 
     void                    Update();
     void                    FixedUpdate();
+    void                    PhysicsUpdate();
     void                    PostTransform();
     void                    LateUpdate();
     void                    DrawDebug(DebugRenderer& renderer);
