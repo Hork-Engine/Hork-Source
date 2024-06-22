@@ -41,18 +41,6 @@ namespace RenderCore
 
 class ITexture;
 
-/// Texture types
-enum TEXTURE_TYPE : uint8_t
-{
-    TEXTURE_1D,
-    TEXTURE_1D_ARRAY,
-    TEXTURE_2D,
-    TEXTURE_2D_ARRAY,
-    TEXTURE_3D,
-    TEXTURE_CUBE_MAP,
-    TEXTURE_CUBE_MAP_ARRAY
-};
-
 enum TEXTURE_VIEW : uint8_t
 {
     TEXTURE_VIEW_UNDEFINED = 0,

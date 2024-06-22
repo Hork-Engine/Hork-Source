@@ -53,13 +53,13 @@ ITextureView::ITextureView(TextureViewDesc const& TextureViewDesc, ITexture* pTe
     {
         // clang-format off
         HK_ASSERT_(
-            ((textureDesc.Type == TEXTURE_1D)             && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
-            ((textureDesc.Type == TEXTURE_1D_ARRAY)       && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
-            ((textureDesc.Type == TEXTURE_2D)             && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
-            ((textureDesc.Type == TEXTURE_2D_ARRAY)       && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
-            ((textureDesc.Type == TEXTURE_3D)             && (TextureViewDesc.Type == TEXTURE_3D)) ||
-            ((textureDesc.Type == TEXTURE_CUBE_MAP)       && (TextureViewDesc.Type == TEXTURE_CUBE_MAP || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_MAP_ARRAY)) ||
-            ((textureDesc.Type == TEXTURE_CUBE_MAP_ARRAY) && (TextureViewDesc.Type == TEXTURE_CUBE_MAP || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_MAP_ARRAY)),
+            ((textureDesc.Type == TEXTURE_1D)         && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
+            ((textureDesc.Type == TEXTURE_1D_ARRAY)   && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
+            ((textureDesc.Type == TEXTURE_2D)         && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
+            ((textureDesc.Type == TEXTURE_2D_ARRAY)   && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
+            ((textureDesc.Type == TEXTURE_3D)         && (TextureViewDesc.Type == TEXTURE_3D)) ||
+            ((textureDesc.Type == TEXTURE_CUBE)       && (TextureViewDesc.Type == TEXTURE_CUBE || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_ARRAY)) ||
+            ((textureDesc.Type == TEXTURE_CUBE_ARRAY) && (TextureViewDesc.Type == TEXTURE_CUBE || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_ARRAY)),
             "ITextureView::ctor: incompatible texture types");
         // clang-format on
 

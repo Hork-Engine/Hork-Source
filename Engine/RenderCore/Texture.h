@@ -348,14 +348,14 @@ struct TextureDesc
 
     TextureDesc& SetResolution(TextureResolutionCubemap const& InResolution)
     {
-        Type       = TEXTURE_CUBE_MAP;
+        Type       = TEXTURE_CUBE;
         Resolution = InResolution;
         return *this;
     }
 
     TextureDesc& SetResolution(TextureResolutionCubemapArray const& InResolution)
     {
-        Type       = TEXTURE_CUBE_MAP_ARRAY;
+        Type       = TEXTURE_CUBE_ARRAY;
         Resolution = InResolution;
         return *this;
     }
@@ -645,7 +645,7 @@ public:
 
     bool IsArray() const
     {
-        return Desc.Type == TEXTURE_1D_ARRAY || Desc.Type == TEXTURE_2D_ARRAY || Desc.Type == TEXTURE_CUBE_MAP_ARRAY;
+        return Desc.Type == TEXTURE_1D_ARRAY || Desc.Type == TEXTURE_2D_ARRAY || Desc.Type == TEXTURE_CUBE_ARRAY;
     }
 
     uint32_t GetSliceCount() const

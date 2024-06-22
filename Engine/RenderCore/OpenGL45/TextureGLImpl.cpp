@@ -126,10 +126,10 @@ TextureGLImpl::TextureGLImpl(DeviceGLImpl* pDevice, TextureDesc const& TextureDe
             case TEXTURE_3D:
                 glTextureStorage3D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height, TextureDesc.Resolution.SliceCount);
                 break;
-            case TEXTURE_CUBE_MAP:
+            case TEXTURE_CUBE:
                 glTextureStorage2D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height);
                 break;
-            case TEXTURE_CUBE_MAP_ARRAY:
+            case TEXTURE_CUBE_ARRAY:
                 glTextureStorage3D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height, TextureDesc.Resolution.SliceCount);
                 break;
         }
@@ -325,12 +325,12 @@ void TextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, TextureMipLevelInfo* pInf
             pInfo->Resoultion.Height     = Math::Max(1u, Desc.Resolution.Height >> MipLevel);
             pInfo->Resoultion.SliceCount = Math::Max(1u, Desc.Resolution.SliceCount >> MipLevel);
             break;
-        case TEXTURE_CUBE_MAP:
+        case TEXTURE_CUBE:
             pInfo->Resoultion.Width      = Math::Max(1u, Desc.Resolution.Width >> MipLevel);
             pInfo->Resoultion.Height     = pInfo->Resoultion.Width;
             pInfo->Resoultion.SliceCount = 6;
             break;
-        case TEXTURE_CUBE_MAP_ARRAY:
+        case TEXTURE_CUBE_ARRAY:
             pInfo->Resoultion.Width      = Math::Max(1u, Desc.Resolution.Width >> MipLevel);
             pInfo->Resoultion.Height     = pInfo->Resoultion.Width;
             pInfo->Resoultion.SliceCount = Desc.Resolution.SliceCount;

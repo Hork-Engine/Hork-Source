@@ -291,7 +291,7 @@ FramebufferGL* FramebufferCacheGL::GetFramebuffer(const char*                  R
 
         if (pDepthStencilAttachment->bSingleSlice)
         {
-            if (viewDesc.Type == TEXTURE_CUBE_MAP_ARRAY) // FIXME
+            if (viewDesc.Type == TEXTURE_CUBE_ARRAY) // FIXME
                 viewDesc.Type = TEXTURE_2D;
 
             viewDesc.FirstSlice = pDepthStencilAttachment->SliceNum;
@@ -3224,7 +3224,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture1D(IBuffer const* _SrcBuffer,
     return true;
 }
 
-// Only for TEXTURE_2D, TEXTURE_1D_ARRAY, TEXTURE_CUBE_MAP
+// Only for TEXTURE_2D, TEXTURE_1D_ARRAY, TEXTURE_CUBE
 bool ImmediateContextGLImpl::CopyBufferToTexture2D(IBuffer const* _SrcBuffer,
                                                     ITexture*      _DstTexture,
                                                     uint16_t       _MipLevel,
@@ -3232,8 +3232,8 @@ bool ImmediateContextGLImpl::CopyBufferToTexture2D(IBuffer const* _SrcBuffer,
                                                     uint16_t       _OffsetY,
                                                     uint16_t       _DimensionX,
                                                     uint16_t       _DimensionY,
-                                                    uint16_t       _CubeFaceIndex,             // only for TEXTURE_CUBE_MAP
-                                                    uint16_t       _NumCubeFaces,              // only for TEXTURE_CUBE_MAP
+                                                    uint16_t       _CubeFaceIndex,             // only for TEXTURE_CUBE
+                                                    uint16_t       _NumCubeFaces,              // only for TEXTURE_CUBE
                                                     size_t         _CompressedDataSizeInBytes, // Only for compressed images
                                                     DATA_FORMAT    _Format,
                                                     size_t         _SourceByteOffset,
@@ -3241,7 +3241,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture2D(IBuffer const* _SrcBuffer,
 {
     VerifyContext();
 
-    if (_DstTexture->GetDesc().Type != TEXTURE_2D && _DstTexture->GetDesc().Type != TEXTURE_1D_ARRAY && _DstTexture->GetDesc().Type != TEXTURE_CUBE_MAP)
+    if (_DstTexture->GetDesc().Type != TEXTURE_2D && _DstTexture->GetDesc().Type != TEXTURE_1D_ARRAY && _DstTexture->GetDesc().Type != TEXTURE_CUBE)
     {
         return false;
     }
@@ -3254,7 +3254,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture2D(IBuffer const* _SrcBuffer,
 
     UnpackAlignment(_Alignment);
 
-    if (_DstTexture->GetDesc().Type == TEXTURE_CUBE_MAP)
+    if (_DstTexture->GetDesc().Type == TEXTURE_CUBE)
     {
 
         GLint  i;
@@ -3398,7 +3398,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture3D(IBuffer const* _SrcBuffer,
     return true;
 }
 
-// Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE_MAP
+// Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE
 bool ImmediateContextGLImpl::CopyBufferToTexture(IBuffer const*      _SrcBuffer,
                                                   ITexture*           _DstTexture,
                                                   TextureRect const& _Rectangle,
@@ -3453,7 +3453,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture(IBuffer const*      _SrcBuffer,
                                          _Format,
                                          _SourceByteOffset,
                                          _Alignment);
-        case TEXTURE_CUBE_MAP:
+        case TEXTURE_CUBE:
             return CopyBufferToTexture2D(_SrcBuffer,
                                          _DstTexture,
                                          _Rectangle.Offset.MipLevel,
@@ -3467,7 +3467,7 @@ bool ImmediateContextGLImpl::CopyBufferToTexture(IBuffer const*      _SrcBuffer,
                                          _Format,
                                          _SourceByteOffset,
                                          _Alignment);
-        case TEXTURE_CUBE_MAP_ARRAY:
+        case TEXTURE_CUBE_ARRAY:
             // FIXME: ???
             //return CopyBufferToTexture3D( static_cast< Buffer const * >( _SrcBuffer ),
             //                              static_cast< Texture * >( _DstTexture ),
@@ -3669,7 +3669,7 @@ bool ImmediateContextGLImpl::CopyFramebufferToTexture(FGRenderPassContext&   Ren
                                     _SrcRect.Height);
             break;
         }
-        case TEXTURE_CUBE_MAP: {
+        case TEXTURE_CUBE: {
             // FIXME: The specification does not say how to copy to the face of a cube texture using glCopyTextureSubImage2D, so we use the workaround via glCopyTexSubImage2D
 
             GLint currentBinding;
@@ -3697,7 +3697,7 @@ bool ImmediateContextGLImpl::CopyFramebufferToTexture(FGRenderPassContext&   Ren
             }
             break;
         }
-        case TEXTURE_CUBE_MAP_ARRAY:
+        case TEXTURE_CUBE_ARRAY:
             // FIXME: The specification does not say anything about this texture type.
             return false;
     }
@@ -4754,7 +4754,7 @@ bool ImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                     pSysMem);
             }
             break;
-        case TEXTURE_CUBE_MAP:
+        case TEXTURE_CUBE:
             if (pTexture->IsCompressed())
             {
                 //glCompressedTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, SizeInBytes, pSysMem );
@@ -4790,7 +4790,7 @@ bool ImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                     pSysMem);
             }
             break;
-        case TEXTURE_CUBE_MAP_ARRAY:
+        case TEXTURE_CUBE_ARRAY:
             // FIXME: The specification does not say anything about this texture type.
             if (pTexture->IsCompressed())
             {
