@@ -242,6 +242,12 @@ TextureHandle WorldRenderView::GetTextureHandle()
 
 RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
 {
+    if (m_Width == 0 || m_Height == 0)
+    {
+        LOG("WorldRenderView::AcquireRenderTarget: invalid render target size: {}x{}\n", m_Width, m_Height);
+        return nullptr;
+    }
+
     TextureResource* renderTarget = GameApplication::GetResourceManager().TryGet(m_HandleRT);
     HK_ASSERT(renderTarget);
 

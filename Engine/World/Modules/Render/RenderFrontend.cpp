@@ -167,6 +167,12 @@ MaterialFrameData* RenderFrontend::GetMaterialFrameData(MaterialInstance* materi
         }
 
         frameData->Textures[i] = texture->GetTextureGPU();
+        //HK_ASSERT(frameData->Textures[i]);
+        if (!frameData->Textures[i])
+        {
+            materialInstance->m_FrameData = nullptr;
+            return nullptr;
+        }
     }
 
     frameData->NumUniformVectors = material->m_pCompiledMaterial->NumUniformVectors;
@@ -782,6 +788,11 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
 void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
     auto* world = worldRenderView->GetWorld();
+    if (!world)
+    {
+        ClearRenderView(view);
+        return;
+    }
 
     m_World = world;
     m_View = view;
@@ -789,7 +800,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     auto& cameraManager = world->GetComponentManager<CameraComponent>();
     auto* camera = cameraManager.GetComponent(worldRenderView->GetCamera());
 
-    if (!r_RenderView || !camera)
+    if (!r_RenderView || !camera || !camera->IsInitialized())
     {
         ClearRenderView(view);
         return;
@@ -1181,6 +1192,23 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         AddDirectionalLightShadows(&shadowMap, lightDef);
         SortShadowInstances(&shadowMap);
     }
+
+    m_LightVoxelizer.Reset();
+
+    // Allocate lights
+    view->NumPointLights = 0;//m_VisLights.Size();
+    view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
+    view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
+    view->PointLights = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
+    view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
+    view->NumOmnidirectionalShadowMaps = 0;
+    // Allocate probes
+    view->NumProbes = 0;//m_VisEnvProbes.Size();
+    view->ProbeStreamSize = sizeof(ProbeParameters) * view->NumProbes;
+    view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
+        streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :
+        0;
+    view->Probes = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
 
     //AddRenderInstances(world); // TODO
 

@@ -209,6 +209,8 @@ public:
     // TODO: bBloomEnabled, BloomParams[4]
     // TODO: Render mode: Polygons,Triangles,Solid,Solid+Triangles,Solid+Polygons,etc (for editor)
 
+    RenderCore::ITexture* AcquireRenderTarget();
+
 private:
     //class TextureViewImpl : public TextureView
     //{
@@ -231,7 +233,6 @@ private:
     //    Ref<WorldRenderView> m_WorldRenderView;
     //};
 
-    RenderCore::ITexture* AcquireRenderTarget();
     RenderCore::ITexture* AcquireLightTexture();
     RenderCore::ITexture* AcquireDepthTexture();
     RenderCore::ITexture* AcquireHBAOMaps();

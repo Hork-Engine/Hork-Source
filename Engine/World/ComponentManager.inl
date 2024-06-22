@@ -32,10 +32,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-HK_FORCEINLINE ComponentManagerBase::ComponentManagerBase(World* world, ComponentTypeID componentTypeID) :
-    m_World(world), m_ComponentTypeID(componentTypeID)
-{}
-
 HK_FORCEINLINE ComponentTypeID ComponentManagerBase::GetComponentTypeID() const
 {
     return m_ComponentTypeID;

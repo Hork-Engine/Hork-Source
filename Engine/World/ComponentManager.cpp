@@ -34,6 +34,10 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+ComponentManagerBase::ComponentManagerBase(World* world, ComponentTypeID componentTypeID) :
+    m_World(world), m_ComponentTypeID(componentTypeID)
+{}
+
 void ComponentManagerBase::RegisterTickFunction(TickFunction const& f)
 {
     m_World->RegisterTickFunction(f);
