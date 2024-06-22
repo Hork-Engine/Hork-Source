@@ -32,8 +32,12 @@ SOFTWARE.
 
 #include <Engine/Renderer/RenderDefs.h>
 #include <Engine/World/World.h>
+#include <Engine/World/DebugRenderer.h>
+#include <Engine/Core/ConsoleVar.h>
 
 HK_NAMESPACE_BEGIN
+
+ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
 
 void CameraComponent::SetProjection(CameraProjection projection)
 {
@@ -206,7 +210,6 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
         }
 
         m_ProjectionDirty = false;
-        m_FrustumDirty = true;
     }
 
     return m_ProjectionMatrix;
@@ -257,52 +260,31 @@ void CameraComponent::MakeRay(Float4x4 const& modelViewProjectionInversed, float
 #endif
 }
 
-//BvFrustum const& CameraComponent::GetFrustum() const
-//{
-//    // Update projection matrix
-//    GetProjectionMatrix();
-//
-//    // Update view matrix
-//    GetViewMatrix();
-//
-//    if (m_FrustumDirty)
-//    {
-//        m_Frustum.FromMatrix(m_ProjectionMatrix * m_ViewMatrix, true);
-//
-//        m_FrustumDirty = false;
-//    }
-//
-//    return m_Frustum;
-//}
+BvFrustum CameraComponent::GetFrustum() const
+{
+    BvFrustum frustum;
+    frustum.FromMatrix(GetProjectionMatrix() * GetViewMatrix(), true);
+    return frustum;
+}
 
-//Float4x4 const& CameraComponent::GetViewMatrix() const
-//{
-//    //if (m_ViewMatrixDirty)
-//    {
-//        m_BillboardMatrix = GetWorldRotation().ToMatrix3x3();
-//
-//        Float3x3 basis = m_BillboardMatrix.Transposed();
-//        Float3 origin = basis * (-GetWorldPosition());
-//
-//        m_ViewMatrix[0] = Float4(basis[0], 0.0f);
-//        m_ViewMatrix[1] = Float4(basis[1], 0.0f);
-//        m_ViewMatrix[2] = Float4(basis[2], 0.0f);
-//        m_ViewMatrix[3] = Float4(origin, 1.0f);
-//
-//        //m_ViewMatrixDirty = false;
-//        m_FrustumDirty = true;
-//    }
-//
-//    return m_ViewMatrix;
-//}
+Float4x4 CameraComponent::GetViewMatrix() const
+{
+    Float3 worldPosition = GetOwner()->GetWorldPosition();
+    Float3x3 worldRotation = GetOwner()->GetWorldRotation().ToMatrix3x3();
 
-//Float3x3 const& CameraComponent::GetBillboardMatrix() const
-//{
-//    // Update billboard matrix
-//    GetViewMatrix();
-//
-//    return m_BillboardMatrix;
-//}
+    Float3x3 basis = worldRotation.Transposed();
+    Float3 origin = basis * (-worldPosition);
+
+    return Float4x4(Float4(basis[0], 0.0f),
+                    Float4(basis[1], 0.0f),
+                    Float4(basis[2], 0.0f),
+                    Float4(origin, 1.0f));
+}
+
+Float3x3 CameraComponent::GetBillboardMatrix() const
+{
+    return GetOwner()->GetWorldRotation().ToMatrix3x3();
+}
 
 void CameraComponent::SkipInterpolation()
 {
@@ -324,26 +306,25 @@ void CameraComponent::BeginPlay()
     m_Rotation[0] = m_Rotation[1] = GetOwner()->GetWorldRotation();
 }
 
-#if 0
-void CameraComponent::DrawDebug(DebugRenderer* InRenderer)
+void CameraComponent::DrawDebug(DebugRenderer& renderer)
 {
-    Super::DrawDebug(InRenderer);
-
     if (com_DrawCameraFrustum)
     {
         Float3 vectorTR;
         Float3 vectorTL;
         Float3 vectorBR;
         Float3 vectorBL;
-        Float3 origin = GetWorldPosition();
+        Float3 origin = GetOwner()->GetWorldPosition();
         Float3 v[4];
         Float3 faces[4][3];
         float rayLength = 32;
 
-        m_Frustum.CornerVector_TR(vectorTR);
-        m_Frustum.CornerVector_TL(vectorTL);
-        m_Frustum.CornerVector_BR(vectorBR);
-        m_Frustum.CornerVector_BL(vectorBL);
+        BvFrustum frustum = GetFrustum();
+
+        frustum.CornerVector_TR(vectorTR);
+        frustum.CornerVector_TL(vectorTL);
+        frustum.CornerVector_BR(vectorBR);
+        frustum.CornerVector_BL(vectorBL);
 
         v[0] = origin + vectorTR * rayLength;
         v[1] = origin + vectorBR * rayLength;
@@ -370,20 +351,19 @@ void CameraComponent::DrawDebug(DebugRenderer* InRenderer)
         faces[3][1] = v[1];
         faces[3][2] = v[0];
 
-        InRenderer->SetDepthTest(true);
+        renderer.SetDepthTest(true);
 
-        InRenderer->SetColor(Color4(0, 1, 1, 1));
-        InRenderer->DrawLine(origin, v[0]);
-        InRenderer->DrawLine(origin, v[3]);
-        InRenderer->DrawLine(origin, v[1]);
-        InRenderer->DrawLine(origin, v[2]);
-        InRenderer->DrawLine(v, true);
+        renderer.SetColor(Color4(0, 1, 1, 1));
+        renderer.DrawLine(origin, v[0]);
+        renderer.DrawLine(origin, v[3]);
+        renderer.DrawLine(origin, v[1]);
+        renderer.DrawLine(origin, v[2]);
+        renderer.DrawLine(v, true);
 
-        InRenderer->SetColor(Color4(1, 1, 1, 0.3f));
-        InRenderer->DrawTriangles(&faces[0][0], 4, sizeof(Float3), false);
-        InRenderer->DrawConvexPoly(v, false);
+        renderer.SetColor(Color4(1, 1, 1, 0.3f));
+        renderer.DrawTriangles(&faces[0][0], 4, sizeof(Float3), false);
+        renderer.DrawConvexPoly(v, false);
     }
 }
-#endif
 
 HK_NAMESPACE_END

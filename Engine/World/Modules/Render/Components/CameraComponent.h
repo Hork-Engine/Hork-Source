@@ -47,6 +47,8 @@ enum class CameraProjection : uint8_t
     PerspectiveFovYWithAspectRatio
 };
 
+class DebugRenderer;
+
 class CameraComponent final : public Component
 {
 public:
@@ -109,11 +111,11 @@ public:
 
     Float4x4 const&         GetProjectionMatrix() const;
 
-    //Float4x4 const&       GetViewMatrix() const;
+    Float4x4                GetViewMatrix() const;
 
-    //Float3x3 const&       GetBillboardMatrix() const;
+    Float3x3                GetBillboardMatrix() const;
 
-    //BvFrustum const&      GetFrustum() const;
+    BvFrustum               GetFrustum() const;
 
     /// NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight
     //void                  MakeRay(float normalizedX, float normalizedY, Float3& rayStart, Float3& rayEnd) const;
@@ -124,7 +126,6 @@ public:
     static void             MakeOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs);
 
     void                    MakeClusterProjectionMatrix(Float4x4& projectionMatrix /*, float clusterZNear, float clusterZFar*/) const;
-
 
     // Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
     void                    SkipInterpolation();
@@ -137,6 +138,8 @@ public:
 
     Quat const&             GetRotation(int index) const {        return m_Rotation[index];    }
 
+    void                    DrawDebug(DebugRenderer& renderer);
+
 private:
     CameraProjection        m_Projection = CameraProjection::PerspectiveFovYWithAspectRatio;
     float                   m_FovX = 90.0f;
@@ -147,19 +150,10 @@ private:
     Float2                  m_OrthoMins{-1, -1};
     Float2                  m_OrthoMaxs{1, 1};
     float                   m_OrthoZoom = 30;
-
-    // Cache
-
     Float3                  m_Position[2];
     Quat                    m_Rotation[2];
-
-    //mutable Float4x4      m_ViewMatrix;
-    //mutable Float3x3      m_BillboardMatrix;
     mutable Float4x4        m_ProjectionMatrix;
-    mutable BvFrustum       m_Frustum;
-    //mutable bool          m_ViewMatrixDirty = true;
     mutable bool            m_ProjectionDirty = true;
-    mutable bool            m_FrustumDirty = true;
 };
 
 namespace TickGroup_PostTransform
