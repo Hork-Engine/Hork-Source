@@ -341,7 +341,7 @@ void GameApplication::RunMainLoop()
         m_InputSystem.Tick(m_FrameDurationInSeconds);
 
         // Tick state
-        m_StateMachine.Tick(m_FrameDurationInSeconds);
+        m_StateMachine.Update(m_FrameDurationInSeconds);
 
         // Tick worlds
         for (auto* world : m_Worlds)

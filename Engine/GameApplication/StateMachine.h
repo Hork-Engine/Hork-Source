@@ -30,93 +30,98 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Containers/Vector.h>
+#include <Engine/Core/Containers/Hash.h>
+#include <Engine/Core/Ref.h>
+#include <Engine/Core/Delegate.h>
 
 HK_NAMESPACE_BEGIN
 
-class StateBase
+class StateBase : public Noncopyable
 {
     friend class StateMachine;
 
 public:
-    virtual ~StateBase() = default;
+    virtual             ~StateBase() = default;
 
-    bool IsActive() const
-    {
-        return m_bIsActive;
-    }
+    bool                IsActive() const { return m_IsActive; }
+
+    StateMachine&       GetOwner() { return *m_Machine; }
 
 protected:
-    virtual void Begin()
-    {}
+    virtual void        Begin() {}
 
-    virtual void End()
-    {}
+    virtual void        End() {}
 
-    virtual void Tick(float timeStep)
-    {}
+    virtual void        Update(float timeStep) {}
 
 private:
-    bool m_bIsActive{};
-
-protected:
-    StateMachine* m_Machine;
-};
-#if 0
-class LoadScreenState : public StateBase
-{
-public:
-    ResourceAreaID m_LoadingArea{};
-    StateBase* NextState{};
-
-protected:
-    void Begin() override;
-
-    void End() override;
-
-    void Tick(float timeStep) override;
+    bool                m_IsActive{};
+    StateMachine*       m_Machine;
 };
 
-class IngameState : public StateBase
+class StateMachine : public Noncopyable
 {
 public:
+    virtual             ~StateMachine() = default;
 
-protected:
-    void Begin() override;
-
-    void End() override;
-
-    void Tick(float timeStep) override;
-};
-#endif
-class StateMachine
-{
-public:
-    virtual ~StateMachine() = default;
-
+    /// Bind state object
     template <typename T, typename... Args>
-    T* CreateState(Args&&... args)
-    {
-        std::unique_ptr<StateBase> state(new T(std::forward<Args>(args)...));
-        state->m_Machine = this;
-        m_States.Add(std::move(state));
-        return static_cast<T*>(m_States.Last().get());
-    }
+    void                BindObject(StringView name, Args&&... args);
 
-    void DestroyState(StateBase* state);
+    /// Bind functions for specified state
+    template <typename T>
+    void                Bind(StringView name, T* object, void (T::*begin)(), void (T::*end)(), void (T::*update)(float));
 
-    void SetCurrent(StateBase* state);
+    /// Unbind/destroy state
+    void                Unbind(StringView name);
 
-    bool HasState(StateBase* state) const;
+    /// Set current state
+    void                MakeCurrent(StringView name);
 
-    void Tick(float timeStep);
+    /// Update state
+    void                Update(float timeStep);
 
 private:
-    void UpdateStateChange();
+    void                UpdateStateChange();
 
-    Vector<std::unique_ptr<StateBase>> m_States;
-    StateBase* m_CurrentState{};
-    StateBase* m_PendingState{};
+    class State : public StateBase
+    {
+    public:
+        Delegate<void()>        m_OnBegin;
+        Delegate<void()>        m_OnEnd;
+        Delegate<void(float)>   m_OnUpdate;
+
+        void            Begin() override;
+        void            End() override;
+        void            Update(float timeStep) override;
+    };
+
+    StringHashMap<UniqueRef<StateBase>> m_States;
+
+    String              m_CurrentState{};
+    String              m_PendingState{};
 };
+
+template <typename T, typename... Args>
+HK_INLINE void StateMachine::BindObject(StringView name, Args&&... args)
+{
+    auto& state = m_States[name];
+    state = MakeUnique<T>(std::forward<Args>(args)...);
+    state->m_Machine = this;
+}
+
+template <typename T>
+HK_FORCEINLINE void StateMachine::Bind(StringView name, T* object, void (T::*begin)(), void (T::*end)(), void (T::*update)(float))
+{
+    auto state = MakeUnique<State>();
+    state->m_Machine = this;
+    if (begin)
+        state->m_OnBegin.Bind(object, begin);
+    if (end)
+        state->m_OnEnd.Bind(object, end);
+    if (update)
+        state->m_OnUpdate.Bind(object, update);
+    m_States[name] = std::move(state);
+}
 
 HK_NAMESPACE_END

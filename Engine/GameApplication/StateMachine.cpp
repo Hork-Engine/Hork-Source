@@ -31,85 +31,39 @@ SOFTWARE.
 #include "StateMachine.h"
 
 HK_NAMESPACE_BEGIN
-#if 0
-void LoadScreenState::Begin()
-{
-    // Create UI with fullscreen image
 
-    LOG("LoadScreenState\n");
+void StateMachine::State::Begin()
+{
+    m_OnBegin.Invoke();
 }
 
-void LoadScreenState::End()
+void StateMachine::State::End()
 {
-    // Destroy UI
+    m_OnEnd.Invoke();
 }
 
-void LoadScreenState::Tick(float timeStep)
+void StateMachine::State::Update(float timeStep)
 {
-    // Update progress bar
-
-    if (m_LoadingArea && GameApplication::GetResourceManager().IsAreaReady(m_LoadingArea))
-    {
-        m_Machine->SetCurrent(NextState);
-    }
+    m_OnUpdate.Invoke(timeStep);
 }
 
-void IngameState::Begin()
+void StateMachine::MakeCurrent(StringView name)
 {
-    LOG("IngameState\n");
+    m_PendingState = name;
 }
 
-void IngameState::End()
-{
-}
-
-void IngameState::Tick(float timeStep)
-{
-}
-#endif
-void StateMachine::DestroyState(StateBase* state)
-{
-    HK_ASSERT(state);
-    HK_ASSERT(!state->IsActive());
-
-    for (auto it = m_States.Begin(); it != m_States.End(); it++)
-    {
-        if (it->get() == state)
-        {
-            m_States.Erase(it);
-            break;
-        }
-    }
-
-    if (m_CurrentState == state)
-        m_CurrentState = nullptr;
-    if (m_PendingState == state)
-        m_PendingState = nullptr;
-}
-
-void StateMachine::SetCurrent(StateBase* state)
-{
-    HK_ASSERT(HasState(state));
-
-    m_PendingState = state;
-}
-
-bool StateMachine::HasState(StateBase* state) const
-{
-    for (auto& it : m_States)
-        if (it.get() == state)
-            return true;
-    return false;
-}
-
-void StateMachine::Tick(float timeStep)
+void StateMachine::Update(float timeStep)
 {
     UpdateStateChange();
 
-    if (!m_CurrentState)
+    if (m_CurrentState.IsEmpty())
         return;
 
-    m_CurrentState->Tick(timeStep);
+    auto it = m_States.Find(m_CurrentState);
+    if (it == m_States.End())
+        return;
+
+    it->second->Update(timeStep);
 }
 
 void StateMachine::UpdateStateChange()
@@ -117,18 +71,36 @@ void StateMachine::UpdateStateChange()
     if (m_CurrentState == m_PendingState)
         return;
 
-    if (m_CurrentState)
+    if (!m_CurrentState.IsEmpty())
     {
-        m_CurrentState->End();
-        m_CurrentState->m_bIsActive = false;
+        auto it = m_States.Find(m_CurrentState);
+        if (it != m_States.End())
+        {
+            it->second->End();
+            it->second->m_IsActive = false;
+        }
     }
 
     m_CurrentState = m_PendingState;
-    if (m_CurrentState)
+
+    if (!m_CurrentState.IsEmpty())
     {
-        m_CurrentState->m_bIsActive = true;
-        m_CurrentState->Begin();
+        auto it = m_States.Find(m_CurrentState);
+        if (it != m_States.End())
+        {
+            it->second->Begin();
+            it->second->m_IsActive = true;
+        }
     }
+}
+
+void StateMachine::Unbind(StringView name)
+{
+    m_States.Erase(name);
+    if (m_CurrentState == name)
+        m_CurrentState.Clear();
+    if (m_PendingState == name)
+        m_PendingState.Clear();
 }
 
 HK_NAMESPACE_END
