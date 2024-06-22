@@ -130,12 +130,16 @@ void UIViewport::UpdateViewSize() // TODO: PostGeometryUpdate?
 {
     if (!GUILockViewportScaling)
     {
-        int x = m_Geometry.Mins.X;
-        int y = m_Geometry.Mins.Y;
-
-        m_ViewWidth  = Math::Max(0.0f, m_Geometry.Maxs.X - x);
-        m_ViewHeight = Math::Max(0.0f, m_Geometry.Maxs.Y - y);
+        m_ViewWidth  = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.X - Math::Floor(m_Geometry.Mins.X)));
+        m_ViewHeight = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.Y - Math::Floor(m_Geometry.Mins.Y)));
     }
+}
+
+void UIViewport::Clear(Canvas& canvas)
+{
+    CANVAS_COMPOSITE currentComposite = canvas.CompositeOperation(Composite);
+    canvas.DrawRectFilled(m_Geometry.Mins, m_Geometry.Maxs, Color4::Black());
+    canvas.CompositeOperation(currentComposite);
 }
 
 void UIViewport::Draw(Canvas& canvas)
@@ -143,47 +147,60 @@ void UIViewport::Draw(Canvas& canvas)
     UpdateViewSize();
 
     if (!m_WorldRenderView)
-        return;
-
-    Float2 const& pos = m_Geometry.Mins;
-    Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
-
-    if (size.X >= 1 && size.Y >= 1)
     {
-        m_WorldRenderView->SetViewport(size.X, size.Y);
-
-        if (auto* world = m_WorldRenderView->GetWorld())
-        {
-            if (auto* cameraComponent = world->GetComponent(m_WorldRenderView->GetCamera()))
-            {
-                float aspectRatio;
-                if (m_ViewWidth > 0 && m_ViewHeight > 0)
-                    aspectRatio = (float)m_ViewWidth / m_ViewHeight;
-                else
-                    aspectRatio = 1;
-
-                DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
-                cameraComponent->SetAspectRatio(aspectRatio * vidMode.AspectScale);
-
-                GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
-
-                DrawTextureDesc desc;
-                desc.TexHandle = m_WorldRenderView->GetTextureHandle();
-                desc.X = pos.X;
-                desc.Y = pos.Y;
-                desc.W = size.X;
-                desc.H = size.Y;
-                desc.Rounding = Rounding;
-                desc.Angle = 0;
-                desc.TintColor = TintColor;
-                desc.Composite = Composite;
-                desc.bFlipY = true;
-
-                canvas.DrawTexture(desc);
-            }
-        }
-        //    hud->DrawHUD(canvas, pos.X, pos.Y, size.X, size.Y);
+        Clear(canvas);
+        return;
     }
+
+    Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
+    if (size.X < 1 && size.Y < 1)
+    {
+        Clear(canvas);
+        return;
+    }
+
+    //m_WorldRenderView->SetViewport(size.X, size.Y);
+    m_WorldRenderView->SetViewport(m_ViewWidth, m_ViewHeight);
+
+    auto world = m_WorldRenderView->GetWorld();
+    if (!world)
+    {
+        Clear(canvas);
+        return;
+    }
+
+    auto camera = world->GetComponent(m_WorldRenderView->GetCamera());
+    if (!camera || !camera->IsInitialized())
+    {
+        Clear(canvas);
+        return;
+    }
+
+    float aspectRatio;
+    if (m_ViewWidth > 0 && m_ViewHeight > 0)
+        aspectRatio = static_cast<float>(m_ViewWidth) / m_ViewHeight;
+    else
+        aspectRatio = 1;
+
+    DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
+    camera->SetAspectRatio(aspectRatio * vidMode.AspectScale);
+
+    GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
+
+    m_WorldRenderView->AcquireRenderTarget();
+
+    DrawTextureDesc desc;
+    desc.TexHandle = m_WorldRenderView->GetTextureHandle();
+    desc.X = m_Geometry.Mins.X;
+    desc.Y = m_Geometry.Mins.Y;
+    desc.W = size.X;
+    desc.H = size.Y;
+    desc.Rounding = Rounding;
+    desc.Angle = 0;
+    desc.TintColor = TintColor;
+    desc.Composite = Composite;
+    desc.bFlipY = true;
+    canvas.DrawTexture(desc);
 }
 
 HK_NAMESPACE_END

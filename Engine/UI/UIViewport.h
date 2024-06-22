@@ -78,8 +78,9 @@ protected:
 
 private:
     void UpdateViewSize();
+    void Clear(Canvas& canvas);
 
-    Ref<WorldRenderView> m_WorldRenderView;
+    Ref<WorldRenderView>  m_WorldRenderView;
     int                   m_ViewWidth{};
     int                   m_ViewHeight{};
 };

@@ -47,24 +47,23 @@ public:
     CANVAS_COMPOSITE  Composite = CANVAS_COMPOSITE_SOURCE_OVER;
     Float2            Offset;
     Float2            Scale = Float2(1, 1);
-    bool              bPremultipliedAlpha : 1;
-    bool              bNearestFilter : 1;
-    bool              bStretchedX : 1;
-    bool              bStretchedY : 1;
-    bool              bTiledX : 1;
-    bool              bTiledY : 1;
-    bool              bFlipY : 1;
 
-    UIImage() :
-        bPremultipliedAlpha{},
-        bNearestFilter{},
-        bStretchedX{},
-        bStretchedY{},
-        bTiledX{},
-        bTiledY{},
-        bFlipY{}
-    {}
+    union
+    {
+        uint32_t      FlagBits = 0;
 
+        struct
+        {
+            bool      PremultipliedAlpha : 1;
+            bool      NearestFilter : 1;
+            bool      StretchedX : 1;
+            bool      StretchedY : 1;
+            bool      TiledX : 1;
+            bool      TiledY : 1;
+            bool      FlipY : 1;
+        } Flags;
+    };
+    
     UIImage& WithTexture(TextureHandle texture)
     {
         TexHandle = texture;
@@ -110,43 +109,43 @@ public:
 
     UIImage& WithPremultipliedAlpha(bool premultipliedAlpha)
     {
-        bPremultipliedAlpha = premultipliedAlpha;
+        Flags.PremultipliedAlpha = premultipliedAlpha;
         return *this;
     }
 
     UIImage& WithNearestFilter(bool nearestFilter)
     {
-        bNearestFilter = nearestFilter;
+        Flags.NearestFilter = nearestFilter;
         return *this;
     }
 
     UIImage& WithStretchedX(bool stretchedX)
     {
-        bStretchedX = stretchedX;
+        Flags.StretchedX = stretchedX;
         return *this;
     }
 
     UIImage& WithStretchedY(bool stretchedY)
     {
-        bStretchedY = stretchedY;
+        Flags.StretchedY = stretchedY;
         return *this;
     }
 
     UIImage& WithTiledX(bool tiledX)
     {
-        bTiledX = tiledX;
+        Flags.TiledX = tiledX;
         return *this;
     }
 
     UIImage& WithTiledY(bool tiledY)
     {
-        bTiledY = tiledY;
+        Flags.TiledY = tiledY;
         return *this;
     }
 
     UIImage& WithFlipY(bool flipY)
     {
-        bFlipY = flipY;
+        Flags.FlipY = flipY;
         return *this;
     }
 

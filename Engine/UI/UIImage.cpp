@@ -39,14 +39,14 @@ void UIImage::AdjustSize(Float2 const& size)
     if (!TexHandle)
         return;
 
-    if (bAutoWidth && !bStretchedX && !bTiledX)
+    if (bAutoWidth && !Flags.StretchedX && !Flags.TiledX)
     {
         m_AdjustedSize.X = TexWidth * Scale.X - Padding.Left - Padding.Right;
         if (m_AdjustedSize.X < 0)
             m_AdjustedSize.X = 0;
     }
 
-    if (bAutoHeight && !bStretchedY && !bTiledY)
+    if (bAutoHeight && !Flags.StretchedY && !Flags.TiledY)
     {
         m_AdjustedSize.Y = TexHeight * Scale.Y - Padding.Top - Padding.Bottom;
         if (m_AdjustedSize.Y < 0)
@@ -62,7 +62,7 @@ void UIImage::Draw(Canvas& canvas)
     Float2 pos = m_Geometry.Mins;
     Float2 size;
 
-    if (bStretchedX)
+    if (Flags.StretchedX)
         size.X = (m_Geometry.Maxs.X - m_Geometry.Mins.X) * Scale.X;
     else
     {
@@ -70,7 +70,7 @@ void UIImage::Draw(Canvas& canvas)
         pos.X += Offset.X;
     }
 
-    if (bStretchedY)
+    if (Flags.StretchedY)
         size.Y = (m_Geometry.Maxs.Y - m_Geometry.Mins.Y) * Scale.Y;
     else
     {
@@ -80,19 +80,19 @@ void UIImage::Draw(Canvas& canvas)
 
     CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT;
 
-    if (bTiledX && !bStretchedX)
+    if (Flags.TiledX && !Flags.StretchedX)
         imageFlags |= CANVAS_IMAGE_REPEATX;
 
-    if (bTiledY && !bStretchedY)
+    if (Flags.TiledY && !Flags.StretchedY)
         imageFlags |= CANVAS_IMAGE_REPEATY;
 
-    if (bFlipY)
+    if (Flags.FlipY)
         imageFlags |= CANVAS_IMAGE_FLIPY;
 
-    if (bPremultipliedAlpha)
+    if (Flags.PremultipliedAlpha)
         imageFlags |= CANVAS_IMAGE_PREMULTIPLIED;
 
-    if (bNearestFilter)
+    if (Flags.NearestFilter)
         imageFlags |= CANVAS_IMAGE_NEAREST;
 
     CanvasPaint paint;
