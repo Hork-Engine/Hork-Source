@@ -455,4 +455,20 @@ bool TextureResource::WriteDataCubemapArray(uint32_t LocationX, uint32_t Locatio
     return WriteData(LocationX, LocationY, ArrayLayer * 6 + FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
+void TextureResource::SetTextureGPU(RenderCore::ITexture* texture)
+{
+    m_TextureGPU = texture;
+
+    if (texture)
+    {
+        m_Type = texture->GetDesc().Type;
+        m_Format = texture->GetDesc().Format;
+        m_Width = texture->GetDesc().Resolution.Width;
+        m_Height = texture->GetDesc().Resolution.Height;
+        m_Depth = texture->GetDesc().Resolution.SliceCount;
+        m_NumMipmaps = texture->GetDesc().NumMipLevels;
+    }
+
+}
+
 HK_NAMESPACE_END
