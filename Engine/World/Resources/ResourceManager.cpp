@@ -49,7 +49,7 @@ struct ResourceArea
 {
     ResourceAreaID      m_Id{};
     uint32_t            m_ResourcesLoaded{};
-    Vector<ResourceID> m_ResourceList;
+    Vector<ResourceID>  m_ResourceList;
     bool                m_Load{};
 
     bool IsReady() const
@@ -260,6 +260,17 @@ void CreateDefaultResources(ResourceManager* resManager)
         data.m_pCompiledMaterial = graph->Compile();
 
         auto file = File::OpenWrite("Data/default/materials/default.mat");
+        data.Write(file, resManager);
+    }
+
+    {
+        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resManager->OpenFile("/Root/materials/unlit.mgraph").ReadInterface());
+
+        MaterialResource data;
+
+        data.m_pCompiledMaterial = graph->Compile();
+
+        auto file = File::OpenWrite("Data/default/materials/default_unlit.mat");
         data.Write(file, resManager);
     }
 
@@ -765,6 +776,22 @@ void ResourceManager::ReleaseResource(ResourceID resource)
     proxy.m_State = RESOURCE_STATE_FREE;
 
     DecrementAreas(proxy);
+}
+
+void ResourceManager::PurgeResourceData(ResourceID resource)
+{
+    if (!resource)
+        return;
+
+    auto& proxy = GetProxy(resource);
+
+    if (proxy.m_State == RESOURCE_STATE_LOAD)
+    {
+        LOG("ResourceManager::PurgeResourceData: A resource that is in loading state cannot be cleared {}\n", proxy.GetName());
+        return;
+    }
+
+    proxy.Purge();
 }
 
 void ResourceManager::IncrementAreas(ResourceProxy& proxy)

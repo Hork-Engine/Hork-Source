@@ -74,7 +74,7 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    // AddResourcePack is not thread safe.
+    /// Adds resource pack. Not thread safe.
     void AddResourcePack(StringView fileName);
 
     Vector<Archive> const& GetResourcePacks() const { return m_ResourcePacks; }
@@ -90,29 +90,35 @@ public:
     bool UnloadResource(ResourceID resource);
     bool ReloadResource(ResourceID resource);
 
+    /// Enques a resource to unload, increases the usage counter
     template <typename T>
     ResourceHandle<T> LoadResource(StringView name);
 
+    /// Enques a resource to unload, decreases the usage counter, unloads if the usage counter == 0
     template <typename T>
     void UnloadResource(StringView name);
 
+    /// Creates a resource in place, replacing resource data, does not increase the usage counter.
     template <typename T>
     ResourceHandle<T> CreateResourceWithData(StringView name, UniqueRef<T> resourceData);
 
+    /// Creates a resource in place, replacing resource data, does not increase the usage counter.
     template <typename T, typename... Args>
     ResourceHandle<T> CreateResource(StringView name, Args&&... args);
 
+    /// Creates a resource in place, loads and replacing resource data, does not increase the usage counter.
     template <typename T>
     ResourceHandle<T> CreateResourceFromFile(StringView path);
 
-    File OpenFile(StringView path);
+    /// Just frees the resource data, does not change the state of the resource.
+    void PurgeResourceData(ResourceID resource);
 
     bool IsAreaReady(ResourceAreaID area);
 
-    // Can be called only from main thread.
+    /// Wait for the resources to load. Can be called only from main thread.
     void MainThread_WaitResourceArea(ResourceAreaID area);
 
-    // Can be called only from main thread.
+    /// Wait for the resources to load. Can be called only from main thread.
     void MainThread_WaitResource(ResourceID resource);
 
     template <typename T>
@@ -134,6 +140,8 @@ public:
 
     // Called per frame
     void MainThread_Update(float timeBudget);
+
+    File OpenFile(StringView path);
 
 private:
     struct Command
@@ -224,12 +232,22 @@ ResourceHandle<T> ResourceManager::CreateResourceWithData(StringView name, Uniqu
 
     auto& proxy = GetProxy(resource);
 
+    if (proxy.m_State == RESOURCE_STATE_LOAD)
+    {
+        LOG("ResourceManager::CreateResourceWithData: A resource that is in loading state cannot be created {}\n", name);
+        return {};
+    }
+
     proxy.m_Resource = std::move(resourceData);
-    proxy.m_UseCount++; // = 1;
     proxy.m_State = RESOURCE_STATE_READY;
     proxy.m_Flags = RESOURCE_FLAG_PROCEDURAL;
 
-    IncrementAreas(proxy);
+    if (proxy.m_UseCount == 0)
+    {
+        // Increment usage counter only on first creation.
+        proxy.m_UseCount++;
+        IncrementAreas(proxy);
+    }
 
     return resource;
 }
