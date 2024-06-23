@@ -57,7 +57,7 @@ protected:
 
     virtual void            Purge() {}
 
-    void                    RegisterTickFunction(TickFunction const& f);
+    void                    RegisterTickFunction(TickFunction const& tickFunc);
     void                    RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& function);
 
 private:

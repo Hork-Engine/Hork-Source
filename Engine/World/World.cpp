@@ -399,9 +399,9 @@ void World::DestroyObjectsAndComponents()
     }
 }
 
-void World::RegisterTickFunction(TickFunction const& f)
+void World::RegisterTickFunction(TickFunction const& tickFunc)
 {
-    m_FunctionsToRegister.Add(f);
+    m_FunctionsToRegister.Add(tickFunc);
 }
 
 void World::RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& function)
@@ -411,10 +411,10 @@ void World::RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& func
 
 void World::RegisterTickFunctions()
 {
-    for (auto& f : m_FunctionsToRegister)
+    for (auto& tickFunc : m_FunctionsToRegister)
     {
         TickingGroup* tickingGroup = nullptr;
-        switch (f.Group)
+        switch (tickFunc.Group)
         {
             case TickGroup::Update:
                 tickingGroup = &m_Update;
@@ -435,7 +435,7 @@ void World::RegisterTickFunctions()
 
         HK_ASSERT(tickingGroup);
 
-        tickingGroup->AddFunction(f);
+        tickingGroup->AddFunction(tickFunc);
     }
     m_FunctionsToRegister.Clear();
 }

@@ -107,7 +107,7 @@ private:
 
     void                SetParent(GameObject* object, GameObject* parent, GameObject::TransformRule transformRule);
 
-    void                RegisterTickFunction(TickFunction const& f);
+    void                RegisterTickFunction(TickFunction const& tickFunc);
     void                RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& function);
 
     // TODO: add

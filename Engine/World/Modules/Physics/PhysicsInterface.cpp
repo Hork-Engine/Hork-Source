@@ -444,23 +444,23 @@ void PhysicsInterface::Initialize()
     m_pImpl->m_CharacterContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
 
     {
-        TickFunction f;
-        f.Desc.Name.FromString("Update Physics");
-        f.Desc.TickEvenWhenPaused = true;
-        f.Group = TickGroup::PhysicsUpdate;
-        f.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
-        f.Delegate.Bind(this, &PhysicsInterface::Update);
-        RegisterTickFunction(f);
+        TickFunction tickFunc;
+        tickFunc.Desc.Name.FromString("Update Physics");
+        tickFunc.Desc.TickEvenWhenPaused = true;
+        tickFunc.Group = TickGroup::PhysicsUpdate;
+        tickFunc.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
+        tickFunc.Delegate.Bind(this, &PhysicsInterface::Update);
+        RegisterTickFunction(tickFunc);
     }
 
     {
-        TickFunction f;
-        f.Desc.Name.FromString("Update Physics Post Transform");
-        f.Desc.TickEvenWhenPaused = true;
-        f.Group = TickGroup::PostTransform;
-        f.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
-        f.Delegate.Bind(this, &PhysicsInterface::PostTransform);
-        RegisterTickFunction(f);
+        TickFunction tickFunc;
+        tickFunc.Desc.Name.FromString("Update Physics Post Transform");
+        tickFunc.Desc.TickEvenWhenPaused = true;
+        tickFunc.Group = TickGroup::PostTransform;
+        tickFunc.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
+        tickFunc.Delegate.Bind(this, &PhysicsInterface::PostTransform);
+        RegisterTickFunction(tickFunc);
     }
 
     RegisterDebugDrawFunction({this, &PhysicsInterface::DrawDebug});

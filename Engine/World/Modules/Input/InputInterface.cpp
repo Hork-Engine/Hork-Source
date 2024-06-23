@@ -37,13 +37,13 @@ HK_NAMESPACE_BEGIN
 
 void InputInterface::Initialize()
 {
-    TickFunction f;
-    f.Desc.Name.FromString("Update Input");
-    f.Desc.TickEvenWhenPaused = true;
-    f.Group = TickGroup::Update;
-    f.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
-    f.Delegate.Bind(this, &InputInterface::Update);
-    RegisterTickFunction(f);
+    TickFunction tickFunc;
+    tickFunc.Desc.Name.FromString("Update Input");
+    tickFunc.Desc.TickEvenWhenPaused = true;
+    tickFunc.Group = TickGroup::Update;
+    tickFunc.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
+    tickFunc.Delegate.Bind(this, &InputInterface::Update);
+    RegisterTickFunction(tickFunc);
 }
 
 void InputInterface::Deinitialize()

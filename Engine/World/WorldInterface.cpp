@@ -33,9 +33,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void WorldInterfaceBase::RegisterTickFunction(TickFunction const& f)
+void WorldInterfaceBase::RegisterTickFunction(TickFunction const& tickFunc)
 {
-    m_World->RegisterTickFunction(f);
+    m_World->RegisterTickFunction(tickFunc);
 }
 
 void WorldInterfaceBase::RegisterDebugDrawFunction(Delegate<void(DebugRenderer&)> const& function)

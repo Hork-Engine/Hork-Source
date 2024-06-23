@@ -49,13 +49,13 @@ AudioInterface::AudioInterface()
 
 void AudioInterface::Initialize()
 {
-    TickFunction f;
-    f.Desc.Name.FromString("UpdateAudio");
-    f.Desc.TickEvenWhenPaused = true;
-    f.Group = TickGroup::PostTransform;
-    f.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
-    f.Delegate.Bind(this, &AudioInterface::Update);
-    RegisterTickFunction(f);
+    TickFunction tickFunc;
+    tickFunc.Desc.Name.FromString("UpdateAudio");
+    tickFunc.Desc.TickEvenWhenPaused = true;
+    tickFunc.Group = TickGroup::PostTransform;
+    tickFunc.OwnerTypeID = GetInterfaceTypeID() | (1 << 31);
+    tickFunc.Delegate.Bind(this, &AudioInterface::Update);
+    RegisterTickFunction(tickFunc);
 }
 
 void AudioInterface::Deinitialize()

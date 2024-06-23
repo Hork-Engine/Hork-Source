@@ -38,9 +38,9 @@ ComponentManagerBase::ComponentManagerBase(World* world, ComponentTypeID compone
     m_World(world), m_ComponentTypeID(componentTypeID)
 {}
 
-void ComponentManagerBase::RegisterTickFunction(TickFunction const& f)
+void ComponentManagerBase::RegisterTickFunction(TickFunction const& tickFunc)
 {
-    m_World->RegisterTickFunction(f);
+    m_World->RegisterTickFunction(tickFunc);
 }
 
 void ComponentManagerBase::RegisterDebugDrawFunction(Delegate<void(DebugRenderer& renderer)> const& function)

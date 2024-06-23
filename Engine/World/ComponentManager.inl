@@ -97,57 +97,57 @@ HK_FORCEINLINE ComponentManager<ComponentType>::ComponentManager(World* world) :
 
     if constexpr (HK_HAS_METHOD(ComponentType, Update))
     {
-        TickFunction f;
-        TickGroup_Update::InitializeTickFunction<ComponentType>(f.Desc);
-        f.Group = TickGroup::Update;
-        f.Delegate.Bind(this, &ComponentManager<ComponentType>::Update);
-        f.OwnerTypeID = GetComponentTypeID();
+        TickFunction tickFunc;
+        TickGroup_Update::InitializeTickFunction<ComponentType>(tickFunc.Desc);
+        tickFunc.Group = TickGroup::Update;
+        tickFunc.Delegate.Bind(this, &ComponentManager<ComponentType>::Update);
+        tickFunc.OwnerTypeID = GetComponentTypeID();
 
-        RegisterTickFunction(f);
+        RegisterTickFunction(tickFunc);
     }
 
     if constexpr (HK_HAS_METHOD(ComponentType, FixedUpdate))
     {
-        TickFunction f;
-        TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(f.Desc);
-        f.Group = TickGroup::FixedUpdate;
-        f.Delegate.Bind(this, &ComponentManager<ComponentType>::FixedUpdate);
-        f.OwnerTypeID = GetComponentTypeID();
+        TickFunction tickFunc;
+        TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(tickFunc.Desc);
+        tickFunc.Group = TickGroup::FixedUpdate;
+        tickFunc.Delegate.Bind(this, &ComponentManager<ComponentType>::FixedUpdate);
+        tickFunc.OwnerTypeID = GetComponentTypeID();
 
-        RegisterTickFunction(f);
+        RegisterTickFunction(tickFunc);
     }
 
     if constexpr (HK_HAS_METHOD(ComponentType, PhysicsUpdate))
     {
-        TickFunction f;
-        TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(f.Desc);
-        f.Group = TickGroup::PhysicsUpdate;
-        f.Delegate.Bind(this, &ComponentManager<ComponentType>::PhysicsUpdate);
-        f.OwnerTypeID = GetComponentTypeID();
+        TickFunction tickFunc;
+        TickGroup_FixedUpdate::InitializeTickFunction<ComponentType>(tickFunc.Desc);
+        tickFunc.Group = TickGroup::PhysicsUpdate;
+        tickFunc.Delegate.Bind(this, &ComponentManager<ComponentType>::PhysicsUpdate);
+        tickFunc.OwnerTypeID = GetComponentTypeID();
 
-        RegisterTickFunction(f);
+        RegisterTickFunction(tickFunc);
     }
 
     if constexpr (HK_HAS_METHOD(ComponentType, PostTransform))
     {
-        TickFunction f;
-        TickGroup_PostTransform::InitializeTickFunction<ComponentType>(f.Desc);
-        f.Group = TickGroup::PostTransform;
-        f.Delegate.Bind(this, &ComponentManager<ComponentType>::PostTransform);
-        f.OwnerTypeID = GetComponentTypeID();
+        TickFunction tickFunc;
+        TickGroup_PostTransform::InitializeTickFunction<ComponentType>(tickFunc.Desc);
+        tickFunc.Group = TickGroup::PostTransform;
+        tickFunc.Delegate.Bind(this, &ComponentManager<ComponentType>::PostTransform);
+        tickFunc.OwnerTypeID = GetComponentTypeID();
 
-        RegisterTickFunction(f);
+        RegisterTickFunction(tickFunc);
     }
 
     if constexpr (HK_HAS_METHOD(ComponentType, LateUpdate))
     {
-        TickFunction f;
-        TickGroup_LateUpdate::InitializeTickFunction<ComponentType>(f.Desc);
-        f.Group = TickGroup::LateUpdate;
-        f.Delegate.Bind(this, &ComponentManager<ComponentType>::LateUpdate);
-        f.OwnerTypeID = GetComponentTypeID();
+        TickFunction tickFunc;
+        TickGroup_LateUpdate::InitializeTickFunction<ComponentType>(tickFunc.Desc);
+        tickFunc.Group = TickGroup::LateUpdate;
+        tickFunc.Delegate.Bind(this, &ComponentManager<ComponentType>::LateUpdate);
+        tickFunc.OwnerTypeID = GetComponentTypeID();
 
-        RegisterTickFunction(f);
+        RegisterTickFunction(tickFunc);
     }
 
     if constexpr (HK_HAS_METHOD(ComponentType, DrawDebug))
