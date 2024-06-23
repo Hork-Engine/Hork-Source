@@ -84,11 +84,25 @@ void CameraComponent::SetFovY(float fov)
     }
 }
 
-void CameraComponent::SetAspectRatio(float aspectRatio)
+void CameraComponent::SetViewportPosition(Float2 const& viewportPos)
 {
-    if (m_AspectRatio != aspectRatio)
+    m_ViewportPosition = viewportPos;
+}
+
+void CameraComponent::SetViewportSize(Float2 const& viewportSize)
+{
+    if (m_ViewportSize != viewportSize)
     {
-        m_AspectRatio = aspectRatio;
+        m_ViewportSize = viewportSize;
+        if (viewportSize.X <= 0.0f || viewportSize.Y <= 0.0f)
+            m_AspectRatio = 1;
+        else
+            m_AspectRatio = viewportSize.X / viewportSize.Y;
+
+        // TODO: check this
+        //DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
+        //m_AspectRatio *= vidMode.AspectScale;
+
         m_ProjectionDirty = true;
     }
 }
@@ -138,7 +152,7 @@ void CameraComponent::SetOrthoZoom(float zoom)
     }
 }
 
-void CameraComponent::MakeOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs)
+void CameraComponent::GetOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs)
 {
     if (aspectRatio > 0.0f)
     {
@@ -156,31 +170,26 @@ void CameraComponent::MakeOrthoRect(float aspectRatio, float zoom, Float2& mins,
     }
 }
 
-void CameraComponent::MakeClusterProjectionMatrix(Float4x4& projectionMatrix) const
+Float4x4 CameraComponent::GetClusterProjectionMatrix() const
 {
-    // TODO: if ( ClusterProjectionDirty ...
-
     switch (m_Projection)
     {
         case CameraProjection::OrthoRect:
-            projectionMatrix = Float4x4::OrthoRevCC(m_OrthoMins, m_OrthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
-            break;
+            return Float4x4::OrthoRevCC(m_OrthoMins, m_OrthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
         case CameraProjection::OrthoZoomWithAspectRatio: {
             Float2 orthoMins, orthoMaxs;
-            CameraComponent::MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
-            projectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
-            break;
+            CameraComponent::GetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+            return Float4x4::OrthoRevCC(orthoMins, orthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
         }
         case CameraProjection::PerspectiveFovProvided:
-            projectionMatrix = Float4x4::PerspectiveRevCC(Math::Radians(m_FovX), Math::Radians(m_FovY), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
-            break;
+            return Float4x4::PerspectiveRevCC(Math::Radians(m_FovX), Math::Radians(m_FovY), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
         case CameraProjection::PerspectiveFovXWithAspectRatio:
-            projectionMatrix = Float4x4::PerspectiveRevCC(Math::Radians(m_FovX), m_AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
-            break;
+            return Float4x4::PerspectiveRevCC(Math::Radians(m_FovX), m_AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
         case CameraProjection::PerspectiveFovYWithAspectRatio:
-            projectionMatrix = Float4x4::PerspectiveRevCC_Y(Math::Radians(m_FovY), m_AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
-            break;
+            return Float4x4::PerspectiveRevCC_Y(Math::Radians(m_FovY), m_AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR);
     }
+
+    return Float4x4::Identity();
 }
 
 Float4x4 const& CameraComponent::GetProjectionMatrix() const
@@ -194,7 +203,7 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 break;
             case CameraProjection::OrthoZoomWithAspectRatio: {
                 Float2 orthoMins, orthoMaxs;
-                MakeOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
+                GetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, orthoMins, orthoMaxs);
                 m_ProjectionMatrix = Float4x4::OrthoRevCC(orthoMins, orthoMaxs, m_ZNear, m_ZFar);
                 break;
             }
@@ -213,51 +222,6 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
     }
 
     return m_ProjectionMatrix;
-}
-
-//void CameraComponent::MakeRay(float normalizedX, float normalizedY, Float3& rayStart, Float3& rayEnd) const
-//{
-//    // Update projection matrix
-//    GetProjectionMatrix();
-//
-//    // Update view matrix
-//    GetViewMatrix();
-//
-//    // TODO: cache ModelViewProjectionInversed
-//    Float4x4 ModelViewProjectionInversed = (m_ProjectionMatrix * m_ViewMatrix).Inversed();
-//    // TODO: try to optimize with m_ViewMatrix.ViewInverseFast() * m_ProjectionMatrix.ProjectionInverseFast()
-//
-//    MakeRay(ModelViewProjectionInversed, normalizedX, normalizedY, rayStart, rayEnd);
-//}
-
-void CameraComponent::MakeRay(Float4x4 const& modelViewProjectionInversed, float normalizedX, float normalizedY, Float3& rayStart, Float3& rayEnd)
-{
-    float x = 2.0f * normalizedX - 1.0f;
-    float y = 2.0f * normalizedY - 1.0f;
-#if 0
-    Float4 near(x, y, 1, 1.0f);
-    Float4 far(x, y, 0, 1.0f);
-    rayStart.X = modelViewProjectionInversed[0][0] * near[0] + modelViewProjectionInversed[1][0] * near[1] + modelViewProjectionInversed[2][0] * near[2] + modelViewProjectionInversed[3][0];
-    rayStart.Y = modelViewProjectionInversed[0][1] * near[0] + modelViewProjectionInversed[1][1] * near[1] + modelViewProjectionInversed[2][1] * near[2] + modelViewProjectionInversed[3][1];
-    rayStart.Z = modelViewProjectionInversed[0][2] * near[0] + modelViewProjectionInversed[1][2] * near[1] + modelViewProjectionInversed[2][2] * near[2] + modelViewProjectionInversed[3][2];
-    rayStart /= (modelViewProjectionInversed[0][3] * near[0] + modelViewProjectionInversed[1][3] * near[1] + modelViewProjectionInversed[2][3] * near[2] + modelViewProjectionInversed[3][3]);
-    rayEnd.X = modelViewProjectionInversed[0][0] * far[0] + modelViewProjectionInversed[1][0] * far[1] + modelViewProjectionInversed[2][0] * far[2] + modelViewProjectionInversed[3][0];
-    rayEnd.Y = modelViewProjectionInversed[0][1] * far[0] + modelViewProjectionInversed[1][1] * far[1] + modelViewProjectionInversed[2][1] * far[2] + modelViewProjectionInversed[3][1];
-    rayEnd.Z = modelViewProjectionInversed[0][2] * far[0] + modelViewProjectionInversed[1][2] * far[1] + modelViewProjectionInversed[2][2] * far[2] + modelViewProjectionInversed[3][2];
-    rayEnd /= (modelViewProjectionInversed[0][3] * far[0] + modelViewProjectionInversed[1][3] * far[1] + modelViewProjectionInversed[2][3] * far[2] + modelViewProjectionInversed[3][3]);
-#else
-    // Same code
-    rayEnd.X = modelViewProjectionInversed[0][0] * x + modelViewProjectionInversed[1][0] * y + modelViewProjectionInversed[3][0];
-    rayEnd.Y = modelViewProjectionInversed[0][1] * x + modelViewProjectionInversed[1][1] * y + modelViewProjectionInversed[3][1];
-    rayEnd.Z = modelViewProjectionInversed[0][2] * x + modelViewProjectionInversed[1][2] * y + modelViewProjectionInversed[3][2];
-    rayStart.X = rayEnd.X + modelViewProjectionInversed[2][0];
-    rayStart.Y = rayEnd.Y + modelViewProjectionInversed[2][1];
-    rayStart.Z = rayEnd.Z + modelViewProjectionInversed[2][2];
-    float div = modelViewProjectionInversed[0][3] * x + modelViewProjectionInversed[1][3] * y + modelViewProjectionInversed[3][3];
-    rayEnd /= div;
-    div += modelViewProjectionInversed[2][3];
-    rayStart /= div;
-#endif
 }
 
 BvFrustum CameraComponent::GetFrustum() const
@@ -284,6 +248,62 @@ Float4x4 CameraComponent::GetViewMatrix() const
 Float3x3 CameraComponent::GetBillboardMatrix() const
 {
     return GetOwner()->GetWorldRotation().ToMatrix3x3();
+}
+
+Float2 CameraComponent::ScreenToViewportPoint(Float2 const& screenPoint) const
+{
+    if (m_ViewportSize.X <= 0 || m_ViewportSize.Y <= 0)
+        return Float2(-1.0f);
+
+    return (screenPoint - m_ViewportPosition) / m_ViewportSize;
+}
+
+Float2 CameraComponent::ViewportPointToScreen(Float2 const& viewportPoint) const
+{
+    if (m_ViewportSize.X <= 0 || m_ViewportSize.Y <= 0)
+        return Float2(-1.0f);
+
+    return viewportPoint * m_ViewportSize + m_ViewportPosition;
+}
+
+bool CameraComponent::ViewportPointToRay(Float2 const& viewportPoint, Float3& rayStart, Float3& rayDir) const
+{
+    if (viewportPoint.X < 0 || viewportPoint.Y < 0 || viewportPoint.X > 1 || viewportPoint.Y > 1)
+    {
+        // Point is outside of camera viewport
+        return false;
+    }
+
+    auto proj = GetProjectionMatrix();
+    auto view = GetViewMatrix();
+
+    auto viewProj = proj * view;
+    auto viewProjInversed = viewProj.Inversed();
+
+    float x = 2.0f * viewportPoint.X - 1.0f;
+    float y = 2.0f * viewportPoint.Y - 1.0f;
+
+    Float3 rayEnd;
+    rayEnd.X = viewProjInversed[0][0] * x + viewProjInversed[1][0] * y + viewProjInversed[3][0];
+    rayEnd.Y = viewProjInversed[0][1] * x + viewProjInversed[1][1] * y + viewProjInversed[3][1];
+    rayEnd.Z = viewProjInversed[0][2] * x + viewProjInversed[1][2] * y + viewProjInversed[3][2];
+    rayStart.X = rayEnd.X + viewProjInversed[2][0];
+    rayStart.Y = rayEnd.Y + viewProjInversed[2][1];
+    rayStart.Z = rayEnd.Z + viewProjInversed[2][2];
+
+    float div = viewProjInversed[0][3] * x + viewProjInversed[1][3] * y + viewProjInversed[3][3];
+    rayEnd /= div;
+    div += viewProjInversed[2][3];
+    rayStart /= div;
+
+    rayDir = rayEnd - rayStart;
+
+    return true;
+}
+
+bool CameraComponent::ScreenPointToRay(Float2 const& screenPoint, Float3& rayStart, Float3& rayDir) const
+{
+    return ViewportPointToRay(ScreenToViewportPoint(screenPoint), rayStart, rayDir);
 }
 
 void CameraComponent::SkipInterpolation()

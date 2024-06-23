@@ -176,14 +176,8 @@ void UIViewport::Draw(Canvas& canvas)
         return;
     }
 
-    float aspectRatio;
-    if (m_ViewWidth > 0 && m_ViewHeight > 0)
-        aspectRatio = static_cast<float>(m_ViewWidth) / m_ViewHeight;
-    else
-        aspectRatio = 1;
-
-    DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
-    camera->SetAspectRatio(aspectRatio * vidMode.AspectScale);
+    camera->SetViewportPosition(m_Geometry.Mins);
+    camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)});
 
     GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
 

@@ -871,7 +871,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->InverseProjectionMatrix = camera->IsPerspective() ?
         view->ProjectionMatrix.PerspectiveProjectionInverseFast() :
         view->ProjectionMatrix.OrthoProjectionInverseFast();
-    camera->MakeClusterProjectionMatrix(view->ClusterProjectionMatrix);
+    view->ClusterProjectionMatrix = camera->GetClusterProjectionMatrix();
 
     view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
     view->ClusterViewProjectionInversed = view->ClusterViewProjection.Inversed();
