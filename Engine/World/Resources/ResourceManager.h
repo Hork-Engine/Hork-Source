@@ -42,106 +42,84 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class ResourceStreamQueue
-{
-public:
-    void Enqueue(ResourceID resource)
-    {
-        m_Queue.Push(resource);
-    }
-
-    ResourceID Dequeue()
-    {
-        ResourceID resource;
-        m_Queue.TryPop(resource);
-        return resource;
-    }
-
-    ThreadSafeQueue<ResourceID> m_Queue;
-};
-
 using ResourceAreaID = uint32_t;
 
 struct ResourceArea;
 
-/*
-All public methods are thread safe except AddResourcePack.
-Methods prefixed with MainThread_ can only be called from the main thread.
-*/
 class ResourceManager final
 {
 public:
-    ResourceManager();
-    ~ResourceManager();
+                            ResourceManager();
+                            ~ResourceManager();
 
     /// Adds resource pack. Not thread safe.
-    void AddResourcePack(StringView fileName);
+    void                    AddResourcePack(StringView fileName);
 
-    Vector<Archive> const& GetResourcePacks() const { return m_ResourcePacks; }
+    Vector<Archive> const&  GetResourcePacks() const { return m_ResourcePacks; }
 
-    ResourceAreaID CreateResourceArea(ArrayView<ResourceID> resourceList);
-    void DestroyResourceArea(ResourceAreaID area);
+    ResourceAreaID          CreateResourceArea(ArrayView<ResourceID> resourceList);
+    void                    DestroyResourceArea(ResourceAreaID area);
 
-    void LoadArea(ResourceAreaID area);
-    void UnloadArea(ResourceAreaID area);
-    void ReloadArea(ResourceAreaID area);
+    void                    LoadArea(ResourceAreaID area);
+    void                    UnloadArea(ResourceAreaID area);
+    void                    ReloadArea(ResourceAreaID area);
 
-    bool LoadResource(ResourceID resource);
-    bool UnloadResource(ResourceID resource);
-    bool ReloadResource(ResourceID resource);
+    bool                    LoadResource(ResourceID resource);
+    bool                    UnloadResource(ResourceID resource);
+    bool                    ReloadResource(ResourceID resource);
 
     /// Enques a resource to unload, increases the usage counter
     template <typename T>
-    ResourceHandle<T> LoadResource(StringView name);
+    ResourceHandle<T>       LoadResource(StringView name);
 
     /// Enques a resource to unload, decreases the usage counter, unloads if the usage counter == 0
     template <typename T>
-    void UnloadResource(StringView name);
+    void                    UnloadResource(StringView name);
 
     /// Creates a resource in place, replacing resource data, does not increase the usage counter.
     template <typename T>
-    ResourceHandle<T> CreateResourceWithData(StringView name, UniqueRef<T> resourceData);
+    ResourceHandle<T>       CreateResourceWithData(StringView name, UniqueRef<T> resourceData);
 
     /// Creates a resource in place, replacing resource data, does not increase the usage counter.
     template <typename T, typename... Args>
-    ResourceHandle<T> CreateResource(StringView name, Args&&... args);
+    ResourceHandle<T>       CreateResource(StringView name, Args&&... args);
 
     /// Creates a resource in place, loads and replacing resource data, does not increase the usage counter.
     template <typename T>
-    ResourceHandle<T> CreateResourceFromFile(StringView path);
+    ResourceHandle<T>       CreateResourceFromFile(StringView path);
 
     /// Just frees the resource data, does not change the state of the resource.
-    void PurgeResourceData(ResourceID resource);
+    void                    PurgeResourceData(ResourceID resource);
 
-    bool IsAreaReady(ResourceAreaID area);
-
-    /// Wait for the resources to load. Can be called only from main thread.
-    void MainThread_WaitResourceArea(ResourceAreaID area);
+    bool                    IsAreaReady(ResourceAreaID area);
 
     /// Wait for the resources to load. Can be called only from main thread.
-    void MainThread_WaitResource(ResourceID resource);
+    void                    MainThread_WaitResourceArea(ResourceAreaID area);
+
+    /// Wait for the resources to load. Can be called only from main thread.
+    void                    MainThread_WaitResource(ResourceID resource);
 
     template <typename T>
-    ResourceHandle<T> GetResource(StringView resourcePath);
+    ResourceHandle<T>       GetResource(StringView resourcePath);
 
-    ResourceProxy* FindResource(StringView resourcePath);
-
-    template <typename T>
-    T* TryGet(ResourceID resource);
+    ResourceProxy*          FindResource(StringView resourcePath);
 
     template <typename T>
-    T* TryGet(ResourceHandle<T> handle);
+    T*                      TryGet(ResourceID resource);
 
-    ResourceProxy& GetProxy(ResourceID resource);
+    template <typename T>
+    T*                      TryGet(ResourceHandle<T> handle);
 
-    StringView GetResourceName(ResourceID resource);
+    ResourceProxy&          GetProxy(ResourceID resource);
 
-    bool IsResourceReady(ResourceID resource);
+    StringView              GetResourceName(ResourceID resource);
+
+    bool                    IsResourceReady(ResourceID resource);
 
     // Called per frame
-    void MainThread_Update(float timeBudget);
+    void                    MainThread_Update(float timeBudget);
 
-    File OpenFile(StringView path);
+    File                    OpenFile(StringView path);
 
 private:
     struct Command
@@ -157,177 +135,76 @@ private:
             RELOAD_RESOURCE,
             RELOAD_AREA,
         };
-        TYPE Type;
-        uint32_t ResourceOrAreaID;
+        TYPE        Type;
+        uint32_t    ResourceOrAreaID;
     };
 
-    void UpdateAsync();
+    void                    UpdateAsync();
 
     UniqueRef<ResourceBase> LoadResourceAsync(RESOURCE_TYPE type, StringView name);
 
     /** Find file in resource packs */
-    bool FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const;
+    bool                    FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const;
 
-    ResourceArea* AllocateArea();
-    void FreeArea(ResourceAreaID areaID);
-    ResourceArea* FetchArea(ResourceAreaID areaID);
+    ResourceArea*           AllocateArea();
+    void                    FreeArea(ResourceAreaID areaID);
+    ResourceArea*           FetchArea(ResourceAreaID areaID);
 
-    void AddCommand(Command const& command);
+    void                    AddCommand(Command const& command);
 
-    void ExecuteCommands();
+    void                    ExecuteCommands();
 
-    void ReleaseResource(ResourceID resource);
+    void                    ReleaseResource(ResourceID resource);
 
-    void IncrementAreas(ResourceProxy& proxy);
-    void DecrementAreas(ResourceProxy& proxy);
+    void                    IncrementAreas(ResourceProxy& proxy);
+    void                    DecrementAreas(ResourceProxy& proxy);
 
     using ResourceList = PagedVector<ResourceProxy, 1024, 1024>;
-    ResourceList m_ResourceList;
+    ResourceList            m_ResourceList;
     StringHashMap<ResourceID> m_ResourceHash;
-    Mutex m_ResourceHashMutex;
+    Mutex                   m_ResourceHashMutex;
 
-    Vector<ResourceID> m_DelayedRelease;
+    Vector<ResourceID>      m_DelayedRelease;
 
-    ResourceStreamQueue m_StreamQueue;
+    class ResourceStreamQueue
+    {
+    public:
+        void Enqueue(ResourceID resource)
+        {
+            m_Queue.Push(resource);
+        }
+
+        ResourceID Dequeue()
+        {
+            ResourceID resource;
+            m_Queue.TryPop(resource);
+            return resource;
+        }
+
+        ThreadSafeQueue<ResourceID> m_Queue;
+    };
+
+    ResourceStreamQueue     m_StreamQueue;
     ThreadSafeQueue<ResourceID> m_ProcessingQueue;
-    SyncEvent m_StreamQueueEvent;
-    SyncEvent m_ProcessingQueueEvent;
+    SyncEvent               m_StreamQueueEvent;
+    SyncEvent               m_ProcessingQueueEvent;
 
-    Vector<ResourceArea*> m_ResourceAreas;
-    Vector<uint32_t> m_ResourceAreaFreeList;
-    Mutex m_ResourceAreaAllocMutex;
+    Vector<ResourceArea*>   m_ResourceAreas;
+    Vector<uint32_t>        m_ResourceAreaFreeList;
+    Mutex                   m_ResourceAreaAllocMutex;
 
-    Vector<Command> m_CommandBuffer;
-    Mutex m_CommandBufferMutex;    
+    Vector<Command>         m_CommandBuffer;
+    Mutex                   m_CommandBufferMutex;    
 
     HashMap<ResourceID, int> m_Refs;
-    HashSet<ResourceID> m_ReloadResources;
+    HashSet<ResourceID>     m_ReloadResources;
 
-    Thread m_Thread;
-    AtomicBool m_RunAsync;
+    Thread                  m_Thread;
+    AtomicBool              m_RunAsync;
 
-    Vector<Archive> m_ResourcePacks;
+    Vector<Archive>         m_ResourcePacks;
 };
 
-template <typename T>
-ResourceHandle<T> ResourceManager::LoadResource(StringView name)
-{
-    ResourceHandle<T> resource = GetResource<T>(name);
-    LoadResource(resource);
-    return resource;
-}
-
-template <typename T>
-void ResourceManager::UnloadResource(StringView name)
-{
-    UnloadResource(GetResource<T>(name));
-}
-
-template <typename T>
-ResourceHandle<T> ResourceManager::CreateResourceWithData(StringView name, UniqueRef<T> resourceData)
-{
-    ResourceHandle<T> resource = GetResource<T>(name);
-    if (!resource)
-        return {};
-
-    auto& proxy = GetProxy(resource);
-
-    if (proxy.m_State == RESOURCE_STATE_LOAD)
-    {
-        LOG("ResourceManager::CreateResourceWithData: A resource that is in loading state cannot be created {}\n", name);
-        return {};
-    }
-
-    proxy.m_Resource = std::move(resourceData);
-    proxy.m_State = RESOURCE_STATE_READY;
-    proxy.m_Flags = RESOURCE_FLAG_PROCEDURAL;
-
-    if (proxy.m_UseCount == 0)
-    {
-        // Increment usage counter only on first creation.
-        proxy.m_UseCount++;
-        IncrementAreas(proxy);
-    }
-
-    return resource;
-}
-
-template <typename T, typename... Args>
-ResourceHandle<T> ResourceManager::CreateResource(StringView name, Args&&... args)
-{
-    return CreateResourceWithData<T>(name, MakeUnique<T>(std::forward<Args>(args)...));
-}
-
-template <typename T>
-ResourceHandle<T> ResourceManager::CreateResourceFromFile(StringView path)
-{
-    if (auto file = OpenFile(path))
-        return CreateResource<T>(path, file, this);
-    return CreateResource<T>(path);
-}
-
-template <typename T>
-ResourceHandle<T> ResourceManager::GetResource(StringView resourcePath)
-{
-    HK_ASSERT(!resourcePath.IsEmpty());
-    if (resourcePath.IsEmpty())
-        return {};
-
-    MutexGuard lock(m_ResourceHashMutex);
-
-    auto it = m_ResourceHash.Find(resourcePath);
-    if (it == m_ResourceHash.End())
-    {
-        ResourceID resource(T::Type, m_ResourceList.Add());
-
-        auto result = m_ResourceHash.Insert(resourcePath, resource);
-
-        GetProxy(resource).m_Name = result.first.get_node()->mValue.first;
-        //LOG("RESOURCES SIZE: sizeof {} num blocks {} block sizeof {} proxy size {}\n", sizeof(m_Resources), m_Resources.m_ResourceList.GetNumBlocks(), sizeof(ResourceList<ResourceProxy, ResourceContainer::BlockSize>::Block), sizeof(ResourceProxy));
-        return ResourceHandle<T>(resource);
-    }
-    // Check is resource already registered with different type.
-    HK_ASSERT(it->second.Is<T>());
-    if (!it->second.Is<T>())
-        return {};
-    return ResourceHandle<T>(it->second);
-}
-
-template <typename T>
-T* ResourceManager::TryGet(ResourceID resource)
-{
-    HK_ASSERT(!resource || resource.Is<T>());
-    if (!resource.Is<T>())
-    {
-        return nullptr;
-    }
-
-    auto& proxy = GetProxy(resource);
-    if (!proxy.IsReady())
-        return nullptr;
-
-    return static_cast<T*>(proxy.m_Resource.RawPtr());
-}
-
-template <typename T>
-HK_FORCEINLINE T* ResourceManager::TryGet(ResourceHandle<T> handle)
-{
-    return TryGet<T>(handle.ID);
-}
-
-HK_FORCEINLINE ResourceProxy& ResourceManager::GetProxy(ResourceID resource)
-{
-    return m_ResourceList.Get(resource.GetIndex());
-}
-
-HK_FORCEINLINE StringView ResourceManager::GetResourceName(ResourceID resource)
-{
-    return GetProxy(resource).GetName();
-}
-
-HK_FORCEINLINE bool ResourceManager::IsResourceReady(ResourceID resource)
-{
-    return GetProxy(resource).IsReady();
-}
-
 HK_NAMESPACE_END
+
+#include "ResourceManager.inl"

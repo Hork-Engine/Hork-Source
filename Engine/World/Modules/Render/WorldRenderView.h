@@ -128,19 +128,18 @@ public:
 class WorldRenderView : public RefCounted
 {
 public:
-    Color4                       BackgroundColor  = Color4(0.3f, 0.3f, 0.8f);
-    bool                         bClearBackground = false;
-    bool                         bWireframe       = false;
-    bool                         bDrawDebug       = false;
-    bool                         bAllowHBAO       = true;
-    bool                         bAllowMotionBlur = true;
-    ANTIALIASING_TYPE            AntialiasingType = ANTIALIASING_SMAA;
-    VISIBILITY_GROUP             VisibilityMask   = VISIBILITY_GROUP_ALL;
+    Color4                      BackgroundColor  = Color4(0.3f, 0.3f, 0.8f);
+    bool                        bClearBackground = false;
+    bool                        bWireframe       = false;
+    bool                        bDrawDebug       = false;
+    bool                        bAllowHBAO       = true;
+    bool                        bAllowMotionBlur = true;
+    ANTIALIASING_TYPE           AntialiasingType = ANTIALIASING_SMAA;
+    VISIBILITY_GROUP            VisibilityMask   = VISIBILITY_GROUP_ALL;
     Ref<ColorGradingParameters> ColorGrading;
     Ref<VignetteParameters>     Vignette;
 
-    //Delegate<void(RenderCore::ITexture)> E_OnTextureReady; // TODO?
-    //uint32_t                           RenderingOrder{}; // TODO?
+    //uint32_t                  RenderingOrder{}; // TODO?
 
                             WorldRenderView();
                             ~WorldRenderView();
@@ -166,8 +165,6 @@ public:
     RenderCore::ITexture*   GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
 
     TextureHandle           GetTextureHandle();
-
-    //TextureView* GetTextureView();
 
     class TerrainView*      GetTerrainView(TerrainHandle resource);
 
@@ -212,53 +209,30 @@ public:
     RenderCore::ITexture* AcquireRenderTarget();
 
 private:
-    //class TextureViewImpl : public TextureView
-    //{
-    //public:
-    //    TextureViewImpl(WorldRenderView* pWorldRenderView) :
-    //        m_WorldRenderView(pWorldRenderView)
-    //    {}
-
-    //    void SetViewport(uint32_t width, uint32_t height)
-    //    {
-    //        m_Width = width;
-    //        m_Height = height;
-    //    }
-
-    //    void SetResource(RenderCore::ITexture* pResource)
-    //    {
-    //        m_Resource = pResource;
-    //    }
-
-    //    Ref<WorldRenderView> m_WorldRenderView;
-    //};
-
     RenderCore::ITexture* AcquireLightTexture();
     RenderCore::ITexture* AcquireDepthTexture();
     RenderCore::ITexture* AcquireHBAOMaps();
     void                  ReleaseHBAOMaps();
 
-    Handle32<CameraComponent> m_Camera;
-    Handle32<CameraComponent> m_CullingCamera;
-    World* m_World{}; // TODO: refcounting or handles
+    Handle32<CameraComponent>           m_Camera;
+    Handle32<CameraComponent>           m_CullingCamera;
+    World*                              m_World{}; // TODO: refcounting or handles
 
-    //WeakRef<TextureViewImpl>              m_WorldViewTex;
-    uint32_t                               m_Width{};
-    uint32_t                               m_Height{};
-    Ref<RenderCore::ITexture>             m_LightTexture;
-    Ref<RenderCore::ITexture>             m_DepthTexture;
-    //Ref<RenderCore::ITexture>             m_RenderTarget;
-    Ref<RenderCore::ITexture>             m_HBAOMaps;
-    HashMap<ResourceID, TerrainView*>     m_TerrainViews;     // TODO: Needs to be cleaned from time to time
-    Float4x4                               m_ProjectionMatrix; // last rendered projection
-    Float4x4                               m_ViewMatrix;       // last rendered view
-    float                                  m_ScaledWidth{};
-    float                                  m_ScaledHeight{};
-    VirtualTextureFeedback                 m_VTFeedback;
-    Ref<RenderCore::ITexture>             m_CurrentColorGradingLUT;
-    Ref<RenderCore::ITexture>             m_CurrentExposure;
-    int                                    m_FrameNum{};
-    TextureHandle                          m_HandleRT;
+    uint32_t                            m_Width{};
+    uint32_t                            m_Height{};
+    Ref<RenderCore::ITexture>           m_LightTexture;
+    Ref<RenderCore::ITexture>           m_DepthTexture;
+    Ref<RenderCore::ITexture>           m_HBAOMaps;
+    HashMap<ResourceID, TerrainView*>   m_TerrainViews;     // TODO: Needs to be cleaned from time to time
+    Float4x4                            m_ProjectionMatrix; // last rendered projection
+    Float4x4                            m_ViewMatrix;       // last rendered view
+    float                               m_ScaledWidth{};
+    float                               m_ScaledHeight{};
+    VirtualTextureFeedback              m_VTFeedback;
+    Ref<RenderCore::ITexture>           m_CurrentColorGradingLUT;
+    Ref<RenderCore::ITexture>           m_CurrentExposure;
+    int                                 m_FrameNum{};
+    TextureHandle                       m_HandleRT;
 
     friend class RenderFrontend;
 };

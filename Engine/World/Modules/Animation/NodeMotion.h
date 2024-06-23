@@ -50,7 +50,7 @@ enum NODE_ANIMATION_PATH_TYPE
     NODE_ANIMATION_PATH_SCALE
 };
 
-class NodeMotion : public RefCounted // Resource
+class NodeMotion : public RefCounted // TODO: Resource
 {
 public:
     Vector<float> m_AnimationTimes;

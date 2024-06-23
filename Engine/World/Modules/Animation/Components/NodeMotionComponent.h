@@ -55,10 +55,10 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
     uint32_t            NodeID;
-    Ref<NodeMotion>    Animation;
+    Ref<NodeMotion>     Animation;
     NodeMotionTimer     Timer;
 
-    void FixedUpdate();
+    void                FixedUpdate();
 };
 
 namespace TickGroup_FixedUpdate

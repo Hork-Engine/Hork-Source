@@ -195,11 +195,6 @@ void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
 {
     m_Width  = width;
     m_Height = height;
-
-    //if (m_WorldViewTex)
-    //{
-    //    m_WorldViewTex->SetViewport(width, height);
-    //}
 }
 
 void WorldRenderView::SetWorld(World* world)
@@ -221,24 +216,6 @@ TextureHandle WorldRenderView::GetTextureHandle()
 {
     return m_HandleRT;
 }
-
-//TextureView* WorldRenderView::GetTextureView()
-//{
-//    if (m_WorldViewTex.IsExpired())
-//    {
-//        m_WorldViewTex = NewObj<TextureViewImpl>(this);
-//        m_WorldViewTex->SetViewport(m_Width, m_Height);
-//
-//        if (m_RenderTarget)
-//        {
-//            m_WorldViewTex->SetResource(m_RenderTarget);
-//        }
-//    }
-//
-//    GarbageCollector::KeepPointerAlive(m_WorldViewTex);
-//
-//    return m_WorldViewTex;
-//}
 
 RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
 {
@@ -269,12 +246,6 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
         renderTarget->SetTextureGPU(newTex);
 
         texture = newTex;
-
-        //if (m_WorldViewTex)
-        //{
-        //    m_WorldViewTex->SetViewport(m_Width, m_Height);
-        //    m_WorldViewTex->SetResource(m_RenderTarget);
-        //}
     }
 
     return texture;

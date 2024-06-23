@@ -1937,7 +1937,7 @@ void NavMesh::Update(float inTimeStep)
 //  +-S-+-T-+
 //  |:::|   | <-- the step can end up in here, resulting U-turn path.
 //  +---+---+
-int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int inNPath ) const {
+int NavMesh::FixupShortcuts( NavPolyRef * inPath, int inNPath ) const {
     if ( _NPath < 3 ) {
         return _NPath;
     }
@@ -1949,7 +1949,7 @@ int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int inNPath ) c
 
     const dtMeshTile * tile = 0;
     const dtPoly * poly = 0;
-    if ( dtStatusFailed( m_NavQuery->getAttachedNavMesh()->getTileAndPolyByRef( _Path[0], &tile, &poly ) ) ) {
+    if ( dtStatusFailed( m_NavQuery->getAttachedNavMesh()->getTileAndPolyByRef( inPath[0], &tile, &poly ) ) ) {
         return _NPath;
     }
 
@@ -1970,7 +1970,7 @@ int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int inNPath ) c
     for (int i = Math::Min(maxLookAhead, _NPath) - 1; i > 1 && cut == 0; i--) {
         for (int j = 0; j < nneis; j++)
         {
-            if (_Path[i] == neis[j]) {
+            if (inPath[i] == neis[j]) {
                 cut = i;
                 break;
             }
@@ -1981,13 +1981,13 @@ int NavigationMeshComponent::FixupShortcuts( NavPolyRef * _Path, int inNPath ) c
         int offset = cut-1;
         _NPath -= offset;
         for (int i = 1; i < _NPath; i++)
-            _Path[i] = _Path[i+offset];
+            inPath[i] = inPath[i+offset];
     }
 
     return _NPath;
 }
 
-int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int inNPath, const int inMaxPath, const NavPolyRef * _Visited, const int inNVisited ) const {
+int NavMesh::FixupCorridor( NavPolyRef * inPath, const int inNPath, const int inMaxPath, const NavPolyRef * _Visited, const int inNVisited ) const {
     int furthestPath = -1;
     int furthestVisited = -1;
 
@@ -1997,7 +1997,7 @@ int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int inNPat
         bool found = false;
         for (int j = _NVisited-1; j >= 0; --j)
         {
-            if (_Path[i] == _Visited[j])
+            if (inPath[i] == _Visited[j])
             {
                 furthestPath = i;
                 furthestVisited = j;
@@ -2021,11 +2021,11 @@ int NavigationMeshComponent::FixupCorridor( NavPolyRef * _Path, const int inNPat
     if (req+size > inMaxPath)
         size = inMaxPath-req;
     if (size)
-        Core::Memmove(_Path+req, _Path+orig, size*sizeof(NavPolyRef));
+        Core::Memmove(inPath+req, inPath+orig, size*sizeof(NavPolyRef));
 
     // Store visited
     for (int i = 0; i < req; ++i)
-        _Path[i] = _Visited[(_NVisited-1)-i];
+        inPath[i] = _Visited[(_NVisited-1)-i];
 
     return req+size;
 }
