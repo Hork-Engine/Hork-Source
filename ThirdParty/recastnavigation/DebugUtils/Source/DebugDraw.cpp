@@ -16,17 +16,29 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#define _USE_MATH_DEFINES
 #include <string.h>
 #include "DebugDraw.h"
 #include "DetourMath.h"
+#include "DetourNavMesh.h"
 
 
 duDebugDraw::~duDebugDraw()
 {
 	// Empty
 }
-	
+
+unsigned int duDebugDraw::areaToCol(unsigned int area)
+{
+	if (area == 0)
+	{
+		// Treat zero area type as default.
+		return duRGBA(0, 192, 255, 255);
+	}
+	else
+	{
+		return duIntToCol(area, 255);
+	}
+}
 
 inline int bit(int a, int b)
 {
@@ -517,9 +529,9 @@ duDisplayList::duDisplayList(int cap) :
 	m_color(0),
 	m_size(0),
 	m_cap(0),
-	m_depthMask(true),
 	m_prim(DU_DRAW_LINES),
-	m_primSize(1.0f)
+	m_primSize(1.0f),
+	m_depthMask(true)
 {
 	if (cap < 8)
 		cap = 8;

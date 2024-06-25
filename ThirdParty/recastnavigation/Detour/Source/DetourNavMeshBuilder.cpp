@@ -358,7 +358,7 @@ bool dtCreateNavMeshData(dtNavMeshCreateParams* params, unsigned char** outData,
 		}
 	}
 	
-	// Off-mesh connectionss are stored as polygons, adjust values.
+	// Off-mesh connections are stored as polygons, adjust values.
 	const int totPolyCount = params->polyCount + storedOffMeshConCount;
 	const int totVertCount = params->vertCount + storedOffMeshConCount*2;
 	
@@ -705,10 +705,10 @@ bool dtNavMeshHeaderSwapEndian(unsigned char* data, const int /*dataSize*/)
 
 /// @par
 ///
-/// @warning This function assumes that the header is in the correct endianess already. 
-/// Call #dtNavMeshHeaderSwapEndian() first on the data if the data is expected to be in wrong endianess 
+/// @warning This function assumes that the header is in the correct endianness already. 
+/// Call #dtNavMeshHeaderSwapEndian() first on the data if the data is expected to be in wrong endianness 
 /// to start with. Call #dtNavMeshHeaderSwapEndian() after the data has been swapped if converting from 
-/// native to foreign endianess.
+/// native to foreign endianness.
 bool dtNavMeshDataSwapEndian(unsigned char* data, const int /*dataSize*/)
 {
 	// Make sure the data is in right format.

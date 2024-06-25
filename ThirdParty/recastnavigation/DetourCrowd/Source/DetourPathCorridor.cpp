@@ -59,13 +59,13 @@ int dtMergeCorridorStartMoved(dtPolyRef* path, const int npath, const int maxPat
 	int size = dtMax(0, npath-orig);
 	if (req+size > maxPath)
 		size = maxPath-req;
-	if (size)
+	if (size > 0)
 		memmove(path+req, path+orig, size*sizeof(dtPolyRef));
-	
+
 	// Store visited
-	for (int i = 0; i < req; ++i)
-		path[i] = visited[(nvisited-1)-i];				
-	
+	for (int i = 0, n = dtMin(req, maxPath); i < n; ++i)
+		path[i] = visited[(nvisited-1)-i];
+
 	return req+size;
 }
 
@@ -431,7 +431,7 @@ Behavior:
 - The new position will be located in the adjusted corridor's first polygon.
 
 The expected use case is that the desired position will be 'near' the current corridor. What is considered 'near' 
-depends on local polygon density, query search extents, etc.
+depends on local polygon density, query search half extents, etc.
 
 The resulting position will differ from the desired position if the desired position is not on the navigation mesh, 
 or it can't be reached using a local search.
@@ -470,7 +470,7 @@ Behavior:
 - The corridor is automatically adjusted (shorted or lengthened) in order to remain valid. 
 - The new target will be located in the adjusted corridor's last polygon.
 
-The expected use case is that the desired target will be 'near' the current corridor. What is considered 'near' depends on local polygon density, query search extents, etc.
+The expected use case is that the desired target will be 'near' the current corridor. What is considered 'near' depends on local polygon density, query search half extents, etc.
 
 The resulting target will differ from the desired target if the desired target is not on the navigation mesh, or it can't be reached using a local search.
 */
@@ -512,7 +512,7 @@ void dtPathCorridor::setCorridor(const float* target, const dtPolyRef* path, con
 {
 	dtAssert(m_path);
 	dtAssert(npath > 0);
-	dtAssert(npath < m_maxPath);
+	dtAssert(npath <= m_maxPath);
 	
 	dtVcopy(m_target, target);
 	memcpy(m_path, path, sizeof(dtPolyRef)*npath);
