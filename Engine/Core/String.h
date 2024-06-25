@@ -745,14 +745,16 @@ HK_FORCEINLINE TString<CharT, Allocator>::~TString()
 template <typename CharT, typename Allocator>
 HK_FORCEINLINE CharT const& TString<CharT, Allocator>::operator[](SizeType Index) const
 {
-    HK_ASSERT_(Index < m_Size, "Undefined behavior accessing out of bounds");
+    // NOTE. Allow access to the trailing \0 character
+    HK_ASSERT_(Index <= m_Size, "Undefined behavior accessing out of bounds");
     return m_pData[Index];
 }
 
 template <typename CharT, typename Allocator>
 HK_FORCEINLINE CharT& TString<CharT, Allocator>::operator[](SizeType Index)
 {
-    HK_ASSERT_(Index < m_Size, "Undefined behavior accessing out of bounds");
+    // NOTE. Allow access to the trailing \0 character
+    HK_ASSERT_(Index <= m_Size, "Undefined behavior accessing out of bounds");
     return m_pData[Index];
 }
 
