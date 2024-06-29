@@ -32,8 +32,8 @@ HK_NAMESPACE_BEGIN
 
 HK_FORCEINLINE GameObject::GameObject(GameObject&& rhs) :
     m_Handle(rhs.m_Handle),
-    m_World(rhs.m_World),
     m_FlagBits(rhs.m_FlagBits),
+    m_World(rhs.m_World),
     m_Parent(rhs.m_Parent),
     m_FirstChild(rhs.m_FirstChild),
     m_LastChild(rhs.m_LastChild),
@@ -51,6 +51,8 @@ HK_FORCEINLINE GameObject::GameObject(GameObject&& rhs) :
     // Patch pointer
     for (auto component : m_Components)
         component->m_Owner = this;
+
+    m_TransformData->Owner = this;
 }
 
 HK_FORCEINLINE GameObjectHandle GameObject::GetHandle() const
