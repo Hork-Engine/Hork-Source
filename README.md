@@ -11,6 +11,7 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * Windows7+, Linux  
 * 64 bit only
 * Data oriented design
+* With no exceptions
 
 ## GameObject-Component based world architecture
 * The world has a modular structure - it's easy to add new features
