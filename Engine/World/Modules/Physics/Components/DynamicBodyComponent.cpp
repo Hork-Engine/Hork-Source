@@ -52,8 +52,6 @@ void DynamicBodyComponent::BeginPlay()
     settings.mAngularVelocity = ConvertVector(AngularVelocity);
     settings.mUserData = (size_t)m_UserData;
     settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Dynamic);
-    //settings.mCollisionGroup.SetGroupID(ObjectFilterID);
-    //settings.mCollisionGroup.SetGroupFilter(physics->m_GroupFilter);
     settings.mMotionType = m_IsKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic;
     settings.mIsSensor = false;
     //settings.mUseManifoldReduction = true;
@@ -340,7 +338,7 @@ void DynamicBodyComponent::AddAngularImpulse(Float3 const& angularImpulse)
 
 float DynamicBodyComponent::GetMass() const
 {
-    if (m_IsKinematic || m_BodyID.IsInvalid())
+    if (m_IsKinematic || !m_BodyID.IsValid())
         return 0.0f;
 
     World* world = const_cast<World*>(GetWorld());
@@ -401,6 +399,28 @@ bool DynamicBodyComponent::IsSleeping() const
     auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
 
     return !bodyInterface.IsActive(JPH::BodyID(m_BodyID.ID));
+}
+
+void DynamicBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices)
+{
+    if (!m_CollisionModel)
+        return;
+
+    PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
+    auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+
+    JPH::Vec3 position;
+    JPH::Quat rotation;
+    bodyInterface.GetPositionAndRotation(JPH::BodyID(m_BodyID.ID), position, rotation);
+
+    Float3x4 transformMatrix;
+    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3(), m_CollisionModel->GetValidScale(m_CachedScale));
+
+    auto firstVert = vertices.Size();
+    m_CollisionModel->GatherGeometry(vertices, indices);
+
+    if (firstVert != vertices.Size())
+        TransformVertices(&vertices[firstVert], vertices.Size() - firstVert, transformMatrix);
 }
 
 HK_NAMESPACE_END

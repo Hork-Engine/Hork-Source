@@ -58,10 +58,6 @@ void CharacterControllerComponent::BeginPlay()
     //    break;
     //}
     // 
-    //if (ObjectFilterID == ~0u)
-    {
-        // TOOD create ObjectFilterID
-    }
 
     auto position = ConvertVector(owner->GetWorldPosition());
     auto rotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());

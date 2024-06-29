@@ -64,6 +64,10 @@ public:
 
     PhysicsMaterial         Material;
 
+    // Utilites
+    void                    GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices);
+
+    // Internal
     void                    BeginPlay();
     void                    EndPlay();
 

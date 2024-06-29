@@ -60,8 +60,6 @@ public:
     /// The collision layer this body belongs to (determines if two objects can collide)
     uint8_t                 m_CollisionLayer = 0;
 
-    //uint32_t              m_ObjectFilterID = ~0u;
-
     /// World space linear velocity of the center of mass (m/s)
     Float3                  LinearVelocity;
 
@@ -159,6 +157,11 @@ public:
     Float3                  GetVelocityAtPosition(Float3 const& position) const;
 
     bool                    IsSleeping() const;
+
+    // Utilites
+    void                    GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices);
+
+    // Internal
 
     void                    BeginPlay();
     void                    EndPlay();

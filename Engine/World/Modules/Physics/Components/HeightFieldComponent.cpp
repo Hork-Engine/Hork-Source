@@ -48,8 +48,6 @@ void HeightFieldComponent::BeginPlay()
     settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
     settings.mUserData = (size_t)m_UserData;
     settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Static);
-    //settings.mCollisionGroup.SetGroupID(ObjectFilterID);
-    //settings.mCollisionGroup.SetGroupFilter(physics->m_GroupFilter);
     settings.mMotionType = JPH::EMotionType::Static;
     settings.mAllowDynamicOrKinematic = false;
     settings.mIsSensor = false;
@@ -82,6 +80,32 @@ void HeightFieldComponent::EndPlay()
 
     physics->DeleteUserData(m_UserData);
     m_UserData = nullptr;
+}
+
+void HeightFieldComponent::GatherGeometry(BvAxisAlignedBox const& cropBox, Vector<Float3>& vertices, Vector<uint32_t>& indices)
+{
+    if (!m_CollisionModel)
+        return;
+
+    PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
+    auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+
+    JPH::Vec3 position;
+    JPH::Quat rotation;
+    bodyInterface.GetPositionAndRotation(JPH::BodyID(m_BodyID.ID), position, rotation);
+
+    Float3x4 transformMatrix;
+    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
+
+    Float3x4 transformMatrixInv = transformMatrix.Inversed();
+
+    BvAxisAlignedBox localClip = cropBox.Transform(transformMatrixInv);
+
+    auto firstVert = vertices.Size();
+    m_CollisionModel->GatherGeometry(localClip, vertices, indices);
+
+    if (firstVert != vertices.Size())
+        TransformVertices(&vertices[firstVert], vertices.Size() - firstVert, transformMatrix);
 }
 
 HK_NAMESPACE_END

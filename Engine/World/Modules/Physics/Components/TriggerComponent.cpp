@@ -48,8 +48,6 @@ void TriggerComponent::BeginPlay()
     settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
     settings.mUserData = (size_t)m_UserData;
     settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Trigger);
-    //settings.mCollisionGroup.SetGroupID(ObjectFilterID);
-    //settings.mCollisionGroup.SetGroupFilter(physics->m_GroupFilter);
 
     // Motion type устанавливаем Kinematic, чтобы не срабатывали "OnEndOverlap" на заснувших объектах
     settings.mMotionType = JPH::EMotionType::Kinematic;//owner->IsDynamic() ? JPH::EMotionType::Kinematic : JPH::EMotionType::Static;

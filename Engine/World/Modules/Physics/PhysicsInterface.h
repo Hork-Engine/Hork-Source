@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/WorldInterface.h>
+#include <Engine/World/Component.h>
 #include <Engine/Core/Ref.h>
 #include <Engine/Math/Quat.h>
 
@@ -63,6 +64,15 @@ private:
     uint32_t                m_Bits{};
 };
 
+struct ObjectLayerMask
+{
+    ObjectLayerMask&        AddLayer(uint32_t layer) { m_Bits |= HK_BIT(layer); return *this; }
+    uint32_t                Get() const { return m_Bits ? m_Bits : ~0u; }
+
+private:
+    uint32_t                m_Bits{};
+};
+
 struct PhysBodyID
 {
     static constexpr uint32_t InvalidID = 0xffffffff;
@@ -72,7 +82,7 @@ struct PhysBodyID
                             PhysBodyID() : ID(InvalidID) {}
     explicit                PhysBodyID(uint32_t id) : ID(id) {}
 
-    bool                    IsInvalid() const { return ID == InvalidID; }
+    bool                    IsValid() const { return ID != InvalidID; }
 };
 
 struct RayCastFilter
@@ -80,6 +90,7 @@ struct RayCastFilter
     // TODO: Add list of entities to ignore
 
     BroadphaseLayerMask     BroadphaseLayers;
+    ObjectLayerMask         ObjectLayers;
 
     bool                    IgonreBackFaces : 1;
     bool                    SortByDistance : 1;
@@ -109,6 +120,7 @@ struct ShapeCastFilter
     // TODO: Add list of entities to ignore
 
     BroadphaseLayerMask     BroadphaseLayers;
+    ObjectLayerMask         ObjectLayers;
 
     bool                    IgonreBackFaces : 1;
     bool                    SortByDistance : 1;
@@ -190,20 +202,25 @@ public:
     bool                    CheckSphere(Float3 const& inPosition, float inRadius, ShapeCastFilter const& inFilter = {});
     bool                    CheckCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastFilter const& inFilter = {});
     bool                    CheckCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastFilter const& inFilter = {});
-    bool                    CheckPoint(Float3 const& inPosition, BroadphaseLayerMask inBroadphaseLayers = {});
+    bool                    CheckPoint(Float3 const& inPosition, BroadphaseLayerMask inBroadphaseLayers = {}, ObjectLayerMask inObjectLayers = {});
 
     void                    CollideBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
     void                    CollideBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
     void                    CollideSphere(Float3 const& inPosition, float inRadius, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
     void                    CollideCapsule(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
     void                    CollideCylinder(Float3 const& inPosition, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCollideResult>& outResult, ShapeCastFilter const& inFilter = {});
-    void                    CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers = {});
+    void                    CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers = {}, ObjectLayerMask inObjectLayers = {});
 
     void                    SetGravity(Float3 const inGravity);
     Float3                  GetGravity() const;
 
     void                    SetCollisionFilter(CollisionFilter const& inCollisionFilter);
     CollisionFilter const&  GetCollisionFilter() const;
+
+    Component*              TryGetComponent(PhysBodyID inBodyID);
+
+    template <typename ComponentType>
+    ComponentType*          TryGetComponent(PhysBodyID inBodyID);
 
     class PhysicsInterfaceImpl* GetImpl() { return m_pImpl.RawPtr(); }
 
@@ -227,5 +244,15 @@ private:
     Vector<Float3>          m_DebugDrawVertices;
     Vector<unsigned int>    m_DebugDrawIndices;
 };
+
+template <typename ComponentType>
+HK_INLINE ComponentType* PhysicsInterface::TryGetComponent(PhysBodyID inBodyID)
+{
+    Component* component = TryGetComponent(inBodyID);
+    if (!component || component->GetManager()->GetComponentTypeID() != ComponentRTTR::TypeID<ComponentType>)
+        return nullptr;
+
+    return static_cast<ComponentType*>(component);
+}
 
 HK_NAMESPACE_END

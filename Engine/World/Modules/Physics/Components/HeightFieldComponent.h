@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/World/Modules/Physics/PhysicsInterface.h>
 #include <Engine/World/Modules/Physics/PhysicsMaterial.h>
+#include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 
 #include "BodyComponent.h"
 
@@ -60,6 +61,14 @@ public:
     //uint32_t              ObjectFilterID = ~0u;
     
     Ref<TerrainCollision>   m_CollisionModel;
+
+    // Utilites
+
+    /// Gather geometry inside crop box. Note that some triangles may be outside the box.
+    /// The crop box is specified in world space.
+    void                    GatherGeometry(BvAxisAlignedBox const& cropBox, Vector<Float3>& vertices, Vector<uint32_t>& indices);
+
+    // Internal
 
     void                    BeginPlay();
     void                    EndPlay();

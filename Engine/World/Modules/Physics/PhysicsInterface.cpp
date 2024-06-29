@@ -117,6 +117,21 @@ private:
     uint32_t m_CollisionGroup;
 };
 
+class CastObjectLayerFilter final : public JPH::ObjectLayerFilter
+{
+public:
+    CastObjectLayerFilter(uint32_t collisionMask) :
+        m_CollisionMask(collisionMask)
+    {}
+
+    uint32_t m_CollisionMask;
+
+    bool ShouldCollide(JPH::ObjectLayer inLayer) const override
+    {
+        return (HK_BIT(static_cast<uint8_t>(inLayer)) & m_CollisionMask) != 0;
+    }
+};
+
 PhysicsInterfaceImpl::PhysicsInterfaceImpl() :
     m_ObjectVsObjectLayerFilter(m_CollisionFilter)
 {}
@@ -184,7 +199,7 @@ bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, 
     settings.mReturnDeepestPoint = true;
 
     JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     if (collector.HadHit())
         CopyShapeCastResult(outResult, collector.mHit);
@@ -199,7 +214,7 @@ bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RV
     settings.mReturnDeepestPoint = false;
 
     JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -217,7 +232,7 @@ bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RV
 void BodyActivationListener::OnBodyActivated(const JPH::BodyID &inBodyID, JPH::uint64 inBodyUserData)
 {
     BodyUserData* userdata = reinterpret_cast<BodyUserData*>(inBodyUserData);
-    if (userdata->TypeID == ComponentTypeRegistry::GetComponentTypeID<DynamicBodyComponent>())
+    if (userdata->TypeID == ComponentRTTR::TypeID<DynamicBodyComponent>)
     {
         MutexGuard lockGuard(m_Mutex);
         m_ActiveBodies.SortedInsert(userdata->Component);
@@ -227,7 +242,7 @@ void BodyActivationListener::OnBodyActivated(const JPH::BodyID &inBodyID, JPH::u
 void BodyActivationListener::OnBodyDeactivated(const JPH::BodyID &inBodyID, JPH::uint64 inBodyUserData)
 {
     BodyUserData* userdata = reinterpret_cast<BodyUserData*>(inBodyUserData);
-    if (userdata->TypeID == ComponentTypeRegistry::GetComponentTypeID<DynamicBodyComponent>())
+    if (userdata->TypeID == ComponentRTTR::TypeID<DynamicBodyComponent>)
     {
         MutexGuard lockGuard(m_Mutex);
         m_ActiveBodies.SortedErase(userdata->Component);
@@ -369,7 +384,7 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
                 event.Type = TriggerEvent::OnBeginOverlap;
                 event.Trigger = contact.Trigger;
                 event.Target.Handle = characterImpl->m_Component;
-                event.Target.TypeID = ComponentTypeRegistry::GetComponentTypeID<CharacterControllerComponent>();
+                event.Target.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
                 m_UpdateOverlap.Add(contactID);
             }
             else
@@ -629,8 +644,8 @@ void PhysicsInterface::Update()
                 phys_character->ExtendedUpdate(m_TimeStep,
                     m_Gravity,
                     update_settings,
-                    broadphase_filter, //m_PhysicsInterface.GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
-                    layer_filter,      //m_PhysicsInterface.GetDefaultLayerFilter(Layers::MOVING),
+                    broadphase_filter,
+                    layer_filter,
                     body_filter,
                     {},
                     temp_allocator);
@@ -657,7 +672,7 @@ void PhysicsInterface::Update()
                     event.Type = TriggerEvent::OnEndOverlap;
                     event.Trigger = contact.Trigger;
                     event.Target.Handle = ComponentHandle(contactID >> 32);
-                    event.Target.TypeID = ComponentTypeRegistry::GetComponentTypeID<CharacterControllerComponent>();
+                    event.Target.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
 
                     m_pImpl->m_CharacterContactListener.m_Triggers.Erase(it);
                     removeContact = true;
@@ -942,25 +957,12 @@ void PhysicsInterface::PostTransform()
 template <typename T>
 void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID, T* rigidBody)
 {
-    auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
-
     m_DebugDrawVertices.Clear();
     m_DebugDrawIndices.Clear();
 
-    rigidBody->m_CollisionModel->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices);
+    rigidBody->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices);
 
-    JPH::Vec3 position;
-    JPH::Quat rotation;
-    bodyInterface.GetPositionAndRotation(JPH::BodyID(bodyID.ID), position, rotation);
-
-    Float3x4 transform_matrix;
-    transform_matrix.Compose(ConvertVector(position),
-        ConvertQuaternion(rotation).ToMatrix3x3(),
-        rigidBody->m_CollisionModel->GetValidScale(rigidBody->m_CachedScale));
-
-    renderer.PushTransform(transform_matrix);
     renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
-    renderer.PopTransform();
 }
 
 void PhysicsInterface::DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyID, HeightFieldComponent* heightfield)
@@ -1297,7 +1299,7 @@ bool PhysicsInterface::CastRayClosest(Float3 const& inRayStart, Float3 const& in
         settings.mTreatConvexAsSolid = true;
 
         JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> collector;
-        m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
         if (!collector.HadHit())
             return false;
@@ -1306,7 +1308,7 @@ bool PhysicsInterface::CastRayClosest(Float3 const& inRayStart, Float3 const& in
     }
     else
     {
-        if (!m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, hit, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())))
+        if (!m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, hit, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get())))
             return false;
     }
 
@@ -1340,7 +1342,7 @@ bool PhysicsInterface::CastRay(Float3 const& inRayStart, Float3 const& inRayDir,
     settings.mTreatConvexAsSolid = true;
 
     JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
-    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CastRay(raycast, settings, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1570,8 +1572,9 @@ bool PhysicsInterface::CheckBox(Float3 const& inPosition, Float3 const& inHalfEx
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
@@ -1603,8 +1606,9 @@ bool PhysicsInterface::CheckBoxMinMax(Float3 const& inMins, Float3 const& inMaxs
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
@@ -1636,8 +1640,9 @@ bool PhysicsInterface::CheckSphere(Float3 const& inPosition, float inRadius, Sha
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
@@ -1670,8 +1675,9 @@ bool PhysicsInterface::CheckCapsule(Float3 const& inPosition, float inHalfHeight
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
@@ -1704,16 +1710,17 @@ bool PhysicsInterface::CheckCylinder(Float3 const& inPosition, float inHalfHeigh
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     return collector.HadHit();
 }
 
-bool PhysicsInterface::CheckPoint(Float3 const& inPosition, BroadphaseLayerMask inBroadphaseLayers)
+bool PhysicsInterface::CheckPoint(Float3 const& inPosition, BroadphaseLayerMask inBroadphaseLayers, ObjectLayerMask inObjectLayers)
 {
     JPH::AnyHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get())
+    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get()), CastObjectLayerFilter(inObjectLayers.Get())
     /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
     return collector.HadHit();
 }
@@ -1746,7 +1753,8 @@ void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalf
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1785,7 +1793,8 @@ void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMa
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1824,7 +1833,8 @@ void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, V
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1864,7 +1874,8 @@ void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeig
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1904,7 +1915,8 @@ void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHei
         settings,
         base_offset,
         collector,
-        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()));
+        BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
+        CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1916,11 +1928,11 @@ void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHei
     }
 }
 
-void PhysicsInterface::CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers)
+void PhysicsInterface::CollidePoint(Float3 const& inPosition, Vector<PhysBodyID>& outResult, BroadphaseLayerMask inBroadphaseLayers, ObjectLayerMask inObjectLayers)
 {
     JPH::AllHitCollisionCollector<JPH::CollidePointCollector> collector;
-    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+    m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get()), CastObjectLayerFilter(inObjectLayers.Get())
+    /* TODO: bodyFilter, shapeFilter*/);
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1949,6 +1961,17 @@ void PhysicsInterface::SetCollisionFilter(CollisionFilter const& inCollisionFilt
 CollisionFilter const& PhysicsInterface::GetCollisionFilter() const
 {
     return m_pImpl->m_CollisionFilter;
+}
+
+Component* PhysicsInterface::TryGetComponent(PhysBodyID inBodyID)
+{
+    auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
+
+    BodyUserData* userData = reinterpret_cast<BodyUserData*>(bodyInterface.GetUserData(JPH::BodyID(inBodyID.ID)));
+    if (!userData)
+        return nullptr;
+
+    return userData->TryGetComponent(GetWorld());
 }
 
 HK_NAMESPACE_END
