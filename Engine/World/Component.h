@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/StringID.h>
 #include <Engine/Core/Containers/ObjectStorage.h>
 
-#include "ComponentTypeRegistry.h"
+#include "ComponentRTTR.h"
 
 HK_NAMESPACE_BEGIN
 

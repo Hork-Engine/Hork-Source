@@ -28,10 +28,30 @@ SOFTWARE.
 
 */
 
-#include "ComponentTypeRegistry.h"
+#pragma once
+
+#include <Engine/Core/BaseTypes.h>
 
 HK_NAMESPACE_BEGIN
 
-ComponentTypeID ComponentTypeRegistry::m_IdGen = 0;
+using ComponentTypeID = uint32_t;
+
+namespace ComponentRTTR
+{
+
+    /// Static time ID generation. Do not use.
+    HK_INLINE ComponentTypeID __StaticTimeTypeIDGenerator = 0;
+
+    // NOTE: ID is used for runtime. For static time use __StaticTimeTypeIDGenerator
+    template <typename T>
+    HK_INLINE const ComponentTypeID TypeID = __StaticTimeTypeIDGenerator++;
+
+    /// Total interface types count
+    HK_FORCEINLINE size_t GetTypesCount()
+    {
+        return __StaticTimeTypeIDGenerator;
+    }
+
+} // namespace ComponentRTTR
 
 HK_NAMESPACE_END

@@ -54,14 +54,14 @@ struct TickFunctionDesc
     template <typename ComponentType>
     void AddPrerequisiteComponent()
     {
-        Prerequisites.Add(ComponentTypeRegistry::GetComponentTypeID<ComponentType>());
+        Prerequisites.Add(ComponentRTTR::TypeID<ComponentType>);
     }
 
     template <typename InterfaceType>
     void AddPrerequisiteInterface()
     {
         // Use high bit to mark interface
-        Prerequisites.Add(InterfaceTypeRegistry::GetInterfaceTypeID<InterfaceType>() | (1 << 31));
+        Prerequisites.Add(InterfaceRTTR::TypeID<InterfaceType> | (1 << 31));
     }
 };
 

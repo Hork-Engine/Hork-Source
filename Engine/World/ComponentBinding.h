@@ -66,7 +66,7 @@ protected:
 template <typename RetType, typename... Args>
 template <typename T>
 HK_FORCEINLINE ComponentBinding<RetType(Args...)>::ComponentBinding(T* component, RetType (T::*method)(Args...)) :
-    m_Handle(component->GetHandle()), m_TypeID(ComponentTypeRegistry::GetComponentTypeID<T>()), m_Method((void(Component::*)(Args...))method)
+    m_Handle(component->GetHandle()), m_TypeID(ComponentRTTR::TypeID<T>), m_Method((void(Component::*)(Args...))method)
 {}
 
 template <typename RetType, typename... Args>
@@ -80,7 +80,7 @@ template <typename T>
 HK_FORCEINLINE void ComponentBinding<RetType(Args...)>::Bind(T* component, RetType (T::*method)(Args...))
 {
     m_Handle = component->GetHandle();
-    m_TypeID = ComponentTypeRegistry::GetComponentTypeID<T>();
+    m_TypeID = ComponentRTTR::TypeID<T>;
     m_Method = (void(Component::*)(Args...))method;
 }
 

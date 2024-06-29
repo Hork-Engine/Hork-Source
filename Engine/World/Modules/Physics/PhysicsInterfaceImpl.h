@@ -69,7 +69,7 @@ public:
     template <typename ComponentType>
     void Initialize(ComponentType* component)
     {
-        TypeID = ComponentTypeRegistry::GetComponentTypeID<ComponentType>();
+        TypeID = ComponentRTTR::TypeID<ComponentType>;
         Component = component->GetHandle();
     }
 
@@ -84,7 +84,7 @@ public:
     template <typename ComponentType>
     ComponentType* TryGetComponent(World* world)
     {
-        if (TypeID == ComponentTypeRegistry::GetComponentTypeID<ComponentType>())
+        if (TypeID == ComponentRTTR::TypeID<ComponentType>)
             return world->GetComponent<ComponentType>(Handle32<ComponentType>(Component));
         return nullptr;
     }

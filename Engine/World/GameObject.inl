@@ -98,13 +98,13 @@ HK_FORCEINLINE Handle32<ComponentType> GameObject::CreateComponent(ComponentType
 template <typename ComponentType>
 HK_FORCEINLINE ComponentType* GameObject::GetComponent()
 {
-    return static_cast<ComponentType*>(GetComponent(ComponentTypeRegistry::GetComponentTypeID<ComponentType>()));
+    return static_cast<ComponentType*>(GetComponent(ComponentRTTR::TypeID<ComponentType>));
 }
 
 template <typename ComponentType>
 HK_FORCEINLINE Handle32<ComponentType> GameObject::GetComponentHandle()
 {
-    auto component = GetComponent(ComponentTypeRegistry::GetComponentTypeID<ComponentType>());
+    auto component = GetComponent(ComponentRTTR::TypeID<ComponentType>);
     if (!component)
         return {};
     return static_cast<Handle32<ComponentType>>(component->GetHandle());
@@ -113,7 +113,7 @@ HK_FORCEINLINE Handle32<ComponentType> GameObject::GetComponentHandle()
 template <typename ComponentType>
 HK_FORCEINLINE void GameObject::GetAllComponents(Vector<ComponentType*>& components)
 {
-    GetAllComponents(ComponentTypeRegistry::GetComponentTypeID<ComponentType>(),
+    GetAllComponents(ComponentRTTR::TypeID<ComponentType>,
         static_cast<Vector<ComponenBase*>&>(components));
 }
 

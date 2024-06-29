@@ -36,65 +36,22 @@ HK_NAMESPACE_BEGIN
 
 using InterfaceTypeID = uint32_t;
 
-template <typename T>
-struct InterfaceID
+namespace InterfaceRTTR
 {
-public:
-    // NOTE: ID is used for runtime. For static time use InterfaceTypeRegistry::StaticTimeGenerateTypeID<T>
-    static const InterfaceTypeID ID;
-};
 
-struct InterfaceTypeRegistry
-{
-    /// Returns interface ID by type
+    /// Static time ID generation. Do not use.
+    HK_INLINE InterfaceTypeID __StaticTimeTypeIDGenerator = 0;
+
+    // NOTE: ID is used for runtime. For static time use __StaticTimeTypeIDGenerator
     template <typename T>
-    static InterfaceTypeID GetInterfaceTypeID()
-    {
-        return InterfaceID<T>::ID;
-    }
+    HK_INLINE const InterfaceTypeID TypeID = __StaticTimeTypeIDGenerator++;
 
     /// Total interface types count
-    static size_t GetInterfaceTypesCount()
+    HK_FORCEINLINE size_t GetTypesCount()
     {
-        return m_IdGen;
+        return __StaticTimeTypeIDGenerator;
     }
 
-    /// Static time ID generation. Do not use at runtime.
-    template <typename T>
-    static InterfaceTypeID StaticTimeGenerateTypeID()
-    {
-        using InterfaceType = typename std::remove_const_t<T>;
-        return _GenerateTypeID<InterfaceType>();
-    }
-
-private:
-    template <typename T>
-    static InterfaceTypeID _GenerateTypeID();
-
-private:
-    static InterfaceTypeID m_IdGen;
-};
-
-template <typename T>
-const InterfaceTypeID InterfaceID<T>::ID = InterfaceTypeRegistry::StaticTimeGenerateTypeID<T>();
-
-template <typename T>
-InterfaceTypeID InterfaceTypeRegistry::_GenerateTypeID()
-{
-    static_assert(!std::is_const<T>::value, "The type must not be constant");
-
-    struct IdGen
-    {
-        IdGen() :
-            ID(m_IdGen++)
-        {
-        }
-
-        const InterfaceTypeID ID;
-    };
-
-    static IdGen generator;
-    return generator.ID;
-}
+} // namespace InterfaceRTTR
 
 HK_NAMESPACE_END

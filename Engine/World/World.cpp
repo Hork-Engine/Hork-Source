@@ -33,41 +33,13 @@ SOFTWARE.
 
 #include <Engine/World/DebugRenderer.h>
 
-/*
-
-Object life cycle:
-
-GameObject представляет собой игровой объект, имеющий позицию, поворот, масштаб. К нему цепляются
-компоненты, которые определяют как объект будет выглядеть, как себя вести и т.п.
-
-Объект создается методом:
-World::CreateObject
-
-Удаление объекта:
-World::DestroyObject и World::DestroyObjectNow
-
-World::DestroyObject помещает объект в очередь на удаление, тогда как World::DestroyObjectNow
-удаляет объект сразу. Как только объект удаляется у него выставляеся флаг
-IsDestroyed = true. При удалении объекта, удаляются все его дочерние объекты и компоненты.
-
-Создание компоненты осуществляется методом CreateComponent. Создать компоненту отдельно без game-object
-нельзя. Компонента создается сразу, но ее инициализация происходит отложено. Во время инициализации
-для компоненты вызывается метод BeginPlay() и устанавливается флаг IsInitialized = true.
-Компненты удаляются методом DestroyComponent. При удалении сразу происходит деинициализация компоненты:
-вызывается метод EndPlay() и компоненте устанавливается флаг IsInitialized = false.
-
-Важно: даже после удаления объекта или компоненты по ним все еще можно итерироваться. Реальное удаление объектов
-из хранилища и вызов их деструкторов происходит в одной точке кадра.
-
-*/
-
 HK_NAMESPACE_BEGIN
 
 World::World()
 {
-    m_ComponentManagers.Resize(ComponentTypeRegistry::GetComponentTypesCount());
-    m_Interfaces.Resize(InterfaceTypeRegistry::GetInterfaceTypesCount());
-    m_EventHolders.Resize(WorldEvent::GetTypesCount());
+    m_ComponentManagers.Resize(ComponentRTTR::GetTypesCount());
+    m_Interfaces.Resize(InterfaceRTTR::GetTypesCount());
+    m_EventHolders.Resize(WorldEventRTTR::GetTypesCount());
 }
 
 World::~World()

@@ -33,7 +33,7 @@ HK_NAMESPACE_BEGIN
 template <typename ComponentType>
 HK_INLINE ComponentManager<ComponentType>& World::GetComponentManager()
 {
-    ComponentTypeID id = ComponentTypeRegistry::GetComponentTypeID<ComponentType>();
+    ComponentTypeID id = ComponentRTTR::TypeID<ComponentType>;
 
     if (!m_ComponentManagers[id])
         m_ComponentManagers[id] = new ComponentManager<ComponentType>(this);
@@ -43,7 +43,7 @@ HK_INLINE ComponentManager<ComponentType>& World::GetComponentManager()
 
 HK_FORCEINLINE ComponentManagerBase* World::TryGetComponentManager(ComponentTypeID typeID)
 {
-    HK_ASSERT(typeID < ComponentTypeRegistry::GetComponentTypesCount());
+    HK_ASSERT(typeID < ComponentRTTR::GetTypesCount());
     return m_ComponentManagers[typeID];
 }
 
@@ -56,7 +56,7 @@ HK_FORCEINLINE ComponentType* World::GetComponent(Handle32<ComponentType> compon
 template <typename ComponentType>
 HK_FORCEINLINE ComponentType* World::GetComponent(ComponentExtendedHandle componentHandle)
 {
-    if (ComponentTypeRegistry::GetComponentTypeID<ComponentType>() != componentHandle.TypeID)
+    if (ComponentRTTR::TypeID<ComponentType> != componentHandle.TypeID)
         return nullptr;
     return GetComponent(Handle32<ComponentType>(componentHandle.Handle));
 }
@@ -64,7 +64,7 @@ HK_FORCEINLINE ComponentType* World::GetComponent(ComponentExtendedHandle compon
 template <typename Interface>
 HK_INLINE Interface& World::GetInterface()
 {
-    InterfaceTypeID id = InterfaceTypeRegistry::GetInterfaceTypeID<Interface>();
+    InterfaceTypeID id = InterfaceRTTR::TypeID<Interface>;
 
     if (!m_Interfaces[id])
     {
@@ -99,7 +99,7 @@ HK_INLINE void World::DispatchEvent(GameObject* eventSender, Args... args)
 template <typename Event>
 HK_INLINE typename Event::Holder* World::GetEventHolder()
 {
-    auto typeID = WorldEvent::TypeID<Event>;
+    auto typeID = WorldEventRTTR::TypeID<Event>;
     if (!m_EventHolders[typeID])
         m_EventHolders[typeID] = new Event::Holder;
     return static_cast<Event::Holder*>(m_EventHolders[typeID]);

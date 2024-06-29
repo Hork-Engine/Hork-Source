@@ -117,20 +117,24 @@ struct Event_OnEndOverlap
     using Holder = typename EventHolderTempl<Event_OnEndOverlap, class BodyComponent*>;
 };
 
-namespace WorldEvent
+using WorldEventTypeID = uint32_t;
+
+namespace WorldEventRTTR
 {
 
-using EventTypeID = uint32_t;
+    /// Static time ID generation. Do not use.
+    HK_INLINE WorldEventTypeID __StaticTimeTypeIDGenerator = 0;
 
-HK_INLINE EventTypeID __StaticTimeTypeIDGenerator = 0;
-template <typename T>
-HK_INLINE const EventTypeID TypeID = __StaticTimeTypeIDGenerator++;
+    // NOTE: ID is used for runtime. For static time use __StaticTimeTypeIDGenerator
+    template <typename T>
+    HK_INLINE const WorldEventTypeID TypeID = __StaticTimeTypeIDGenerator++;
 
-HK_FORCEINLINE uint32_t GetTypesCount()
-{
-    return __StaticTimeTypeIDGenerator;
-}
+    /// Total types count
+    HK_FORCEINLINE size_t GetTypesCount()
+    {
+        return __StaticTimeTypeIDGenerator;
+    }
 
-}
+} // namespace WorldEventRTTR
 
 HK_NAMESPACE_END

@@ -40,7 +40,7 @@ HK_FORCEINLINE ComponentTypeID ComponentManagerBase::GetComponentTypeID() const
 template <typename ComponentType>
 HK_INLINE Handle32<ComponentType> ComponentManagerBase::CreateComponent(GameObject* gameObject, ComponentType*& component)
 {
-    HK_IF_NOT_ASSERT(m_ComponentTypeID == ComponentTypeRegistry::GetComponentTypeID<ComponentType>())
+    HK_IF_NOT_ASSERT(m_ComponentTypeID == ComponentRTTR::TypeID<ComponentType>)
     {
         component = nullptr;
         return {};
@@ -83,7 +83,7 @@ HK_FIND_METHOD(OnEndOverlap)
 
 template <typename ComponentType>
 HK_FORCEINLINE ComponentManager<ComponentType>::ComponentManager(World* world) :
-    ComponentManagerBase(world, ComponentTypeRegistry::GetComponentTypeID<ComponentType>())
+    ComponentManagerBase(world, ComponentRTTR::TypeID<ComponentType>)
 {
     if constexpr (HK_HAS_METHOD(ComponentType, BeginPlay))
     {

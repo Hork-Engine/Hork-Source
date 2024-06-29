@@ -63,7 +63,7 @@ HK_FORCEINLINE bool Component::IsInitialized() const
 template <typename ComponentType>
 HK_FORCEINLINE ComponentType* Component::Upcast(Component* component)
 {
-    if (component->GetManager()->GetComponentTypeID() == ComponentTypeRegistry::GetComponentTypeID<ComponentType>())
+    if (component->GetManager()->GetComponentTypeID() == ComponentRTTR::TypeID<ComponentType>)
         return static_cast<ComponentType*>(component);
     return nullptr;
 }

@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/Delegate.h>
-#include "InterfaceTypeRegistry.h"
+#include "InterfaceRTTR.h"
 #include "TickFunction.h"
 
 HK_NAMESPACE_BEGIN
