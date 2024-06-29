@@ -46,7 +46,7 @@ namespace ComponentRTTR
     template <typename T>
     HK_INLINE const ComponentTypeID TypeID = __StaticTimeTypeIDGenerator++;
 
-    /// Total interface types count
+    /// Total types count
     HK_FORCEINLINE size_t GetTypesCount()
     {
         return __StaticTimeTypeIDGenerator;

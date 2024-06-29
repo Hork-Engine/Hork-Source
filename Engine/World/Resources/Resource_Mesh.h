@@ -103,17 +103,6 @@ struct MeshSocket
     }
 };
 
-//class MeshAsset
-//{
-//public:
-//    Vector<String>           SupbartMaterials;
-//    String                    DefaultMaterialInstance;
-//
-//    // TODO
-//    //Ref<CollisionModel> Collision;
-//    
-//};
-
 class MeshResource : public ResourceBase
 {
 public:

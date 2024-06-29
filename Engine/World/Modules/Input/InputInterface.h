@@ -39,8 +39,6 @@ HK_NAMESPACE_BEGIN
 class InputInterface : public WorldInterfaceBase
 {
 public:
-                                InputInterface() {}
-
     void                        SetActive(bool isActive) { m_IsActive = isActive; }
     bool                        IsActive() const { return m_IsActive; }
 
