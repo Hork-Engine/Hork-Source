@@ -41,9 +41,9 @@ public:
 
     void                    Clear();
 
-    void                    SetShouldCollide(uint32_t group1, uint32_t group2, bool shouldCollide);
+    void                    SetShouldCollide(uint32_t layer1, uint32_t layer2, bool shouldCollide);
 
-    bool                    ShouldCollide(uint32_t group1, uint32_t group2) const;
+    bool                    ShouldCollide(uint32_t layer1, uint32_t layer2) const;
 
 private:
     Array<uint32_t, 32>     m_CollisionMask;
