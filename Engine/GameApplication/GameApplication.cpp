@@ -38,7 +38,6 @@ SOFTWARE.
 #include <Engine/Audio/AudioMixer.h>
 #include <Engine/World/World.h>
 #include <Engine/World/Modules/Physics/PhysicsModule.h>
-#include <Engine/World/Modules/NavMesh/NavMeshModule.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -207,8 +206,6 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
 
     PhysicsModule::Initialize();
 
-    NavMeshModule::Initialize();
-
     m_AudioDevice = MakeRef<AudioDevice>(44100);
     m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
     m_AudioMixer->StartAsync();
@@ -269,15 +266,11 @@ GameApplication::~GameApplication()
     m_AudioMixer.Reset();
     m_AudioDevice.Reset();
     
-    NavMeshModule::Deinitialize();
     PhysicsModule::Deinitialize();
 
     //Hk::ECS::Shutdown();
 
     GarbageCollector::Shutdown();
-
-    //VisibilitySystem::PrimitivePool.Free();
-    //VisibilitySystem::PrimitiveLinkPool.Free();
 
     Core::ShutdownProfiler();
 
@@ -346,9 +339,6 @@ void GameApplication::RunMainLoop()
         // Tick worlds
         for (auto* world : m_Worlds)
             world->Tick(m_FrameDurationInSeconds);
-
-        //VisibilitySystem::PrimitivePool.CleanupEmptyBlocks();
-        //VisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
 
         // Update audio
         if (!m_AudioMixer->IsAsync())

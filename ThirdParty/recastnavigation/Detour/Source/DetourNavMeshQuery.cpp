@@ -26,6 +26,7 @@
 #include "DetourAlloc.h"
 #include "DetourAssert.h"
 #include <new>
+#include <array>
 
 /// @class dtQueryFilter
 ///
@@ -60,6 +61,7 @@
 ///
 /// @see dtNavMeshQuery
 
+#if 0
 dtQueryFilter::dtQueryFilter() :
 	m_includeFlags(0xffff),
 	m_excludeFlags(0)
@@ -99,6 +101,50 @@ inline float dtQueryFilter::getCost(const float* pa, const float* pb,
 	return dtVdist(pa, pb) * m_areaCost[curPoly->getArea()];
 }
 #endif	
+
+#else
+
+// 0xc0de
+namespace
+{
+	constexpr auto AreaCost
+	{
+		[]() constexpr
+		{
+			std::array<float, 32> result{};
+			for (int i = 0; i < result.size(); ++i)
+				result[i] = 1.0f;
+			return result;
+		}()
+	};
+}
+
+dtQueryFilter::dtQueryFilter() :
+	m_AreaCost(AreaCost.data()), m_AreaMask(0xffffffff)
+{}
+
+dtQueryFilter::dtQueryFilter(const float* areaCost, unsigned int areaMask) :
+	m_AreaCost(areaCost), m_AreaMask(areaMask)
+{}
+
+inline bool dtQueryFilter::passFilter(const dtPolyRef /*ref*/,
+	const dtMeshTile* /*tile*/,
+	const dtPoly* poly) const
+{
+	return ((1 << poly->getArea()) & m_AreaMask) != 0;
+}
+
+inline float dtQueryFilter::getCost(const float* pa, const float* pb,
+	const dtPolyRef /*prevRef*/, const dtMeshTile* /*prevTile*/, const dtPoly* /*prevPoly*/,
+	const dtPolyRef /*curRef*/, const dtMeshTile* /*curTile*/, const dtPoly* curPoly,
+	const dtPolyRef /*nextRef*/, const dtMeshTile* /*nextTile*/, const dtPoly* /*nextPoly*/) const
+{
+	return dtVdist(pa, pb) * m_AreaCost[curPoly->getArea()];
+}
+
+#endif
+
+
 	
 static const float H_SCALE = 0.999f; // Search heuristic scale.
 

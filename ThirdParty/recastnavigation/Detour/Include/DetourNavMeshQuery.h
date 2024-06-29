@@ -30,6 +30,7 @@
 
 //#define DT_VIRTUAL_QUERYFILTER 1
 
+#if 0
 /// Defines polygon filtering and traversal costs for navigation mesh query operations.
 /// @ingroup detour
 class dtQueryFilter
@@ -118,6 +119,45 @@ public:
 	///@}
 
 };
+#else
+
+// 0xc0de
+
+/// Defines polygon filtering and traversal costs for navigation mesh query operations.
+/// @ingroup detour
+class dtQueryFilter
+{
+	const float* m_AreaCost;
+	unsigned int m_AreaMask;
+
+public:
+	dtQueryFilter();
+	dtQueryFilter(const float* areaCost, unsigned int areaMask);
+
+	bool passFilter(const dtPolyRef ref,
+		const dtMeshTile* tile,
+		const dtPoly* poly) const;
+
+	/// Returns cost to move from the beginning to the end of a line segment
+	/// that is fully contained within a polygon.
+	///  @param[in]		pa			The start position on the edge of the previous and current polygon. [(x, y, z)]
+	///  @param[in]		pb			The end position on the edge of the current and next polygon. [(x, y, z)]
+	///  @param[in]		prevRef		The reference id of the previous polygon. [opt]
+	///  @param[in]		prevTile	The tile containing the previous polygon. [opt]
+	///  @param[in]		prevPoly	The previous polygon. [opt]
+	///  @param[in]		curRef		The reference id of the current polygon.
+	///  @param[in]		curTile		The tile containing the current polygon.
+	///  @param[in]		curPoly		The current polygon.
+	///  @param[in]		nextRef		The refernece id of the next polygon. [opt]
+	///  @param[in]		nextTile	The tile containing the next polygon. [opt]
+	///  @param[in]		nextPoly	The next polygon. [opt]
+	float getCost(const float* pa, const float* pb,
+		const dtPolyRef prevRef, const dtMeshTile* prevTile, const dtPoly* prevPoly,
+		const dtPolyRef curRef, const dtMeshTile* curTile, const dtPoly* curPoly,
+		const dtPolyRef nextRef, const dtMeshTile* nextTile, const dtPoly* nextPoly) const;
+};
+
+#endif
 
 /// Provides information about raycast hit
 /// filled by dtNavMeshQuery::raycast
