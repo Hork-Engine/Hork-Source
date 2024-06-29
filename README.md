@@ -17,7 +17,7 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * The world has a modular structure - it's easy to add new features
 * Composition instead of inheritance, objects are extended by different components
 * Handles instead of pointers
-* ECS (Entity-Component-System) can be easily integrated into an existing model.
+* ECS (Entity-Component-System) can be easily integrated into an existing model
 * Asynchronous loading of resources
 
 ## Rendering
@@ -50,7 +50,10 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * Skeletal animation, inverse kinematics, sockets
 
 ## Navigation
-* Tiled navigation mesh generation and path finding
+* Tiled navigation mesh
+* Path finding
+* Off-mesh links
+* Dynamic obstacles
 
 ## UI
 * Customizable UI
