@@ -273,6 +273,13 @@ struct BvAxisAlignedBox
         return minSize;
     }
 
+    float GetSquareDistanceToPoint(Float3 const& point) const
+    {
+        return Float3(Math::Max3(Mins.X - point.X, 0, point.X - Maxs.X),
+                      Math::Max3(Mins.Y - point.Y, 0, point.Y - Maxs.Y),
+                      Math::Max3(Mins.Z - point.Y, 0, point.Y - Maxs.Z)).LengthSqr();
+    }
+
     void GetVertices(Float3 vertices[8]) const;
 
     /** faceNum 0..5 corresponds to +X, -X, +Y, -Y, +Z, -Z */
