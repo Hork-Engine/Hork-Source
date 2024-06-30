@@ -30,7 +30,9 @@ SOFTWARE.
 
 #include "CharacterControllerComponent.h"
 #include <Engine/World/Modules/Physics/PhysicsInterfaceImpl.h>
-#include <Engine/World/Modules/Physics/CollisionModel.h>
+
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 HK_NAMESPACE_BEGIN
 

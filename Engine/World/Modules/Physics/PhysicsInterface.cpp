@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "PhysicsInterfaceImpl.h"
-#include "CollisionModel.h"
 #include "PhysicsModule.h"
 #include "Components/StaticBodyComponent.h"
 #include "Components/DynamicBodyComponent.h"
@@ -45,6 +44,23 @@ SOFTWARE.
 
 #include <Jolt/Core/JobSystemThreadPool.h>
 #include <Jolt/Geometry/OrientedBox.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/TaperedCapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+#include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/CollidePointResult.h>
+#include <Jolt/AABBTree/TriangleCodec/TriangleCodecIndexed8BitPackSOA4Flags.h>
+#include <Jolt/AABBTree/NodeCodec/NodeCodecQuadTreeHalfFloat.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -102,19 +118,19 @@ public:
 class ObjectLayerFilter final : public JPH::ObjectLayerFilter
 {
 public:
-    ObjectLayerFilter(CollisionFilter const& collisionFilter, uint32_t collisionGroup) :
+    ObjectLayerFilter(CollisionFilter const& collisionFilter, uint32_t collisionLayer) :
         m_CollisionFilter(collisionFilter),
-        m_CollisionGroup(collisionGroup)
+        m_CollisionLayer(collisionLayer)
     {}
 
     bool ShouldCollide(JPH::ObjectLayer inLayer) const override
     {
-        return m_CollisionFilter.ShouldCollide(m_CollisionGroup, static_cast<uint32_t>(inLayer) & 0xff);
+        return m_CollisionFilter.ShouldCollide(m_CollisionLayer, static_cast<uint32_t>(inLayer) & 0xff);
     }
 
 private:
     CollisionFilter const& m_CollisionFilter;
-    uint32_t m_CollisionGroup;
+    uint32_t m_CollisionLayer;
 };
 
 class CastObjectLayerFilter final : public JPH::ObjectLayerFilter
@@ -158,38 +174,803 @@ void PhysicsInterfaceImpl::QueueToAdd(JPH::Body* body, bool startAsSleeping)
         m_QueueToAdd[1].Add(body->GetID());
 }
 
-void CopyShapeCastResult(ShapeCastResult& out, JPH::ShapeCastResult const& in)
+bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settings, JPH::Shape*& outShape,  ScalingMode& outScalingMode)
 {
-    out.BodyID = PhysBodyID(in.mBodyID2.GetIndexAndSequenceNumber());
-    out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
-    out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
-    out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
-    out.PenetrationDepth = in.mPenetrationDepth;
-    out.Fraction = in.mFraction;
-    out.IsBackFaceHit = in.mIsBackFaceHit;
+    if (!settings.Object)
+        return false;
+
+    m_TempShapes.Clear();
+    m_TempShapeTransform.Clear();
+
+    outScalingMode = ScalingMode::NonUniform;
+
+    for (auto component : settings.Object->GetComponents())
+    {
+        if (auto* collider = Component::Upcast<SphereCollider>(component))
+        {
+            // add sphere
+            m_TempShapes.Add(new JPH::SphereShape(collider->Radius));
+            m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), JPH::Quat::sIdentity());
+            outScalingMode = ScalingMode::Uniform;
+            continue;
+        }
+
+        if (auto* collider = Component::Upcast<BoxCollider>(component))
+        {
+            // add box
+            m_TempShapes.Add(new JPH::BoxShape(ConvertVector(collider->HalfExtents)));
+            m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), ConvertQuaternion(collider->OffsetRotation));            
+            continue;
+        }
+
+        if (auto* collider = Component::Upcast<CylinderCollider>(component))
+        {
+            // add cylinder
+            m_TempShapes.Add(new JPH::CylinderShape(collider->Height * 0.5f, collider->Radius));
+            m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), ConvertQuaternion(collider->OffsetRotation));
+
+            if (outScalingMode != ScalingMode::Uniform)
+                outScalingMode = collider->OffsetRotation != Quat::Identity() ? ScalingMode::Uniform : ScalingMode::UniformXZ;
+            continue;
+        }
+
+        if (auto* collider = Component::Upcast<CapsuleCollider>(component))
+        {
+            // add capsule
+            m_TempShapes.Add(new JPH::CapsuleShape(collider->Height * 0.5f, collider->Radius));
+            m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), ConvertQuaternion(collider->OffsetRotation));
+            outScalingMode = ScalingMode::Uniform;
+            continue;
+        }
+
+        if (auto* collider = Component::Upcast<MeshCollider>(component))
+        {
+            // add mesh
+            MeshCollisionData* data = collider->Data;
+            if (data)
+            {
+                if (data->IsConvex() || !settings.ConvexOnly)
+                {
+                    m_TempShapes.Add(data->m_Data->m_Shape);
+                    m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), ConvertQuaternion(collider->OffsetRotation));
+                }
+            }
+            continue;
+        }
+    }
+
+    if (m_TempShapes.IsEmpty())
+        return false;
+
+    if (m_TempShapes.Size() > 1)
+    {
+        m_TempCompoundShapeSettings.mSubShapes.reserve(m_TempShapes.Size());
+        for (int i = 0, count = m_TempShapes.Size(); i < count; ++i)
+            m_TempCompoundShapeSettings.AddShape(m_TempShapeTransform[i].Position, m_TempShapeTransform[i].Rotation, m_TempShapes[i]);
+
+        JPH::ShapeSettings::ShapeResult result;
+        outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, *PhysicsModule::Get().GetTempAllocator(), result);
+        outShape->AddRef();
+
+        m_TempCompoundShapeSettings.mSubShapes.clear();
+    }
+    else if (m_TempShapeTransform[0].Position.LengthSq() > 0.001f || m_TempShapeTransform[0].Rotation != JPH::Quat::sIdentity())
+    {
+        outShape = new JPH::RotatedTranslatedShape(m_TempShapeTransform[0].Position, m_TempShapeTransform[0].Rotation, m_TempShapes[0]);
+        outShape->AddRef();
+    }
+    else
+    {
+        outShape = m_TempShapes[0];
+        outShape->AddRef();
+    }
+
+    if (settings.CenterOfMassOffset != Float3(0.0f))
+    {
+        // TODO: Use OffsetCenterOfMassShape
+    }
+
+    return true;
 }
 
-void CopyShapeCastResult(Vector<ShapeCastResult>& out, JPH::Array<JPH::ShapeCastResult> const& in)
+JPH::Shape* PhysicsInterfaceImpl::CreateScaledShape(ScalingMode scalingMode, JPH::Shape* sourceShape, Float3 const& scale)
 {
-    out.Resize(in.size());
-    for (int i = 0; i < in.size(); i++)
-        CopyShapeCastResult(out[i], in[i]);
+    if (!sourceShape)
+        return nullptr;
+
+    if (scale.X != 1 || scale.Y != 1 || scale.Z != 1)
+    {
+        bool isUniformXZ = scale.X == scale.Z;
+        bool isUniformScaling = isUniformXZ && scale.X == scale.Y; // FIXME: allow some epsilon?
+
+        if (scalingMode == ScalingMode::NonUniform || isUniformScaling)
+            return new JPH::ScaledShape(sourceShape, ConvertVector(scale));
+
+        if (scalingMode == ScalingMode::UniformXZ)
+        {
+            if (!isUniformXZ)
+                LOG("WARNING: Non-uniform XZ scaling is not allowed for this collision model\n");
+
+            float scaleXZ = Math::Max(scale.X, scale.Z);
+            return new JPH::ScaledShape(sourceShape, JPH::Vec3(scaleXZ, scale.Y, scaleXZ));
+        }
+
+        LOG("WARNING: Non-uniform scaling is not allowed for this collision model\n");
+        return new JPH::ScaledShape(sourceShape, JPH::Vec3::sReplicate(Math::Max3(scale.X, scale.Y, scale.Z)));
+    }
+    return sourceShape;
 }
 
-void CopyShapeCollideResult(ShapeCollideResult& out, JPH::CollideShapeResult const& in)
+namespace
 {
-    out.BodyID = PhysBodyID(in.mBodyID2.GetIndexAndSequenceNumber());
-    out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
-    out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
-    out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
-    out.PenetrationDepth = in.mPenetrationDepth;
+
+    void GatherGeometry(JPH::SphereShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        float sinTheta, cosTheta, sinPhi, cosPhi;
+
+        float radius = shape->GetRadius();
+
+        float detail = Math::Floor(Math::Max(1.0f, radius) + 0.5f);
+
+        int numStacks = 8 * detail;
+        int numSlices = 12 * detail;
+
+        int vertexCount = (numStacks + 1) * numSlices;
+        int indexCount = numStacks * numSlices * 6;
+
+        int firstVertex = vertices.Size();
+        int firstIndex = indices.Size();
+
+        vertices.Resize(firstVertex + vertexCount);
+        indices.Resize(firstIndex + indexCount);
+
+        Float3* pVertices = vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = indices.ToPtr() + firstIndex;
+
+        for (int stack = 0; stack <= numStacks; ++stack)
+        {
+            float theta = stack * Math::_PI / numStacks;
+            Math::SinCos(theta, sinTheta, cosTheta);
+
+            for (int slice = 0; slice < numSlices; ++slice)
+            {
+                float phi = slice * Math::_2PI / numSlices;
+                Math::SinCos(phi, sinPhi, cosPhi);
+
+                *pVertices++ = Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * radius;
+            }
+        }
+
+        for (int stack = 0; stack < numStacks; ++stack)
+        {
+            int stackOffset = firstVertex + stack * numSlices;
+            int nextStackOffset = firstVertex + (stack + 1) * numSlices;
+
+            for (int slice = 0; slice < numSlices; ++slice)
+            {
+                int nextSlice = (slice + 1) % numSlices;
+                *pIndices++ = stackOffset + slice;
+                *pIndices++ = stackOffset + nextSlice;
+                *pIndices++ = nextStackOffset + nextSlice;
+                *pIndices++ = nextStackOffset + nextSlice;
+                *pIndices++ = nextStackOffset + slice;
+                *pIndices++ = stackOffset + slice;
+            }
+        }
+    }
+
+    void GatherGeometry(JPH::BoxShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        unsigned int const faceIndices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
+
+        int firstVertex = vertices.Size();
+        int firstIndex = indices.Size();
+
+        vertices.Resize(firstVertex + 8);
+        indices.Resize(firstIndex + 36);
+
+        Float3* pVertices = vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = indices.ToPtr() + firstIndex;
+
+        Float3 halfExtents = ConvertVector(shape->GetHalfExtent());
+
+        *pVertices++ = Float3(-halfExtents.X, halfExtents.Y, -halfExtents.Z);
+        *pVertices++ = Float3(halfExtents.X, halfExtents.Y, -halfExtents.Z);
+        *pVertices++ = Float3(halfExtents.X, halfExtents.Y, halfExtents.Z);
+        *pVertices++ = Float3(-halfExtents.X, halfExtents.Y, halfExtents.Z);
+        *pVertices++ = Float3(-halfExtents.X, -halfExtents.Y, -halfExtents.Z);
+        *pVertices++ = Float3(halfExtents.X, -halfExtents.Y, -halfExtents.Z);
+        *pVertices++ = Float3(halfExtents.X, -halfExtents.Y, halfExtents.Z);
+        *pVertices++ = Float3(-halfExtents.X, -halfExtents.Y, halfExtents.Z);
+
+        for (int i = 0; i < 36; i++)
+        {
+            *pIndices++ = firstVertex + faceIndices[i];
+        }
+    }
+
+    void GatherGeometry(JPH::CylinderShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        float sinPhi, cosPhi;
+
+        float halfHeight = shape->GetHalfHeight();
+        float radius = shape->GetRadius();
+
+        float detail = Math::Floor(Math::Max(1.0f, radius) + 0.5f);
+
+        int numSlices = 8 * detail;
+        int faceTriangles = numSlices - 2;
+
+        int vertexCount = numSlices * 2;
+        int indexCount = faceTriangles * 3 * 2 + numSlices * 6;
+
+        int firstVertex = vertices.Size();
+        int firstIndex = indices.Size();
+
+        vertices.Resize(firstVertex + vertexCount);
+        indices.Resize(firstIndex + indexCount);
+
+        Float3* pVertices = vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = indices.ToPtr() + firstIndex;
+
+        Float3 vert;
+
+        for (int slice = 0; slice < numSlices; slice++, pVertices++)
+        {
+            Math::SinCos(slice * Math::_2PI / numSlices, sinPhi, cosPhi);
+
+            vert[0] = cosPhi * radius;
+            vert[2] = sinPhi * radius;
+            vert[1] = halfHeight;
+
+            *pVertices = vert;
+
+            vert[1] = -vert[1];
+
+            *(pVertices + numSlices) = vert;
+        }
+
+        int offset = firstVertex;
+        int nextOffset = firstVertex + numSlices;
+
+        // top face
+        for (int i = 0; i < faceTriangles; i++)
+        {
+            *pIndices++ = offset + i + 2;
+            *pIndices++ = offset + i + 1;
+            *pIndices++ = offset + 0;
+        }
+
+        // bottom face
+        for (int i = 0; i < faceTriangles; i++)
+        {
+            *pIndices++ = nextOffset + i + 1;
+            *pIndices++ = nextOffset + i + 2;
+            *pIndices++ = nextOffset + 0;
+        }
+
+        for (int slice = 0; slice < numSlices; ++slice)
+        {
+            int nextSlice = (slice + 1) % numSlices;
+            *pIndices++ = offset + slice;
+            *pIndices++ = offset + nextSlice;
+            *pIndices++ = nextOffset + nextSlice;
+            *pIndices++ = nextOffset + nextSlice;
+            *pIndices++ = nextOffset + slice;
+            *pIndices++ = offset + slice;
+        }
+    }
+
+    void GatherGeometry(JPH::CapsuleShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        float radius = shape->GetRadius();
+
+        int x, y;
+        float verticalAngle, horizontalAngle;
+
+        unsigned int quad[4];
+
+        float detail = Math::Floor(Math::Max(1.0f, radius) + 0.5f);
+
+        int numVerticalSubdivs = 6 * detail;
+        int numHorizontalSubdivs = 8 * detail;
+
+        int halfVerticalSubdivs = numVerticalSubdivs >> 1;
+
+        int vertexCount = (numHorizontalSubdivs + 1) * (numVerticalSubdivs + 1) * 2;
+        int indexCount = numHorizontalSubdivs * (numVerticalSubdivs + 1) * 6;
+
+        int firstVertex = vertices.Size();
+        int firstIndex = indices.Size();
+
+        vertices.Resize(firstVertex + vertexCount);
+        indices.Resize(firstIndex + indexCount);
+
+        Float3* pVertices = vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = indices.ToPtr() + firstIndex;
+
+        float verticalStep = Math::_PI / numVerticalSubdivs;
+        float horizontalStep = Math::_2PI / numHorizontalSubdivs;
+
+        float halfHeight = shape->GetHalfHeightOfCylinder();
+
+        for (y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++)
+        {
+            float h, r;
+            Math::SinCos(verticalAngle, h, r);
+            h = h * radius - halfHeight;
+            r *= radius;
+            for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
+            {
+                float s, c;
+                Float3& v = *pVertices++;
+                Math::SinCos(horizontalAngle, s, c);
+                v[0] = r * c;
+                v[2] = r * s;
+                v[1] = h;
+                horizontalAngle += horizontalStep;
+            }
+            verticalAngle += verticalStep;
+        }
+
+        for (y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++)
+        {
+            float h, r;
+            Math::SinCos(verticalAngle, h, r);
+            h = h * radius + halfHeight;
+            r *= radius;
+            for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
+            {
+                float s, c;
+                Float3& v = *pVertices++;
+                Math::SinCos(horizontalAngle, s, c);
+                v[0] = r * c;
+                v[2] = r * s;
+                v[1] = h;
+                horizontalAngle += horizontalStep;
+            }
+            verticalAngle += verticalStep;
+        }
+
+        for (y = 0; y <= numVerticalSubdivs; y++)
+        {
+            int y2 = y + 1;
+            for (x = 0; x < numHorizontalSubdivs; x++)
+            {
+                int x2 = x + 1;
+                quad[0] = firstVertex + y * (numHorizontalSubdivs + 1) + x;
+                quad[1] = firstVertex + y2 * (numHorizontalSubdivs + 1) + x;
+                quad[2] = firstVertex + y2 * (numHorizontalSubdivs + 1) + x2;
+                quad[3] = firstVertex + y * (numHorizontalSubdivs + 1) + x2;
+                *pIndices++ = quad[0];
+                *pIndices++ = quad[1];
+                *pIndices++ = quad[2];
+                *pIndices++ = quad[2];
+                *pIndices++ = quad[3];
+                *pIndices++ = quad[0];
+            }
+        }
+    }
+
+    void GatherGeometry(JPH::ConvexHullShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        int vertexCount = shape->GetNumPoints();
+
+        int indexCount = 0;
+
+        uint32_t faceCount = shape->GetNumFaces();
+        for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
+        {
+            indexCount += (shape->GetNumVerticesInFace(faceIndex) - 2) * 3;
+        }
+
+        int firstVertex = vertices.Size();
+        int firstIndex = indices.Size();
+
+        vertices.Resize(firstVertex + vertexCount);
+        indices.Resize(firstIndex + indexCount);
+
+        Float3* pVertices = vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices = indices.ToPtr() + firstIndex;
+
+        for (int i = 0; i < vertexCount; i++)
+        {
+            pVertices[i] = ConvertVector(shape->GetPoint(i));
+        }
+
+        for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
+        {
+            const JPH::uint8* indexData = shape->GetFaceVertices(faceIndex);
+            int triangleCount = shape->GetNumVerticesInFace(faceIndex) - 2;
+
+            for (int i = 0; i < triangleCount; i++)
+            {
+                pIndices[0] = firstVertex + indexData[0];
+                pIndices[1] = firstVertex + indexData[i + 1];
+                pIndices[2] = firstVertex + indexData[i + 2];
+                pIndices += 3;
+            }
+        }
+    }
+
+    void GatherGeometry(JPH::MeshShape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        using TriangleCodec = JPH::TriangleCodecIndexed8BitPackSOA4Flags;
+        using NodeCodec = JPH::NodeCodecQuadTreeHalfFloat<1>;
+
+        struct Visitor
+        {
+            JPH_INLINE bool ShouldAbort() const
+            {
+                return false;
+            }
+
+            JPH_INLINE bool ShouldVisitNode(int inStackTop) const
+            {
+                return true;
+            }
+
+            JPH_INLINE int VisitNodes(JPH::Vec4Arg inBoundsMinX, JPH::Vec4Arg inBoundsMinY, JPH::Vec4Arg inBoundsMinZ, JPH::Vec4Arg inBoundsMaxX, JPH::Vec4Arg inBoundsMaxY, JPH::Vec4Arg inBoundsMaxZ, JPH::UVec4& ioProperties, int inStackTop)
+            {
+                JPH::UVec4 valid = JPH::UVec4::sOr(JPH::UVec4::sOr(JPH::Vec4::sLess(inBoundsMinX, inBoundsMaxX), JPH::Vec4::sLess(inBoundsMinY, inBoundsMaxY)), JPH::Vec4::sLess(inBoundsMinZ, inBoundsMaxZ));
+                return CountAndSortTrues(valid, ioProperties);
+            }
+
+            JPH_INLINE void VisitTriangles(const TriangleCodec::DecodingContext& ioContext, const void* inTriangles, int inNumTriangles, [[maybe_unused]] JPH::uint32 inTriangleBlockID)
+            {
+                HK_ASSERT(inNumTriangles <= JPH::MeshShape::MaxTrianglesPerLeaf);
+
+                JPH::Vec3 vertices[JPH::MeshShape::MaxTrianglesPerLeaf * 3];
+                ioContext.Unpack(inTriangles, inNumTriangles, vertices);
+
+                auto firstVertex = m_Vertices.Size();
+
+                for (const JPH::Vec3 *v = vertices, *v_end = vertices + inNumTriangles * 3; v < v_end; v += 3)
+                {
+                    m_Vertices.Add(ConvertVector(v[0]));
+                    m_Vertices.Add(ConvertVector(v[1]));
+                    m_Vertices.Add(ConvertVector(v[2]));
+
+                    m_Indices.Add(firstVertex + 0);
+                    m_Indices.Add(firstVertex + 1);
+                    m_Indices.Add(firstVertex + 2);
+
+                    firstVertex += 3;
+                }
+            }
+
+            Vector<Float3>& m_Vertices;
+            Vector<unsigned int>& m_Indices;
+        };
+
+        Visitor visitor{vertices, indices};
+
+        const NodeCodec::Header* header = shape->mTree.Get<NodeCodec::Header>(0);
+        NodeCodec::DecodingContext node_ctx(header);
+
+        const TriangleCodec::DecodingContext triangle_ctx(shape->mTree.Get<TriangleCodec::TriangleHeader>(NodeCodec::HeaderSize));
+        const JPH::uint8* buffer_start = &shape->mTree[0];
+        node_ctx.WalkTree(buffer_start, triangle_ctx, visitor);
+    }
+
+    void GatherGeometrySimpleShape(JPH::Shape const* shape, Vector<Float3>& vertices, Vector<unsigned int>& indices)
+    {
+        switch (shape->GetSubType())
+        {
+        case JPH::EShapeSubType::Sphere:
+            GatherGeometry(static_cast<JPH::SphereShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::Box:
+            GatherGeometry(static_cast<JPH::BoxShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::Cylinder:
+            GatherGeometry(static_cast<JPH::CylinderShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::Capsule:
+            GatherGeometry(static_cast<JPH::CapsuleShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::ConvexHull:
+            GatherGeometry(static_cast<JPH::ConvexHullShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::Mesh:
+            GatherGeometry(static_cast<JPH::MeshShape const*>(shape), vertices, indices);
+            break;
+        case JPH::EShapeSubType::Triangle:
+            HK_ASSERT_(0, "Unsupported shape type Triangle\n");
+            break;
+        case JPH::EShapeSubType::TaperedCapsule:
+            HK_ASSERT_(0, "Unsupported shape type TaperedCapsule\n");
+            break;
+        case JPH::EShapeSubType::HeightField:
+            HK_ASSERT_(0, "Use TerrainCollider to gather geometry\n");
+            break;
+        case JPH::EShapeSubType::SoftBody:
+            HK_ASSERT_(0, "Unsupported shape type SoftBody\n");
+        default:
+            HK_ASSERT_(0, "Unknown shape type\n");
+            break;
+        }
+    }
+
+    void GatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& outVertices, Vector<uint32_t>& outIndices)
+    {
+        if (!shape)
+            return;
+
+        switch (shape->GetSubType())
+        {
+            case JPH::EShapeSubType::Sphere:
+            case JPH::EShapeSubType::Box:
+            case JPH::EShapeSubType::Triangle:
+            case JPH::EShapeSubType::Capsule:
+            case JPH::EShapeSubType::TaperedCapsule:
+            case JPH::EShapeSubType::Cylinder:
+            case JPH::EShapeSubType::ConvexHull:
+            case JPH::EShapeSubType::Mesh:
+            case JPH::EShapeSubType::HeightField:
+            case JPH::EShapeSubType::SoftBody: {
+                auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+                Float3x4 centerOfMassOffsetMatrix = Float3x4::Translation(centerOfMass);
+
+                auto firstVert = outVertices.Size();
+                GatherGeometrySimpleShape(shape, outVertices, outIndices);
+                TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, centerOfMassOffsetMatrix);
+                break;
+            }
+
+            case JPH::EShapeSubType::StaticCompound: {
+                JPH::StaticCompoundShape const* compoundShape = static_cast<JPH::StaticCompoundShape const*>(shape);
+
+                auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+                Float3x4 centerOfMassOffsetMatrix = Float3x4::Translation(centerOfMass);
+
+                Float3x4 localTransform;
+
+                JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
+                for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
+                {
+                    auto position = ConvertVector(subShape.GetPositionCOM());
+                    auto rotation = ConvertQuaternion(subShape.GetRotation());
+
+                    localTransform.Compose(position, rotation.ToMatrix3x3());
+
+                    auto firstVert = outVertices.Size();
+                    GatherShapeGeometry(subShape.mShape, outVertices, outIndices);
+                    TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, centerOfMassOffsetMatrix * localTransform);
+                }
+                break;
+            }
+
+            case JPH::EShapeSubType::MutableCompound:
+                HK_ASSERT_(0, "MutableCompound shape is not supported\n");
+                break;
+
+            case JPH::EShapeSubType::RotatedTranslated: {
+                JPH::RotatedTranslatedShape const* transformedShape = static_cast<JPH::RotatedTranslatedShape const*>(shape);
+
+                Float3x4 localTransform;
+                localTransform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
+
+                auto firstVert = outVertices.Size();
+                GatherShapeGeometry(transformedShape->GetInnerShape(), outVertices, outIndices);
+                TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, localTransform);
+                break;
+            }
+            case JPH::EShapeSubType::Scaled: {
+                JPH::ScaledShape const* scaledShape = static_cast<JPH::ScaledShape const*>(shape);
+
+                auto firstVert = outVertices.Size();
+                GatherShapeGeometry(scaledShape->GetInnerShape(), outVertices, outIndices);
+                TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, Float3x4::Scale(ConvertVector(scaledShape->GetScale())));
+                break;
+            }
+            case JPH::EShapeSubType::OffsetCenterOfMass:
+                HK_ASSERT_(0, "TODO: Add OffsetCenterOfMass\n");
+                break;
+        }
+    }
+
+} // namespace
+
+void PhysicsInterfaceImpl::GatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& outVertices, Vector<uint32_t>& outIndices)
+{
+    Hk::GatherShapeGeometry(shape, outVertices, outIndices);
 }
 
-void CopyShapeCollideResult(Vector<ShapeCollideResult>& out, JPH::Array<JPH::CollideShapeResult> const& in)
+namespace
 {
-    out.Resize(in.size());
-    for (int i = 0; i < in.size(); i++)
-        CopyShapeCollideResult(out[i], in[i]);
+
+    void DrawSphere(DebugRenderer& renderer, JPH::SphereShape const* shape)
+    {
+        renderer.DrawSphere(Float3(0), shape->GetRadius());
+    }
+
+    void DrawBox(DebugRenderer& renderer, JPH::BoxShape const* shape)
+    {
+        renderer.DrawBox(Float3(0), ConvertVector(shape->GetHalfExtent()));
+    }
+
+    void DrawCylinder(DebugRenderer& renderer, JPH::CylinderShape const* shape)
+    {
+        renderer.DrawCylinder(Float3(0), Float3x3::Identity(), shape->GetRadius(), shape->GetHalfHeight() * 2);
+    }
+
+    void DrawCapsule(DebugRenderer& renderer, JPH::CapsuleShape const* shape)
+    {
+        renderer.DrawCapsule(Float3(0), Float3x3::Identity(), shape->GetRadius(), shape->GetHalfHeightOfCylinder() * 2, 1);
+    }
+
+    void DrawConvexHull(DebugRenderer& renderer, JPH::ConvexHullShape const* shape)
+    {
+        SmallVector<Float3, 32> verts;
+
+        uint32_t faceCount = shape->GetNumFaces();
+        for (uint32_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
+        {
+            verts.Clear();
+
+            uint32_t vertexCount = shape->GetNumVerticesInFace(faceIndex);
+            const JPH::uint8* indexData = shape->GetFaceVertices(faceIndex);
+            for (uint32_t v = 0; v < vertexCount; ++v)
+                verts.Add(ConvertVector(shape->GetPoint(indexData[v])));
+
+            renderer.DrawLine(verts, true);
+        }
+    }
+
+    void DrawMesh(DebugRenderer& renderer, JPH::MeshShape const* shape)
+    {
+        // TODO
+    }
+
+    void DrawSimpleShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
+    {
+        renderer.PushTransform(transform);
+
+        switch (shape->GetSubType())
+        {
+        case JPH::EShapeSubType::Sphere:
+            DrawSphere(renderer, static_cast<JPH::SphereShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::Box:
+            DrawBox(renderer, static_cast<JPH::BoxShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::Cylinder:
+            DrawCylinder(renderer, static_cast<JPH::CylinderShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::Capsule:
+            DrawCapsule(renderer, static_cast<JPH::CapsuleShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::ConvexHull:
+            DrawConvexHull(renderer, static_cast<JPH::ConvexHullShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::Mesh:
+            DrawMesh(renderer, static_cast<JPH::MeshShape const*>(shape));
+            break;
+        case JPH::EShapeSubType::Triangle:
+            HK_ASSERT_(0, "Unsupported shape type Triangle\n");
+            break;
+        case JPH::EShapeSubType::TaperedCapsule:
+            HK_ASSERT_(0, "Unsupported shape type TaperedCapsule\n");
+            break;
+        case JPH::EShapeSubType::HeightField:
+            HK_ASSERT_(0, "Use TerrainCollider to draw shape\n");
+            break;
+        case JPH::EShapeSubType::SoftBody:
+            HK_ASSERT_(0, "Unsupported shape type SoftBody\n");
+        default:
+            HK_ASSERT_(0, "Unknown shape type\n");
+            break;
+        }
+
+        renderer.PopTransform();
+    }
+
+    void DrawShape(DebugRenderer& renderer, JPH::Shape const* shape, Float3x4 const& transform)
+    {
+        if (!shape)
+            return;
+
+        switch (shape->GetSubType())
+        {
+            case JPH::EShapeSubType::Sphere:
+            case JPH::EShapeSubType::Box:
+            case JPH::EShapeSubType::Triangle:
+            case JPH::EShapeSubType::Capsule:
+            case JPH::EShapeSubType::TaperedCapsule:
+            case JPH::EShapeSubType::Cylinder:
+            case JPH::EShapeSubType::ConvexHull:
+            case JPH::EShapeSubType::Mesh:
+            case JPH::EShapeSubType::HeightField:
+            case JPH::EShapeSubType::SoftBody: {
+
+                auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::Translation(centerOfMass);
+
+                DrawSimpleShape(renderer, shape, centerOfMassOffsetMatrix);
+                break;
+            }
+
+            case JPH::EShapeSubType::StaticCompound: {
+                JPH::StaticCompoundShape const* compoundShape = static_cast<JPH::StaticCompoundShape const*>(shape);
+
+                auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
+                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::Translation(centerOfMass);
+
+                Float3x4 localTransform;
+
+                JPH::StaticCompoundShape::SubShapes const& subShapes = compoundShape->GetSubShapes();
+                for (JPH::StaticCompoundShape::SubShape const& subShape : subShapes)
+                {
+                    auto position = ConvertVector(subShape.GetPositionCOM());
+                    auto rotation = ConvertQuaternion(subShape.GetRotation());
+
+                    localTransform.Compose(position, rotation.ToMatrix3x3());
+
+                    DrawShape(renderer, subShape.mShape, centerOfMassOffsetMatrix * localTransform);
+                }
+                break;
+            }
+
+            case JPH::EShapeSubType::MutableCompound:
+                HK_ASSERT_(0, "MutableCompound shape is not supported\n");
+                break;
+
+            case JPH::EShapeSubType::RotatedTranslated: {
+                JPH::RotatedTranslatedShape const* transformedShape = static_cast<JPH::RotatedTranslatedShape const*>(shape);
+
+                Float3x4 localTransform;
+                localTransform.Compose(ConvertVector(transformedShape->GetPosition()), ConvertQuaternion(transformedShape->GetRotation()).ToMatrix3x3());
+
+                DrawShape(renderer, transformedShape->GetInnerShape(), transform * localTransform);
+                break;
+            }
+            case JPH::EShapeSubType::Scaled: {
+                JPH::ScaledShape const* scaledShape = static_cast<JPH::ScaledShape const*>(shape);
+
+                DrawShape(renderer, scaledShape->GetInnerShape(), transform * Float3x4::Scale(ConvertVector(scaledShape->GetScale())));
+                break;
+            }
+            case JPH::EShapeSubType::OffsetCenterOfMass:
+                HK_ASSERT_(0, "TODO: Add OffsetCenterOfMass\n");
+                break;
+        }
+    }
+
+    void CopyShapeCastResult(ShapeCastResult& out, JPH::ShapeCastResult const& in)
+    {
+        out.BodyID = PhysBodyID(in.mBodyID2.GetIndexAndSequenceNumber());
+        out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
+        out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
+        out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
+        out.PenetrationDepth = in.mPenetrationDepth;
+        out.Fraction = in.mFraction;
+        out.IsBackFaceHit = in.mIsBackFaceHit;
+    }
+
+    void CopyShapeCastResult(Vector<ShapeCastResult>& out, JPH::Array<JPH::ShapeCastResult> const& in)
+    {
+        out.Resize(in.size());
+        for (int i = 0; i < in.size(); i++)
+            CopyShapeCastResult(out[i], in[i]);
+    }
+
+    void CopyShapeCollideResult(ShapeCollideResult& out, JPH::CollideShapeResult const& in)
+    {
+        out.BodyID = PhysBodyID(in.mBodyID2.GetIndexAndSequenceNumber());
+        out.ContactPointOn1 = ConvertVector(in.mContactPointOn1);
+        out.ContactPointOn2 = ConvertVector(in.mContactPointOn2);
+        out.PenetrationAxis = ConvertVector(in.mPenetrationAxis);
+        out.PenetrationDepth = in.mPenetrationDepth;
+    }
+
+    void CopyShapeCollideResult(Vector<ShapeCollideResult>& out, JPH::Array<JPH::CollideShapeResult> const& in)
+    {
+        out.Resize(in.size());
+        for (int i = 0; i < in.size(); i++)
+            CopyShapeCollideResult(out[i], in[i]);
+    }
+
 }
 
 bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -612,7 +1393,7 @@ void PhysicsInterface::Update()
                     HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
                     HK_BIT(uint32_t(BroadphaseLayer::Character)));
 
-                ObjectLayerFilter layer_filter(m_CollisionFilter, character.m_CollisionLayer);
+                ObjectLayerFilter layer_filter(m_CollisionFilter, character.CollisionLayer);
 
                 class BodyFilter final : public JPH::BodyFilter
                 {
@@ -700,10 +1481,10 @@ void PhysicsInterface::Update()
             {
                 component->m_CachedScale = scale;
 
-                if (CollisionModel* model = component->m_CollisionModel)
+                if (JPH::Shape* shape = m_pImpl->CreateScaledShape(component->m_ScalingMode, component->m_Shape, scale))
                 {
                     const bool bUpdateMassProperties = false;
-                    bodyInterface.SetShape(JPH::BodyID(component->m_BodyID.ID), model->Instatiate(scale), bUpdateMassProperties, JPH::EActivation::Activate);
+                    bodyInterface.SetShape(JPH::BodyID(component->m_BodyID.ID), shape, bUpdateMassProperties, JPH::EActivation::Activate);
                 }
             }
         }
@@ -860,9 +1641,9 @@ void PhysicsInterface::Update()
 
                 m_Collector.SetSurfacePosition(surfacePos);
 
-                ObjectLayerFilter layer_filter(m_CollisionFilter, waterVolume.m_CollisionLayer);
+                ObjectLayerFilter layerFilter(m_CollisionFilter, waterVolume.CollisionLayer);
 
-                m_BroadPhaseQuery.CollideAABox(waterBox, m_Collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(ToUnderlying(BroadphaseLayer::Dynamic))), layer_filter);
+                m_BroadPhaseQuery.CollideAABox(waterBox, m_Collector, JPH::SpecifiedBroadPhaseLayerFilter(JPH::BroadPhaseLayer(ToUnderlying(BroadphaseLayer::Dynamic))), layerFilter);
             }
         };
 
@@ -967,6 +1748,9 @@ void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID,
 
 void PhysicsInterface::DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyID, HeightFieldComponent* heightfield)
 {
+    if (!heightfield->Data)
+        return;
+
     auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 
     m_DebugDrawVertices.Clear();
@@ -976,20 +1760,20 @@ void PhysicsInterface::DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyI
     JPH::Quat rotation;
     bodyInterface.GetPositionAndRotation(JPH::BodyID(bodyID.ID), position, rotation);
 
-    Float3x4 transform_matrix;
-    transform_matrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
+    Float3x4 transformMatrix;
+    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
-    Float3x4 transform_matrix_inv = transform_matrix.Inversed();
-    Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
+    Float3x4 transformMatrixInv = transformMatrix.Inversed();
+    Float3 localViewPosition = transformMatrixInv * renderer.GetRenderView()->ViewPosition;
 
-    BvAxisAlignedBox local_bounds(local_view_position - 5, local_view_position + 5);
+    BvAxisAlignedBox localBounds(localViewPosition - 5, localViewPosition + 5);
 
-    local_bounds.Mins.Y = -FLT_MAX;
-    local_bounds.Maxs.Y = FLT_MAX;
+    localBounds.Mins.Y = -FLT_MAX;
+    localBounds.Maxs.Y = FLT_MAX;
 
-    heightfield->m_CollisionModel->GatherGeometry(local_bounds, m_DebugDrawVertices, m_DebugDrawIndices);
+    heightfield->Data->GatherGeometry(localBounds, m_DebugDrawVertices, m_DebugDrawIndices);
 
-    renderer.PushTransform(transform_matrix);
+    renderer.PushTransform(transformMatrix);
     renderer.DrawTriangleSoupWireframe(m_DebugDrawVertices, m_DebugDrawIndices);
     renderer.PopTransform();
 }
@@ -1036,34 +1820,17 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
         ShapeOverlapFilter filter;
         filter.BroadphaseLayers
             .AddLayer(BroadphaseLayer::Static)
-            .AddLayer(BroadphaseLayer::Dynamic)
-            .AddLayer(BroadphaseLayer::Trigger);
+            .AddLayer(BroadphaseLayer::Dynamic);
 
         OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::Identity(), m_BodyQueryResult, filter);
 
         auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 
         renderer.SetDepthTest(false);
+
         for (PhysBodyID bodyID : m_BodyQueryResult)
         {
             JPH::BodyID joltBodyID(bodyID.ID);
-            BodyUserData* userData = reinterpret_cast<BodyUserData*>(bodyInterface.GetUserData(joltBodyID));
-
-            CollisionModel* model;
-            Float3 scale;
-
-            if (auto staticBody = userData->TryGetComponent<StaticBodyComponent>(GetWorld()))
-            {
-                model = staticBody->m_CollisionModel;
-                scale = staticBody->m_CachedScale;
-            }
-            else if (auto dynamicBody = userData->TryGetComponent<DynamicBodyComponent>(GetWorld()))
-            {
-                model = dynamicBody->m_CollisionModel;
-                scale = dynamicBody->m_CachedScale;
-            }
-            else
-                continue;
 
             auto motionType = bodyInterface.GetMotionType(joltBodyID);
             switch (motionType)
@@ -1085,22 +1852,17 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             JPH::Quat rotation;
             bodyInterface.GetPositionAndRotation(joltBodyID, position, rotation);
 
-            Float3x3 rotation_matrix = ConvertQuaternion(rotation).ToMatrix3x3();
+            Float3x3 rotationMatrix = ConvertQuaternion(rotation).ToMatrix3x3();
 
-            if (model)
-            {
-                Float3x4 transform_matrix;
-                transform_matrix.Compose(ConvertVector(position),
-                                         rotation_matrix,
-                                         model->GetValidScale(scale));
+            Float3x4 transformMatrix;
+            transformMatrix.Compose(ConvertVector(position), rotationMatrix);
 
-                model->DrawDebug(renderer, transform_matrix);
-            }
+            DrawShape(renderer, bodyInterface.GetShape(joltBodyID), transformMatrix);
 
             if (motionType == JPH::EMotionType::Dynamic)
             {
                 renderer.SetColor({1, 1, 1, 1});
-                renderer.DrawAxis(ConvertVector(position), rotation_matrix[0], rotation_matrix[1], rotation_matrix[2], Float3(0.25f));
+                renderer.DrawAxis(ConvertVector(position), rotationMatrix[0], rotationMatrix[1], rotationMatrix[2], Float3(0.25f));
             }
         }
     }
@@ -1159,27 +1921,21 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
 
             HK_FORCEINLINE void Visit(TriggerComponent& body)
             {
-                auto* owner = body.GetOwner();
-                auto* model = body.m_CollisionModel.RawPtr();
+                m_DebugDrawVertices.Clear();
+                m_DebugDrawIndices.Clear();
 
-                if (model)
-                {
-                    m_DebugDrawVertices.Clear();
-                    m_DebugDrawIndices.Clear();
+                PhysicsInterfaceImpl::GatherShapeGeometry(m_BodyInterface.GetShape((JPH::BodyID(body.m_BodyID.ID))), m_DebugDrawVertices, m_DebugDrawIndices);
 
-                    model->GatherGeometry(m_DebugDrawVertices, m_DebugDrawIndices);
+                JPH::Vec3 position;
+                JPH::Quat rotation;
+                m_BodyInterface.GetPositionAndRotation(JPH::BodyID(body.m_BodyID.ID), position, rotation);
 
-                    JPH::Vec3 position;
-                    JPH::Quat rotation;
-                    m_BodyInterface.GetPositionAndRotation(JPH::BodyID(body.m_BodyID.ID), position, rotation);
+                Float3x4 transform;
+                transform.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
-                    Float3x4 transform;
-                    transform.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3(), model->GetValidScale(owner->GetWorldScale())); // TODO: Use cached scale
-
-                    m_DebugRenderer.PushTransform(transform);
-                    m_DebugRenderer.DrawTriangleSoup(m_DebugDrawVertices, m_DebugDrawIndices);
-                    m_DebugRenderer.PopTransform();
-                }
+                m_DebugRenderer.PushTransform(transform);
+                m_DebugRenderer.DrawTriangleSoup(m_DebugDrawVertices, m_DebugDrawIndices);
+                m_DebugRenderer.PopTransform();
             }
         };
 
@@ -1209,22 +1965,22 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             {
                 if (!body.IsKinematic())
                 {
-                    auto* owner = body.GetOwner();
-                    auto* model = body.m_CollisionModel.RawPtr();
+                    //auto* owner = body.GetOwner();
+                    //auto* model = body.m_CollisionModel.RawPtr();
 
-                    Float3x4 transform;
-                    transform.Compose(owner->GetWorldPosition(),
-                        owner->GetWorldRotation().ToMatrix3x3(),
-                        model->GetValidScale(body.m_CachedScale));
+                    //Float3x4 transform;
+                    //transform.Compose(owner->GetWorldPosition(),
+                    //    owner->GetWorldRotation().ToMatrix3x3(),
+                    //    model->GetValidScale(body.m_CachedScale));
 
-                    Float3 center_of_mass_pos = transform * model->GetCenterOfMass();
-                    Float3 center_of_mass_pos2 = ConvertVector(m_BodyInterface.GetCenterOfMassPosition(JPH::BodyID(body.m_BodyID.ID)));
+                    //Float3 centerOfMassPos = transform * model->GetCenterOfMass();
+                    Float3 centerOfMassPos2 = ConvertVector(m_BodyInterface.GetCenterOfMassPosition(JPH::BodyID(body.m_BodyID.ID)));
 
-                    m_DebugRenderer.SetColor({1, 1, 1, 1});
-                    m_DebugRenderer.DrawBoxFilled(center_of_mass_pos, Float3(0.05f));
+                    //m_DebugRenderer.SetColor({1, 1, 1, 1});
+                    //m_DebugRenderer.DrawBoxFilled(centerOfMassPos, Float3(0.05f));
 
                     m_DebugRenderer.SetColor({1, 0, 0, 1});
-                    m_DebugRenderer.DrawBoxFilled(center_of_mass_pos2, Float3(0.05f));
+                    m_DebugRenderer.DrawBoxFilled(centerOfMassPos2, Float3(0.05f));
                 }
             }
         };
@@ -1251,10 +2007,10 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             {
                 if (character.IsInitialized())
                 {
-                    Float3x4 transform_matrix;
-                    transform_matrix.Compose(ConvertVector(character.m_pImpl->GetPosition()), ConvertQuaternion(character.m_pImpl->GetRotation()).ToMatrix3x3());
+                    Float3x4 transformMatrix;
+                    transformMatrix.Compose(ConvertVector(character.m_pImpl->GetPosition()), ConvertQuaternion(character.m_pImpl->GetRotation()).ToMatrix3x3());
 
-                    DrawShape(m_DebugRenderer, character.m_pImpl->GetShape(), transform_matrix);
+                    DrawShape(m_DebugRenderer, character.m_pImpl->GetShape(), transformMatrix);
                 }
             }
         };

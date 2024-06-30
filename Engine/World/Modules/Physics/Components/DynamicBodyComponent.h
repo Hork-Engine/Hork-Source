@@ -35,9 +35,12 @@ SOFTWARE.
 
 #include "BodyComponent.h"
 
-HK_NAMESPACE_BEGIN
+namespace JPH
+{
+    class Shape;
+}
 
-class CollisionModel;
+HK_NAMESPACE_BEGIN
 
 class DynamicBodyComponent final : public BodyComponent
 {
@@ -54,11 +57,8 @@ public:
     // Initial properties
     //
 
-    /// Collision model of the body
-    Ref<CollisionModel>     m_CollisionModel;
-
     /// The collision layer this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = 0;
+    uint8_t                 CollisionLayer = 0;
 
     /// World space linear velocity of the center of mass (m/s)
     Float3                  LinearVelocity;
@@ -92,9 +92,6 @@ public:
     /// Motion quality, or how well it detects collisions when it has a high velocity
     bool                    UseCCD = false;
 
-    /// Enable to allow rigid body scaling
-    bool                    IsDynamicScaling = false;
-
     PhysicsMaterial         Material;
 
     //
@@ -104,6 +101,10 @@ public:
     /// Set motion behavior kinematic or dynamic
     void                    SetKinematic(bool isKinematic);
     bool                    IsKinematic() const { return m_IsKinematic; }
+
+    /// Enable to allow rigid body scaling
+    void                    SetDynamicScaling(bool isDynamicScaling);
+    bool                    IsDynamicScaling() const { return m_IsDynamicScaling; }
 
     /// Value to multiply gravity with for this body
     void                    SetGravityFactor(float factor);
@@ -170,8 +171,11 @@ private:
     PhysBodyID              m_BodyID;
     Float3                  m_CachedScale;
     float                   m_GravityFactor = 1.0f;
+    ScalingMode             m_ScalingMode = ScalingMode::NonUniform;
     bool                    m_IsKinematic = false;
+    bool                    m_IsDynamicScaling = false;
     class BodyUserData*     m_UserData = nullptr;
+    JPH::Shape*             m_Shape = nullptr;
 };
 
 namespace ComponentMeta

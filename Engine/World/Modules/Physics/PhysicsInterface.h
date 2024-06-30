@@ -167,6 +167,13 @@ struct ShapeOverlapFilter
     BroadphaseLayerMask    BroadphaseLayers;
 };
 
+enum class ScalingMode : uint8_t
+{
+    NonUniform,
+    UniformXZ,
+    Uniform
+};
+
 class CollisionFilter;
 
 class PhysicsInterface : public WorldInterfaceBase

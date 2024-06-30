@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "DynamicBodyComponent.h"
 #include <Engine/World/Modules/Physics/PhysicsInterfaceImpl.h>
-#include <Engine/World/Modules/Physics/CollisionModel.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -44,51 +43,61 @@ void DynamicBodyComponent::BeginPlay()
 
     m_CachedScale = owner->GetWorldScale();
 
-    JPH::BodyCreationSettings settings;
-    settings.SetShape(m_CollisionModel->Instatiate(m_CachedScale));
-    settings.mPosition = ConvertVector(owner->GetWorldPosition());
-    settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
-    settings.mLinearVelocity = ConvertVector(LinearVelocity);
-    settings.mAngularVelocity = ConvertVector(AngularVelocity);
-    settings.mUserData = (size_t)m_UserData;
-    settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Dynamic);
-    settings.mMotionType = m_IsKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic;
-    settings.mIsSensor = false;
-    //settings.mUseManifoldReduction = true;
-    settings.mMotionQuality = UseCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
-    settings.mAllowSleeping = AllowSleeping;
-    settings.mFriction = Material.Friction;
-    settings.mRestitution = Material.Restitution;
-    settings.mLinearDamping = LinearDamping;
-    settings.mAngularDamping = AngularDamping;
-    settings.mMaxLinearVelocity = MaxLinearVelocity;
-    settings.mMaxAngularVelocity = MaxAngularVelocity;
-    settings.mGravityFactor = m_GravityFactor;
+    CreateCollisionSettings collisionSettings;
+    collisionSettings.Object = GetOwner();
+    //collisionSettings.CenterOfMassOffset = CenterOfMassOffset; TODO
+    collisionSettings.ConvexOnly = true;
+
+    if (physics->CreateCollision(collisionSettings, m_Shape, m_ScalingMode))
+    {
+        JPH::BodyCreationSettings settings;
+        settings.SetShape(physics->CreateScaledShape(m_ScalingMode, m_Shape, m_CachedScale));
+        settings.mPosition = ConvertVector(owner->GetWorldPosition());
+        settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
+        settings.mLinearVelocity = ConvertVector(LinearVelocity);
+        settings.mAngularVelocity = ConvertVector(AngularVelocity);
+        settings.mUserData = (size_t)m_UserData;
+        settings.mObjectLayer = MakeObjectLayer(CollisionLayer, BroadphaseLayer::Dynamic);
+        settings.mMotionType = m_IsKinematic ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic;
+        settings.mIsSensor = false;
+        //settings.mUseManifoldReduction = true;
+        settings.mMotionQuality = UseCCD ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+        settings.mAllowSleeping = AllowSleeping;
+        settings.mFriction = Material.Friction;
+        settings.mRestitution = Material.Restitution;
+        settings.mLinearDamping = LinearDamping;
+        settings.mAngularDamping = AngularDamping;
+        settings.mMaxLinearVelocity = MaxLinearVelocity;
+        settings.mMaxAngularVelocity = MaxAngularVelocity;
+        settings.mGravityFactor = m_GravityFactor;
+
+        //settings.mEnhancedInternalEdgeRemoval = true;
     
-    settings.mInertiaMultiplier = InertiaMultiplier;
-    if (Mass > 0.0f)
-    {
-        settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-        settings.mMassPropertiesOverride.mMass = Mass;
+        settings.mInertiaMultiplier = InertiaMultiplier;
+        if (Mass > 0.0f)
+        {
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+            settings.mMassPropertiesOverride.mMass = Mass;
+        }
+        else
+        {
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
+        }
+
+        auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+
+        JPH::Body* body = bodyInterface.CreateBody(settings);
+        m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
+
+        physics->QueueToAdd(body, StartAsSleeping);
     }
-    else
-    {
-        settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
-    }
-
-    auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
-
-    JPH::Body* body = bodyInterface.CreateBody(settings);
-    m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
-
-    physics->QueueToAdd(body, StartAsSleeping);
 
     if (m_IsKinematic)
     {
         physics->m_KinematicBodies.Add(Handle32<DynamicBodyComponent>(GetHandle()));
     }
 
-    if (IsDynamicScaling)
+    if (m_IsDynamicScaling)
     {
         physics->m_DynamicScaling.Add(Handle32<DynamicBodyComponent>(GetHandle()));
     }
@@ -111,7 +120,7 @@ void DynamicBodyComponent::EndPlay()
         physics->m_KinematicBodies.RemoveUnsorted(index);
     }
 
-    if (IsDynamicScaling)
+    if (m_IsDynamicScaling)
     {
         auto index = physics->m_DynamicScaling.IndexOf(Handle32<DynamicBodyComponent>(GetHandle()));
         physics->m_DynamicScaling.RemoveUnsorted(index);
@@ -127,6 +136,12 @@ void DynamicBodyComponent::EndPlay()
 
         bodyInterface.DestroyBody(bodyID);
         m_BodyID.ID = PhysBodyID::InvalidID;
+    }
+
+    if (m_Shape)
+    {
+        m_Shape->Release();
+        m_Shape = nullptr;
     }
 
     physics->DeleteUserData(m_UserData);
@@ -178,6 +193,26 @@ void DynamicBodyComponent::SetKinematic(bool isKinematic)
         GetOwner()->SetLockWorldPositionAndRotation(false);
     else
         GetOwner()->SetLockWorldPositionAndRotation(true);
+}
+
+void DynamicBodyComponent::SetDynamicScaling(bool isDynamicScaling)
+{
+    if (m_IsDynamicScaling == isDynamicScaling)
+        return;
+
+    m_IsDynamicScaling = isDynamicScaling;
+
+    PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
+
+    if (m_IsDynamicScaling)
+    {
+        physics->m_DynamicScaling.Add(Handle32<DynamicBodyComponent>(GetHandle()));
+    }
+    else
+    {
+        auto index = physics->m_DynamicScaling.IndexOf(Handle32<DynamicBodyComponent>(GetHandle()));
+        physics->m_DynamicScaling.RemoveUnsorted(index);
+    }
 }
 
 void DynamicBodyComponent::SetGravityFactor(float factor)
@@ -403,7 +438,11 @@ bool DynamicBodyComponent::IsSleeping() const
 
 void DynamicBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices)
 {
-    if (!m_CollisionModel)
+    JPH::BodyID bodyID(m_BodyID.ID);
+    if (bodyID.IsInvalid())
+        return;
+
+    if (!m_Shape)
         return;
 
     PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
@@ -411,13 +450,13 @@ void DynamicBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint3
 
     JPH::Vec3 position;
     JPH::Quat rotation;
-    bodyInterface.GetPositionAndRotation(JPH::BodyID(m_BodyID.ID), position, rotation);
+    bodyInterface.GetPositionAndRotation(bodyID, position, rotation);
 
     Float3x4 transformMatrix;
-    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3(), m_CollisionModel->GetValidScale(m_CachedScale));
+    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
     auto firstVert = vertices.Size();
-    m_CollisionModel->GatherGeometry(vertices, indices);
+    PhysicsInterfaceImpl::GatherShapeGeometry(bodyInterface.GetShape(bodyID), vertices, indices);
 
     if (firstVert != vertices.Size())
         TransformVertices(&vertices[firstVert], vertices.Size() - firstVert, transformMatrix);

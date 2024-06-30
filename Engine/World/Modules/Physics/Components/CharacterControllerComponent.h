@@ -48,7 +48,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
     /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = 0;
+    uint8_t                 CollisionLayer = 0;
 
     float                   HeightStanding = 1.35f;
     float                   RadiusStanding = 0.3f;

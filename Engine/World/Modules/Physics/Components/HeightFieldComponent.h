@@ -31,14 +31,13 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Modules/Physics/PhysicsInterface.h>
-#include <Engine/World/Modules/Physics/PhysicsMaterial.h>
 #include <Engine/Geometry/BV/BvAxisAlignedBox.h>
 
 #include "BodyComponent.h"
 
 HK_NAMESPACE_BEGIN
 
-class TerrainCollision;
+class TerrainCollisionData;
 
 class HeightFieldComponent final : public BodyComponent
 {
@@ -53,14 +52,10 @@ public:
     // Initial properties
     //
 
-    //PhysicsMaterial       Material;
-
     /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = 0;
+    uint8_t                 CollisionLayer = 0;
 
-    //uint32_t              ObjectFilterID = ~0u;
-    
-    Ref<TerrainCollision>   m_CollisionModel;
+    Ref<TerrainCollisionData> Data;
 
     // Utilites
 
@@ -75,7 +70,6 @@ public:
 
 private:
     PhysBodyID              m_BodyID;
-
     class BodyUserData*     m_UserData = nullptr;
 };
 
@@ -87,5 +81,34 @@ namespace ComponentMeta
         return ObjectStorageType::Sparse;
     }
 }
+
+class TerrainCollisionData : public RefCounted
+{
+public:
+                                    TerrainCollisionData();
+
+    void                            Create(const float* inSamples, uint32_t inSampleCount/*, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList()*/);
+
+    /// Get height field position at sampled location (inX, inY).
+    /// where inX and inY are integers in the range inX e [0, mSampleCount - 1] and inY e [0, mSampleCount - 1].
+    Float3                          GetPosition(uint32_t inX, uint32_t inY) const;
+
+    /// Check if height field at sampled location (inX, inY) has collision (has a hole or not)
+    bool                            IsNoCollision(uint32_t inX, uint32_t inY) const;
+
+    /// Projects inLocalPosition (a point in the space of the shape) along the Y axis onto the surface and returns it in outSurfacePosition.
+    /// When there is no surface position (because of a hole or because the point is outside the heightfield) the function will return false.
+    bool                            ProjectOntoSurface(Float3 const& inLocalPosition, Float3& outSurfacePosition, Float3& outSurfaceNormal) const;
+
+    /// Amount of memory used by height field (size in bytes)
+    size_t                          GetMemoryUsage() const;
+
+    void                            GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
+
+    MeshCollisionDataInternal const* GetData() { return m_Data.RawPtr(); }
+
+private:
+    UniqueRef<MeshCollisionDataInternal> m_Data;
+};
 
 HK_NAMESPACE_END

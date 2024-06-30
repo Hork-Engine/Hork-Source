@@ -31,15 +31,28 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Component.h>
-
-#include "Colliders/SphereCollider.h"
-#include "Colliders/BoxCollider.h"
-#include "Colliders/CylinderCollider.h"
-#include "Colliders/CapsuleCollider.h"
-#include "Colliders/MeshCollider.h"
+#include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
 
-class BodyComponent : public Component {};
+class CapsuleCollider : public Component
+{
+public:
+    static constexpr ComponentMode Mode = ComponentMode::Static;
+
+    Float3  OffsetPosition;
+    Quat    OffsetRotation;
+    float   Radius = 0.5f;
+    float   Height = 1.0f;
+};
+
+namespace ComponentMeta
+{
+    template <>
+    constexpr ObjectStorageType ComponentStorageType<CapsuleCollider>()
+    {
+        return ObjectStorageType::Sparse;
+    }
+}
 
 HK_NAMESPACE_END

@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "TriggerComponent.h"
 #include <Engine/World/Modules/Physics/PhysicsInterfaceImpl.h>
-#include <Engine/World/Modules/Physics/CollisionModel.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -42,23 +41,31 @@ void TriggerComponent::BeginPlay()
     m_UserData = physics->CreateUserData();
     m_UserData->Initialize(this);
 
-    JPH::BodyCreationSettings settings;
-    settings.SetShape(m_CollisionModel->Instatiate(owner->GetWorldScale()));
-    settings.mPosition = ConvertVector(owner->GetWorldPosition());
-    settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
-    settings.mUserData = (size_t)m_UserData;
-    settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Trigger);
+    CreateCollisionSettings collisionSettings;
+    collisionSettings.Object = GetOwner();
+    collisionSettings.ConvexOnly = false;
 
-    // Motion type устанавливаем Kinematic, чтобы не срабатывали "OnEndOverlap" на заснувших объектах
-    settings.mMotionType = JPH::EMotionType::Kinematic;//owner->IsDynamic() ? JPH::EMotionType::Kinematic : JPH::EMotionType::Static;
-    settings.mIsSensor = true;
+    ScalingMode scalingMode;
+    if (physics->CreateCollision(collisionSettings, m_Shape, scalingMode))
+    {
+        JPH::BodyCreationSettings settings;
+        settings.SetShape(physics->CreateScaledShape(scalingMode, m_Shape, owner->GetWorldScale()));
+        settings.mPosition = ConvertVector(owner->GetWorldPosition());
+        settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
+        settings.mUserData = (size_t)m_UserData;
+        settings.mObjectLayer = MakeObjectLayer(CollisionLayer, BroadphaseLayer::Trigger);
 
-    auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+        // Motion type устанавливаем Kinematic, чтобы не срабатывали "OnEndOverlap" на заснувших объектах
+        settings.mMotionType = JPH::EMotionType::Kinematic;//owner->IsDynamic() ? JPH::EMotionType::Kinematic : JPH::EMotionType::Static;
+        settings.mIsSensor = true;
 
-    JPH::Body* body = bodyInterface.CreateBody(settings);
-    m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
+        auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
 
-    physics->QueueToAdd(body, false);
+        JPH::Body* body = bodyInterface.CreateBody(settings);
+        m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
+
+        physics->QueueToAdd(body, false);
+    }
 
     if (owner->IsDynamic())
     {
@@ -95,6 +102,12 @@ void TriggerComponent::EndPlay()
 
         bodyInterface.DestroyBody(bodyID);
         m_BodyID.ID = JPH::BodyID::cInvalidBodyID;
+    }
+
+    if (m_Shape)
+    {
+        m_Shape->Release();
+        m_Shape = nullptr;
     }
 
     physics->DeleteUserData(m_UserData);

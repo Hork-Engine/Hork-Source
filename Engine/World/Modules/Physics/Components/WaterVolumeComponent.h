@@ -45,8 +45,8 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
+    uint8_t                 CollisionLayer = 0;
     Float3                  HalfExtents{0.5f};
-    uint8_t                 m_CollisionLayer = 0;
 };
 
 namespace ComponentMeta

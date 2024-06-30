@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "StaticBodyComponent.h"
 #include <Engine/World/Modules/Physics/PhysicsInterfaceImpl.h>
-#include <Engine/World/Modules/Physics/CollisionModel.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -42,26 +41,34 @@ void StaticBodyComponent::BeginPlay()
     m_UserData = physics->CreateUserData();
     m_UserData->Initialize(this);
 
-    m_CachedScale = owner->GetWorldScale();
-    
-    JPH::BodyCreationSettings settings;
-    settings.SetShape(m_CollisionModel->Instatiate(m_CachedScale));
-    settings.mPosition = ConvertVector(owner->GetWorldPosition());
-    settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
-    settings.mUserData = (size_t)m_UserData;
-    settings.mObjectLayer = MakeObjectLayer(m_CollisionLayer, BroadphaseLayer::Static);
-    settings.mMotionType = JPH::EMotionType::Static;
-    settings.mAllowDynamicOrKinematic = false;
-    settings.mIsSensor = false;
-    settings.mFriction = Material.Friction;
-    settings.mRestitution = Material.Restitution;
+    CreateCollisionSettings collisionSettings;
+    collisionSettings.Object = GetOwner();
+    collisionSettings.ConvexOnly = false;
 
-    auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+    ScalingMode scalingMode;
+    if (physics->CreateCollision(collisionSettings, m_Shape, scalingMode))
+    {
+        JPH::BodyCreationSettings settings;
+        settings.SetShape(physics->CreateScaledShape(scalingMode, m_Shape, owner->GetWorldScale()));
+        settings.mPosition = ConvertVector(owner->GetWorldPosition());
+        settings.mRotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
+        settings.mUserData = (size_t)m_UserData;
+        settings.mObjectLayer = MakeObjectLayer(CollisionLayer, BroadphaseLayer::Static);
+        settings.mMotionType = JPH::EMotionType::Static;
+        settings.mAllowDynamicOrKinematic = false;
+        settings.mIsSensor = false;
+        settings.mFriction = Material.Friction;
+        settings.mRestitution = Material.Restitution;
 
-    JPH::Body* body = bodyInterface.CreateBody(settings);
-    m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
+        //settings.mEnhancedInternalEdgeRemoval = true;
 
-    physics->QueueToAdd(body, true);
+        auto& bodyInterface = physics->m_PhysSystem.GetBodyInterface();
+
+        JPH::Body* body = bodyInterface.CreateBody(settings);
+        m_BodyID = PhysBodyID(body->GetID().GetIndexAndSequenceNumber());
+
+        physics->QueueToAdd(body, true);
+    }
 }
 
 void StaticBodyComponent::EndPlay()
@@ -80,13 +87,23 @@ void StaticBodyComponent::EndPlay()
         m_BodyID.ID = JPH::BodyID::cInvalidBodyID;
     }
 
+    if (m_Shape)
+    {
+        m_Shape->Release();
+        m_Shape = nullptr;
+    }
+
     physics->DeleteUserData(m_UserData);
     m_UserData = nullptr;
 }
 
 void StaticBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices)
 {
-    if (!m_CollisionModel)
+    JPH::BodyID bodyID(m_BodyID.ID);
+    if (bodyID.IsInvalid())
+        return;
+
+    if (!m_Shape)
         return;
 
     PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
@@ -94,13 +111,13 @@ void StaticBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint32
 
     JPH::Vec3 position;
     JPH::Quat rotation;
-    bodyInterface.GetPositionAndRotation(JPH::BodyID(m_BodyID.ID), position, rotation);
+    bodyInterface.GetPositionAndRotation(bodyID, position, rotation);
 
     Float3x4 transformMatrix;
-    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3(), m_CollisionModel->GetValidScale(m_CachedScale));
+    transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
     auto firstVert = vertices.Size();
-    m_CollisionModel->GatherGeometry(vertices, indices);
+    PhysicsInterfaceImpl::GatherShapeGeometry(bodyInterface.GetShape(bodyID), vertices, indices);
 
     if (firstVert != vertices.Size())
         TransformVertices(&vertices[firstVert], vertices.Size() - firstVert, transformMatrix);

@@ -34,14 +34,16 @@ SOFTWARE.
 
 #include "BodyComponent.h"
 
-HK_NAMESPACE_BEGIN
+namespace JPH
+{
+    class Shape;
+}
 
-class CollisionModel;
+HK_NAMESPACE_BEGIN
 
 class TriggerComponent final : public BodyComponent
 {
     friend class PhysicsInterface;
-    friend class ContactListener;
 
 public:
     //
@@ -54,13 +56,8 @@ public:
     // Initial properties
     //
 
-    /// Collision model of the body
-    Ref<CollisionModel>     m_CollisionModel;
-
     /// The collision layer this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = 0;
-
-    //uint32_t              m_ObjectFilterID = ~0u;
+    uint8_t                 CollisionLayer = 0;
 
     void                    BeginPlay();
     void                    EndPlay();
@@ -68,6 +65,7 @@ public:
 private:
     PhysBodyID              m_BodyID;
     class BodyUserData*     m_UserData = nullptr;
+    JPH::Shape*             m_Shape = nullptr;
 };
 
 namespace ComponentMeta

@@ -35,14 +35,15 @@ SOFTWARE.
 
 #include "BodyComponent.h"
 
-HK_NAMESPACE_BEGIN
+namespace JPH
+{
+    class Shape;
+}
 
-class CollisionModel;
+HK_NAMESPACE_BEGIN
 
 class StaticBodyComponent final : public BodyComponent
 {
-    friend class PhysicsInterface;
-
 public:
     //
     // Meta info
@@ -54,13 +55,8 @@ public:
     // Initial properties
     //
 
-    /// Collision model of the body
-    Ref<CollisionModel>     m_CollisionModel;
-
     /// The collision layer this body belongs to (determines if two objects can collide)
-    uint8_t                 m_CollisionLayer = 0;
-
-    //uint32_t              m_ObjectFilterID = ~0u;
+    uint8_t                 CollisionLayer = 0;
 
     PhysicsMaterial         Material;
 
@@ -73,8 +69,8 @@ public:
 
 private:
     PhysBodyID              m_BodyID;
-    Float3                  m_CachedScale;
     class BodyUserData*     m_UserData = nullptr;
+    JPH::Shape*             m_Shape = nullptr;
 };
 
 namespace ComponentMeta
