@@ -4,6 +4,12 @@ Game engine
 
 Developed for Quake-style 3D games, but it is possible to create games of other genres.
 
+Samples can be found here:\
+https://github.com/Hork-Engine/Hork-Samples
+
+Old version of the engine:\
+https://github.com/Hork-Engine/Hork-Source-Archive
+
 # Features
 
 ## Technical information
