@@ -99,6 +99,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * muFFT
 * nanovg
 * Optick
+* ozz-animation
 * Recast & Detour
 * SDL2
 * stb
@@ -108,7 +109,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * SMAA
 * half.c
 
-See [details](ThridParty.md).
+See [details](ThirdParty.md).
 
 
 ## Contributing

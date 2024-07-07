@@ -91,6 +91,10 @@ message(STATUS "FAST_OBJ.................................")
 add_subdirectory_with_folder("ThirdParty" fast_obj)
 install_thirdparty_includes(fast_obj/ fast_obj)
 
+message(STATUS "OZZ.................................")
+add_subdirectory_with_folder("ThirdParty/Ozz" ozz)
+install_thirdparty_includes(ozz/include/ozz ozz)
+
 message(STATUS "MIKKTSPACE.................................")
 add_subdirectory_with_folder("ThirdParty" MikkTSpace)
 install_thirdparty_includes(MikkTSpace/ MikkTSpace)
