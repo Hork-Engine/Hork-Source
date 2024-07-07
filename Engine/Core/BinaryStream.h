@@ -234,6 +234,13 @@ public:
         return i;
     }
 
+    Half ReadHalf()
+    {
+        Half hf;
+        hf.v = ReadUInt16();
+        return hf;
+    }
+
     float ReadFloat()
     {
         float f;
@@ -413,6 +420,11 @@ public:
     {
         i = Core::LittleDDWord(i);
         Write(&i, sizeof(i));
+    }
+
+    void WriteHalf(Half hf)
+    {
+        WriteUInt16(hf.v);
     }
 
     void WriteFloat(float f)
