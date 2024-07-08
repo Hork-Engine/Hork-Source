@@ -45,7 +45,6 @@ SOFTWARE.
 #include <Engine/Core/Logger.h>
 #include <Engine/Core/Profiler.h>
 
-#include <Engine/Assets/Asset.h>
 #include <Engine/Image/ImageEncoders.h>
 
 HK_NAMESPACE_BEGIN
@@ -61,7 +60,7 @@ ConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
 ConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
 ConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
 ConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
-ConsoleVar r_ToneExposure("r_ToneExposure"s, "0.4"s);
+ConsoleVar r_ToneExposure("r_ToneExposure"s, "1.0"s);
 ConsoleVar r_Brightness("r_Brightness"s, "1"s);
 ConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
 ConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
@@ -804,6 +803,9 @@ bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, St
         LOG("Failed to write {}\n", EnvmapFile);
         return false;
     }
+
+    constexpr uint32_t ASSET_ENVMAP = 8;
+    constexpr uint32_t ASSET_VERSION_ENVMAP = 2;
 
     f.WriteUInt32(ASSET_ENVMAP);
     f.WriteUInt32(ASSET_VERSION_ENVMAP);

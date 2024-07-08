@@ -88,7 +88,6 @@ add_subdirectory_with_folder("ThirdParty" cgltf)
 install_thirdparty_includes(cgltf/ cgltf)
 
 message(STATUS "FAST_OBJ.................................")
-add_subdirectory_with_folder("ThirdParty" fast_obj)
 install_thirdparty_includes(fast_obj/ fast_obj)
 
 message(STATUS "OZZ.................................")
