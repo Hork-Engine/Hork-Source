@@ -41,6 +41,7 @@ ConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
 ConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
 ConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
 ConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
+ConsoleVar in_GamepadAxisPressThreshold("in_GamepadAxisPressThreshold"s, "0.5"s);
 
 InputSystem::InputSystem()
 {
@@ -235,7 +236,9 @@ void InputSystem::SetGamepadAxis(GamepadAxis axis, float value, PlayerController
 
     if (m_InputMappings)
     {
-        if (value == 1.0f && oldValue != 1.0f)
+        float pressThreshold = in_GamepadAxisPressThreshold.GetFloat();
+
+        if (value > pressThreshold && oldValue <= pressThreshold)
         {
             VirtualMapping virtMapping;
             bool isBinded = m_InputMappings->GetGamepadMapping(player, axis, virtMapping);
@@ -248,7 +251,7 @@ void InputSystem::SetGamepadAxis(GamepadAxis axis, float value, PlayerController
                 action.IsPressed = true;
             }
         }
-        else if (value != 1.0f && oldValue == 1.0f)
+        else if (value <= pressThreshold && oldValue > pressThreshold)
         {
             VirtualMapping virtMapping;
             bool isBinded = m_InputMappings->GetGamepadMapping(player, axis, virtMapping);
