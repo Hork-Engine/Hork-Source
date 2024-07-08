@@ -139,6 +139,71 @@ bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* Ind
     return true;
 }
 
+bool CalcTangentSpaceMikkTSpace(Float3 const* Positions, Float2 const* TexCoords, Float3 const* Normals, Float4* Tangents, unsigned int const* IndexArray, unsigned int NumIndices)
+{
+    struct GeometryData
+    {
+        Float3 const* Positions;
+        Float2 const* TexCoords;
+        Float3 const* Normals;
+        Float4* Tangents;
+
+        unsigned int const* IndexArray;
+        unsigned int NumFaces;
+    };
+
+    GeometryData data;
+    data.Positions = Positions;
+    data.TexCoords = TexCoords;
+    data.Normals = Normals;
+    data.Tangents = Tangents;
+    data.IndexArray = IndexArray;
+    data.NumFaces = NumIndices / 3;
+
+    SMikkTSpaceInterface iface = {};
+    iface.m_getNumFaces = [](SMikkTSpaceContext const* context) -> int
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        return data->NumFaces;
+    };
+    iface.m_getNumVerticesOfFace = [](SMikkTSpaceContext const* context, const int faceNum) -> int
+    {
+        return 3;
+    };
+    iface.m_getPosition = [](SMikkTSpaceContext const* context, float posOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        *((Float3*)&posOut[0]) = data->Positions[data->IndexArray[faceNum * 3 + vertNum]];
+    };
+    iface.m_getNormal = [](SMikkTSpaceContext const* context, float normOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        *((Float3*)&normOut[0]) = data->Normals[data->IndexArray[faceNum * 3 + vertNum]];
+    };
+    iface.m_getTexCoord = [](SMikkTSpaceContext const* context, float texCoordOut[], const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        *((Float2*)&texCoordOut[0]) = data->TexCoords[data->IndexArray[faceNum * 3 + vertNum]];
+    };
+    iface.m_setTSpaceBasic = [](SMikkTSpaceContext const* context, const float tangent[], const float fSign, const int faceNum, const int vertNum)
+    {
+        GeometryData* data = (GeometryData*)context->m_pUserData;
+        Float4& outTangent = data->Tangents[data->IndexArray[faceNum * 3 + vertNum]];
+        outTangent[0] = tangent[0];
+        outTangent[1] = tangent[1];
+        outTangent[2] = tangent[2];
+        outTangent[3] = fSign;
+    };
+
+    SMikkTSpaceContext ctx{&iface, &data};
+    if (!genTangSpaceDefault(&ctx))
+    {
+        LOG("Failed on tangent space calculation\n");
+        return false;
+    }
+    return true;
+}
+
 } // namespace Geometry
 
 HK_NAMESPACE_END

@@ -40,6 +40,7 @@ namespace Geometry
 void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices);
 
 bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* IndexArray, unsigned int NumIndices);
+bool CalcTangentSpaceMikkTSpace(Float3 const* Positions, Float2 const* TexCoords, Float3 const* Normals, Float4* Tangents, unsigned int const* IndexArray, unsigned int NumIndices);
 
 HK_FORCEINLINE void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
 {
@@ -49,6 +50,11 @@ HK_FORCEINLINE void CalcTangentSpace(MeshVertex* VertexArray, unsigned int NumVe
     #else
     CalcTangentSpaceLegacy(VertexArray, NumVerts, IndexArray, NumIndices);
     #endif
+}
+
+HK_FORCEINLINE void CalcTangentSpace(Float3 const* Positions, Float2 const* TexCoords, Float3 const* Normals, Float4* Tangents, unsigned int const* IndexArray, unsigned int NumIndices)
+{
+    CalcTangentSpaceMikkTSpace(Positions, TexCoords, Normals, Tangents, IndexArray, NumIndices);
 }
 
 /** binormal = cross( normal, tangent ) * handedness */
