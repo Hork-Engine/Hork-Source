@@ -33,12 +33,12 @@ layout( location = 0 ) in vec3 GS_Barycentric;
 
 void main() {
 #ifdef SKINNED_MESH
-    const vec4 Color = vec4(0.5,0.5,1.0,0.5);
+    const vec4 Color = vec4(0.5,0.5,1.0,0.9);
 #else
 #ifdef HAS_VERTEX_DEFORM
-    const vec4 Color = vec4(1.0,1.0,0.0,0.5);
+    const vec4 Color = vec4(1.0,1.0,0.0,0.9);
 #else
-    const vec4 Color = vec4(0.5,1.0,0.5,0.5);
+    const vec4 Color = vec4(0.5,1.0,0.5,0.9);
 #endif
 #endif
     const float LineWidth = 1.5;
