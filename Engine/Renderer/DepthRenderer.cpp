@@ -44,7 +44,7 @@ static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, RenderInstanc
     int bSkinned = instance->SkeletonSize > 0;
 
     IPipeline* pPipeline;
-    if (GRenderView->bAllowMotionBlur && instance->GetGeometryPriority() == RENDERING_GEOMETRY_PRIORITY_DYNAMIC)
+    if (GRenderView->bAllowMotionBlur && instance->bPerObjectMotionBlur)
     {
         pPipeline = pMaterial->DepthVelocityPass[bSkinned];
     }

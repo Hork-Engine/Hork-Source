@@ -757,6 +757,8 @@ struct RenderInstance
     unsigned int StartIndexLocation;
     int          BaseVertexLocation;
 
+    bool bPerObjectMotionBlur;
+
     uint64_t SortKey;
 
     uint8_t GetRenderingPriority() const
