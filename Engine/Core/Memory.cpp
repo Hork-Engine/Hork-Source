@@ -439,7 +439,10 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
 
 void* MemoryHeap::Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
 {
-    HK_VERIFY(SizeInBytes != 0, "MemoryAlloc: Invalid bytes count\n");
+    HK_IF_NOT_ASSERT(SizeInBytes != 0)
+    {
+        SizeInBytes = 1;
+    }
 
     void* Ptr = _Alloc(SizeInBytes, Alignment, Flags);
     if (HK_UNLIKELY(!Ptr))
@@ -449,7 +452,10 @@ void* MemoryHeap::Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags
 
 void* MemoryHeap::Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
 {
-    HK_VERIFY(SizeInBytes != 0, "MemoryAlloc: Invalid bytes count\n");
+    HK_IF_NOT_ASSERT(SizeInBytes != 0)
+    {
+        SizeInBytes = 1;
+    }
 
     Ptr = _Realloc(Ptr, SizeInBytes, Alignment, Flags);
     if (HK_UNLIKELY(!Ptr))
