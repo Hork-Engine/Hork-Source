@@ -32,13 +32,13 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ObjectStorage() :
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::ObjectStorage() :
     m_Data(sizeof(T))
 {}
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ObjectStorage(ObjectStorage&& rhs) noexcept :
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::ObjectStorage(ObjectStorage&& rhs) noexcept :
     m_Data(std::move(rhs.m_Data)),
     m_Size(rhs.m_Size),
     m_RandomAccess(std::move(rhs.m_RandomAccess)),
@@ -48,14 +48,14 @@ HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ObjectStorage(ObjectStor
     rhs.m_FreeListHead = 0;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::~ObjectStorage()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::~ObjectStorage()
 {
     Clear();
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>& ObjectStorage<T, PageSize, StorageType>::operator=(ObjectStorage&& rhs) noexcept
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>& ObjectStorage<T, PageSize, StorageType, Heap>::operator=(ObjectStorage&& rhs) noexcept
 {
     m_Data = std::move(rhs.m_Data);
     m_Size = rhs.m_Size;
@@ -66,8 +66,8 @@ HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>& ObjectStorage<T, PageSiz
     return *this;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_INLINE Handle32<T> ObjectStorage<T, PageSize, StorageType>::CreateObject(T*& newObject)
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_INLINE Handle32<T> ObjectStorage<T, PageSize, StorageType, Heap>::CreateObject(T*& newObject)
 {
     static_assert(sizeof(T) >= sizeof(m_FreeListHead), "The size of the object must be greater than or equal to sizeof(uint32_t)");
 
@@ -115,17 +115,17 @@ HK_INLINE Handle32<T> ObjectStorage<T, PageSize, StorageType>::CreateObject(T*& 
     return Handle32<T>(handleID, 1);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename HandleFetcher>
-HK_INLINE void ObjectStorage<T, PageSize, StorageType>::DestroyObject(Handle32<T> handle)
+HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(Handle32<T> handle)
 {
     T* movedObject;
     DestroyObject<HandleFetcher>(handle, movedObject);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename HandleFetcher>
-HK_INLINE void ObjectStorage<T, PageSize, StorageType>::DestroyObject(Handle32<T> handle, T*& movedObject)
+HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(Handle32<T> handle, T*& movedObject)
 {
     uint32_t handleID = handle.GetID();
     HK_ASSERT(m_RandomAccess[handleID]);
@@ -182,20 +182,20 @@ HK_INLINE void ObjectStorage<T, PageSize, StorageType>::DestroyObject(Handle32<T
     }
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE T* ObjectStorage<T, PageSize, StorageType>::GetObject(Handle32<T> handle)
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE T* ObjectStorage<T, PageSize, StorageType, Heap>::GetObject(Handle32<T> handle)
 {
     return m_RandomAccess[handle.GetID()];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE T const* ObjectStorage<T, PageSize, StorageType>::GetObject(Handle32<T> handle) const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE T const* ObjectStorage<T, PageSize, StorageType, Heap>::GetObject(Handle32<T> handle) const
 {
     return m_RandomAccess[handle.GetID()];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::Clear()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::Clear()
 {
     if constexpr (std::is_trivially_destructible_v<T>)
     {
@@ -232,33 +232,33 @@ HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::Clear()
     m_FreeListHead = 0;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType>::IsEmpty() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType, Heap>::IsEmpty() const
 {
     return m_Size == 0;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType>::Size() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType, Heap>::Size() const
 {
     return m_Size;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType>::Capacity() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType, Heap>::Capacity() const
 {
     return m_Data.GetPageCount() * PageSize;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType>::GetPageCount() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType, Heap>::GetPageCount() const
 {
     return m_Data.GetPageCount();
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor, bool IsConst>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::_Iterate(Visitor& visitor)
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::_Iterate(Visitor& visitor)
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
     {
@@ -307,9 +307,9 @@ HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::_Iterate(Visitor& v
     }
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor, bool IsConst>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::_IterateBatches(Visitor& visitor)
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::_IterateBatches(Visitor& visitor)
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
     {
@@ -376,36 +376,36 @@ HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::_IterateBatches(Vis
     }
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::Iterate(Visitor& visitor)
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::Iterate(Visitor& visitor)
 {
     _Iterate<Visitor, false>(visitor);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::Iterate(Visitor& visitor) const
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::Iterate(Visitor& visitor) const
 {
-    const_cast<ObjectStorage<T, PageSize, StorageType>*>(this)->_Iterate<Visitor, true>(visitor);
+    const_cast<ObjectStorage<T, PageSize, StorageType, Heap>*>(this)->_Iterate<Visitor, true>(visitor);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::IterateBatches(Visitor& visitor)
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::IterateBatches(Visitor& visitor)
 {
     _IterateBatches<Visitor, false>(visitor);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename Visitor>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::IterateBatches(Visitor& visitor) const
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::IterateBatches(Visitor& visitor) const
 {
-    const_cast<ObjectStorage<T, PageSize, StorageType>*>(this)->_IterateBatches<Visitor, true>(visitor);
+    const_cast<ObjectStorage<T, PageSize, StorageType, Heap>*>(this)->_IterateBatches<Visitor, true>(visitor);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType>::Iterator ObjectStorage<T, PageSize, StorageType>::GetObjects()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType, Heap>::Iterator ObjectStorage<T, PageSize, StorageType, Heap>::GetObjects()
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return Iterator(0, m_Size, *this);
@@ -413,8 +413,8 @@ HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType>::Iterator Object
         return Iterator(0, m_RandomAccess.Size(), *this);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType>::ConstIterator ObjectStorage<T, PageSize, StorageType>::GetObjects() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator ObjectStorage<T, PageSize, StorageType, Heap>::GetObjects() const
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return ConstIterator(0, m_Size, *this);
@@ -422,13 +422,13 @@ HK_FORCEINLINE typename ObjectStorage<T, PageSize, StorageType>::ConstIterator O
         return ConstIterator(0, m_RandomAccess.Size(), *this);
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::Iterator::Iterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType>& storage) :
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::Iterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType, Heap>& storage) :
     m_Index(startIndex), m_EndIndex(endIndex), m_Storage(storage)
 {}
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE T* ObjectStorage<T, PageSize, StorageType>::Iterator::operator->()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE T* ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::operator->()
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return reinterpret_cast<T*>(m_Storage.m_Data.GetAddress(m_Index));
@@ -436,8 +436,8 @@ HK_FORCEINLINE T* ObjectStorage<T, PageSize, StorageType>::Iterator::operator->(
         return m_Storage.m_RandomAccess[m_Index];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::Iterator::operator T*()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::operator T*()
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return reinterpret_cast<T*>(m_Storage.m_Data.GetAddress(m_Index));
@@ -445,31 +445,31 @@ HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::Iterator::operator T*()
         return m_Storage.m_RandomAccess[m_Index];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType>::Iterator::IsValid() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::IsValid() const
 {
     return m_Index < m_EndIndex;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType>::Iterator::GetIndex() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::GetIndex() const
 {
     return m_Index;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::Iterator::operator++()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::Iterator::operator++()
 {
     ++m_Index;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ConstIterator::ConstIterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType> const& storage) :
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::ConstIterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType, Heap> const& storage) :
     m_Index(startIndex), m_EndIndex(endIndex), m_Storage(storage)
 {}
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE T const* ObjectStorage<T, PageSize, StorageType>::ConstIterator::operator->() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE T const* ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::operator->() const
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return reinterpret_cast<T*>(m_Storage.m_Data.GetAddress(m_Index));
@@ -477,8 +477,8 @@ HK_FORCEINLINE T const* ObjectStorage<T, PageSize, StorageType>::ConstIterator::
         return m_Storage.m_RandomAccess[m_Index];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ConstIterator::operator T const*() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::operator T const*() const
 {
     if constexpr (StorageType == ObjectStorageType::Compact)
         return reinterpret_cast<T*>(m_Storage.m_Data.GetAddress(m_Index));
@@ -486,26 +486,26 @@ HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType>::ConstIterator::operator 
         return m_Storage.m_RandomAccess[m_Index];
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType>::ConstIterator::IsValid() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE bool ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::IsValid() const
 {
     return m_Index < m_EndIndex;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType>::ConstIterator::GetIndex() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::GetIndex() const
 {
     return m_Index;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType>::ConstIterator::operator++()
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE void ObjectStorage<T, PageSize, StorageType, Heap>::ConstIterator::operator++()
 {
     ++m_Index;
 }
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
-HK_FORCEINLINE Vector<T*> const& ObjectStorage<T, PageSize, StorageType>::GetRandomAccessTable() const
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
+HK_FORCEINLINE Vector<T*> const& ObjectStorage<T, PageSize, StorageType, Heap>::GetRandomAccessTable() const
 {
     return m_RandomAccess;
 }

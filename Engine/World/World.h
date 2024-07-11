@@ -145,7 +145,7 @@ private:
         Unpause
     };
 
-    using GameObjectStorage = ObjectStorage<GameObject, 64, ObjectStorageType::Compact>;
+    using GameObjectStorage = ObjectStorage<GameObject, 64, ObjectStorageType::Compact, HEAP_WORLD_OBJECTS>;
 
     GameObjectStorage           m_ObjectStorage;
     Vector<ComponentManagerBase*> m_ComponentManagers;

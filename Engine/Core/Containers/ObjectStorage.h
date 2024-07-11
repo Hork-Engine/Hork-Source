@@ -41,7 +41,7 @@ enum class ObjectStorageType
     Sparse
 };
 
-template <typename T, uint32_t PageSize, ObjectStorageType StorageType>
+template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 class ObjectStorage final
 {
 public:
@@ -92,10 +92,10 @@ public:
     private:
         uint32_t    m_Index;
         uint32_t    m_EndIndex;
-        ObjectStorage<T, PageSize, StorageType>& m_Storage;
+        ObjectStorage<T, PageSize, StorageType, Heap>& m_Storage;
 
     public:
-                    Iterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType>& storage);
+                    Iterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType, Heap>& storage);
 
         T*          operator->();
 
@@ -113,10 +113,10 @@ public:
     private:
         uint32_t    m_Index;
         uint32_t    m_EndIndex;
-        ObjectStorage<T, PageSize, StorageType> const& m_Storage;
+        ObjectStorage<T, PageSize, StorageType, Heap> const& m_Storage;
 
     public:
-                    ConstIterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType> const& storage);
+                    ConstIterator(uint32_t startIndex, uint32_t endIndex, ObjectStorage<T, PageSize, StorageType, Heap> const& storage);
 
         T const*    operator->() const;
 
@@ -141,7 +141,7 @@ private:
     template <typename Visitor, bool IsConst>
     void            _IterateBatches(Visitor& visitor);
 
-    PageAllocator<PageSize> m_Data;
+    PageAllocator<PageSize, Heap> m_Data;
     Vector<T*>      m_RandomAccess;
     uint32_t        m_Size = 0;
     uint32_t        m_FreeListHead = 0;

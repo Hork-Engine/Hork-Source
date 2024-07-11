@@ -57,7 +57,7 @@ class GameObject final
 {
     friend class World;
     friend class ComponentManagerBase;
-    friend class ObjectStorage<GameObject, 64, ObjectStorageType::Compact>;
+    friend class ObjectStorage<GameObject, 64, ObjectStorageType::Compact, HEAP_WORLD_OBJECTS>;
 
 public:
     enum

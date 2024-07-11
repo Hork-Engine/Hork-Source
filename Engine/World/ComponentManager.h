@@ -95,7 +95,7 @@ class ComponentManager final : public ComponentManagerBase
 public:
     static constexpr ObjectStorageType StorageType = ComponentMeta::ComponentStorageType<ComponentType>();
 
-    using ComponentStorage = ObjectStorage<ComponentType, 64, StorageType>;
+    using ComponentStorage = ObjectStorage<ComponentType, 64, StorageType, HEAP_WORLD_OBJECTS>;
 
     Handle32<ComponentType> CreateComponent(GameObject* gameObject);
 

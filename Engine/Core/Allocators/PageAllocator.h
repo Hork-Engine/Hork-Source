@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-template <size_t _PageSize = 64>
+template <size_t _PageSize = 64, MEMORY_HEAP Heap = HEAP_MISC>
 class PageAllocator final : Noncopyable
 {
     struct Page
@@ -65,40 +65,40 @@ public:
     void*           GetAddress(uint32_t index) const;
 };
 
-template <size_t _PageSize>
-HK_FORCEINLINE PageAllocator<_PageSize>::PageAllocator(size_t typeSize) :
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE PageAllocator<_PageSize, Heap>::PageAllocator(size_t typeSize) :
     m_TypeSize(typeSize)
 {}
 
-template <size_t _PageSize>
-HK_FORCEINLINE PageAllocator<_PageSize>::PageAllocator(PageAllocator&& rhs) noexcept :
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE PageAllocator<_PageSize, Heap>::PageAllocator(PageAllocator&& rhs) noexcept :
     m_Pages(std::move(rhs.m_Pages)),
     m_TypeSize(rhs.m_TypeSize)
 {}
 
-template <size_t _PageSize>
-HK_FORCEINLINE PageAllocator<_PageSize>::~PageAllocator()
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE PageAllocator<_PageSize, Heap>::~PageAllocator()
 {
     for (Page& page : m_Pages)
-        Core::GetHeapAllocator<HEAP_MISC>().Free(page.Data);
+        Core::GetHeapAllocator<Heap>().Free(page.Data);
 }
 
-template <size_t _PageSize>
-HK_FORCEINLINE PageAllocator<_PageSize>& PageAllocator<_PageSize>::operator=(PageAllocator&& rhs) noexcept
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE PageAllocator<_PageSize, Heap>& PageAllocator<_PageSize, Heap>::operator=(PageAllocator&& rhs) noexcept
 {
     m_Pages = std::move(rhs.m_Pages);
     m_TypeSize = rhs.m_TypeSize;
     return *this;
 }
 
-template <size_t _PageSize>
-HK_FORCEINLINE uint32_t PageAllocator<_PageSize>::GetPageCount() const
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE uint32_t PageAllocator<_PageSize, Heap>::GetPageCount() const
 {
     return m_Pages.Size();
 }
 
-template <size_t _PageSize>
-HK_INLINE void PageAllocator<_PageSize>::Grow(uint32_t count)
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_INLINE void PageAllocator<_PageSize, Heap>::Grow(uint32_t count)
 {
     HK_ASSERT(count > 0);
 
@@ -115,12 +115,12 @@ HK_INLINE void PageAllocator<_PageSize>::Grow(uint32_t count)
     {
         m_Pages.Resize(pageCount);
         for (uint32_t i = curPageCount ; i < pageCount ; ++i)
-            m_Pages[i].Data = Core::GetHeapAllocator<HEAP_MISC>().Alloc(pageSizeInBytes, alignment);
+            m_Pages[i].Data = Core::GetHeapAllocator<Heap>().Alloc(pageSizeInBytes, alignment);
     }
 }
 
-template <size_t _PageSize>
-HK_INLINE void PageAllocator<_PageSize>::Shrink(uint32_t count)
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_INLINE void PageAllocator<_PageSize, Heap>::Shrink(uint32_t count)
 {
     count = std::min(size_t(count), m_Pages.Size() * _PageSize);
 
@@ -131,20 +131,20 @@ HK_INLINE void PageAllocator<_PageSize>::Shrink(uint32_t count)
     uint32_t pagesToRemove = m_Pages.Size() - pageCount;
     while (pagesToRemove > 0)
     {
-        Core::GetHeapAllocator<HEAP_MISC>().Free(m_Pages.Last().Data);
+        Core::GetHeapAllocator<Heap>().Free(m_Pages.Last().Data);
         m_Pages.RemoveLast();
         --pagesToRemove;
     }
 }
 
-template <size_t _PageSize>
-HK_FORCEINLINE void* PageAllocator<_PageSize>::GetPageAddress(uint32_t pageIndex) const
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE void* PageAllocator<_PageSize, Heap>::GetPageAddress(uint32_t pageIndex) const
 {
     return m_Pages[pageIndex].Data;
 }
 
-template <size_t _PageSize>
-HK_FORCEINLINE void* PageAllocator<_PageSize>::GetAddress(uint32_t index) const
+template <size_t _PageSize, MEMORY_HEAP Heap>
+HK_FORCEINLINE void* PageAllocator<_PageSize, Heap>::GetAddress(uint32_t index) const
 {
     uint32_t pageIndex = index / _PageSize;
     size_t pageOffset = index - pageIndex * _PageSize;
