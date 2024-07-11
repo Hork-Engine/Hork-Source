@@ -30,59 +30,51 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Modules/Skeleton/SkeletalAnimation.h>
-#include <Engine/World/Resources/Resource_Mesh.h>
-#include <Engine/World/Component.h>
-#include <Engine/World/TickFunction.h>
+#include "ResourceHandle.h"
+#include "ResourceBase.h"
+
+#include <Engine/Geometry/RawMesh.h>
+#include <Engine/Core/Ref.h>
+
+namespace ozz::animation
+{
+    class Animation;
+}
 
 HK_NAMESPACE_BEGIN
 
-class SkinnedMeshComponent final : public Component
+using OzzAnimation = ozz::animation::Animation;
+
+class AnimationResource : public ResourceBase
 {
 public:
-    //
-    // Meta info
-    //
+    static const uint8_t        Type = RESOURCE_ANIMATION;
+    static const uint8_t        Version = 2;
 
-    static constexpr ComponentMode Mode = ComponentMode::Static;
+                                AnimationResource() = default;
+                                ~AnimationResource();
 
-    Ref<AnimationInstance> AnimInstance;
-    Ref<SkeletonPose> Pose;
-    MeshHandle Mesh;
+    static UniqueRef<AnimationResource> Load(IBinaryStreamReadInterface& stream);
 
-    void FixedUpdate()
-    {
-        UpdatePoses();
-    }
+    bool                        Read(IBinaryStreamReadInterface& stream);
+    void                        Write(IBinaryStreamWriteInterface& stream) const;
 
-    void LateUpdate()
-    {
-        UpdateSkins();
-    }
-    
-    void DrawDebug(DebugRenderer& renderer);
+    float                       GetDuration() const;
+
+    OzzAnimation*               GetImpl() { return m_OzzAnimation.RawPtr(); }
 
 private:
-    void UpdatePoses();
-    void UpdateSkins();
+    UniqueRef<OzzAnimation>     m_OzzAnimation;
+
+    friend class                AnimationResourceBuilder;
 };
 
-namespace TickGroup_FixedUpdate
-{
-    template <>
-    HK_INLINE void InitializeTickFunction<SkinnedMeshComponent>(TickFunctionDesc& desc)
-    {
-        desc.Name.FromString("Update Poses");
-    }
-}
+using AnimationHandle = ResourceHandle<AnimationResource>;
 
-namespace TickGroup_LateUpdate
+class AnimationResourceBuilder
 {
-    template <>
-    HK_INLINE void InitializeTickFunction<SkinnedMeshComponent>(TickFunctionDesc& desc)
-    {
-        desc.Name.FromString("Update Skins");
-    }
-}
+public:
+    UniqueRef<AnimationResource> Build(RawAnimation const& rawAnimation, RawSkeleton const& rawSkeleton);
+};
 
 HK_NAMESPACE_END

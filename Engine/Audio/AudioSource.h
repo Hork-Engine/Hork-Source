@@ -38,61 +38,61 @@ HK_NAMESPACE_BEGIN
 class AudioSource final : public InterlockedRef
 {
 public:
-    AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, HeapBlob blob);
-    AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, const void* inFrames);
+                                AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, HeapBlob blob);
+                                AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, const void* inFrames);
 
-    const void*                GetHeapPtr() const { return m_Blob.GetData(); }
+    const void*                 GetHeapPtr() const { return m_Blob.GetData(); }
 
-    size_t                     GetSizeInBytes() const { return m_Blob.Size(); }
+    size_t                      GetSizeInBytes() const { return m_Blob.Size(); }
 
     /// Audio data
-    HK_FORCEINLINE const void* GetFrames() const { return m_Frames; }
+    HK_FORCEINLINE const void*  GetFrames() const { return m_Frames; }
 
     /// Frame count
-    HK_FORCEINLINE int         GetFrameCount() const { return m_FrameCount; }
+    HK_FORCEINLINE int          GetFrameCount() const { return m_FrameCount; }
 
     /// Channels count
-    HK_FORCEINLINE int         GetChannels() const { return m_Channels; }
+    HK_FORCEINLINE int          GetChannels() const { return m_Channels; }
 
     /// Is mono
-    HK_FORCEINLINE bool        IsMono() const { return m_Channels == 1; }
+    HK_FORCEINLINE bool         IsMono() const { return m_Channels == 1; }
 
     /// Is stereo
-    HK_FORCEINLINE bool        IsStereo() const { return m_Channels == 2; }
+    HK_FORCEINLINE bool         IsStereo() const { return m_Channels == 2; }
 
     /// Bits per sample
-    HK_FORCEINLINE int         GetSampleBits() const { return m_SampleBits; }
+    HK_FORCEINLINE int          GetSampleBits() const { return m_SampleBits; }
 
     /// Stride between frames in bytes
-    HK_FORCEINLINE int         GetSampleStride() const { return m_SampleStride; }
+    HK_FORCEINLINE int          GetSampleStride() const { return m_SampleStride; }
 
-    HK_FORCEINLINE int         GetSampleRate() const { return m_SampleRate; }
+    HK_FORCEINLINE int          GetSampleRate() const { return m_SampleRate; }
 
-    HK_FORCEINLINE float       GetDurationInSeconds() const { return static_cast<float>(m_FrameCount) / m_SampleRate; }
+    HK_FORCEINLINE float        GetDurationInSeconds() const { return static_cast<float>(m_FrameCount) / m_SampleRate; }
 
-    HK_FORCEINLINE bool        IsEncoded() const { return m_bIsEncoded; }
+    HK_FORCEINLINE bool         IsEncoded() const { return m_bIsEncoded; }
 
 private:
-    HeapBlob m_Blob;
+    HeapBlob                    m_Blob;
 
-    bool m_bIsEncoded;
+    bool                        m_bIsEncoded;
 
     /// Pointer to first frame
-    void* m_Frames;
+    void*                       m_Frames;
 
     /// Frame count
-    int m_FrameCount;
+    int                         m_FrameCount;
 
     /// Channels count
-    int m_Channels;
+    int                         m_Channels;
 
     /// Bits per sample
-    int m_SampleBits;
+    int                         m_SampleBits;
 
     /// Stride between frames in bytes
-    int m_SampleStride;
+    int                         m_SampleStride;
 
-    int m_SampleRate;
+    int                         m_SampleRate;
 };
 
 HK_NAMESPACE_END

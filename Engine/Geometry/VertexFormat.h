@@ -51,25 +51,29 @@ struct MeshVertex
     void Write(IBinaryStreamWriteInterface& Stream) const
     {
         Stream.WriteObject(Position);
-        Stream.WriteObject(GetTexCoord());
-        Stream.WriteObject(GetTangent());
-        Stream.WriteFloat((float)Handedness);
-        Stream.WriteObject(GetNormal());
+        Stream.WriteHalf(TexCoord[0]);
+        Stream.WriteHalf(TexCoord[1]);
+        Stream.WriteHalf(Normal[0]);
+        Stream.WriteHalf(Normal[1]);
+        Stream.WriteHalf(Normal[2]);
+        Stream.WriteHalf(Tangent[0]);
+        Stream.WriteHalf(Tangent[1]);
+        Stream.WriteHalf(Tangent[2]);
+        Stream.WriteInt8(Handedness);
     }
 
     void Read(IBinaryStreamReadInterface& Stream)
     {
-        Float2 texCoord;
-        Float3 normal;
-        Float3 tangent;
         Stream.ReadObject(Position);
-        Stream.ReadObject(texCoord);
-        Stream.ReadObject(tangent);
-        Handedness = (Stream.ReadFloat() > 0.0f) ? 1 : -1;
-        Stream.ReadObject(normal);
-        SetTexCoord(texCoord);
-        SetNormal(normal);
-        SetTangent(tangent);
+        TexCoord[0] = Stream.ReadHalf();
+        TexCoord[1] = Stream.ReadHalf();
+        Normal[0] = Stream.ReadHalf();
+        Normal[1] = Stream.ReadHalf();
+        Normal[2] = Stream.ReadHalf();
+        Tangent[0] = Stream.ReadHalf();
+        Tangent[1] = Stream.ReadHalf();
+        Tangent[2] = Stream.ReadHalf();
+        Handedness = Stream.ReadInt8();
     }
 
     void SetTexCoord(Half S, Half T)
@@ -230,19 +234,27 @@ HK_FORCEINLINE MeshVertexLight MeshVertexLight::Lerp(MeshVertexLight const& Vert
     return Result;
 }
 
-struct MeshVertexSkin
+struct SkinVertex
 {
-    uint8_t JointIndices[4];
-    uint8_t JointWeights[4];
+    uint16_t    JointIndices[4];
+    uint8_t     JointWeights[4];
 
     void Write(IBinaryStreamWriteInterface& Stream) const
     {
-        Stream.Write(JointIndices, 8);
+        Stream.WriteUInt16(JointIndices[0]);
+        Stream.WriteUInt16(JointIndices[1]);
+        Stream.WriteUInt16(JointIndices[2]);
+        Stream.WriteUInt16(JointIndices[3]);
+        Stream.Write(JointWeights, 4);
     }
 
     void Read(IBinaryStreamReadInterface& Stream)
     {
-        Stream.Read(JointIndices, 8);
+        JointIndices[0] = Stream.ReadUInt16();
+        JointIndices[1] = Stream.ReadUInt16();
+        JointIndices[2] = Stream.ReadUInt16();
+        JointIndices[3] = Stream.ReadUInt16();
+        Stream.Read(JointWeights, 4);
     }
 };
 

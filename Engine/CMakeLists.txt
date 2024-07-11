@@ -26,25 +26,24 @@ source_group("Generated" FILES ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c)
 add_library(${PROJECT_NAME} ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME}
-	EASTL
-	fmt::fmt-header-only
-	HACD
-	vhacd
-	SDL2-static
-	MikkTSpace
-	mimalloc-static
-	miniz
-	fastlz
-	glutess
-	polyclipping
-	tinyexr
-	cgltf
-	fast_obj
-	bc7enc
-	bcdec
-	lunasvg
-	webp
-	OptickCore
+    EASTL
+    fmt::fmt-header-only
+    HACD
+    vhacd
+    SDL2-static
+    MikkTSpace
+    mimalloc-static
+    miniz
+    fastlz
+    glutess
+    polyclipping
+    tinyexr
+    cgltf
+    bc7enc
+    bcdec
+    lunasvg
+    webp
+    OptickCore
 #    BulletSoftBody
 #    BulletDynamics
 #    BulletCollision
@@ -67,6 +66,8 @@ target_link_libraries(${PROJECT_NAME}
     Recast
     muFFT
     miniaudio
+    ozz_animation
+    ozz_animation_offline
 #    ${ANGELSCRIPT_LIBRARY_NAME}
 #    angelscript_addon
 )

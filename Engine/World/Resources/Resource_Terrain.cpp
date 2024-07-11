@@ -110,16 +110,19 @@ void DownsampleHeightMap(int inSourceResolution, const float* inSourceMap, float
     }
 }
 
-TerrainResource::TerrainResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
-
 TerrainResource::~TerrainResource()
 {
 }
 
-bool TerrainResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+UniqueRef<TerrainResource> TerrainResource::Load(IBinaryStreamReadInterface& stream)
+{
+    UniqueRef<TerrainResource> resource = MakeUnique<TerrainResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
+}
+
+bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
 {
     //uint32_t fileMagic = stream.ReadUInt32();
 

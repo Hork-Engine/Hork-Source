@@ -48,11 +48,6 @@ const char* TextureTypeName[] =
 };
 }
 
-TextureResource::TextureResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
-
 TextureResource::~TextureResource()
 {
 }
@@ -62,7 +57,15 @@ TextureResource::TextureResource(ImageStorage image) :
 {
 }
 
-bool TextureResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+UniqueRef<TextureResource> TextureResource::Load(IBinaryStreamReadInterface& stream)
+{
+    UniqueRef<TextureResource> resource = MakeUnique<TextureResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
+}
+
+bool TextureResource::Read(IBinaryStreamReadInterface& stream)
 {
     if (GetImageFileFormat(stream.GetName()) != IMAGE_FILE_FORMAT_UNKNOWN)
     {

@@ -85,7 +85,11 @@ template <typename T>
 ResourceHandle<T> ResourceManager::CreateResourceFromFile(StringView path)
 {
     if (auto file = OpenFile(path))
-        return CreateResource<T>(path, file, this);
+    {
+        UniqueRef<T> resource = T::Load(file);
+        if (resource)
+            return CreateResourceWithData<T>(path, std::move(resource));
+    }
     return CreateResource<T>(path);
 }
 

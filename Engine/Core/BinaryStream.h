@@ -504,52 +504,15 @@ public:
     template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
     void WriteArray(T& Array)
     {
-        using ElementType = typename T::ValueType;
-
-        static_assert(sizeof(ElementType) == 4 || sizeof(ElementType) == 8, "Unsupported integer");
-
         WriteUInt32(Array.Size());
-
-        switch (sizeof(ElementType))
-        {
-            case 1:
-                Write(Array.ToPtr(), Array.Size());
-                break;
-            case 2:
-                for (typename T::SizeType i = 0; i < Array.Size(); i++)
-                    WriteUInt16(Array[i]);
-                break;
-            case 4:
-                for (typename T::SizeType i = 0; i < Array.Size(); i++)
-                    WriteUInt32(Array[i]);
-                break;
-            case 8:
-                for (typename T::SizeType i = 0; i < Array.Size(); i++)
-                    WriteUInt64(Array[i]);
-                break;
-        }
+        WriteWords(Array.ToPtr(), Array.Size());
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
     void WriteArray(T& Array)
     {
-        using ElementType = typename T::ValueType;
-
-        static_assert(sizeof(ElementType) == 4 || sizeof(ElementType) == 8, "Unsupported floating point");
-
         WriteUInt32(Array.Size());
-
-        switch (sizeof(ElementType))
-        {
-            case 4:
-                for (typename T::SizeType i = 0; i < Array.Size(); i++)
-                    WriteFloat(Array[i]);
-                break;
-            case 8:
-                for (typename T::SizeType i = 0; i < Array.Size(); i++)
-                    WriteDouble(Array[i]);
-                break;
-        }
+        WriteFloats(Array.ToPtr(), Array.Size());
     }
 
     template<typename T, std::enable_if_t<!std::is_integral<typename T::ValueType>::value && !std::is_floating_point<typename T::ValueType>::value, bool> = true>

@@ -38,23 +38,32 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
 
-void SocketComponent::FixedUpdate()
+void SocketComponent::LateUpdate()
 {
-    if (Pose)
+    if (Pose && JointIndex < Pose->m_ModelMatrices.Size())
     {
-        // TODO: Сейчас мы считаем, что SocketIndex == JointIndex. Скорее всего, правильно было бы сокеты хранить
-        // отдельно от костей.
-        auto& socketTransform = Pose->GetJointTransform(SocketIndex);
+        SimdFloat4x4 transform = Pose->m_ModelMatrices[JointIndex] * SimdFloat4x4::Translation(Simd::LoadFloat4(Offset.X, Offset.Y, Offset.Z, 0.0f));
 
-        Float3 position, scale;
-        Float3x3 rotationMat;
-        Quat rotation;
+        SimdFloat4 p, r, s;
+        if (Simd::Decompose(transform, &p, &r, &s))
+        {
+            alignas(16) Float4 position;
+            alignas(16) Quat rotation;
 
-        // TODO: Убрать декомпозицию, хранить в позе не матрицы, а по отдельности: позицию, ориентацию, масштаб.
-        socketTransform.DecomposeAll(position, rotationMat, scale);
-        rotation.FromMatrix(rotationMat);
-
-        GetOwner()->SetTransform(position, rotation, scale);
+            Simd::StorePtr(p, &position.X);
+            Simd::StorePtr(r, &rotation.X);
+        
+            if (bApplyJointScale)
+            {
+                alignas(16) Float4 scale;
+                Simd::StorePtr(s, &scale.X);
+                GetOwner()->SetTransform(Float3(position), rotation, Float3(scale));
+            }
+            else
+            {
+                GetOwner()->SetPositionAndRotation(Float3(position), rotation);
+            }        
+        }
     }
 }
 

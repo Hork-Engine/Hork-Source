@@ -34,16 +34,18 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-MaterialResource::MaterialResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
-
 MaterialResource::~MaterialResource()
+{}
+
+UniqueRef<MaterialResource> MaterialResource::Load(IBinaryStreamReadInterface& stream)
 {
+    UniqueRef<MaterialResource> resource = MakeUnique<MaterialResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
 }
 
-bool MaterialResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+bool MaterialResource::Read(IBinaryStreamReadInterface& stream)
 {
     uint32_t fileMagic = stream.ReadUInt32();
 
@@ -60,7 +62,7 @@ bool MaterialResource::Read(IBinaryStreamReadInterface& stream, ResourceManager*
     return true;
 }
 
-void MaterialResource::Write(IBinaryStreamWriteInterface& stream, ResourceManager* resManager)
+void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
 {
     stream.WriteUInt32(MakeResourceMagic(Type, Version));
 

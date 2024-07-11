@@ -478,6 +478,21 @@ void RenderFrontend::AddDirectionalLightShadows(LightShadowmap* shadowmap, Direc
 }
 
 template <typename MeshComponentType>
+constexpr bool IsDynamicMesh();
+
+template <>
+constexpr bool IsDynamicMesh<StaticMeshComponent>()
+{
+    return false;
+}
+
+template <>
+constexpr bool IsDynamicMesh<DynamicMeshComponent>()
+{
+    return true;
+}
+
+template <typename MeshComponentType>
 void RenderFrontend::AddMeshes()
 {
     PreRenderContext context;
@@ -501,35 +516,24 @@ void RenderFrontend::AddMeshes()
 
         Float3x3 modelNormalToViewSpace = m_View->NormalToViewMatrix * mesh.GetRotationMatrix();
 
-        size_t skeletonOffset = 0;
-        size_t skeletonOffsetMB = 0;
-        size_t skeletonSize = 0;
-
-        if (mesh.m_Pose)
+        if (auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource))
         {
-            skeletonOffset = mesh.m_Pose->m_SkeletonOffset;
-            skeletonOffsetMB = mesh.m_Pose->m_SkeletonOffsetMB;
-            skeletonSize = mesh.m_Pose->m_SkeletonSize;
-        }
-
-        for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
-        {
-            auto& surface = mesh.m_Surfaces[surfaceIndex];
-
-            MaterialInstance* materialInstance = surface.Materials[0];
-            if (!materialInstance)
-                continue;
-
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
-            if (!material)
-                continue;
-
-            MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
-            if (!materialInstanceFrameData)
-                continue;
-
-            if (auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource))
+            for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
             {
+                auto& surface = mesh.m_Surfaces[surfaceIndex];
+
+                MaterialInstance* materialInstance = surface.Materials[0];
+                if (!materialInstance)
+                    continue;
+
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                if (!material)
+                    continue;
+
+                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                if (!materialInstanceFrameData)
+                    continue;
+            
                 // Add render instance
                 RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
@@ -553,10 +557,10 @@ void RenderFrontend::AddMeshes()
                 instance->Material = materialInstanceFrameData->Material;
                 instance->MaterialInstance = materialInstanceFrameData;
 
-                auto& subpart = meshResource->m_Subparts[surfaceIndex];
+                auto& subpart = meshResource->GetSurfaces()[surfaceIndex];
                 meshResource->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
                 meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
-                meshResource->GetWeightsBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
+                meshResource->GetSkinBufferBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
 
                 //if (bHasLightmap)
                 //{
@@ -583,30 +587,82 @@ void RenderFrontend::AddMeshes()
                     instance->VertexLightChannel = nullptr;
                 }
 
+                instance->Matrix = instanceMatrix;
+                instance->MatrixP = instanceMatrixP;
+                instance->ModelNormalToViewSpace = modelNormalToViewSpace;
+
+                size_t skeletonOffset = 0;
+                size_t skeletonOffsetMB = 0;
+                size_t skeletonSize = 0;
+
+                if constexpr (IsDynamicMesh<MeshComponentType>())
+                {
+                    if (mesh.m_Pose)
+                    {
+                        if (subpart.SkinIndex != -1)
+                        {
+                            auto& buffer = mesh.m_Pose->m_StreamBuffers[subpart.SkinIndex];
+                            skeletonOffset = buffer.Offset;
+                            skeletonOffsetMB = buffer.OffsetP;
+                            skeletonSize = buffer.Size;
+                        }
+                        else
+                        {
+                            alignas(16) Float4x4 transform;
+                            Simd::StoreFloat4x4((mesh.m_Pose->m_ModelMatrices[subpart.JointIndex] * subpart.InverseTransform).cols, transform);
+
+                            Float3x4 transform3x4(transform.Transposed());
+                        
+                            instance->Matrix = instance->Matrix * transform3x4;
+
+                            // TODO: calc previous transform for animated meshes
+                            instance->MatrixP = instance->MatrixP * transform3x4;
+
+                            instance->ModelNormalToViewSpace = instance->ModelNormalToViewSpace * transform3x4.DecomposeRotation();
+                        }
+                    }
+                }
+
                 instance->IndexCount = subpart.IndexCount;
                 instance->StartIndexLocation = subpart.FirstIndex;
                 instance->BaseVertexLocation = subpart.BaseVertex; // + mesh.SubpartBaseVertexOffset;
                 instance->SkeletonOffset = skeletonOffset;
                 instance->SkeletonOffsetMB = skeletonOffsetMB;
                 instance->SkeletonSize = skeletonSize;
-                instance->Matrix = instanceMatrix;
-                instance->MatrixP = instanceMatrixP;
-                instance->ModelNormalToViewSpace = modelNormalToViewSpace;
+
+                instance->bPerObjectMotionBlur = IsDynamicMesh<MeshComponentType>();
 
                 uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
-                //if (bMovable)
-                //{
-                //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
-                //}
+                if constexpr (IsDynamicMesh<MeshComponentType>())
+                {
+                    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+                }
 
                 instance->GenerateSortKey(priority, (uint64_t)meshResource);
 
                 m_RenderDef.PolyCount += instance->IndexCount / 3;
             }
+        }
 
-            if (mesh.m_ProceduralData && !mesh.m_ProceduralData->IndexCache.IsEmpty())
+        if (mesh.m_ProceduralData && !mesh.m_ProceduralData->IndexCache.IsEmpty())
+        {
+            ProceduralMesh_ECS* proceduralMesh = mesh.m_ProceduralData.RawPtr();
+
+            for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
             {
-                ProceduralMesh_ECS* proceduralMesh = mesh.m_ProceduralData.RawPtr();
+                auto& surface = mesh.m_Surfaces[surfaceIndex];
+
+                MaterialInstance* materialInstance = surface.Materials[0];
+                if (!materialInstance)
+                    continue;
+
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                if (!material)
+                    continue;
+
+                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                if (!materialInstanceFrameData)
+                    continue;
 
                 // Add render instance
                 RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
@@ -650,11 +706,13 @@ void RenderFrontend::AddMeshes()
                 instance->MatrixP = instanceMatrixP;
                 instance->ModelNormalToViewSpace = modelNormalToViewSpace;
 
+                instance->bPerObjectMotionBlur = IsDynamicMesh<MeshComponentType>();
+
                 uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
-                //if (bMovable)
-                //{
-                //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
-                //}
+                if constexpr (IsDynamicMesh<MeshComponentType>())
+                {
+                    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+                }
 
                 instance->GenerateSortKey(priority, (uint64_t)proceduralMesh);
 
@@ -685,37 +743,28 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
 
         Float3x4 const& instanceMatrix = mesh.GetRenderTransform();
 
-        size_t skeletonOffset = 0;
-        size_t skeletonSize = 0;
-
-        if (mesh.m_Pose)
+        auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
+        if (meshResource)
         {
-            skeletonOffset = mesh.m_Pose->m_SkeletonOffset;
-            skeletonSize = mesh.m_Pose->m_SkeletonSize;
-        }
-
-        for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
-        {
-            auto& surface = mesh.m_Surfaces[surfaceIndex];
-
-            MaterialInstance* materialInstance = surface.Materials[0];
-            if (!materialInstance)
-                continue;
-
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
-            if (!material)
-                continue;
-
-            if (material->m_pCompiledMaterial->bNoCastShadow)
-                continue;
-
-            MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
-            if (!materialInstanceFrameData)
-                continue;
-
-            auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
-            if (meshResource)
+            for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
             {
+                auto& surface = mesh.m_Surfaces[surfaceIndex];
+
+                MaterialInstance* materialInstance = surface.Materials[0];
+                if (!materialInstance)
+                    continue;
+
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                if (!material)
+                    continue;
+
+                if (material->m_pCompiledMaterial->bNoCastShadow)
+                    continue;
+
+                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                if (!materialInstanceFrameData)
+                    continue;
+            
                 // Add render instance
                 ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
 
@@ -726,16 +775,39 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
 
                 meshResource->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
                 meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
-                meshResource->GetWeightsBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
+                meshResource->GetSkinBufferBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
 
-                auto& subpart = meshResource->m_Subparts[surfaceIndex];
+                auto& subpart = meshResource->GetSurfaces()[surfaceIndex];
+
+                instance->WorldTransformMatrix = instanceMatrix;
+
+                size_t skeletonOffset = 0;
+                size_t skeletonSize = 0;
+
+                if constexpr (IsDynamicMesh<MeshComponentType>())
+                {
+                    if (mesh.m_Pose)
+                    {
+                        if (subpart.SkinIndex != -1)
+                        {
+                            auto& buffer = mesh.m_Pose->m_StreamBuffers[subpart.SkinIndex];
+                            skeletonOffset = buffer.Offset;
+                            skeletonSize = buffer.Size;
+                        }
+                        else
+                        {
+                            alignas(16) Float4x4 transform;
+                            Simd::StoreFloat4x4((mesh.m_Pose->m_ModelMatrices[subpart.JointIndex] * subpart.InverseTransform).cols, transform);
+                            instance->WorldTransformMatrix = instance->WorldTransformMatrix * Float3x4(transform.Transposed());
+                        }
+                    }
+                }
 
                 instance->IndexCount = subpart.IndexCount;
                 instance->StartIndexLocation = subpart.FirstIndex;
                 instance->BaseVertexLocation = subpart.BaseVertex; // + mesh.SubpartBaseVertexOffset;
                 instance->SkeletonOffset = skeletonOffset;
                 instance->SkeletonSize = skeletonSize;
-                instance->WorldTransformMatrix = instanceMatrix;
                 instance->CascadeMask = 0xffff;//mesh.m_CascadeMask; // TODO
 
                 uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
@@ -746,10 +818,30 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
 
                 m_RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
             }
+        }
 
-            if (mesh.m_ProceduralData && !mesh.m_ProceduralData->IndexCache.IsEmpty())
+        if (mesh.m_ProceduralData && !mesh.m_ProceduralData->IndexCache.IsEmpty())
+        {        
+            ProceduralMesh_ECS* proceduralMesh = mesh.m_ProceduralData.RawPtr();
+
+            for (int surfaceIndex = 0; surfaceIndex < mesh.m_Surfaces.Size(); ++surfaceIndex)
             {
-                ProceduralMesh_ECS* proceduralMesh = mesh.m_ProceduralData.RawPtr();
+                auto& surface = mesh.m_Surfaces[surfaceIndex];
+
+                MaterialInstance* materialInstance = surface.Materials[0];
+                if (!materialInstance)
+                    continue;
+
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                if (!material)
+                    continue;
+
+                if (material->m_pCompiledMaterial->bNoCastShadow)
+                    continue;
+
+                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                if (!materialInstanceFrameData)
+                    continue;
 
                 // Add render instance
                 ShadowRenderInstance* instance = (ShadowRenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(ShadowRenderInstance));
@@ -1622,7 +1714,7 @@ void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
 
             mesh->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
             mesh->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
-            mesh->GetWeightsBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
+            mesh->GetSkinBufferBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
 
             if (bHasLightmap)
             {

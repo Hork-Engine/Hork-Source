@@ -33,9 +33,12 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void CreateBoxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+namespace Geometry
 {
-    constexpr unsigned int indices[6 * 6] =
+
+void CreateBoxMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, Float3 const& extents, float texCoordScale)
+{
+    constexpr unsigned int _indices[6 * 6] =
         {
             0, 1, 2, 2, 3, 0,                                                 // front face
             4, 5, 6, 6, 7, 4,                                                 // back face
@@ -45,182 +48,186 @@ void CreateBoxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigne
             1 + 8 * 2, 0 + 8 * 2, 5 + 8 * 2, 5 + 8 * 2, 4 + 8 * 2, 1 + 8 * 2, // bottom face
         };
 
-    Vertices.ResizeInvalidate(24);
-    Indices.ResizeInvalidate(36);
+    positions.Resize(24);
+    texCoords.Resize(24);
+    normals.Resize(24);
+    tangents.Resize(24);
+    indices.Resize(36);
 
-    Core::Memcpy(Indices.ToPtr(), indices, sizeof(indices));
+    Core::Memcpy(indices.ToPtr(), _indices, sizeof(_indices));
 
-    const Float3 halfSize = Extents * 0.5f;
+    Float3 halfSize = extents * 0.5f;
 
-    Bounds.Mins  = -halfSize;
-    Bounds.Maxs = halfSize;
+    bounds.Mins  = -halfSize;
+    bounds.Maxs = halfSize;
 
-    Float3 const& mins = Bounds.Mins;
-    Float3 const& maxs = Bounds.Maxs;
+    Float3 const& mins = bounds.Mins;
+    Float3 const& maxs = bounds.Maxs;
 
-    MeshVertex* pVerts = Vertices.ToPtr();
+    positions[0 + 8 * 0] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[0 + 8 * 0] = Float2(Float2(0, 1) * texCoordScale);
 
-    Half zero = 0.0f;
-    Half pos  = 1.0f;
-    Half neg  = -1.0f;
+    positions[1 + 8 * 0] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[1 + 8 * 0] = Float2(Float2(1, 1) * texCoordScale);
 
-    pVerts[0 + 8 * 0].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[0 + 8 * 0].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[2 + 8 * 0] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[2 + 8 * 0] = Float2(Float2(1, 0) * texCoordScale);
 
-    pVerts[1 + 8 * 0].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[1 + 8 * 0].SetTexCoord(Float2(1, 1) * TexCoordScale);
-
-    pVerts[2 + 8 * 0].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[2 + 8 * 0].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-    pVerts[3 + 8 * 0].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[3 + 8 * 0].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[3 + 8 * 0] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[3 + 8 * 0] = Float2(Float2(0, 0) * texCoordScale);
 
 
-    pVerts[4 + 8 * 0].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[4 + 8 * 0].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[4 + 8 * 0] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[4 + 8 * 0] = Float2(Float2(0, 1) * texCoordScale);
 
-    pVerts[5 + 8 * 0].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[5 + 8 * 0].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[5 + 8 * 0] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[5 + 8 * 0] = Float2(Float2(1, 1) * texCoordScale);
 
-    pVerts[6 + 8 * 0].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[6 + 8 * 0].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[6 + 8 * 0] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[6 + 8 * 0] = Float2(Float2(1, 0) * texCoordScale);
 
-    pVerts[7 + 8 * 0].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[7 + 8 * 0].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-
-    pVerts[0 + 8 * 1].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[0 + 8 * 1].SetTexCoord(Float2(1, 1) * TexCoordScale);
-
-    pVerts[1 + 8 * 1].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[1 + 8 * 1].SetTexCoord(Float2(0, 1) * TexCoordScale);
-
-    pVerts[2 + 8 * 1].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[2 + 8 * 1].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-    pVerts[3 + 8 * 1].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[3 + 8 * 1].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[7 + 8 * 0] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[7 + 8 * 0] = Float2(Float2(0, 0) * texCoordScale);
 
 
-    pVerts[4 + 8 * 1].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[4 + 8 * 1].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[0 + 8 * 1] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[0 + 8 * 1] = Float2(Float2(1, 1) * texCoordScale);
 
-    pVerts[5 + 8 * 1].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[5 + 8 * 1].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[1 + 8 * 1] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[1 + 8 * 1] = Float2(Float2(0, 1) * texCoordScale);
 
-    pVerts[6 + 8 * 1].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[6 + 8 * 1].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[2 + 8 * 1] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[2 + 8 * 1] = Float2(Float2(0, 0) * texCoordScale);
 
-    pVerts[7 + 8 * 1].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[7 + 8 * 1].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-
-    pVerts[1 + 8 * 2].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[1 + 8 * 2].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-    pVerts[0 + 8 * 2].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[0 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-    pVerts[5 + 8 * 2].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[5 + 8 * 2].SetTexCoord(Float2(0, 1) * TexCoordScale);
-
-    pVerts[4 + 8 * 2].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[4 + 8 * 2].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[3 + 8 * 1] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[3 + 8 * 1] = Float2(Float2(1, 0) * texCoordScale);
 
 
-    pVerts[3 + 8 * 2].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[3 + 8 * 2].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[4 + 8 * 1] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[4 + 8 * 1] = Float2(Float2(1, 1) * texCoordScale);
 
-    pVerts[2 + 8 * 2].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[2 + 8 * 2].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[5 + 8 * 1] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[5 + 8 * 1] = Float2(Float2(0, 1) * texCoordScale);
 
-    pVerts[7 + 8 * 2].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[7 + 8 * 2].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[6 + 8 * 1] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[6 + 8 * 1] = Float2(Float2(0, 0) * texCoordScale);
 
-    pVerts[6 + 8 * 2].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[7 + 8 * 1] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[7 + 8 * 1] = Float2(Float2(1, 0) * texCoordScale);
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+
+    positions[1 + 8 * 2] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[1 + 8 * 2] = Float2(Float2(1, 0) * texCoordScale);
+
+    positions[0 + 8 * 2] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[0 + 8 * 2] = Float2(Float2(0, 0) * texCoordScale);
+
+    positions[5 + 8 * 2] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[5 + 8 * 2] = Float2(Float2(0, 1) * texCoordScale);
+
+    positions[4 + 8 * 2] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[4 + 8 * 2] = Float2(Float2(1, 1) * texCoordScale);
+
+
+    positions[3 + 8 * 2] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[3 + 8 * 2] = Float2(Float2(0, 1) * texCoordScale);
+
+    positions[2 + 8 * 2] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[2 + 8 * 2] = Float2(Float2(1, 1) * texCoordScale);
+
+    positions[7 + 8 * 2] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[7 + 8 * 2] = Float2(Float2(1, 0) * texCoordScale);
+
+    positions[6 + 8 * 2] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[6 + 8 * 2] = Float2(Float2(0, 0) * texCoordScale);
+
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreateSphereMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateSphereMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float radius, float texCoordScale, int numVerticalSubdivs, int numHorizontalSubdivs)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
     unsigned int quad[4];
 
-    NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 4);
-    NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 4);
+    numVerticalSubdivs    = Math::Max(numVerticalSubdivs, 4);
+    numHorizontalSubdivs = Math::Max(numHorizontalSubdivs, 4);
 
-    Vertices.ResizeInvalidate((NumHorizontalSubdivs + 1) * (NumVerticalSubdivs + 1));
-    Indices.ResizeInvalidate(NumHorizontalSubdivs * NumVerticalSubdivs * 6);
+    int vertexCount = (numHorizontalSubdivs + 1) * (numVerticalSubdivs + 1);
 
-    Bounds.Mins.X = Bounds.Mins.Y = Bounds.Mins.Z = -Radius;
-    Bounds.Maxs.X = Bounds.Maxs.Y = Bounds.Maxs.Z = Radius;
+    positions.Resize(vertexCount);
+    texCoords.Resize(vertexCount);
+    normals.Resize(vertexCount);
+    tangents.Resize(vertexCount);
 
-    MeshVertex* pVert = Vertices.ToPtr();
+    indices.Resize(numHorizontalSubdivs * numVerticalSubdivs * 6);
 
-    const float verticalStep    = Math::_PI / NumVerticalSubdivs;
-    const float horizontalStep  = Math::_2PI / NumHorizontalSubdivs;
-    const float verticalScale   = 1.0f / NumVerticalSubdivs;
-    const float horizontalScale = 1.0f / NumHorizontalSubdivs;
+    bounds.Mins.X = bounds.Mins.Y = bounds.Mins.Z = -radius;
+    bounds.Maxs.X = bounds.Maxs.Y = bounds.Maxs.Z = radius;
 
-    for (y = 0, verticalAngle = -Math::_HALF_PI; y <= NumVerticalSubdivs; y++)
+    Float3* pPos = positions.ToPtr();
+    Float2* pTC = texCoords.ToPtr();
+    Float3* pNormal = normals.ToPtr();
+
+    float verticalStep    = Math::_PI / numVerticalSubdivs;
+    float horizontalStep  = Math::_2PI / numHorizontalSubdivs;
+    float verticalScale   = 1.0f / numVerticalSubdivs;
+    float horizontalScale = 1.0f / numHorizontalSubdivs;
+
+    for (y = 0, verticalAngle = -Math::_HALF_PI; y <= numVerticalSubdivs; y++)
     {
         float h, r;
         Math::SinCos(verticalAngle, h, r);
-        const float scaledH = h * Radius;
-        const float scaledR = r * Radius;
-        for (x = 0, horizontalAngle = 0; x <= NumHorizontalSubdivs; x++)
+        float scaledH = h * radius;
+        float scaledR = r * radius;
+        for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
         {
             float s, c;
             Math::SinCos(horizontalAngle, s, c);
-            pVert->Position = Float3(scaledR * c, scaledH, scaledR * s);
-            pVert->SetTexCoord(Float2(1.0f - static_cast<float>(x) * horizontalScale, 1.0f - static_cast<float>(y) * verticalScale) * TexCoordScale);
-            pVert->SetNormal(r * c, h, r * s);
-            pVert++;
+            *pPos++ = Float3(scaledR * c, scaledH, scaledR * s);
+            *pTC++ = Float2(1.0f - static_cast<float>(x) * horizontalScale, 1.0f - static_cast<float>(y) * verticalScale) * texCoordScale;
+            *pNormal++ = Float3(r * c, h, r * s);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
     }
 
-    unsigned int* pIndices = Indices.ToPtr();
-    for (y = 0; y < NumVerticalSubdivs; y++)
+    unsigned int* pIndices = indices.ToPtr();
+    for (y = 0; y < numVerticalSubdivs; y++)
     {
-        const int y2 = y + 1;
-        for (x = 0; x < NumHorizontalSubdivs; x++)
+        int y2 = y + 1;
+        for (x = 0; x < numHorizontalSubdivs; x++)
         {
-            const int x2 = x + 1;
+            int x2 = x + 1;
 
-            quad[0] = y * (NumHorizontalSubdivs + 1) + x;
-            quad[1] = y2 * (NumHorizontalSubdivs + 1) + x;
-            quad[2] = y2 * (NumHorizontalSubdivs + 1) + x2;
-            quad[3] = y * (NumHorizontalSubdivs + 1) + x2;
+            quad[0] = y * (numHorizontalSubdivs + 1) + x;
+            quad[1] = y2 * (numHorizontalSubdivs + 1) + x;
+            quad[2] = y2 * (numHorizontalSubdivs + 1) + x2;
+            quad[3] = y * (numHorizontalSubdivs + 1) + x2;
 
             *pIndices++ = quad[0];
             *pIndices++ = quad[1];
@@ -231,111 +238,141 @@ void CreateSphereMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsi
         }
     }
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreatePlaneMeshXZ(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXZ(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float width, float height, Float2 const& texCoordScale)
 {
-    Vertices.ResizeInvalidate(4);
-    Indices.ResizeInvalidate(6);
+    positions.Resize(4);
+    texCoords.Resize(4);
+    normals.Resize(4);
+    tangents.Resize(4);
 
-    const float halfWidth  = Width * 0.5f;
-    const float halfHeight = Height * 0.5f;
+    indices.Resize(6);
 
-    const MeshVertex Verts[4] = {
-        MakeMeshVertex(Float3(-halfWidth, 0, -halfHeight), Float2(0, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(-halfWidth, 0, halfHeight), Float2(0, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(halfWidth, 0, halfHeight), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(halfWidth, 0, -halfHeight), Float2(TexCoordScale.X, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0))};
+    float halfWidth  = width * 0.5f;
+    float halfHeight = height * 0.5f;
 
-    Core::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(MeshVertex));
+    positions[0] = Float3(-halfWidth, 0, -halfHeight);
+    texCoords[0] = Float2(0, 0);
+    tangents[0] = Float4(0, 0, 1, 1.0f);
+    normals[0] = Float3(0, 1, 0);
+    positions[1] = Float3(-halfWidth, 0, halfHeight);
+    texCoords[1] = Float2(0, texCoordScale.Y);
+    tangents[1] = Float4(0, 0, 1, 1.0f);
+    normals[1] = Float3(0, 1, 0);
+    positions[2] = Float3(halfWidth, 0, halfHeight);
+    texCoords[2] = Float2(texCoordScale.X, texCoordScale.Y);
+    tangents[2] = Float4(0, 0, 1, 1.0f);
+    normals[2] = Float3(0, 1, 0);
+    positions[3] = Float3(halfWidth, 0, -halfHeight);
+    texCoords[3] = Float2(texCoordScale.X, 0);
+    tangents[3] = Float4(0, 0, 1, 1.0f);
+    normals[3] = Float3(0, 1, 0);
 
-    constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
-    Core::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
+    constexpr unsigned int _indices[6] = {0, 1, 2, 2, 3, 0};
+    Core::Memcpy(indices.ToPtr(), &_indices, sizeof(_indices));
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 
-    Bounds.Mins.X  = -halfWidth;
-    Bounds.Mins.Y  = -0.001f;
-    Bounds.Mins.Z  = -halfHeight;
-    Bounds.Maxs.X  = halfWidth;
-    Bounds.Maxs.Y  = 0.001f;
-    Bounds.Maxs.Z  = halfHeight;
+    bounds.Mins.X  = -halfWidth;
+    bounds.Mins.Y  = -0.001f;
+    bounds.Mins.Z  = -halfHeight;
+    bounds.Maxs.X  = halfWidth;
+    bounds.Maxs.Y  = 0.001f;
+    bounds.Maxs.Z  = halfHeight;
 }
 
-void CreatePlaneMeshXY(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
+void CreatePlaneMeshXY(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float width, float height, Float2 const& texCoordScale)
 {
-    Vertices.ResizeInvalidate(4);
-    Indices.ResizeInvalidate(6);
+    positions.Resize(4);
+    texCoords.Resize(4);
+    normals.Resize(4);
+    tangents.Resize(4);
 
-    const float halfWidth  = Width * 0.5f;
-    const float halfHeight = Height * 0.5f;
+    indices.Resize(6);
 
-    const MeshVertex Verts[4] = {
-        MakeMeshVertex(Float3(-halfWidth, -halfHeight, 0), Float2(0, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
-        MakeMeshVertex(Float3(halfWidth, -halfHeight, 0), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
-        MakeMeshVertex(Float3(halfWidth, halfHeight, 0), Float2(TexCoordScale.X, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
-        MakeMeshVertex(Float3(-halfWidth, halfHeight, 0), Float2(0, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1))};
+    float halfWidth  = width * 0.5f;
+    float halfHeight = height * 0.5f;
 
-    Core::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(MeshVertex));
+    positions[0] = Float3(-halfWidth, -halfHeight, 0);
+    texCoords[0] = Float2(0, texCoordScale.Y);
+    tangents[0] = Float4(0, 0, 0, 1.0f);
+    normals[0] = Float3(0, 0, 1);
+    positions[1] = Float3(halfWidth, -halfHeight, 0);
+    texCoords[1] = Float2(texCoordScale.X, texCoordScale.Y);
+    tangents[1] = Float4(0, 0, 0, 1.0f);
+    normals[1] = Float3(0, 0, 1);
+    positions[2] = Float3(halfWidth, halfHeight, 0);
+    texCoords[2] = Float2(texCoordScale.X, 0);
+    tangents[2] = Float4(0, 0, 0, 1.0f);
+    normals[2] = Float3(0, 0, 1);
+    positions[3] = Float3(-halfWidth, halfHeight, 0);
+    texCoords[3] = Float2(0, 0);
+    tangents[3] = Float4(0, 0, 0, 1.0f);
+    normals[3] = Float3(0, 0, 1);
 
-    constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
-    Core::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
+    constexpr unsigned int _indices[6] = {0, 1, 2, 2, 3, 0};
+    Core::Memcpy(indices.ToPtr(), &_indices, sizeof(_indices));
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 
-    Bounds.Mins.X  = -halfWidth;
-    Bounds.Mins.Y  = -halfHeight;
-    Bounds.Mins.Z  = -0.001f;
-    Bounds.Maxs.X  = halfWidth;
-    Bounds.Maxs.Y  = halfHeight;
-    Bounds.Maxs.Z  = 0.001f;
+    bounds.Mins.X  = -halfWidth;
+    bounds.Mins.Y  = -halfHeight;
+    bounds.Mins.Z  = -0.001f;
+    bounds.Maxs.X  = halfWidth;
+    bounds.Maxs.Y  = halfHeight;
+    bounds.Maxs.Z  = 0.001f;
 }
 
-void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float TexCoordScale, bool bTwoSided, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreatePatchMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, Float3 const& corner00, Float3 const& corner10, Float3 const& corner01, Float3 const& corner11, float texCoordScale, bool isTwoSided, int numVerticalSubdivs, int numHorizontalSubdivs)
 {
-    NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 2);
-    NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 2);
+    numVerticalSubdivs    = Math::Max(numVerticalSubdivs, 2);
+    numHorizontalSubdivs = Math::Max(numHorizontalSubdivs, 2);
 
-    const float scaleX = 1.0f / (float)(NumHorizontalSubdivs - 1);
-    const float scaleY = 1.0f / (float)(NumVerticalSubdivs - 1);
+    float scaleX = 1.0f / (float)(numHorizontalSubdivs - 1);
+    float scaleY = 1.0f / (float)(numVerticalSubdivs - 1);
 
-    const int vertexCount = NumHorizontalSubdivs * NumVerticalSubdivs;
-    const int indexCount  = (NumHorizontalSubdivs - 1) * (NumVerticalSubdivs - 1) * 6;
+    int vertexCount = numHorizontalSubdivs * numVerticalSubdivs;
+    int indexCount  = (numHorizontalSubdivs - 1) * (numVerticalSubdivs - 1) * 6;
 
-    Float3 normal = Math::Cross(Corner10 - Corner00, Corner01 - Corner00).Normalized();
+    Float3 normal = Math::Cross(corner10 - corner00, corner01 - corner00).Normalized();
 
     Half normalNative[3];
     normalNative[0] = normal.X;
     normalNative[1] = normal.Y;
     normalNative[2] = normal.Z;
 
-    Vertices.ResizeInvalidate(bTwoSided ? vertexCount << 1 : vertexCount);
-    Indices.ResizeInvalidate(bTwoSided ? indexCount << 1 : indexCount);
+    int totalVerts = isTwoSided ? vertexCount << 1 : vertexCount;
+    positions.Resize(totalVerts);
+    texCoords.Resize(totalVerts);
+    normals.Resize(totalVerts);
+    tangents.Resize(totalVerts);
+    indices.Resize(isTwoSided ? indexCount << 1 : indexCount);
 
-    MeshVertex*  pVert    = Vertices.ToPtr();
-    unsigned int* pIndices = Indices.ToPtr();
+    Float3* pPos = positions.ToPtr();
+    Float2* pTC = texCoords.ToPtr();
+    Float3* pNormal = normals.ToPtr();
+    unsigned int* pIndices = indices.ToPtr();
 
-    for (int y = 0; y < NumVerticalSubdivs; ++y)
+    for (int y = 0; y < numVerticalSubdivs; ++y)
     {
-        const float  lerpY = y * scaleY;
-        const Float3 py0   = Math::Lerp(Corner00, Corner01, lerpY);
-        const Float3 py1   = Math::Lerp(Corner10, Corner11, lerpY);
-        const float  ty    = lerpY * TexCoordScale;
+        float  lerpY = y * scaleY;
+        Float3 py0   = Math::Lerp(corner00, corner01, lerpY);
+        Float3 py1   = Math::Lerp(corner10, corner11, lerpY);
+        float  ty    = lerpY * texCoordScale;
 
-        for (int x = 0; x < NumHorizontalSubdivs; ++x)
+        for (int x = 0; x < numHorizontalSubdivs; ++x)
         {
-            const float lerpX = x * scaleX;
+            float lerpX = x * scaleX;
 
-            pVert->Position = Math::Lerp(py0, py1, lerpX);
-            pVert->SetTexCoord(lerpX * TexCoordScale, ty);
-            pVert->SetNormal(normalNative[0], normalNative[1], normalNative[2]);
-
-            ++pVert;
+            *pPos++ = Math::Lerp(py0, py1, lerpX);
+            *pTC++ = Float2(lerpX * texCoordScale, ty);
+            *pNormal++ = Float3(normalNative[0], normalNative[1], normalNative[2]);
         }
     }
 
-    if (bTwoSided)
+    if (isTwoSided)
     {
         normal = -normal;
 
@@ -343,40 +380,38 @@ void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsig
         normalNative[1] = normal.Y;
         normalNative[2] = normal.Z;
 
-        for (int y = 0; y < NumVerticalSubdivs; ++y)
+        for (int y = 0; y < numVerticalSubdivs; ++y)
         {
-            const float  lerpY = y * scaleY;
-            const Float3 py0   = Math::Lerp(Corner00, Corner01, lerpY);
-            const Float3 py1   = Math::Lerp(Corner10, Corner11, lerpY);
-            const float  ty    = lerpY * TexCoordScale;
+            float  lerpY = y * scaleY;
+            Float3 py0   = Math::Lerp(corner00, corner01, lerpY);
+            Float3 py1   = Math::Lerp(corner10, corner11, lerpY);
+            float  ty    = lerpY * texCoordScale;
 
-            for (int x = 0; x < NumHorizontalSubdivs; ++x)
+            for (int x = 0; x < numHorizontalSubdivs; ++x)
             {
-                const float lerpX = x * scaleX;
+                float lerpX = x * scaleX;
 
-                pVert->Position = Math::Lerp(py0, py1, lerpX);
-                pVert->SetTexCoord(lerpX * TexCoordScale, ty);
-                pVert->SetNormal(normalNative[0], normalNative[1], normalNative[2]);
-
-                ++pVert;
+                *pPos++ = Math::Lerp(py0, py1, lerpX);
+                *pTC++ = Float2(lerpX * texCoordScale, ty);
+                *pNormal++ = Float3(normalNative[0], normalNative[1], normalNative[2]);
             }
         }
     }
 
-    for (int y = 0; y < NumVerticalSubdivs; ++y)
+    for (int y = 0; y < numVerticalSubdivs; ++y)
     {
 
-        const int index0 = y * NumHorizontalSubdivs;
-        const int index1 = (y + 1) * NumHorizontalSubdivs;
+        int index0 = y * numHorizontalSubdivs;
+        int index1 = (y + 1) * numHorizontalSubdivs;
 
-        for (int x = 0; x < NumHorizontalSubdivs; ++x)
+        for (int x = 0; x < numHorizontalSubdivs; ++x)
         {
-            const int quad00 = index0 + x;
-            const int quad01 = index0 + x + 1;
-            const int quad10 = index1 + x;
-            const int quad11 = index1 + x + 1;
+            int quad00 = index0 + x;
+            int quad01 = index0 + x + 1;
+            int quad10 = index1 + x;
+            int quad11 = index1 + x + 1;
 
-            if ((x + 1) < NumHorizontalSubdivs && (y + 1) < NumVerticalSubdivs)
+            if ((x + 1) < numHorizontalSubdivs && (y + 1) < numVerticalSubdivs)
             {
                 *pIndices++ = quad00;
                 *pIndices++ = quad10;
@@ -388,22 +423,22 @@ void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsig
         }
     }
 
-    if (bTwoSided)
+    if (isTwoSided)
     {
-        for (int y = 0; y < NumVerticalSubdivs; ++y)
+        for (int y = 0; y < numVerticalSubdivs; ++y)
         {
 
-            const int index0 = vertexCount + y * NumHorizontalSubdivs;
-            const int index1 = vertexCount + (y + 1) * NumHorizontalSubdivs;
+            int index0 = vertexCount + y * numHorizontalSubdivs;
+            int index1 = vertexCount + (y + 1) * numHorizontalSubdivs;
 
-            for (int x = 0; x < NumHorizontalSubdivs; ++x)
+            for (int x = 0; x < numHorizontalSubdivs; ++x)
             {
-                const int quad00 = index0 + x;
-                const int quad01 = index0 + x + 1;
-                const int quad10 = index1 + x;
-                const int quad11 = index1 + x + 1;
+                int quad00 = index0 + x;
+                int quad01 = index0 + x + 1;
+                int quad10 = index1 + x;
+                int quad11 = index1 + x + 1;
 
-                if ((x + 1) < NumHorizontalSubdivs && (y + 1) < NumVerticalSubdivs)
+                if ((x + 1) < numHorizontalSubdivs && (y + 1) < numVerticalSubdivs)
                 {
                     *pIndices++ = quad00;
                     *pIndices++ = quad01;
@@ -416,119 +451,117 @@ void CreatePatchMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsig
         }
     }
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 
-    Bounds.Clear();
-    Bounds.AddPoint(Corner00);
-    Bounds.AddPoint(Corner01);
-    Bounds.AddPoint(Corner10);
-    Bounds.AddPoint(Corner11);
+    bounds.Clear();
+    bounds.AddPoint(corner00);
+    bounds.AddPoint(corner01);
+    bounds.AddPoint(corner10);
+    bounds.AddPoint(corner11);
 }
 
-void CreateCylinderMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateCylinderMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float radius, float height, float texCoordScale, int numSubdivs)
 {
     int          i, j;
     float        angle;
     unsigned int quad[4];
 
-    NumSubdivs = Math::Max(NumSubdivs, 4);
+    numSubdivs = Math::Max(numSubdivs, 4);
 
-    const float invSubdivs = 1.0f / NumSubdivs;
-    const float angleStep  = Math::_2PI * invSubdivs;
-    const float halfHeight = Height * 0.5f;
+    float invSubdivs = 1.0f / numSubdivs;
+    float angleStep  = Math::_2PI * invSubdivs;
+    float halfHeight = height * 0.5f;
 
-    Vertices.ResizeInvalidate(6 * (NumSubdivs + 1));
-    Indices.ResizeInvalidate(3 * NumSubdivs * 6);
+    int totalVerts = 6 * (numSubdivs + 1);
+    positions.Resize(totalVerts);
+    texCoords.Resize(totalVerts);
+    normals.Resize(totalVerts);
+    tangents.Resize(totalVerts);
+    indices.Resize(3 * numSubdivs * 6);
 
-    Bounds.Mins.X  = -Radius;
-    Bounds.Mins.Z = -Radius;
-    Bounds.Mins.Y  = -halfHeight;
+    bounds.Mins.X  = -radius;
+    bounds.Mins.Z = -radius;
+    bounds.Mins.Y  = -halfHeight;
 
-    Bounds.Maxs.X  = Radius;
-    Bounds.Maxs.Z = Radius;
-    Bounds.Maxs.Y  = halfHeight;
-
-    MeshVertex* pVerts = Vertices.ToPtr();
+    bounds.Maxs.X  = radius;
+    bounds.Maxs.Z = radius;
+    bounds.Maxs.Y  = halfHeight;
 
     int firstVertex = 0;
 
-    Half pos  = 1.0f;
-    Half neg  = -1.0f;
-    Half zero = 0.0f;
-
-    for (j = 0; j <= NumSubdivs; j++)
+    for (j = 0; j <= numSubdivs; j++)
     {
-        pVerts[firstVertex + j].Position = Float3(0.0f, -halfHeight, 0.0f);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
+        positions[firstVertex + j] = Float3(0.0f, -halfHeight, 0.0f);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 0.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, -1, 0);
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, -halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
+        positions[firstVertex + j] = Float3(radius * c, -halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 1.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, -1, 0);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, -halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 1.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(c, 0.0f, s);
+        positions[firstVertex + j] = Float3(radius * c, -halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(1.0f - j * invSubdivs, 1.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(c, 0.0f, s);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 0.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(c, 0.0f, s);
+        positions[firstVertex + j] = Float3(radius * c, halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(1.0f - j * invSubdivs, 0.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(c, 0.0f, s);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, pos, zero);
+        positions[firstVertex + j] = Float3(radius * c, halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 0.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, 1, 0);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0; j <= NumSubdivs; j++)
+    for (j = 0; j <= numSubdivs; j++)
     {
-        pVerts[firstVertex + j].Position = Float3(0.0f, halfHeight, 0.0f);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, pos, zero);
+        positions[firstVertex + j] = Float3(0.0f, halfHeight, 0.0f);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 1.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, 1, 0);
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
     // generate indices
 
-    unsigned int* pIndices = Indices.ToPtr();
+    unsigned int* pIndices = indices.ToPtr();
 
     firstVertex = 0;
     for (i = 0; i < 3; i++)
     {
-        for (j = 0; j < NumSubdivs; j++)
+        for (j = 0; j < numSubdivs; j++)
         {
             quad[3] = firstVertex + j;
             quad[2] = firstVertex + j + 1;
-            quad[1] = firstVertex + j + 1 + (NumSubdivs + 1);
-            quad[0] = firstVertex + j + (NumSubdivs + 1);
+            quad[1] = firstVertex + j + 1 + (numSubdivs + 1);
+            quad[0] = firstVertex + j + (numSubdivs + 1);
 
             *pIndices++ = quad[0];
             *pIndices++ = quad[1];
@@ -537,106 +570,105 @@ void CreateCylinderMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<un
             *pIndices++ = quad[3];
             *pIndices++ = quad[0];
         }
-        firstVertex += (NumSubdivs + 1) * 2;
+        firstVertex += (numSubdivs + 1) * 2;
     }
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreateConeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
+void CreateConeMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float radius, float height, float texCoordScale, int numSubdivs)
 {
     int          i, j;
     float        angle;
     unsigned int quad[4];
 
-    NumSubdivs = Math::Max(NumSubdivs, 4);
+    numSubdivs = Math::Max(numSubdivs, 4);
 
-    const float invSubdivs = 1.0f / NumSubdivs;
-    const float angleStep  = Math::_2PI * invSubdivs;
-    const float halfHeight = Height * 0.5f;
+    float invSubdivs = 1.0f / numSubdivs;
+    float angleStep  = Math::_2PI * invSubdivs;
+    float halfHeight = height * 0.5f;
 
-    Vertices.ResizeInvalidate(4 * (NumSubdivs + 1));
-    Indices.ResizeInvalidate(2 * NumSubdivs * 6);
+    int totalVerts = 4 * (numSubdivs + 1);
 
-    Bounds.Mins.X  = -Radius;
-    Bounds.Mins.Z = -Radius;
-    Bounds.Mins.Y  = -halfHeight;
+    positions.Resize(totalVerts);
+    texCoords.Resize(totalVerts);
+    normals.Resize(totalVerts);
+    tangents.Resize(totalVerts);
+    indices.Resize(2 * numSubdivs * 6);
 
-    Bounds.Maxs.X  = Radius;
-    Bounds.Maxs.Z = Radius;
-    Bounds.Maxs.Y  = halfHeight;
+    bounds.Mins.X  = -radius;
+    bounds.Mins.Z = -radius;
+    bounds.Mins.Y  = -halfHeight;
 
-    Half neg = -1.0f;
-    Half zero = 0.0f;
-
-    MeshVertex* pVerts = Vertices.ToPtr();
+    bounds.Maxs.X  = radius;
+    bounds.Maxs.Z = radius;
+    bounds.Maxs.Y  = halfHeight;
 
     int firstVertex = 0;
 
-    for (j = 0; j <= NumSubdivs; j++)
+    for (j = 0; j <= numSubdivs; j++)
     {
-        pVerts[firstVertex + j].Position = Float3(0, -halfHeight, 0);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
+        positions[firstVertex + j] = Float3(0, -halfHeight, 0);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 0.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, -1, 0);
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, -halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
-        ;
+        positions[firstVertex + j] = Float3(radius * c, -halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(j * invSubdivs, 1.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(0, -1, 0);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(Radius * c, -halfHeight, Radius * s);
-        pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 1.0f) * TexCoordScale);
-        pVerts[firstVertex + j].SetNormal(c, 0.0f, s);
+        positions[firstVertex + j] = Float3(radius * c, -halfHeight, radius * s);
+        texCoords[firstVertex + j] = Float2(1.0f - j * invSubdivs, 1.0f) * texCoordScale;
+        normals[firstVertex + j] = Float3(c, 0.0f, s);
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
     Float3 vx;
     Float3 vy(0, halfHeight, 0);
     Float3 v;
-    for (j = 0, angle = 0; j <= NumSubdivs; j++)
+    for (j = 0, angle = 0; j <= numSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(0, halfHeight, 0);
-        pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 0.0f) * TexCoordScale);
+        positions[firstVertex + j] = Float3(0, halfHeight, 0);
+        texCoords[firstVertex + j] = Float2(1.0f - j * invSubdivs, 0.0f) * texCoordScale;
 
         vx = Float3(c, 0.0f, s);
         v  = vy - vx;
-        pVerts[firstVertex + j].SetNormal(Math::Cross(Math::Cross(v, vx), v).Normalized());
+        normals[firstVertex + j] = Float3(Math::Cross(Math::Cross(v, vx), v).Normalized());
 
         angle += angleStep;
     }
-    firstVertex += NumSubdivs + 1;
+    firstVertex += numSubdivs + 1;
 
-    HK_ASSERT(firstVertex == Vertices.Size());
+    HK_ASSERT(firstVertex == totalVerts);
 
     // generate indices
 
-    unsigned int* pIndices = Indices.ToPtr();
+    unsigned int* pIndices = indices.ToPtr();
 
     firstVertex = 0;
     for (i = 0; i < 2; i++)
     {
-        for (j = 0; j < NumSubdivs; j++)
+        for (j = 0; j < numSubdivs; j++)
         {
             quad[3] = firstVertex + j;
             quad[2] = firstVertex + j + 1;
-            quad[1] = firstVertex + j + 1 + (NumSubdivs + 1);
-            quad[0] = firstVertex + j + (NumSubdivs + 1);
+            quad[1] = firstVertex + j + 1 + (numSubdivs + 1);
+            quad[0] = firstVertex + j + (numSubdivs + 1);
 
             *pIndices++ = quad[0];
             *pIndices++ = quad[1];
@@ -645,40 +677,47 @@ void CreateConeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsign
             *pIndices++ = quad[3];
             *pIndices++ = quad[0];
         }
-        firstVertex += (NumSubdivs + 1) * 2;
+        firstVertex += (numSubdivs + 1) * 2;
     }
 
-    HK_ASSERT(pIndices == Indices.ToPtr() + Indices.Size());
+    HK_ASSERT(pIndices == indices.ToPtr() + indices.Size());
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
+void CreateCapsuleMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float radius, float height, float texCoordScale, int numVerticalSubdivs, int numHorizontalSubdivs)
 {
     int          x, y, tcY;
     float        verticalAngle, horizontalAngle;
-    const float  halfHeight = Height * 0.5f;
+    float        halfHeight = height * 0.5f;
     unsigned int quad[4];
 
-    NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 4);
-    NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 4);
+    numVerticalSubdivs    = Math::Max(numVerticalSubdivs, 4);
+    numHorizontalSubdivs = Math::Max(numHorizontalSubdivs, 4);
 
-    const int halfVerticalSubdivs = NumVerticalSubdivs >> 1;
+    int halfVerticalSubdivs = numVerticalSubdivs >> 1;
 
-    Vertices.ResizeInvalidate((NumHorizontalSubdivs + 1) * (NumVerticalSubdivs + 1) * 2);
-    Indices.ResizeInvalidate(NumHorizontalSubdivs * (NumVerticalSubdivs + 1) * 6);
+    int totalVerts = (numHorizontalSubdivs + 1) * (numVerticalSubdivs + 1) * 2;
+    positions.Resize(totalVerts);
+    texCoords.Resize(totalVerts);
+    normals.Resize(totalVerts);
+    tangents.Resize(totalVerts);
 
-    Bounds.Mins.X = Bounds.Mins.Z = -Radius;
-    Bounds.Mins.Y                 = -Radius - halfHeight;
-    Bounds.Maxs.X = Bounds.Maxs.Z = Radius;
-    Bounds.Maxs.Y                 = Radius + halfHeight;
+    indices.Resize(numHorizontalSubdivs * (numVerticalSubdivs + 1) * 6);
 
-    MeshVertex* pVert = Vertices.ToPtr();
+    bounds.Mins.X = bounds.Mins.Z = -radius;
+    bounds.Mins.Y                 = -radius - halfHeight;
+    bounds.Maxs.X = bounds.Maxs.Z = radius;
+    bounds.Maxs.Y                 = radius + halfHeight;
 
-    const float verticalStep    = Math::_PI / NumVerticalSubdivs;
-    const float horizontalStep  = Math::_2PI / NumHorizontalSubdivs;
-    const float verticalScale   = 1.0f / (NumVerticalSubdivs + 1);
-    const float horizontalScale = 1.0f / NumHorizontalSubdivs;
+    Float3* pPos = positions.ToPtr();
+    Float2* pTC = texCoords.ToPtr();
+    Float3* pNormal = normals.ToPtr();
+
+    float verticalStep    = Math::_PI / numVerticalSubdivs;
+    float horizontalStep  = Math::_2PI / numHorizontalSubdivs;
+    float verticalScale   = 1.0f / (numVerticalSubdivs + 1);
+    float horizontalScale = 1.0f / numHorizontalSubdivs;
 
     tcY = 0;
 
@@ -686,20 +725,20 @@ void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<uns
     {
         float h, r;
         Math::SinCos(verticalAngle, h, r);
-        const float scaledH = h * Radius;
-        const float scaledR = r * Radius;
-        const float posY    = scaledH - halfHeight;
-        for (x = 0, horizontalAngle = 0; x <= NumHorizontalSubdivs; x++)
+        float scaledH = h * radius;
+        float scaledR = r * radius;
+        float posY    = scaledH - halfHeight;
+        for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
         {
             float s, c;
             Math::SinCos(horizontalAngle, s, c);
-            pVert->Position.X = scaledR * c;
-            pVert->Position.Y = posY;
-            pVert->Position.Z = scaledR * s;
-            pVert->SetTexCoord((1.0f - static_cast<float>(x) * horizontalScale) * TexCoordScale,
-                               (1.0f - static_cast<float>(tcY) * verticalScale) * TexCoordScale);
-            pVert->SetNormal(r * c, h, r * s);
-            pVert++;
+            pPos->X = scaledR * c;
+            pPos->Y = posY;
+            pPos->Z = scaledR * s;
+            pPos++;
+            *pTC++ = Float2((1.0f - static_cast<float>(x) * horizontalScale) * texCoordScale,
+                            (1.0f - static_cast<float>(tcY) * verticalScale) * texCoordScale);
+            *pNormal++ = Float3(r * c, h, r * s);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
@@ -709,37 +748,37 @@ void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<uns
     {
         float h, r;
         Math::SinCos(verticalAngle, h, r);
-        const float scaledH = h * Radius;
-        const float scaledR = r * Radius;
-        const float posY    = scaledH + halfHeight;
-        for (x = 0, horizontalAngle = 0; x <= NumHorizontalSubdivs; x++)
+        float scaledH = h * radius;
+        float scaledR = r * radius;
+        float posY    = scaledH + halfHeight;
+        for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
         {
             float s, c;
             Math::SinCos(horizontalAngle, s, c);
-            pVert->Position.X = scaledR * c;
-            pVert->Position.Y = posY;
-            pVert->Position.Z = scaledR * s;
-            pVert->SetTexCoord((1.0f - static_cast<float>(x) * horizontalScale) * TexCoordScale,
-                               (1.0f - static_cast<float>(tcY) * verticalScale) * TexCoordScale);
-            pVert->SetNormal(r * c, h, r * s);
-            pVert++;
+            pPos->X = scaledR * c;
+            pPos->Y = posY;
+            pPos->Z = scaledR * s;
+            pPos++;
+            *pTC++ = Float2((1.0f - static_cast<float>(x) * horizontalScale) * texCoordScale,
+                            (1.0f - static_cast<float>(tcY) * verticalScale) * texCoordScale);
+            *pNormal++ = Float3(r * c, h, r * s);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
     }
 
-    unsigned int* pIndices = Indices.ToPtr();
-    for (y = 0; y <= NumVerticalSubdivs; y++)
+    unsigned int* pIndices = indices.ToPtr();
+    for (y = 0; y <= numVerticalSubdivs; y++)
     {
-        const int y2 = y + 1;
-        for (x = 0; x < NumHorizontalSubdivs; x++)
+        int y2 = y + 1;
+        for (x = 0; x < numHorizontalSubdivs; x++)
         {
-            const int x2 = x + 1;
+            int x2 = x + 1;
 
-            quad[0] = y * (NumHorizontalSubdivs + 1) + x;
-            quad[1] = y2 * (NumHorizontalSubdivs + 1) + x;
-            quad[2] = y2 * (NumHorizontalSubdivs + 1) + x2;
-            quad[3] = y * (NumHorizontalSubdivs + 1) + x2;
+            quad[0] = y * (numHorizontalSubdivs + 1) + x;
+            quad[1] = y2 * (numHorizontalSubdivs + 1) + x;
+            quad[2] = y2 * (numHorizontalSubdivs + 1) + x2;
+            quad[3] = y * (numHorizontalSubdivs + 1) + x2;
 
             *pIndices++ = quad[0];
             *pIndices++ = quad[1];
@@ -750,12 +789,12 @@ void CreateCapsuleMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<uns
         }
     }
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreateSkyboxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
+void CreateSkyboxMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, Float3 const& extents, float texCoordScale)
 {
-    constexpr unsigned int indices[6 * 6] =
+    constexpr unsigned int _indices[6 * 6] =
         {
             0, 1, 2, 2, 3, 0,                                                 // front face
             4, 5, 6, 6, 7, 4,                                                 // back face
@@ -766,188 +805,191 @@ void CreateSkyboxMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsi
             1 + 8 * 2, 0 + 8 * 2, 5 + 8 * 2, 5 + 8 * 2, 4 + 8 * 2, 1 + 8 * 2, // bottom face
         };
 
-    Vertices.ResizeInvalidate(24);
-    Indices.ResizeInvalidate(36);
+    positions.Resize(24);
+    texCoords.Resize(24);
+    normals.Resize(24);
+    tangents.Resize(24);
+    indices.Resize(36);
 
     for (int i = 0; i < 36; i += 3)
     {
-        Indices[i]      = indices[i + 2];
-        Indices[i + 1]  = indices[i + 1];
-        Indices[i + 2]  = indices[i];
+        indices[i]      = _indices[i + 2];
+        indices[i + 1]  = _indices[i + 1];
+        indices[i + 2]  = _indices[i];
     }
 
-    const Float3 halfSize = Extents * 0.5f;
+    Float3 halfSize = extents * 0.5f;
 
-    Bounds.Mins  = -halfSize;
-    Bounds.Maxs = halfSize;
+    bounds.Mins  = -halfSize;
+    bounds.Maxs = halfSize;
 
-    Float3 const& mins = Bounds.Mins;
-    Float3 const& maxs = Bounds.Maxs;
+    Float3 const& mins = bounds.Mins;
+    Float3 const& maxs = bounds.Maxs;
 
-    MeshVertex* pVerts = Vertices.ToPtr();
+    positions[0 + 8 * 0] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[0 + 8 * 0] = Float2(0, 1) * texCoordScale;
 
-    Half     zero = 0.0f;
-    Half     pos  = 1.0f;
-    Half     neg  = -1.0f;
+    positions[1 + 8 * 0] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[1 + 8 * 0] = Float2(1, 1) * texCoordScale;
 
-    pVerts[0 + 8 * 0].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[0 + 8 * 0].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[2 + 8 * 0] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[2 + 8 * 0] = Float2(1, 0) * texCoordScale;
 
-    pVerts[1 + 8 * 0].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[1 + 8 * 0].SetTexCoord(Float2(1, 1) * TexCoordScale);
-
-    pVerts[2 + 8 * 0].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[2 + 8 * 0].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-    pVerts[3 + 8 * 0].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 0].SetNormal(zero, zero, neg);
-    pVerts[3 + 8 * 0].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[3 + 8 * 0] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 0] = Float3(0, 0, -1);
+    texCoords[3 + 8 * 0] = Float2(0, 0) * texCoordScale;
 
 
-    pVerts[4 + 8 * 0].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[4 + 8 * 0].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[4 + 8 * 0] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[4 + 8 * 0] = Float2(0, 1) * texCoordScale;
 
-    pVerts[5 + 8 * 0].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[5 + 8 * 0].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[5 + 8 * 0] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[5 + 8 * 0] = Float2(1, 1) * texCoordScale;
 
-    pVerts[6 + 8 * 0].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[6 + 8 * 0].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[6 + 8 * 0] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[6 + 8 * 0] = Float2(1, 0) * texCoordScale;
 
-    pVerts[7 + 8 * 0].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 0].SetNormal(zero, zero, pos);
-    pVerts[7 + 8 * 0].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-
-    pVerts[0 + 8 * 1].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[0 + 8 * 1].SetTexCoord(Float2(1, 1) * TexCoordScale);
-
-    pVerts[1 + 8 * 1].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[1 + 8 * 1].SetTexCoord(Float2(0, 1) * TexCoordScale);
-
-    pVerts[2 + 8 * 1].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[2 + 8 * 1].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-    pVerts[3 + 8 * 1].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[3 + 8 * 1].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[7 + 8 * 0] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 0] = Float3(0, 0, 1);
+    texCoords[7 + 8 * 0] = Float2(0, 0) * texCoordScale;
 
 
-    pVerts[4 + 8 * 1].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[4 + 8 * 1].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[0 + 8 * 1] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[0 + 8 * 1] = Float2(1, 1) * texCoordScale;
 
-    pVerts[5 + 8 * 1].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[5 + 8 * 1].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[1 + 8 * 1] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[1 + 8 * 1] = Float2(0, 1) * texCoordScale;
 
-    pVerts[6 + 8 * 1].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 1].SetNormal(pos, zero, zero);
-    pVerts[6 + 8 * 1].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[2 + 8 * 1] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[2 + 8 * 1] = Float2(0, 0) * texCoordScale;
 
-    pVerts[7 + 8 * 1].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 1].SetNormal(neg, zero, zero);
-    pVerts[7 + 8 * 1].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-
-    pVerts[1 + 8 * 2].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[1 + 8 * 2].SetTexCoord(Float2(1, 0) * TexCoordScale);
-
-    pVerts[0 + 8 * 2].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[0 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
-
-    pVerts[5 + 8 * 2].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[5 + 8 * 2].SetTexCoord(Float2(0, 1) * TexCoordScale);
-
-    pVerts[4 + 8 * 2].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 2].SetNormal(zero, pos, zero);
-    pVerts[4 + 8 * 2].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[3 + 8 * 1] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[3 + 8 * 1] = Float2(1, 0) * texCoordScale;
 
 
-    pVerts[3 + 8 * 2].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[3 + 8 * 2].SetTexCoord(Float2(0, 1) * TexCoordScale);
+    positions[4 + 8 * 1] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[4 + 8 * 1] = Float2(1, 1) * texCoordScale;
 
-    pVerts[2 + 8 * 2].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[2 + 8 * 2].SetTexCoord(Float2(1, 1) * TexCoordScale);
+    positions[5 + 8 * 1] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[5 + 8 * 1] = Float2(0, 1) * texCoordScale;
 
-    pVerts[7 + 8 * 2].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[7 + 8 * 2].SetTexCoord(Float2(1, 0) * TexCoordScale);
+    positions[6 + 8 * 1] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 1] = Float3(1, 0, 0);
+    texCoords[6 + 8 * 1] = Float2(0, 0) * texCoordScale;
 
-    pVerts[6 + 8 * 2].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 2].SetNormal(zero, neg, zero);
-    pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
+    positions[7 + 8 * 1] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 1] = Float3(-1, 0, 0);
+    texCoords[7 + 8 * 1] = Float2(1, 0) * texCoordScale;
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+
+    positions[1 + 8 * 2] = Float3(maxs.X, mins.Y, maxs.Z); // 1
+    normals[1 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[1 + 8 * 2] = Float2(1, 0) * texCoordScale;
+
+    positions[0 + 8 * 2] = Float3(mins.X, mins.Y, maxs.Z); // 0
+    normals[0 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[0 + 8 * 2] = Float2(0, 0) * texCoordScale;
+
+    positions[5 + 8 * 2] = Float3(mins.X, mins.Y, mins.Z); // 5
+    normals[5 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[5 + 8 * 2] = Float2(0, 1) * texCoordScale;
+
+    positions[4 + 8 * 2] = Float3(maxs.X, mins.Y, mins.Z); // 4
+    normals[4 + 8 * 2] = Float3(0, 1, 0);
+    texCoords[4 + 8 * 2] = Float2(1, 1) * texCoordScale;
+
+
+    positions[3 + 8 * 2] = Float3(mins.X, maxs.Y, maxs.Z); // 3
+    normals[3 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[3 + 8 * 2] = Float2(0, 1) * texCoordScale;
+
+    positions[2 + 8 * 2] = Float3(maxs.X, maxs.Y, maxs.Z); // 2
+    normals[2 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[2 + 8 * 2] = Float2(1, 1) * texCoordScale;
+
+    positions[7 + 8 * 2] = Float3(maxs.X, maxs.Y, mins.Z); // 7
+    normals[7 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[7 + 8 * 2] = Float2(1, 0) * texCoordScale;
+
+    positions[6 + 8 * 2] = Float3(mins.X, maxs.Y, mins.Z); // 6
+    normals[6 + 8 * 2] = Float3(0, -1, 0);
+    texCoords[6 + 8 * 2] = Float2(0, 0) * texCoordScale;
+
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
 }
 
-void CreateSkydomeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
+void CreateSkydomeMesh(Vector<Float3>& positions, Vector<Float2>& texCoords, Vector<Float3>& normals, Vector<Float4>& tangents, Vector<unsigned int>& indices, BvAxisAlignedBox& bounds, float radius, float texCoordScale, int numVerticalSubdivs, int numHorizontalSubdivs, bool isHemisphere)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
     unsigned int quad[4];
 
-    NumVerticalSubdivs    = Math::Max(NumVerticalSubdivs, 4);
-    NumHorizontalSubdivs = Math::Max(NumHorizontalSubdivs, 4);
+    numVerticalSubdivs    = Math::Max(numVerticalSubdivs, 4);
+    numHorizontalSubdivs = Math::Max(numHorizontalSubdivs, 4);
 
-    Vertices.ResizeInvalidate((NumHorizontalSubdivs + 1) * (NumVerticalSubdivs + 1));
-    Indices.ResizeInvalidate(NumHorizontalSubdivs * NumVerticalSubdivs * 6);
+    int totalVerts = (numHorizontalSubdivs + 1) * (numVerticalSubdivs + 1);
+    positions.Resize(totalVerts);
+    texCoords.Resize(totalVerts);
+    normals.Resize(totalVerts);
+    tangents.Resize(totalVerts);
 
-    Bounds.Mins.X = Bounds.Mins.Y = Bounds.Mins.Z = -Radius;
-    Bounds.Maxs.X = Bounds.Maxs.Y = Bounds.Maxs.Z = Radius;
+    indices.Resize(numHorizontalSubdivs * numVerticalSubdivs * 6);
 
-    MeshVertex* pVert = Vertices.ToPtr();
+    bounds.Mins.X = bounds.Mins.Y = bounds.Mins.Z = -radius;
+    bounds.Maxs.X = bounds.Maxs.Y = bounds.Maxs.Z = radius;
 
-    const float verticalRange   = bHemisphere ? Math::_HALF_PI : Math::_PI;
-    const float verticalStep    = verticalRange / NumVerticalSubdivs;
-    const float horizontalStep  = Math::_2PI / NumHorizontalSubdivs;
-    const float verticalScale   = 1.0f / NumVerticalSubdivs;
-    const float horizontalScale = 1.0f / NumHorizontalSubdivs;
+    Float3* pPos = positions.ToPtr();
+    Float2* pTC = texCoords.ToPtr();
+    Float3* pNormal = normals.ToPtr();
 
-    for (y = 0, verticalAngle = bHemisphere ? 0 : -Math::_HALF_PI; y <= NumVerticalSubdivs; y++)
+    float verticalRange   = isHemisphere ? Math::_HALF_PI : Math::_PI;
+    float verticalStep    = verticalRange / numVerticalSubdivs;
+    float horizontalStep  = Math::_2PI / numHorizontalSubdivs;
+    float verticalScale   = 1.0f / numVerticalSubdivs;
+    float horizontalScale = 1.0f / numHorizontalSubdivs;
+
+    for (y = 0, verticalAngle = isHemisphere ? 0 : -Math::_HALF_PI; y <= numVerticalSubdivs; y++)
     {
         float h, r;
         Math::SinCos(verticalAngle, h, r);
-        const float scaledH = h * Radius;
-        const float scaledR = r * Radius;
-        for (x = 0, horizontalAngle = 0; x <= NumHorizontalSubdivs; x++)
+        float scaledH = h * radius;
+        float scaledR = r * radius;
+        for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
         {
             float s, c;
             Math::SinCos(horizontalAngle, s, c);
-            pVert->Position = Float3(scaledR * c, scaledH, scaledR * s);
-            pVert->SetTexCoord(Float2(1.0f - static_cast<float>(x) * horizontalScale, 1.0f - static_cast<float>(y) * verticalScale) * TexCoordScale);
-            pVert->SetNormal(-r * c, -h, -r * s);
-            pVert++;
+            *pPos++ = Float3(scaledR * c, scaledH, scaledR * s);
+            *pTC++ = Float2(1.0f - static_cast<float>(x) * horizontalScale, 1.0f - static_cast<float>(y) * verticalScale) * texCoordScale;
+            *pNormal++ = Float3(-r * c, -h, -r * s);
             horizontalAngle += horizontalStep;
         }
         verticalAngle += verticalStep;
     }
 
-    unsigned int* pIndices = Indices.ToPtr();
-    for (y = 0; y < NumVerticalSubdivs; y++)
+    unsigned int* pIndices = indices.ToPtr();
+    for (y = 0; y < numVerticalSubdivs; y++)
     {
-        const int y2 = y + 1;
-        for (x = 0; x < NumHorizontalSubdivs; x++)
+        int y2 = y + 1;
+        for (x = 0; x < numHorizontalSubdivs; x++)
         {
-            const int x2 = x + 1;
+            int x2 = x + 1;
 
-            quad[0] = y * (NumHorizontalSubdivs + 1) + x;
-            quad[1] = y * (NumHorizontalSubdivs + 1) + x2;
-            quad[2] = y2 * (NumHorizontalSubdivs + 1) + x2;
-            quad[3] = y2 * (NumHorizontalSubdivs + 1) + x;
+            quad[0] = y * (numHorizontalSubdivs + 1) + x;
+            quad[1] = y * (numHorizontalSubdivs + 1) + x2;
+            quad[2] = y2 * (numHorizontalSubdivs + 1) + x2;
+            quad[3] = y2 * (numHorizontalSubdivs + 1) + x;
 
             *pIndices++ = quad[0];
             *pIndices++ = quad[1];
@@ -958,7 +1000,9 @@ void CreateSkydomeMesh(VertexBufferCPU<MeshVertex>& Vertices, IndexBufferCPU<uns
         }
     }
 
-    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(positions.ToPtr(), texCoords.ToPtr(), normals.ToPtr(), tangents.ToPtr(), indices.ToPtr(), indices.Size());
+}
+
 }
 
 HK_NAMESPACE_END

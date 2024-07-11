@@ -42,20 +42,21 @@ HK_NAMESPACE_BEGIN
 class MaterialResource : public ResourceBase
 {
 public:
-    static const uint8_t Type = RESOURCE_MATERIAL;
-    static const uint8_t Version = 1;
+    static const uint8_t        Type = RESOURCE_MATERIAL;
+    static const uint8_t        Version = 1;
 
-    MaterialResource() = default;
-    MaterialResource(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
-    ~MaterialResource();
+                                MaterialResource() = default;
+                                ~MaterialResource();
 
-    bool Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
-    void Write(IBinaryStreamWriteInterface& stream, ResourceManager* resManager);
+    static UniqueRef<MaterialResource> Load(IBinaryStreamReadInterface& stream);
 
-    void Upload() override;
+    bool                        Read(IBinaryStreamReadInterface& stream);
+    void                        Write(IBinaryStreamWriteInterface& stream);
 
-    Ref<MaterialGPU> m_GpuMaterial;
-    Ref<CompiledMaterial> m_pCompiledMaterial;
+    void                        Upload() override;
+
+    Ref<MaterialGPU>            m_GpuMaterial;
+    Ref<CompiledMaterial>       m_pCompiledMaterial;
 
 private:
     String m_Shader;

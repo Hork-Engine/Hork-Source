@@ -37,15 +37,18 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-SoundResource::SoundResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
-
 SoundResource::~SoundResource()
 {}
 
-bool SoundResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+UniqueRef<SoundResource> SoundResource::Load(IBinaryStreamReadInterface& stream)
+{
+    UniqueRef<SoundResource> resource = MakeUnique<SoundResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
+}
+
+bool SoundResource::Read(IBinaryStreamReadInterface& stream)
 {
     AudioDevice* device = GameApplication::GetAudioDevice();
 

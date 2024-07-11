@@ -42,7 +42,7 @@ public:
     MaterialInstance* CreateMaterial(StringView name);
     void DestroyMaterial(MaterialInstance* material);
 
-    void Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
+    void Read(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
     void Write(IBinaryStreamWriteInterface& stream);
 
     MaterialInstance* Get(StringView name);

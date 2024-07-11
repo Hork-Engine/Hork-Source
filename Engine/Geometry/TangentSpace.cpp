@@ -29,9 +29,8 @@ SOFTWARE.
 */
 
 #include "TangentSpace.h"
-#include <Engine/Core/Containers/Vector.h>
-#include <Engine/Core/Logger.h>
 
+#include <Engine/Core/Logger.h>
 #include <MikkTSpace/mikktspace.h>
 
 HK_NAMESPACE_BEGIN
@@ -39,48 +38,7 @@ HK_NAMESPACE_BEGIN
 namespace Geometry
 {
 
-void CalcTangentSpaceLegacy(MeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
-{
-    Float3 binormal, tangent;
-
-    Vector<Float3> binormals(NumVerts);
-    Vector<Float3> tangents(NumVerts);
-
-    for (unsigned int i = 0; i < NumIndices; i += 3)
-    {
-        const unsigned int a = IndexArray[i];
-        const unsigned int b = IndexArray[i + 1];
-        const unsigned int c = IndexArray[i + 2];
-
-        Float3 e1  = VertexArray[b].Position - VertexArray[a].Position;
-        Float3 e2  = VertexArray[c].Position - VertexArray[a].Position;
-        Float2 et1 = VertexArray[b].GetTexCoord() - VertexArray[a].GetTexCoord();
-        Float2 et2 = VertexArray[c].GetTexCoord() - VertexArray[a].GetTexCoord();
-
-        const float denom = et1.X * et2.Y - et1.Y * et2.X;
-        const float scale = (Math::Abs(denom) < 0.0001f) ? 1.0f : (1.0 / denom);
-        tangent           = (e1 * et2.Y - e2 * et1.Y) * scale;
-        binormal          = (e2 * et1.X - e1 * et2.X) * scale;
-
-        tangents[a] += tangent;
-        tangents[b] += tangent;
-        tangents[c] += tangent;
-
-        binormals[a] += binormal;
-        binormals[b] += binormal;
-        binormals[c] += binormal;
-    }
-
-    for (int i = 0; i < NumVerts; i++)
-    {
-        const Float3  n = VertexArray[i].GetNormal();
-        Float3 const& t = tangents[i];
-        VertexArray[i].SetTangent((t - n * Math::Dot(n, t)).Normalized());
-        VertexArray[i].Handedness = (int8_t)CalcHandedness(t, binormals[i].Normalized(), n);
-    }
-}
-
-bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* IndexArray, unsigned int NumIndices)
+bool CalcTangentSpace(MeshVertex* vertices, unsigned int const* indices, unsigned int indexCount)
 {
     struct GeometryData
     {
@@ -90,9 +48,9 @@ bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* Ind
     };
 
     GeometryData data;
-    data.VertexArray = VertexArray;
-    data.IndexArray = IndexArray;
-    data.NumFaces = NumIndices / 3;
+    data.VertexArray = vertices;
+    data.IndexArray = indices;
+    data.NumFaces = indexCount / 3;
 
     SMikkTSpaceInterface iface = {};
     iface.m_getNumFaces = [](SMikkTSpaceContext const* context) -> int
@@ -139,7 +97,7 @@ bool CalcTangentSpaceMikkTSpace(MeshVertex* VertexArray, unsigned int const* Ind
     return true;
 }
 
-bool CalcTangentSpaceMikkTSpace(Float3 const* Positions, Float2 const* TexCoords, Float3 const* Normals, Float4* Tangents, unsigned int const* IndexArray, unsigned int NumIndices)
+bool CalcTangentSpace(Float3 const* positions, Float2 const* texCoords, Float3 const* normals, Float4* tangents, unsigned int const* indices, unsigned int indexCount)
 {
     struct GeometryData
     {
@@ -153,12 +111,12 @@ bool CalcTangentSpaceMikkTSpace(Float3 const* Positions, Float2 const* TexCoords
     };
 
     GeometryData data;
-    data.Positions = Positions;
-    data.TexCoords = TexCoords;
-    data.Normals = Normals;
-    data.Tangents = Tangents;
-    data.IndexArray = IndexArray;
-    data.NumFaces = NumIndices / 3;
+    data.Positions = positions;
+    data.TexCoords = texCoords;
+    data.Normals = normals;
+    data.Tangents = tangents;
+    data.IndexArray = indices;
+    data.NumFaces = indexCount / 3;
 
     SMikkTSpaceInterface iface = {};
     iface.m_getNumFaces = [](SMikkTSpaceContext const* context) -> int
@@ -202,6 +160,32 @@ bool CalcTangentSpaceMikkTSpace(Float3 const* Positions, Float2 const* TexCoords
         return false;
     }
     return true;
+}
+
+void CalcNormals(Float3 const* positions, Float3* normals, unsigned int vertexCount, unsigned int const* indices, unsigned int indexCount)
+{
+    int triangleCount = indexCount / 3;
+
+    Core::ZeroMem(normals, vertexCount * sizeof(Float3));
+
+    for (int n = 0; n < triangleCount; ++n)
+    {
+        auto& v0 = positions[indices[n * 3    ]];
+        auto& v1 = positions[indices[n * 3 + 1]];
+        auto& v2 = positions[indices[n * 3 + 2]];
+
+        auto e0 = v1 - v0;
+        auto e1 = v2 - v0;
+
+        auto normal = Math::Cross(e0, e1).Normalized();
+
+        normals[indices[n * 3    ]] += normal;
+        normals[indices[n * 3 + 1]] += normal;
+        normals[indices[n * 3 + 2]] += normal;
+    }
+
+    for (int n = 0; n < vertexCount; ++n)
+        normals[n].NormalizeSelf();
 }
 
 } // namespace Geometry

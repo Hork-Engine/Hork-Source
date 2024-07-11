@@ -30,29 +30,27 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Geometry/VertexFormat.h>
+#include <Engine/Core/Containers/Vector.h>
+#include <Engine/Math/Simd/Simd.h>
 
 HK_NAMESPACE_BEGIN
 
-namespace Geometry
+struct SkeletonPose : RefCounted
 {
+    Vector<SoaTransform>        m_LocalMatrices;
+    Vector<SimdFloat4x4>        m_ModelMatrices;
 
-bool CalcTangentSpace(MeshVertex* vertices, unsigned int const* indices, unsigned int indexCount);
-bool CalcTangentSpace(Float3 const* positions, Float2 const* texCoords, Float3 const* normals, Float4* tangents, unsigned int const* indices, unsigned int indexCount);
+    // Skinning matrices from previous frame
+    Vector<Float3x4>            m_SkinningMatrices;
 
-/** binormal = cross( normal, tangent ) * handedness */
-HK_FORCEINLINE float CalcHandedness(Float3 const& tangent, Float3 const& binormal, Float3 const& normal)
-{
-    return (Math::Dot(Math::Cross(normal, tangent), binormal) < 0.0f) ? -1.0f : 1.0f;
-}
-
-HK_FORCEINLINE Float3 CalcBinormal(Float3 const& tangent, Float3 const& normal, float handedness)
-{
-    return Math::Cross(normal, tangent).Normalized() * handedness;
-}
-
-void CalcNormals(Float3 const* positions, Float3* normals, unsigned int vertexCount, unsigned int const* indices, unsigned int indexCount);
-
-} // namespace Geometry
+    struct StreamBuffer
+    {
+        // GPU memory offset/size for the mesh skin
+        size_t      Offset;
+        size_t      OffsetP;
+        size_t      Size;
+    };
+    Vector<StreamBuffer>        m_StreamBuffers;
+};
 
 HK_NAMESPACE_END

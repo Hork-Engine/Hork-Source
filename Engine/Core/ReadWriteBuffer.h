@@ -37,15 +37,15 @@ HK_NAMESPACE_BEGIN
 class ReadWriteBuffer final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
 {
 public:
-    ReadWriteBuffer() = default;
+                    ReadWriteBuffer() = default;
 
-    ReadWriteBuffer(ReadWriteBuffer const&) = delete;
-    ReadWriteBuffer& operator=(ReadWriteBuffer const&) = delete;
+                    ReadWriteBuffer(ReadWriteBuffer const&) = delete;
+                    ReadWriteBuffer& operator=(ReadWriteBuffer const&) = delete;
 
-    ReadWriteBuffer(ReadWriteBuffer&& rhs) noexcept;
-    ReadWriteBuffer& operator=(ReadWriteBuffer&& rhs) noexcept;
+                    ReadWriteBuffer(ReadWriteBuffer&& rhs) noexcept;
+                    ReadWriteBuffer& operator=(ReadWriteBuffer&& rhs) noexcept;
 
-    ~ReadWriteBuffer();
+                    ~ReadWriteBuffer();
 
     void            SetName(StringView Name);
 
@@ -92,13 +92,13 @@ public:
     bool            IsValid() const override;
 
 private:
-    String      m_Name;
-    byte*       m_RawPtr{};
-    size_t      m_RWOffset{};
-    size_t      m_Size{};
-    size_t      m_Capacity{};
-    uint32_t    m_Granularity{1024};
-    bool        m_bExternalBuffer{};
+    String          m_Name;
+    byte*           m_RawPtr{};
+    size_t          m_RWOffset{};
+    size_t          m_Size{};
+    size_t          m_Capacity{};
+    uint32_t        m_Granularity{1024};
+    bool            m_bExternalBuffer{};
 };
 
 HK_NAMESPACE_END

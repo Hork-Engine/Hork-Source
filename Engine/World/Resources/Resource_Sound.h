@@ -42,19 +42,20 @@ class AudioSource;
 class SoundResource : public ResourceBase
 {
 public:
-    static const uint8_t Type = RESOURCE_SOUND;
-    static const uint8_t Version = 1;
+    static const uint8_t        Type = RESOURCE_SOUND;
+    static const uint8_t        Version = 1;
 
-    SoundResource() = default;
-    SoundResource(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
-    ~SoundResource();
+                                SoundResource() = default;
+                                ~SoundResource();
 
-    Ref<AudioSource> GetSource();
+    static UniqueRef<SoundResource> Load(IBinaryStreamReadInterface& stream);
+
+    bool                        Read(IBinaryStreamReadInterface& stream);
+
+    Ref<AudioSource>            GetSource();
 
 private:
-    bool Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
-
-    Ref<AudioSource> m_Source;
+    Ref<AudioSource>            m_Source;
 };
 
 using SoundHandle = ResourceHandle<SoundResource>;

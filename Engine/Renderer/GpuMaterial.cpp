@@ -249,17 +249,17 @@ static const VertexAttribInfo VertexAttribsSkinned[] = {
     {"InJointIndices",
      5, // location
      1, // buffer input slot
-     VAT_UBYTE4,
+     VAT_USHORT4,
      VAM_INTEGER,
      0, // InstanceDataStepRate
-     HK_OFS(MeshVertexSkin, JointIndices)},
+     HK_OFS(SkinVertex, JointIndices)},
     {"InJointWeights",
      6, // location
      1, // buffer input slot
      VAT_UBYTE4N,
      VAM_FLOAT,
      0, // InstanceDataStepRate
-     HK_OFS(MeshVertexSkin, JointWeights)}};
+     HK_OFS(SkinVertex, JointWeights)}};
 
 static const VertexAttribInfo VertexAttribsStatic[] = {
     {"InPosition",
@@ -446,7 +446,7 @@ void CreateDepthPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char*
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -548,7 +548,7 @@ void CreateDepthVelocityPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, con
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -660,7 +660,7 @@ void CreateWireframePassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const c
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -768,7 +768,7 @@ void CreateNormalsPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const cha
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -900,7 +900,7 @@ void CreateLightPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const char*
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if (_Skinned)
@@ -1292,7 +1292,7 @@ void CreateShadowMapPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const c
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1414,7 +1414,7 @@ void CreateOmniShadowMapPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, con
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1529,7 +1529,7 @@ void CreateFeedbackPassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const ch
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if (_Skinned)
@@ -1626,7 +1626,7 @@ void CreateOutlinePassPipeline(Ref<RenderCore::IPipeline>* ppPipeline, const cha
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof(MeshVertexSkin);
+    vertexBinding[1].Stride = sizeof(SkinVertex);
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;

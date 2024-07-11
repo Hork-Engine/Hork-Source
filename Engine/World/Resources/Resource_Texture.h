@@ -46,11 +46,12 @@ public:
     static const uint8_t        Version = 1;
 
                                 TextureResource() = default;
-                                TextureResource(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
     explicit                    TextureResource(ImageStorage image);
                                 ~TextureResource();
 
-    bool                        Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
+    static UniqueRef<TextureResource> Load(IBinaryStreamReadInterface& stream);
+
+    bool                        Read(IBinaryStreamReadInterface& stream);
 
     void                        Upload() override;
 

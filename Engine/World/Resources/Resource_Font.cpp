@@ -37,17 +37,20 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-FontResource::FontResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
-
 FontResource::~FontResource()
 {
     // NOTE: Assume we in main thread
 
     if (m_FontStash && m_FontId != FONS_INVALID)
         fonsRemoveFont(m_FontStash->GetImpl(), m_FontId);
+}
+
+UniqueRef<FontResource> FontResource::Load(IBinaryStreamReadInterface& stream)
+{
+    UniqueRef<FontResource> resource = MakeUnique<FontResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
 }
 
 namespace
@@ -60,7 +63,7 @@ bool CheckTtfHeader(BlobRef blob)
 }
 } // namespace
 
-bool FontResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+bool FontResource::Read(IBinaryStreamReadInterface& stream)
 {
     m_Blob = stream.AsBlob();
 

@@ -42,49 +42,50 @@ HK_NAMESPACE_BEGIN
 class TerrainResource : public ResourceBase
 {
 public:
-    static const uint8_t Type = RESOURCE_TERRAIN;
-    static const uint8_t Version = 1;
+    static const uint8_t        Type = RESOURCE_TERRAIN;
+    static const uint8_t        Version = 1;
 
-    TerrainResource() = default;
-    TerrainResource(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
-    ~TerrainResource();
+                                TerrainResource() = default;
+                                ~TerrainResource();
 
-    bool Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
+    static UniqueRef<TerrainResource> Load(IBinaryStreamReadInterface& stream);
 
-    void Upload() override;
+    bool                        Read(IBinaryStreamReadInterface& stream);
 
-    /** Allocate empty height map */
-    void Allocate(uint32_t resolution);
+    void                        Upload() override;
 
-    /** Fill height map data. */
-    bool WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData);
+    /// Allocate empty height map
+    void                        Allocate(uint32_t resolution);
 
-    float Sample(float x, float z) const;
+    /// Fill height map data.
+    bool                        WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData);
 
-    float Fetch(int x, int z, int lod) const;
+    float                       Sample(float x, float z) const;
 
-    bool GetTriangleVertices(float x, float z, Float3& outV0, Float3& outV1, Float3& outV2) const;
-    bool GetNormal(float x, float z, Float3& outNormal) const;
-    bool GetTexcoord(float x, float z, Float2& outTexcoord) const;
-    void GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
+    float                       Fetch(int x, int z, int lod) const;
 
-    Int2 const& GetClipMin() const { return m_ClipMin; }
-    Int2 const& GetClipMax() const { return m_ClipMax; }
+    bool                        GetTriangleVertices(float x, float z, Float3& outV0, Float3& outV1, Float3& outV2) const;
+    bool                        GetNormal(float x, float z, Float3& outNormal) const;
+    bool                        GetTexcoord(float x, float z, Float2& outTexcoord) const;
+    void                        GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const;
 
-    BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
+    Int2 const&                 GetClipMin() const { return m_ClipMin; }
+    Int2 const&                 GetClipMax() const { return m_ClipMax; }
+
+    BvAxisAlignedBox const&     GetBoundingBox() const { return m_BoundingBox; }
 
 private:
-    void GenerateLods();
+    void                        GenerateLods();
 
-    uint32_t m_Resolution = 0;
-    int m_NumLods{};
-    Int2 m_ClipMin{};
-    Int2 m_ClipMax{};
-    BvAxisAlignedBox m_BoundingBox;
+    uint32_t                    m_Resolution = 0;
+    int                         m_NumLods{};
+    Int2                        m_ClipMin{};
+    Int2                        m_ClipMax{};
+    BvAxisAlignedBox            m_BoundingBox;
 
     // TODO: store heightmap in blocks m*m for cache friendly sampling
     // TODO: проверить, можем ли мы обойтись без лодов без потери в качетсве отображения.
-    Vector<HeapBlob> m_Lods;
+    Vector<HeapBlob>            m_Lods;
 };
 
 using TerrainHandle = ResourceHandle<TerrainResource>;

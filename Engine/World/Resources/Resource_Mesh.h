@@ -31,221 +31,186 @@ SOFTWARE.
 #pragma once
 
 #include "ResourceHandle.h"
-#include "Resource_Skeleton.h"
+#include "ResourceBase.h"
 
 #include <Engine/RenderCore/VertexMemoryGPU.h>
 
-#include <Engine/Math/VectorMath.h>
-#include <Engine/Geometry/VertexFormat.h>
-#include <Engine/Geometry/Skinning.h>
 #include <Engine/Geometry/BV/BvhTree.h>
 #include <Engine/Geometry/Utilites.h>
+#include <Engine/Geometry/RawMesh.h>
+#include <Engine/Math/Simd/Simd.h>
+
+#include <ozz/animation/runtime/skeleton.h> // TODO: move to cpp
+
+namespace ozz::animation
+{
+    class Skeleton;
+}
 
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
 struct TriangleHitResult;
 
-class ResourceManager;
-
-struct MeshSubpart
+struct MeshSurface
 {
-    uint32_t BaseVertex;
-    uint32_t FirstIndex;
-    uint32_t VertexCount;
-    uint32_t IndexCount;
+    uint32_t            BaseVertex = 0;
+    uint32_t            FirstIndex = 0;
+    uint32_t            VertexCount = 0;
+    uint32_t            IndexCount = 0;
+    int16_t             SkinIndex = -1;
+    uint16_t            JointIndex = 0;
+    SimdFloat4x4        InverseTransform = SimdFloat4x4::identity();
+    BvAxisAlignedBox    BoundingBox = BvAxisAlignedBox::Empty();
+    BvhTree             Bvh;
 
-    BvAxisAlignedBox BoundingBox;
-    BvhTree  Bvh;
-
-    void Read(IBinaryStreamReadInterface& stream)
-    {
-        BaseVertex = stream.ReadUInt32();
-        FirstIndex = stream.ReadUInt32();
-        VertexCount = stream.ReadUInt32();
-        IndexCount = stream.ReadUInt32();
-        stream.ReadObject(BoundingBox);
-        stream.ReadObject(Bvh);
-    }
-
-    void Write(IBinaryStreamWriteInterface& stream) const
-    {
-        stream.WriteUInt32(BaseVertex);
-        stream.WriteUInt32(FirstIndex);
-        stream.WriteUInt32(VertexCount);
-        stream.WriteUInt32(IndexCount);
-        stream.WriteObject(BoundingBox);
-        stream.WriteObject(Bvh);
-    }
+    void                Read(IBinaryStreamReadInterface& stream);
+    void                Write(IBinaryStreamWriteInterface& stream) const;
 };
 
-struct MeshSocket
+struct MeshSkin
 {
-    Float3  Position;
-    Quat    Rotation;
-    Float3  Scale = Float3(1);
-    int32_t JointIndex{-1};
+    uint16_t            FirstMatrix = 0;
+    uint16_t            MatrixCount = 0;
 
-    void Read(IBinaryStreamReadInterface& stream)
-    {
-        stream.ReadObject(Position);
-        stream.ReadObject(Rotation);
-        stream.ReadObject(Scale);
-        JointIndex = stream.ReadInt32();
-    }
+    void                Read(IBinaryStreamReadInterface& stream);
+    void                Write(IBinaryStreamWriteInterface& stream) const;
+};
 
-    void Write(IBinaryStreamWriteInterface& stream) const
-    {
-        stream.WriteObject(Position);
-        stream.WriteObject(Rotation);
-        stream.WriteObject(Scale);
-        stream.WriteInt32(JointIndex);
-    }
+template <typename VertexType>
+using VertexBufferCPU = Vector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
+
+template <typename IndexType>
+using IndexBufferCPU = Vector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
+
+using OzzSkeleton = ozz::animation::Skeleton;
+
+struct MeshAllocateDesc
+{
+    uint32_t            SurfaceCount = 0;
+    uint32_t            SkinsCount = 0;
+    uint32_t            JointReampSize = 0;
+    uint32_t            JointCount = 0;
+    uint32_t            VertexCount = 0;
+    uint32_t            IndexCount = 0;
+    bool                HasLightmapChannel = false;
 };
 
 class MeshResource : public ResourceBase
 {
 public:
-    static const uint8_t Type = RESOURCE_MESH;
-    static const uint8_t Version = 1;
+    static const uint8_t        Type = RESOURCE_MESH;
+    static const uint8_t        Version = 2;
 
-    MeshResource() = default;
-    MeshResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
-    ~MeshResource();
+    using VertexBuffer =        VertexBufferCPU<MeshVertex>;
+    using UvBuffer =            VertexBufferCPU<MeshVertexUV>;
+    using SkinBuffer =          VertexBufferCPU<SkinVertex>;
+    using IndexBuffer =         IndexBufferCPU<unsigned int>;
 
-    bool Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager);
+                                MeshResource() = default;
+                                ~MeshResource();
 
-    void Write(IBinaryStreamWriteInterface& stream, ResourceManager* resManager) const;
+    static UniqueRef<MeshResource> Load(IBinaryStreamReadInterface& stream);
 
-    void Upload() override;
+    bool                        Read(IBinaryStreamReadInterface& stream);
+    void                        Write(IBinaryStreamWriteInterface& stream) const;
 
-    bool IsSkinned() const { return m_IsSkinned; }
+    void                        Upload() override;
 
-    bool HasLightmapUVs() const { return m_LightmapUVsGPU != nullptr; }
+    bool                        HasLightmapUVs() const { return m_LightmapUVsGPU != nullptr; }
+    bool                        HasSkinning() const { return !m_SkinBuffer.IsEmpty(); }
 
-    void Allocate(int vertexCount, int indexCount, int subpartCount, bool bSkinned, bool bWithLightmapUVs);
+    void                        Allocate(MeshAllocateDesc const& desc);
 
-    /** Write vertices at location and send them to GPU */
-    bool WriteVertexData(MeshVertex const* vertices, int vertexCount, int startVertexLocation);
-    bool SendVertexDataToGPU(int vertexCount, int startVertexLocation);
+    bool                        WriteVertexData(MeshVertex const* vertices, int vertexCount, int startVertexLocation);
+    bool                        WriteSkinningData(SkinVertex const* vertices, int vertexCount, int startVertexLocation);
+    bool                        WriteLightmapUVsData(MeshVertexUV const* UVs, int vertexCount, int startVertexLocation);
+    bool                        WriteIndexData(unsigned int const* indices, int indexCount, int startIndexLocation);
 
-    /** Write joint weights at location and send them to GPU */
-    bool WriteJointWeights(MeshVertexSkin const* vertices, int vertexCount, int startVertexLocation);
+    MeshVertex const*           GetVertices() const { return m_Vertices.ToPtr(); }
+    SkinVertex const*           GetSkinBuffer() const { return m_SkinBuffer.ToPtr(); }
+    MeshVertexUV const*         GetLightmapUVs() const { return m_LightmapUVs.ToPtr(); }
+    unsigned int const*         GetIndices() const { return m_Indices.ToPtr(); }
 
-    /** Write lightmap UVs at location and send them to GPU */
-    bool WriteLightmapUVsData(MeshVertexUV const* UVs, int vertexCount, int startVertexLocation);
+    int                         GetVertexCount() const { return m_Vertices.Size(); }
+    int                         GetIndexCount() const { return m_Indices.Size(); }
 
-    /** Write indices at location and send them to GPU */
-    bool WriteIndexData(unsigned int const* indices, int IndexCount, int startIndexLocation);
+    void                        SetBoundingBox(BvAxisAlignedBox const& boundingBox);
+    BvAxisAlignedBox const&     GetBoundingBox() const { return m_BoundingBox; }
 
-    /** Get mesh vertices */
-    MeshVertex* GetVertices() { return m_Vertices.ToPtr(); }
+    MeshSurface&                LockSurface(uint32_t surfaceIndex) { return m_Surfaces[surfaceIndex]; }
 
-    /** Get mesh vertices */
-    MeshVertex const* GetVertices() const { return m_Vertices.ToPtr(); }
+    MeshSurface const*          GetSurfaces() const { return m_Surfaces.ToPtr(); }
+    int                         GetSurfaceCount() const { return m_Surfaces.Size(); }
 
-    /** Get weights for vertex skinning */
-    MeshVertexSkin* GetWeights() { return m_Weights.ToPtr(); }
+    OzzSkeleton const*          GetSkeleton() const { return m_Skeleton.RawPtr(); }
 
-    /** Get weights for vertex skinning */
-    MeshVertexSkin const* GetWeights() const { return m_Weights.ToPtr(); }
+    uint16_t                    GetJointCount() const;
+    const char*                 GetJointName(uint16_t jointIndex) const;
+    int16_t                     GetJointParent(uint16_t jointIndex) const;
 
-    MeshVertexUV* GetLightmapUVs() { return m_LightmapUVs.ToPtr(); }
-    MeshVertexUV const* GetLightmapUVs() const { return m_LightmapUVs.ToPtr(); }
+    int16_t                     FindJoint(StringView name) const;
 
-    /** Get mesh indices */
-    unsigned int* GetIndices() { return m_Indices.ToPtr(); }
+    Vector<MeshSkin> const&     GetSkins() const { return m_Skins; }
+    Vector<uint16_t> const&     GetJointRemaps() const { return m_JointRemaps; }
+    Vector<SimdFloat4x4> const& GetInverseBindPoses() const { return m_InverseBindPoses; }
 
-    /** Get mesh indices */
-    unsigned int const* GetIndices() const { return m_Indices.ToPtr(); }
+    /// Geometry BVH
+    void                        GenerateBVH(uint16_t trianglesPerLeaf = 16);
 
-    /** Mesh vertex count */
-    int GetVertexCount() const { return m_Vertices.Size(); }
+    /// Get mesh GPU buffers
+    void                        GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
-    /** Mesh index count */
-    int GetIndexCount() const { return m_Indices.Size(); }
+    /// Check ray intersection. Result is unordered by distance to save performance
+    bool                        Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
 
-    void SetBoundingBox(BvAxisAlignedBox const& boundingBox);
-    BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
+    /// Check ray intersection
+    bool                        RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& surfaceIndex) const;
 
-    Vector<MeshSubpart>& GetSubparts() { return m_Subparts; }
-    Vector<MeshSubpart> const& GetSubparts() const { return m_Subparts; }
-    #if 0
-    void SetMaterials(ArrayView<MaterialInstanceHandle> materials);
-    void SetMaterial(int subpartIndex, MaterialInstanceHandle handle);
+    void                        DrawDebug(DebugRenderer& renderer) const;
+    void                        DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) const;
 
-    Vector<MaterialInstanceHandle>& GetMaterials() { return m_Materials; }
-    Vector<MaterialInstanceHandle> const& GetMaterials() const { return m_Materials; }
-    #endif
+private:
+    static void*                GetVertexMemory(void* _This);
+    static void*                GetSkinMemory(void* _This);
+    static void*                GetLightmapUVMemory(void* _This);
+    static void*                GetIndexMemory(void* _This);
 
-    /** Attach skeleton. */
-    void SetSkeleton(SkeletonHandle skeleton) { m_Skeleton = skeleton; }
+    void                        Clear();
+    void                        AddLightmapUVs();
 
-    /** Get attached skeleton. */
-    SkeletonHandle GetSkeleton() const { return m_Skeleton; }
+    bool                        SurfaceRaycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
+    bool                        SurfaceRaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
 
-    void SetSockets(ArrayView<MeshSocket> sockets);
-    Vector<MeshSocket>& GetSockets() { return m_Sockets; }
-    Vector<MeshSocket> const& GetSockets() const { return m_Sockets; }
+    Vector<MeshSurface>         m_Surfaces;
+    Vector<MeshSkin>            m_Skins;
+    Vector<uint16_t>            m_JointRemaps;
+    Vector<SimdFloat4x4>        m_InverseBindPoses;
+    UniqueRef<OzzSkeleton>      m_Skeleton;
+    VertexBuffer                m_Vertices;
+    SkinBuffer                  m_SkinBuffer;
+    UvBuffer                    m_LightmapUVs;
+    IndexBuffer                 m_Indices; // TODO: unsigned short, split large meshes to surfaces
+    BvAxisAlignedBox            m_BoundingBox;
 
-    /** Set mesh skin */
-    void SetSkin(MeshSkin skin);
+    VertexHandle*               m_VertexHandle{};
+    VertexHandle*               m_SkinBufferHandle{};
+    VertexHandle*               m_LightmapUVsGPU{};
+    VertexHandle*               m_IndexHandle{};
 
-    /** Get mesh skin */
-    MeshSkin const& GetSkin() const { return m_Skin; }
-
-    /** Create BVH for raycast optimization. */
-    void GenerateBVH(uint16_t primitivesPerLeaf = 16);
-
-    /** Max primitives per leaf used for BVH generation. */
-    uint16_t GetBvhPrimitivesPerLeaf() const { return m_BvhPrimitivesPerLeaf; }
-
-    /** Get mesh GPU buffers */
-    void GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-
-    /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
-
-    /** Check ray intersection */
-    bool RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& subpartIndex) const;
-
-    void DrawDebug(DebugRenderer& renderer) const;
-    void DrawDebugSubpart(DebugRenderer& renderer, int subpartIndex) const;
-
-//private:
-    static void* GetVertexMemory(void* _This);
-    static void* GetWeightMemory(void* _This);
-    static void* GetLightmapUVMemory(void* _This);
-    static void* GetIndexMemory(void* _This);
-
-    void AddLightmapUVs();
-
-    bool SubpartRaycast(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
-    bool SubpartRaycastClosest(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
-
-    VertexHandle*                    m_VertexHandle{};
-    VertexHandle*                    m_WeightsHandle{};
-    VertexHandle*                    m_LightmapUVsGPU{};
-    VertexHandle*                    m_IndexHandle{};
-    VertexBufferCPU<MeshVertex>     m_Vertices;
-    VertexBufferCPU<MeshVertexSkin> m_Weights;
-    VertexBufferCPU<MeshVertexUV>   m_LightmapUVs;
-    IndexBufferCPU<unsigned int>    m_Indices; // TODO: unsigned short, split large meshes to subparts
-    Vector<MeshSubpart>             m_Subparts;
-    #if 0
-    Vector<MaterialInstanceHandle>  m_Materials;
-    #endif
-    Vector<MeshSocket>              m_Sockets;
-    SkeletonHandle                   m_Skeleton;
-    MeshSkin                         m_Skin;
-    BvAxisAlignedBox                 m_BoundingBox;
-    uint16_t                         m_BvhPrimitivesPerLeaf{16};
-    bool                             m_IsSkinned{};
+    friend class                MeshResourceBuilder;
 };
 
 using MeshHandle = ResourceHandle<MeshResource>;
+
+class MeshResourceBuilder
+{
+public:
+    UniqueRef<MeshResource>     Build(RawMesh const& rawMesh);
+
+};
 
 HK_NAMESPACE_END

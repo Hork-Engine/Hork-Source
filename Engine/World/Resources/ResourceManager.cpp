@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "ResourceManager.h"
 
+#include "Resource_Animation.h"
 #include "Resource_Mesh.h"
 #include "Resource_Material.h"
 #include "Resource_MaterialInstance.h"
@@ -38,8 +39,6 @@ SOFTWARE.
 #include "Resource_Terrain.h"
 #include "Resource_Sound.h"
 
-#include <Engine/Geometry/BV/BvhTree.h>
-#include <Engine/World/Modules/Render/MaterialGraph.h> // TODO: remove dependency
 #include <Engine/GameApplication/GameApplication.h>
 #include <Engine/Core/Platform.h>
 
@@ -57,252 +56,6 @@ struct ResourceArea
         return m_ResourcesLoaded == m_ResourceList.Size();
     }
 };
-
-void CreateDefaultResources(ResourceManager* resManager)
-{
-    {
-        MeshResource data;
-
-        CreateBoxMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, Float3(1), 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/box.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateSphereMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/sphere.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateCylinderMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1.0f, 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/cylinder.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateConeMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1.0f, 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/cone.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateCapsuleMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1.0f, 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/capsule.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreatePlaneMeshXZ(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 256, 256, Float2(256));
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/plane_xz.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreatePlaneMeshXY(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 256, 256, Float2(256));
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/plane_xy.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreatePlaneMeshXZ(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 1.0f, 1.0f, Float2(1));
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/quad_xz.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreatePlaneMeshXY(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 1.0f, 1.0f, Float2(1));
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/quad_xy.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateSkyboxMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, Float3(1.0f), 1.0f);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/skybox.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateSkydomeMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1, 32, 32, false);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/skydome.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MeshResource data;
-
-        CreateSkydomeMesh(data.m_Vertices, data.m_Indices, data.m_BoundingBox, 0.5f, 1, 32, 32, true);
-
-        data.m_Subparts.Resize(1);
-        data.m_Subparts[0].BaseVertex = 0;
-        data.m_Subparts[0].FirstIndex = 0;
-        data.m_Subparts[0].VertexCount = data.m_Vertices.Size();
-        data.m_Subparts[0].IndexCount = data.m_Indices.Size();
-        data.GenerateBVH();
-
-        auto file = File::OpenWrite("Data/default/skydome_hemisphere.mesh");
-        data.Write(file, resManager);
-    }
-
-    {
-        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resManager->OpenFile("/Root/materials/sample_material_graph.mgraph").ReadInterface());
-
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
-
-        auto file = File::OpenWrite("Data/default/materials/default.mat");
-        data.Write(file, resManager);
-    }
-
-    {
-        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resManager->OpenFile("/Root/materials/unlit.mgraph").ReadInterface());
-
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
-
-        auto file = File::OpenWrite("Data/default/materials/default_unlit.mat");
-        data.Write(file, resManager);
-    }
-
-    {
-        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
-
-        auto& inPosition = graph->Add2<MGInPosition>();
-
-        MGTextureSlot* cubemapTexture = graph->GetTexture(0);
-        cubemapTexture->TextureType = TEXTURE_CUBE;
-        cubemapTexture->Filter = TEXTURE_FILTER_LINEAR;
-        cubemapTexture->AddressU = TEXTURE_ADDRESS_CLAMP;
-        cubemapTexture->AddressV = TEXTURE_ADDRESS_CLAMP;
-        cubemapTexture->AddressW = TEXTURE_ADDRESS_CLAMP;
-
-        auto& cubemapSampler = graph->Add2<MGTextureLoad>();
-        cubemapSampler.BindInput("TexCoord", inPosition);
-        cubemapSampler.BindInput("Texture", cubemapTexture);
-
-        graph->BindInput("Color", cubemapSampler);
-
-        graph->MaterialType = MATERIAL_TYPE_UNLIT;
-        graph->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
-
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
-
-        auto file = File::OpenWrite("Data/default/materials/skybox.mat");
-        data.Write(file, resManager);
-    }
-}
 
 ResourceManager::ResourceManager()
 {
@@ -328,8 +81,6 @@ ResourceManager::ResourceManager()
                                     AddResourcePack(fileName);
                                 }
                             });
-
-    //CreateDefaultResources(this);
 }
 
 ResourceManager::~ResourceManager()
@@ -447,33 +198,30 @@ ResourceProxy* ResourceManager::FindResource(StringView resourcePath)
 
 UniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, StringView name)
 {
+    auto n = name.FindCharacter('#');
+    if (n != -1)
+        name = name.GetSubstring(0, n);
+
     File f = OpenFile(name);
     if (!f)
         return {};
 
-    //Thread::WaitSeconds(1);
-    //Thread::WaitMilliseconds(100);
-
     switch (type)
     {
         case RESOURCE_MESH:
-            return MakeUnique<MeshResource>(f, this);
-        case RESOURCE_SKELETON:
-            return MakeUnique<SkeletonResource>(f, this);
+            return MeshResource::Load(f);
+        case RESOURCE_ANIMATION:
+            return AnimationResource::Load(f);
         case RESOURCE_TEXTURE:
-            return MakeUnique<TextureResource>(f, this);
+            return TextureResource::Load(f);
         case RESOURCE_MATERIAL:
-            return MakeUnique<MaterialResource>(f, this);
+            return MaterialResource::Load(f);
         case RESOURCE_SOUND:
-            return MakeUnique<SoundResource>(f, this);
+            return SoundResource::Load(f);
         case RESOURCE_FONT:
-            return MakeUnique<FontResource>(f, this);
+            return FontResource::Load(f);
         case RESOURCE_TERRAIN:
-            return MakeUnique<TerrainResource>(f, this);
-#if 0
-        case RESOURCE_SOUND:
-            return LoadSound(name);
-#endif
+            return TerrainResource::Load(f);
         default:
             break;
     }

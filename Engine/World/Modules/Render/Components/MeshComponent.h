@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/World/Component.h>
 #include <Engine/World/Modules/Render/ProceduralMesh.h>
+#include <Engine/World/Modules/Skeleton/SkeletonPose.h>
 #include <Engine/World/Resources/Resource_Mesh.h>
 #include <Engine/World/Resources/Resource_MaterialInstance.h>
 
@@ -46,21 +47,29 @@ public:
     struct Surface
     {
         Vector<MaterialInstance*>  Materials;
-        //BvAxisAlignedBox            BoundingBox;
-        //BvAxisAlignedBox            WorldBoundingBox;
     };
 
-    MeshHandle              m_Resource;
-    Vector<Surface>         m_Surfaces;
-    Ref<SkeletonPose>       m_Pose;
-    Ref<ProceduralMesh_ECS> m_ProceduralData;
-    bool                    m_Outline = false;
-    bool                    m_CastShadow = true;
-    uint32_t                m_CascadeMask = 0;
+    MeshHandle                  m_Resource;
+    Vector<Surface>             m_Surfaces;
+    Ref<ProceduralMesh_ECS>     m_ProceduralData;
+    bool                        m_Outline = false;
+    bool                        m_CastShadow = true;
+    uint32_t                    m_CascadeMask = 0;
 
-    void                    UpdateBoundingBox();
+    void                        SetLocalBoundingBox(BvAxisAlignedBox const& boundingBox);
+    BvAxisAlignedBox const&     GetLocalBoundingBox() const { return m_LocalBoundingBox; }
 
-    void                    DrawDebug(DebugRenderer& renderer);
+    /// The bounding box is updated in BeginPlay for static and dynamic meshes, and at every update before rendering for dynamic meshes.
+    BvAxisAlignedBox const&     GetWorldBoundingBox() const { return m_WorldBoundingBox; }
+
+    /// Force update for world bonding box
+    void                        UpdateWorldBoundingBox();
+
+    void                        DrawDebug(DebugRenderer& renderer);
+
+protected:
+    BvAxisAlignedBox            m_LocalBoundingBox;
+    BvAxisAlignedBox            m_WorldBoundingBox;
 };
 
 struct PreRenderContext
@@ -80,33 +89,19 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    void BeginPlay()
-    {
-        m_RenderTransform = GetOwner()->GetWorldTransformMatrix();
-        m_RotationMatrix = GetOwner()->GetWorldRotation().ToMatrix3x3();
-    }
+    // Internal
 
-    void PreRender(PreRenderContext const& context)
-    {}
+    void                        BeginPlay();
+    void                        PreRender(PreRenderContext const& context) {}
 
-    Float3x4 const& GetRenderTransform() const
-    {
-        return m_RenderTransform;
-    }
+    Float3x4 const&             GetRenderTransform() const { return m_RenderTransform; }
+    Float3x4 const&             GetRenderTransformPrev() const { return m_RenderTransform; }
 
-    Float3x4 const& GetRenderTransformPrev() const
-    {
-        return m_RenderTransform;
-    }
-
-    Float3x3 const& GetRotationMatrix() const
-    {
-        return m_RotationMatrix;
-    }
+    Float3x3 const&             GetRotationMatrix() const { return m_RotationMatrix; }
 
 private:
-    Float3x4 m_RenderTransform;
-    Float3x3 m_RotationMatrix;
+    Float3x4                    m_RenderTransform;
+    Float3x3                    m_RotationMatrix;
 };
 
 class DynamicMeshComponent : public MeshComponent
@@ -118,75 +113,31 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    // Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
-    void SkipInterpolation()
-    {
-        m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
-        m_Transform[0].Rotation = m_Transform[1].Rotation = GetOwner()->GetWorldRotation();
-        m_Transform[0].Scale    = m_Transform[1].Scale    = GetOwner()->GetWorldScale();
+    Ref<SkeletonPose>           m_Pose;
 
-        m_LastFrame = 0;
-    }
+    /// Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
+    void                        SkipInterpolation();
+    
+    // Internal
 
-    void PostTransform()
-    {
-        auto index = GetWorld()->GetTick().StateIndex;
+    void                        BeginPlay();
+    void                        PostTransform();
+    void                        PreRender(PreRenderContext const& context);
 
-        m_Transform[index].Position = GetOwner()->GetWorldPosition();
-        m_Transform[index].Rotation = GetOwner()->GetWorldRotation();
-        m_Transform[index].Scale    = GetOwner()->GetWorldScale();
-    }
+    Float3x4 const&             GetRenderTransform() const { return m_RenderTransform[m_LastFrame & 1]; }
+    Float3x4 const&             GetRenderTransformPrev() const { return m_RenderTransform[(m_LastFrame + 1) & 1]; }
 
-    void BeginPlay()
-    {
-        m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
-        m_Transform[0].Rotation = m_Transform[1].Rotation = GetOwner()->GetWorldRotation();
-        m_Transform[0].Scale    = m_Transform[1].Scale    = GetOwner()->GetWorldScale();
+    Float3x3 const&             GetRotationMatrix() const { return m_RotationMatrix; }
 
-        m_RenderTransform[0].Compose(m_Transform[0].Position, m_Transform[0].Rotation.ToMatrix3x3(), m_Transform[0].Scale);
-        m_RenderTransform[1] = m_RenderTransform[0];
-    }
-
-    // Update before rendering once per frame
-    void PreRender(PreRenderContext const& context)
-    {
-        if (m_LastFrame == context.FrameNum)
-            return;  // already called for this frame
-
-        Float3 position = Math::Lerp (m_Transform[context.Prev].Position, m_Transform[context.Cur].Position, context.Frac);
-        Quat   rotation = Math::Slerp(m_Transform[context.Prev].Rotation, m_Transform[context.Cur].Rotation, context.Frac);
-        Float3 scale    = Math::Lerp (m_Transform[context.Prev].Scale,    m_Transform[context.Cur].Scale,    context.Frac);
-
-        m_RotationMatrix = rotation.ToMatrix3x3();
-
-        m_RenderTransform[context.FrameNum & 1].Compose(position, m_RotationMatrix, scale);
-
-        if (m_LastFrame + 1 != context.FrameNum)
-            m_RenderTransform[(context.FrameNum + 1) & 1] = m_RenderTransform[context.FrameNum & 1];
-
-        m_LastFrame = context.FrameNum;
-    }
-
-    Float3x4 const& GetRenderTransform() const
-    {
-        return m_RenderTransform[m_LastFrame & 1];
-    }
-
-    Float3x4 const& GetRenderTransformPrev() const
-    {
-        return m_RenderTransform[(m_LastFrame + 1) & 1];
-    }
-
-    Float3x3 const& GetRotationMatrix() const
-    {
-        return m_RotationMatrix;
-    }
+    void                        DrawDebug(DebugRenderer& renderer);
 
 private:
-    Transform m_Transform[2];
-    Float3x4  m_RenderTransform[2];
-    Float3x3  m_RotationMatrix;
-    uint32_t  m_LastFrame{0};
+    void                        UpdateSkinningMatrices();
+
+    Transform                   m_Transform[2];
+    Float3x4                    m_RenderTransform[2];
+    Float3x3                    m_RotationMatrix;
+    uint32_t                    m_LastFrame{0};
 };
 
 namespace TickGroup_PostTransform

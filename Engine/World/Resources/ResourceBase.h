@@ -38,7 +38,7 @@ enum RESOURCE_TYPE : uint8_t
 {
     RESOURCE_UNDEFINED,
     RESOURCE_MESH,//ok
-    RESOURCE_SKELETON,//ok
+    RESOURCE_ANIMATION,//ok
     RESOURCE_NODE_MOTION,     // todo
     RESOURCE_TEXTURE,//ok
     RESOURCE_MATERIAL,// combine compiledmaterial with material

@@ -1078,7 +1078,7 @@ HK_FORCEINLINE T HermiteCubicSpline(T const& p0, T const& m0, T const& p1, T con
     const float s3  = ttt - tt;
     const float s0  = 1 - s2;
     const float s1  = s3 - tt + t;
-    return s0 * p0 + s1 * m0 * t + s2 * p1 + s3 * m1 * t;
+    return p0 * s0 + m0 * (s1 * t) + p1 * s2 + m1 * (s3 * t);
 }
 
 // Comparision

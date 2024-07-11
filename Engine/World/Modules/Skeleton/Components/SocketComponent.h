@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Modules/Skeleton/SkeletalAnimation.h>
-#include "SkinnedMeshComponent.h"
+#include <Engine/World/Component.h>
+#include <Engine/World/TickFunction.h>
+#include <Engine/World/Modules/Skeleton/SkeletonPose.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -46,10 +47,12 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
+    Float3              Offset;
     Ref<SkeletonPose>   Pose;
-    int                 SocketIndex{};
+    uint16_t            JointIndex{};
+    bool                bApplyJointScale = false;
     
-    void                FixedUpdate();
+    void                LateUpdate();
 
     void                DrawDebug(DebugRenderer& renderer);
 };
@@ -60,7 +63,6 @@ namespace TickGroup_FixedUpdate
     HK_INLINE void InitializeTickFunction<SocketComponent>(TickFunctionDesc& desc)
     {
         desc.Name.FromString("Update Sockets");
-        desc.AddPrerequisiteComponent<SkinnedMeshComponent>();
     }
 }
 

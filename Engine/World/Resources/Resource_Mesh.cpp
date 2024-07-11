@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -29,31 +29,185 @@ SOFTWARE.
 */
 
 #include "Resource_Mesh.h"
-#include "Resource_Skeleton.h"
 #include "ResourceManager.h"
 
 #include <Engine/Geometry/BV/BvIntersect.h>
+#include <Engine/Geometry/TangentSpace.h>
 #include <Engine/GameApplication/GameApplication.h>
 
-HK_NAMESPACE_BEGIN
+#include <Engine/Core/ReadWriteBuffer.h>
 
-MeshResource::MeshResource(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
-{
-    Read(stream, resManager);
-}
+#include "Implementation/OzzIO.h"
+
+#include <ozz/animation/runtime/animation.h>
+#include <ozz/animation/runtime/skeleton.h>
+
+HK_NAMESPACE_BEGIN
 
 MeshResource::~MeshResource()
 {
     VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_WeightsHandle);
+    vertexMemory->Deallocate(m_SkinBufferHandle);
     vertexMemory->Deallocate(m_LightmapUVsGPU);
     vertexMemory->Deallocate(m_IndexHandle);
 }
 
-bool MeshResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+int16_t MeshResource::FindJoint(StringView name) const
 {
+    if (!m_Skeleton)
+        return -1;
+
+    int16_t jointIndex = 0;
+    for (const char* joint : m_Skeleton->joint_names())
+    {
+        if (!name.Cmp(joint))
+            return jointIndex;
+        ++jointIndex;
+    }
+    return -1;
+}
+
+uint16_t MeshResource::GetJointCount() const
+{
+    return m_Skeleton ? m_Skeleton->num_joints() : 0;
+}
+
+const char* MeshResource::GetJointName(uint16_t jointIndex) const
+{
+    return m_Skeleton ? m_Skeleton->joint_names()[jointIndex] : "";
+}
+
+int16_t MeshResource::GetJointParent(uint16_t jointIndex) const
+{
+    return m_Skeleton ? m_Skeleton->joint_parents()[jointIndex] : -1;
+}
+
+void MeshResource::Clear()
+{
+    m_Surfaces.Clear();
+    m_Skins.Clear();
+    m_JointRemaps.Clear();
+    m_InverseBindPoses.Clear();
+    m_Skeleton.Reset();
+    m_Vertices.Clear();
+    m_SkinBuffer.Clear();
+    m_LightmapUVs.Clear();
+    m_Indices.Clear();
+    m_BoundingBox.Clear();
+}
+
+UniqueRef<MeshResource> MeshResource::Load(IBinaryStreamReadInterface& stream)
+{
+    StringView extension = PathUtils::GetExt(stream.GetName());
+
+    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb"))
+    {
+        RawMesh mesh;
+        if (!mesh.LoadGLTF(stream, RawMeshLoadFlags::Surfaces | RawMeshLoadFlags::Skins | RawMeshLoadFlags::Skeleton))
+            return {};
+
+        return MeshResourceBuilder().Build(mesh);
+    }
+    if (!extension.Icmp(".obj"))
+    {
+        RawMesh mesh;
+        if (!mesh.LoadOBJ(stream, RawMeshLoadFlags::Surfaces))
+            return {};
+
+        return MeshResourceBuilder().Build(mesh);
+    }
+
+    UniqueRef<MeshResource> resource = MakeUnique<MeshResource>();
+    if (!resource->Read(stream))
+        return {};
+    return resource;
+}
+
+namespace
+{
+
+    void ReadInverseBindPoses(IBinaryStreamReadInterface& stream, Vector<SimdFloat4x4>& v)
+    {
+        uint32_t arraySize = stream.ReadUInt32();
+
+        v.Clear();
+        v.Reserve(arraySize);
+
+        Float3x4 inverseBindPose;
+        for (uint32_t n = 0; n < arraySize; ++n)
+        {
+            stream.ReadObject(inverseBindPose);
+            alignas(16) Float4x4 source(inverseBindPose);
+            source.TransposeSelf();
+            Simd::LoadFloat4x4(source, v.EmplaceBack().cols);
+        }
+    }
+
+    void WriteInverseBindPoses(IBinaryStreamWriteInterface& stream, Vector<SimdFloat4x4> const& v)
+    {
+        stream.WriteUInt32(v.Size());
+
+        alignas(16) Float4x4 inverseBindPose;
+        for (uint32_t n = 0, arraySize = v.Size(); n < arraySize; ++n)
+        {
+            Simd::StoreFloat4x4(v[n].cols, inverseBindPose);
+            stream.WriteObject(Float3x4(inverseBindPose.Transposed()));
+        }
+    }
+}
+
+void MeshSurface::Read(IBinaryStreamReadInterface& stream)
+{
+    BaseVertex = stream.ReadUInt32();
+    FirstIndex = stream.ReadUInt32();
+    VertexCount = stream.ReadUInt32();
+    IndexCount = stream.ReadUInt32();
+    SkinIndex = stream.ReadInt16();
+    JointIndex = stream.ReadUInt16();
+
+    alignas(16) Float4x4 m;
+    stream.ReadObject(m);
+    Simd::LoadFloat4x4(m, InverseTransform.cols);
+
+    stream.ReadObject(BoundingBox);
+    stream.ReadObject(Bvh);
+}
+
+void MeshSurface::Write(IBinaryStreamWriteInterface& stream) const
+{
+    stream.WriteUInt32(BaseVertex);
+    stream.WriteUInt32(FirstIndex);
+    stream.WriteUInt32(VertexCount);
+    stream.WriteUInt32(IndexCount);
+    stream.WriteInt16(SkinIndex);
+    stream.WriteUInt16(JointIndex);
+
+    alignas(16) Float4x4 m;
+    Simd::StoreFloat4x4(InverseTransform.cols, m);
+    stream.WriteObject(m);
+
+    stream.WriteObject(BoundingBox);
+    stream.WriteObject(Bvh);
+}
+
+void MeshSkin::Read(IBinaryStreamReadInterface& stream)
+{
+    FirstMatrix = stream.ReadUInt16();
+    MatrixCount = stream.ReadUInt16();
+}
+
+void MeshSkin::Write(IBinaryStreamWriteInterface& stream) const
+{
+    stream.WriteUInt16(FirstMatrix);
+    stream.WriteUInt16(MatrixCount);
+}
+
+bool MeshResource::Read(IBinaryStreamReadInterface& stream)
+{   
+    Clear();
+
     uint32_t fileMagic = stream.ReadUInt32();
 
     if (fileMagic != MakeResourceMagic(Type, Version))
@@ -62,74 +216,50 @@ bool MeshResource::Read(IBinaryStreamReadInterface& stream, ResourceManager* res
         return false;
     }
 
-    String resourcePath;
+    stream.ReadArray(m_Surfaces);
+    stream.ReadArray(m_Skins);
+    stream.ReadArray(m_JointRemaps);
+    ReadInverseBindPoses(stream, m_InverseBindPoses);
+
+    m_Skeleton = OzzReadSkeleton(stream);
 
     stream.ReadArray(m_Vertices);
-    stream.ReadArray(m_Weights);
+    stream.ReadArray(m_SkinBuffer);
     stream.ReadArray(m_LightmapUVs);
     stream.ReadArray(m_Indices);
-    stream.ReadArray(m_Subparts);
-    stream.ReadArray(m_Sockets);
-    #if 0
-    uint32_t numMaterials = stream.ReadUInt32();
-
-    m_Materials.Clear();
-    m_Materials.Reserve(numMaterials);
-    for (uint32_t i = 0; i < numMaterials; ++i)
-    {
-        resourcePath = stream.ReadString();
-
-        m_Materials.Add(resManager->GetResource<MaterialInstance>(resourcePath));
-    }
-    #endif
-    stream.ReadArray(m_Skin.JointIndices);
-    stream.ReadArray(m_Skin.OffsetMatrices);
     stream.ReadObject(m_BoundingBox);
 
-    resourcePath = stream.ReadString();
-    if (!resourcePath.IsEmpty())
-        m_Skeleton = resManager->GetResource<SkeletonResource>(resourcePath);
-    else
-        m_Skeleton = {};
-
-    m_IsSkinned = stream.ReadBool();
-    m_BvhPrimitivesPerLeaf = stream.ReadUInt16();    
-
+    stream.ReadArray(m_Vertices);
+    stream.ReadArray(m_SkinBuffer);
+    stream.ReadArray(m_LightmapUVs);
+    stream.ReadArray(m_Indices);
+    stream.ReadArray(m_Surfaces);
+      
     return true;
 }
 
-void MeshResource::Write(IBinaryStreamWriteInterface& stream, ResourceManager* resManager) const
+void MeshResource::Write(IBinaryStreamWriteInterface& stream) const
 {
-    StringView resourcePath;
-
     stream.WriteUInt32(MakeResourceMagic(Type, Version));
+
+    stream.WriteArray(m_Surfaces);
+    stream.WriteArray(m_Skins);
+    stream.WriteArray(m_JointRemaps);
+    WriteInverseBindPoses(stream, m_InverseBindPoses);
+    
+    OzzWriteSkeleton(stream, m_Skeleton.RawPtr());
+
     stream.WriteArray(m_Vertices);
-    stream.WriteArray(m_Weights);
+    stream.WriteArray(m_SkinBuffer);
     stream.WriteArray(m_LightmapUVs);
     stream.WriteArray(m_Indices);
-    stream.WriteArray(m_Subparts);
-    stream.WriteArray(m_Sockets);
-    #if 0
-    uint32_t numMaterials = m_Materials.Size();
-    stream.WriteUInt32(numMaterials);
-    for (uint32_t i = 0; i < numMaterials; ++i)
-    {
-        resourcePath = resManager->GetProxy(m_Materials[i]).GetName();
-        stream.WriteString(resourcePath);
-    }
-    #endif
-    stream.WriteArray(m_Skin.JointIndices);
-    stream.WriteArray(m_Skin.OffsetMatrices);
     stream.WriteObject(m_BoundingBox);
 
-    if (m_Skeleton)
-        resourcePath = resManager->GetProxy(m_Skeleton).GetName();
-    else
-        resourcePath = "";
-    stream.WriteString(resourcePath);
-
-    stream.WriteBool(m_IsSkinned);
-    stream.WriteUInt16(m_BvhPrimitivesPerLeaf);
+    stream.WriteArray(m_Vertices);
+    stream.WriteArray(m_SkinBuffer);
+    stream.WriteArray(m_LightmapUVs);
+    stream.WriteArray(m_Indices);
+    stream.WriteArray(m_Surfaces);
 }
 
 void* MeshResource::GetVertexMemory(void* _This)
@@ -137,9 +267,9 @@ void* MeshResource::GetVertexMemory(void* _This)
     return static_cast<MeshResource*>(_This)->m_Vertices.ToPtr();
 }
 
-void* MeshResource::GetWeightMemory(void* _This)
+void* MeshResource::GetSkinMemory(void* _This)
 {
-    return static_cast<MeshResource*>(_This)->m_Weights.ToPtr();
+    return static_cast<MeshResource*>(_This)->m_SkinBuffer.ToPtr();
 }
 
 void* MeshResource::GetLightmapUVMemory(void* _This)
@@ -159,14 +289,24 @@ void MeshResource::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pO
         VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_VertexHandle, ppBuffer, pOffset);
     }
+    else
+    {
+        *ppBuffer = nullptr;
+        *pOffset = 0;
+    }
 }
 
-void MeshResource::GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void MeshResource::GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
-    if (m_WeightsHandle)
+    if (m_SkinBufferHandle)
     {
         VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_WeightsHandle, ppBuffer, pOffset);
+        vertexMemory->GetPhysicalBufferAndOffset(m_SkinBufferHandle, ppBuffer, pOffset);
+    }
+    else
+    {
+        *ppBuffer = nullptr;
+        *pOffset = 0;
     }
 }
 
@@ -177,6 +317,11 @@ void MeshResource::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOf
         VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
     }
+    else
+    {
+        *ppBuffer = nullptr;
+        *pOffset = 0;
+    }
 }
 
 void MeshResource::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
@@ -186,60 +331,71 @@ void MeshResource::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOf
         VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_IndexHandle, ppBuffer, pOffset);
     }
+    else
+    {
+        *ppBuffer = nullptr;
+        *pOffset = 0;
+    }
 }
 
-void MeshResource::Allocate(int vertexCount, int indexCount, int subpartCount, bool bSkinned, bool bWithLightmapUVs)
+void MeshResource::Allocate(MeshAllocateDesc const& desc)
 {
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+    Clear();
 
-    vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_WeightsHandle);
-    vertexMemory->Deallocate(m_LightmapUVsGPU);
-    vertexMemory->Deallocate(m_IndexHandle);
+    m_Vertices.Resize(desc.VertexCount);
+    m_Indices.Resize(desc.IndexCount);
 
-    m_Vertices.Resize(vertexCount);
-    m_Indices.Resize(indexCount);
-
-    if (bSkinned)
-        m_Weights.Resize(vertexCount);
+    if (desc.SkinsCount)
+        m_SkinBuffer.Resize(desc.VertexCount);
     else
-        m_Weights.Clear();
+        m_SkinBuffer.Clear();
 
-    if (bWithLightmapUVs)
-        m_LightmapUVs.Resize(vertexCount);
+    if (desc.HasLightmapChannel)
+        m_LightmapUVs.Resize(desc.VertexCount);
     else
         m_LightmapUVs.Clear();
 
-    m_IsSkinned = bSkinned;
+    uint32_t surfaceCount = desc.SurfaceCount < 1 ? 1 : desc.SurfaceCount;
+    m_Surfaces.Resize(surfaceCount);
+    if (surfaceCount == 1)
+    {
+        MeshSurface& surface = m_Surfaces[0];
+        surface.BaseVertex = 0;
+        surface.FirstIndex = 0;
+        surface.VertexCount = m_Vertices.Size();
+        surface.IndexCount = m_Indices.Size();
+    }
+
+    m_Skins.Resize(desc.SkinsCount);
+    m_JointRemaps.Resize(desc.JointReampSize);
+    m_InverseBindPoses.Resize(desc.JointReampSize);
+    //m_Skeleton = .... TODO: allocate with desc.JointCount
+
+    m_Surfaces.ShrinkToFit();
+    m_Skins.ShrinkToFit();
+    m_JointRemaps.ShrinkToFit();
+    m_InverseBindPoses.ShrinkToFit();
+    m_Vertices.ShrinkToFit();
+    m_SkinBuffer.ShrinkToFit();
+    m_LightmapUVs.ShrinkToFit();
+
+    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+
+    vertexMemory->Deallocate(m_VertexHandle);
+    vertexMemory->Deallocate(m_SkinBufferHandle);
+    vertexMemory->Deallocate(m_LightmapUVsGPU);
+    vertexMemory->Deallocate(m_IndexHandle);
 
     m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, GetVertexMemory, this);
     m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, GetIndexMemory, this);
-
-    if (bSkinned)
-        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(MeshVertexSkin), nullptr, GetWeightMemory, this);
+    if (desc.SkinsCount)
+        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), nullptr, GetSkinMemory, this);
     else
-        m_WeightsHandle = nullptr;
-
-    if (bWithLightmapUVs)
+        m_SkinBufferHandle = nullptr;
+    if (desc.HasLightmapChannel)
         m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, GetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
-
-    subpartCount = subpartCount < 1 ? 1 : subpartCount;
-    m_Subparts.Resize(subpartCount);
-    if (subpartCount == 1)
-    {
-        MeshSubpart& subpart = m_Subparts[0];
-        subpart.BaseVertex = 0;
-        subpart.FirstIndex = 0;
-        subpart.VertexCount = m_Vertices.Size();
-        subpart.IndexCount = m_Indices.Size();
-    }
-
-    m_Vertices.ShrinkToFit();
-    m_Weights.ShrinkToFit();
-    m_LightmapUVs.ShrinkToFit();
-    m_Subparts.ShrinkToFit();
 }
 
 bool MeshResource::WriteVertexData(MeshVertex const* vertices, int vertexCount, int startVertexLocation)
@@ -257,37 +413,20 @@ bool MeshResource::WriteVertexData(MeshVertex const* vertices, int vertexCount, 
 
     Core::Memcpy(m_Vertices.ToPtr() + startVertexLocation, vertices, vertexCount * sizeof(MeshVertex));
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
+    if (m_VertexHandle)
+    {
+        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
+    }
 
     return true;
 }
 
-bool MeshResource::SendVertexDataToGPU(int vertexCount, int startVertexLocation)
+bool MeshResource::WriteSkinningData(SkinVertex const* vertices, int vertexCount, int startVertexLocation)
 {
-    if (!vertexCount)
+    if (!m_SkinBufferHandle)
     {
-        return true;
-    }
-
-    if (startVertexLocation + vertexCount > m_Vertices.Size())
-    {
-        LOG("MeshResource::SendVertexDataToGPU: Referencing outside of buffer\n");
-        return false;
-    }
-
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
-    return true;
-}
-
-bool MeshResource::WriteJointWeights(MeshVertexSkin const* vertices, int vertexCount, int startVertexLocation)
-{
-    if (!m_IsSkinned)
-    {
-        LOG("MeshResource::WriteJointWeights: Cannot write joint weights for static mesh\n");
+        LOG("MeshResource::WriteSkinningData: Cannot write skinning data for static mesh\n");
         return false;
     }
 
@@ -296,17 +435,19 @@ bool MeshResource::WriteJointWeights(MeshVertexSkin const* vertices, int vertexC
         return true;
     }
 
-    if (startVertexLocation + vertexCount > m_Weights.Size())
+    if (startVertexLocation + vertexCount > m_SkinBuffer.Size())
     {
-        LOG("MeshResource::WriteJointWeights: Referencing outside of buffer\n");
+        LOG("MeshResource::WriteSkinningData: Referencing outside of buffer\n");
         return false;
     }
 
-    Core::Memcpy(m_Weights.ToPtr() + startVertexLocation, vertices, vertexCount * sizeof(MeshVertexSkin));
+    Core::Memcpy(m_SkinBuffer.ToPtr() + startVertexLocation, vertices, vertexCount * sizeof(SkinVertex));
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_WeightsHandle, startVertexLocation * sizeof(MeshVertexSkin), vertexCount * sizeof(MeshVertexSkin), m_Weights.ToPtr() + startVertexLocation);
+    if (m_SkinBufferHandle)
+    {
+        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        vertexMemory->Update(m_SkinBufferHandle, startVertexLocation * sizeof(SkinVertex), vertexCount * sizeof(SkinVertex), m_SkinBuffer.ToPtr() + startVertexLocation);
+    }
 
     return true;
 }
@@ -328,9 +469,11 @@ bool MeshResource::WriteLightmapUVsData(MeshVertexUV const* UVs, int vertexCount
 
     Core::Memcpy(m_LightmapUVs.ToPtr() + startVertexLocation, UVs, vertexCount * sizeof(MeshVertexUV));
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_LightmapUVsGPU, startVertexLocation * sizeof(MeshVertexUV), vertexCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + startVertexLocation);
+    if (m_LightmapUVsGPU)
+    {
+        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        vertexMemory->Update(m_LightmapUVsGPU, startVertexLocation * sizeof(MeshVertexUV), vertexCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + startVertexLocation);
+    }
 
     return true;
 }
@@ -350,9 +493,11 @@ bool MeshResource::WriteIndexData(unsigned int const* indices, int indexCount, i
 
     Core::Memcpy(m_Indices.ToPtr() + startIndexLocation, indices, indexCount * sizeof(unsigned int));
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_IndexHandle, startIndexLocation * sizeof(unsigned int), indexCount * sizeof(unsigned int), m_Indices.ToPtr() + startIndexLocation);
+    if (m_IndexHandle)
+    {
+        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        vertexMemory->Update(m_IndexHandle, startIndexLocation * sizeof(unsigned int), indexCount * sizeof(unsigned int), m_Indices.ToPtr() + startIndexLocation);
+    }
 
     return true;
 }
@@ -362,35 +507,22 @@ void MeshResource::Upload()
     VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_WeightsHandle);
+    vertexMemory->Deallocate(m_SkinBufferHandle);
     vertexMemory->Deallocate(m_LightmapUVsGPU);
     vertexMemory->Deallocate(m_IndexHandle);
 
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, GetVertexMemory, this);
-    m_IndexHandle = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, GetIndexMemory, this);
+    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr(), GetVertexMemory, this);
+    m_IndexHandle = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr(), GetIndexMemory, this);
 
-    if (m_IsSkinned)
-    {
-        m_WeightsHandle = vertexMemory->AllocateVertex(m_Weights.Size() * sizeof(MeshVertexSkin), nullptr, GetWeightMemory, this);
-    }
+    if (!m_SkinBuffer.IsEmpty())
+        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), m_SkinBuffer.ToPtr(), GetSkinMemory, this);
     else
-        m_WeightsHandle = nullptr;
+        m_SkinBufferHandle = nullptr;
 
     if (!m_LightmapUVs.IsEmpty())
-    {
-        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, GetLightmapUVMemory, this);
-    }
+        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr(), GetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
-
-    vertexMemory->Update(m_VertexHandle, 0, m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr());
-
-    vertexMemory->Update(m_IndexHandle, 0, m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr());
-
-    if (m_IsSkinned)
-    {
-        vertexMemory->Update(m_WeightsHandle, 0, m_Weights.Size() * sizeof(MeshVertexSkin), m_Weights.ToPtr());
-    }
 }
 
 void MeshResource::AddLightmapUVs()
@@ -411,65 +543,23 @@ void MeshResource::SetBoundingBox(BvAxisAlignedBox const& boundingBox)
 {
     m_BoundingBox = boundingBox;
 }
-#if 0
-void MeshResource::SetMaterials(ArrayView<MaterialInstanceHandle> materials)
+
+void MeshResource::GenerateBVH(uint16_t trianglesPerLeaf)
 {
-    m_Materials.Clear();
-    m_Materials.Reserve(materials.Size());
-    for (MaterialInstanceHandle handle : materials)
-        m_Materials.Add(handle);
+    const uint16_t MaxTrianglesPerLeaf = 1024;
+    if (trianglesPerLeaf > MaxTrianglesPerLeaf)
+        trianglesPerLeaf = MaxTrianglesPerLeaf;
+
+    for (MeshSurface& surface : m_Surfaces)
+        surface.Bvh = BvhTree(ArrayView<MeshVertex>(m_Vertices), ArrayView<unsigned int>(m_Indices.ToPtr() + surface.FirstIndex, (size_t)surface.IndexCount), surface.BaseVertex, trianglesPerLeaf);
 }
 
-void MeshResource::SetMaterial(int subpartIndex, MaterialInstanceHandle handle)
-{
-    if (m_Materials.Size() <= subpartIndex)
-        m_Materials.Resize(subpartIndex + 1);
-    m_Materials[subpartIndex] = handle;
-}
-#endif
-void MeshResource::SetSockets(ArrayView<MeshSocket> sockets)
-{
-    m_Sockets.Clear();
-    m_Sockets.Reserve(sockets.Size());
-    for (MeshSocket const& socket : sockets)
-        m_Sockets.Add(socket);
-}
-
-void MeshResource::SetSkin(MeshSkin skin)
-{
-    m_Skin = std::move(skin);
-}
-
-void MeshResource::GenerateBVH(uint16_t primitivesPerLeaf)
-{
-    if (m_IsSkinned)
-    {
-        LOG("MeshResource::GenerateBVH: called for skinned mesh\n");
-        return;
-    }
-
-    const uint16_t MaxPrimitivesPerLeaf = 1024;
-
-    // Don't allow to generate large leafs
-    if (primitivesPerLeaf > MaxPrimitivesPerLeaf)
-    {
-        primitivesPerLeaf = MaxPrimitivesPerLeaf;
-    }
-
-    for (MeshSubpart& subpart : m_Subparts)
-    {
-        subpart.Bvh = BvhTree(ArrayView<MeshVertex>(m_Vertices), ArrayView<unsigned int>(m_Indices.ToPtr() + subpart.FirstIndex, (size_t)subpart.IndexCount), subpart.BaseVertex, primitivesPerLeaf);
-    }
-
-    m_BvhPrimitivesPerLeaf = primitivesPerLeaf;
-}
-
-bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
+bool MeshResource::SurfaceRaycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
 {
     bool ret = false;
     float d, u, v;
-    MeshSubpart const& subpart = m_Subparts[subpartIndex];
-    unsigned int const* indices = m_Indices.ToPtr() + subpart.FirstIndex;
+    MeshSurface const& surface = m_Surfaces[surfaceIndex];
+    unsigned int const* indices = m_Indices.ToPtr() + surface.FirstIndex;
     MeshVertex const* vertices = m_Vertices.ToPtr();
 
     if (distance < 0.0001f)
@@ -477,10 +567,10 @@ bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Floa
         return false;
     }
 
-    if (!subpart.Bvh.GetNodes().IsEmpty())
+    if (!surface.Bvh.GetNodes().IsEmpty())
     {
-        Vector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
-        unsigned int const* indirection = subpart.Bvh.GetIndirection();
+        Vector<BvhNode> const& nodes = surface.Bvh.GetNodes();
+        unsigned int const* indirection = surface.Bvh.GetIndirection();
 
         float hitMin, hitMax;
 
@@ -497,9 +587,9 @@ bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Floa
                 {
                     const int triangleNum = node->Index + t;
                     const unsigned int baseInd = indirection[triangleNum];
-                    const unsigned int i0 = subpart.BaseVertex + indices[baseInd + 0];
-                    const unsigned int i1 = subpart.BaseVertex + indices[baseInd + 1];
-                    const unsigned int i2 = subpart.BaseVertex + indices[baseInd + 2];
+                    const unsigned int i0 = surface.BaseVertex + indices[baseInd + 0];
+                    const unsigned int i1 = surface.BaseVertex + indices[baseInd + 1];
+                    const unsigned int i2 = surface.BaseVertex + indices[baseInd + 2];
                     Float3 const& v0 = vertices[i0].Position;
                     Float3 const& v1 = vertices[i1].Position;
                     Float3 const& v2 = vertices[i2].Position;
@@ -530,18 +620,18 @@ bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Floa
     {
         float hitMin, hitMax;
 
-        if (!BvRayIntersectBox(rayStart, invRayDir, subpart.BoundingBox, hitMin, hitMax) || hitMin >= distance)
+        if (!BvRayIntersectBox(rayStart, invRayDir, surface.BoundingBox, hitMin, hitMax) || hitMin >= distance)
         {
             return false;
         }
 
-        const int primCount = subpart.IndexCount / 3;
+        const int primCount = surface.IndexCount / 3;
 
         for (int tri = 0; tri < primCount; tri++, indices += 3)
         {
-            const unsigned int i0 = subpart.BaseVertex + indices[0];
-            const unsigned int i1 = subpart.BaseVertex + indices[1];
-            const unsigned int i2 = subpart.BaseVertex + indices[2];
+            const unsigned int i0 = surface.BaseVertex + indices[0];
+            const unsigned int i1 = surface.BaseVertex + indices[1];
+            const unsigned int i2 = surface.BaseVertex + indices[2];
 
             Float3 const& v0 = vertices[i0].Position;
             Float3 const& v1 = vertices[i1].Position;
@@ -569,12 +659,12 @@ bool MeshResource::SubpartRaycast(int subpartIndex, Float3 const& rayStart, Floa
     return ret;
 }
 
-bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const
+bool MeshResource::SurfaceRaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const
 {
     bool ret = false;
     float d, u, v;
-    MeshSubpart const& subpart = m_Subparts[subpartIndex];
-    unsigned int const* indices = m_Indices.ToPtr() + subpart.FirstIndex;
+    MeshSurface const& surface = m_Surfaces[surfaceIndex];
+    unsigned int const* indices = m_Indices.ToPtr() + surface.FirstIndex;
     MeshVertex const* vertices = m_Vertices.ToPtr();
 
     if (distance < 0.0001f)
@@ -582,10 +672,10 @@ bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStar
         return false;
     }
 
-    if (!subpart.Bvh.GetNodes().IsEmpty())
+    if (!surface.Bvh.GetNodes().IsEmpty())
     {
-        Vector<BvhNode> const& nodes = subpart.Bvh.GetNodes();
-        unsigned int const* indirection = subpart.Bvh.GetIndirection();
+        Vector<BvhNode> const& nodes = surface.Bvh.GetNodes();
+        unsigned int const* indirection = surface.Bvh.GetIndirection();
 
         float hitMin, hitMax;
 
@@ -602,9 +692,9 @@ bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStar
                 {
                     const int triangleNum = node->Index + t;
                     const unsigned int baseInd = indirection[triangleNum];
-                    const unsigned int i0 = subpart.BaseVertex + indices[baseInd + 0];
-                    const unsigned int i1 = subpart.BaseVertex + indices[baseInd + 1];
-                    const unsigned int i2 = subpart.BaseVertex + indices[baseInd + 2];
+                    const unsigned int i0 = surface.BaseVertex + indices[baseInd + 0];
+                    const unsigned int i1 = surface.BaseVertex + indices[baseInd + 1];
+                    const unsigned int i2 = surface.BaseVertex + indices[baseInd + 2];
                     Float3 const& v0 = vertices[i0].Position;
                     Float3 const& v1 = vertices[i1].Position;
                     Float3 const& v2 = vertices[i2].Position;
@@ -633,18 +723,18 @@ bool MeshResource::SubpartRaycastClosest(int subpartIndex, Float3 const& rayStar
     {
         float hitMin, hitMax;
 
-        if (!BvRayIntersectBox(rayStart, invRayDir, subpart.BoundingBox, hitMin, hitMax) || hitMin >= distance)
+        if (!BvRayIntersectBox(rayStart, invRayDir, surface.BoundingBox, hitMin, hitMax) || hitMin >= distance)
         {
             return false;
         }
 
-        const int primCount = subpart.IndexCount / 3;
+        const int primCount = surface.IndexCount / 3;
 
         for (int tri = 0; tri < primCount; tri++, indices += 3)
         {
-            const unsigned int i0 = subpart.BaseVertex + indices[0];
-            const unsigned int i1 = subpart.BaseVertex + indices[1];
-            const unsigned int i2 = subpart.BaseVertex + indices[2];
+            const unsigned int i0 = surface.BaseVertex + indices[0];
+            const unsigned int i1 = surface.BaseVertex + indices[1];
+            const unsigned int i2 = surface.BaseVertex + indices[2];
 
             Float3 const& v0 = vertices[i0].Position;
             Float3 const& v1 = vertices[i1].Position;
@@ -687,14 +777,14 @@ bool MeshResource::Raycast(Float3 const& rayStart, Float3 const& rayDir, float d
         return false;
     }
 
-    for (int i = 0; i < m_Subparts.Size(); i++)
+    for (int i = 0; i < m_Surfaces.Size(); i++)
     {
-        ret |= SubpartRaycast(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitResult);
+        ret |= SurfaceRaycast(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitResult);
     }
     return ret;
 }
 
-bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& subpartIndex) const
+bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& surfaceIndex) const
 {
     bool ret = false;
 
@@ -711,11 +801,11 @@ bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, 
         return false;
     }
 
-    for (int i = 0; i < m_Subparts.Size(); i++)
+    for (int i = 0; i < m_Surfaces.Size(); i++)
     {
-        if (SubpartRaycastClosest(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitLocation, hitUV, hitDistance, triangle))
+        if (SurfaceRaycastClosest(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitLocation, hitUV, hitDistance, triangle))
         {
-            subpartIndex = i;
+            surfaceIndex = i;
             distance = hitDistance;
             ret = true;
         }
@@ -730,45 +820,255 @@ void MeshResource::DrawDebug(DebugRenderer& renderer) const
     renderer.SetColor(Color4::White());
 
     renderer.DrawAABB(m_BoundingBox);
-
-    // TODO: Draw sockets
 }
 
-void MeshResource::DrawDebugSubpart(DebugRenderer& renderer, int subpartIndex) const
+void MeshResource::DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) const
 {
-    if (subpartIndex >= m_Subparts.Size())
+    if (surfaceIndex >= m_Surfaces.Size())
         return;
 
-    MeshSubpart const& subpart = m_Subparts[subpartIndex];
+    MeshSurface const& surface = m_Surfaces[surfaceIndex];
 
     renderer.SetDepthTest(false);
     renderer.SetColor(Color4::White());
-    renderer.DrawAABB(subpart.BoundingBox);
+    renderer.DrawAABB(surface.BoundingBox);
 
-    if (!subpart.Bvh.GetNodes().IsEmpty())
+    if (!surface.Bvh.GetNodes().IsEmpty())
     {
         BvOrientedBox orientedBox;
-
-        for (BvhNode const& node : subpart.Bvh.GetNodes())
+        for (BvhNode const& node : surface.Bvh.GetNodes())
         {
             if (node.IsLeaf())
-            {
                 renderer.DrawAABB(node.Bounds);
-            }
         }
     }
 }
 
-//void MeshResourceInterface::Raycast(ResourceID resource, Float3 const& rayStart, Float3 const& rayDir)
-//{
-//    //if (!resource.Is<MeshResource>())
-//    //{
-//    //    // error
-//    //}
-//
-//    //MeshResource& meshResource = m_Manager->m_Resources.Get<MeshResource>(resource);
-//
-//    //HK_UNUSED(meshResource);
-//}
+namespace
+{
+    UniqueRef<OzzSkeleton> ConvertSkeletonToOzz(RawSkeleton const* rawSkeleton)
+    {
+        UniqueRef<ozz::animation::Skeleton> ozzSkeleton = MakeUnique<ozz::animation::Skeleton>();
+        const int numJoints = rawSkeleton->Joints.Size();
+
+        int nameBufferSize = 0;
+        for (int i = 0; i < numJoints; ++i)
+            nameBufferSize += rawSkeleton->Joints[i].Name.Size() + 1;
+
+        char* nameBuffer = ozzSkeleton->Allocate(nameBufferSize, numJoints);
+        for (int i = 0; i < numJoints; ++i)
+        {
+            auto& joint = rawSkeleton->Joints[i];
+            ozzSkeleton->joint_names_[i] = nameBuffer;
+            strcpy(nameBuffer, joint.Name.GetRawString());
+            nameBuffer += joint.Name.Size() + 1;
+        }
+
+        for (int i = 0; i < numJoints; ++i)
+            ozzSkeleton->joint_parents_[i] = rawSkeleton->Joints[i].Parent;
+
+        const SimdFloat4 w_axis = Simd::AxisW();
+        const SimdFloat4 zero = Simd::Zero();
+        const SimdFloat4 one = Simd::One();
+        for (int i = 0; i < ozzSkeleton->num_soa_joints(); ++i)
+        {
+            SimdFloat4 translations[4];
+            SimdFloat4 scales[4];
+            SimdFloat4 rotations[4];
+            for (int j = 0; j < 4; ++j)
+            {
+                if (i * 4 + j < numJoints)
+                {
+                    auto& rawJoint = rawSkeleton->Joints[i * 4 + j];
+
+                    translations[j] = Simd::Load3PtrU(&rawJoint.Position.X);
+                    rotations[j] = Simd::NormalizeSafe4(Simd::LoadPtrU(&rawJoint.Rotation.X), w_axis);
+                    scales[j] = Simd::Load3PtrU(&rawJoint.Scale.X);
+                }
+                else
+                {
+                    translations[j] = zero;
+                    rotations[j] = w_axis;
+                    scales[j] = one;
+                }
+            }
+
+            // Fills the SoaTransform structure.
+            Simd::Transpose4x3(translations, &ozzSkeleton->joint_rest_poses_[i].translation.x);
+            Simd::Transpose4x4(rotations, &ozzSkeleton->joint_rest_poses_[i].rotation.x);
+            Simd::Transpose4x3(scales, &ozzSkeleton->joint_rest_poses_[i].scale.x);
+        }
+
+        return ozzSkeleton;
+    }
+}
+
+UniqueRef<MeshResource> MeshResourceBuilder::Build(RawMesh const& rawMesh)
+{
+    UniqueRef<MeshResource> resource = MakeUnique<MeshResource>();
+
+    auto& m_Surfaces = resource->m_Surfaces;
+    auto& m_Skins = resource->m_Skins;
+    auto& m_JointRemaps = resource->m_JointRemaps;
+    auto& m_InverseBindPoses = resource->m_InverseBindPoses;
+    auto& m_Skeleton = resource->m_Skeleton;
+    auto& m_Vertices = resource->m_Vertices;
+    auto& m_SkinBuffer = resource->m_SkinBuffer;
+    //auto& m_LightmapUVs = resource->m_LightmapUVs; // TODO
+    auto& m_Indices = resource->m_Indices;
+    auto& m_BoundingBox = resource->m_BoundingBox;
+
+    m_Surfaces.Reserve(rawMesh.Surfaces.Size());
+    m_Skeleton = ConvertSkeletonToOzz(&rawMesh.Skeleton);
+
+    m_Skins.Resize(rawMesh.Skins.Size());
+    uint32_t matrixCount = 0;
+    for (size_t skinIndex = 0; skinIndex < m_Skins.Size(); ++skinIndex)
+    {
+        m_Skins[skinIndex].FirstMatrix = matrixCount;
+        m_Skins[skinIndex].MatrixCount = rawMesh.Skins[skinIndex]->GetJointCount();
+        matrixCount += m_Skins[skinIndex].MatrixCount;
+    }
+
+    m_JointRemaps.Resize(matrixCount);
+    m_InverseBindPoses.Resize(matrixCount);
+    for (size_t skinIndex = 0; skinIndex < m_Skins.Size(); ++skinIndex)
+    {
+        Core::Memcpy(&m_JointRemaps[m_Skins[skinIndex].FirstMatrix], &rawMesh.Skins[skinIndex]->JointRemaps[0], sizeof(m_JointRemaps[0]) * m_Skins[skinIndex].MatrixCount);
+
+        for (uint32_t n = 0; n < m_Skins[skinIndex].MatrixCount; ++n)
+        {
+            auto source = Float4x4(rawMesh.Skins[skinIndex]->InverseBindPoses[n]).Transposed();
+            auto& matrix = m_InverseBindPoses[m_Skins[skinIndex].FirstMatrix + n];
+
+            matrix.cols[0] = Simd::LoadPtr(&source.Col0[0]);
+            matrix.cols[1] = Simd::LoadPtr(&source.Col1[0]);
+            matrix.cols[2] = Simd::LoadPtr(&source.Col2[0]);
+            matrix.cols[3] = Simd::LoadPtr(&source.Col3[0]);
+        }
+    }
+
+    Vector<Float3> tempNormals;
+
+    size_t vertexCount = 0;
+    size_t indexCount = 0;
+    bool hasSkinning = false;
+    for (auto& surface : rawMesh.Surfaces)
+    {
+        auto firstVertex = vertexCount;
+        auto firstIndex = indexCount;
+
+        vertexCount += surface->Positions.Size();
+        indexCount += surface->Indices.Size();
+
+        auto& dst = m_Surfaces.EmplaceBack();
+        dst.BaseVertex = firstVertex;
+        dst.VertexCount = surface->Positions.Size();
+        dst.FirstIndex = firstIndex;
+        dst.IndexCount = surface->Indices.Size();
+        dst.SkinIndex = rawMesh.Skins.IndexOf(surface->Skin, [](auto& a, auto& b)
+            {
+                return a.RawPtr() == b;
+            });
+        dst.JointIndex = surface->JointIndex;
+
+        Float4x4 inverseTransform = Float4x4(surface->InverseTransform).Transposed();
+        dst.InverseTransform.cols[0] = Simd::LoadPtr(&inverseTransform.Col0[0]);
+        dst.InverseTransform.cols[1] = Simd::LoadPtr(&inverseTransform.Col1[0]);
+        dst.InverseTransform.cols[2] = Simd::LoadPtr(&inverseTransform.Col2[0]);
+        dst.InverseTransform.cols[3] = Simd::LoadPtr(&inverseTransform.Col3[0]);
+
+        dst.BoundingBox = surface->BoundingBox;
+
+        hasSkinning |= surface->SkinVerts.Size() > 0;
+    }
+
+    m_Vertices.Reserve(vertexCount);
+    m_Indices.Reserve(indexCount);
+
+    if (hasSkinning)
+        m_SkinBuffer.Resize(vertexCount);
+
+    for (auto& surface : rawMesh.Surfaces)
+    {
+        auto firstVertex = m_Vertices.Size();
+
+        // Fill positions
+        {
+            size_t count = surface->Positions.Size();
+            m_Vertices.Resize(firstVertex + count);
+            for (size_t n = 0; n < count; ++n)
+                m_Vertices[firstVertex + n].Position = surface->Positions[n];
+        }
+
+        // Fill texcoords
+        {
+            size_t count = Math::Min(surface->TexCoords.Size(), surface->Positions.Size());
+            size_t n;
+            for (n = 0; n < count; ++n)
+                m_Vertices[firstVertex + n].SetTexCoord(surface->TexCoords[n]);
+            for (; n < surface->Positions.Size(); ++n)
+                m_Vertices[firstVertex + n].SetTexCoord(0, 0);
+        }
+
+        // Fill normals
+        {
+            size_t count = surface->Positions.Size();
+            if (surface->Normals.Size() != count)
+            {
+                if (tempNormals.Size() < count)
+                    tempNormals.Resize(count);
+
+                Geometry::CalcNormals(surface->Positions.ToPtr(), tempNormals.ToPtr(), count, surface->Indices.ToPtr(), surface->Indices.Size());
+
+                for (size_t n = 0; n < count; ++n)
+                    m_Vertices[firstVertex + n].SetNormal(tempNormals[n]);
+            }
+            else
+            {
+                for (size_t n = 0; n < count; ++n)
+                    m_Vertices[firstVertex + n].SetNormal(surface->Normals[n]);
+            }
+        }
+
+        // Fill tangents
+        {
+            size_t count = surface->Positions.Size();
+            if (surface->Tangents.Size() != count)
+            {
+                Geometry::CalcTangentSpace(&m_Vertices[firstVertex], surface->Indices.ToPtr(), surface->Indices.Size());
+            }
+            else
+            {
+                for (size_t n = 0; n < count; ++n)
+                {
+                    m_Vertices[firstVertex + n].SetTangent(surface->Tangents[n].X, surface->Tangents[n].Y, surface->Tangents[n].Z);
+                    m_Vertices[firstVertex + n].Handedness = surface->Tangents[n].W;
+                }
+            }
+        }
+
+        // Fill skinning
+        if (hasSkinning)
+        {
+            size_t count = Math::Min(surface->SkinVerts.Size(), surface->Positions.Size());
+            size_t n;
+            for (n = 0; n < count; ++n)
+                m_SkinBuffer[firstVertex + n] = surface->SkinVerts[n];
+            count = surface->Positions.Size() - n;
+            if (count)
+                Core::ZeroMem(&m_SkinBuffer[firstVertex + n], count * sizeof(SkinVertex));
+        }
+
+        // Fill indices
+        {
+            m_Indices.Add(surface->Indices);
+        }
+    }
+
+    m_BoundingBox = rawMesh.CalcBoundingBox();
+
+    return resource;
+}
 
 HK_NAMESPACE_END
