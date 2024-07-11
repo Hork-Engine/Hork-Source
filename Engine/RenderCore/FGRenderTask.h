@@ -48,7 +48,7 @@ enum FG_RENDER_TASK_PROXY_TYPE : uint8_t
 
 class FrameGraph;
 
-class FGRenderTaskBase : public AFrameResource
+class FGRenderTaskBase : public FrameResource
 {
 public:
     template <typename T>

@@ -480,10 +480,10 @@ template <typename T, typename U> bool operator!=(TStdFrameAllocator<T> const&, 
 
 } // namespace Allocators
 
-class AFrameResource
+class FrameResource
 {
 public:
-    virtual ~AFrameResource() {}
+    virtual ~FrameResource() {}
 
     void* operator new(size_t SizeInBytes)
     {

@@ -48,7 +48,7 @@ enum FG_RESOURCE_ACCESS
     FG_RESOURCE_ACCESS_READ_WRITE
 };
 
-class FGResourceProxyBase : public AFrameResource
+class FGResourceProxyBase : public FrameResource
 {
 public:
     explicit FGResourceProxyBase(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, DEVICE_OBJECT_PROXY_TYPE ProxyType) :
