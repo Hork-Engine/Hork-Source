@@ -40,11 +40,11 @@ class StreamedMemoryGPU;
 struct RenderFrontendDef;
 struct TriangleHitResult;
 
-class ProceduralMesh_ECS : public RefCounted
+class ProceduralMesh : public RefCounted
 {
 public:
-    ProceduralMesh_ECS();
-    ~ProceduralMesh_ECS();
+    ProceduralMesh();
+    ~ProceduralMesh();
 
     /** Update vertex cache occasionally or every frame */
     VertexBufferCPU<MeshVertex> VertexCache;

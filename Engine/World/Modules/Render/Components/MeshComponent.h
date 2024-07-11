@@ -44,17 +44,27 @@ HK_NAMESPACE_BEGIN
 class MeshComponent : public Component
 {
 public:
-    struct Surface
-    {
-        Vector<MaterialInstance*>  Materials;
-    };
+    void                        SetMesh(MeshHandle handle) { m_Resource = handle; }
+    MeshHandle                  GetMesh() const { return m_Resource; }
 
-    MeshHandle                  m_Resource;
-    Vector<Surface>             m_Surfaces;
-    Ref<ProceduralMesh_ECS>     m_ProceduralData;
-    bool                        m_Outline = false;
-    bool                        m_CastShadow = true;
-    uint32_t                    m_CascadeMask = 0;
+    void                        SetProceduralMesh(ProceduralMesh* proceduralMesh) { m_ProceduralData = proceduralMesh; }
+    ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData; }
+
+    void                        SetMaterial(MaterialInstance* material);
+    void                        SetMaterial(uint32_t index, MaterialInstance* material);
+    MaterialInstance*           GetMaterial(uint32_t index);
+    void                        SetMaterialCount(uint32_t count);
+    uint32_t                    GetMaterialCount() const;
+
+    // NOTE: In the future the outline can be achieved using post-processing materials
+    void                        SetOutline(bool enable) { m_Outline = enable; }
+    bool                        HasOutline() const { return m_Outline; }
+
+    void                        SetCastShadow(bool castShadow) { m_CastShadow = castShadow; }
+    bool                        IsCastShadow() const { return m_CastShadow; }
+
+    void                        SetCascadeMask(uint32_t cascadeMask) { m_CascadeMask = cascadeMask; }
+    uint32_t                    GetCascadeMask() const { return m_CascadeMask; }
 
     void                        SetLocalBoundingBox(BvAxisAlignedBox const& boundingBox);
     BvAxisAlignedBox const&     GetLocalBoundingBox() const { return m_LocalBoundingBox; }
@@ -68,6 +78,12 @@ public:
     void                        DrawDebug(DebugRenderer& renderer);
 
 protected:
+    MeshHandle                  m_Resource;
+    Vector<MaterialInstance*>   m_Materials; // NOTE: pointers will be replaced by handles!
+    Ref<ProceduralMesh>         m_ProceduralData;
+    bool                        m_Outline = false;
+    bool                        m_CastShadow = true;
+    uint32_t                    m_CascadeMask = 0;
     BvAxisAlignedBox            m_LocalBoundingBox;
     BvAxisAlignedBox            m_WorldBoundingBox;
 };
@@ -113,7 +129,8 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    Ref<SkeletonPose>           m_Pose;
+    void                        SetPose(SkeletonPose* pose);
+    SkeletonPose*               GetPose();
 
     /// Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
     void                        SkipInterpolation();
@@ -134,6 +151,7 @@ public:
 private:
     void                        UpdateSkinningMatrices();
 
+    Ref<SkeletonPose>           m_Pose;
     Transform                   m_Transform[2];
     Float3x4                    m_RenderTransform[2];
     Float3x3                    m_RotationMatrix;
@@ -147,6 +165,16 @@ namespace TickGroup_PostTransform
     {
         desc.TickEvenWhenPaused = true;
     }
+}
+
+HK_FORCEINLINE void DynamicMeshComponent::SetPose(SkeletonPose* pose)
+{
+    m_Pose = pose;
+}
+
+HK_FORCEINLINE SkeletonPose* DynamicMeshComponent::GetPose()
+{
+    return m_Pose;
 }
 
 HK_NAMESPACE_END

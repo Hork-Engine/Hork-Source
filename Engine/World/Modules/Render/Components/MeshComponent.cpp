@@ -41,6 +41,36 @@ ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
 ConsoleVar com_DrawSkeletons("com_DrawSkeletons"s, "0"s);
 
+void MeshComponent::SetMaterial(MaterialInstance* material)
+{
+    SetMaterial(0, material);
+}
+
+void MeshComponent::SetMaterial(uint32_t index, MaterialInstance* material)
+{
+    while (m_Materials.Size() <= index)
+        m_Materials.Add(nullptr);
+    m_Materials[index] = material;
+}
+
+MaterialInstance* MeshComponent::GetMaterial(uint32_t index)
+{
+    return (index < m_Materials.Size()) ? m_Materials[index] : nullptr;
+}
+
+void MeshComponent::SetMaterialCount(uint32_t count)
+{
+    m_Materials.Reserve(count);
+    while (m_Materials.Size() < count)
+        m_Materials.Add(nullptr);
+    m_Materials.Resize(count);
+}
+
+uint32_t MeshComponent::GetMaterialCount() const
+{
+    return m_Materials.Size();
+}
+
 void MeshComponent::SetLocalBoundingBox(BvAxisAlignedBox const& boundingBox)
 {
     m_LocalBoundingBox = boundingBox;
@@ -60,7 +90,8 @@ void MeshComponent::DrawDebug(DebugRenderer& renderer)
         {
             renderer.PushTransform(GetOwner()->GetWorldTransformMatrix());
             resource->DrawDebug(renderer);
-            for (int surfaceIndex = 0; surfaceIndex < m_Surfaces.Size(); ++surfaceIndex)
+            int surfaceCount = resource->GetSurfaceCount();
+            for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
                 resource->DrawDebugSurface(renderer, surfaceIndex);
             renderer.PopTransform();
         }

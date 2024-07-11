@@ -36,26 +36,26 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ProceduralMesh_ECS::ProceduralMesh_ECS()
+ProceduralMesh::ProceduralMesh()
 {
     BoundingBox.Clear();
 }
 
-ProceduralMesh_ECS::~ProceduralMesh_ECS()
+ProceduralMesh::~ProceduralMesh()
 {
 }
 
-void ProceduralMesh_ECS::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_VertexStream, ppBuffer, pOffset);
 }
 
-void ProceduralMesh_ECS::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_IndexSteam, ppBuffer, pOffset);
 }
 
-void ProceduralMesh_ECS::PrepareStreams(RenderFrontendDef const* pDef)
+void ProceduralMesh::PrepareStreams(RenderFrontendDef const* pDef)
 {
     if (m_VisFrame == pDef->FrameNumber)
     {
@@ -73,7 +73,7 @@ void ProceduralMesh_ECS::PrepareStreams(RenderFrontendDef const* pDef)
     }
 }
 
-bool ProceduralMesh_ECS::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const
+bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const
 {
     if (Distance < 0.0001f)
     {
@@ -135,7 +135,7 @@ bool ProceduralMesh_ECS::Raycast(Float3 const& RayStart, Float3 const& RayDir, f
     return ret;
 }
 
-bool ProceduralMesh_ECS::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
+bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
 {
     if (Distance < 0.0001f)
     {
