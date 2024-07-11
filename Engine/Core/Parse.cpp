@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "Parse.h"
-#include "fast_float.h"
+#include <fast_float/fast_float.h>
 
 HK_NAMESPACE_BEGIN
 

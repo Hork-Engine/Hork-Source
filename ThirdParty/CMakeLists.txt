@@ -90,6 +90,9 @@ install_thirdparty_includes(cgltf/ cgltf)
 message(STATUS "FAST_OBJ.................................")
 install_thirdparty_includes(fast_obj/ fast_obj)
 
+message(STATUS "FAST_FLOAT.................................")
+install_thirdparty_includes(fast_float/ fast_float)
+
 message(STATUS "OZZ.................................")
 add_subdirectory_with_folder("ThirdParty/Ozz" ozz)
 install_thirdparty_includes(ozz/include/ozz ozz)
