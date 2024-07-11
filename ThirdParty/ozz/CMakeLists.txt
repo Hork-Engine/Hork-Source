@@ -18,7 +18,6 @@ option(ozz_build_msvc_rt_dll "Select msvc DLL runtime library" ON)
 # Include ozz cmake parameters and scripts
 include(CheckCXXCompilerFlag)
 include(${PROJECT_SOURCE_DIR}/build-utils/cmake/compiler_settings.cmake)
-include(${PROJECT_SOURCE_DIR}/build-utils/cmake/fuse_target.cmake)
 
 # Starts building the sources tree
 add_subdirectory(src)

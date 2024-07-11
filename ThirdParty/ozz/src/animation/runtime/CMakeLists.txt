@@ -38,5 +38,3 @@ set_target_properties(ozz_animation
   PROPERTIES FOLDER "ozz")
 
 install(TARGETS ozz_animation DESTINATION lib)
-
-fuse_target("ozz_animation")
