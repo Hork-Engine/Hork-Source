@@ -45,9 +45,6 @@ HK_NAMESPACE_BEGIN
 // Common constants
 //
 
-/** Max skeleton joints */
-constexpr int MAX_SKINNED_MESH_JOINTS = 256;
-
 /** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
