@@ -97,7 +97,7 @@ Float2 FontResource::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWi
     FONScontext* fs = m_FontStash->GetImpl();
     FONSfont* font = fs->fonts[m_FontId];
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
     //float invscale = 1.0f / scale;
     float fontSize = fontStyle.FontSize * scale;
     short isize = (short)(fontSize * 10.0f);
@@ -135,7 +135,7 @@ Float2 FontResource::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWi
     FONScontext* fs = m_FontStash->GetImpl();
     FONSfont* font = fs->fonts[m_FontId];
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
     //float invscale = 1.0f / scale;
     float fontSize = fontStyle.FontSize * scale;
     short isize = (short)(fontSize * 10.0f);
@@ -181,7 +181,7 @@ int FontResource::TextBreakLines(FontStyle const& fontStyle, StringView text, fl
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
     float invscale = 1.0f / scale;
 
     //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
@@ -415,7 +415,7 @@ int FontResource::TextLineCount(FontStyle const& fontStyle, StringView text, flo
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
 
     FONStextIter iter, prevIter;
     FONSquad q;
@@ -616,7 +616,7 @@ int FontResource::TextBreakLines(FontStyle const& fontStyle, WideStringView text
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
     float invscale = 1.0f / scale;
 
     //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
@@ -850,7 +850,7 @@ int FontResource::TextLineCount(FontStyle const& fontStyle, WideStringView text,
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
 
     FONStextIter iter, prevIter;
     FONSquad q;
@@ -1058,7 +1058,7 @@ void FontResource::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metri
 
     FONScontext* fs = m_FontStash->GetImpl();
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
     float fontSize = fontStyle.FontSize * scale;
 
     FONSfont* font = fs->fonts[m_FontId];
@@ -1078,7 +1078,7 @@ float FontResource::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) cons
 
     FONScontext* fs = m_FontStash->GetImpl();
 
-    float scale = Global::GRetinaScale.X;
+    float scale = GameApplication::GetRetinaScale().X;
 
     fonsSetSize(fs, fontStyle.FontSize * scale);
     fonsSetBlur(fs, fontStyle.FontBlur * scale);

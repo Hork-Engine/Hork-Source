@@ -53,7 +53,7 @@ Float2 UIText::GetTextBoxSize(float breakRowWidth) const
         if (font)
             m_CachedSize = font->GetTextBoxSize(style, breakRowWidth, Text);
         else
-            m_CachedSize = Global::GDefaultFont->GetTextBoxSize(style, breakRowWidth, Text);
+            m_CachedSize = GameApplication::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
 
         // Update m_BreakRowWidth only if font is valid.
         if (font)

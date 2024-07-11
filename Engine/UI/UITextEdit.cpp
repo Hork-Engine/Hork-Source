@@ -545,14 +545,14 @@ FontResource* UITextEdit::GetFont() const
 {
     FontResource* resource = GameApplication::GetResourceManager().TryGet(m_Font);
 
-    return resource ? resource : Global::GDefaultFont;
+    return resource ? resource : GameApplication::GetDefaultFont();
 }
 
 FontHandle UITextEdit::GetFontHandle() const
 {
     FontResource* resource = GameApplication::GetResourceManager().TryGet(m_Font);
 
-    return resource ? m_Font : Global::GDefaultFontHandle;
+    return resource ? m_Font : GameApplication::GetDefaultFontHandle();
 }
 
 float UITextEdit::GetFontSize() const

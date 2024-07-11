@@ -402,7 +402,7 @@ void UIConsole::DrawCmdLine(Canvas& cv, int x, int y, int maxLineChars)
 
     if ((Core::SysMicroseconds() >> 18) & 1)
     {
-        FontResource* font = Global::GDefaultFont;
+        FontResource* font = GameApplication::GetDefaultFont();
         for (int i = 0; i < m_CmdLinePos - offset; i++)
             x += font->GetCharAdvance(fontStyle, m_CmdLine[i]);
 
@@ -461,7 +461,7 @@ void UIConsole::Draw(Canvas& cv, UIBrush* background, float width, float height)
     const float fontSize = ConsoleBuffer::CharacterWidth;
 
     cv.ResetScissor();
-    cv.FontFace(Global::GDefaultFontHandle);
+    cv.FontFace(GameApplication::GetDefaultFontHandle());
 
     FontStyle fontStyle;
     fontStyle.FontSize = fontSize;

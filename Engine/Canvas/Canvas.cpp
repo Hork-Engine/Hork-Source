@@ -590,7 +590,7 @@ void Canvas::NewFrame()
     m_NumStates = 0;
     Push(CANVAS_PUSH_FLAG_RESET);
 
-    m_DevicePxRatio = Global::GRetinaScale.X;
+    m_DevicePxRatio = GameApplication::GetRetinaScale().X;
 
     m_TessTol     = 0.25f / m_DevicePxRatio;
     m_DistTol     = 0.01f / m_DevicePxRatio;
@@ -2098,7 +2098,7 @@ FontResource* Canvas::CurrentFont()
 
     FontResource* resource = GameApplication::GetResourceManager().TryGet(state->Font);
 
-    return resource ? resource : Global::GDefaultFont;
+    return resource ? resource : GameApplication::GetDefaultFont();
 }
 
 void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, StringView text)

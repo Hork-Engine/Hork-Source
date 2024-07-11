@@ -35,8 +35,8 @@ SOFTWARE.
 #include <Engine/Core/IO.h>
 #include <Engine/Core/Random.h>
 
-#include <Engine/World/Modules/Render/MaterialManager.h>
 #include <Engine/World/Modules/Render/RenderFrontend.h>
+#include <Engine/World/Resources/Materials/MaterialManager.h>
 
 #include <Engine/UI/UIManager.h>
 #include <Engine/Renderer/RenderBackend.h>
@@ -173,6 +173,21 @@ public:
         return static_cast<GameApplication*>(Instance())->m_AudioMixer.RawPtr();
     }
 
+    static FontHandle GetDefaultFontHandle()
+    {
+        return static_cast<GameApplication*>(Instance())->m_DefaultFontHandle;
+    }
+
+    static FontResource* GetDefaultFont()
+    {
+        return static_cast<GameApplication*>(Instance())->m_DefaultFont;
+    }
+
+    static Float2 const& GetRetinaScale()
+    {
+        return static_cast<GameApplication*>(Instance())->m_RetinaScale;
+    }
+
 protected:
     bool bToggleFullscreenAltEnter{true};
 
@@ -249,13 +264,9 @@ private:
     bool                            m_bPostChangeVideoMode{};
     bool                            m_bPostTerminateEvent{};
     bool                            m_bPostTakeScreenshot{};
+    FontHandle                      m_DefaultFontHandle;
+    FontResource*                   m_DefaultFont;
+    Float2                          m_RetinaScale;
 };
-
-namespace Global
-{
-extern FontHandle GDefaultFontHandle;
-extern FontResource* GDefaultFont;
-extern Float2 GRetinaScale;
-} // namespace Global
 
 HK_NAMESPACE_END

@@ -64,14 +64,6 @@ ConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "1"s);
 #endif
 ConsoleVar rt_SwapInterval("rt_SwapInterval"s, "0"s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"s);
 
-
-namespace Global
-{
-FontHandle GDefaultFontHandle;
-FontResource* GDefaultFont;
-Float2 GRetinaScale;
-} // namespace Global
-
 enum
 {
     RENDER_FRONTEND_JOB_LIST,
@@ -201,7 +193,7 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     CreateMainWindowAndSwapChain();
 
     // FIXME: Move to RenderModule?
-    Global::GRetinaScale = Float2(1.0f);
+    m_RetinaScale = Float2(1.0f);
     m_VertexMemoryGPU = MakeUnique<VertexMemoryGPU>(m_RenderDevice);
 
     PhysicsModule::Initialize();
@@ -218,11 +210,11 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     m_MaterialManager = MakeUnique<MaterialManager>();
 
     // Q: Move RobotoMono-Regular.ttf to embedded files?
-    Global::GDefaultFontHandle = m_ResourceManager->CreateResourceFromFile<FontResource>("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf");
-    Global::GDefaultFont = m_ResourceManager->TryGet(Global::GDefaultFontHandle);
-    HK_ASSERT(Global::GDefaultFont);
-    Global::GDefaultFont->Upload();
-    HK_ASSERT(Global::GDefaultFont->IsValid());
+    m_DefaultFontHandle = m_ResourceManager->CreateResourceFromFile<FontResource>("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf");
+    m_DefaultFont = m_ResourceManager->TryGet(m_DefaultFontHandle);
+    HK_ASSERT(m_DefaultFont);
+    m_DefaultFont->Upload();
+    HK_ASSERT(m_DefaultFont->IsValid());
 
     m_FrameLoop = MakeUnique<FrameLoop>(m_RenderDevice);
 
@@ -251,7 +243,7 @@ GameApplication::~GameApplication()
 
     m_FrameLoop.Reset();
 
-    m_ResourceManager->UnloadResource(Global::GDefaultFontHandle);
+    m_ResourceManager->UnloadResource(m_DefaultFontHandle);
 
     // Process resource unload
     m_ResourceManager->MainThread_Update(1);
@@ -595,8 +587,8 @@ void GameApplication::OnResize()
 {
     DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
 
-    Global::GRetinaScale = Float2((float)videoMode.FramebufferWidth / videoMode.Width,
-                                  (float)videoMode.FramebufferHeight / videoMode.Height);
+    m_RetinaScale = Float2(static_cast<float>(videoMode.FramebufferWidth) / videoMode.Width,
+                           static_cast<float>(videoMode.FramebufferHeight) / videoMode.Height);
 }
 
 void GameApplication::PostChangeVideoMode(DisplayVideoMode const& mode)
