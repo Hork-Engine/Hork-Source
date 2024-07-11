@@ -276,8 +276,8 @@ public:
     /// the start position toward the end position.
     bool                    CastRay(Float3 const& inRayStart, Float3 const& inRayEnd, Float3 const& inExtents, NavMeshRayCastResult& outResult) const;
 
-    /// Query tile loaction
-    bool                    GetTileLocaction(Float3 const& inPosition, int& outTileX, int& outTileY) const;
+    /// Query tile location
+    bool                    GetTileLocation(Float3 const& inPosition, int& outTileX, int& outTileY) const;
 
     /// Queries the polygon nearest to the specified position.
     /// Extents is the search distance along each axis

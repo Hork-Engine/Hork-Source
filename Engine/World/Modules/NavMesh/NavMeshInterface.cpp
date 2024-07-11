@@ -842,7 +842,7 @@ bool NavMeshInterface::CastRay(Float3 const& inRayStart, Float3 const& inRayEnd,
     return CastRay(inRayStart, inRayEnd, inExtents, m_QueryFilter, outResult);
 }
 
-bool NavMeshInterface::GetTileLocaction(Float3 const& inPosition, int& outTileX, int& outTileY) const
+bool NavMeshInterface::GetTileLocation(Float3 const& inPosition, int& outTileX, int& outTileY) const
 {
     if (!m_NavMesh)
     {
