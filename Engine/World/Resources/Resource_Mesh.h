@@ -210,7 +210,6 @@ class MeshResourceBuilder
 {
 public:
     UniqueRef<MeshResource>     Build(RawMesh const& rawMesh);
-
 };
 
 HK_NAMESPACE_END

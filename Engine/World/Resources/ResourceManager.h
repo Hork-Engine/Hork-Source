@@ -46,7 +46,7 @@ using ResourceAreaID = uint32_t;
 
 struct ResourceArea;
 
-class ResourceManager final
+class ResourceManager final : public Noncopyable
 {
 public:
                             ResourceManager();
@@ -143,7 +143,7 @@ private:
 
     UniqueRef<ResourceBase> LoadResourceAsync(RESOURCE_TYPE type, StringView name);
 
-    /** Find file in resource packs */
+    /// Find file in resource packs
     bool                    FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const;
 
     ResourceArea*           AllocateArea();

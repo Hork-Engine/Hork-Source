@@ -42,11 +42,7 @@ DebugRenderer::DebugRenderer()
     m_pColors = &m_CurrentColor;
 }
 
-DebugRenderer::~DebugRenderer()
-{
-}
-
-void DebugRenderer::Free()
+void DebugRenderer::Purge()
 {
     Reset();
 
@@ -163,7 +159,7 @@ void DebugRenderer::SplitCommands()
     m_bSplit = true;
 }
 
-bool DebugRenderer::PrimitiveReserve(DBG_DRAW_CMD _CmdName, int _NumVertices, int _NumIndices, DebugDrawCmd** _Cmd, DebugVertex** _Verts, unsigned short** _Indices)
+bool DebugRenderer::PrimitiveReserve(DBG_DRAW_CMD _CmdName, int _NumVertices, int _NumIndices, DebugDrawCmd** _Cmd, DebugVertex** _Verts, uint16_t** _Indices)
 {
     if (_NumVertices <= 0 || _NumIndices <= 0)
     {
@@ -238,7 +234,7 @@ void DebugRenderer::DrawPoint(Float3 const& _Position)
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, 1, 1, &cmd, &verts, &indices))
     {
@@ -259,7 +255,7 @@ void DebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Strid
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, _NumPoints, &cmd, &verts, &indices))
     {
@@ -291,7 +287,7 @@ void DebugRenderer::DrawLine(Float3 const& _P0, Float3 const& _P1)
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, 2, 3, &cmd, &verts, &indices))
     {
@@ -342,7 +338,7 @@ void DebugRenderer::DrawLine(ArrayView<Float3> _Points, bool _Closed)
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
     {
@@ -385,7 +381,7 @@ void DebugRenderer::DrawConvexPoly(ArrayView<Float3> _Points, bool _TwoSided)
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
     {
@@ -421,7 +417,7 @@ void DebugRenderer::DrawConvexPoly(ArrayView<Float3> _Points, bool _TwoSided)
     }
 }
 
-void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned int const* _Indices, int _NumIndices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, uint32_t const* _Indices, int _NumIndices, bool _TwoSided)
 {
     int numIndices = _NumIndices;
 
@@ -433,7 +429,7 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
     {
@@ -473,12 +469,12 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     }
 }
 
-void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<uint32_t> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
 
-void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned short const* _Indices, int _NumIndices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, uint16_t const* _Indices, int _NumIndices, bool _TwoSided)
 {
     int numIndices = _NumIndices;
 
@@ -490,7 +486,7 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     DBG_DRAW_CMD   cmdName = m_bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
     {
@@ -530,12 +526,12 @@ void DebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int 
     }
 }
 
-void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices, bool _TwoSided)
+void DebugRenderer::DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<uint16_t> _Indices, bool _TwoSided)
 {
     DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned int const* _Indices, int _NumIndices)
+void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, uint32_t const* _Indices, int _NumIndices)
 {
     Float3 points[3];
     byte*  pPoints = (byte*)_Points;
@@ -548,12 +544,12 @@ void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride
     }
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned int> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<uint32_t> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned short const* _Indices, int _NumIndices)
+void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, uint16_t const* _Indices, int _NumIndices)
 {
     Float3 points[3];
     byte*  pPoints = (byte*)_Points;
@@ -566,7 +562,7 @@ void DebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride
     }
 }
 
-void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<unsigned short> _Indices)
+void DebugRenderer::DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<uint16_t> _Indices)
 {
     DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
@@ -585,7 +581,7 @@ void DebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, i
     DBG_DRAW_CMD   cmdName      = m_bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
     DebugDrawCmd*  cmd;
     DebugVertex*   verts;
-    unsigned short* indices;
+    uint16_t*      indices;
 
     if (PrimitiveReserve(cmdName, numPoints, totalIndices, &cmd, &verts, &indices))
     {
@@ -663,7 +659,7 @@ void DebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfEx
         Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
-    unsigned short indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
+    uint16_t indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
     DrawTriangleSoup(points, indices, _TwoSided);
 }
@@ -706,7 +702,7 @@ void DebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 cons
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         _Orientation * Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
-    unsigned short indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
+    uint16_t indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
     DrawTriangleSoup(points, indices, _TwoSided);
 }
