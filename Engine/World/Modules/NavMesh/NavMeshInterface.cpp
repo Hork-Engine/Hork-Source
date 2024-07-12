@@ -50,7 +50,6 @@ SOFTWARE.
 #undef free
 
 #include <Recast/Recast.h>
-#include <Recast/RecastAlloc.h>
 #include <Detour/DetourNavMesh.h>
 #include <Detour/DetourNavMeshQuery.h>
 #include <Detour/DetourNavMeshBuilder.h>
@@ -365,33 +364,6 @@ NavQueryFilter::NavQueryFilter()
 
 NavMeshInterface::NavMeshInterface()
 {
-    static bool InitializeAllocators = true;
-
-    if (InitializeAllocators)
-    {
-        auto detourAlloc = [](size_t sizeInBytes, dtAllocHint hint)
-        {
-            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
-        };
-
-        auto recastAlloc = [](size_t sizeInBytes, rcAllocHint hint)
-        {
-            if (sizeInBytes == 0)
-                sizeInBytes = 1;
-            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
-        };
-
-        auto dealloc = [](void* bytes)
-        {
-            Core::GetHeapAllocator<HEAP_NAVIGATION>().Free(bytes);
-        };
-
-        dtAllocSetCustom(detourAlloc, dealloc);
-        rcAllocSetCustom(recastAlloc, dealloc);
-
-        InitializeAllocators = false;
-    }
-
     m_AreaDesc[NAV_MESH_AREA_GROUND].Name = "Ground";
     m_AreaDesc[NAV_MESH_AREA_GROUND].Color = duRGBA(0, 255, 0, 255);
     m_AreaDesc[NAV_MESH_AREA_WATER].Name = "Water";

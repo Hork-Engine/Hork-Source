@@ -45,6 +45,9 @@ SOFTWARE.
 #endif
 
 #include <SDL/SDL.h>
+#include <ozz/base/memory/allocator.h>
+#include <Recast/RecastAlloc.h>
+#include <Detour/DetourAlloc.h>
 
 extern "C" const size_t   EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
@@ -161,6 +164,50 @@ String GetApplicationUserPath()
     #endif
 }
 
+void InitializeThirdPartyLibraries()
+{
+    {
+        class OzzAllocator : public ozz::memory::Allocator
+        {
+        public:
+            void* Allocate(size_t _size, size_t _alignment) override
+            {
+                return Core::GetHeapAllocator<HEAP_MISC>().Alloc(_size, _alignment);
+            }
+
+            void Deallocate(void* _block) override
+            {
+                return Core::GetHeapAllocator<HEAP_MISC>().Free(_block);
+            }
+        };
+
+        static OzzAllocator s_OzzAllocator;
+        ozz::memory::SetDefaulAllocator(&s_OzzAllocator);
+    }
+
+    {
+        auto detourAlloc = [](size_t sizeInBytes, dtAllocHint hint)
+        {
+            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
+        };
+
+        auto recastAlloc = [](size_t sizeInBytes, rcAllocHint hint)
+        {
+            if (sizeInBytes == 0)
+                sizeInBytes = 1;
+            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
+        };
+
+        auto dealloc = [](void* bytes)
+        {
+            Core::GetHeapAllocator<HEAP_NAVIGATION>().Free(bytes);
+        };
+
+        dtAllocSetCustom(detourAlloc, dealloc);
+        rcAllocSetCustom(recastAlloc, dealloc);
+    }
+}
+
 } // namespace
 
 GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
@@ -195,6 +242,8 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     // FIXME: Move to RenderModule?
     m_RetinaScale = Float2(1.0f);
     m_VertexMemoryGPU = MakeUnique<VertexMemoryGPU>(m_RenderDevice);
+
+    InitializeThirdPartyLibraries();
 
     PhysicsModule::Initialize();
 
