@@ -41,28 +41,28 @@ ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
 ConsoleVar com_DrawSkeletons("com_DrawSkeletons"s, "0"s);
 
-void MeshComponent::SetMaterial(MaterialInstance* material)
+void MeshComponent::SetMaterial(Material* material)
 {
     SetMaterial(0, material);
 }
 
-void MeshComponent::SetMaterial(uint32_t index, MaterialInstance* material)
+void MeshComponent::SetMaterial(uint32_t index, Material* material)
 {
     while (m_Materials.Size() <= index)
-        m_Materials.Add(nullptr);
+        m_Materials.EmplaceBack();
     m_Materials[index] = material;
 }
 
-MaterialInstance* MeshComponent::GetMaterial(uint32_t index)
+Material* MeshComponent::GetMaterial(uint32_t index)
 {
-    return (index < m_Materials.Size()) ? m_Materials[index] : nullptr;
+    return (index < m_Materials.Size()) ? m_Materials[index].RawPtr() : nullptr;
 }
 
 void MeshComponent::SetMaterialCount(uint32_t count)
 {
     m_Materials.Reserve(count);
     while (m_Materials.Size() < count)
-        m_Materials.Add(nullptr);
+        m_Materials.EmplaceBack();
     m_Materials.Resize(count);
 }
 

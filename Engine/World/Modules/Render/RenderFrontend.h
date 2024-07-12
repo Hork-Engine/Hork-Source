@@ -84,8 +84,6 @@ private:
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, Vector<PrimitiveDef*>& Primitives);
     void AddRenderInstances(World* world);
 
-    MaterialFrameData* GetMaterialFrameData(class MaterialInstance* materialInstance, FrameLoop* frameLoop, int frameNumber);
-
     void AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
     void AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef);
 

@@ -32,14 +32,12 @@ SOFTWARE.
 #include "ResourceManager.h"
 #include "Resource_Mesh.h"
 #include <Engine/GameApplication/GameApplication.h>
-#include <Engine/World/Resources/Materials/MaterialGraph.h>
+#include <Engine/World/Resources/Materials/MaterialGraph/MaterialGraph.h>
 
 HK_NAMESPACE_BEGIN
 
 void CreateDefaultResources()
 {
-    //auto& resourceMngr = GameApplication::GetResourceManager();
-
     {
         RawMesh mesh;
         mesh.CreateBox(Float3(1), 1.0f);
@@ -202,31 +200,30 @@ void CreateDefaultResources()
         HK_ASSERT(file);
         resource->Write(file);
     }
-#if 0
+#if 1
+    auto& resourceMngr = GameApplication::GetResourceManager();
     {
-        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resourceMngr.OpenFile("/Root/materials/sample_material_graph.mgraph").ReadInterface());
+        auto graph = MaterialGraph::Load(resourceMngr.OpenFile("/Root/materials/sample_material_graph.mgraph").ReadInterface());
 
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
+        MaterialResourceBuilder builder;
+        auto material = builder.Build(*graph);
 
         auto file = File::OpenWrite("Data/default/materials/default.mat");
-        data.Write(file);
+        material->Write(file);
     }
 
     {
-        MGMaterialGraph* graph = MGMaterialGraph::LoadFromFile(resourceMngr.OpenFile("/Root/materials/unlit.mgraph").ReadInterface());
+        auto graph = MaterialGraph::Load(resourceMngr.OpenFile("/Root/materials/unlit.mgraph").ReadInterface());
 
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
+        MaterialResourceBuilder builder;
+        auto material = builder.Build(*graph);
 
         auto file = File::OpenWrite("Data/default/materials/default_unlit.mat");
-        data.Write(file);
+        material->Write(file);
     }
 
     {
-        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
+        auto graph = MakeRef<MaterialGraph>();
 
         auto& inPosition = graph->Add2<MGInPosition>();
 
@@ -246,12 +243,11 @@ void CreateDefaultResources()
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
         graph->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
 
-        MaterialResource data;
-
-        data.m_pCompiledMaterial = graph->Compile();
+        MaterialResourceBuilder builder;
+        auto material = builder.Build(*graph);
 
         auto file = File::OpenWrite("Data/default/materials/skybox.mat");
-        data.Write(file);
+        material->Write(file);
     }
 #endif
 }

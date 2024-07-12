@@ -33,7 +33,6 @@ SOFTWARE.
 #include "Resource_Animation.h"
 #include "Resource_Mesh.h"
 #include "Resource_Material.h"
-#include "Resource_MaterialInstance.h"
 #include "Resource_Texture.h"
 #include "Resource_Font.h"
 #include "Resource_Terrain.h"

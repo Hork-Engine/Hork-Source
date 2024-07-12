@@ -29,53 +29,49 @@ SOFTWARE.
 */
 
 #include "MaterialManager.h"
-#include <Engine/World/Resources/ResourceManager.h>
 
 #include <Engine/Core/DOM.h>
+#include <Engine/World/Resources/ResourceManager.h>
+#include <Engine/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
-MaterialLibrary::~MaterialLibrary()
-{
-    for (auto& pair : m_Instances)
-    {
-        delete pair.second;
-    }
-}
-
-MaterialInstance* MaterialLibrary::CreateMaterial(StringView name)
+Ref<Material> MaterialLibrary::CreateMaterial(StringView name)
 {
     if (name.IsEmpty())
     {
         LOG("MaterialLibrary::CreateMaterial: invalid name\n");
-        return nullptr;
+        return {};
     }
 
-    if (Get(name))
+    if (TryGet(name))
     {
         LOG("MaterialLibrary::CreateMaterial: material {} already exists\n", name);
-        return nullptr;
+        return {};
     }
 
     // TODO: Use pool allocator
-    MaterialInstance* instance = new MaterialInstance(name);
-
+    Ref<Material> instance = MakeRef<Material>(name);
     m_Instances[name] = instance;
     return instance;
 }
 
-void MaterialLibrary::DestroyMaterial(MaterialInstance* material)
+void MaterialLibrary::DestroyMaterial(Material* material)
 {
-    auto it = m_Instances.Find(material->m_Name);
+    if (!material)
+        return;
+
+    auto it = m_Instances.Find(material->GetName());
     if (it == m_Instances.End())
         return;
 
     m_Instances.Erase(it);
-    delete material;
 }
 
-void MaterialLibrary::Read(IBinaryStreamReadInterface& stream, ResourceManager* resManager)
+void MaterialLibrary::Read(IBinaryStreamReadInterface& stream)
 {
+    ResourceManager& resourceMngr = GameApplication::GetResourceManager();
+
     DOM::Object document = DOM::Parser().Parse(stream.AsString());
     DOM::ObjectView documentView = document;
 
@@ -87,26 +83,22 @@ void MaterialLibrary::Read(IBinaryStreamReadInterface& stream, ResourceManager* 
         if (!dinstance.IsStructure())
             continue;
 
-        MaterialInstance* instance = CreateMaterial(materialName.GetStringView());
+        Material* instance = CreateMaterial(materialName.GetStringView());
         if (!instance)
             continue;
 
-        auto material = dinstance["Material"].AsString();
-        instance->m_Material = resManager->GetResource<MaterialResource>(!material.IsEmpty() ? material : "/Default/Materials/Unlit");
+        auto resource = dinstance["Material"].AsString();
+        instance->SetResource(resourceMngr.GetResource<MaterialResource>(!resource.IsEmpty() ? resource : "/Default/Materials/Unlit"));
 
         auto dtextures = dinstance["Textures"];
-        int textureCount = Math::Min<int>(MAX_MATERIAL_TEXTURES, dtextures.GetArraySize());
-        for (int i = 0; i < textureCount; i++)
-        {
-            instance->m_Textures[i] = resManager->GetResource<TextureResource>(dtextures.At(i).AsString());
-        }
+        uint32_t textureCount = Math::Min<uint32_t>(MAX_MATERIAL_TEXTURES, dtextures.GetArraySize());
+        for (uint32_t slot = 0; slot < textureCount; ++slot)
+            instance->SetTexture(slot, resourceMngr.GetResource<TextureResource>(dtextures.At(slot).AsString()));
 
         auto dconstants = dinstance["Constants"];
-        int constantCount = Math::Min<int>(MAX_MATERIAL_UNIFORMS, dconstants.GetArraySize());
-        for (int i = 0; i < constantCount; i++)
-        {
-            instance->m_Constants[i] = dconstants.At(i).As<float>();
-        }
+        uint32_t constantCount = Math::Min<uint32_t>(MAX_MATERIAL_UNIFORMS, dconstants.GetArraySize());
+        for (uint32_t index = 0; index < constantCount; ++index)
+            instance->SetConstant(index, dconstants.At(index).As<float>());
     }
 }
 
@@ -115,39 +107,49 @@ void MaterialLibrary::Write(IBinaryStreamWriteInterface& stream)
     // TODO
 }
 
-MaterialInstance* MaterialLibrary::Get(StringView name)
+Ref<Material> MaterialLibrary::TryGet(StringView name)
 {
     auto it = m_Instances.Find(name);
     if (it == m_Instances.End())
-        return nullptr;
+        return {};
     return it->second;
 }
 
-MaterialManager::~MaterialManager()
+Ref<MaterialLibrary> MaterialManager::CreateLibrary()
 {
+    Ref<MaterialLibrary> library;
+    library.Attach(new MaterialLibrary);
+    m_Libraries.Add(library);
+    return library;
 }
 
-void MaterialManager::AddMaterialLibrary(MaterialLibrary* library)
+Ref<MaterialLibrary> MaterialManager::LoadLibrary(StringView fileName)
 {
-    m_Libraries.Add() = library;
+    auto& resourceMngr = GameApplication::GetResourceManager();
+    if (auto file = resourceMngr.OpenFile(fileName))
+    {
+        auto library = CreateLibrary();
+        library->Read(file);
+        return library;
+    }
+    return {};
 }
 
-void MaterialManager::RemoveMaterialLibrary(MaterialLibrary* library)
+void MaterialManager::RemoveLibrary(MaterialLibrary* library)
 {
-    auto i = m_Libraries.IndexOf(Ref<MaterialLibrary>(library));
+    auto i = m_Libraries.IndexOf(library, [](auto& a, MaterialLibrary* b) { return a.RawPtr() == b; } );
     if (i != Core::NPOS)
         m_Libraries.Remove(i);
 }
 
-MaterialInstance* MaterialManager::Get(StringView name)
+Ref<Material> MaterialManager::TryGet(StringView name)
 {
-    for (MaterialLibrary* library : m_Libraries)
+    for (auto& library : m_Libraries)
     {
-        MaterialInstance* instance = library->Get(name);
-        if (instance)
+        if (auto instance = library->TryGet(name))
             return instance;
     }
-    return nullptr;
+    return {};
 }
 
 HK_NAMESPACE_END

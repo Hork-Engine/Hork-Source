@@ -134,54 +134,6 @@ void RenderFrontend::ClearRenderView(RenderViewData* view)
     Core::ZeroMem(view, sizeof(*view));
 }
 
-MaterialFrameData* RenderFrontend::GetMaterialFrameData(MaterialInstance* materialInstance, FrameLoop* frameLoop, int frameNumber)
-{
-    if (materialInstance->m_VisFrame == frameNumber)
-    {
-        return materialInstance->m_FrameData;
-    }
-
-    MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
-    if (!material)
-        return nullptr;
-
-    MaterialFrameData* frameData = (MaterialFrameData*)frameLoop->AllocFrameMem(sizeof(MaterialFrameData));
-
-    materialInstance->m_VisFrame = frameNumber;
-    materialInstance->m_FrameData = frameData;
-
-    frameData->Material    = material->m_GpuMaterial;
-    frameData->NumTextures = material->m_pCompiledMaterial->Samplers.Size();
-
-    HK_ASSERT(frameData->NumTextures <= MAX_MATERIAL_TEXTURES);
-
-    for (int i = 0, count = frameData->NumTextures; i < count; ++i)
-    {
-        TextureHandle texHandle = materialInstance->m_Textures[i];
-
-        TextureResource* texture = GameApplication::GetResourceManager().TryGet(texHandle);
-        if (!texture)
-        {
-            materialInstance->m_FrameData = nullptr;
-            return nullptr;
-        }
-
-        frameData->Textures[i] = texture->GetTextureGPU();
-        //HK_ASSERT(frameData->Textures[i]);
-        if (!frameData->Textures[i])
-        {
-            materialInstance->m_FrameData = nullptr;
-            return nullptr;
-        }
-    }
-
-    frameData->NumUniformVectors = material->m_pCompiledMaterial->NumUniformVectors;
-    Core::Memcpy(frameData->UniformVectors, materialInstance->m_Constants, sizeof(Float4) * frameData->NumUniformVectors);
-
-    return frameData;
-}
-
-
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
 static constexpr Float4x4 ShadowMapBias = Float4x4(
@@ -521,22 +473,22 @@ void RenderFrontend::AddMeshes()
             int surfaceCount = meshResource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
             {
-                MaterialInstance* materialInstance = mesh.GetMaterial(surfaceIndex);
+                Material* materialInstance = mesh.GetMaterial(surfaceIndex);
                 if (!materialInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
                 if (!material)
                     continue;
 
-                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
                 if (!materialInstanceFrameData)
                     continue;
             
                 // Add render instance
                 RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
-                if (material->m_pCompiledMaterial->bTranslucent)
+                if (material->IsTranslucent())
                 {
                     m_FrameData.TranslucentInstances.Add(instance);
                     m_View->TranslucentInstanceCount++;
@@ -631,7 +583,7 @@ void RenderFrontend::AddMeshes()
 
                 instance->bPerObjectMotionBlur = IsDynamicMesh<MeshComponentType>();
 
-                uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+                uint8_t priority = material->GetRenderingPriority();
                 if constexpr (IsDynamicMesh<MeshComponentType>())
                 {
                     priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
@@ -646,22 +598,22 @@ void RenderFrontend::AddMeshes()
         ProceduralMesh* proceduralMesh = mesh.GetProceduralMesh();
         if (proceduralMesh && !proceduralMesh->IndexCache.IsEmpty())
         {
-            MaterialInstance* materialInstance = mesh.GetMaterial(0);
+            Material* materialInstance = mesh.GetMaterial(0);
             if (!materialInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
             if (!material)
                 continue;
 
-            MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
             // Add render instance
             RenderInstance* instance = (RenderInstance*)m_FrameLoop->AllocFrameMem(sizeof(RenderInstance));
 
-            if (material->m_pCompiledMaterial->bTranslucent)
+            if (material->IsTranslucent())
             {
                 m_FrameData.TranslucentInstances.Add(instance);
                 m_View->TranslucentInstanceCount++;
@@ -702,7 +654,7 @@ void RenderFrontend::AddMeshes()
 
             instance->bPerObjectMotionBlur = IsDynamicMesh<MeshComponentType>();
 
-            uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+            uint8_t priority = material->GetRenderingPriority();
             if constexpr (IsDynamicMesh<MeshComponentType>())
             {
                 priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
@@ -742,18 +694,18 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
             int surfaceCount = meshResource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
             {
-                MaterialInstance* materialInstance = mesh.GetMaterial(surfaceIndex);
+                Material* materialInstance = mesh.GetMaterial(surfaceIndex);
                 if (!materialInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
                 if (!material)
                     continue;
 
-                if (material->m_pCompiledMaterial->bNoCastShadow)
+                if (!material->IsCastShadow())
                     continue;
 
-                MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+                MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
                 if (!materialInstanceFrameData)
                     continue;
             
@@ -802,7 +754,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
                 instance->SkeletonSize = skeletonSize;
                 instance->CascadeMask = 0xffff;//mesh.m_CascadeMask; // TODO
 
-                uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+                uint8_t priority = material->GetRenderingPriority();
 
                 instance->GenerateSortKey(priority, (uint64_t)meshResource);
 
@@ -815,18 +767,18 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
         ProceduralMesh* proceduralMesh = mesh.GetProceduralMesh();
         if (proceduralMesh && !proceduralMesh->IndexCache.IsEmpty())
         {        
-            MaterialInstance* materialInstance = mesh.GetMaterial(0);
+            Material* materialInstance = mesh.GetMaterial(0);
             if (!materialInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->m_Material);
+            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
             if (!material)
                 continue;
 
-            if (material->m_pCompiledMaterial->bNoCastShadow)
+            if (!material->IsCastShadow())
                 continue;
 
-            MaterialFrameData* materialInstanceFrameData = GetMaterialFrameData(materialInstance, m_FrameLoop, m_FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -852,7 +804,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
             instance->WorldTransformMatrix = instanceMatrix;
             instance->CascadeMask = 0xffff; //mesh.m_CascadeMask; // TODO
 
-            uint8_t priority = material->m_pCompiledMaterial->RenderingPriority;
+            uint8_t priority = material->GetRenderingPriority();
 
             instance->GenerateSortKey(priority, (uint64_t)proceduralMesh);
 

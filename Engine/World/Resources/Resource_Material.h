@@ -45,23 +45,37 @@ public:
     static const uint8_t        Type = RESOURCE_MATERIAL;
     static const uint8_t        Version = 1;
 
-                                MaterialResource() = default;
-                                ~MaterialResource();
-
     static UniqueRef<MaterialResource> Load(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
     void                        Write(IBinaryStreamWriteInterface& stream);
 
+    bool                        IsCastShadow() const;
+    bool                        IsTranslucent() const;
+
+    RENDERING_PRIORITY          GetRenderingPriority() const;
+
+    uint32_t                    GetTextureCount() const;
+    uint32_t                    GetUniformVectorCount() const;
+
+    MaterialGPU*                GetGpuMaterial() { return m_GpuMaterial; }
+
     void                        Upload() override;
 
-    Ref<MaterialGPU>            m_GpuMaterial;
-    Ref<CompiledMaterial>       m_pCompiledMaterial;
-
 private:
-    String m_Shader;
+    Ref<MaterialGPU>            m_GpuMaterial;
+    Ref<CompiledMaterial>       m_CompiledGraph;
+    String                      m_Shader;
+
+    friend class                MaterialResourceBuilder;
 };
 
 using MaterialHandle = ResourceHandle<MaterialResource>;
+
+class MaterialResourceBuilder
+{
+public:
+    UniqueRef<MaterialResource> Build(class MaterialGraph& graph);
+};
 
 HK_NAMESPACE_END

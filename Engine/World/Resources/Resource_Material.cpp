@@ -30,12 +30,10 @@ SOFTWARE.
 
 #include "Resource_Material.h"
 
+#include "Materials/MaterialGraph/MaterialGraph.h"
 #include <Engine/Renderer/ShaderLoader.h>
 
 HK_NAMESPACE_BEGIN
-
-MaterialResource::~MaterialResource()
-{}
 
 UniqueRef<MaterialResource> MaterialResource::Load(IBinaryStreamReadInterface& stream)
 {
@@ -55,10 +53,8 @@ bool MaterialResource::Read(IBinaryStreamReadInterface& stream)
         return false;
     }
 
-    m_pCompiledMaterial = MakeRef<CompiledMaterial>(stream);
-
-    m_Shader = LoadShader("material.glsl", m_pCompiledMaterial->Shaders);
-
+    m_CompiledGraph = MakeRef<CompiledMaterial>(stream);
+    m_Shader = LoadShader("material.glsl", m_CompiledGraph->Shaders);
     return true;
 }
 
@@ -66,14 +62,46 @@ void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
 {
     stream.WriteUInt32(MakeResourceMagic(Type, Version));
 
-    m_pCompiledMaterial->Write(stream);
+    m_CompiledGraph->Write(stream);
 }
 
 void MaterialResource::Upload()
 {
-    m_GpuMaterial = MakeRef<MaterialGPU>(m_pCompiledMaterial, m_Shader);
-
+    m_GpuMaterial = MakeRef<MaterialGPU>(m_CompiledGraph, m_Shader);
     m_Shader.Free();
+}
+
+bool MaterialResource::IsCastShadow() const
+{
+    return !m_CompiledGraph->bNoCastShadow;
+}
+
+bool MaterialResource::IsTranslucent() const
+{
+    return m_CompiledGraph->bTranslucent;
+}
+
+RENDERING_PRIORITY MaterialResource::GetRenderingPriority() const
+{
+    return m_CompiledGraph->RenderingPriority;
+}
+
+uint32_t MaterialResource::GetTextureCount() const
+{
+    return m_CompiledGraph->Samplers.Size();
+}
+
+uint32_t MaterialResource::GetUniformVectorCount() const
+{
+    return m_CompiledGraph->NumUniformVectors;
+}
+
+UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph)
+{
+    UniqueRef<MaterialResource> material;
+    material->m_CompiledGraph = graph.Compile();
+    material->m_Shader = LoadShader("material.glsl", material->m_CompiledGraph->Shaders);
+    return material;
 }
 
 HK_NAMESPACE_END

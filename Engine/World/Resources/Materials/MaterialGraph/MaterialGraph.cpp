@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "MaterialGraph.h"
 #include <Engine/Core/Logger.h>
-#include <Engine/Core/DOM.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -224,27 +223,27 @@ struct StageVarying
         VaryingName(Name), VaryingSource(Source), VaryingType(Type), RefCount(0)
     {}
 
-    String       VaryingName;
-    String       VaryingSource;
-    MG_VALUE_TYPE VaryingType;
-    int           RefCount;
+    String                  VaryingName;
+    String                  VaryingSource;
+    MG_VALUE_TYPE           VaryingType;
+    int                     RefCount;
 };
 
 class MaterialBuildContext
 {
 public:
-    String            SourceCode;
-    int               MaxTextureSlot{-1};
-    int               MaxUniformAddress{-1};
-    int               ParallaxSampler{-1};
-    bool              bHasVertexDeform{};
-    bool              bHasDisplacement{};
-    bool              bHasAlphaMask{};
-    bool              bHasShadowMask{};
-    Vector<StageVarying> InputVaryings;
-    int               Serial{};
+    String                  SourceCode;
+    int                     MaxTextureSlot{-1};
+    int                     MaxUniformAddress{-1};
+    int                     ParallaxSampler{-1};
+    bool                    bHasVertexDeform{};
+    bool                    bHasDisplacement{};
+    bool                    bHasAlphaMask{};
+    bool                    bHasShadowMask{};
+    Vector<StageVarying>    InputVaryings;
+    int                     Serial{};
 
-    MaterialBuildContext(MGMaterialGraph const* Graph, MATERIAL_STAGE Stage) :
+    MaterialBuildContext(MaterialGraph const* Graph, MATERIAL_STAGE Stage) :
         m_Graph(Graph), m_Stage(Stage)
     {}
 
@@ -267,15 +266,15 @@ public:
         return m_Graph->MaterialType;
     }
 
-    MGMaterialGraph const* GetGraph()
+    MaterialGraph const* GetGraph()
     {
         return m_Graph;
     }
 
 private:
-    mutable int            m_VariableName{};
-    MGMaterialGraph const* m_Graph;
-    MATERIAL_STAGE         m_Stage;
+    mutable int             m_VariableName{};
+    MaterialGraph const*    m_Graph;
+    MATERIAL_STAGE          m_Stage;
 };
 
 static constexpr const char* VariableTypeStr[] = {
@@ -417,9 +416,7 @@ HK_FLAG_ENUM_OPERATORS(MG_VECTOR_CAST_FLAGS)
 static String MakeVectorCast(String const& Expression, MG_VALUE_TYPE TypeFrom, MG_VALUE_TYPE TypeTo, MG_VECTOR_CAST_FLAGS VectorCastFlags = MG_VECTOR_CAST_UNDEFINED)
 {
     if (TypeFrom == TypeTo || TypeTo == MG_VALUE_TYPE_UNDEFINED)
-    {
         return Expression;
-    }
 
     MG_COMPONENT_TYPE componentFrom = GetTypeComponent(TypeFrom);
     MG_COMPONENT_TYPE componentTo   = GetTypeComponent(TypeTo);
@@ -651,13 +648,9 @@ void MaterialBuildContext::GenerateSourceCode(MGOutput& Slot, StringView Express
     else
     {
         if (bAddBrackets)
-        {
             Slot.Expression = "( " + Expression + " )";
-        }
         else
-        {
             Slot.Expression = Expression;
-        }
     }
 }
 
@@ -699,9 +692,7 @@ void MGNode::SetOutputs(std::initializer_list<MGOutput*> Outputs)
 {
     m_Outputs = Outputs;
     for (MGOutput* output : m_Outputs)
-    {
         output->m_Owner = this;
-    }
 }
 
 MGNode& MGNode::BindInput(StringView InputSlot, MGNode* Node)
@@ -727,6 +718,7 @@ MGNode& MGNode::BindInput(StringView InputSlot, MGOutput& pSlot)
 {
     return BindInput(InputSlot, &pSlot);
 }
+
 MGNode& MGNode::BindInput(StringView InputSlot, MGOutput* pSlot)
 {
     for (auto input : m_Inputs)
@@ -764,25 +756,18 @@ void MGNode::UnbindInput(StringView InputSlot)
 MGOutput* MGNode::FindOutput(StringView _Name)
 {
     for (MGOutput* Out : m_Outputs)
-    {
         if (!Out->GetName().Icmp(_Name))
-        {
             return Out;
-        }
-    }
     return nullptr;
 }
 
 bool MGNode::Build(MaterialBuildContext& Context)
 {
     if (m_Serial == Context.GetBuildSerial())
-    {
         return true;
-    }
 
-    //if ( !(Stages & Context.GetStageMask() ) ) {
+    //if (!(Stages & Context.GetStageMask()))
     //    return false;
-    //}
 
     m_Serial = Context.GetBuildSerial();
 
@@ -793,9 +778,7 @@ bool MGNode::Build(MaterialBuildContext& Context)
 void MGNode::ResetConnections(MaterialBuildContext const& Context)
 {
     if (!m_bTouched)
-    {
         return;
-    }
 
     m_bTouched = false;
 
@@ -814,9 +797,7 @@ void MGNode::ResetConnections(MaterialBuildContext const& Context)
 void MGNode::TouchConnections(MaterialBuildContext const& Context)
 {
     if (m_bTouched)
-    {
         return;
-    }
 
     m_bTouched = true;
 
@@ -846,7 +827,7 @@ static String MakeExpression(MaterialBuildContext& Context, MGInput& Input, MG_V
     return String(DefaultExpression); //MakeEmptyVector(DesiredType);
 }
 
-void MGMaterialGraph::Compute(MaterialBuildContext& Context)
+void MaterialGraph::Compute(MaterialBuildContext& Context)
 {
     Super::Compute(Context);
 
@@ -875,25 +856,22 @@ void MGMaterialGraph::Compute(MaterialBuildContext& Context)
     }
 }
 
-void MGMaterialGraph::ComputeVertexStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeVertexStage(MaterialBuildContext& Context)
 {
     MGOutput* positionCon = VertexDeform.GetConnection();
 
     Context.bHasVertexDeform = false;
 
     //String TransformMatrix;
-    //if ( Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
+    //if (Context.GetMaterialType() == MATERIAL_TYPE_HUD)
     //    TransformMatrix = "OrthoProjection";
-    //} else {
+    //else
     //    TransformMatrix = "TransformMatrix";
-    //}
 
     if (positionCon && VertexDeform.ConnectedNode()->Build(Context))
     {
         if (positionCon->Expression != "VertexPosition")
-        {
             Context.bHasVertexDeform = true;
-        }
 
         String expression = MakeVectorCast(positionCon->Expression, positionCon->Type, MG_VALUE_TYPE_FLOAT4, MG_VECTOR_CAST_IDENTITY_W);
 
@@ -905,12 +883,12 @@ void MGMaterialGraph::ComputeVertexStage(MaterialBuildContext& Context)
     }
 }
 
-void MGMaterialGraph::ComputeDepthStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeDepthStage(MaterialBuildContext& Context)
 {
     ComputeAlphaMask(Context);
 }
 
-void MGMaterialGraph::ComputeLightStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeLightStage(MaterialBuildContext& Context)
 {
     String expression;
 
@@ -968,7 +946,7 @@ void MGMaterialGraph::ComputeLightStage(MaterialBuildContext& Context)
         ComputeAlphaMask(Context);
 }
 
-void MGMaterialGraph::ComputeShadowCastStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeShadowCastStage(MaterialBuildContext& Context)
 {
     MGOutput* con = ShadowMask.GetConnection();
 
@@ -1002,7 +980,7 @@ void MGMaterialGraph::ComputeShadowCastStage(MaterialBuildContext& Context)
     }
 }
 
-void MGMaterialGraph::ComputeTessellationControlStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeTessellationControlStage(MaterialBuildContext& Context)
 {
     MGOutput* tessFactorCon = TessellationFactor.GetConnection();
 
@@ -1018,7 +996,7 @@ void MGMaterialGraph::ComputeTessellationControlStage(MaterialBuildContext& Cont
     }
 }
 
-void MGMaterialGraph::ComputeTessellationEvalStage(MaterialBuildContext& Context)
+void MaterialGraph::ComputeTessellationEvalStage(MaterialBuildContext& Context)
 {
     MGOutput* displacementCon = Displacement.GetConnection();
 
@@ -1038,7 +1016,7 @@ void MGMaterialGraph::ComputeTessellationEvalStage(MaterialBuildContext& Context
     }
 }
 
-void MGMaterialGraph::ComputeAlphaMask(MaterialBuildContext& Context)
+void MaterialGraph::ComputeAlphaMask(MaterialBuildContext& Context)
 {
     MGOutput* con = AlphaMask.GetConnection();
 
@@ -1385,7 +1363,6 @@ void MGArithmeticFunction1::Compute(MaterialBuildContext& Context)
 
     if (connectionA && Value.ConnectedNode()->Build(Context))
     {
-
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
@@ -1474,7 +1451,6 @@ void MGArithmeticFunction2::Compute(MaterialBuildContext& Context)
 
     if (connectionA && ValueA.ConnectedNode()->Build(Context) && connectionB && ValueB.ConnectedNode()->Build(Context))
     {
-
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
@@ -1559,7 +1535,6 @@ void MGArithmeticFunction3::Compute(MaterialBuildContext& Context)
 
     if (connectionA && ValueA.ConnectedNode()->Build(Context) && connectionB && ValueB.ConnectedNode()->Build(Context) && connectionC && ValueC.ConnectedNode()->Build(Context))
     {
-
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
@@ -2000,11 +1975,9 @@ void MGTextureLoad::Compute(MaterialBuildContext& Context)
     MGOutput* texSlotCon = Texture.GetConnection();
     if (texSlotCon)
     {
-
         MGNode* node = Texture.ConnectedNode();
         if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
-
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
             MG_VALUE_TYPE sampleType = MG_VALUE_TYPE_FLOAT2;
@@ -2040,12 +2013,10 @@ void MGTextureLoad::Compute(MaterialBuildContext& Context)
             int32_t slotIndex = texSlot->GetSlotIndex();
             if (slotIndex != -1)
             {
-
                 MGOutput* texCoordCon = TexCoord.GetConnection();
 
                 if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                 {
-
                     const char* swizzleStr = bSwappedToBGR ? ".bgra" : "";
 
                     const char* sampleFunc = ChooseSampleFunction(ColorSpace);
@@ -2122,11 +2093,9 @@ void MGNormalLoad::Compute(MaterialBuildContext& Context)
     MGOutput* texSlotCon = Texture.GetConnection();
     if (texSlotCon)
     {
-
         MGNode* node = Texture.ConnectedNode();
         if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
-
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
             MG_VALUE_TYPE sampleType = MG_VALUE_TYPE_FLOAT2;
@@ -2162,12 +2131,10 @@ void MGNormalLoad::Compute(MaterialBuildContext& Context)
             int32_t slotIndex = texSlot->GetSlotIndex();
             if (slotIndex != -1)
             {
-
                 MGOutput* texCoordCon = TexCoord.GetConnection();
 
                 if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                 {
-
                     const char* sampleFunc = ChooseSampleFunction(Pack);
 
                     XYZ.Expression = Context.GenerateVariableName();
@@ -2216,7 +2183,6 @@ void MGParallaxMapLoad::Compute(MaterialBuildContext& Context)
         MGNode* node = Texture.ConnectedNode();
         if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
-
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
             if (texSlot->TextureType == TEXTURE_2D)
@@ -2224,12 +2190,10 @@ void MGParallaxMapLoad::Compute(MaterialBuildContext& Context)
                 int32_t slotIndex = texSlot->GetSlotIndex();
                 if (slotIndex != -1)
                 {
-
                     MGOutput* texCoordCon = TexCoord.GetConnection();
 
                     if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                     {
-
                         String sampler  = "tslot_" + Core::ToString(slotIndex);
                         String texCoord = MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, MG_VALUE_TYPE_FLOAT2);
 
@@ -2436,7 +2400,6 @@ void MGInColor::Compute(MaterialBuildContext& Context)
         }
         else
         {
-
             Value.Expression = "InColor";
         }
     }
@@ -2595,7 +2558,7 @@ void MGAtmosphere::Compute(MaterialBuildContext& Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-String MGMaterialGraph::SamplersString(int MaxtextureSlot)
+String MaterialGraph::SamplersString(int MaxtextureSlot)
 {
     String s;
     String bindingStr;
@@ -2766,57 +2729,33 @@ static void GenerateBuiltinSource()
 
     String builtin;
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-    {
         builtin += format.Sprintf(texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    }
 
     builtin += builtin_spheremap_coord;
     builtin += builtin_luminance;
 
     for (int i = MG_VALUE_TYPE_FLOAT1; i <= MG_VALUE_TYPE_FLOAT4; i++)
-    {
         builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
-    }
 
     File f = File::OpenWrite("material_builtin.glsl");
     if (f)
@@ -2827,9 +2766,7 @@ static void WriteDebugShaders(Vector<MaterialSource> const& Shaders)
 {
     File f = File::OpenWrite("debug.glsl");
     if (!f)
-    {
         return;
-    }
 
     for (MaterialSource const& shader : Shaders)
     {
@@ -2974,12 +2911,12 @@ struct MaterialStageTransition
     String FS_CopyVaryingsCode;
 };
 
-void MGMaterialGraph::CreateStageTransitions(MaterialStageTransition&    Transition,
-                                             MaterialBuildContext const* VertexStage,
-                                             MaterialBuildContext const* TessControlStage,
-                                             MaterialBuildContext const* TessEvalStage,
-                                             MaterialBuildContext const* GeometryStage,
-                                             MaterialBuildContext const* FragmentStage)
+void MaterialGraph::CreateStageTransitions(MaterialStageTransition&    Transition,
+                                           MaterialBuildContext const* VertexStage,
+                                           MaterialBuildContext const* TessControlStage,
+                                           MaterialBuildContext const* TessEvalStage,
+                                           MaterialBuildContext const* GeometryStage,
+                                           MaterialBuildContext const* FragmentStage)
 {
     HK_ASSERT(VertexStage != nullptr);
 
@@ -3216,7 +3153,7 @@ void MGMaterialGraph::CreateStageTransitions(MaterialStageTransition&    Transit
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGMaterialGraph)
+HK_BEGIN_CLASS_META(MaterialGraph)
 HK_PROPERTY_DIRECT(MaterialType, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(TessellationMethod, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(RenderingPriority, HK_PROPERTY_DEFAULT)
@@ -3238,21 +3175,13 @@ HK_PROPERTY_DIRECT(bPerBoneMotionBlur, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bUseVirtualTexture, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGMaterialGraph::MGMaterialGraph() :
+MaterialGraph::MaterialGraph() :
     Super("Material Graph")
 {
     SetSlots({&Color, &Normal, &Metallic, &Roughness, &AmbientOcclusion, &AmbientLight, &Emissive, &Specular, &Opacity, &VertexDeform, &AlphaMask, &ShadowMask, &Displacement, &TessellationFactor}, {});
 }
 
-MGMaterialGraph::~MGMaterialGraph()
-{
-    for (MGNode* node : m_Nodes)
-    {
-        node->RemoveRef();
-    }
-}
-
-void MGMaterialGraph::CompileStage(MaterialBuildContext& ctx)
+void MaterialGraph::CompileStage(MaterialBuildContext& ctx)
 {
     static int BuildSerial = 0;
 
@@ -3263,7 +3192,7 @@ void MGMaterialGraph::CompileStage(MaterialBuildContext& ctx)
     Build(ctx);
 }
 
-Ref<CompiledMaterial> MGMaterialGraph::Compile()
+Ref<CompiledMaterial> MaterialGraph::Compile()
 {
     int n = 0;
     for (auto textureSlot : GetTextures())
@@ -3280,20 +3209,20 @@ Ref<CompiledMaterial> MGMaterialGraph::Compile()
 
     Ref<CompiledMaterial> material = MakeRef<CompiledMaterial>();
 
-    material->Type                      = MaterialType;
-    material->Blending                  = Blending;
-    material->TessellationMethod        = TessellationMethod;
-    material->RenderingPriority         = RENDERING_PRIORITY_DEFAULT;
-    material->bDepthTest_EXPERIMENTAL   = bDepthTest;
+    material->Type = MaterialType;
+    material->Blending = Blending;
+    material->TessellationMethod = TessellationMethod;
+    material->RenderingPriority = RENDERING_PRIORITY_DEFAULT;
+    material->bDepthTest_EXPERIMENTAL = bDepthTest;
     material->bDisplacementAffectShadow = bDisplacementAffectShadow;
     //material->bParallaxMappingSelfShadowing = bParallaxMappingSelfShadowing;
-    material->bTranslucent      = bTranslucent;
-    material->bTwoSided         = bTwoSided;
-    material->bAlphaMasking     = false;
+    material->bTranslucent = bTranslucent;
+    material->bTwoSided = bTwoSided;
+    material->bAlphaMasking = false;
     material->bShadowMapMasking = false;
-    material->bHasVertexDeform  = false;
-    material->bNoCastShadow     = false;
-    material->LightmapSlot      = 0;
+    material->bHasVertexDeform = false;
+    material->bNoCastShadow = false;
+    material->LightmapSlot = 0;
 
     String predefines;
 
@@ -3352,54 +3281,34 @@ Ref<CompiledMaterial> MGMaterialGraph::Compile()
     }
 
     if (bTranslucent)
-    {
         predefines += "#define TRANSLUCENT\n";
-    }
 
     if (bTwoSided)
-    {
         predefines += "#define TWOSIDED\n";
-    }
 
     if (bNoLightmap)
-    {
         predefines += "#define NO_LIGHTMAP\n";
-    }
 
     if (bAllowScreenSpaceReflections)
-    {
         predefines += "#define ALLOW_SSLR\n";
-    }
 
     if (bAllowScreenAmbientOcclusion)
-    {
         predefines += "#define ALLOW_SSAO\n";
-    }
 
     if (bAllowShadowReceive)
-    {
         predefines += "#define ALLOW_SHADOW_RECEIVE\n";
-    }
 
     if (bDisplacementAffectShadow)
-    {
         predefines += "#define DISPLACEMENT_AFFECT_SHADOW\n";
-    }
 
     if (bParallaxMappingSelfShadowing)
-    {
         predefines += "#define PARALLAX_SELF_SHADOW\n";
-    }
 
     if (bPerBoneMotionBlur)
-    {
         predefines += "#define PER_BONE_MOTION_BLUR\n";
-    }
 
     if (MotionBlurScale > 0.0f && !bTranslucent)
-    {
         predefines += "#define ALLOW_MOTION_BLUR\n";
-    }
 
     predefines += "#define MOTION_BLUR_SCALE " + Core::ToString(Math::Saturate(MotionBlurScale)) + "\n";
 
@@ -3410,14 +3319,10 @@ Ref<CompiledMaterial> MGMaterialGraph::Compile()
     }
 
     if (!bDepthTest /*|| bTranslucent */)
-    {
         material->bNoCastShadow = true;
-    }
 
     if (Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA)
-    {
         predefines += "#define PREMULTIPLIED_ALPHA\n";
-    }
 
     bool bTess = TessellationMethod != TESSELLATION_DISABLED;
 
@@ -3644,9 +3549,7 @@ Ref<CompiledMaterial> MGMaterialGraph::Compile()
         predefines += "#define COLOR_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
 
         if (bUseVirtualTexture)
-        {
             predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD " + Core::ToString(locationIndex++) + "\n";
-        }
 
         material->LightmapSlot = lightCtx.MaxTextureSlot + 1;
 
@@ -3821,9 +3724,7 @@ Ref<CompiledMaterial> MGMaterialGraph::Compile()
     }
 
     if (material->bHasVertexDeform)
-    {
         predefines += "#define HAS_VERTEX_DEFORM\n";
-    }
 
     material->AddShader("$PREDEFINES$", predefines);
 
@@ -3871,8 +3772,8 @@ class MGNodeRegistry
 public:
     struct NodeType
     {
-        ClassMeta const* NodeClass{};
-        MG_NODE_FLAGS     Flags{};
+        ClassMeta const*    NodeClass{};
+        MG_NODE_FLAGS       Flags{};
 
         operator bool() const
         {
@@ -3952,9 +3853,7 @@ public:
     {
         Vector<StringView> types;
         for (auto& it : m_Types)
-        {
             types.Add(it.first);
-        }
         std::sort(types.Begin(), types.End(), [](StringView Lhs, StringView Rhs)
                   { return Lhs.Icmp(Rhs); });
         return types;
@@ -3963,7 +3862,7 @@ public:
 
 MGNodeRegistry GMaterialNodeRegistry;
 
-MGNode* MGMaterialGraph::Add(StringView Name)
+MGNode* MaterialGraph::Add(StringView Name)
 {
     MGNodeRegistry::NodeType nodeType = GMaterialNodeRegistry.FindType(Name);
     if (!nodeType)
@@ -3976,61 +3875,57 @@ MGNode* MGMaterialGraph::Add(StringView Name)
 
     if (nodeType.Flags & MG_NODE_SINGLETON)
     {
-        for (MGNode* node : m_Nodes)
-        {
+        for (auto& node : m_Nodes)
             if (node->FinalClassId() == nodeClass->ClassId)
-            {
-                return node;
-            }
-        }
+                return node.RawPtr();
     }
 
-    MGNode* node = static_cast<MGNode*>(nodeClass->CreateInstance());
+    Ref<MGNode> node;
+    node.Attach(static_cast<MGNode*>(nodeClass->CreateInstance().Detach()));
     m_Nodes.Add(node);
-    node->AddRef();
     node->m_ID = ++m_NodeIdGen;
-    return node;
+    return node.RawPtr();
 }
 
-MGTextureSlot* MGMaterialGraph::GetTexture(uint32_t Slot)
+MGTextureSlot* MaterialGraph::GetTexture(uint32_t Slot)
 {
     if (Slot >= MAX_MATERIAL_TEXTURES)
     {
-        LOG("MGMaterialGraph::GetTexture: MAX_MATERIAL_TEXTURES hit\n");
+        LOG("MaterialGraph::GetTexture: MAX_MATERIAL_TEXTURES hit\n");
         return nullptr;
     }
 
     while (m_TextureSlots.Size() <= Slot)
-        m_TextureSlots.Add(nullptr);
+        m_TextureSlots.EmplaceBack();
 
     if (!m_TextureSlots[Slot])
     {
-        m_TextureSlots[Slot] = NewObj<MGTextureSlot>();
-        m_TextureSlots[Slot]->AddRef();
+        auto node = MakeRef<MGTextureSlot>();
+        m_TextureSlots[Slot] = node.RawPtr();
         m_TextureSlots[Slot]->m_ID        = ++m_NodeIdGen;
         m_TextureSlots[Slot]->m_SlotIndex = Slot;
 
-        m_Nodes.Add(m_TextureSlots[Slot]);
+        m_Nodes.Add(node);
     }
 
     return m_TextureSlots[Slot];
 }
 
-MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Stream)
+Ref<MaterialGraph> MaterialGraph::Load(IBinaryStreamReadInterface& Stream)
 {
     if (!Stream.IsValid())
-        return nullptr;
+        return {};
 
     DOM::Object document = DOM::Parser().Parse(Stream.AsString());
     DOM::ObjectView documentView = document;
 
     if (documentView["version"].As<int32_t>() != 1)
     {
-        LOG("MGMaterialGraph::LoadFromFile: unknown version\n");
-        return nullptr;
+        LOG("MaterialGraph::LoadFromFile: unknown version\n");
+        return {};
     }
 
-    MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
+    auto graph = MakeRef<MaterialGraph>();
 
     auto dtextureSlots = documentView["textures"];
    
@@ -4063,7 +3958,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
 
     StringHashMap<NodeInfo> nodes;
 
-    nodes["__root__"].Node = graph;
+    nodes["__root__"].Node = graph.RawPtr();
     nodes["__root__"].ObjectView = documentView;
 
     auto dnodes = documentView["nodes"];

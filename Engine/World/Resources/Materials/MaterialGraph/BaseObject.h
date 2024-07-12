@@ -30,8 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/GarbageCollector.h>
-
 #include "Factory.h"
 
 HK_NAMESPACE_BEGIN
@@ -43,11 +41,11 @@ BaseObject
 Base object class.
 
 */
-class BaseObject : public GCObject
+class BaseObject : public RefCounted
 {
 public:
-    typedef BaseObject                                          ThisClass;
-    typedef Allocators::HeapMemoryAllocator<HEAP_WORLD_OBJECTS> Allocator;
+    typedef BaseObject                                 ThisClass;
+    typedef Allocators::HeapMemoryAllocator<HEAP_MISC> Allocator;
     class ThisClassMeta : public ClassMeta
     {
     public:
@@ -55,88 +53,24 @@ public:
             ClassMeta(ClassMeta::DummyFactory(), "BaseObject"s, nullptr)
         {}
 
-        BaseObject* CreateInstance() const override
+        Ref<BaseObject> CreateInstance() const override
         {
-            return NewObj<ThisClass>();
+            return MakeRef<ThisClass>();
         }
     };
 
     _HK_GENERATED_CLASS_BODY()
 
-    /** Object unique identifier */
-    const uint64_t Id;
-
-    BaseObject();
-    ~BaseObject();
-
     void SetProperties(StringHashMap<String> const& Properties);
 
     bool SetProperty(StringView PropertyName, StringView PropertyValue);
-
-    //bool SetProperty(StringView PropertyName, Variant const& PropertyValue);
 
     Property const* FindProperty(StringView PropertyName, bool bRecursive) const;
 
     void GetProperties(PropertyList& Properties, bool bRecursive = true) const;
 
-    /** Get total existing objects */
-    static uint64_t GetTotalObjects() { return m_TotalObjects; }
-
-    static BaseObject* FindObject(uint64_t _Id);
-
-    template <typename T>
-    static T* FindObject(uint64_t _Id)
-    {
-        BaseObject* object = FindObject(_Id);
-        if (!object)
-        {
-            return nullptr;
-        }
-        if (object->FinalClassId() != T::ClassId())
-        {
-            return nullptr;
-        }
-        return static_cast<T*>(object);
-    }
-
 private:
     void SetProperties_r(ClassMeta const* Meta, StringHashMap<String> const& Properties);
-
-    /** Object global list */
-    BaseObject* m_NextObject{};
-    BaseObject* m_PrevObject{};
-
-    /** Total existing objects */
-    static uint64_t m_TotalObjects;
-
-    static BaseObject* m_Objects;
-    static BaseObject* m_ObjectsTail;
 };
-
-/**
-
-Utilites
-
-*/
-
-//template <typename T>
-//T* Upcast(BaseObject* pObject)
-//{
-//    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
-//    {
-//        return static_cast<T*>(pObject);
-//    }
-//    return nullptr;
-//}
-//
-//template <typename T>
-//T const* Upcast(BaseObject const* pObject)
-//{
-//    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
-//    {
-//        return static_cast<T const*>(pObject);
-//    }
-//    return nullptr;
-//}
 
 HK_NAMESPACE_END

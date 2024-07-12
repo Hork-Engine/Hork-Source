@@ -49,8 +49,8 @@ public:
 
     const char* GetTag() const { return m_Tag; }
 
-    BaseObject* CreateInstance(StringView ClassName) const;
-    BaseObject* CreateInstance(uint64_t ClassId) const;
+    Ref<BaseObject> CreateInstance(StringView ClassName) const;
+    Ref<BaseObject> CreateInstance(uint64_t ClassId) const;
 
     ClassMeta const* GetClassList() const;
 
@@ -110,7 +110,7 @@ public:
         return IsSubclassOf(Superclass::GetClassMeta());
     }
 
-    virtual BaseObject* CreateInstance() const = 0;
+    virtual Ref<BaseObject> CreateInstance() const = 0;
 
     static void CloneProperties(BaseObject const* Template, BaseObject* Destination);
 
@@ -149,16 +149,16 @@ private:
     Property const*      m_PropertyListTail;
 };
 
-HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(StringView ClassName) const
+HK_FORCEINLINE Ref<BaseObject> ObjectFactory::CreateInstance(StringView ClassName) const
 {
     ClassMeta const* classMeta = LookupClass(ClassName);
-    return classMeta ? classMeta->CreateInstance() : nullptr;
+    return classMeta ? classMeta->CreateInstance() : Ref<BaseObject>{};
 }
 
-HK_FORCEINLINE BaseObject* ObjectFactory::CreateInstance(uint64_t ClassId) const
+HK_FORCEINLINE Ref<BaseObject> ObjectFactory::CreateInstance(uint64_t ClassId) const
 {
     ClassMeta const* classMeta = LookupClass(ClassId);
-    return classMeta ? classMeta->CreateInstance() : nullptr;
+    return classMeta ? classMeta->CreateInstance() : Ref<BaseObject>{};
 }
 
 HK_FORCEINLINE ClassMeta const* ObjectFactory::GetClassList() const
@@ -380,9 +380,9 @@ public:                                                                         
         {                                                                                                   \
             RegisterProperties();                                                                           \
         }                                                                                                   \
-        BaseObject* CreateInstance() const override                                                         \
+        Ref<BaseObject> CreateInstance() const override                                                     \
         {                                                                                                   \
-            return new ThisClass;                                                                           \
+            return MakeRef<ThisClass>();                                                                    \
         }                                                                                                   \
                                                                                                             \
     private:                                                                                                \

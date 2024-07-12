@@ -30,35 +30,37 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Resources/Resource_MaterialInstance.h>
+#include "Material.h"
 
 HK_NAMESPACE_BEGIN
 
 class MaterialLibrary final : public RefCounted
 {
 public:
-    ~MaterialLibrary();
+    Ref<Material>           CreateMaterial(StringView name);
+    void                    DestroyMaterial(Material* material);
 
-    MaterialInstance* CreateMaterial(StringView name);
-    void DestroyMaterial(MaterialInstance* material);
+    void                    Read(IBinaryStreamReadInterface& stream);
+    void                    Write(IBinaryStreamWriteInterface& stream);
 
-    void Read(IBinaryStreamReadInterface& stream, class ResourceManager* resManager);
-    void Write(IBinaryStreamWriteInterface& stream);
+    Ref<Material>           TryGet(StringView name);
 
-    MaterialInstance* Get(StringView name);
+private:
+                            MaterialLibrary() = default;
 
-    StringHashMap<MaterialInstance*> m_Instances;
+    StringHashMap<Ref<Material>> m_Instances;
+
+    friend class            MaterialManager;
 };
 
 class MaterialManager final : public Noncopyable
 {
 public:
-    ~MaterialManager();
+    Ref<MaterialLibrary>    CreateLibrary();
+    Ref<MaterialLibrary>    LoadLibrary(StringView fileName);
+    void                    RemoveLibrary(MaterialLibrary* library);
 
-    void AddMaterialLibrary(MaterialLibrary* library);
-    void RemoveMaterialLibrary(MaterialLibrary* library);
-
-    MaterialInstance* Get(StringView name);
+    Ref<Material>           TryGet(StringView name);
 
 private:
     Vector<Ref<MaterialLibrary>> m_Libraries;

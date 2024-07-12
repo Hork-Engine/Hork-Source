@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Engine/World/Modules/Render/ProceduralMesh.h>
 #include <Engine/World/Modules/Skeleton/SkeletonPose.h>
 #include <Engine/World/Resources/Resource_Mesh.h>
-#include <Engine/World/Resources/Resource_MaterialInstance.h>
+#include <Engine/World/Resources/Materials/Material.h>
 
 #include <Engine/World/GameObject.h>
 #include <Engine/World/World.h>
@@ -50,9 +50,9 @@ public:
     void                        SetProceduralMesh(ProceduralMesh* proceduralMesh) { m_ProceduralData = proceduralMesh; }
     ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData; }
 
-    void                        SetMaterial(MaterialInstance* material);
-    void                        SetMaterial(uint32_t index, MaterialInstance* material);
-    MaterialInstance*           GetMaterial(uint32_t index);
+    void                        SetMaterial(Material* material);
+    void                        SetMaterial(uint32_t index, Material* material);
+    Material*                   GetMaterial(uint32_t index);
     void                        SetMaterialCount(uint32_t count);
     uint32_t                    GetMaterialCount() const;
 
@@ -79,7 +79,7 @@ public:
 
 protected:
     MeshHandle                  m_Resource;
-    Vector<MaterialInstance*>   m_Materials; // NOTE: pointers will be replaced by handles!
+    Vector<Ref<Material>>       m_Materials; // NOTE: pointers will be replaced by handles!
     Ref<ProceduralMesh>         m_ProceduralData;
     bool                        m_Outline = false;
     bool                        m_CastShadow = true;

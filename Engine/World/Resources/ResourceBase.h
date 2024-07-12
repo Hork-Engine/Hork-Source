@@ -41,7 +41,7 @@ enum RESOURCE_TYPE : uint8_t
     RESOURCE_ANIMATION,//ok
     RESOURCE_NODE_MOTION,     // todo
     RESOURCE_TEXTURE,//ok
-    RESOURCE_MATERIAL,// combine compiledmaterial with material
+    RESOURCE_MATERIAL,//ok
     RESOURCE_COLLISION,// todo
     RESOURCE_SOUND,//ok
     RESOURCE_FONT,//ok
