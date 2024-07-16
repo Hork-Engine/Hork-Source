@@ -100,9 +100,6 @@ const vec4 Jitters[16] = vec4[](
 
 #define AO_LAYER gl_Layer//gl_PrimitiveID
 
-const vec2 g_Float2Offset = Float2Offsets[AO_LAYER].xy;
-const vec4 g_Jitter = Jitters[AO_LAYER];
-
 const float NUM_STEPS = 4;
 const float NUM_DIRECTIONS = 8;
 
@@ -111,7 +108,7 @@ vec4 GetJitter()
 {
 #ifdef AO_DEINTERLEAVED
     // Get the current jitter vector from the per-pass constant buffer
-    return g_Jitter;
+    return Jitters[AO_LAYER];
 #else
     #if 1
         // Divide gl_FragCoord by four (random map dimension)
@@ -234,7 +231,7 @@ float ComputeCoarseAO( vec2 FullResUV, float RadiusPixels, vec4 Rand, vec3 ViewP
 
 void main() {
 #ifdef AO_DEINTERLEAVED
-    const vec2 base = floor( gl_FragCoord.xy ) * 4.0 + g_Float2Offset;
+    const vec2 base = floor( gl_FragCoord.xy ) * 4.0 + Float2Offsets[AO_LAYER].xy;
     const vec2 uv = base * ( AOInvQuarterResolution * 0.25 );
 
     vec3 ViewPosition = FetchQuarterResViewPos( uv );

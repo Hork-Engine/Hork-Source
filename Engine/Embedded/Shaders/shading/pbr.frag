@@ -113,7 +113,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     vec3 PrefilteredColor = vec3( 0.1 );
 
 // NOTE: there is an issue
-#ifndef ATI
+#if 0
     if ( NearestProbe < 9999 ) {
         // Gather irradiance from cubemaps
         Irradiance += texture( samplerCube(Probes[NearestProbe].IrradianceAndReflectionMaps.xy), Normal ).rgb;

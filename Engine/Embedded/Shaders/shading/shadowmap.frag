@@ -146,7 +146,7 @@ float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
 }
 
 float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
-#ifdef ATI
+#if 0
     const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
 
     float Shadow = 0;
@@ -155,9 +155,31 @@ float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
             Shadow += texture( _ShadowMap, _TexCoord + vec4(i,j,0,0)*invSize );
 #else
     float Shadow = 0;
-    for ( int i = -2 ; i <= 2 ; i++ )
-        for ( int j = -2 ; j <= 2 ; j++ )
-            Shadow += textureOffset( _ShadowMap, _TexCoord, ivec2( i, j ) );
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2,-2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2,-1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 0));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1,-2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1,-1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 0));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0,-2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0,-1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 0));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1,-2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1,-1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 0));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2,-2));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2,-1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 0));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 1));
+	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 2));
 #endif
     return Shadow * (1.0f/25.0f);
 }
@@ -167,7 +189,7 @@ float SampleLightShadow( uint ShadowmapIndex, uint FirstCascade, uint NumCascade
         uint CascadeIndex = FirstCascade + i;
         vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
-        
+
         // TODO: Move this values to uniforms
         ShadowCoord.z -= clamp( Bias * (1 << i)*1.5, 0.45, 5.0 ) * 0.0001;
         

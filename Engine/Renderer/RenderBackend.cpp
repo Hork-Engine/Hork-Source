@@ -71,14 +71,6 @@ ConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
 
 void TestVT();
 
-static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
-{
-    // TODO
-
-    *BinaryCode = nullptr;
-    *BinarySize = 0;
-}
-
 Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth();
 Ref<RenderCore::IPipeline> CreateTerrainMaterialLight();
 Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
@@ -276,17 +268,6 @@ RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
     free(mem);
 #    endif
 #endif
-
-    #if 0
-    // Test SPIR-V
-    Ref<IShaderModule> shaderModule;
-    ShaderBinaryData   binaryData;
-    binaryData.ShaderType   = VERTEX_SHADER;
-    binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
-    LoadSPIRV(&binaryData.BinaryCode, &binaryData.BinarySize);
-    GDevice->CreateShaderFromBinary(&binaryData, &shaderModule);
-    #endif
-
 
     m_TerrainDepthPipeline = CreateTerrainMaterialDepth();
     GTerrainDepthPipeline = m_TerrainDepthPipeline;

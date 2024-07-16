@@ -167,7 +167,7 @@ unsigned int ShaderModuleGLImpl::CreateShaderProgramBin(ShaderBinaryData const* 
         return 0;
     }
 
-    //glProgramParameteri( program, GL_PROGRAM_SEPARABLE, GL_TRUE );
+    glProgramParameteri(program, GL_PROGRAM_SEPARABLE, GL_TRUE);
     glProgramParameteri(program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_FALSE);
 
     if (_BinaryData->BinaryFormat == SHADER_BINARY_FORMAT_SPIR_V_ARB)

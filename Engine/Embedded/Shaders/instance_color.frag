@@ -33,7 +33,8 @@ SOFTWARE.
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-layout( origin_upper_left ) in vec4 gl_FragCoord;
+//#extension GL_ARB_fragment_coord_conventions: require
+//layout(origin_upper_left) in vec4 gl_FragCoord;
 
 
 // Built-in samplers
@@ -189,114 +190,6 @@ vec2  InPhysicalUV;
 #include "shading/baselight.frag"
 #endif
 
-float getSoftStripes(float value, float gridSize, float stripeSize) {
-    float mainVal = value * gridSize;
-    float filterWidth = fwidth(value);
-    float edge = filterWidth * gridSize * 2.0;
-    
-    // major line shading, currently set to place a major line every 64 units
-    float mValue = 1.0 / (64.0 * gridSize);
-    float triMajor = abs(2.0 * fract(mainVal * mValue) - 1.0);
-    float isMajor = step(1.0 - mValue, triMajor);
-    
-    float outIntensity = isMajor * 0.7 + 0.85; // tweak intensities here
-    float sSize = stripeSize;
-    
-    float triangle = abs(2.0 * fract(mainVal) - 1.0);
-    return smoothstep(sSize - edge, sSize + edge, triangle) * outIntensity;
-}
-
-/**
- * Draws two overlaid grids
- * 
- * @param inCoords fragment coordinates (TODO: document units)
- * @param gridRatio the reciprocal of the first grid size, e.g. (1/16) for a 16 unit grid
- * @param gridRatio2 the reciprocal of the second grid size, e.g. (1/16) for a 16 unit grid
- * @param lineWidth the line width (TODO: document units)
- * @param gridBlend the fraction of the two grids to draw, between 0 and 1, 
- *                  where 0.0 means 100% of grid one, and 1.0 means 100% of grid two.
- */
-float gridLinesSoft(vec2 inCoords, float gridRatio, float gridRatio2, float lineWidth, float gridBlend) {
-    float stripeRatio = lineWidth * gridRatio;
-    float stripeRatio2 = lineWidth * gridRatio2;
-    float stripeSize = 1.0 - stripeRatio;
-    float stripeSize2 = 1.0 - stripeRatio2;
-    
-    float theGrid, nextGrid;
-    
-    theGrid = getSoftStripes(inCoords.x, gridRatio, stripeSize);
-    theGrid = max(theGrid, getSoftStripes(inCoords.y, gridRatio, stripeSize));
-    nextGrid = getSoftStripes(inCoords.x, gridRatio2, stripeSize2);
-    nextGrid = max(nextGrid, getSoftStripes(inCoords.y, gridRatio2, stripeSize2));
-    
-    theGrid = mix(theGrid, nextGrid, gridBlend);
-    
-    return theGrid * 0.5;
-}
-
-/**
- * Given a valid grid size, returns the next larger one.
- */
-float gridNextLarger(float size) {
-    return 2.0 * size;
-}
-
-/**
- * Given any size, finds the next smaller size that is a proper grid size.
- * Returns the input unmodified if it's already a grid size.
- */
-float gridFloor(float size) {
-    return exp2(floor(log2(size)));
-}
-
-/*
- * Computes the grid for the current fragment with the given parameters.
- *
- * @param coords the coordinates of the fragment in world space (same units as gridSize)
- * @param normal the normal vector of the fragment
- * @param gridSize the actual size of the grid (e.g. 16, 32, 64, etc.)
- * @param minGridSize the minimal grid size to render (to fade out smaller grids to prevent moire etc.)
- * @param lineWidthFactor a factor for the line width of the grid
- *
- * @return opacity of the grid line to draw on this fragment, in [0..1]
- */
-float grid(vec3 coords, vec3 normal, float gridSize, float minGridSize, float lineWidthFactor) {
-    float lineWidth = (gridSize < 1.0 ? (1.0 / 32.0)
-                       : (gridSize < 4.0 ? 0.25 : 0.5)) * lineWidthFactor;
-
-    // magic number to make the grid fade sooner, preventing aliasing
-    float minGridSizeToRender = minGridSize * 2.0;
-
-    float baseGridSize = gridFloor(minGridSizeToRender);
-    if (gridSize > baseGridSize) {
-        baseGridSize = gridSize;
-    }
-    float nextGridSize = gridNextLarger(baseGridSize);
-    
-    // This is 0 if we want to render just baseGridSize, and 1 if we want to fully render at nextGridSize
-    float gridBlend = smoothstep(baseGridSize, nextGridSize, minGridSizeToRender);
-
-    float gridRatio = 1.0 / baseGridSize;
-    float gridRatio2 = 1.0 / nextGridSize;
-    
-    vec2 baseCoords; // coordinates used for overlay creation
-    
-    if (abs(normal.x) > abs(normal.y)) {
-        if (abs(normal.x) > abs(normal.z))
-            baseCoords = coords.yz;
-        else
-            baseCoords = coords.xy;
-    } else if (abs(normal.y) > abs(normal.z)) {
-        baseCoords = coords.xz;
-    } else {
-        baseCoords = coords.xy;
-    }
-
-    return gridLinesSoft(baseCoords, gridRatio, gridRatio2, lineWidth, gridBlend);
-}
-
-
-	
 void main()
 {
 #ifdef COMPUTE_TBN
@@ -304,6 +197,7 @@ void main()
 #endif
 
     InScreenCoord           = gl_FragCoord.xy;
+    InScreenCoord.y         = 1.0/GetViewportSizeInverted().y - InScreenCoord.y;
     InScreenDepth           = gl_FragCoord.z;
     InNormalizedScreenCoord = InScreenCoord * GetViewportSizeInverted();
     InClipspacePosition     = vec4( InNormalizedScreenCoord * 2.0 - 1.0, InScreenDepth, 1.0 );
@@ -361,28 +255,5 @@ void main()
 
 #ifdef MATERIAL_TYPE_POSTPROCESS
     FS_FragColor = BaseColor;
-#endif
-
-
-#if defined(MATERIAL_TYPE_PBR) || defined (MATERIAL_TYPE_BASELIGHT)
-// Transform vector from view space to world space
-    const mat3 VectorTransformWS = mat3( vec3(WorldNormalToViewSpace0),
-                                            vec3(WorldNormalToViewSpace1),
-                                            vec3(WorldNormalToViewSpace2)
-                                           );
-    vec3 norm = normalize(VectorTransformWS * VS_N);
-	
-	vec2 baseCoords;
-	vec3 coords = (InverseViewMatrix * vec4(VS_Position, 1.0)).xyz;
-	
-	norm = floor(norm*10000)/10000;
-
-	float gridSize = 16;
-	float minGridSize = 4;
-	float lineWidthFactor = 1;
-	
-	float line = grid(coords * 32, norm, gridSize, minGridSize, lineWidthFactor);
-
-	//FS_FragColor.rgb = mix(FS_FragColor.rgb, vec3(1.0), line);
 #endif
 }

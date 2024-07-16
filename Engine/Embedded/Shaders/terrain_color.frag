@@ -38,7 +38,7 @@ SOFTWARE.
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-layout( origin_upper_left ) in vec4 gl_FragCoord;
+//layout( origin_upper_left ) in vec4 gl_FragCoord;
 
 layout( location = 0 ) in vec3 VS_N;
 layout( location = 1 ) in vec3 VS_Position;
@@ -178,6 +178,7 @@ float gridTextureGradBox( in vec2 p, in vec2 ddx, in vec2 ddy )
 void main() {
     InViewspaceToEyeVec     = normalize( -VS_Position );
     InScreenCoord           = gl_FragCoord.xy;
+    InScreenCoord.y         = 1.0/GetViewportSizeInverted().y - InScreenCoord.y;
     InScreenDepth           = gl_FragCoord.z;
     InNormalizedScreenCoord = InScreenCoord * GetViewportSizeInverted();
     InClipspacePosition     = vec4( InNormalizedScreenCoord * 2.0 - 1.0, InScreenDepth, 1.0 );

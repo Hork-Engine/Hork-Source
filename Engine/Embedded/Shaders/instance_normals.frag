@@ -30,10 +30,7 @@ SOFTWARE.
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-void main() {
-#ifdef SKINNED_MESH
+void main()
+{
     FS_FragColor = vec4(1.0,1.0,0.0,0.5);
-#else
-    FS_FragColor = vec4(1.0,1.0,0.0,0.5);
-#endif
 }
