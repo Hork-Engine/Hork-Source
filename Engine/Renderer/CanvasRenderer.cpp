@@ -460,9 +460,10 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
                         float w = float(RenderPassContext.RenderArea.Width);
                         float h = float(RenderPassContext.RenderArea.Height);
 
-                        const Float2 orthoMins(0.0f, h);
-                        const Float2 orthoMaxs(w, 0.0f);
-                        pCanvasCBuf->OrthoProjection = Float4x4::Ortho2DCC(orthoMins, orthoMaxs);
+                        Float4x4::OrthoMatrixDesc desc = {};
+                        desc.Mins = Float2(0.0f, h);
+                        desc.Maxs = Float2(w, 0.0f);
+                        pCanvasCBuf->OrthoProjection = Float4x4::GetOrthoMatrix(desc);
 
                         pCanvasCBuf->ViewSize.X = w;
                         pCanvasCBuf->ViewSize.Y = h;

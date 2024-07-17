@@ -74,6 +74,9 @@ public:
     void                    SetZFar(float zFar);
     float                   GetZFar() const { return m_ZFar; }
 
+    void                    SetFocalLength(float millimeters);
+    float                   GetFocalLength() const;
+
     void                    SetViewportPosition(Float2 const& viewportPos);
     Float2 const&           GetViewportPosition() const { return m_ViewportPosition; }
 

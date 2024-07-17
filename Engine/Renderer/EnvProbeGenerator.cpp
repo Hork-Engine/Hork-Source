@@ -46,7 +46,13 @@ EnvProbeGenerator::EnvProbeGenerator()
     GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
     Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC(Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f);
+
+    Float4x4::PerspectiveMatrixDesc desc = {};
+    desc.AspectRatio = 1;
+    desc.FieldOfView = 90;
+    desc.ZNear = 0.1f;
+    desc.ZFar = 100.0f;
+    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {

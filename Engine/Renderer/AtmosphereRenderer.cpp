@@ -38,15 +38,22 @@ using namespace RenderCore;
 //static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA32_FLOAT;
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_R11G11B10_FLOAT;
 
-AtmosphereRenderer::AtmosphereRenderer() {
+AtmosphereRenderer::AtmosphereRenderer()
+{
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof( ConstantData );
-    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
+    GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
+
+    Float4x4::PerspectiveMatrixDesc desc = {};
+    desc.AspectRatio = 1;
+    desc.FieldOfView = 90;
+    desc.ZNear = 0.1f;
+    desc.ZFar = 100.0f;
+    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
@@ -101,7 +108,7 @@ AtmosphereRenderer::AtmosphereRenderer() {
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, Ref< RenderCore::ITexture > * ppTexture )
+void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture)
 {
     FrameGraph frameGraph( GDevice );
     RenderPass & pass = frameGraph.AddTask< RenderPass >( "Atmosphere pass" );

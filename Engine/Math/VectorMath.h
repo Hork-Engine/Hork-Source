@@ -3187,64 +3187,23 @@ struct Float4x4
 
     Float4x4 ViewInverseFast() const
     {
-        Float4x4 inversed;
-
-        float*       DstPtr = inversed.ToPtr();
-        const float* SrcPtr = ToPtr();
-
-        DstPtr[0] = SrcPtr[0];
-        DstPtr[1] = SrcPtr[4];
-        DstPtr[2] = SrcPtr[8];
-        DstPtr[3] = 0;
-
-        DstPtr[4] = SrcPtr[1];
-        DstPtr[5] = SrcPtr[5];
-        DstPtr[6] = SrcPtr[9];
-        DstPtr[7] = 0;
-
-        DstPtr[8]  = SrcPtr[2];
-        DstPtr[9]  = SrcPtr[6];
-        DstPtr[10] = SrcPtr[10];
-        DstPtr[11] = 0;
-
-        DstPtr[12] = -(DstPtr[0] * SrcPtr[12] + DstPtr[4] * SrcPtr[13] + DstPtr[8] * SrcPtr[14]);
-        DstPtr[13] = -(DstPtr[1] * SrcPtr[12] + DstPtr[5] * SrcPtr[13] + DstPtr[9] * SrcPtr[14]);
-        DstPtr[14] = -(DstPtr[2] * SrcPtr[12] + DstPtr[6] * SrcPtr[13] + DstPtr[10] * SrcPtr[14]);
-        DstPtr[15] = 1;
-
-        return inversed;
+        Float4x4 const& source = *this;
+        return Float4x4(source[0][0], source[1][0], source[2][0], 0,
+                        source[0][1], source[1][1], source[2][1], 0,
+                        source[0][2], source[1][2], source[2][2], 0,
+                        -(source[0][0] * source[3][0] + source[0][1] * source[3][1] + source[0][2] * source[3][2]),
+                        -(source[1][0] * source[3][0] + source[1][1] * source[3][1] + source[1][2] * source[3][2]),
+                        -(source[2][0] * source[3][0] + source[2][1] * source[3][1] + source[2][2] * source[3][2]),
+                        1);
     }
 
     HK_FORCEINLINE Float4x4 PerspectiveProjectionInverseFast() const
     {
-        Float4x4 inversed;
-
-        // TODO: check correctness for all perspective projections
-
-        float*       DstPtr = inversed.ToPtr();
-        const float* SrcPtr = ToPtr();
-
-        DstPtr[0] = 1.0f / SrcPtr[0];
-        DstPtr[1] = 0;
-        DstPtr[2] = 0;
-        DstPtr[3] = 0;
-
-        DstPtr[4] = 0;
-        DstPtr[5] = 1.0f / SrcPtr[5];
-        DstPtr[6] = 0;
-        DstPtr[7] = 0;
-
-        DstPtr[8]  = 0;
-        DstPtr[9]  = 0;
-        DstPtr[10] = 0;
-        DstPtr[11] = 1.0f / SrcPtr[14];
-
-        DstPtr[12] = 0;
-        DstPtr[13] = 0;
-        DstPtr[14] = 1.0f / SrcPtr[11];
-        DstPtr[15] = -SrcPtr[10] / (SrcPtr[11] * SrcPtr[14]);
-
-        return inversed;
+        Float4x4 const& source = *this;
+        return Float4x4(1.0f / source[0][0], 0, 0, 0,
+                        0, 1.0f / source[1][1], 0, 0,
+                        0, 0, 0, 1.0f / source[3][2],
+                        0, 0, 1.0f / source[2][3], -source[2][2] / (source[2][3] * source[3][2]));
     }
 
     HK_FORCEINLINE Float4x4 OrthoProjectionInverseFast() const
@@ -3308,197 +3267,116 @@ struct Float4x4
         return result;
     }
 
-    // Conversion from standard projection matrix to clip control "upper-left & zero-to-one"
-    static HK_FORCEINLINE Float4x4 const& ClipControl_UpperLeft_ZeroToOne()
+    struct PerspectiveMatrixDesc
     {
-        static constexpr float ClipTransform[] = {
-            1, 0, 0, 0,
-            0, -1, 0, 0,
-            0, 0, 0.5f, 0,
-            0, 0, 0.5f, 1};
+        float   AspectRatio;    // width / height
+        float   FieldOfView;    // vertical, in degrees
+        float   ZNear;          // near clip plane
+        float   ZFar;           // far clip plane, set to INFINITY if you want infinity distance
+    };
 
-        return *reinterpret_cast<Float4x4 const*>(&ClipTransform[0]);
+    // Reversed-depth with clip control "upper-left & zero-to-one"
+    static HK_INLINE Float4x4 GetPerspectiveMatrix(PerspectiveMatrixDesc const& desc)
+    {
+        float focalLength;
 
-        // Same
-        //return Float4x4::Identity().Scaled(Float3(1.0f,1.0f,0.5f)).Translated(Float3(0,0,0.5)).Scaled(Float3(1,-1,1));
+        if (desc.FieldOfView == 90.0f)
+            focalLength = 1;
+        else
+            focalLength = 1.0f / std::tan(Math::Radians(desc.FieldOfView) * 0.5f);
+
+        float x =  focalLength / desc.AspectRatio;
+        float y = -focalLength;
+        float a;
+        float b;
+
+        if (desc.ZFar == INFINITY)
+        {
+            a  = 0;
+            b  = desc.ZNear;
+        }
+        else
+        {
+            a  = desc.ZNear / (desc.ZFar - desc.ZNear);
+            b  = desc.ZFar * a;
+        }
+
+        return Float4x4(x,    0.0f, 0.0f, 0.0f,
+                        0.0f,   y,  0.0f, 0.0f,
+                        0.0f, 0.0f,    a,-1.0f,
+                        0.0f, 0.0f,    b, 0.0f);
     }
 
-    // Standard OpenGL ortho projection for 2D
-    static HK_FORCEINLINE Float4x4 Ortho2D(Float2 const& mins, Float2 const& maxs)
+    struct PerspectiveMatrixDesc2
     {
-        const float InvX = 1.0f / (maxs.X - mins.X);
-        const float InvY = 1.0f / (maxs.Y - mins.Y);
-        const float tx   = -(maxs.X + mins.X) * InvX;
-        const float ty   = -(maxs.Y + mins.Y) * InvY;
-        return Float4x4(2 * InvX, 0, 0, 0,
-                        0, 2 * InvY, 0, 0,
-                        0, 0, -2, 0,
-                        tx, ty, -1, 1);
+        float   FieldOfViewX;   // horizontal, in degrees
+        float   FieldOfViewY;   // vertical, in degrees
+        float   ZNear;          // near clip plane
+        float   ZFar;           // far clip plane, set to INFINITY if you want infinity distance
+    };
+
+    // Reversed-depth with clip control "upper-left & zero-to-one"
+    static HK_INLINE Float4x4 GetPerspectiveMatrix(PerspectiveMatrixDesc2 const& desc)
+    {
+        float x =  1.0f / std::tan(Math::Radians(desc.FieldOfViewX) * 0.5f);
+        float y = -1.0f / std::tan(Math::Radians(desc.FieldOfViewY) * 0.5f);
+        float a;
+        float b;
+
+        if (desc.ZFar == INFINITY)
+        {
+            a  = 0;
+            b  = desc.ZNear;
+        }
+        else
+        {
+            a  = desc.ZNear / (desc.ZFar - desc.ZNear);
+            b  = desc.ZFar * a;
+        }
+
+        return Float4x4(x,    0.0f, 0.0f, 0.0f,
+                        0.0f,   y,  0.0f, 0.0f,
+                        0.0f, 0.0f,    a,-1.0f,
+                        0.0f, 0.0f,    b, 0.0f);
     }
 
-    // OpenGL ortho projection for 2D with clip control "upper-left & zero-to-one"
-    static HK_FORCEINLINE Float4x4 Ortho2DCC(Float2 const& mins, Float2 const& maxs)
+    struct OrthoMatrixDesc
     {
-        return ClipControl_UpperLeft_ZeroToOne() * Ortho2D(mins, maxs);
-    }
+        Float2 Mins;
+        Float2 Maxs;
+        float ZNear;
+        float ZFar;
+        bool ReversedDepth;
+    };
 
-    // Standard OpenGL ortho projection
-    static HK_FORCEINLINE Float4x4 Ortho(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
+    // Reversed-depth with clip control "upper-left & zero-to-one"
+    static HK_FORCEINLINE Float4x4 GetOrthoMatrix(OrthoMatrixDesc const& desc)
     {
-        const float InvX = 1.0f / (maxs.X - mins.X);
-        const float InvY = 1.0f / (maxs.Y - mins.Y);
-        const float InvZ = 1.0f / (zfar - znear);
-        const float tx   = -(maxs.X + mins.X) * InvX;
-        const float ty   = -(maxs.Y + mins.Y) * InvY;
-        const float tz   = -(zfar + znear) * InvZ;
-        return Float4x4(2 * InvX, 0, 0, 0,
-                        0, 2 * InvY, 0, 0,
-                        0, 0, -2 * InvZ, 0,
-                        tx, ty, tz, 1);
-    }
+        float invX = 1.0f / (desc.Maxs.X - desc.Mins.X);
+        float invY = 1.0f / (desc.Maxs.Y - desc.Mins.Y);
+        float tx   = -(desc.Maxs.X + desc.Mins.X) * invX;
+        float ty   = -(desc.Maxs.Y + desc.Mins.Y) * invY;
+        float invZ;
+        float tz;
 
-    // OpenGL ortho projection with clip control "upper-left & zero-to-one"
-    static HK_FORCEINLINE Float4x4 OrthoCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
-    {
-        const float InvX = 1.0f / (maxs.X - mins.X);
-        const float InvY = 1.0f / (maxs.Y - mins.Y);
-        const float InvZ = 1.0f / (zfar - znear);
-        const float tx   = -(maxs.X + mins.X) * InvX;
-        const float ty   = -(maxs.Y + mins.Y) * InvY;
-        const float tz   = -(zfar + znear) * InvZ;
-        return Float4x4(2 * InvX, 0, 0, 0,
-                        0, -2 * InvY, 0, 0,
-                        0, 0, -InvZ, 0,
-                        tx, -ty, tz * 0.5 + 0.5, 1);
-        // Same
-        // Transform according to clip control
-        //return ClipControl_UpperLeft_ZeroToOne() * Ortho( mins, maxs, znear, zfar );
-    }
+        float denom = desc.ZFar - desc.ZNear;
+        if (denom != 0.0f)
+        {
+            invZ = 1.0f / denom;
+            if (desc.ReversedDepth)
+                invZ = -invZ;
+            tz   = -(desc.ZNear + desc.ZFar) * invZ;
+        }
+        else
+        {
+            invZ = 1.0f;
+            tz   = -1.0f;
+        }
 
-    // Reversed-depth OpenGL ortho projection
-    static HK_FORCEINLINE Float4x4 OrthoRev(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
-    {
-        const float InvX = 1.0f / (maxs.X - mins.X);
-        const float InvY = 1.0f / (maxs.Y - mins.Y);
-        const float InvZ = 1.0f / (znear - zfar);
-        const float tx   = -(maxs.X + mins.X) * InvX;
-        const float ty   = -(maxs.Y + mins.Y) * InvY;
-        const float tz   = -(znear + zfar) * InvZ;
-        return Float4x4(2 * InvX, 0, 0, 0,
-                        0, 2 * InvY, 0, 0,
-                        0, 0, -2 * InvZ, 0,
-                        tx, ty, tz, 1);
-    }
-
-    // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL ortho projection
-    static HK_FORCEINLINE Float4x4 OrthoRevCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
-    {
-        // TODO: Optimize multiplication
-
-        // Transform according to clip control
-        return ClipControl_UpperLeft_ZeroToOne() * OrthoRev(mins, maxs, znear, zfar);
-    }
-
-    // Standard OpenGL perspective projection
-    static HK_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _Width, float _Height, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
-        const float TanHalfFovY = tan(HalfFovY);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, 1 / TanHalfFovY, 0, 0,
-                        0, 0, (zfar + znear) / (znear - zfar), -1,
-                        0, 0, 2 * zfar * znear / (znear - zfar), 0);
-    }
-
-    static HK_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _FovYRad, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float TanHalfFovY = tan(_FovYRad * 0.5f);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, 1 / TanHalfFovY, 0, 0,
-                        0, 0, (zfar + znear) / (znear - zfar), -1,
-                        0, 0, 2 * zfar * znear / (znear - zfar), 0);
-    }
-
-    // OpenGL perspective projection with clip control "upper-left & zero-to-one"
-    static HK_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
-    {
-        // TODO: Optimize multiplication
-
-        // Transform according to clip control
-        return ClipControl_UpperLeft_ZeroToOne() * Perspective(_FovXRad, _Width, _Height, znear, zfar);
-    }
-
-    static HK_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _FovYRad, float znear, float zfar)
-    {
-        // TODO: Optimize multiplication
-
-        // Transform according to clip control
-        return ClipControl_UpperLeft_ZeroToOne() * Perspective(_FovXRad, _FovYRad, znear, zfar);
-    }
-
-    // Reversed-depth OpenGL perspective projection
-    static HK_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _Width, float _Height, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
-        const float TanHalfFovY = tan(HalfFovY);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, 1 / TanHalfFovY, 0, 0,
-                        0, 0, (znear + zfar) / (zfar - znear), -1,
-                        0, 0, 2 * znear * zfar / (zfar - znear), 0);
-    }
-
-    static HK_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _FovYRad, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float TanHalfFovY = tan(_FovYRad * 0.5f);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, 1 / TanHalfFovY, 0, 0,
-                        0, 0, (znear + zfar) / (zfar - znear), -1,
-                        0, 0, 2 * znear * zfar / (zfar - znear), 0);
-    }
-
-    // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL perspective projection
-    static HK_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
-        const float TanHalfFovY = tan(HalfFovY);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, -1 / TanHalfFovY, 0, 0,
-                        0, 0, znear / (zfar - znear), -1,
-                        0, 0, znear * zfar / (zfar - znear), 0);
-    }
-
-    static HK_FORCEINLINE Float4x4 PerspectiveRevCC_Y(float _FovYRad, float _Width, float _Height, float znear, float zfar)
-    {
-        const float TanHalfFovY = tan(_FovYRad * 0.5f);
-        const float HalfFovX    = atan2(TanHalfFovY * _Width, _Height);
-        const float TanHalfFovX = tan(HalfFovX);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, -1 / TanHalfFovY, 0, 0,
-                        0, 0, znear / (zfar - znear), -1,
-                        0, 0, znear * zfar / (zfar - znear), 0);
-    }
-
-    static HK_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _FovYRad, float znear, float zfar)
-    {
-        const float TanHalfFovX = tan(_FovXRad * 0.5f);
-        const float TanHalfFovY = tan(_FovYRad * 0.5f);
-        return Float4x4(1 / TanHalfFovX, 0, 0, 0,
-                        0, -1 / TanHalfFovY, 0, 0,
-                        0, 0, znear / (zfar - znear), -1,
-                        0, 0, znear * zfar / (zfar - znear), 0);
-    }
-
-    static HK_FORCEINLINE Float4x4 PerspectiveRevCC_Cube(float znear, float zfar)
-    {
-        return Float4x4(1, 0, 0, 0,
-                        0, -1, 0, 0,
-                        0, 0, znear / (zfar - znear), -1,
-                        0, 0, znear * zfar / (zfar - znear), 0);
+        return Float4x4(2 * invX, 0,        0,                0,
+                        0,       -2 * invY, 0,                0,
+                        0,        0,       -invZ,             0,
+                        tx,      -ty,       tz * 0.5f + 0.5f, 1);
     }
 
     static HK_INLINE void GetCubeFaceMatrices(Float4x4& _PositiveX,

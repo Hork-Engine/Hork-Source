@@ -838,9 +838,7 @@ void LightVoxelizer::DrawVoxels(DebugRenderer* InRenderer)
     if (!com_FreezeFrustumClusters)
     {
         RenderViewData const* view = InRenderer->GetRenderView();
-
-        const Float4x4 viewProjInv = (view->ClusterProjectionMatrix * view->ViewMatrix).Inversed();
-        // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
+        const Float4x4 viewProjInv = view->ViewMatrix.ViewInverseFast() * view->ClusterProjectionMatrix.PerspectiveProjectionInverseFast();
 
         GatherVoxelGeometry(DebugLinePoints, viewProjInv);
     }

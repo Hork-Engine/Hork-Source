@@ -245,6 +245,7 @@ void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light
         lightViewProjectionMatrices = (Float4x4*)StreamedMemory->Map(*ViewProjStreamHandle);
     }
 
+    Float4x4::OrthoMatrixDesc orthoDesc = {};
     for (int i = 0; i < numVisibleCascades; i++)
     {
         // Calc cascade bounding sphere
@@ -261,7 +262,11 @@ void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light
         cascadeMins[2] -= lightDistance;
 
         // Calc light view projection matrix
-        Float4x4 cascadeMatrix = Float4x4::OrthoCC(Float2(cascadeMins), Float2(cascadeMaxs), cascadeMins[2], cascadeMaxs[2]) * lightViewMatrix;
+        orthoDesc.Mins = Float2(cascadeMins);
+        orthoDesc.Maxs = Float2(cascadeMaxs);
+        orthoDesc.ZNear = cascadeMins[2];
+        orthoDesc.ZFar = cascadeMaxs[2];
+        Float4x4 cascadeMatrix = Float4x4::GetOrthoMatrix(orthoDesc) * lightViewMatrix;
 
 #if 0
         // Calc pixel fraction in texture space
@@ -895,7 +900,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->ViewFovX           = fovx;
     view->ViewFovY           = fovy;
     view->bPerspective       = camera->IsPerspective();
-    view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
+    view->MaxVisibleDistance = camera->GetZFar(); // TODO: calculate the farthest point (use mesh bounding boxes)
     view->NormalToViewMatrix = Float3x3(view->ViewMatrix);
 
     view->InverseProjectionMatrix = camera->IsPerspective() ?
@@ -903,15 +908,15 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         view->ProjectionMatrix.OrthoProjectionInverseFast();
     view->ClusterProjectionMatrix = camera->GetClusterProjectionMatrix();
 
-    view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
-    view->ClusterViewProjectionInversed = view->ClusterViewProjection.Inversed();
+    view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix;
+    view->ClusterViewProjectionInversed = view->ViewMatrix.ViewInverseFast() * view->ClusterProjectionMatrix.PerspectiveProjectionInverseFast();//view->ClusterViewProjection.Inversed();
 
     worldRenderView->m_ViewMatrix = view->ViewMatrix;
     worldRenderView->m_ProjectionMatrix = view->ProjectionMatrix;
 
     view->ViewProjection        = view->ProjectionMatrix * view->ViewMatrix;
     view->ViewProjectionP       = view->ProjectionMatrixP * view->ViewMatrixP;
-    view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
+    view->ViewSpaceToWorldSpace = view->ViewMatrix.ViewInverseFast();
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
     view->BackgroundColor       = Float3(worldRenderView->BackgroundColor.R, worldRenderView->BackgroundColor.G, worldRenderView->BackgroundColor.B);
     view->bClearBackground      = worldRenderView->bClearBackground;
@@ -1904,7 +1909,13 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radi
     World* world = Light->GetWorld();
 
     Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC_Cube(0.1f, 1000 /*Radius*/);
+
+    Float4x4::PerspectiveMatrixDesc desc = {};
+    desc.AspectRatio = 1;
+    desc.FieldOfView = 90;
+    desc.ZNear = 0.1f;
+    desc.ZFar = 1000 /*Radius*/;
+    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
 
     Float4x4 lightViewProjection;
     Float4x4 lightViewMatrix;
