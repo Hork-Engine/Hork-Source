@@ -28,6 +28,7 @@ SOFTWARE.
 
 */
 
+#include "Common.h"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 

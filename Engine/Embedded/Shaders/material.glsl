@@ -32,6 +32,7 @@ SOFTWARE.
 // Material shader
 //
 
+#include "Common.h"
 
 // Built-in predefines
 #include "$PREDEFINES$"

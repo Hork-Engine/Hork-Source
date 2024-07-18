@@ -32,10 +32,7 @@ SOFTWARE.
 
 #include "ResourceHandle.h"
 #include "ResourceBase.h"
-
-#include <Engine/Core/BinaryStream.h>
-
-#include <Engine/Renderer/GpuMaterial.h>
+#include "Materials/MaterialGraph/MaterialBinary.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -64,8 +61,7 @@ public:
 
 private:
     Ref<MaterialGPU>            m_GpuMaterial;
-    Ref<CompiledMaterial>       m_CompiledGraph;
-    String                      m_Shader;
+    UniqueRef<MaterialBinary>   m_Binary;
 
     friend class                MaterialResourceBuilder;
 };

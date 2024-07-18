@@ -931,7 +931,7 @@ void MaterialGraph::ComputeLightStage(MaterialBuildContext& Context)
     }
 
     // Opacity
-    if (Context.GetGraph()->bTranslucent)
+    if (Context.GetGraph()->IsTranslucent)
     {
         expression = MakeExpression(Context, Opacity, MG_VALUE_TYPE_FLOAT1, "1.0");
         Context.SourceCode += "float Opacity = saturate( " + expression + " );\n";
@@ -942,7 +942,7 @@ void MaterialGraph::ComputeLightStage(MaterialBuildContext& Context)
     }
 
     // NOTE. It is not necessary to calculate an alpha mask for opaque materials, but there may still be cases where translucent materials use an alpha test.
-    if (bTranslucent)
+    if (IsTranslucent)
         ComputeAlphaMask(Context);
 }
 
@@ -2762,16 +2762,16 @@ static void GenerateBuiltinSource()
         f.Write(builtin.CStr(), builtin.Size());
 }
 
-static void WriteDebugShaders(Vector<MaterialSource> const& Shaders)
+static void WriteDebugShaders(Vector<CodeBlock> const& codeBlocks)
 {
     File f = File::OpenWrite("debug.glsl");
     if (!f)
         return;
 
-    for (MaterialSource const& shader : Shaders)
+    for (CodeBlock const& codeBlock : codeBlocks)
     {
-        f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", shader.SourceName);
-        f.FormattedPrint("{}\n", shader.Code);
+        f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", codeBlock.Name);
+        f.FormattedPrint("{}\n", codeBlock.Code);
     }
 }
 
@@ -3162,17 +3162,17 @@ HK_PROPERTY_DIRECT(ParallaxTechnique, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(DepthHack, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(MotionBlurScale, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(AlphaMaskCutOff, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bDepthTest, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bTranslucent, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bTwoSided, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bNoLightmap, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bAllowScreenSpaceReflections, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bAllowScreenAmbientOcclusion, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bAllowShadowReceive, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bDisplacementAffectShadow, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bParallaxMappingSelfShadowing, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bPerBoneMotionBlur, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(bUseVirtualTexture, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(DepthTest, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(IsTranslucent, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(IsTwoSided, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(NoLightmap, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AllowScreenSpaceReflections, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AllowScreenAmbientOcclusion, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AllowShadowReceive, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(DisplacementAffectShadow, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(ParallaxMappingSelfShadowing, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(PerBoneMotionBlur, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(UseVirtualTexture, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MaterialGraph::MaterialGraph() :
@@ -3181,7 +3181,7 @@ MaterialGraph::MaterialGraph() :
     SetSlots({&Color, &Normal, &Metallic, &Roughness, &AmbientOcclusion, &AmbientLight, &Emissive, &Specular, &Opacity, &VertexDeform, &AlphaMask, &ShadowMask, &Displacement, &TessellationFactor}, {});
 }
 
-void MaterialGraph::CompileStage(MaterialBuildContext& ctx)
+void MaterialGraph::BuildStage(MaterialBuildContext& ctx)
 {
     static int BuildSerial = 0;
 
@@ -3189,10 +3189,10 @@ void MaterialGraph::CompileStage(MaterialBuildContext& ctx)
 
     ResetConnections(ctx);
     TouchConnections(ctx);
-    Build(ctx);
+    Super::Build(ctx);
 }
 
-Ref<CompiledMaterial> MaterialGraph::Compile()
+UniqueRef<MaterialCode> MaterialGraph::Build()
 {
     int n = 0;
     for (auto textureSlot : GetTextures())
@@ -3207,21 +3207,21 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
 
     int maxUniformAddress = -1;
 
-    Ref<CompiledMaterial> material = MakeRef<CompiledMaterial>();
+    UniqueRef<MaterialCode> material = MakeUnique<MaterialCode>();
 
     material->Type = MaterialType;
     material->Blending = Blending;
     material->TessellationMethod = TessellationMethod;
     material->RenderingPriority = RENDERING_PRIORITY_DEFAULT;
-    material->bDepthTest_EXPERIMENTAL = bDepthTest;
-    material->bDisplacementAffectShadow = bDisplacementAffectShadow;
-    //material->bParallaxMappingSelfShadowing = bParallaxMappingSelfShadowing;
-    material->bTranslucent = bTranslucent;
-    material->bTwoSided = bTwoSided;
-    material->bAlphaMasking = false;
-    material->bShadowMapMasking = false;
-    material->bHasVertexDeform = false;
-    material->bNoCastShadow = false;
+    material->DepthTest_EXPERIMENTAL = DepthTest;
+    material->DisplacementAffectShadow = DisplacementAffectShadow;
+    //material->ParallaxMappingSelfShadowing = ParallaxMappingSelfShadowing;
+    material->IsTranslucent = IsTranslucent;
+    material->IsTwoSided = IsTwoSided;
+    material->HasAlphaMasking = false;
+    material->HasShadowMapMasking = false;
+    material->HasVertexDeform = false;
+    material->NoCastShadow = false;
     material->LightmapSlot = 0;
 
     String predefines;
@@ -3264,7 +3264,7 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
     if (DepthHack == MATERIAL_DEPTH_HACK_WEAPON)
     {
         predefines += "#define WEAPON_DEPTH_HACK\n";
-        material->bNoCastShadow     = true;
+        material->NoCastShadow     = true;
         material->RenderingPriority = RENDERING_PRIORITY_WEAPON;
 
         if (RenderingPriority != RENDERING_PRIORITY_DEFAULT && RenderingPriority != RENDERING_PRIORITY_WEAPON)
@@ -3273,53 +3273,53 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
     else if (DepthHack == MATERIAL_DEPTH_HACK_SKYBOX)
     {
         predefines += "#define SKYBOX_DEPTH_HACK\n";
-        material->bNoCastShadow     = true;
+        material->NoCastShadow     = true;
         material->RenderingPriority = RENDERING_PRIORITY_SKYBOX;
 
         if (RenderingPriority != RENDERING_PRIORITY_DEFAULT && RenderingPriority != RENDERING_PRIORITY_SKYBOX)
             LOG("MATERIAL_DEPTH_HACK_SKYBOX overrides RenderingPriority with RENDERING_PRIORITY_SKYBOX.\n");
     }
 
-    if (bTranslucent)
+    if (IsTranslucent)
         predefines += "#define TRANSLUCENT\n";
 
-    if (bTwoSided)
+    if (IsTwoSided)
         predefines += "#define TWOSIDED\n";
 
-    if (bNoLightmap)
+    if (NoLightmap)
         predefines += "#define NO_LIGHTMAP\n";
 
-    if (bAllowScreenSpaceReflections)
+    if (AllowScreenSpaceReflections)
         predefines += "#define ALLOW_SSLR\n";
 
-    if (bAllowScreenAmbientOcclusion)
+    if (AllowScreenAmbientOcclusion)
         predefines += "#define ALLOW_SSAO\n";
 
-    if (bAllowShadowReceive)
+    if (AllowShadowReceive)
         predefines += "#define ALLOW_SHADOW_RECEIVE\n";
 
-    if (bDisplacementAffectShadow)
+    if (DisplacementAffectShadow)
         predefines += "#define DISPLACEMENT_AFFECT_SHADOW\n";
 
-    if (bParallaxMappingSelfShadowing)
+    if (ParallaxMappingSelfShadowing)
         predefines += "#define PARALLAX_SELF_SHADOW\n";
 
-    if (bPerBoneMotionBlur)
+    if (PerBoneMotionBlur)
         predefines += "#define PER_BONE_MOTION_BLUR\n";
 
-    if (MotionBlurScale > 0.0f && !bTranslucent)
+    if (MotionBlurScale > 0.0f && !IsTranslucent)
         predefines += "#define ALLOW_MOTION_BLUR\n";
 
     predefines += "#define MOTION_BLUR_SCALE " + Core::ToString(Math::Saturate(MotionBlurScale)) + "\n";
 
-    if (bUseVirtualTexture)
+    if (UseVirtualTexture)
     {
         predefines += "#define USE_VIRTUAL_TEXTURE\n";
         predefines += "#define VT_LAYERS 1\n"; // TODO: Add based on material
     }
 
-    if (!bDepthTest /*|| bTranslucent */)
-        material->bNoCastShadow = true;
+    if (!DepthTest /*|| bTranslucent */)
+        material->NoCastShadow = true;
 
     if (Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA)
         predefines += "#define PREMULTIPLIED_ALPHA\n";
@@ -3343,13 +3343,13 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    depthCtx(this, MATERIAL_STAGE_DEPTH);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
-        CompileStage(depthCtx);
+        BuildStage(vertexCtx);
+        BuildStage(depthCtx);
 
         if (bTess)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3359,8 +3359,8 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
                                nullptr,
                                /*depthCtx.bHasAlphaMask ? */ &depthCtx /* : nullptr*/);
 
-        material->bHasVertexDeform      = vertexCtx.bHasVertexDeform;
-        material->bAlphaMasking         = depthCtx.bHasAlphaMask;
+        material->HasVertexDeform      = vertexCtx.bHasVertexDeform;
+        material->HasAlphaMasking         = depthCtx.bHasAlphaMask;
         material->DepthPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
@@ -3372,25 +3372,25 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Core::ToString(locationIndex++) + "\n";
 
-        material->AddShader("$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$DEPTH_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$DEPTH_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$DEPTH_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$DEPTH_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$DEPTH_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$DEPTH_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$DEPTH_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$DEPTH_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$DEPTH_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        material->AddShader("$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        material->AddShader("$DEPTH_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
-        material->AddShader("$DEPTH_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
+        material->AddCodeBlock("$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddCodeBlock("$DEPTH_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
+        material->AddCodeBlock("$DEPTH_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
     }
 
     // Create shadowmap pass
@@ -3402,15 +3402,15 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    shadowCtx(this, MATERIAL_STAGE_SHADOWCAST);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
-        CompileStage(shadowCtx);
+        BuildStage(vertexCtx);
+        BuildStage(shadowCtx);
 
-        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && bDisplacementAffectShadow);
+        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && DisplacementAffectShadow);
 
         if (bTessShadowmap)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3420,7 +3420,7 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
                                &geometryCtx,
                                shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
 
-        material->bShadowMapMasking         = shadowCtx.bHasShadowMask;
+        material->HasShadowMapMasking       = shadowCtx.bHasShadowMask;
         material->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress                   = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
@@ -3430,29 +3430,29 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        material->AddShader("$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", trans.GS_InputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", trans.GS_OutputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", trans.GS_CopyVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", trans.GS_InputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", trans.GS_OutputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", trans.GS_CopyVaryingsCode);
 
-        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
-        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddCodeBlock("$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
+        material->AddCodeBlock("$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
     }
 
     // Create omnidirectional shadowmap pass
@@ -3463,15 +3463,15 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    shadowCtx(this, MATERIAL_STAGE_SHADOWCAST);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
-        CompileStage(shadowCtx);
+        BuildStage(vertexCtx);
+        BuildStage(shadowCtx);
 
-        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && bDisplacementAffectShadow);
+        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && DisplacementAffectShadow);
 
         if (bTessShadowmap)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3482,7 +3482,7 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
                                shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
 
         // NOTE: bShadowMapMasking and ShadowMapPassTextureCount should be same as in directional shadow map pass
-        material->bShadowMapMasking         = shadowCtx.bHasShadowMask;
+        material->HasShadowMapMasking       = shadowCtx.bHasShadowMask;
         material->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress                   = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
@@ -3492,25 +3492,25 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
-        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
     }
 
     // Create light pass
@@ -3521,13 +3521,13 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    lightCtx(this, MATERIAL_STAGE_LIGHT);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
-        CompileStage(lightCtx);
+        BuildStage(vertexCtx);
+        BuildStage(lightCtx);
 
         if (bTess)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3548,7 +3548,7 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define COLOR_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define COLOR_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
 
-        if (bUseVirtualTexture)
+        if (UseVirtualTexture)
             predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD " + Core::ToString(locationIndex++) + "\n";
 
         material->LightmapSlot = lightCtx.MaxTextureSlot + 1;
@@ -3581,25 +3581,25 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
             predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
         }
 
-        material->AddShader("$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$COLOR_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$COLOR_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$COLOR_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$COLOR_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$COLOR_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$COLOR_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$COLOR_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$COLOR_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        material->AddShader("$COLOR_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        material->AddShader("$COLOR_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$COLOR_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$COLOR_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$COLOR_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$COLOR_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        material->AddShader("$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        material->AddShader("$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString(lightCtx.MaxTextureSlot));
-        material->AddShader("$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode);
+        material->AddCodeBlock("$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddCodeBlock("$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString(lightCtx.MaxTextureSlot));
+        material->AddCodeBlock("$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode);
     }
 
     // Create outline pass
@@ -3610,13 +3610,13 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    depthCtx(this, MATERIAL_STAGE_DEPTH);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
-        CompileStage(depthCtx);
+        BuildStage(vertexCtx);
+        BuildStage(depthCtx);
 
         if (bTess)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3636,25 +3636,25 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define OUTLINE_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define OUTLINE_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        material->AddShader("$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$OUTLINE_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OUTLINE_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$OUTLINE_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$OUTLINE_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OUTLINE_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$OUTLINE_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$OUTLINE_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OUTLINE_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        material->AddShader("$OUTLINE_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        material->AddShader("$OUTLINE_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
-        material->AddShader("$OUTLINE_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
+        material->AddCodeBlock("$OUTLINE_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddCodeBlock("$OUTLINE_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
+        material->AddCodeBlock("$OUTLINE_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
     }
 
     // Create wireframe pass
@@ -3665,12 +3665,12 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         MaterialBuildContext    geometryCtx(this, MATERIAL_STAGE_GEOMETRY);
         MaterialStageTransition trans;
 
-        CompileStage(vertexCtx);
+        BuildStage(vertexCtx);
 
         if (bTess)
         {
-            CompileStage(tessControlCtx);
-            CompileStage(tessEvalCtx);
+            BuildStage(tessControlCtx);
+            BuildStage(tessEvalCtx);
         }
 
         CreateStageTransitions(trans,
@@ -3688,45 +3688,45 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
         predefines += "#define WIREFRAME_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define WIREFRAME_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        material->AddShader("$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        material->AddShader("$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        material->AddShader("$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        material->AddShader("$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        material->AddShader("$WIREFRAME_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
-        material->AddShader("$WIREFRAME_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        material->AddShader("$WIREFRAME_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddCodeBlock("$WIREFRAME_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        material->AddShader("$WIREFRAME_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        //material->AddShader( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
-        material->AddShader("$WIREFRAME_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
-        material->AddShader("$WIREFRAME_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        material->AddShader("$WIREFRAME_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        //material->AddCodeBlock( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
+        material->AddCodeBlock("$WIREFRAME_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddCodeBlock("$WIREFRAME_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddCodeBlock("$WIREFRAME_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
-        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_OUTPUT_VARYINGS$", geometryCtx.OutputVaryingsCode );
-        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_COPY_VARYINGS$", geometryCtx.CopyVaryingsCode );
+        //material->AddCodeBlock( "$WIREFRAME_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
+        //material->AddCodeBlock( "$WIREFRAME_PASS_GEOMETRY_OUTPUT_VARYINGS$", geometryCtx.OutputVaryingsCode );
+        //material->AddCodeBlock( "$WIREFRAME_PASS_GEOMETRY_COPY_VARYINGS$", geometryCtx.CopyVaryingsCode );
     }
 
     // Create normals debugging pass
     {
         // Normals pass. Vertex stage
         MaterialBuildContext vertexCtx(this, MATERIAL_STAGE_VERTEX);
-        CompileStage(vertexCtx);
+        BuildStage(vertexCtx);
 
         material->NormalsPassTextureCount = vertexCtx.MaxTextureSlot + 1;
 
         maxUniformAddress = Math::Max(maxUniformAddress, vertexCtx.MaxUniformAddress);
 
-        material->AddShader("$NORMALS_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
-        material->AddShader("$NORMALS_PASS_VERTEX_CODE$", vertexCtx.SourceCode);
+        material->AddCodeBlock("$NORMALS_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddCodeBlock("$NORMALS_PASS_VERTEX_CODE$", vertexCtx.SourceCode);
     }
 
-    if (material->bHasVertexDeform)
+    if (material->HasVertexDeform)
         predefines += "#define HAS_VERTEX_DEFORM\n";
 
-    material->AddShader("$PREDEFINES$", predefines);
+    material->AddCodeBlock("$PREDEFINES$", predefines);
 
     material->NumUniformVectors = maxUniformAddress + 1;
 
@@ -3755,7 +3755,7 @@ Ref<CompiledMaterial> MaterialGraph::Compile()
     }
 
 #if 0
-    WriteDebugShaders( material->Shaders );
+    WriteDebugShaders( material->CodeBlocks );
 #endif
 
     return material;

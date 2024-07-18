@@ -46,11 +46,11 @@ static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, RenderInstanc
     IPipeline* pPipeline;
     if (GRenderView->bAllowMotionBlur && instance->bPerObjectMotionBlur)
     {
-        pPipeline = pMaterial->DepthVelocityPass[bSkinned];
+        pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::DepthVelocityPass_Skin : MaterialPass::DepthVelocityPass];
     }
     else
     {
-        pPipeline = pMaterial->DepthPass[bSkinned];
+        pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::DepthPass_Skin : MaterialPass::DepthPass];
     }
 
     if (!pPipeline)

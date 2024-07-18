@@ -205,7 +205,7 @@ static bool BindMaterialOutlinePass(IImmediateContext* immediateCtx, RenderInsta
 
     int bSkinned = instance->SkeletonSize > 0;
 
-    IPipeline* pPipeline = pMaterial->OutlinePass[bSkinned];
+    IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::OutlinePass_Skin : MaterialPass::OutlinePass];
     if (!pPipeline)
     {
         return false;

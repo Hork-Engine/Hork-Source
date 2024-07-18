@@ -54,7 +54,7 @@ enum SHADER_BINARY_FORMAT : unsigned int
 
 struct ShaderBinaryData
 {
-    void*        BinaryCode;
+    void const*  BinaryCode;
     size_t       BinarySize;
     unsigned int BinaryFormat;
     SHADER_TYPE  ShaderType;

@@ -43,7 +43,7 @@ static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, RenderIns
 
     int bSkinned = instance->SkeletonSize > 0;
 
-    IPipeline* pPipeline = pMaterial->WireframePass[bSkinned];
+    IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::WireframePass_Skin : MaterialPass::WireframePass];
     if (!pPipeline)
     {
         return false;

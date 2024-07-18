@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseObject.h"
+#include "MaterialCode.h"
 #include <Engine/Core/DOM.h>
 #include <Engine/Image/Image.h>
 #include <Engine/Renderer/RenderDefs.h>
@@ -745,29 +746,29 @@ public:
 
     float                       AlphaMaskCutOff = 0.5f;
 
-    bool                        bDepthTest = true;
+    bool                        DepthTest = true;
 
-    bool                        bTranslucent = false;
+    bool                        IsTranslucent = false;
 
-    bool                        bTwoSided = false;
+    bool                        IsTwoSided = false;
 
-    bool                        bNoLightmap = false;
+    bool                        NoLightmap = false;
 
-    bool                        bAllowScreenSpaceReflections = true;
+    bool                        AllowScreenSpaceReflections = true;
 
-    bool                        bAllowScreenAmbientOcclusion = true;
+    bool                        AllowScreenAmbientOcclusion = true;
 
-    bool                        bAllowShadowReceive = true;
+    bool                        AllowShadowReceive = true;
 
     /// Use tessellation for shadow maps
-    bool                        bDisplacementAffectShadow = true;
+    bool                        DisplacementAffectShadow = true;
 
     /// Apply fake shadows. Used with parallax technique
-    bool                        bParallaxMappingSelfShadowing = true;
+    bool                        ParallaxMappingSelfShadowing = true;
 
-    bool                        bPerBoneMotionBlur = true;
+    bool                        PerBoneMotionBlur = true;
 
-    bool                        bUseVirtualTexture = false;
+    bool                        UseVirtualTexture = false;
 
                                 MaterialGraph();
 
@@ -785,10 +786,10 @@ public:
 
     Vector<MGTextureSlot*> const& GetTextures() const { return m_TextureSlots; }
 
-    Ref<CompiledMaterial>       Compile();
+    UniqueRef<MaterialCode>     Build();
 
 private:
-    void                        CompileStage(class MaterialBuildContext& ctx);
+    void                        BuildStage(class MaterialBuildContext& ctx);
 
     void                        CreateStageTransitions(struct MaterialStageTransition& Transition,
                                                         MaterialBuildContext const* VertexStage,

@@ -43,7 +43,7 @@ static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, RenderInstan
 
     int bSkinned = instance->SkeletonSize > 0;
 
-    IPipeline* pPipeline = pMaterial->NormalsPass[bSkinned];
+    IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::NormalsPass_Skin : MaterialPass::NormalsPass];
     if (!pPipeline)
     {
         return false;

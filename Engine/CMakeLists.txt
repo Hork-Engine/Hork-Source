@@ -44,32 +44,15 @@ target_link_libraries(${PROJECT_NAME}
     lunasvg
     webp
     OptickCore
-#    BulletSoftBody
-#    BulletDynamics
-#    BulletCollision
-#    LinearMath
-#    Bullet2FileLoader
-#    BulletFileLoader
-#    Bullet3Collision
-#    Bullet3Common
-#    Bullet3Dynamics
-#    Bullet3Geometry
-#    Bullet3OpenCL_clew
-#    BulletInverseDynamics
-#    BulletInverseDynamicsUtils
-#    BulletWorldImporter
-#    BulletXmlWorldImporter
-#    ConvexDecomposition
-#    GIMPACTUtils
     Jolt
     OpenGL::GL
+    glslang::SPIRV
+    glslang::glslang-default-resource-limits
     Recast
     muFFT
     miniaudio
     ozz_animation
     ozz_animation_offline
-#    ${ANGELSCRIPT_LIBRARY_NAME}
-#    angelscript_addon
 )
 
 if(WIN32)

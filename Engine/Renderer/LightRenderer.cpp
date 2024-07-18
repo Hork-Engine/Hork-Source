@@ -206,7 +206,7 @@ bool LightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, Rende
     switch (pMaterial->MaterialType)
     {
         case MATERIAL_TYPE_UNLIT:
-            pPipeline = pMaterial->LightPass[bSkinned];
+            pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::LightPass_Skin : MaterialPass::LightPass];
             if (bSkinned)
             {
                 pSecondVertexBuffer = Instance->WeightsBuffer;
@@ -218,14 +218,14 @@ bool LightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, Rende
         case MATERIAL_TYPE_BASELIGHT:
             if (bSkinned)
             {
-                pPipeline = pMaterial->LightPass[1];
+                pPipeline = pMaterial->Passes[MaterialPass::LightPass_Skin];
 
                 pSecondVertexBuffer = Instance->WeightsBuffer;
                 secondBufferOffset  = Instance->WeightsBufferOffset;
             }
             else if (bLightmap)
             {
-                pPipeline = pMaterial->LightPassLightmap;
+                pPipeline = pMaterial->Passes[MaterialPass::LightmapPass];
 
                 pSecondVertexBuffer = Instance->LightmapUVChannel;
                 secondBufferOffset  = Instance->LightmapUVOffset;
@@ -235,14 +235,14 @@ bool LightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, Rende
             }
             else if (bVertexLight)
             {
-                pPipeline = pMaterial->LightPassVertexLight;
+                pPipeline = pMaterial->Passes[MaterialPass::VertexLightPass];
 
                 pSecondVertexBuffer = Instance->VertexLightChannel;
                 secondBufferOffset  = Instance->VertexLightOffset;
             }
             else
             {
-                pPipeline = pMaterial->LightPass[0];
+                pPipeline = pMaterial->Passes[MaterialPass::LightPass];
 
                 pSecondVertexBuffer = nullptr;
             }

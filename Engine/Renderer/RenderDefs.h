@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include <Engine/Image/Image.h>
 #include <Engine/Core/Color.h>
-#include <Engine/Core/Containers/Vector.h>
 #include <Engine/Math/Quat.h>
 #include <Engine/Geometry/VertexFormat.h>
 #include <Engine/Geometry/BV/BvFrustum.h>
 
 #include <Engine/RenderCore/Device.h>
+#include <Engine/Embedded/Shaders/Common.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -50,15 +50,6 @@ constexpr int MAX_MATERIAL_TEXTURES = 11; // Reserved texture slots for AOLookup
 
 constexpr int MAX_MATERIAL_UNIFORMS        = 16;
 constexpr int MAX_MATERIAL_UNIFORM_VECTORS = 16 >> 2;
-
-/** Max directional lights per view */
-constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
-
-/** Max cascades per light */
-constexpr int MAX_SHADOW_CASCADES = 4;
-
-/** Max cascades per view */
-constexpr int MAX_TOTAL_SHADOW_CASCADES_PER_VIEW = MAX_SHADOW_CASCADES * MAX_DIRECTIONAL_LIGHTS;
 
 /** Frustum width */
 constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
@@ -270,218 +261,58 @@ enum RENDERING_GEOMETRY_PRIORITY : uint8_t
     RENDERING_GEOMETRY_PRIORITY_RESERVED15 = 15
 };
 
-struct MaterialSource
+namespace MaterialPass
 {
-    /** The source name */
-    String SourceName;
+    enum Type: uint8_t
+    {
+        DepthPass,
+        DepthPass_Skin,
+        DepthVelocityPass,
+        DepthVelocityPass_Skin,
+        LightPass,
+        LightPass_Skin,
+        ShadowMapPass,
+        ShadowMapPass_Skin,
+        OmniShadowMapPass,
+        OmniShadowMapPass_Skin,
+        FeedbackPass,
+        FeedbackPass_Skin,
+        OutlinePass,
+        OutlinePass_Skin,
+        WireframePass,
+        WireframePass_Skin,
+        NormalsPass,
+        NormalsPass_Skin,
 
-    /** Source code */
-    String Code;
+        LightmapPass,
+        VertexLightPass,
 
-    MaterialSource() = default;
-    MaterialSource(StringView inSourceName, StringView inCode) :
-        SourceName(inSourceName), Code(inCode)
-    {}
-};
+        MAX
+    };
+}
 
-class CompiledMaterial : public RefCounted
+class MaterialGPU : public RefCounted
 {
 public:
-    /** Material type (Unlit,baselight,pbr,etc) */
-    MATERIAL_TYPE Type{MATERIAL_TYPE_PBR};
-
-    /** Blending mode (FIXME: only for UNLIT materials?) */
-    BLENDING_MODE Blending{COLOR_BLENDING_DISABLED};
-
-    TESSELLATION_METHOD TessellationMethod{TESSELLATION_DISABLED};
-
-    RENDERING_PRIORITY RenderingPriority{RENDERING_PRIORITY_DEFAULT};
-
-    /** Lightmap binding unit */
-    uint32_t LightmapSlot{};
-
-    /** Texture binding count for different passes. This allow renderer to optimize sampler/texture bindings
-    during rendering. */
-    int DepthPassTextureCount{};
-    int LightPassTextureCount{};
-    int WireframePassTextureCount{};
-    int NormalsPassTextureCount{};
-    int ShadowMapPassTextureCount{};
-
-    int NumUniformVectors{};
-
-    /** Material samplers */
-    StaticVector<TextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
-
-    /** Material shaders */
-    Vector<MaterialSource> Shaders;
-
-    /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
-    during rendering. */
-    bool bHasVertexDeform : 1;
-
-    /** Experimental. Depth testing. */
-    bool bDepthTest_EXPERIMENTAL : 1;
-
-    /** Disable shadow casting (for specific materials like skybox or first person shooter weapon) */
-    bool bNoCastShadow : 1;
-
-    /** Enable alpha masking */
-    bool bAlphaMasking : 1;
-
-    /** Enable shadow map masking */
-    bool bShadowMapMasking : 1;
-
-    /** Use tessellation for shadow maps */
-    bool bDisplacementAffectShadow : 1;
-
-    /** Apply fake shadows. Used with parallax technique */
-    //bool bParallaxMappingSelfShadowing : 1;
-
-    /** Translusent materials with alpha test */
-    bool bTranslucent : 1;
-
-    /** Disable backface culling */
-    bool bTwoSided : 1;
-
-    CompiledMaterial()
-    {
-        bHasVertexDeform          = false;
-        bDepthTest_EXPERIMENTAL   = false;
-        bNoCastShadow             = false;
-        bAlphaMasking             = false;
-        bShadowMapMasking         = false;
-        bDisplacementAffectShadow = false;
-        bTranslucent              = false;
-        bTwoSided                 = false;
-    }
-
-    CompiledMaterial(IBinaryStreamReadInterface& Stream)
-    {
-        Read(Stream);
-    }
-
-    ~CompiledMaterial() = default;
-
-    CompiledMaterial(CompiledMaterial&& Rhs) noexcept = default;
-
-    CompiledMaterial& operator=(CompiledMaterial&& Rhs) noexcept = default;
-
-    void AddShader(StringView SourceName, StringView SourceCode)
-    {
-        Shaders.EmplaceBack(SourceName, SourceCode);
-    }
-
-    void Read(IBinaryStreamReadInterface& Stream)
-    {
-        Type                      = (MATERIAL_TYPE)Stream.ReadUInt8();
-        Blending                  = (BLENDING_MODE)Stream.ReadUInt8();
-        TessellationMethod        = (TESSELLATION_METHOD)Stream.ReadUInt8();
-        RenderingPriority         = (RENDERING_PRIORITY)Stream.ReadUInt8();
-        LightmapSlot              = Stream.ReadUInt16();
-        DepthPassTextureCount     = Stream.ReadUInt8();
-        LightPassTextureCount     = Stream.ReadUInt8();
-        WireframePassTextureCount = Stream.ReadUInt8();
-        NormalsPassTextureCount   = Stream.ReadUInt8();
-        ShadowMapPassTextureCount = Stream.ReadUInt8();
-        bHasVertexDeform          = Stream.ReadBool();
-        bDepthTest_EXPERIMENTAL   = Stream.ReadBool();
-        bNoCastShadow             = Stream.ReadBool();
-        bAlphaMasking             = Stream.ReadBool();
-        bShadowMapMasking         = Stream.ReadBool();
-        bDisplacementAffectShadow = Stream.ReadBool();
-        //bParallaxMappingSelfShadowing = Stream.ReadBool(); // TODO
-        bTranslucent      = Stream.ReadBool();
-        bTwoSided         = Stream.ReadBool();
-        NumUniformVectors = Stream.ReadUInt8();
-
-        Samplers.Clear();
-        Samplers.Resize(Stream.ReadUInt8());
-        for (auto& sampler : Samplers)
-        {
-            sampler.TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
-            sampler.Filter      = (TEXTURE_FILTER)Stream.ReadUInt8();
-            sampler.AddressU    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
-            sampler.AddressV    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
-            sampler.AddressW    = (TEXTURE_ADDRESS)Stream.ReadUInt8();
-            sampler.MipLODBias  = Stream.ReadFloat();
-            sampler.Anisotropy  = Stream.ReadFloat();
-            sampler.MinLod      = Stream.ReadFloat();
-            sampler.MaxLod      = Stream.ReadFloat();
-        }
-
-        auto numShaders = Stream.ReadUInt16();
-
-        Shaders.Clear();
-        Shaders.Reserve(numShaders);
-
-        String sourceName, sourceCode;
-        for (int i = 0; i < numShaders; i++)
-        {
-            sourceName = Stream.ReadString();
-            sourceCode = Stream.ReadString();
-            AddShader(sourceName, sourceCode);
-        }
-    }
-
-    void Write(IBinaryStreamWriteInterface& Stream) const
-    {
-        Stream.WriteUInt8(Type);
-        Stream.WriteUInt8(Blending);
-        Stream.WriteUInt8(TessellationMethod);
-        Stream.WriteUInt8(RenderingPriority);        
-        Stream.WriteUInt16(LightmapSlot);
-        Stream.WriteUInt8(DepthPassTextureCount);
-        Stream.WriteUInt8(LightPassTextureCount);
-        Stream.WriteUInt8(WireframePassTextureCount);
-        Stream.WriteUInt8(NormalsPassTextureCount);
-        Stream.WriteUInt8(ShadowMapPassTextureCount);
-        Stream.WriteBool(bHasVertexDeform);
-        Stream.WriteBool(bDepthTest_EXPERIMENTAL);
-        Stream.WriteBool(bNoCastShadow);
-        Stream.WriteBool(bAlphaMasking);
-        Stream.WriteBool(bShadowMapMasking);
-        Stream.WriteBool(bDisplacementAffectShadow);
-        //Stream.WriteBool( bParallaxMappingSelfShadowing ); // TODO
-        Stream.WriteBool(bTranslucent);
-        Stream.WriteBool(bTwoSided);
-        Stream.WriteUInt8(NumUniformVectors);
-        Stream.WriteUInt8(Samplers.Size());
-        for (auto& sampler : Samplers)
-        {
-            Stream.WriteUInt8(sampler.TextureType);
-            Stream.WriteUInt8(sampler.Filter);
-            Stream.WriteUInt8(sampler.AddressU);
-            Stream.WriteUInt8(sampler.AddressV);
-            Stream.WriteUInt8(sampler.AddressW);
-            Stream.WriteFloat(sampler.MipLODBias);
-            Stream.WriteFloat(sampler.Anisotropy);
-            Stream.WriteFloat(sampler.MinLod);
-            Stream.WriteFloat(sampler.MaxLod);
-        }
-
-        Stream.WriteUInt16(Shaders.Size());
-
-        for (MaterialSource const& s : Shaders)
-        {
-            Stream.WriteString(s.SourceName);
-            Stream.WriteString(s.Code);
-        }
-    }    
+    MATERIAL_TYPE               MaterialType{MATERIAL_TYPE_PBR};
+    int                         LightmapSlot{};
+    int                         DepthPassTextureCount{};
+    int                         LightPassTextureCount{};
+    int                         WireframePassTextureCount{};
+    int                         NormalsPassTextureCount{};
+    int                         ShadowMapPassTextureCount{};
+    Ref<RenderCore::IPipeline>  Passes[MaterialPass::MAX];
 };
-
-class MaterialGPU;
 
 struct MaterialFrameData
 {
-    MaterialGPU*                   Material;
-    RenderCore::ITexture*          Textures[MAX_MATERIAL_TEXTURES];
-    int                            NumTextures;
-    Float4                         UniformVectors[4];
-    int                            NumUniformVectors;
+    MaterialGPU*                Material;
+    RenderCore::ITexture*       Textures[MAX_MATERIAL_TEXTURES];
+    int                         NumTextures;
+    Float4                      UniformVectors[4];
+    int                         NumUniformVectors;
     //class VirtualTextureResource* VirtualTexture;
 };
-
 
 //
 // Debug draw

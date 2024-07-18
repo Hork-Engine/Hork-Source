@@ -28,50 +28,21 @@ SOFTWARE.
 
 */
 
-#pragma once
+#ifndef SHADERS_COMMON_H
+#define SHADERS_COMMON_H
 
-#include "RenderDefs.h"
+/// Max directional lights per view
+#define MAX_DIRECTIONAL_LIGHTS                  4
 
-HK_NAMESPACE_BEGIN
+/// Max cascades per light
+#define MAX_SHADOW_CASCADES                     4
 
-class MaterialGPU : public RefCounted
-{
-public:
-    MaterialGPU(CompiledMaterial const* pCompiledMaterial, String const& code);
+/// Max cascades per view
+#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW      (MAX_SHADOW_CASCADES * MAX_DIRECTIONAL_LIGHTS)
 
-    MaterialGPU(MaterialGPU&& Rhs) = default;
-    MaterialGPU& operator=(MaterialGPU&& Rhs) = default;
+#define SHADOWMAP_PCF
+//#define SHADOWMAP_PCSS
+//#define SHADOWMAP_VSM
+//#define SHADOWMAP_EVSM
 
-    // Internal. Do not modify:
-
-    MATERIAL_TYPE MaterialType{MATERIAL_TYPE_PBR};
-
-    int LightmapSlot{};
-
-    int DepthPassTextureCount{};
-    int LightPassTextureCount{};
-    int WireframePassTextureCount{};
-    int NormalsPassTextureCount{};
-    int ShadowMapPassTextureCount{};
-
-    using PipelineRef = Ref<RenderCore::IPipeline>;
-
-    // NOTE: 0 - Static geometry, 1 - Skinned geometry
-
-    PipelineRef DepthPass[2];
-    PipelineRef DepthVelocityPass[2];
-    PipelineRef WireframePass[2];
-    PipelineRef NormalsPass[2];
-    PipelineRef LightPass[2];
-    PipelineRef LightPassLightmap;
-    PipelineRef LightPassVertexLight;
-    PipelineRef ShadowPass[2];
-    PipelineRef OmniShadowPass[2];
-    PipelineRef FeedbackPass[2];
-    PipelineRef OutlinePass[2];
-    #if 0
-    PipelineRef HUDPipeline;
-    #endif
-};
-
-HK_NAMESPACE_END
+#endif

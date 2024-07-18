@@ -27,7 +27,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * Asynchronous loading of resources
 
 ## Rendering
-* Forward+ clustered renderer based on OpenGL4.5 core
+* Forward+ clustered renderer based on OpenGL4.6 core
 * Modern Framegraph architecture
 * Material graph with automatic shader generation, material instancing
 * Physically Based Rendering

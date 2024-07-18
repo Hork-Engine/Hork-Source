@@ -34,38 +34,32 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-#define SHADOWMAP_PCF
-//#define SHADOWMAP_PCSS
-//#define SHADOWMAP_VSM
-//#define SHADOWMAP_EVSM
-
 class ShaderFactory
 {
 public:
-    using SourceList = SmallVector<const char*, 64>;
+    static void CreateShader(RenderCore::SHADER_TYPE shaderType, const char* source, Ref<RenderCore::IShaderModule>& module);
+    static void CreateShader(RenderCore::SHADER_TYPE shaderType, String const& source, Ref<RenderCore::IShaderModule>& module);
+    static Ref<RenderCore::IShaderModule> CreateShaderSpirV(RenderCore::SHADER_TYPE shaderType, BlobRef blob);
 
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, SourceList const& Sources, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, const char* Source, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateShader(RenderCore::SHADER_TYPE ShaderType, String const& Source, Ref<RenderCore::IShaderModule>& Module);
-
-    static void CreateVertexShader(StringView FileName, RenderCore::VertexAttribInfo const* VertexAttribs, int NumVertexAttribs, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateTessControlShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateTessEvalShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateGeometryShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
-    static void CreateFragmentShader(StringView FileName, Ref<RenderCore::IShaderModule>& Module);
+    static void CreateVertexShader(StringView fileName, ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, Ref<RenderCore::IShaderModule>& module);
+    static void CreateVertexShader(StringView fileName, RenderCore::VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<RenderCore::IShaderModule>& module);
+    static void CreateTessControlShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
+    static void CreateTessEvalShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
+    static void CreateGeometryShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
+    static void CreateFragmentShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
 
     static void CreateFullscreenQuadPipeline(Ref<RenderCore::IPipeline>*               ppPipeline,
-                                             StringView                                VertexShader,
-                                             StringView                                FragmentShader,
+                                             StringView                                vertexShader,
+                                             StringView                                fragmentShader,
                                              RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
-                                             RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
+                                             RenderCore::BLENDING_PRESET               blendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
     static void CreateFullscreenQuadPipelineGS(Ref<RenderCore::IPipeline>*               ppPipeline,
-                                               StringView                                VertexShader,
-                                               StringView                                FragmentShader,
-                                               StringView                                GeometryShader,
+                                               StringView                                vertexShader,
+                                               StringView                                fragmentShader,
+                                               StringView                                geometryShader,
                                                RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
-                                               RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
+                                               RenderCore::BLENDING_PRESET               blendingPreset  = RenderCore::BLENDING_NO_BLEND);
 };
 
 HK_NAMESPACE_END

@@ -182,7 +182,7 @@ static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, RenderInst
 
     int bSkinned = Instance->SkeletonSize > 0;
 
-    IPipeline* pPipeline = pMaterial->FeedbackPass[bSkinned];
+    IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::FeedbackPass_Skin : MaterialPass::FeedbackPass];
     if (!pPipeline)
     {
         return false;

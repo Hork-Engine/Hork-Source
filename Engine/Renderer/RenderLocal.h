@@ -31,12 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Core/ConsoleVar.h>
+#include <Engine/ShaderUtils/ShaderLoader.h>
 
-#include "GpuMaterial.h"
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
 #include "SphereMesh.h"
-#include "ShaderLoader.h"
 #include "ShaderFactory.h"
 
 HK_NAMESPACE_BEGIN

@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Engine/Audio/AudioMixer.h>
 #include <Engine/World/World.h>
 #include <Engine/World/Modules/Physics/PhysicsModule.h>
+#include <Engine/ShaderUtils/ShaderCompiler.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -235,6 +236,8 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     m_RenderFrontendJobList = m_AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
     //pRenderBackendJobList  = m_AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
+    ShaderCompiler::Initialize();
+
     CreateLogicalDevice("OpenGL 4.5", &m_RenderDevice);
 
     CreateMainWindowAndSwapChain();
@@ -309,6 +312,8 @@ GameApplication::~GameApplication()
     
     PhysicsModule::Deinitialize();
 
+    ShaderCompiler::Deinitialize();
+
     //Hk::ECS::Shutdown();
 
     GarbageCollector::Shutdown();
@@ -356,14 +361,11 @@ void GameApplication::RunMainLoop()
         // Take current frame duration
         m_FrameDurationInSeconds = m_FrameLoop->SysFrameDuration() * 0.000001;
 
-        // Don't allow very slow frames
-        if (m_FrameDurationInSeconds > 0.25f)
-            m_FrameDurationInSeconds = 0.25f;
+        const float minFps = 10;
+        if (m_FrameDurationInSeconds > 1.0f / minFps)
+            m_FrameDurationInSeconds = 1.0f / minFps;
         else if (m_FrameDurationInSeconds < 0.001f)
-        {
-            LOG("m_FrameDurationInSeconds < 0.001\n");
             m_FrameDurationInSeconds = 0.001f;
-        }
 
         // Execute console commands
         m_CommandProcessor.Execute(m_CommandContext);

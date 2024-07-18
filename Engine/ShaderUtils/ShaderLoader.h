@@ -30,11 +30,25 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderDefs.h"
 #include <Engine/Core/Containers/ArrayView.h>
+#include <Engine/Core/String.h>
 
 HK_NAMESPACE_BEGIN
 
-String LoadShader(StringView FileName, ArrayView<MaterialSource> Predefined = {});
+struct CodeBlock
+{
+    /// The source name
+    String Name;
+
+    /// Source code
+    String Code;
+
+    CodeBlock() = default;
+    CodeBlock(String inName, String inCode) :
+        Name(std::move(inName)), Code(std::move(inCode))
+    {}
+};
+
+String LoadShader(StringView fileName, ArrayView<CodeBlock> codeBlocks = {});
 
 HK_NAMESPACE_END

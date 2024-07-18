@@ -36,6 +36,8 @@ SOFTWARE.
 #include "Texture.h"
 #include "Buffer.h"
 
+#include <Engine/Core/Containers/ArrayView.h>
+
 HK_NAMESPACE_BEGIN
 
 namespace RenderCore
@@ -496,19 +498,24 @@ struct ImageInfo
 
 struct BufferInfo
 {
+    BufferInfo() = default;
+    BufferInfo(BUFFER_BINDING binding) :
+        BufferBinding(binding)
+    {}
+
     BUFFER_BINDING BufferBinding = BUFFER_BIND_CONSTANT;
 };
 
 struct PipelineResourceLayout
 {
     int                 NumSamplers = 0;
-    struct SamplerDesc* Samplers = nullptr;
+    struct SamplerDesc const* Samplers = nullptr;
 
     int        NumImages = 0;
-    ImageInfo* Images = nullptr;
+    ImageInfo const* Images = nullptr;
 
     int         NumBuffers = 0;
-    BufferInfo* Buffers = nullptr;
+    BufferInfo const* Buffers = nullptr;
 
     PipelineResourceLayout() = default;
 };
@@ -715,54 +722,6 @@ struct VertexAttribInfo
         return HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::Hash(Location), InputSlot), uint8_t(Type)), uint8_t(Mode)), InstanceDataStepRate), Offset);
     }
 };
-
-//
-// Vertex attrubte to shader string helper
-//
-
-template <typename TString>
-TString ShaderStringForVertexAttribs(VertexAttribInfo const* _VertexAttribs, int _NumVertexAttribs)
-{
-    // TODO: modify for compile time?
-
-    TString     s;
-    const char* attribType;
-    int         attribIndex = 0;
-    char        location[16];
-
-    const char* Types[4][4] = {
-        {"float", "vec2", "vec3", "vec4"},     // Float types
-        {"double", "dvec2", "dvec3", "dvec4"}, // Double types
-        {"int", "ivec2", "ivec3", "ivec4"},    // Integer types
-        {"uint", "uvec2", "uvec3", "uvec4"}    // Unsigned types
-    };
-
-    for (VertexAttribInfo const* attrib = _VertexAttribs; attrib < &_VertexAttribs[_NumVertexAttribs]; attrib++, attribIndex++)
-    {
-        VERTEX_ATTRIB_COMPONENT typeOfComponent = attrib->TypeOfComponent();
-
-        if (attrib->Mode == VAM_INTEGER && (typeOfComponent == COMPONENT_UBYTE || typeOfComponent == COMPONENT_USHORT || typeOfComponent == COMPONENT_UINT))
-        {
-            attribType = Types[3][attrib->NumComponents() - 1];
-        }
-        else
-        {
-            attribType = Types[attrib->Mode][attrib->NumComponents() - 1];
-        }
-
-        snprintf(location, sizeof(location), "%d", attrib->Location);
-
-        s += "layout( location = ";
-        s += location;
-        s += " ) in ";
-        s += attribType;
-        s += " ";
-        s += attrib->SemanticName;
-        s += ";\n";
-    }
-
-    return s;
-}
 
 enum PRIMITIVE_TOPOLOGY : uint8_t
 {

@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "Common.h"
+
 #include "instance_shadowmap_uniforms.glsl"
 
 out gl_PerVertex

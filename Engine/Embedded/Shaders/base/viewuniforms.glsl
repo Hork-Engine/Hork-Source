@@ -31,6 +31,8 @@ SOFTWARE.
 #ifndef VIEWUNIFORMS_H
 #define VIEWUNIFORMS_H
 
+#include "Common.h"
+
 // Keep paddings, don't use vec3, keep in sync with cpp struct
 layout( binding = 0, std140 ) uniform UniformBuffer0
 {

@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "Common.h"
+
 in gl_PerVertex
 {
     vec4 gl_Position;

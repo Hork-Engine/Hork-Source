@@ -167,7 +167,7 @@ bool ShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, S
     {
         int bSkinned = instance->SkeletonSize > 0;
 
-        IPipeline* pPipeline = pMaterial->ShadowPass[bSkinned];
+        IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::ShadowMapPass_Skin : MaterialPass::ShadowMapPass];
         if (!pPipeline)
         {
             return false;
@@ -205,7 +205,7 @@ bool ShadowMapRenderer::BindMaterialOmniShadowMap(IImmediateContext* immediateCt
     {
         int bSkinned = instance->SkeletonSize > 0;
 
-        IPipeline* pPipeline = pMaterial->OmniShadowPass[bSkinned];
+        IPipeline* pPipeline = pMaterial->Passes[bSkinned ? MaterialPass::OmniShadowMapPass_Skin : MaterialPass::OmniShadowMapPass];
         if (!pPipeline)
         {
             return false;

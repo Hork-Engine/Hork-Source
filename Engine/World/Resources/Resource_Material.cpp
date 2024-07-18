@@ -31,7 +31,6 @@ SOFTWARE.
 #include "Resource_Material.h"
 
 #include "Materials/MaterialGraph/MaterialGraph.h"
-#include <Engine/Renderer/ShaderLoader.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -53,54 +52,62 @@ bool MaterialResource::Read(IBinaryStreamReadInterface& stream)
         return false;
     }
 
-    m_CompiledGraph = MakeRef<CompiledMaterial>(stream);
-    m_Shader = LoadShader("material.glsl", m_CompiledGraph->Shaders);
+    auto materialCode = MakeUnique<MaterialCode>();
+    materialCode->Read(stream);
+
+    m_Binary = materialCode->Translate();
+
     return true;
 }
 
 void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
 {
-    stream.WriteUInt32(MakeResourceMagic(Type, Version));
+    // TODO
 
-    m_CompiledGraph->Write(stream);
+    //stream.WriteUInt32(MakeResourceMagic(Type, Version));
+
+    //m_Binary->Write(stream);
 }
 
 void MaterialResource::Upload()
 {
-    m_GpuMaterial = MakeRef<MaterialGPU>(m_CompiledGraph, m_Shader);
-    m_Shader.Free();
+    m_GpuMaterial = m_Binary->Compile();
 }
 
 bool MaterialResource::IsCastShadow() const
 {
-    return !m_CompiledGraph->bNoCastShadow;
+    return m_Binary->IsCastShadow;
 }
 
 bool MaterialResource::IsTranslucent() const
 {
-    return m_CompiledGraph->bTranslucent;
+    return m_Binary->IsTranslucent;
 }
 
 RENDERING_PRIORITY MaterialResource::GetRenderingPriority() const
 {
-    return m_CompiledGraph->RenderingPriority;
+    return m_Binary->RenderingPriority;
 }
 
 uint32_t MaterialResource::GetTextureCount() const
 {
-    return m_CompiledGraph->Samplers.Size();
+    return m_Binary->TextureCount;
 }
 
 uint32_t MaterialResource::GetUniformVectorCount() const
 {
-    return m_CompiledGraph->NumUniformVectors;
+    return m_Binary->UniformVectorCount;
 }
 
 UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph)
 {
+    auto materialCode = graph.Build();
+    if (!materialCode)
+        return {};
+
     UniqueRef<MaterialResource> material;
-    material->m_CompiledGraph = graph.Compile();
-    material->m_Shader = LoadShader("material.glsl", material->m_CompiledGraph->Shaders);
+    material->m_Binary = materialCode->Translate();
+
     return material;
 }
 
