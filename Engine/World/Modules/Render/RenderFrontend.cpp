@@ -42,7 +42,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
 ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
 ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
@@ -86,6 +85,7 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
     m_FrameData.FrameNumber = m_FrameNumber;
 
     m_FrameData.pCanvasDrawData = canvas->GetDrawData();
+
     if (m_FrameData.pCanvasDrawData->VertexCount > 0)
         m_FrameData.CanvasVertexData = streamedMemory->AllocateVertex(m_FrameData.pCanvasDrawData->VertexCount * sizeof(CanvasVertex), m_FrameData.pCanvasDrawData->Vertices);
     else
@@ -102,6 +102,7 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
 
     m_FrameData.NumViews = renderViews.Size();
     m_FrameData.RenderViews = (RenderViewData*)frameLoop->AllocFrameMem(sizeof(RenderViewData) * m_FrameData.NumViews);
+    Core::ZeroMem(m_FrameData.RenderViews, sizeof(RenderViewData) * m_FrameData.NumViews);
 
     for (int i = 0; i < m_FrameData.NumViews; i++)
     {
@@ -1247,6 +1248,8 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     //AddRenderInstances(world); // TODO
 
+    m_LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
+
     m_Stat.PolyCount += m_RenderDef.PolyCount;
     m_Stat.ShadowMapPolyCount += m_RenderDef.ShadowMapPolyCount;
 
@@ -1576,10 +1579,7 @@ void RenderFrontend::AddRenderInstances(World* world)
     //    }
     //}
 
-    if (!r_FixFrustumClusters)
-    {
-        m_LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
-    }
+    
 }
 #if 0
 void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
