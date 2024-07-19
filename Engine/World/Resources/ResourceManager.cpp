@@ -40,6 +40,7 @@ SOFTWARE.
 
 #include <Engine/GameApplication/GameApplication.h>
 #include <Engine/Core/Platform.h>
+#include <Engine/Core/Profiler.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -254,6 +255,8 @@ void ResourceManager::UpdateAsync()
 
 void ResourceManager::MainThread_Update(float timeBudget)
 {
+    HK_PROFILER_EVENT("ResourceManager::MainThread_Update");
+
     uint64_t time = Core::SysMicroseconds();
 
     ExecuteCommands();

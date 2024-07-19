@@ -125,6 +125,7 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swap
     // Swap window
     for (auto* swapChain : swapChains)
     {
+        HK_PROFILER_EVENT("Swap chain present");
         swapChain->Present(swapInterval);
     }
 
