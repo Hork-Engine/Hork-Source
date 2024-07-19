@@ -49,8 +49,6 @@ void ShaderCompiler::Deinitialize()
 
 bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv)
 {
-    SourceList _sources;
-
     const char* shaderTypeMacro[] =
     {
         "#define VERTEX_SHADER\n",
@@ -61,7 +59,8 @@ bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList 
         "#define COMPUTE_SHADER\n"
     };
 
-    _sources.Add("#version 450\n");
+    SourceList _sources;
+    _sources.Add("#version 450\n\n");
     _sources.Add("#extension GL_GOOGLE_cpp_style_line_directive : enable\n");
     _sources.Add("#extension GL_EXT_control_flow_attributes : enable\n");
     _sources.Add("#extension GL_EXT_control_flow_attributes2 : enable\n");
@@ -73,7 +72,6 @@ bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList 
     using namespace glslang;
 
     EShLanguage stage;
-
     switch (shaderType)
     {
     case RenderCore::VERTEX_SHADER:
@@ -98,31 +96,37 @@ bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList 
         return false;
     }
 
+    const EShMessages messages = EShMsgSpvRules;
+
     TShader shader(stage);
-
-    TProgram program;
-
-    EShMessages messages = EShMsgSpvRules;
-
     shader.setStrings(_sources.ToPtr(), _sources.Size());
     shader.setEnvInput(EShSourceGlsl, stage, EShClientOpenGL, 450);
     shader.setEnvClient(EShClientOpenGL, EShTargetOpenGL_450);
-    shader.setEnvTarget(EShTargetSpv, EShTargetSpv_1_5);
+    shader.setEnvTarget(EShTargetSpv, EShTargetSpv_1_0); // FIXME: Which target version of SpirV should we use?
 
-    const int defaultVersion = 110; // use 100 for ES environment, 110 for desktop
+    const int defaultVersion = 100;
     if (!shader.parse(GetDefaultResources(), defaultVersion, false, messages))
     {
         LOG("{}\n{}\n", shader.getInfoLog(), shader.getInfoDebugLog());
         return {};
     }
 
+    TProgram program;
     program.addShader(&shader);
-
     if (!program.link(messages))
     {
         LOG("{}\n{}\n", program.getInfoLog(), program.getInfoDebugLog());
         return false;
     }
+
+    // A small code snippet to log the pre-processed code.
+    //std::string preprocessedCode;
+    //TShader::ForbidIncluder forbidIncluder;
+    //if (shader.preprocess(GetDefaultResources(), defaultVersion, ENoProfile, false, false, messages, &preprocessedCode, forbidIncluder))
+    //{
+    //    if (auto file = File::OpenWrite("debug.glsl"))
+    //        file.Write(preprocessedCode.c_str(), preprocessedCode.size());
+    //}
 
     SpvOptions options;
     options.stripDebugInfo = true;
@@ -130,10 +134,17 @@ bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList 
     options.optimizeSize = true;
     options.validate = true;
 
+    spv::SpvBuildLogger logger;
+
     std::vector<uint32_t> _spirv;
-    glslang::GlslangToSpv(*program.getIntermediate(stage), _spirv, &options);
+    glslang::GlslangToSpv(*program.getIntermediate(stage), _spirv, &logger, &options);
     spirv.Reset(_spirv.size() * sizeof(_spirv[0]), _spirv.data());
-    return true;
+
+    std::string loggerMessages = logger.getAllMessages();
+    if (!loggerMessages.empty())
+        LOG("{}\n", loggerMessages);
+
+    return !spirv.IsEmpty();
 }
 
 namespace
@@ -158,13 +169,9 @@ namespace
             VERTEX_ATTRIB_COMPONENT typeOfComponent = attrib.TypeOfComponent();
 
             if (attrib.Mode == VAM_INTEGER && (typeOfComponent == COMPONENT_UBYTE || typeOfComponent == COMPONENT_USHORT || typeOfComponent == COMPONENT_UINT))
-            {
                 attribType = Types[3][attrib.NumComponents() - 1];
-            }
             else
-            {
                 attribType = Types[attrib.Mode][attrib.NumComponents() - 1];
-            }
 
             s += HK_FORMAT("layout(location = {}) in {} {};\n", attrib.Location, attribType, attrib.SemanticName);
         }

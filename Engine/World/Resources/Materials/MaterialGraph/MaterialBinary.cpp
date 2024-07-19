@@ -73,18 +73,16 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
     desc.DSS.bDepthEnable = pass.DepthTest;
     desc.IA.Topology = pass.Topology;
 
+    StaticVector<VertexBindingInfo, 2> vertexBinding;
+
     switch (pass.VertFormat)
     {
         case MaterialBinary::VertexFormat::StaticMesh:
         {
-            VertexBindingInfo vertexBinding[1] = {};
-
-            vertexBinding[0].InputSlot = 0;
-            vertexBinding[0].Stride = sizeof(MeshVertex);
-            vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-            desc.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-            desc.pVertexBindings = vertexBinding;
+            auto& binding = vertexBinding.EmplaceBack();
+            binding.InputSlot = 0;
+            binding.Stride = sizeof(MeshVertex);
+            binding.InputRate = INPUT_RATE_PER_VERTEX;
 
             desc.NumVertexAttribs = g_VertexAttribsStatic.Size();
             desc.pVertexAttribs = g_VertexAttribsStatic.ToPtr();
@@ -93,18 +91,15 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
         }
         case MaterialBinary::VertexFormat::SkinnedMesh:
         {
-            VertexBindingInfo vertexBinding[2] = {};
+            auto& binding0 = vertexBinding.EmplaceBack();
+            binding0.InputSlot = 0;
+            binding0.Stride = sizeof(MeshVertex);
+            binding0.InputRate = INPUT_RATE_PER_VERTEX;
 
-            vertexBinding[0].InputSlot = 0;
-            vertexBinding[0].Stride = sizeof(MeshVertex);
-            vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-            vertexBinding[1].InputSlot = 1;
-            vertexBinding[1].Stride = sizeof(SkinVertex);
-            vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
-
-            desc.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-            desc.pVertexBindings = vertexBinding;
+            auto& binding1 = vertexBinding.EmplaceBack();
+            binding1.InputSlot = 1;
+            binding1.Stride = sizeof(SkinVertex);
+            binding1.InputRate = INPUT_RATE_PER_VERTEX;
 
             desc.NumVertexAttribs = g_VertexAttribsSkinned.Size();
             desc.pVertexAttribs = g_VertexAttribsSkinned.ToPtr();
@@ -113,18 +108,15 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
         }
         case MaterialBinary::VertexFormat::StaticMesh_Lightmap:
         {
-            VertexBindingInfo vertexBinding[2] = {};
+            auto& binding0 = vertexBinding.EmplaceBack();
+            binding0.InputSlot = 0;
+            binding0.Stride = sizeof(MeshVertex);
+            binding0.InputRate = INPUT_RATE_PER_VERTEX;
 
-            vertexBinding[0].InputSlot = 0;
-            vertexBinding[0].Stride = sizeof(MeshVertex);
-            vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-            vertexBinding[1].InputSlot = 1;
-            vertexBinding[1].Stride = sizeof(MeshVertexUV);
-            vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
-
-            desc.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-            desc.pVertexBindings = vertexBinding;
+            auto& binding1 = vertexBinding.EmplaceBack();
+            binding1.InputSlot = 1;
+            binding1.Stride = sizeof(MeshVertexUV);
+            binding1.InputRate = INPUT_RATE_PER_VERTEX;
 
             desc.NumVertexAttribs = g_VertexAttribsStaticLightmap.Size();
             desc.pVertexAttribs = g_VertexAttribsStaticLightmap.ToPtr();
@@ -133,18 +125,15 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
         }
         case MaterialBinary::VertexFormat::StaticMesh_VertexLight:
         {
-            VertexBindingInfo vertexBinding[2] = {};
+            auto& binding0 = vertexBinding.EmplaceBack();
+            binding0.InputSlot = 0;
+            binding0.Stride = sizeof(MeshVertex);
+            binding0.InputRate = INPUT_RATE_PER_VERTEX;
 
-            vertexBinding[0].InputSlot = 0;
-            vertexBinding[0].Stride = sizeof(MeshVertex);
-            vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-            vertexBinding[1].InputSlot = 1;
-            vertexBinding[1].Stride = sizeof(MeshVertexLight);
-            vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
-
-            desc.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-            desc.pVertexBindings = vertexBinding;
+            auto& binding1 = vertexBinding.EmplaceBack();
+            binding1.InputSlot = 1;
+            binding1.Stride = sizeof(MeshVertexLight);
+            binding1.InputRate = INPUT_RATE_PER_VERTEX;
 
             desc.NumVertexAttribs = g_VertexAttribsStaticVertexLight.Size();
             desc.pVertexAttribs = g_VertexAttribsStaticVertexLight.ToPtr();
@@ -154,6 +143,9 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
         default:
             return {};
     }
+
+    desc.NumVertexBindings = vertexBinding.Size();
+    desc.pVertexBindings = vertexBinding.ToPtr();
 
     int index = 0;
     for (auto& renderTarget : pass.RenderTargets)
@@ -382,10 +374,8 @@ Ref<MaterialGPU> MaterialBinary::Compile()
     }
 
     Ref<MaterialGPU> materialGPU = MakeRef<MaterialGPU>();
-
     materialGPU->MaterialType = MaterialType;
     materialGPU->LightmapSlot = LightmapSlot;
-
     materialGPU->DepthPassTextureCount = DepthPassTextureCount;
     materialGPU->LightPassTextureCount = LightPassTextureCount;
     materialGPU->WireframePassTextureCount = WireframePassTextureCount;
