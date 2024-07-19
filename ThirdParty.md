@@ -242,6 +242,10 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
 
+# GLSLANG
+
+See https://github.com/Hork-Engine/Hork-Source/blob/master/ThirdParty/glslang/LICENSE.txt
+
 # GLUTESS
 
 Copyright notice and license for the libglutess files 

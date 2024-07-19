@@ -87,6 +87,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * fast_obj
 * {fmt}
 * GLEW
+* glslang
 * glutess
 * HACD
 * Jolt Physics
