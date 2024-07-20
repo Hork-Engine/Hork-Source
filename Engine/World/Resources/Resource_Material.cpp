@@ -36,6 +36,17 @@ HK_NAMESPACE_BEGIN
 
 UniqueRef<MaterialResource> MaterialResource::Load(IBinaryStreamReadInterface& stream)
 {
+    StringView extension = PathUtils::GetExt(stream.GetName());
+
+    if (!extension.Icmp(".mg"))
+    {
+        auto graph = MaterialGraph::Load(stream);
+        if (!graph)
+            return {};
+
+        return MaterialResourceBuilder().Build(*graph.RawPtr());
+    }
+
     UniqueRef<MaterialResource> resource = MakeUnique<MaterialResource>();
     if (!resource->Read(stream))
         return {};
@@ -52,21 +63,17 @@ bool MaterialResource::Read(IBinaryStreamReadInterface& stream)
         return false;
     }
 
-    auto materialCode = MakeUnique<MaterialCode>();
-    materialCode->Read(stream);
-
-    m_Binary = materialCode->Translate();
+    m_Binary = MakeUnique<MaterialBinary>();
+    m_Binary->Read(stream);
 
     return true;
 }
 
 void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
 {
-    // TODO
+    stream.WriteUInt32(MakeResourceMagic(Type, Version));
 
-    //stream.WriteUInt32(MakeResourceMagic(Type, Version));
-
-    //m_Binary->Write(stream);
+    m_Binary->Write(stream);
 }
 
 void MaterialResource::Upload()
@@ -105,7 +112,7 @@ UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph)
     if (!materialCode)
         return {};
 
-    UniqueRef<MaterialResource> material;
+    auto material = MakeUnique<MaterialResource>();
     material->m_Binary = materialCode->Translate();
 
     return material;

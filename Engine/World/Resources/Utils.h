@@ -30,10 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/BaseTypes.h>
+#include <Engine/Core/String.h>
 
 HK_NAMESPACE_BEGIN
 
 void CreateDefaultResources();
+bool CompileMaterial(StringView input, StringView output);
 
 HK_NAMESPACE_END

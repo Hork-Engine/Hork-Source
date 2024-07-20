@@ -40,7 +40,7 @@ class MaterialResource : public ResourceBase
 {
 public:
     static const uint8_t        Type = RESOURCE_MATERIAL;
-    static const uint8_t        Version = 1;
+    static const uint8_t        Version = 2;
 
     static UniqueRef<MaterialResource> Load(IBinaryStreamReadInterface& stream);
 

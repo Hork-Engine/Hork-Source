@@ -39,12 +39,16 @@ class MaterialBinary
 public:
     struct Shader
     {
+        Shader() = default;
         Shader(RenderCore::SHADER_TYPE type, HeapBlob blob) :
             m_Type(type), m_Blob(std::move(blob))
         {}
 
         RenderCore::SHADER_TYPE m_Type;
         HeapBlob m_Blob;
+
+        void Read(IBinaryStreamReadInterface& stream);
+        void Write(IBinaryStreamWriteInterface& stream) const;
     };
 
     enum class VertexFormat
@@ -74,6 +78,9 @@ public:
         uint32_t                        TessControlShader = ~0u;
         uint32_t                        TessEvalShader = ~0u;
         uint32_t                        GeometryShader = ~0u;
+
+        void Read(IBinaryStreamReadInterface& stream);
+        void Write(IBinaryStreamWriteInterface& stream) const;
     };
 
     MATERIAL_TYPE           MaterialType{MATERIAL_TYPE_PBR};
@@ -94,6 +101,9 @@ public:
     uint32_t                AddShader(RenderCore::SHADER_TYPE shaderType, HeapBlob blob);
 
     Ref<MaterialGPU>        Compile();
+
+    void                    Read(IBinaryStreamReadInterface& stream);
+    void                    Write(IBinaryStreamWriteInterface& stream) const;
 };
 
 HK_NAMESPACE_END

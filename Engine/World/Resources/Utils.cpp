@@ -200,27 +200,9 @@ void CreateDefaultResources()
         HK_ASSERT(file);
         resource->Write(file);
     }
-#if 1
-    auto& resourceMngr = GameApplication::GetResourceManager();
-    {
-        auto graph = MaterialGraph::Load(resourceMngr.OpenFile("/Root/materials/sample_material_graph.mgraph").ReadInterface());
 
-        MaterialResourceBuilder builder;
-        auto material = builder.Build(*graph);
-
-        auto file = File::OpenWrite("Data/default/materials/default.mat");
-        material->Write(file);
-    }
-
-    {
-        auto graph = MaterialGraph::Load(resourceMngr.OpenFile("/Root/materials/unlit.mgraph").ReadInterface());
-
-        MaterialResourceBuilder builder;
-        auto material = builder.Build(*graph);
-
-        auto file = File::OpenWrite("Data/default/materials/default_unlit.mat");
-        material->Write(file);
-    }
+    CompileMaterial("/Root/materials/default.mg", "Data/default/materials/default.mat");
+    CompileMaterial("/Root/materials/unlit.mg", "Data/default/materials/unlit.mat");
 
     {
         auto graph = MakeRef<MaterialGraph>();
@@ -244,12 +226,32 @@ void CreateDefaultResources()
         graph->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
 
         MaterialResourceBuilder builder;
-        auto material = builder.Build(*graph);
-
-        auto file = File::OpenWrite("Data/default/materials/skybox.mat");
-        material->Write(file);
+        if (auto material = builder.Build(*graph))
+        {
+            if (auto file = File::OpenWrite("Data/default/materials/skybox.mat"))
+                material->Write(file);
+        }
     }
-#endif
+}
+
+bool CompileMaterial(StringView input, StringView output)
+{
+    auto& resourceMngr = GameApplication::GetResourceManager();
+    if (auto file = resourceMngr.OpenFile(input))
+    {
+        auto graph = MaterialGraph::Load(file);
+
+        MaterialResourceBuilder builder;
+        if (auto material = builder.Build(*graph))
+        {
+            if (auto outfile = File::OpenWrite(output))
+            {
+                material->Write(outfile);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 HK_NAMESPACE_END
