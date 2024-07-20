@@ -391,7 +391,7 @@ void VertexMemoryGPU::AddGPUBuffer()
 
     m_BufferHandles.Add(buffer);
 
-    LOG("Allocated a new block (total blocks {})\n", m_BufferHandles.Size());
+    //LOG("Allocated a new block (total blocks {})\n", m_BufferHandles.Size());
 }
 
 void VertexMemoryGPU::CheckMemoryLeaks()

@@ -244,11 +244,9 @@ void ResourceManager::UpdateAsync()
         }
         else
         {
-            LOG("Sleep\n");
+            //LOG("Sleep\n");
             m_StreamQueueEvent.Wait();
-            LOG("Awake\n");
-            // TODO: wait event
-            //Thread::WaitMilliseconds(17);
+            //LOG("Awake\n");
         }
     }
 }
@@ -281,7 +279,7 @@ void ResourceManager::MainThread_Update(float timeBudget)
             proxy.m_State = RESOURCE_STATE_INVALID;
         }     
 
-        LOG("Processed {} {} [{}]\n", resource, proxy.GetName(), proxy.m_State == RESOURCE_STATE_READY ? "READY" : "INVALID");
+        //LOG("Processed {} {} [{}]\n", resource, proxy.GetName(), proxy.m_State == RESOURCE_STATE_READY ? "READY" : "INVALID");
 
         IncrementAreas(proxy);
 
@@ -447,7 +445,7 @@ void ResourceManager::ExecuteCommands()
 
                         proxy.m_State = RESOURCE_STATE_LOAD;
 
-                        LOG("Enqueued {} {}\n", resource, proxy.GetName());
+                        //LOG("Enqueued {} {}\n", resource, proxy.GetName());
                     }
                 }
             }

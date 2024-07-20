@@ -201,7 +201,7 @@ HK_INLINE typename PoolAllocator<T, BlockCapacity>::Block* PoolAllocator<T, Bloc
     m_Blocks         = block;
     m_CurBlock       = block;
     ++m_TotalBlocks;
-    DEBUG("PoolAllocator::AllocateBlock: allocated a new block\n");
+    //DEBUG("PoolAllocator::AllocateBlock: allocated a new block\n");
     return block;
 }
 
