@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "base/common.frag"
+
 #if 0
 
 #define BLOCKER_SEARCH_NUM_SAMPLES 16
@@ -40,7 +42,8 @@ SOFTWARE.
 
 #define LIGHT_SIZE_UV 0.02
 
-const vec2 poissonDisk[ 16 ] = vec2[](
+const vec2 poissonDisk[16] = vec2[]
+(
         vec2( -0.94201624, -0.39906216 ),
         vec2( 0.94558609, -0.76890725 ),
         vec2( -0.094184101, -0.92938870 ),
@@ -59,268 +62,305 @@ const vec2 poissonDisk[ 16 ] = vec2[](
         vec2( 0.14383161, -0.14100790 )
 );
 
-float PCSS_PenumbraSize( float zReceiver, float zBlocker ) { //Parallel plane estimation
+float PCSS_PenumbraSize(float zReceiver, float zBlocker) //Parallel plane estimation
+{
     return (zReceiver - zBlocker) / zBlocker;
 } 
 
-const float PCSS_bias =0;//0.0001;// 0.1;
+const float PCSS_bias = 0;//0.0001;// 0.1;
 
-void PCSS_FindBlocker( sampler2DArray _ShadowMap, float _CascadeIndex, vec2 uv, float zReceiver, out float _AvgBlockerDepth, out float _NumBlockers ) {
+void PCSS_FindBlocker(sampler2DArray ShadowMap, float CascadeIndex, vec2 uv, float zReceiver, out float AvgBlockerDepth, out float NumBlockers)
+{
     //This uses similar triangles to compute what
     //area of the shadow map we should search
-    const float SearchWidth = LIGHT_SIZE_UV;// * ( zReceiver - NEAR_PLANE ) / zReceiver;
-    float BlockerSum = 0;
-    _NumBlockers = 0;
+    const float searchWidth = LIGHT_SIZE_UV; // * ( zReceiver - NEAR_PLANE ) / zReceiver;
+    float blockerSum = 0;
+
+    NumBlockers = 0;
 
     float biasedZ = zReceiver + PCSS_bias;
 
-    for ( int i = 0; i < BLOCKER_SEARCH_NUM_SAMPLES; ++i ) {
-        float ShadowMapDepth = texture( _ShadowMap /*PointSampler*/, vec3( uv + poissonDisk[ i ] * SearchWidth, _CascadeIndex ) ).x;
-        if ( ShadowMapDepth < biasedZ ) {
-            BlockerSum += ShadowMapDepth;
-            _NumBlockers++;
+    for (int i = 0; i < BLOCKER_SEARCH_NUM_SAMPLES; ++i)
+    {
+        float shadowMapDepth = texture(ShadowMap /*PointSampler*/, vec3(uv + poissonDisk[i] * searchWidth, CascadeIndex)).x;
+        if (shadowMapDepth < biasedZ)
+        {
+            blockerSum += shadowMapDepth;
+            NumBlockers++;
         }
     }
-    _AvgBlockerDepth = BlockerSum / _NumBlockers;
+    AvgBlockerDepth = blockerSum / NumBlockers;
 }
 
-float PCF_Filter( sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord, float _FilterRadiusUV ) {
+float PCF_Filter(sampler2DArrayShadow ShadowMapShadow, vec4 TexCoord, float _FilterRadiusUV)
+{
     float sum = 0.0f;
-    vec4 SampleCoord = _TexCoord;
-    for ( int i = 0; i < PCF_NUM_SAMPLES; ++i ) {
-        SampleCoord.xy = _TexCoord.xy + poissonDisk[ i ] * _FilterRadiusUV;
+    vec4 sampleCoord = TexCoord;
+    for (int i = 0; i < PCF_NUM_SAMPLES; ++i)
+    {
+        sampleCoord.xy = TexCoord.xy + poissonDisk[i] * _FilterRadiusUV;
 
-        //bool SamplingOutside = any( bvec2( any( lessThan( SampleCoord.xy, vec2( 0.0 ) ) ), any( greaterThan( SampleCoord.xy, vec2( 1.0 ) ) ) ) );
-        //if ( SamplingOutside ) {
+        //bool SamplingOutside = any(bvec2(any(lessThan(sampleCoord.xy, vec2(0.0))), any(greaterThan(sampleCoord.xy, vec2(1.0)))));
+        //if (SamplingOutside) {
         //    sum += 0;
         //} else {
-            sum += texture( _ShadowMapShadow, SampleCoord );
+        sum += texture(ShadowMapShadow, sampleCoord);
         //}
     }
     return sum / PCF_NUM_SAMPLES;
 }
 
-float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord ) {
-    float zReceiver = _TexCoord.w;
+float PCSS_Shadow(sampler2DArray ShadowMap, sampler2DArrayShadow ShadowMapShadow, vec4 TexCoord)
+{
+    float zReceiver = TexCoord.w;
 
     float AvgBlockerDepth = 0;
     float NumBlockers = 0;
-    PCSS_FindBlocker( _ShadowMap, _TexCoord.z, _TexCoord.xy, zReceiver, AvgBlockerDepth, NumBlockers );
-    if ( NumBlockers < 1 ) {
+    PCSS_FindBlocker(ShadowMap, TexCoord.z, TexCoord.xy, zReceiver, AvgBlockerDepth, NumBlockers);
+    if (NumBlockers < 1)
+    {
         //There are no occluders so early out (this saves filtering)
         //DebugEarlyCutoff = true;
         return 1.0f;
     }
 
-    float PenumbraRatio = PCSS_PenumbraSize( zReceiver, AvgBlockerDepth );
-    float FilterRadiusUV = PenumbraRatio * LIGHT_SIZE_UV / zReceiver / exp( _TexCoord.z );// * NEAR_PLANE / zReceiver;
+    float PenumbraRatio = PCSS_PenumbraSize(zReceiver, AvgBlockerDepth);
+    float FilterRadiusUV = PenumbraRatio * LIGHT_SIZE_UV / zReceiver / exp(TexCoord.z); // * NEAR_PLANE / zReceiver;
 
-    return PCF_Filter( _ShadowMapShadow, _TexCoord, FilterRadiusUV );
+    return PCF_Filter(ShadowMapShadow, TexCoord, FilterRadiusUV);
 }
 #endif
 
-float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
+float PCF_3x3(sampler2DArrayShadow ShadowMap, vec4 TexCoord)
+{
 //#ifdef ATI
-    const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
+    const float invSize = 1.0 / textureSize(ShadowMap,0).x; // NOTE: shadow maps has equal width and height
 
-    return ( texture( _ShadowMap, _TexCoord + vec4(-invSize,-invSize, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( 0,      -invSize, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( invSize,-invSize, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4(-invSize,       0, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( 0,             0, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( invSize,       0, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4(-invSize, invSize, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( 0,       invSize, 0, 0 ) )
-           + texture( _ShadowMap, _TexCoord + vec4( invSize, invSize, 0, 0 ) ) ) / 9.0;
+    return ( texture(ShadowMap, TexCoord + vec4(-invSize,-invSize, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( 0,      -invSize, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( invSize,-invSize, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4(-invSize,       0, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( 0,             0, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( invSize,       0, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4(-invSize, invSize, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( 0,       invSize, 0, 0))
+           + texture(ShadowMap, TexCoord + vec4( invSize, invSize, 0, 0))) / 9.0;
 //#else
-//    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1 ) )
-//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1 ) ) ) / 9.0;
+//    return ( textureOffset(ShadowMap, TexCoord, ivec2(-1,-1))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 0,-1))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 1,-1))
+//           + textureOffset(ShadowMap, TexCoord, ivec2(-1, 0))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 0, 0))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 1, 0))
+//           + textureOffset(ShadowMap, TexCoord, ivec2(-1, 1))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 0, 1))
+//           + textureOffset(ShadowMap, TexCoord, ivec2( 1, 1))) / 9.0;
 //#endif
 }
 
-float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
+float PCF_5x5(sampler2DArrayShadow ShadowMap, vec4 TexCoord)
+{
 #if 0
-    const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
+    const float invSize = 1.0 / textureSize(ShadowMap,0).x; // NOTE: shadow maps has equal width and height
 
-    float Shadow = 0;
-    for ( float i = -2 ; i <= 2 ; i++ )
-        for ( float j = -2 ; j <= 2 ; j++ )
-            Shadow += texture( _ShadowMap, _TexCoord + vec4(i,j,0,0)*invSize );
+    float shadow = 0;
+    for (float i = -2; i <= 2; i++)
+        for (float j = -2; j <= 2; j++)
+            shadow += texture(ShadowMap, TexCoord + vec4(i, j, 0, 0) * invSize);
 #else
-    float Shadow = 0;
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2,-2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2,-1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 0));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-2, 2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1,-2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1,-1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 0));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2(-1, 2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0,-2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0,-1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 0));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 0, 2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1,-2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1,-1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 0));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 1, 2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2,-2));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2,-1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 0));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 1));
-	Shadow += textureOffset(_ShadowMap, _TexCoord, ivec2( 2, 2));
+    float shadow = 0;
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-2,-2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-2,-1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-2, 0));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-2, 1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-2, 2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-1,-2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-1,-1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-1, 0));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-1, 1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2(-1, 2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 0,-2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 0,-1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 0, 0));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 0, 1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 0, 2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 1,-2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 1,-1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 1, 0));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 1, 1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 1, 2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 2,-2));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 2,-1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 2, 0));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 2, 1));
+    shadow += textureOffset(ShadowMap, TexCoord, ivec2( 2, 2));
 #endif
-    return Shadow * (1.0f/25.0f);
+    return shadow * (1.0f/25.0f);
 }
 
-float SampleLightShadow( uint ShadowmapIndex, uint FirstCascade, uint NumCascades, float Bias ) {
-    for ( uint i = 0; i < NumCascades ; i++ ) {
-        uint CascadeIndex = FirstCascade + i;
-        vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
-        vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
+float SampleLightShadow(uint ShadowmapIndex, uint FirstCascade, uint NumCascades, float Bias)
+{
+    for (uint i = 0; i < NumCascades; i++)
+    {
+        uint cascadeIndex = FirstCascade + i;
+        vec4 SMTexCoord = ShadowMapMatrices[cascadeIndex] * InClipspacePosition;
+        vec3 shadowCoord = SMTexCoord.xyz / SMTexCoord.w;
 
         // TODO: Move this values to uniforms
-        ShadowCoord.z -= clamp( Bias * (1 << i)*1.5, 0.45, 5.0 ) * 0.0001;
-        
+        shadowCoord.z -= clamp(Bias * (1 << i) * 1.5, 0.45, 5.0) * 0.0001;
+
 #ifdef SHADOWMAP_PCF
-        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
-            return PCF_5x5( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
-        }
+        if (!any(bvec2(any(lessThan(shadowCoord, vec3(0.0))), any(greaterThan(shadowCoord, vec3(1.0))))))
+            return PCF_5x5(ShadowMap[ShadowmapIndex], vec4(shadowCoord.xy, float(i), shadowCoord.z));
 #endif
 
 #ifdef SHADOWMAP_PCSS
-        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.05 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.05 ) ) ) ) ) ) {
-            return PCSS_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
-        }
+        if (!any(bvec2(any(lessThan(shadowCoord, vec3(0.05))), any(greaterThan(shadowCoord, vec3(1.0 - 0.05))))))
+            return PCSS_Shadow(ShadowMap[ShadowmapIndex], vec4(shadowCoord.xy, float(i), shadowCoord.z));
 #endif
 
 #ifdef SHADOWMAP_VSM
-        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
-            return VSM_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
+        if (!any(bvec2(any(lessThan(shadowCoord, vec3(0.01))), any(greaterThan(shadowCoord, vec3(1.0 - 0.01))))))
+            return VSM_Shadow(ShadowMap[ShadowmapIndex], vec4(shadowCoord.xy, float(i), shadowCoord.z));
             //Shadow = VSM_Shadow_PCF_3x3( ShadowMap[ShadowmapIndex], SMTexCoord );
-        }
 #endif
 
 #ifdef SHADOWMAP_EVSM
-        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
-            return EVSM_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
-        }
+        if (!any(bvec2(any(lessThan(shadowCoord, vec3(0.01))), any(greaterThan(shadowCoord, vec3(1.0 - 0.01))))))
+            return EVSM_Shadow(ShadowMap[ShadowmapIndex], vec4(shadowCoord.xy, float(i), shadowCoord.z));
 #endif
     }
-
     return 1.0;
 }
 
-vec3 DebugShadowCascades( uint FirstCascade, uint NumCascades )
-{    
+vec3 DebugShadowCascades(uint FirstCascade, uint NumCascades)
+{
     const vec3 CascadeColor[MAX_SHADOW_CASCADES] = vec3[](
-        vec3( 1,0,0 ),
-        vec3( 0,1,0 ),
-        vec3( 0,0,1 ),
-        vec3( 1,1,0 )
-    );
-    
-    for ( uint i = 0; i < NumCascades ; i++ ) {
-        const uint CascadeIndex = FirstCascade + i;
-        const vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
-        
-        vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
-        
-        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
+        vec3(1, 0, 0),
+        vec3(0, 1, 0),
+        vec3(0, 0, 1),
+        vec3(1, 1, 0));
+
+    for (uint i = 0; i < NumCascades; i++)
+    {
+        const uint cascadeIndex = FirstCascade + i;
+        const vec4 SMTexCoord = ShadowMapMatrices[cascadeIndex] * InClipspacePosition;
+
+        vec3 shadowCoord = SMTexCoord.xyz / SMTexCoord.w;
+
+        if (!any(bvec2(any(lessThan(shadowCoord, vec3(0.0))), any(greaterThan(shadowCoord, vec3(1.0))))))
             return CascadeColor[i];
-        }
     }
 
-    return vec3( 0.0 );
+    return vec3(0.0);
 }
 
 vec3 DebugDirectionalLightCascades()
 {
-    const uint NumLights = GetNumDirectionalLights();
-    vec3 Result = vec3(0.0);
+    const uint numLights = GetNumDirectionalLights();
+    vec3 result = vec3(0.0);
     
-    for ( int i = 0 ; i < NumLights ; ++i ) {
-        float x = 1.0 / float(NumLights);
+    for ( int i = 0 ; i < numLights ; ++i ) {
+        float x = 1.0 / float(numLights);
         
         if ( i * x <= InNormalizedScreenCoord.x && ( i + 1 ) * x > InNormalizedScreenCoord.x ) {
-            Result += DebugShadowCascades( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
+            result += DebugShadowCascades( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
         }
     }
-    return Result;
+    return result;
 }
 
-float vector_to_depth_hack(vec3 vec)
+float ChebyshevUpperBound(vec2 moments, float t)
 {
-    vec3 v = abs(vec);
-    return max(v.x, max(v.y, v.z));
+    const float MinVariance = 0;
+
+    // One-tailed inequality valid if t > moments.x
+    float p = float(t <= moments.x);
+  
+    // Compute variance
+    float variance = moments.y - (moments.x * moments.x);
+    variance = max(variance, MinVariance);
+  
+    // Compute probabilistic upper bound.
+    float d = t - moments.x;
+    float p_max = variance / (variance + d * d);
+  
+    return max(p, p_max);
 }
 
-float linearize_depth(float depth, float n, float f)
+float linstep(float min, float max, float v)
 {
-    return n * f / (depth * (f - n) + n);
+    return clamp((v - min) / (max - min), 0, 1);
 }
-    
-float SampleOmnidirectionalLightShadow(uint ShadowmapIndex, vec3 LightDir, float LightRadius, float ShadowBias, float SmoothDiskRadius)
+
+float ReduceLightBleeding(float p_max, float amount)
+{
+    // Remove the [0, Amount] tail and linearly rescale (Amount, 1].
+    return linstep(amount, 1, p_max);
+}
+
+float SampleOmnidirectionalLightShadow_VSM(uint shadowmapIndex, vec3 lightDir)
 {
     const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
-	const float ShadowZFar = 1000;//LightRadius
+    const float ShadowZFar = 1000;
 
     // Transform vector from view space to world space
     const mat3 VectorTransformWS = mat3( vec3(WorldNormalToViewSpace0),
-                                            vec3(WorldNormalToViewSpace1),
-                                            vec3(WorldNormalToViewSpace2)
-                                           ); // TODO: Optimize this!
-										   
-	LightDir = VectorTransformWS * LightDir;
-    
-    float atten = 1;
-    float dist = vector_to_depth_hack(LightDir);
-    float biasedDist = dist - ShadowBias;
-	
-    if (SmoothDiskRadius > 0.0f)
+                                         vec3(WorldNormalToViewSpace1),
+                                         vec3(WorldNormalToViewSpace2)
+                                       ); // TODO: Optimize this!
+
+    lightDir = VectorTransformWS * lightDir;
+
+    float distanceToLight = length(lightDir);
+
+    vec2 Moments = texture(OmnidirectionalShadowMapArray, vec4(lightDir, shadowmapIndex)).rg;
+
+    float cheb = ChebyshevUpperBound(Moments, distanceToLight);
+
+    cheb = ReduceLightBleeding(cheb, 0.5);
+
+    return cheb;
+}
+
+float SampleOmnidirectionalLightShadow(uint shadowmapIndex, vec3 lightDir, float shadowBias)
+{
+    const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
+    const float ShadowZFar = 1000;
+
+    // Transform vector from view space to world space
+    const mat3 VectorTransformWS = mat3( vec3(WorldNormalToViewSpace0),
+                                         vec3(WorldNormalToViewSpace1),
+                                         vec3(WorldNormalToViewSpace2)
+                                       ); // TODO: Optimize this!
+
+    lightDir = VectorTransformWS * lightDir;
+
+    float fragmentDist = length(lightDir);
+    float biasedDist = fragmentDist - shadowBias;
+
+    const int NUM_SAMPLES = 20;
+
+    const vec3 directions[NUM_SAMPLES] =
     {
-        const int NUM_SAMPLES = 20;
+        vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+        vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+        vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
+        vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+        vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
+    };
 
-        const vec3 directions[NUM_SAMPLES] =
-        {
-            vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
-            vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
-            vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
-            vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
-            vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
-        };
+    float viewDistance = length(VS_Position);
+    float diskRadius = (0.01 + (fragmentDist / 5 + viewDistance / 25)) / 25.0;  
 
-        float accumulator = 0.0;
-
-        for (int i = 0; i < NUM_SAMPLES; ++i)
-        {
-            vec3 dir = LightDir + directions[i] * SmoothDiskRadius;
-            float cubemap_depth = texture(OmnidirectionalShadowMapArray, vec4(dir, ShadowmapIndex)).r;
-            cubemap_depth = linearize_depth(cubemap_depth, ShadowZNear, ShadowZFar);
-
-            accumulator += float(biasedDist > cubemap_depth);
-        }
-
-        atten = saturate(1.0 - accumulator / float(NUM_SAMPLES));
-    }
-    else
+    float shadow = 0.0;
+    for(int i = 0; i < NUM_SAMPLES; ++i)
     {
-        float cubemap_depth = texture(OmnidirectionalShadowMapArray, vec4(LightDir, ShadowmapIndex)).r;
-        cubemap_depth = linearize_depth(cubemap_depth, ShadowZNear, ShadowZFar);
-
-        atten = 1.0 - float(biasedDist > cubemap_depth);
+        vec3 dir = lightDir + directions[i] * diskRadius;
+        float occluderDist = texture(OmnidirectionalShadowMapArray, vec4(dir, shadowmapIndex)).r * ShadowZFar;
+        shadow += float(occluderDist < biasedDist);
     }
+    shadow /= float(NUM_SAMPLES); 
 
-    return atten;
+    return 1.0 - shadow;
 }

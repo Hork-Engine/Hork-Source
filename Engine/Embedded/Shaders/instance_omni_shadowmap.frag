@@ -29,47 +29,50 @@ SOFTWARE.
 */
 
 
+#include "base/common.frag"
+
 #include "$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$"
 #include "$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$"
 
-#if defined SHADOWMAP_EVSM
+#if defined POINT_SHADOWMAP_VSM
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-void main() {
-
+void main()
+{
     #include "$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$"
 
-    const float EVSM_positiveExponent = 40.0;
-    const float EVSM_negativeExponent = 5.0;
+    const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
+    const float ShadowZFar = 1000;
+    const float ShadowMapResolution = 256;
 
-    float Depth = 2.0 * gl_FragCoord.z - 1.0;
-    vec2 WarpDepth = vec2( exp( EVSM_positiveExponent * Depth ), -exp( -EVSM_negativeExponent * Depth ) );
-    FS_FragColor = vec4( WarpDepth, WarpDepth * WarpDepth );
-}
+    vec2 uv = gl_FragCoord.xy / ShadowMapResolution; // TODO cubemap face resolution
+    float z = CalcLinearDepth_Perpective(gl_FragCoord.z, ShadowZNear, ShadowZFar);
 
-#elif defined SHADOWMAP_VSM
+    float depth = length(vec3(uv * 2.0 - 1.0, -1.0)) * z;
 
-//layout( location = 0 ) in vec4 GS_Position;
+    float dx = dFdx(depth);
+    float dy = dFdy(depth);
 
-void main() {
-
-    #include "$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$"
-
-    float depth = gl_FragCoord.z;
-    //float depth = GS_Position.z / GS_Position.w;
-
-    // Adjusting moments (this is sort of bias per pixel) using partial derivative
-    float dx = dFdx( depth );
-    float dy = dFdy( depth );
-
-    FS_FragColor = vec4( depth, depth * depth + 0.25*( dx*dx + dy*dy ), 0.0, 0.0 );
+    FS_FragColor = vec4(depth, depth * depth + 0.25*(dx*dx + dy*dy), 0.0, 0.0);
 }
 
 #else
 
-void main() {
+void main()
+{
     #include "$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$"
+
+    const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
+    const float ShadowZFar = 1000;
+    const float ShadowMapResolution = 256;
+
+    vec2 uv = gl_FragCoord.xy / ShadowMapResolution; // TODO cubemap face resolution
+    float z = CalcLinearDepth_Perpective(gl_FragCoord.z, ShadowZNear, ShadowZFar);
+
+    float dist = length(vec3(uv * 2.0 - 1.0, -1.0)) * z;
+
+    gl_FragDepth = dist / ShadowZFar;
 }
 
-#endif // SHADOWMAP_VSM/EVSM
+#endif

@@ -116,6 +116,7 @@ MaterialSamplers::MaterialSamplers()
     OmniShadowMapSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
     OmniShadowMapSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
     OmniShadowMapSampler.Filter = FILTER_LINEAR;
+    OmniShadowMapSampler.bCubemapSeamless = true;
 
     IESSampler.Filter = FILTER_LINEAR;
     IESSampler.AddressU = SAMPLER_ADDRESS_CLAMP;

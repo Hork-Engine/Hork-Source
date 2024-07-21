@@ -60,7 +60,7 @@ ConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
 ConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
 ConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
 ConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
-ConsoleVar r_ToneExposure("r_ToneExposure"s, "1.0"s);
+ConsoleVar r_ExposureScale("r_ExposureScale"s, "1.0"s);
 ConsoleVar r_Brightness("r_Brightness"s, "1"s);
 ConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
 ConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
@@ -439,6 +439,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
         RenderView(i, pRenderView);
 
         m_FrameGraph->Build();
+        //m_FrameGraph->ExportGraphviz("frame.graphviz");
         rcmd->ExecuteFrameGraph(m_FrameGraph);
         m_FrameGraph->Clear();
     }
@@ -446,7 +447,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
     m_CanvasRenderer->Render(*m_FrameGraph, pBackBuffer);
 
     m_FrameGraph->Build();
-    //FrameGraph->ExportGraphviz("frame.graphviz");
+    //m_FrameGraph->ExportGraphviz("frame.graphviz");
     rcmd->ExecuteFrameGraph(m_FrameGraph);
 
     if (r_FrameGraphDebug)
@@ -545,6 +546,7 @@ void RenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     pViewCBuf->GameplayTimeSeconds    = GRenderView->GameplayTimeSeconds;
 
+    pViewCBuf->GlobalAmbient = GRenderView->GlobalAmbient;
     pViewCBuf->GlobalIrradianceMap = GRenderView->GlobalIrradianceMap;
     pViewCBuf->GlobalReflectionMap = GRenderView->GlobalReflectionMap;
 
@@ -579,7 +581,7 @@ void RenderBackend::SetViewConstants(int ViewportIndex)
         r_BloomScale.GetFloat();
 
     pViewCBuf->BloomEnabled                = r_Bloom;                   // TODO: Get from GRenderView
-    pViewCBuf->ToneMappingExposure         = r_ToneExposure.GetFloat(); // TODO: Get from GRenderView
+    pViewCBuf->ToneMappingExposure         = GRenderView->Exposure * r_ExposureScale.GetFloat();
     pViewCBuf->ColorGrading                = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
     pViewCBuf->FXAA                        = GRenderView->AntialiasingType == ANTIALIASING_FXAA;
     pViewCBuf->VignetteColorIntensity      = GRenderView->VignetteColorIntensity;

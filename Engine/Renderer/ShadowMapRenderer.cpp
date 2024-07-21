@@ -410,7 +410,7 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, DirectionalLightInstance
 
 void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, LightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, OmnidirectionalShadowMapPool& Pool, FGTextureProxy** ppOmnidirectionalShadowMapArray)
 {
-    FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", Pool.GetTexture());
+    FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", Pool.GetDepthTexture());
 
     if (!NumOmnidirectionalShadowMaps)
     {
@@ -445,10 +445,10 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, LightShadowmap const* Sh
                     TextureAttachment(OmnidirectionalShadowMapArray_R)
                         .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
                         .SetSlice(sliceIndex)
-                        .SetClearValue(ClearDepthStencilValue(0, 0))
+                        .SetClearValue(ClearDepthStencilValue(1, 0))
                 });
 
-            pass.AddSubpass({}, // no color attachments
+            pass.AddSubpass({},
                             [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                             {
                                 IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
@@ -480,7 +480,6 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, LightShadowmap const* Sh
                             });
         }
     }
-
     *ppOmnidirectionalShadowMapArray = OmnidirectionalShadowMapArray_R;
 }
 

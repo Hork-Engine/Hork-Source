@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Engine/World/Modules/Render/Components/MeshComponent.h>
 #include <Engine/World/Modules/Render/Components/TerrainComponent.h>
 #include <Engine/World/Modules/Render/Components/DirectionalLightComponent.h>
+#include <Engine/World/Modules/Render/Components/PunctualLightComponent.h>
 #include <Engine/World/Modules/Render/TerrainView.h>
 
 HK_NAMESPACE_BEGIN
@@ -50,6 +51,7 @@ ConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
 ConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
 ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_GlobalAmbient("r_GlobalAmbient"s, "0.00025"s, CVAR_CHEAT);
 
 extern ConsoleVar r_HBAO;
 extern ConsoleVar r_HBAODeinterleaved;
@@ -821,6 +823,65 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
     }
 }
 
+bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radius)
+{
+    if (!light->IsCastShadow())
+        return false;
+
+    //Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+
+    //Float4x4::PerspectiveMatrixDesc desc = {};
+    //desc.AspectRatio = 1;
+    //desc.FieldOfView = 90;
+    //desc.ZNear = 0.1f;
+    //desc.ZFar = 1000 /*radius*/;
+    //Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
+
+    //Float4x4 lightViewProjection;
+    //Float4x4 lightViewMatrix;
+
+    Float3 lightPos = light->GetOwner()->GetWorldPosition();
+
+    int totalInstances = 0;
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++)
+    {
+        //Float3x3 basis = Float3x3(cubeFaceMatrices[faceIndex]);
+        //Float3 origin = basis * (-lightPos);
+
+        //lightViewMatrix[0] = Float4(basis[0], 0.0f);
+        //lightViewMatrix[1] = Float4(basis[1], 0.0f);
+        //lightViewMatrix[2] = Float4(basis[2], 0.0f);
+        //lightViewMatrix[3] = Float4(origin, 1.0f);
+
+        //lightViewProjection = projMat * lightViewMatrix;
+
+        LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
+
+        shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
+        shadowMap->ShadowInstanceCount = 0;
+        shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
+        shadowMap->LightPortalsCount = 0;
+        shadowMap->LightPosition = lightPos;
+
+        // TODO: Add only visible objects
+        AddMeshesShadow<StaticMeshComponent>(shadowMap);
+        AddMeshesShadow<DynamicMeshComponent>(shadowMap);
+
+        SortShadowInstances(shadowMap);
+
+        totalInstances += shadowMap->ShadowInstanceCount;
+    }
+
+    if (totalInstances == 0)
+    {
+        m_FrameData.LightShadowmaps.Resize(m_FrameData.LightShadowmaps.Size() - 6);
+        return false;
+    }
+
+    return true;
+}
+
 void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
     auto* world = worldRenderView->GetWorld();
@@ -934,6 +995,8 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         view->VignetteColorIntensity.W = 0;
     }
 
+    view->Exposure = camera->GetExposure();
+
     if (worldRenderView->ColorGrading)
     {
         ColorGradingParameters* params = worldRenderView->ColorGrading;
@@ -1034,6 +1097,8 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     //QueryVisiblePrimitives(world);
 
     //EnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap(); TODO
+
+    view->GlobalAmbient = r_GlobalAmbient.GetFloat();
 
     //if (pEnvironmentMap)
     //{
@@ -1231,13 +1296,72 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     m_LightVoxelizer.Reset();
 
+    auto& lightManager = m_World->GetComponentManager<PunctualLightComponent>();
+
     // Allocate lights
-    view->NumPointLights = 0;//m_VisLights.Size();
+    view->NumPointLights = lightManager.GetComponentCount();//m_VisLights.Size();  // TODO: only visible light count!
     view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
     view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
     view->PointLights = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
     view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
     view->NumOmnidirectionalShadowMaps = 0;
+
+    int maxOmnidirectionalShadowMaps = GameApplication::GetRenderBackend().MaxOmnidirectionalShadowMapsPerView();
+
+    uint32_t index = 0;
+    for (auto it = lightManager.GetComponents(); it.IsValid(); ++it)
+    {
+        PunctualLightComponent& light = *it;
+
+        if (index >= MAX_LIGHTS)
+        {
+            LOG("MAX_LIGHTS hit\n");
+            break;
+        }
+
+        if (!light.IsInitialized())
+            continue;
+
+        light.PackLight(view->ViewMatrix, view->PointLights[index]);
+
+        view->PointLights[index].ShadowmapIndex = -1;
+
+        if (view->NumOmnidirectionalShadowMaps < maxOmnidirectionalShadowMaps)
+        {
+            if (AddLightShadowmap(&light, view->PointLights[index].Radius))
+            {
+                view->PointLights[index].ShadowmapIndex = view->NumOmnidirectionalShadowMaps;
+                view->NumOmnidirectionalShadowMaps++;
+            }
+            else
+                view->PointLights[index].ShadowmapIndex = -1;
+        }
+        else
+        {
+            LOG("maxOmnidirectionalShadowMaps hit\n");
+        }
+
+        //PhotometricProfile* profile = light->GetPhotometricProfile();
+        //if (profile)
+        //  profile->WritePhotometricData(m_PhotometricProfiles, m_FrameNumber);
+
+        ItemInfo* info = m_LightVoxelizer.AllocItem();
+        info->Type = ITEM_TYPE_LIGHT;
+        info->ListIndex = index;
+
+        BvAxisAlignedBox const& AABB = light.m_AABBWorldBounds;
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
+
+        if (m_LightVoxelizer.IsSSE())
+            info->ClipToBoxMatSSE = light.m_OBBTransformInverse * view->ClusterViewProjectionInversed;
+        else
+            info->ClipToBoxMat = light.m_OBBTransformInverse * view->ClusterViewProjectionInversed;
+
+        index++;
+    }
+    view->NumPointLights = index;
+
     // Allocate probes
     view->NumProbes = 0;//m_VisEnvProbes.Size();
     view->ProbeStreamSize = sizeof(ProbeParameters) * view->NumProbes;
@@ -1246,7 +1370,30 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         0;
     view->Probes = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
 
-    //AddRenderInstances(world); // TODO
+    // TODO
+    //for (int i = 0; i < view->NumProbes; i++)
+    //{
+    //    envProbe = m_VisEnvProbes[i];
+
+    //    envProbe->PackProbe(view->ViewMatrix, view->Probes[i]);
+
+    //    ItemInfo* info = m_LightVoxelizer.AllocItem();
+    //    info->Type = ITEM_TYPE_PROBE;
+    //    info->ListIndex = i;
+
+    //    BvAxisAlignedBox const& AABB = envProbe->GetWorldBounds();
+    //    info->Mins = AABB.Mins;
+    //    info->Maxs = AABB.Maxs;
+
+    //    if (m_LightVoxelizer.IsSSE())
+    //    {
+    //        info->ClipToBoxMatSSE = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+    //    }
+    //    else
+    //    {
+    //        info->ClipToBoxMat = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+    //    }
+    //}
 
     m_LightVoxelizer.Voxelize(m_FrameLoop->GetStreamedMemoryGPU(), view);
 
@@ -1415,172 +1562,6 @@ void RenderFrontend::QueryShadowCasters(World* InWorld, Float4x4 const& LightVie
     //InWorld->QueryVisiblePrimitives(Primitives, nullptr, query);
 }
 
-void RenderFrontend::AddRenderInstances(World* world)
-{
-    HK_PROFILER_EVENT("Add Render Instances");
-
-    RenderViewData* view = m_RenderDef.View;
-    //TerrainComponent* terrain;
-    //PunctualLightComponent* light;
-    //EnvironmentProbe* envProbe;
-    StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
-    //LightingSystem& lightingSystem = InWorld->LightingSystem;
-
-    //m_VisLights.Clear();
-    //m_VisEnvProbes.Clear();
-
-    //for (PrimitiveDef* primitive : m_VisPrimitives)
-    //{
-        // TODO: Replace upcasting by something better (virtual function?)
-
-        //if (nullptr != (drawable = Upcast<Drawable>(primitive->Owner)))
-        //{
-        //    AddDrawable(drawable);
-        //    continue;
-        //}
-
-        //if (nullptr != (terrain = Upcast<TerrainComponent>(primitive->Owner)))
-        //{
-        //    AddTerrain(terrain);
-        //    continue;
-        //}
-
-        //if (nullptr != (light = Upcast<PunctualLightComponent>(primitive->Owner)))
-        //{
-        //    if (!light->IsEnabled())
-        //    {
-        //        continue;
-        //    }
-
-        //    if (m_VisLights.Size() < MAX_LIGHTS)
-        //    {
-        //        m_VisLights.Add(light);
-        //    }
-        //    else
-        //    {
-        //        LOG("MAX_LIGHTS hit\n");
-        //    }
-        //    continue;
-        //}
-
-        //if (nullptr != (envProbe = Upcast<EnvironmentProbe>(primitive->Owner)))
-        //{
-        //    if (!envProbe->IsEnabled())
-        //    {
-        //        continue;
-        //    }
-
-        //    if (m_VisEnvProbes.Size() < MAX_PROBES)
-        //    {
-        //        m_VisEnvProbes.Add(envProbe);
-        //    }
-        //    else
-        //    {
-        //        LOG("MAX_PROBES hit\n");
-        //    }
-        //    continue;
-        //}
-
-        //LOG("Unhandled primitive\n");
-    //}
-
-    // Add directional lights
-    view->NumShadowMapCascades = 0;
-    view->NumCascadedShadowMaps = 0;
-
-    //world->AddDirectionalLight(m_RenderDef, m_FrameData);
-
-    m_LightVoxelizer.Reset();
-
-    // Allocate lights
-    view->NumPointLights = 0;//m_VisLights.Size();
-    view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
-    view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
-    view->PointLights = (LightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
-    view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
-    view->NumOmnidirectionalShadowMaps = 0;
-
-    //int maxOmnidirectionalShadowMaps = GameApplication::GetRenderBackend().MaxOmnidirectionalShadowMapsPerView();
-
-    //for (int i = 0; i < view->NumPointLights; i++)
-    //{
-    //    light = m_VisLights[i];
-
-    //    light->PackLight(view->ViewMatrix, view->PointLights[i]);
-
-    //    if (view->NumOmnidirectionalShadowMaps < maxOmnidirectionalShadowMaps)
-    //    {
-    //        if (AddLightShadowmap(light, view->PointLights[i].Radius))
-    //        {
-    //            view->PointLights[i].ShadowmapIndex = view->NumOmnidirectionalShadowMaps;
-    //            view->NumOmnidirectionalShadowMaps++;
-    //        }
-    //        else
-    //            view->PointLights[i].ShadowmapIndex = -1;
-    //    }
-    //    else
-    //    {
-    //        LOG("maxOmnidirectionalShadowMaps hit\n");
-    //    }
-
-    //    PhotometricProfile* profile = light->GetPhotometricProfile();
-    //    if (profile)
-    //    {
-    //        profile->WritePhotometricData(m_PhotometricProfiles, m_FrameNumber);
-    //    }
-
-    //    ItemInfo* info = m_LightVoxelizer.AllocItem();
-    //    info->Type = ITEM_TYPE_LIGHT;
-    //    info->ListIndex = i;
-
-    //    BvAxisAlignedBox const& AABB = light->GetWorldBounds();
-    //    info->Mins = AABB.Mins;
-    //    info->Maxs = AABB.Maxs;
-
-    //    if (m_LightVoxelizer.IsSSE())
-    //    {
-    //        info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
-    //    }
-    //    else
-    //    {
-    //        info->ClipToBoxMat = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
-    //    }
-    //}
-
-    // Allocate probes
-    view->NumProbes = 0;//m_VisEnvProbes.Size();
-    view->ProbeStreamSize = sizeof(ProbeParameters) * view->NumProbes;
-    view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
-        streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :
-        0;
-    view->Probes = (ProbeParameters*)streamedMemory->Map(view->ProbeStreamHandle);
-
-    //for (int i = 0; i < view->NumProbes; i++)
-    //{
-    //    envProbe = m_VisEnvProbes[i];
-
-    //    envProbe->PackProbe(view->ViewMatrix, view->Probes[i]);
-
-    //    ItemInfo* info = m_LightVoxelizer.AllocItem();
-    //    info->Type = ITEM_TYPE_PROBE;
-    //    info->ListIndex = i;
-
-    //    BvAxisAlignedBox const& AABB = envProbe->GetWorldBounds();
-    //    info->Mins = AABB.Mins;
-    //    info->Maxs = AABB.Maxs;
-
-    //    if (m_LightVoxelizer.IsSSE())
-    //    {
-    //        info->ClipToBoxMatSSE = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
-    //    }
-    //    else
-    //    {
-    //        info->ClipToBoxMat = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
-    //    }
-    //}
-
-    
-}
 #if 0
 void RenderFrontend::AddStaticMesh(MeshComponent* InComponent)
 {
@@ -1896,103 +1877,6 @@ void RenderFrontend::AddDirectionalShadowmapInstances(World* InWorld)
             }
         }
     }
-}
-#endif
-#if 0
-bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* Light, float Radius)
-{
-    if (!Light->IsCastShadow())
-    {
-        return false;
-    }
-
-    World* world = Light->GetWorld();
-
-    Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-
-    Float4x4::PerspectiveMatrixDesc desc = {};
-    desc.AspectRatio = 1;
-    desc.FieldOfView = 90;
-    desc.ZNear = 0.1f;
-    desc.ZFar = 1000 /*Radius*/;
-    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
-
-    Float4x4 lightViewProjection;
-    Float4x4 lightViewMatrix;
-
-    Float3 lightPos = Light->GetWorldPosition();
-
-    Drawable* drawable;
-
-    int totalInstances = 0;
-
-    for (int faceIndex = 0; faceIndex < 6; faceIndex++)
-    {
-        Float3x3 basis = Float3x3(cubeFaceMatrices[faceIndex]);
-        Float3 origin = basis * (-lightPos);
-
-        lightViewMatrix[0] = Float4(basis[0], 0.0f);
-        lightViewMatrix[1] = Float4(basis[1], 0.0f);
-        lightViewMatrix[2] = Float4(basis[2], 0.0f);
-        lightViewMatrix[3] = Float4(origin, 1.0f);
-
-        //lightViewMatrix    = cubeFaceMatrices[faceIndex];
-        //lightViewMatrix[3] = Float4(Float3x3(lightViewMatrix) * -lightPos, 1.0f);
-
-        lightViewProjection = projMat * lightViewMatrix;
-
-        // TODO: VSD не учитывает FarPlane для кулинга - исправить это
-        QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), m_VisPrimitives);
-
-        LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
-
-        shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
-        shadowMap->ShadowInstanceCount = 0;
-        shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
-        shadowMap->LightPortalsCount = 0;
-        shadowMap->LightPosition = lightPos;
-
-        worldECS->AddShadows(m_RenderDef, m_FrameData, shadowMap);
-
-        for (PrimitiveDef* primitive : m_VisPrimitives)
-        {
-            // TODO: Replace upcasting by something better (virtual function?)
-
-            if (nullptr != (drawable = Upcast<Drawable>(primitive->Owner)))
-            {
-                drawable->CascadeMask = 1 << faceIndex;
-
-                //switch (drawable->GetDrawableType())
-                //{
-                //    case DRAWABLE_STATIC_MESH:
-                //        AddShadowmap_StaticMesh(shadowMap, static_cast<MeshComponent*>(drawable));
-                //        break;
-                //    default:
-                //        break;
-                //}
-
-#if 0
-                m_DebugDraw.SetDepthTest( false );
-                m_DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
-                m_DebugDraw.DrawAABB( drawable->GetWorldBounds() );
-#endif
-
-                drawable->CascadeMask = 0;
-            }
-        }
-
-        SortShadowInstances(shadowMap);
-
-        totalInstances += shadowMap->ShadowInstanceCount;
-    }
-
-    if (totalInstances == 0)
-    {
-        m_FrameData.LightShadowmaps.Resize(m_FrameData.LightShadowmaps.Size() - 6);
-        return false;
-    }
-
-    return true;
 }
 #endif
 

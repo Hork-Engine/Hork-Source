@@ -528,16 +528,8 @@ public:
                 return false;
         }
 
-        bool bVSM = false;
-
-#if defined SHADOWMAP_VSM || defined SHADOWMAP_EVSM
-        bVSM = true;
-#endif
-        if (properties.ShadowMasking || bVSM)
-        {
-            if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
-                return false;
-        }
+        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+            return false;
 
         return true;
     }
@@ -697,7 +689,6 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // IBL buffer
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // VT buffer
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // skeleton for motion blur
-                pass.RenderTargets.EmplaceBack().ColorWriteMask = COLOR_WRITE_DISABLED;
                 AddSamplers(pass.Samplers, ArrayView<TextureSampler>(Samplers.ToPtr(), DepthPassTextureCount));
             }
             {
@@ -722,7 +713,6 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // IBL buffer
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // VT buffer
                 pass.BufferBindings.EmplaceBack(BUFFER_BIND_CONSTANT); // skeleton for motion blur
-                pass.RenderTargets.EmplaceBack().ColorWriteMask = COLOR_WRITE_DISABLED;
                 AddSamplers(pass.Samplers, ArrayView<TextureSampler>(Samplers.ToPtr(), DepthPassTextureCount));
             }
         }
@@ -931,7 +921,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
                 pass.Type = MaterialPass::OmniShadowMapPass;
                 pass.CullMode = IsTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
-                pass.DepthFunc = CMPFUNC_GREATER;
+                pass.DepthFunc = CMPFUNC_LESS;
                 pass.VertFormat = MaterialBinary::VertexFormat::StaticMesh;
                 pass.VertexShader = vertexShaderStatic;
                 pass.TessControlShader = tessControlShader;
@@ -951,7 +941,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
                 pass.Type = MaterialPass::OmniShadowMapPass_Skin;
                 pass.CullMode = IsTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
-                pass.DepthFunc = CMPFUNC_GREATER;
+                pass.DepthFunc = CMPFUNC_LESS;
                 pass.VertFormat = MaterialBinary::VertexFormat::SkinnedMesh;
                 pass.VertexShader = vertexShaderSkinned;
                 pass.TessControlShader = tessControlShader;

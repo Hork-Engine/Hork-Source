@@ -5,13 +5,13 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_OminShadowmapBits("r_OminShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
-ConsoleVar r_OminShadowmapResolution("r_OminShadowmapResolution"s, "1024"s);
+ConsoleVar r_OmniShadowmapBits("r_OmniShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
+ConsoleVar r_OmniShadowmapResolution("r_OmniShadowmapResolution"s, "256"s);
 
 OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
 {
     TEXTURE_FORMAT depthFormat;
-    if (r_OminShadowmapBits.GetInteger() <= 16)
+    if (r_OmniShadowmapBits.GetInteger() <= 16)
     {
         depthFormat = TEXTURE_FORMAT_D16;
     }
@@ -20,7 +20,7 @@ OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
         depthFormat = TEXTURE_FORMAT_D32;
     }
 
-    int faceResolution = Math::ToClosestPowerOfTwo(r_OminShadowmapResolution.GetInteger());
+    int faceResolution = Math::ToClosestPowerOfTwo(r_OmniShadowmapResolution.GetInteger());
 
     PoolSize = 256;
 
@@ -29,12 +29,12 @@ OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
             .SetFormat(depthFormat)
             .SetResolution(TextureResolutionCubemapArray(faceResolution, PoolSize))
             .SetBindFlags(BIND_SHADER_RESOURCE | BIND_DEPTH_STENCIL),
-        &Texture);
+        &DepthTexture);
 }
 
 int OmnidirectionalShadowMapPool::GetResolution() const
 {
-    return Texture->GetWidth();
+    return DepthTexture->GetWidth();
 }
 
 int OmnidirectionalShadowMapPool::GetSize() const

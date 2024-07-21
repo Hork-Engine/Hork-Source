@@ -51,7 +51,7 @@ void PunctualLightComponent::UpdateEffectiveColor()
     else
     {
         float cosHalfConeAngle;
-        if (m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
+        if (m_InnerConeAngle < MaxConeAngle)
             cosHalfConeAngle = Math::Min(m_CosHalfOuterConeAngle, 0.9999f);
         else
             cosHalfConeAngle = -1.0f;
@@ -136,37 +136,39 @@ void PunctualLightComponent::UpdateBoundingBox()
     }
 }
 
-// TODO:
-#if 0
-void PackLight(Float4x4 const& InViewMatrix, LightParameters& Light)
+void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParameters& parameters)
 {
-    PhotometricProfile* profile = GetPhotometricProfile();
+    //PhotometricProfile* profile = GetPhotometricProfile();
 
-    Light.Position = Float3(InViewMatrix * GetWorldPosition());
-    Light.Radius = GetRadius();
-    Light.InverseSquareRadius = m_InverseSquareRadius;
-    Light.Direction = InViewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
-    Light.RenderMask = ~0u;                                                   //RenderMask; // TODO
-    Light.PhotometricProfile = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
+    UpdateBoundingBox();
+    UpdateEffectiveColor();
+
+    auto& worldPosition = GetOwner()->GetWorldPosition();
+
+    parameters.Position = Float3(viewMatrix * worldPosition);
+    parameters.Radius = GetRadius();
+    parameters.InverseSquareRadius = m_InverseSquareRadius;
+    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_OBBWorldBounds.Orient[2]);// viewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
+    parameters.RenderMask = ~0u;                                                   //RenderMask; // TODO
+    parameters.PhotometricProfile = 0xffffffff;//profile ? profile->GetPhotometricProfileIndex() : 0xffffffff; // TODO
 
     if (m_InnerConeAngle < MaxConeAngle)
     {
-        Light.CosHalfOuterConeAngle = m_CosHalfOuterConeAngle;
-        Light.CosHalfInnerConeAngle = m_CosHalfInnerConeAngle;
-        Light.SpotExponent = m_SpotExponent;
-        Light.Color = GetEffectiveColor(Math::Min(m_CosHalfOuterConeAngle, 0.9999f));
-        Light.LightType = CLUSTER_LIGHT_SPOT;
+        parameters.CosHalfOuterConeAngle = m_CosHalfOuterConeAngle;
+        parameters.CosHalfInnerConeAngle = m_CosHalfInnerConeAngle;
+        parameters.SpotExponent = m_SpotExponent;
+        parameters.Color = m_EffectiveColor;
+        parameters.LightType = CLUSTER_LIGHT_SPOT;
     }
     else
     {   
-        Light.CosHalfOuterConeAngle = 0;
-        Light.CosHalfInnerConeAngle = 0;
-        Light.SpotExponent = 0;
-        Light.Color = GetEffectiveColor(-1.0f);
-        Light.LightType = CLUSTER_LIGHT_POINT;  
+        parameters.CosHalfOuterConeAngle = 0;
+        parameters.CosHalfInnerConeAngle = 0;
+        parameters.SpotExponent = 0;
+        parameters.Color = m_EffectiveColor;
+        parameters.LightType = CLUSTER_LIGHT_POINT;  
     }
 }
-#endif
 
 void PunctualLightComponent::DrawDebug(DebugRenderer& renderer)
 {

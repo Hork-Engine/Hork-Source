@@ -13,11 +13,11 @@ public:
 
     int GetSize() const;
 
-    Ref<RenderCore::ITexture> const& GetTexture() const { return Texture; }
+    Ref<RenderCore::ITexture> const& GetDepthTexture() const { return DepthTexture; }
 
 private:
-    Ref<RenderCore::ITexture> Texture;
-    int                        PoolSize;
+    Ref<RenderCore::ITexture>   DepthTexture;
+    int                         PoolSize;
 };
 
 HK_NAMESPACE_END

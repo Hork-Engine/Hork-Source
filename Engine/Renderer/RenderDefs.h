@@ -889,6 +889,8 @@ struct RenderViewData
     float  VignetteOuterRadiusSqr;
     float  VignetteInnerRadiusSqr;
 
+    float Exposure;
+
     /** Source color grading texture */
     RenderCore::ITexture* ColorGradingLUT;
     /** Current color grading texture */
@@ -987,6 +989,8 @@ struct RenderViewData
     /** Global reflection & irradiance */
     uint64_t GlobalIrradianceMap;
     uint64_t GlobalReflectionMap;
+
+    float GlobalAmbient;
 };
 
 

@@ -77,6 +77,9 @@ public:
     void                    SetFocalLength(float millimeters);
     float                   GetFocalLength() const;
 
+    void                    SetExposure(float exposure) { m_Exposure = exposure; }
+    float                   GetExposure() const { return m_Exposure;}
+
     void                    SetViewportPosition(Float2 const& viewportPos);
     Float2 const&           GetViewportPosition() const { return m_ViewportPosition; }
 
@@ -162,6 +165,7 @@ private:
     Quat                    m_Rotation[2];
     mutable Float4x4        m_ProjectionMatrix;
     mutable bool            m_ProjectionDirty = true;
+    float                   m_Exposure = 1.0f;
 };
 
 namespace TickGroup_PostTransform

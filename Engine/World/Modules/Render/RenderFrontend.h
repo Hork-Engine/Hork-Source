@@ -82,7 +82,6 @@ private:
 
     void QueryVisiblePrimitives(World* world);
     void QueryShadowCasters(World* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, Vector<PrimitiveDef*>& Primitives);
-    void AddRenderInstances(World* world);
 
     void AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
     void AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef);
@@ -93,7 +92,7 @@ private:
     template <typename MeshComponentType>
     void AddMeshesShadow(LightShadowmap* shadowMap);
 
-    //bool AddLightShadowmap(PunctualLightComponent* Light, float Radius);
+    bool AddLightShadowmap(class PunctualLightComponent* Light, float Radius);
 
     RenderFrameData m_FrameData;
     DebugRenderer m_DebugDraw;

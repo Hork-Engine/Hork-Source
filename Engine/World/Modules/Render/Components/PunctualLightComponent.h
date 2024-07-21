@@ -42,6 +42,7 @@ class DebugRenderer;
 class PunctualLightComponent : public Component
 {
 public:
+    static constexpr ComponentMode Mode = ComponentMode::Static;
 
     static constexpr float MinRadius = 0.01f;
     static constexpr float MinConeAngle = 1.0f;
@@ -163,12 +164,16 @@ public:
         return m_CastShadow;
     }
 
+    // Internal
+
+    void PackLight(Float4x4 const& viewMatrix, struct LightParameters& parameters);
+
     void UpdateEffectiveColor();
     void UpdateBoundingBox();
 
     void DrawDebug(DebugRenderer& renderer);
 
-    // Private
+    // TODO: Make private:
 
     BvSphere         m_SphereWorldBounds;
     BvOrientedBox    m_OBBWorldBounds;

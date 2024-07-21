@@ -136,7 +136,7 @@ public:
     void UpdateEffectiveColor()
     {
         const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
-        float energy = m_IlluminanceInLux * EnergyUnitScale; // * GetAnimationBrightness();
+        float energy = m_IlluminanceInLux * EnergyUnitScale;
 
         Color4 temperatureColor;
         temperatureColor.SetTemperature(m_Temperature);
@@ -155,8 +155,6 @@ public:
     float          m_IlluminanceInLux = 110000.0f;
     Float4         m_EffectiveColor;
     bool           m_CastShadow = true;
-
-    // TODO: move to CascadeShadowComponent?
     float          m_ShadowMaxDistance = 128;
     float          m_ShadowCascadeOffset = 3;
     int            m_MaxShadowCascades = 4;
