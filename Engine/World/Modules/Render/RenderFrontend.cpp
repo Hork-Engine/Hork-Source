@@ -516,7 +516,7 @@ void RenderFrontend::AddMeshes()
                 instance->Material = materialInstanceFrameData->Material;
                 instance->MaterialInstance = materialInstanceFrameData;
 
-                auto& subpart = meshResource->GetSurfaces()[surfaceIndex];
+                auto& surface = meshResource->GetSurfaces()[surfaceIndex];
                 meshResource->GetVertexBufferGPU(&instance->VertexBuffer, &instance->VertexBufferOffset);
                 meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
                 meshResource->GetSkinBufferBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
@@ -558,9 +558,9 @@ void RenderFrontend::AddMeshes()
                 {
                     if (SkeletonPose* pose = mesh.GetPose())
                     {
-                        if (subpart.SkinIndex != -1)
+                        if (surface.SkinIndex != -1)
                         {
-                            auto& buffer = pose->m_StreamBuffers[subpart.SkinIndex];
+                            auto& buffer = pose->m_StreamBuffers[surface.SkinIndex];
                             skeletonOffset = buffer.Offset;
                             skeletonOffsetMB = buffer.OffsetP;
                             skeletonSize = buffer.Size;
@@ -568,7 +568,7 @@ void RenderFrontend::AddMeshes()
                         else
                         {
                             alignas(16) Float4x4 transform;
-                            Simd::StoreFloat4x4((pose->m_ModelMatrices[subpart.JointIndex] * subpart.InverseTransform).cols, transform);
+                            Simd::StoreFloat4x4((pose->m_ModelMatrices[surface.JointIndex] * surface.InverseTransform).cols, transform);
 
                             Float3x4 transform3x4(transform.Transposed());
                         
@@ -582,9 +582,9 @@ void RenderFrontend::AddMeshes()
                     }
                 }
 
-                instance->IndexCount = subpart.IndexCount;
-                instance->StartIndexLocation = subpart.FirstIndex;
-                instance->BaseVertexLocation = subpart.BaseVertex; // + mesh.SubpartBaseVertexOffset;
+                instance->IndexCount = surface.IndexCount;
+                instance->StartIndexLocation = surface.FirstIndex;
+                instance->BaseVertexLocation = surface.BaseVertex; // + mesh.SurfaceBaseVertexOffset;
                 instance->SkeletonOffset = skeletonOffset;
                 instance->SkeletonOffsetMB = skeletonOffsetMB;
                 instance->SkeletonSize = skeletonSize;
@@ -729,7 +729,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
                 meshResource->GetIndexBufferGPU(&instance->IndexBuffer, &instance->IndexBufferOffset);
                 meshResource->GetSkinBufferBufferGPU(&instance->WeightsBuffer, &instance->WeightsBufferOffset);
 
-                auto& subpart = meshResource->GetSurfaces()[surfaceIndex];
+                auto& surface = meshResource->GetSurfaces()[surfaceIndex];
 
                 instance->WorldTransformMatrix = instanceMatrix;
 
@@ -740,24 +740,24 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
                 {
                     if (SkeletonPose* pose = mesh.GetPose())
                     {
-                        if (subpart.SkinIndex != -1)
+                        if (surface.SkinIndex != -1)
                         {
-                            auto& buffer = pose->m_StreamBuffers[subpart.SkinIndex];
+                            auto& buffer = pose->m_StreamBuffers[surface.SkinIndex];
                             skeletonOffset = buffer.Offset;
                             skeletonSize = buffer.Size;
                         }
                         else
                         {
                             alignas(16) Float4x4 transform;
-                            Simd::StoreFloat4x4((pose->m_ModelMatrices[subpart.JointIndex] * subpart.InverseTransform).cols, transform);
+                            Simd::StoreFloat4x4((pose->m_ModelMatrices[surface.JointIndex] * surface.InverseTransform).cols, transform);
                             instance->WorldTransformMatrix = instance->WorldTransformMatrix * Float3x4(transform.Transposed());
                         }
                     }
                 }
 
-                instance->IndexCount = subpart.IndexCount;
-                instance->StartIndexLocation = subpart.FirstIndex;
-                instance->BaseVertexLocation = subpart.BaseVertex; // + mesh.SubpartBaseVertexOffset;
+                instance->IndexCount = surface.IndexCount;
+                instance->StartIndexLocation = surface.FirstIndex;
+                instance->BaseVertexLocation = surface.BaseVertex; // + mesh.SurfaceBaseVertexOffset;
                 instance->SkeletonOffset = skeletonOffset;
                 instance->SkeletonSize = skeletonSize;
                 instance->CascadeMask = 0xffff;//mesh.m_CascadeMask; // TODO
