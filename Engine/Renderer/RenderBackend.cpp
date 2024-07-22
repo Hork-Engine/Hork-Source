@@ -546,7 +546,7 @@ void RenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     pViewCBuf->GameplayTimeSeconds    = GRenderView->GameplayTimeSeconds;
 
-    pViewCBuf->GlobalAmbient = GRenderView->GlobalAmbient;
+    pViewCBuf->WorldAmbient = GRenderView->WorldAmbient;
     pViewCBuf->GlobalIrradianceMap = GRenderView->GlobalIrradianceMap;
     pViewCBuf->GlobalReflectionMap = GRenderView->GlobalReflectionMap;
 

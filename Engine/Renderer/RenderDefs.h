@@ -990,7 +990,7 @@ struct RenderViewData
     uint64_t GlobalIrradianceMap;
     uint64_t GlobalReflectionMap;
 
-    float GlobalAmbient;
+    float WorldAmbient;
 };
 
 

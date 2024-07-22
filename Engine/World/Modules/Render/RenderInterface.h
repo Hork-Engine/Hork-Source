@@ -40,6 +40,9 @@ class RenderInterface : public WorldInterfaceBase
 public:
                             RenderInterface();
 
+    void                    SetAmbient(float ambient) { m_Ambient = ambient; }
+    float                   GetAmbient() const { return m_Ambient; }
+
     class RenderInterfaceImpl* GetImpl() { return m_pImpl.RawPtr(); }
 
 protected:
@@ -50,6 +53,7 @@ private:
     void                    DrawDebug(DebugRenderer& renderer);
 
     UniqueRef<class RenderInterfaceImpl> m_pImpl;
+    float                   m_Ambient = 0.00025f;
 };
 
 HK_NAMESPACE_END

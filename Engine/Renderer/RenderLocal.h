@@ -68,7 +68,7 @@ struct ViewConstantBuffer
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
 
-    float GlobalAmbient;
+    float WorldAmbient;
     float Pad;
 
     float DynamicResolutionRatioX;

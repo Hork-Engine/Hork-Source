@@ -74,7 +74,7 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
     
-    float GlobalAmbient;
+    float WorldAmbient;
     float Pad;
     
     vec2 DynamicResolutionRatio;

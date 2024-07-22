@@ -39,6 +39,7 @@ SOFTWARE.
 #include <Engine/World/Modules/Render/Components/TerrainComponent.h>
 #include <Engine/World/Modules/Render/Components/DirectionalLightComponent.h>
 #include <Engine/World/Modules/Render/Components/PunctualLightComponent.h>
+#include <Engine/World/Modules/Render/RenderInterface.h>
 #include <Engine/World/Modules/Render/TerrainView.h>
 
 HK_NAMESPACE_BEGIN
@@ -51,7 +52,6 @@ ConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
 ConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
 ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
 ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
-ConsoleVar r_GlobalAmbient("r_GlobalAmbient"s, "0.00025"s, CVAR_CHEAT);
 
 extern ConsoleVar r_HBAO;
 extern ConsoleVar r_HBAODeinterleaved;
@@ -1096,9 +1096,9 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     //QueryVisiblePrimitives(world);
 
-    //EnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap(); TODO
+    //EnvironmentMap* pEnvironmentMap = world->GetInterface<RenderInterface>().GetEnvironmentMap(); TODO
 
-    view->GlobalAmbient = r_GlobalAmbient.GetFloat();
+    view->WorldAmbient = world->GetInterface<RenderInterface>().GetAmbient();
 
     //if (pEnvironmentMap)
     //{

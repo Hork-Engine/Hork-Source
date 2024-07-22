@@ -138,7 +138,7 @@ vec3 CalcAmbient(vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughnes
     prefilteredColor += FetchLocalReflection(R, Roughness);
 #endif
 
-    irradiance = max(irradiance, vec3(GlobalAmbient));
+    irradiance = max(irradiance, vec3(WorldAmbient));
 
     const vec3 diffuse = irradiance * Albedo;
     const vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
