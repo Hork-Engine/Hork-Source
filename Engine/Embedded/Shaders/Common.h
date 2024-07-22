@@ -40,11 +40,13 @@ SOFTWARE.
 /// Max cascades per view
 #define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW      (MAX_SHADOW_CASCADES * MAX_DIRECTIONAL_LIGHTS)
 
+/// Directional shadow map technique (currently only PCF is supported)
 #define SHADOWMAP_PCF
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
 
+/// Cubemap face resolution for omnidirectional light shadow
 #define OMNISHADOW_RESOLUTION                   1024
 
 #endif
