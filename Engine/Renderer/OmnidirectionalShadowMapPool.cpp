@@ -6,7 +6,6 @@ HK_NAMESPACE_BEGIN
 using namespace RenderCore;
 
 ConsoleVar r_OmniShadowmapBits("r_OmniShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
-ConsoleVar r_OmniShadowmapResolution("r_OmniShadowmapResolution"s, "256"s);
 
 OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
 {
@@ -20,7 +19,7 @@ OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
         depthFormat = TEXTURE_FORMAT_D32;
     }
 
-    int faceResolution = Math::ToClosestPowerOfTwo(r_OmniShadowmapResolution.GetInteger());
+    int faceResolution = OMNISHADOW_RESOLUTION;
 
     PoolSize = 256;
 

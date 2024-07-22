@@ -45,4 +45,6 @@ SOFTWARE.
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
 
+#define OMNISHADOW_RESOLUTION                   1024
+
 #endif

@@ -351,7 +351,7 @@ float SampleOmnidirectionalLightShadow(uint shadowmapIndex, vec3 lightDir, float
     };
 
     float viewDistance = length(VS_Position);
-    float diskRadius = (0.01 + (fragmentDist / 5 + viewDistance / 25)) / 25.0;  
+    float diskRadius = (0.01 + (fragmentDist / 25 + viewDistance / 25)) / 25.0;  // TODO: move coefficients to light parameters
 
     float shadow = 0.0;
     for(int i = 0; i < NUM_SAMPLES; ++i)

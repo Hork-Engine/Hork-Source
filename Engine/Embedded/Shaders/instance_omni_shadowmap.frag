@@ -65,7 +65,7 @@ void main()
 
     const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
     const float ShadowZFar = 1000;
-    const float ShadowMapResolution = 256;
+    const float ShadowMapResolution = OMNISHADOW_RESOLUTION;
 
     vec2 uv = gl_FragCoord.xy / ShadowMapResolution; // TODO cubemap face resolution
     float z = CalcLinearDepth_Perpective(gl_FragCoord.z, ShadowZNear, ShadowZFar);
