@@ -840,7 +840,7 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radi
     //Float4x4 lightViewProjection;
     //Float4x4 lightViewMatrix;
 
-    Float3 lightPos = light->GetOwner()->GetWorldPosition();
+    Float3 lightPos = light->m_RenderTransform.Position;
 
     int totalInstances = 0;
 
@@ -1298,6 +1298,12 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     auto& lightManager = m_World->GetComponentManager<PunctualLightComponent>();
 
+    PreRenderContext context;
+    context.FrameNum = m_RenderDef.FrameNumber;
+    context.Prev = m_World->GetTick().PrevStateIndex;
+    context.Cur = m_World->GetTick().StateIndex;
+    context.Frac = m_World->GetTick().Interpolate;
+
     // Allocate lights
     view->NumPointLights = lightManager.GetComponentCount();//m_VisLights.Size();  // TODO: only visible light count!
     view->PointLightsStreamSize = sizeof(LightParameters) * view->NumPointLights;
@@ -1322,6 +1328,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         if (!light.IsInitialized())
             continue;
 
+        light.PreRender(context);
         light.PackLight(view->ViewMatrix, view->PointLights[index]);
 
         view->PointLights[index].ShadowmapIndex = -1;

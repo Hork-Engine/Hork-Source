@@ -32,8 +32,10 @@ SOFTWARE.
 
 #include <Engine/Geometry/BV/BvSphere.h>
 #include <Engine/Geometry/BV/BvOrientedBox.h>
+#include <Engine/Math/Quat.h>
 
 #include <Engine/World/Component.h>
+#include <Engine/World/TickFunction.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -166,6 +168,11 @@ public:
 
     // Internal
 
+    void BeginPlay();
+    void PostTransform();
+
+    void PreRender(struct PreRenderContext const& context);
+
     void PackLight(Float4x4 const& viewMatrix, struct LightParameters& parameters);
 
     void UpdateEffectiveColor();
@@ -174,6 +181,16 @@ public:
     void DrawDebug(DebugRenderer& renderer);
 
     // TODO: Make private:
+
+    struct LightTransform
+    {
+        Float3 Position;
+        Quat Rotation;
+    };
+
+    LightTransform   m_Transform[2];
+    LightTransform   m_RenderTransform;
+    uint32_t         m_LastFrame{0};
 
     BvSphere         m_SphereWorldBounds;
     BvOrientedBox    m_OBBWorldBounds;
@@ -198,5 +215,14 @@ public:
     float            m_CosHalfOuterConeAngle = 0;
     float            m_SpotExponent = 1.0f;
 };
+
+namespace TickGroup_PostTransform
+{
+    template <>
+    HK_INLINE void InitializeTickFunction<PunctualLightComponent>(TickFunctionDesc& desc)
+    {
+        desc.TickEvenWhenPaused = true;
+    }
+}
 
 HK_NAMESPACE_END

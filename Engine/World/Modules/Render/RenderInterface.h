@@ -35,6 +35,14 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+struct PreRenderContext
+{
+    uint32_t FrameNum;
+    uint32_t Prev;
+    uint32_t Cur;
+    float    Frac;
+};
+
 class RenderInterface : public WorldInterfaceBase
 {
 public:

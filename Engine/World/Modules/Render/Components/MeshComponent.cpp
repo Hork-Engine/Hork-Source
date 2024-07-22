@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Engine/GameApplication/GameApplication.h>
 #include <Engine/World/WorldInterface.h>
 #include <Engine/World/World.h>
+#include <Engine/World/Modules/Render/RenderInterface.h>
 
 HK_NAMESPACE_BEGIN
 

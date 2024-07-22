@@ -88,14 +88,6 @@ protected:
     BvAxisAlignedBox            m_WorldBoundingBox;
 };
 
-struct PreRenderContext
-{
-    uint32_t FrameNum;
-    uint32_t Prev;
-    uint32_t Cur;
-    float    Frac;
-};
-
 class StaticMeshComponent : public MeshComponent
 {
 public:
@@ -108,7 +100,7 @@ public:
     // Internal
 
     void                        BeginPlay();
-    void                        PreRender(PreRenderContext const& context) {}
+    void                        PreRender(struct PreRenderContext const& context) {}
 
     Float3x4 const&             GetRenderTransform() const { return m_RenderTransform; }
     Float3x4 const&             GetRenderTransformPrev() const { return m_RenderTransform; }

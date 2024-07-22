@@ -32,11 +32,46 @@ SOFTWARE.
 #include <Engine/Core/ConsoleVar.h>
 #include <Engine/World/GameObject.h>
 #include <Engine/World/DebugRenderer.h>
+#include <Engine/World/World.h>
+#include <Engine/World/Modules/Render/RenderInterface.h>
 
 HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawPunctualLights("com_DrawPunctualLights"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_LightEnergyScale("com_LightEnergyScale"s, "16"s);
+
+void PunctualLightComponent::BeginPlay()
+{
+    m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
+    m_Transform[0].Rotation = m_Transform[1].Rotation = GetOwner()->GetWorldRotation();
+
+    m_RenderTransform = m_Transform[0];
+
+    UpdateBoundingBox();
+}
+
+void PunctualLightComponent::PostTransform()
+{
+    auto index = GetWorld()->GetTick().StateIndex;
+
+    m_Transform[index].Position = GetOwner()->GetWorldPosition();
+    m_Transform[index].Rotation = GetOwner()->GetWorldRotation();
+}
+
+void PunctualLightComponent::PreRender(PreRenderContext const& context)
+{
+    // TODO: Call only for dynamic light
+
+    if (m_LastFrame == context.FrameNum)
+        return;  // already called for this frame
+
+    m_RenderTransform.Position = Math::Lerp (m_Transform[context.Prev].Position, m_Transform[context.Cur].Position, context.Frac);
+    m_RenderTransform.Rotation = Math::Slerp(m_Transform[context.Prev].Rotation, m_Transform[context.Cur].Rotation, context.Frac);
+
+    m_LastFrame = context.FrameNum;
+
+    UpdateBoundingBox();
+}
 
 void PunctualLightComponent::UpdateEffectiveColor()
 {
@@ -61,9 +96,6 @@ void PunctualLightComponent::UpdateEffectiveColor()
         candela = m_Lumens * lumensToCandela;
     }
 
-    // Animate light intensity
-    //candela *= GetAnimationBrightness();
-
     Color4 temperatureColor;
     temperatureColor.SetTemperature(m_Temperature);
 
@@ -80,11 +112,11 @@ void PunctualLightComponent::UpdateBoundingBox()
     {
         const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
         const float HalfConeAngle = m_OuterConeAngle * ToHalfAngleRadians;
-        const Float3 WorldPos = GetOwner()->GetWorldPosition();
+        const Float3& WorldPos = m_RenderTransform.Position;
         const float SinHalfConeAngle = Math::Sin(HalfConeAngle);
 
         // Compute cone OBB for voxelization
-        m_OBBWorldBounds.Orient = GetOwner()->GetWorldRotation().ToMatrix3x3();
+        m_OBBWorldBounds.Orient = m_RenderTransform.Rotation.ToMatrix3x3();
 
         const Float3 SpotDir = -m_OBBWorldBounds.Orient[2];
 
@@ -123,7 +155,7 @@ void PunctualLightComponent::UpdateBoundingBox()
     else
     {
         m_SphereWorldBounds.Radius = m_Radius;
-        m_SphereWorldBounds.Center = GetOwner()->GetWorldPosition();
+        m_SphereWorldBounds.Center = m_RenderTransform.Position;
         m_AABBWorldBounds.Mins = m_SphereWorldBounds.Center - m_Radius;
         m_AABBWorldBounds.Maxs = m_SphereWorldBounds.Center + m_Radius;
         m_OBBWorldBounds.Center = m_SphereWorldBounds.Center;
@@ -140,15 +172,12 @@ void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParamete
 {
     //PhotometricProfile* profile = GetPhotometricProfile();
 
-    UpdateBoundingBox();
     UpdateEffectiveColor();
 
-    auto& worldPosition = GetOwner()->GetWorldPosition();
-
-    parameters.Position = Float3(viewMatrix * worldPosition);
+    parameters.Position = Float3(viewMatrix * m_RenderTransform.Position);
     parameters.Radius = GetRadius();
     parameters.InverseSquareRadius = m_InverseSquareRadius;
-    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_OBBWorldBounds.Orient[2]);// viewMatrix.TransformAsFloat3x3(-GetWorldDirection()); // Only for photometric light
+    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_OBBWorldBounds.Orient[2]); // Only for photometric light
     parameters.RenderMask = ~0u;                                                   //RenderMask; // TODO
     parameters.PhotometricProfile = 0xffffffff;//profile ? profile->GetPhotometricProfileIndex() : 0xffffffff; // TODO
 
@@ -179,16 +208,14 @@ void PunctualLightComponent::DrawDebug(DebugRenderer& renderer)
 
         renderer.SetDepthTest(false);
 
-        Float3 pos = GetOwner()->GetWorldPosition();
+        Float3 pos = m_RenderTransform.Position;
 
         if (m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
         {
-            Float3x3 orient = GetOwner()->GetWorldRotation().ToMatrix3x3();
-
             renderer.SetColor(Color4(0.5f, 0.5f, 0.5f, 1));
-            renderer.DrawCone(pos, orient, m_Radius, Math::Radians(m_InnerConeAngle) * 0.5f);
+            renderer.DrawCone(pos, m_OBBWorldBounds.Orient, m_Radius, Math::Radians(m_InnerConeAngle) * 0.5f);
             renderer.SetColor(Color4(1, 1, 1, 1));
-            renderer.DrawCone(pos, orient, m_Radius, Math::Radians(m_OuterConeAngle) * 0.5f);
+            renderer.DrawCone(pos, m_OBBWorldBounds.Orient, m_Radius, Math::Radians(m_OuterConeAngle) * 0.5f);
         }
         else
         {
@@ -196,34 +223,6 @@ void PunctualLightComponent::DrawDebug(DebugRenderer& renderer)
             renderer.DrawSphere(pos, m_Radius);
         }
     }
-}
-
-HK_FORCEINLINE float Quantize(float frac, float quantizer)
-{
-    return quantizer > 0.0f ? Math::Floor(frac * quantizer) / quantizer : frac;
-}
-
-// Converts string to brightness
-float SamplePattern(StringView pattern, float position, float quantizer = 0)
-{
-    int frameCount = pattern.Size();
-    if (frameCount > 0)
-    {
-        int keyframe = Math::Floor(position);
-        int nextframe = keyframe + 1;
-
-        float lerp = position - keyframe;
-
-        keyframe %= frameCount;
-        nextframe %= frameCount;
-
-        float a = (Math::Clamp(pattern[keyframe], 'a', 'z') - 'a') / 26.0f;
-        float b = (Math::Clamp(pattern[nextframe], 'a', 'z') - 'a') / 26.0f;
-
-        return Math::Lerp(a, b, Quantize(lerp, quantizer));
-    }
-
-    return 1.0f;
 }
 
 HK_NAMESPACE_END
