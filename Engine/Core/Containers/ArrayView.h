@@ -258,4 +258,245 @@ private:
     SizeType m_Size;
 };
 
+
+template <typename T>
+class MutableArrayView
+{
+public:
+    using ValueType            = std::remove_cv_t<T>;
+    using Pointer              = T*;
+    using ConstPointer         = const T*;
+    using Reference            = T&;
+    using ConstReference       = const T&;
+    using Iterator             = T*;
+    using ConstIterator        = const T*;
+    using ReverseIterator      = eastl::reverse_iterator<Iterator>;
+    using ConstReverseIterator = eastl::reverse_iterator<ConstIterator>;
+    using SizeType             = size_t;
+
+    constexpr HK_FORCEINLINE MutableArrayView() :
+        m_Data(nullptr), m_Size(0)
+    {}
+
+    constexpr HK_FORCEINLINE MutableArrayView(Pointer _Data, SizeType _Size) :
+        m_Data(_Data), m_Size(_Size)
+    {}
+
+    constexpr HK_FORCEINLINE MutableArrayView(Pointer pBegin, Pointer pEnd) :
+        m_Data(pBegin), m_Size(static_cast<SizeType>(pEnd - pBegin))
+    {}
+
+    template <size_t N>
+    constexpr HK_FORCEINLINE MutableArrayView(T (&Array)[N]) :
+        m_Data(Array), m_Size(N)
+    {}
+
+    template <size_t N>
+    constexpr HK_FORCEINLINE MutableArrayView(Array<ValueType, N>& Array) :
+        m_Data(Array.ToPtr()), m_Size(Array.Size())
+    {}
+
+    template <typename Allocator>
+    constexpr HK_FORCEINLINE MutableArrayView(Vector<ValueType, Allocator>& Vector) :
+        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    {}
+
+    template <size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
+    constexpr HK_FORCEINLINE MutableArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator>& Vector) :
+        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    {}
+
+    constexpr MutableArrayView(MutableArrayView const& Rhs) = default;
+    constexpr MutableArrayView& operator=(MutableArrayView const& Rhs) = default;
+
+    constexpr HK_FORCEINLINE bool operator==(MutableArrayView Rhs) const
+    {
+        return (m_Size == Rhs.m_Size) && eastl::equal(begin(), end(), Rhs.begin());
+    }
+
+    constexpr HK_FORCEINLINE bool operator!=(MutableArrayView Rhs) const
+    {
+        return (m_Size != Rhs.m_Size) || !eastl::equal(begin(), end(), Rhs.begin());
+    }
+
+    constexpr HK_FORCEINLINE bool operator<(MutableArrayView Rhs) const
+    {
+        return eastl::lexicographical_compare(begin(), end(), Rhs.begin(), Rhs.end());
+    }
+
+    constexpr HK_FORCEINLINE bool operator<=(MutableArrayView Rhs) const { return !(Rhs < *this); }
+
+    constexpr HK_FORCEINLINE bool operator>(MutableArrayView Rhs) const { return Rhs < *this; }
+
+    constexpr HK_FORCEINLINE bool operator>=(MutableArrayView Rhs) const { return !(*this < Rhs); }
+
+    constexpr HK_FORCEINLINE Pointer ToPtr()
+    {
+        return m_Data;
+    }
+
+    constexpr HK_FORCEINLINE ConstPointer ToPtr() const
+    {
+        return m_Data;
+    }
+
+    constexpr HK_FORCEINLINE SizeType Size() const
+    {
+        return m_Size;
+    }
+
+    constexpr HK_FORCEINLINE bool IsEmpty() const
+    {
+        return m_Size == 0;
+    }
+
+    constexpr HK_FORCEINLINE Reference operator[](SizeType i) const
+    {
+        HK_ASSERT_(i < m_Size, "Undefined behavior accessing out of bounds");
+        return m_Data[i];
+    }
+
+    constexpr HK_FORCEINLINE Reference First()
+    {
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty MutableArrayView");
+        return m_Data[0];
+    }
+
+    constexpr HK_FORCEINLINE Reference First() const
+    {
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty MutableArrayView");
+        return m_Data[0];
+    }
+
+    constexpr HK_FORCEINLINE ConstReference Last()
+    {
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty MutableArrayView");
+        return m_Data[m_Size - 1];
+    }
+
+    constexpr HK_FORCEINLINE ConstReference Last() const
+    {
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty MutableArrayView");
+        return m_Data[m_Size - 1];
+    }
+
+    constexpr HK_FORCEINLINE Iterator begin() const
+    {
+        return m_Data;
+    }
+
+    constexpr HK_FORCEINLINE Iterator end() const
+    {
+        return m_Data + m_Size;
+    }
+
+    constexpr HK_FORCEINLINE ConstIterator cbegin() const
+    {
+        return m_Data;
+    }
+
+    constexpr HK_FORCEINLINE ConstIterator cend() const
+    {
+        return m_Data + m_Size;
+    }
+
+    constexpr HK_FORCEINLINE ReverseIterator rbegin() const
+    {
+        return ReverseIterator(m_Data + m_Size);
+    }
+
+    constexpr HK_FORCEINLINE ReverseIterator rend() const
+    {
+        return ReverseIterator(m_Data);
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator crbegin() const
+    {
+        return ConstReverseIterator(m_Data + m_Size);
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator crend() const
+    {
+        return ConstReverseIterator(m_Data);
+    }
+
+    constexpr HK_FORCEINLINE Iterator Begin() const
+    {
+        return begin();
+    }
+
+    constexpr HK_FORCEINLINE Iterator End() const
+    {
+        return end();
+    }
+
+    constexpr HK_FORCEINLINE ConstIterator CBegin() const
+    {
+        return cbegin();
+    }
+
+    constexpr HK_FORCEINLINE ConstIterator CEnd() const
+    {
+        return cend();
+    }
+
+    constexpr HK_FORCEINLINE ReverseIterator RBegin() const
+    {
+        return rbegin();
+    }
+
+    constexpr HK_FORCEINLINE ReverseIterator REnd() const
+    {
+        return rend();
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator CRBegin() const
+    {
+        return crbegin();
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator CREnd() const
+    {
+        return crend();
+    }
+
+    HK_FORCEINLINE Iterator Find(ValueType const& value) const
+    {
+        return eastl::find(begin(), end(), value);
+    }
+
+    HK_FORCEINLINE bool Contains(ValueType const& value) const
+    {
+        return eastl::find(begin(), end(), value) != end();
+    }
+
+    template <typename Predicate>
+    HK_FORCEINLINE bool Contains(ValueType const& value, Predicate predicate) const
+    {
+        return eastl::find(begin(), end(), value, predicate) != end();
+    }
+
+    HK_FORCEINLINE SizeType IndexOf(ValueType const& value) const
+    {
+        auto it = eastl::find(begin(), end(), value);
+        return it == end() ? Core::NPOS : (SizeType)(it - begin());
+    }
+
+    HK_FORCEINLINE MutableArrayView<T> GetSubView(SizeType first, SizeType count) const
+    {
+        HK_ASSERT_(first + count <= m_Size, "Undefined behavior accessing out of bounds");
+        return MutableArrayView<T>(m_Data + first, count);
+    }
+
+    HK_FORCEINLINE MutableArrayView<T> GetSubView(SizeType first) const
+    {
+        HK_ASSERT_(first <= m_Size, "Undefined behavior accessing out of bounds");
+        return MutableArrayView<T>(m_Data + first, m_Size - first);
+    }
+
+private:
+    Pointer m_Data;
+    SizeType m_Size;
+};
+
 HK_NAMESPACE_END
