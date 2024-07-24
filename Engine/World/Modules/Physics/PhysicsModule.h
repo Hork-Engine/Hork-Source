@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/BaseModule.h>
+#include <Engine/Core/Ref.h>
 
 namespace JPH
 {
@@ -47,20 +48,20 @@ class PhysicsModule : public BaseModule<PhysicsModule>
 public:
     JPH::TempAllocator* GetTempAllocator()
     {
-        return m_PhysicsTempAllocator.get();
+        return m_PhysicsTempAllocator.RawPtr();
     }
 
     JPH::JobSystemThreadPool* GetJobSystemThreadPool()
     {
-        return m_JobSystemThreadPool.get();
+        return m_JobSystemThreadPool.RawPtr();
     }
 
 private:
     PhysicsModule();
     ~PhysicsModule();
 
-    std::unique_ptr<JPH::TempAllocator> m_PhysicsTempAllocator;
-    std::unique_ptr<JPH::JobSystemThreadPool> m_JobSystemThreadPool;
+    UniqueRef<JPH::TempAllocator> m_PhysicsTempAllocator;
+    UniqueRef<JPH::JobSystemThreadPool> m_JobSystemThreadPool;
 };
 
 HK_NAMESPACE_END

@@ -101,20 +101,20 @@ PhysicsModule::PhysicsModule()
     // B.t.w. 10 MB is a typical value you can use.
     // If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
     // malloc / free.
-    m_PhysicsTempAllocator = std::make_unique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
+    m_PhysicsTempAllocator = MakeUnique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
 
     // We need a job system that will execute physics jobs on multiple threads. Typically
     // you would implement the JobSystem interface yourself and let Jolt Physics run on top
     // of your own job scheduler. JobSystemThreadPool is an example implementation.
     int numThreads = Math::Max(1, Thread::NumHardwareThreads - 1);
     LOG("Job system thread count {}\n", numThreads);
-    m_JobSystemThreadPool = std::make_unique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, numThreads);
+    m_JobSystemThreadPool = MakeUnique<JPH::JobSystemThreadPool>(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, numThreads);
 }
 
 PhysicsModule::~PhysicsModule()
 {
-    m_PhysicsTempAllocator.reset();
-    m_JobSystemThreadPool.reset();
+    m_PhysicsTempAllocator.Reset();
+    m_JobSystemThreadPool.Reset();
 
     // Destroy the factory
     delete JPH::Factory::sInstance;
