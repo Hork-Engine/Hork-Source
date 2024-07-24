@@ -40,6 +40,11 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"s, "0"s);
 
+void TerrainComponent::SetResource(TerrainHandle resource)
+{
+    m_Resource = resource;
+}
+
 void TerrainComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawTerrainMesh)

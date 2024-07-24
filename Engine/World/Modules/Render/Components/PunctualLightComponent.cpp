@@ -40,6 +40,24 @@ HK_NAMESPACE_BEGIN
 ConsoleVar com_DrawPunctualLights("com_DrawPunctualLights"s, "0"s, CVAR_CHEAT);
 ConsoleVar com_LightEnergyScale("com_LightEnergyScale"s, "16"s);
 
+void PunctualLightComponent::SetRadius(float radius)
+{
+    m_Radius = Math::Max(MinRadius, radius);
+    m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
+}
+
+void PunctualLightComponent::SetInnerConeAngle(float angle)
+{
+    m_InnerConeAngle = Math::Clamp(angle, MinConeAngle, MaxConeAngle);
+    m_CosHalfInnerConeAngle = Math::Cos(Math::Radians(m_InnerConeAngle * 0.5f));
+}
+
+void PunctualLightComponent::SetOuterConeAngle(float angle)
+{
+    m_OuterConeAngle = Math::Clamp(angle, MinConeAngle, MaxConeAngle);
+    m_CosHalfOuterConeAngle = Math::Cos(Math::Radians(m_OuterConeAngle * 0.5f));
+}
+
 void PunctualLightComponent::BeginPlay()
 {
     m_Transform[0].Position = m_Transform[1].Position = GetOwner()->GetWorldPosition();
@@ -47,7 +65,7 @@ void PunctualLightComponent::BeginPlay()
 
     m_RenderTransform = m_Transform[0];
 
-    UpdateBoundingBox();
+    UpdateWorldBoundingBox();
 }
 
 void PunctualLightComponent::PostTransform()
@@ -70,7 +88,7 @@ void PunctualLightComponent::PreRender(PreRenderContext const& context)
 
     m_LastFrame = context.FrameNum;
 
-    UpdateBoundingBox();
+    UpdateWorldBoundingBox();
 }
 
 void PunctualLightComponent::UpdateEffectiveColor()
@@ -79,7 +97,7 @@ void PunctualLightComponent::UpdateEffectiveColor()
 
     float candela;
 
-    if (m_PhotometricProfileId && !m_bPhotometricAsMask)
+    if (m_PhotometricProfileId && !m_PhotometricAsMask)
     {
         candela = m_LuminousIntensityScale; // * PhotometricProfile->GetIntensity(); // TODO
     }
@@ -106,64 +124,63 @@ void PunctualLightComponent::UpdateEffectiveColor()
     m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * scale;
 }
 
-void PunctualLightComponent::UpdateBoundingBox()
+void PunctualLightComponent::UpdateWorldBoundingBox()
 {
     if (m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
     {
-        const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
-        const float HalfConeAngle = m_OuterConeAngle * ToHalfAngleRadians;
-        const Float3& WorldPos = m_RenderTransform.Position;
-        const float SinHalfConeAngle = Math::Sin(HalfConeAngle);
+        float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
+        float HalfConeAngle = m_OuterConeAngle * ToHalfAngleRadians;
+        float SinHalfConeAngle = Math::Sin(HalfConeAngle);
 
         // Compute cone OBB for voxelization
-        m_OBBWorldBounds.Orient = m_RenderTransform.Rotation.ToMatrix3x3();
+        m_WorldOrientedBoundingBox.Orient = m_RenderTransform.Rotation.ToMatrix3x3();
 
-        const Float3 SpotDir = -m_OBBWorldBounds.Orient[2];
+        Float3 spotDir = -m_WorldOrientedBoundingBox.Orient[2];
 
-        //m_OBBWorldBounds.HalfSize.X = m_OBBWorldBounds.HalfSize.Y = tan( HalfConeAngle ) * m_Radius;
-        m_OBBWorldBounds.HalfSize.X = m_OBBWorldBounds.HalfSize.Y = SinHalfConeAngle * m_Radius;
-        m_OBBWorldBounds.HalfSize.Z = m_Radius * 0.5f;
-        m_OBBWorldBounds.Center = WorldPos + SpotDir * (m_OBBWorldBounds.HalfSize.Z);
+        //m_WorldOrientedBoundingBox.HalfSize.X = m_WorldOrientedBoundingBox.HalfSize.Y = tan( HalfConeAngle ) * m_Radius;
+        m_WorldOrientedBoundingBox.HalfSize.X = m_WorldOrientedBoundingBox.HalfSize.Y = SinHalfConeAngle * m_Radius;
+        m_WorldOrientedBoundingBox.HalfSize.Z = m_Radius * 0.5f;
+        m_WorldOrientedBoundingBox.Center = m_RenderTransform.Position + spotDir * (m_WorldOrientedBoundingBox.HalfSize.Z);
 
         // TODO: Optimize?
-        Float4x4 OBBTransform = Float4x4::Translation(m_OBBWorldBounds.Center) * Float4x4(m_OBBWorldBounds.Orient) * Float4x4::Scale(m_OBBWorldBounds.HalfSize);
+        Float4x4 OBBTransform = Float4x4::Translation(m_WorldOrientedBoundingBox.Center) * Float4x4(m_WorldOrientedBoundingBox.Orient) * Float4x4::Scale(m_WorldOrientedBoundingBox.HalfSize);
         m_OBBTransformInverse = OBBTransform.Inversed();
 
         // Compute cone AABB for culling
-        m_AABBWorldBounds.Clear();
-        m_AABBWorldBounds.AddPoint(WorldPos);
-        Float3 v = WorldPos + SpotDir * m_Radius;
-        Float3 vx = m_OBBWorldBounds.Orient[0] * m_OBBWorldBounds.HalfSize.X;
-        Float3 vy = m_OBBWorldBounds.Orient[1] * m_OBBWorldBounds.HalfSize.X;
-        m_AABBWorldBounds.AddPoint(v + vx);
-        m_AABBWorldBounds.AddPoint(v - vx);
-        m_AABBWorldBounds.AddPoint(v + vy);
-        m_AABBWorldBounds.AddPoint(v - vy);
+        m_WorldBoundingBox.Clear();
+        m_WorldBoundingBox.AddPoint(m_RenderTransform.Position);
+        Float3 v = m_RenderTransform.Position + spotDir * m_Radius;
+        Float3 vx = m_WorldOrientedBoundingBox.Orient[0] * m_WorldOrientedBoundingBox.HalfSize.X;
+        Float3 vy = m_WorldOrientedBoundingBox.Orient[1] * m_WorldOrientedBoundingBox.HalfSize.X;
+        m_WorldBoundingBox.AddPoint(v + vx);
+        m_WorldBoundingBox.AddPoint(v - vx);
+        m_WorldBoundingBox.AddPoint(v + vy);
+        m_WorldBoundingBox.AddPoint(v - vy);
 
         // Compute cone Sphere bounds
         if (HalfConeAngle > Math::_PI / 4)
         {
-            m_SphereWorldBounds.Radius = SinHalfConeAngle * m_Radius;
-            m_SphereWorldBounds.Center = WorldPos + SpotDir * (m_CosHalfOuterConeAngle * m_Radius);
+            m_WorldBoundingSphere.Radius = SinHalfConeAngle * m_Radius;
+            m_WorldBoundingSphere.Center = m_RenderTransform.Position + spotDir * (m_CosHalfOuterConeAngle * m_Radius);
         }
         else
         {
-            m_SphereWorldBounds.Radius = m_Radius / (2.0 * m_CosHalfOuterConeAngle);
-            m_SphereWorldBounds.Center = WorldPos + SpotDir * m_SphereWorldBounds.Radius;
+            m_WorldBoundingSphere.Radius = m_Radius / (2.0 * m_CosHalfOuterConeAngle);
+            m_WorldBoundingSphere.Center = m_RenderTransform.Position + spotDir * m_WorldBoundingSphere.Radius;
         }
     }
     else
     {
-        m_SphereWorldBounds.Radius = m_Radius;
-        m_SphereWorldBounds.Center = m_RenderTransform.Position;
-        m_AABBWorldBounds.Mins = m_SphereWorldBounds.Center - m_Radius;
-        m_AABBWorldBounds.Maxs = m_SphereWorldBounds.Center + m_Radius;
-        m_OBBWorldBounds.Center = m_SphereWorldBounds.Center;
-        m_OBBWorldBounds.HalfSize = Float3(m_SphereWorldBounds.Radius);
-        m_OBBWorldBounds.Orient.SetIdentity();
+        m_WorldBoundingSphere.Radius = m_Radius;
+        m_WorldBoundingSphere.Center = m_RenderTransform.Position;
+        m_WorldBoundingBox.Mins = m_WorldBoundingSphere.Center - m_Radius;
+        m_WorldBoundingBox.Maxs = m_WorldBoundingSphere.Center + m_Radius;
+        m_WorldOrientedBoundingBox.Center = m_WorldBoundingSphere.Center;
+        m_WorldOrientedBoundingBox.HalfSize = Float3(m_WorldBoundingSphere.Radius);
+        m_WorldOrientedBoundingBox.Orient.SetIdentity();
 
         // TODO: Optimize?
-        Float4x4 OBBTransform = Float4x4::Translation(m_OBBWorldBounds.Center) * Float4x4::Scale(m_OBBWorldBounds.HalfSize);
+        Float4x4 OBBTransform = Float4x4::Translation(m_WorldOrientedBoundingBox.Center) * Float4x4::Scale(m_WorldOrientedBoundingBox.HalfSize);
         m_OBBTransformInverse = OBBTransform.Inversed();
     }
 }
@@ -177,7 +194,7 @@ void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParamete
     parameters.Position = Float3(viewMatrix * m_RenderTransform.Position);
     parameters.Radius = GetRadius();
     parameters.InverseSquareRadius = m_InverseSquareRadius;
-    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_OBBWorldBounds.Orient[2]); // Only for photometric light
+    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_WorldOrientedBoundingBox.Orient[2]); // Only for photometric light
     parameters.RenderMask = ~0u;                                                   //RenderMask; // TODO
     parameters.PhotometricProfile = 0xffffffff;//profile ? profile->GetPhotometricProfileIndex() : 0xffffffff; // TODO
 
@@ -213,9 +230,9 @@ void PunctualLightComponent::DrawDebug(DebugRenderer& renderer)
         if (m_InnerConeAngle < PunctualLightComponent::MaxConeAngle)
         {
             renderer.SetColor(Color4(0.5f, 0.5f, 0.5f, 1));
-            renderer.DrawCone(pos, m_OBBWorldBounds.Orient, m_Radius, Math::Radians(m_InnerConeAngle) * 0.5f);
+            renderer.DrawCone(pos, m_WorldOrientedBoundingBox.Orient, m_Radius, m_InnerConeAngle * 0.5f);
             renderer.SetColor(Color4(1, 1, 1, 1));
-            renderer.DrawCone(pos, m_OBBWorldBounds.Orient, m_Radius, Math::Radians(m_OuterConeAngle) * 0.5f);
+            renderer.DrawCone(pos, m_WorldOrientedBoundingBox.Orient, m_Radius, m_OuterConeAngle * 0.5f);
         }
         else
         {

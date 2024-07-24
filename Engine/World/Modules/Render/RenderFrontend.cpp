@@ -148,13 +148,13 @@ static constexpr Float4x4 ShadowMapBias = Float4x4(
 void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* StreamedMemory, RenderViewData* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
 {
     float cascadeSplits[MAX_CASCADE_SPLITS];
-    int numSplits = light.m_MaxShadowCascades + 1;
+    int numSplits = light.GetMaxShadowCascades() + 1;
     int numVisibleSplits;
     Float4x4 lightViewMatrix;
     Float3 worldspaceVerts[MAX_CASCADE_SPLITS][4];
     Float3 right, up;
 
-    HK_ASSERT(light.m_MaxShadowCascades > 0 && light.m_MaxShadowCascades <= MAX_SHADOW_CASCADES);
+    HK_ASSERT(light.GetMaxShadowCascades() > 0 && light.GetMaxShadowCascades() <= MAX_SHADOW_CASCADES);
 
     if (View->bPerspective)
     {
@@ -171,11 +171,11 @@ void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light
         up = View->ViewUpVec * Math::Abs(orthoHeight * 0.5f);
     }
 
-    const float shadowMaxDistance = light.m_ShadowMaxDistance;
-    const float offset = light.m_ShadowCascadeOffset;
+    const float shadowMaxDistance = light.GetShadowMaxDistance();
+    const float offset = light.GetShadowCascadeOffset();
     const float a = (shadowMaxDistance - offset) / View->ViewZNear;
     const float b = (shadowMaxDistance - offset) - View->ViewZNear;
-    const float lambda = light.m_ShadowCascadeSplitLambda;
+    const float lambda = light.GetShadowCascadeSplitLambda();
 
     // Calc splits
     cascadeSplits[0] = View->ViewZNear;
@@ -230,7 +230,7 @@ void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light
     lightViewMatrix[1] = Float4(basis[1], 0.0f);
     lightViewMatrix[2] = Float4(basis[2], 0.0f);
 
-    const float halfCascadeRes = light.m_ShadowCascadeResolution >> 1;
+    const float halfCascadeRes = light.GetShadowCascadeResolution() >> 1;
     const float oneOverHalfCascadeRes = 1.0f / halfCascadeRes;
 
     int firstCascade = View->NumShadowMapCascades;
@@ -828,34 +828,12 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radi
     if (!light->IsCastShadow())
         return false;
 
-    //Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-
-    //Float4x4::PerspectiveMatrixDesc desc = {};
-    //desc.AspectRatio = 1;
-    //desc.FieldOfView = 90;
-    //desc.ZNear = 0.1f;
-    //desc.ZFar = 1000 /*radius*/;
-    //Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
-
-    //Float4x4 lightViewProjection;
-    //Float4x4 lightViewMatrix;
-
-    Float3 lightPos = light->m_RenderTransform.Position;
+    Float3 const& lightPos = light->GetRenderPosition();
 
     int totalInstances = 0;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        //Float3x3 basis = Float3x3(cubeFaceMatrices[faceIndex]);
-        //Float3 origin = basis * (-lightPos);
-
-        //lightViewMatrix[0] = Float4(basis[0], 0.0f);
-        //lightViewMatrix[1] = Float4(basis[1], 0.0f);
-        //lightViewMatrix[2] = Float4(basis[2], 0.0f);
-        //lightViewMatrix[3] = Float4(origin, 1.0f);
-
-        //lightViewProjection = projMat * lightViewMatrix;
-
         LightShadowmap* shadowMap = &m_FrameData.LightShadowmaps.Add();
 
         shadowMap->FirstShadowInstance = m_FrameData.ShadowInstances.Size();
@@ -1146,7 +1124,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         {
             TerrainComponent& terrain = *it;
 
-            auto* terrainResource = GameApplication::GetResourceManager().TryGet(terrain.m_Resource);
+            auto* terrainResource = GameApplication::GetResourceManager().TryGet(terrain.GetResource());
             if (!terrainResource)
                 continue;
 
@@ -1187,7 +1165,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
             localFrustum.FromMatrix(localMVP, true);
 
             // Update view
-            auto terrainView = worldRenderView->GetTerrainView(terrain.m_Resource);
+            auto terrainView = worldRenderView->GetTerrainView(terrain.GetResource());
 
             terrainView->Update(localViewPosition, localFrustum);
             if (terrainView->GetIndirectBufferDrawCount() == 0)
@@ -1246,7 +1224,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
             Float3x3 rotationMat = FixupLightRotation(rotation);
 
-            if (light.m_CastShadow)
+            if (light.IsCastShadow())
             {
                 AddShadowmapCascades(light, rotationMat, m_FrameLoop->GetStreamedMemoryGPU(), view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades);
 
@@ -1260,7 +1238,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
             light.UpdateEffectiveColor();
 
-            instance->ColorAndAmbientIntensity = light.m_EffectiveColor;
+            instance->ColorAndAmbientIntensity = light.GetEffectiveColor();
             instance->Matrix = rotationMat;
             instance->MaxShadowCascades = light.GetMaxShadowCascades();
             instance->RenderMask = ~0; //light.RenderingGroup;
@@ -1356,14 +1334,14 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         info->Type = ITEM_TYPE_LIGHT;
         info->ListIndex = index;
 
-        BvAxisAlignedBox const& AABB = light.m_AABBWorldBounds;
+        BvAxisAlignedBox const& AABB = light.GetWorldBoundingBox();
         info->Mins = AABB.Mins;
         info->Maxs = AABB.Maxs;
 
         if (m_LightVoxelizer.IsSSE())
-            info->ClipToBoxMatSSE = light.m_OBBTransformInverse * view->ClusterViewProjectionInversed;
+            info->ClipToBoxMatSSE = light.GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         else
-            info->ClipToBoxMat = light.m_OBBTransformInverse * view->ClusterViewProjectionInversed;
+            info->ClipToBoxMat = light.GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
 
         index++;
     }

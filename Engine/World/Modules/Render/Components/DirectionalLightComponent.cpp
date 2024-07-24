@@ -37,6 +37,19 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
 
+void DirectionalLightComponent::UpdateEffectiveColor()
+{
+    const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
+    float energy = m_IlluminanceInLux * EnergyUnitScale;
+
+    Color4 temperatureColor;
+    temperatureColor.SetTemperature(m_Temperature);
+
+    m_EffectiveColor[0] = m_Color[0] * temperatureColor[0] * energy;
+    m_EffectiveColor[1] = m_Color[1] * temperatureColor[1] * energy;
+    m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * energy;
+}
+
 void DirectionalLightComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawDirectionalLights)

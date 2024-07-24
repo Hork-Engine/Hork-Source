@@ -51,7 +51,7 @@ public:
     void                    Reset();
     void                    Purge();
 
-    void                    BeginRenderView(RenderViewData* InView, int InVisPass);
+    void                    BeginRenderView(RenderViewData* view, int visPass);
     void                    EndRenderView();
 
     RenderViewData const*   GetRenderView() const { return m_pView; }
@@ -59,65 +59,65 @@ public:
     void                    PushTransform(Float3x4 const& transform);
     void                    PopTransform();
 
-    void                    SetDepthTest(bool _DepthTest);
-    void                    SetColor(uint32_t _Color);
-    void                    SetColor(Color4 const& _Color);
-    void                    SetAlpha(float _Alpha);
-    void                    SetRandomColors(bool bRandomVolors);
+    void                    SetDepthTest(bool depthTest);
+    void                    SetColor(uint32_t color);
+    void                    SetColor(Color4 const& color);
+    void                    SetAlpha(float alpha);
+    void                    EnableRandomColors(bool enable);
 
-    void                    DrawPoint(Float3 const& _Position);
-    void                    DrawPoints(Float3 const* _Points, int _NumPoints, int _Stride);
-    void                    DrawPoints(ArrayView<Float3> _Points);
+    void                    DrawPoint(Float3 const& position);
+    void                    DrawPoints(Float3 const* points, int numPoints, size_t stride);
+    void                    DrawPoints(ArrayView<Float3> points);
 
-    void                    DrawLine(Float3 const& _P0, Float3 const& _P1);
-    void                    DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float _Step);
-    void                    DrawLine(ArrayView<Float3> _Points, bool _Closed = false);
+    void                    DrawLine(Float3 const& p0, Float3 const& p1);
+    void                    DrawDottedLine(Float3 const& p0, Float3 const& p1, float step);
+    void                    DrawLine(ArrayView<Float3> points, bool closed = false);
 
-    void                    DrawConvexPoly(ArrayView<Float3> _Points, bool _TwoSided = false);
+    void                    DrawConvexPoly(ArrayView<Float3> points, bool twoSided = false);
 
-    void                    DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, uint32_t const* _Indices, int _NumIndices, bool _TwoSided = false);
-    void                    DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<uint32_t> _Indices, bool _TwoSided = false);
-    void                    DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, uint16_t const* _Indices, int _NumIndices, bool _TwoSided = false);
-    void                    DrawTriangleSoup(ArrayView<Float3> _Points, ArrayView<uint16_t> _Indices, bool _TwoSided = false);
+    void                    DrawTriangleSoup(Float3 const* points, int numPoints, size_t stride, uint32_t const* indices, int numIndices, bool twoSided = false);
+    void                    DrawTriangleSoup(ArrayView<Float3> points, ArrayView<uint32_t> indices, bool twoSided = false);
+    void                    DrawTriangleSoup(Float3 const* points, int numPoints, size_t stride, uint16_t const* indices, int numIndices, bool twoSided = false);
+    void                    DrawTriangleSoup(ArrayView<Float3> points, ArrayView<uint16_t> indices, bool twoSided = false);
 
-    void                    DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, uint32_t const* _Indices, int _NumIndices);
-    void                    DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<uint32_t> _Indices);
-    void                    DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, uint16_t const* _Indices, int _NumIndices);
-    void                    DrawTriangleSoupWireframe(ArrayView<Float3> _Points, ArrayView<uint16_t> _Indices);
+    void                    DrawTriangleSoupWireframe(Float3 const* points, size_t stride, uint32_t const* indices, int numIndices);
+    void                    DrawTriangleSoupWireframe(ArrayView<Float3> points, ArrayView<uint32_t> indices);
+    void                    DrawTriangleSoupWireframe(Float3 const* points, size_t stride, uint16_t const* indices, int numIndices);
+    void                    DrawTriangleSoupWireframe(ArrayView<Float3> points, ArrayView<uint16_t> indices);
 
-    void                    DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided = false);
-    void                    DrawTriangles(Float3 const* _Triangles, int _NumTriangles, int _Stride, bool _TwoSided = false);
+    void                    DrawTriangle(Float3 const& p0, Float3 const& p1, Float3 const& p2, bool twoSided = false);
+    void                    DrawTriangles(Float3 const* triangles, int numTriangles, size_t stride, bool twoSided = false);
 
-    void                    DrawQuad(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, Float3 const& _P3, bool _TwoSided = false);
+    void                    DrawQuad(Float3 const& p0, Float3 const& p1, Float3 const& p2, Float3 const& p3, bool twoSided = false);
 
-    void                    DrawBox(Float3 const& _Position, Float3 const& _HalfExtents);
-    void                    DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfExtents, bool _TwoSided = false);
+    void                    DrawBox(Float3 const& position, Float3 const& halfExtents);
+    void                    DrawBoxFilled(Float3 const& position, Float3 const& halfExtents, bool twoSided = false);
 
-    void                    DrawOrientedBox(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents);
-    void                    DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents, bool _TwoSided = false);
+    void                    DrawOrientedBox(Float3 const& position, Float3x3 const& orientation, Float3 const& halfExtents);
+    void                    DrawOrientedBoxFilled(Float3 const& position, Float3x3 const& orientation, Float3 const& halfExtents, bool twoSided = false);
 
-    void                    DrawSphere(Float3 const& _Position, float _Radius);
-    void                    DrawOrientedSphere(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius);
-    void                    DrawSpherePatch(Float3 const& _Position, Float3 const& _Up, Float3 const& _Right, float _Radius, float _MinTh, float _MaxTh, float _MinPs, float _MaxPs, float _StepDegrees = 10.0f, bool _DrawCenter = true);
+    void                    DrawSphere(Float3 const& position, float radius);
+    void                    DrawOrientedSphere(Float3 const& position, Float3x3 const& orientation, float radius);
+    void                    DrawSpherePatch(Float3 const& position, Float3 const& up, Float3 const& right, float radius, float minTh, float maxTh, float minPs, float maxPs, float stepDegrees = 10.0f, bool drawCenter = true);
 
-    void                    DrawCircle(Float3 const& _Position, Float3 const& _UpVector, float _Radius);
-    void                    DrawCircleFilled(Float3 const& _Position, Float3 const& _UpVector, float _Radius, bool _TwoSided = false);
+    void                    DrawCircle(Float3 const& position, Float3 const& up, float radius);
+    void                    DrawCircleFilled(Float3 const& position, Float3 const& up, float radius, bool twoSided = false);
 
-    void                    DrawCone(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _HalfAngle);
-    void                    DrawCylinder(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height);
-    void                    DrawCapsule(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height, int _UpAxis);
+    void                    DrawCone(Float3 const& position, Float3x3 const& orientation, float radius, float halfAngleDegrees);
+    void                    DrawCylinder(Float3 const& position, Float3x3 const& orientation, float radius, float height);
+    void                    DrawCapsule(Float3 const& position, Float3x3 const& orientation, float radius, float height, int upAxis);
 
-    void                    DrawAABB(BvAxisAlignedBox const& _AABB);
-    void                    DrawOBB(BvOrientedBox const& _OBB);
+    void                    DrawAABB(BvAxisAlignedBox const& aabb);
+    void                    DrawOBB(BvOrientedBox const& obb);
 
-    void                    DrawAxis(const Float3x4& _TransformMatrix, bool _Normalized);
-    void                    DrawAxis(Float3 const& _Origin, Float3 const& _XVec, Float3 const& _YVec, Float3 const& _ZVec, Float3 const& _Scale = Float3(1));
+    void                    DrawAxis(Float3x4 const& transformMatrix, bool normalized);
+    void                    DrawAxis(Float3 const& origin, Float3 const& xVec, Float3 const& yVec, Float3 const& zVec, Float3 const& scale = Float3(1));
 
-    void                    DrawPlane(PlaneF const& _Plane, float _Length = 100.0f);
-    void                    DrawPlane(Float3 const& _Normal, float _D, float _Length = 100.0f);
+    void                    DrawPlane(PlaneF const& plane, float length = 100.0f);
+    void                    DrawPlane(Float3 const& normal, float d, float length = 100.0f);
 
-    void                    DrawPlaneFilled(PlaneF const& _Plane, float _Length = 100.0f, bool _TwoSided = false);
-    void                    DrawPlaneFilled(Float3 const& _Normal, float _D, float _Length = 100.0f, bool _TwoSided = false);
+    void                    DrawPlaneFilled(PlaneF const& plane, float length = 100.0f, bool twoSided = false);
+    void                    DrawPlaneFilled(Float3 const& normal, float d, float length = 100.0f, bool twoSided = false);
 
     void                    SplitCommands();
     int                     CommandsCount() const { return m_Cmds.Size(); }
@@ -129,7 +129,7 @@ public:
     DebugDrawCmds const&    GetCmds() const { return m_Cmds; }
 
 private:
-    bool                    PrimitiveReserve(DBG_DRAW_CMD _CmdName, int _NumVertices, int _NumIndices, DebugDrawCmd** _Cmd, DebugVertex** _Verts, uint16_t** _Indices);
+    bool                    PrimitiveReserve(DBG_DRAW_CMD name, int numVertices, int numIndices, DebugDrawCmd** cmd, DebugVertex** verts, uint16_t** indices);
 
     RenderViewData*         m_pView{};
     DebugVertices           m_Vertices;
@@ -139,8 +139,8 @@ private:
     int                     m_FirstVertex{};
     int                     m_FirstIndex{};
     int                     m_VisPass{};
-    bool                    m_bDepthTest{};
-    bool                    m_bSplit{};
+    bool                    m_DepthTest{};
+    bool                    m_Split{};
     Stack<Float3x4, 4>      m_TransformStack;
     const uint32_t*         m_pColors{};
     size_t                  m_ColorMask{1};

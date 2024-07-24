@@ -46,174 +46,116 @@ class PunctualLightComponent : public Component
 public:
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    static constexpr float MinRadius = 0.01f;
-    static constexpr float MinConeAngle = 1.0f;
-    static constexpr float MaxConeAngle = 180.0f;
+    static constexpr float      MinRadius = 0.01f;
+    static constexpr float      MinConeAngle = 1.0f;
+    static constexpr float      MaxConeAngle = 180.0f;
 
     // Public
     
-    void SetLumens(float lumens)
-    {
-        m_Lumens = Math::Max(0.0f, lumens);
-    }
+    void                        SetLumens(float lumens) { m_Lumens = Math::Max(0.0f, lumens); }
 
-    float GetLumens() const
-    {
-        return m_Lumens;
-    }
+    float                       GetLumens() const { return m_Lumens; }
 
-    void SetTemperature(float temperature)
-    {
-        m_Temperature = temperature;
-    }
+    void                        SetTemperature(float temperature) { m_Temperature = temperature; }
 
-    float GetTemperature() const
-    {
-        return m_Temperature;
-    }
+    float                       GetTemperature() const { return m_Temperature; }
 
-    void SetColor(Float3 const& color)
-    {
-        m_Color = color;
-    }
+    void                        SetColor(Float3 const& color) { m_Color = color; }
 
-    Float3 const& GetColor() const
-    {
-        return m_Color;
-    }
+    Float3 const&               GetColor() const { return m_Color; }
 
-    void SetRadius(float radius)
-    {
-        m_Radius = Math::Max(MinRadius, radius);
-        m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
-    }
+    void                        SetRadius(float radius);
 
-    float GetRadius() const
-    {
-        return m_Radius;
-    }
+    float                       GetRadius() const { return m_Radius; }
 
-    void SetInnerConeAngle(float angle)
-    {
-        m_InnerConeAngle = Math::Clamp(angle, MinConeAngle, MaxConeAngle);
-        m_CosHalfInnerConeAngle = Math::Cos(Math::Radians(m_InnerConeAngle * 0.5f));
-    }
+    void                        SetInnerConeAngle(float angle);
 
-    float GetInnerConeAngle() const
-    {
-        return m_InnerConeAngle;
-    }
+    float                       GetInnerConeAngle() const { return m_InnerConeAngle; }
 
-    void SetOuterConeAngle(float angle)
-    {
-        m_OuterConeAngle = Math::Clamp(angle, MinConeAngle, MaxConeAngle);
-        m_CosHalfOuterConeAngle = Math::Cos(Math::Radians(m_OuterConeAngle * 0.5f));
-    }
+    void                        SetOuterConeAngle(float angle);
 
-    float GetOuterConeAngle() const
-    {
-        return m_OuterConeAngle;
-    }
+    float                       GetOuterConeAngle() const { return m_OuterConeAngle; }
 
-    void SetSpotExponent(float exponent)
-    {
-        m_SpotExponent = exponent;
-    }
+    void                        SetSpotExponent(float exponent) { m_SpotExponent = exponent; }
 
-    float GetSpotExponent() const
-    {
-        return m_SpotExponent;
-    }
+    float                       GetSpotExponent() const { return m_SpotExponent; }
 
-    void SetPhotometric(uint16_t id)
-    {
-        m_PhotometricProfileId = id;
-    }
+    void                        SetPhotometric(uint16_t id) { m_PhotometricProfileId = id; }
 
-    uint16_t GetPhotometric() const
-    {
-        return m_PhotometricProfileId;
-    }
+    uint16_t                    GetPhotometric() const { return m_PhotometricProfileId; }
 
-    void SetPhotometricAsMask(bool bPhotometricAsMask)
-    {
-        m_bPhotometricAsMask = bPhotometricAsMask;
-    }
+    void                        SetPhotometricAsMask(bool bPhotometricAsMask) { m_PhotometricAsMask = bPhotometricAsMask; }
 
-    bool IsPhotometricAsMask() const
-    {
-        return m_bPhotometricAsMask;
-    }
+    bool                        IsPhotometricAsMask() const { return m_PhotometricAsMask; }
 
-    /** Luminous intensity scale for photometric profile */
-    void SetLuminousIntensityScale(float intensityScale)
-    {
-        m_LuminousIntensityScale = intensityScale;
-    }
+    /// Luminous intensity scale for photometric profile
+    void                        SetLuminousIntensityScale(float intensityScale) { m_LuminousIntensityScale = intensityScale; }
 
-    float GetLuminousIntensityScale() const
-    {
-        return m_LuminousIntensityScale;
-    }
+    float                       GetLuminousIntensityScale() const { return m_LuminousIntensityScale; }
 
-    void SetCastShadow(bool castShadow)
-    {
-        m_CastShadow = castShadow;
-    }
+    void                        SetCastShadow(bool castShadow) { m_CastShadow = castShadow; }
 
-    bool IsCastShadow() const
-    {
-        return m_CastShadow;
-    }
+    bool                        IsCastShadow() const { return m_CastShadow; }
+
+    BvSphere                    GetWorldBoundingSphere() const { return m_WorldBoundingSphere; }
+
+    BvAxisAlignedBox const&     GetWorldBoundingBox() const { return m_WorldBoundingBox; };
+
+    BvOrientedBox  const&       GetWorldOrientedBoundingBox() const { return m_WorldOrientedBoundingBox; }
+
+    Float4x4 const&             GetOBBTransformInverse() const { return m_OBBTransformInverse; }
+
+    /// Force update for world bonding box
+    void                        UpdateWorldBoundingBox();
+
+    Float3 const&               GetRenderPosition() const { return m_RenderTransform.Position; }
 
     // Internal
 
-    void BeginPlay();
-    void PostTransform();
+    void                        BeginPlay();
+    void                        PostTransform();
 
-    void PreRender(struct PreRenderContext const& context);
+    void                        PreRender(struct PreRenderContext const& context);
 
-    void PackLight(Float4x4 const& viewMatrix, struct LightParameters& parameters);
+    void                        PackLight(Float4x4 const& viewMatrix, struct LightParameters& parameters);
 
-    void UpdateEffectiveColor();
-    void UpdateBoundingBox();
+    void                        UpdateEffectiveColor();
 
-    void DrawDebug(DebugRenderer& renderer);
+    void                        DrawDebug(DebugRenderer& renderer);
 
-    // TODO: Make private:
-
+private:
     struct LightTransform
     {
         Float3 Position;
         Quat Rotation;
     };
 
-    LightTransform   m_Transform[2];
-    LightTransform   m_RenderTransform;
-    uint32_t         m_LastFrame{0};
+    LightTransform              m_Transform[2];
+    LightTransform              m_RenderTransform;
+    uint32_t                    m_LastFrame{0};
 
-    BvSphere         m_SphereWorldBounds;
-    BvOrientedBox    m_OBBWorldBounds;
+    BvSphere                    m_WorldBoundingSphere;
+    BvAxisAlignedBox            m_WorldBoundingBox;
+    BvOrientedBox               m_WorldOrientedBoundingBox;
 
-    BvAxisAlignedBox m_AABBWorldBounds;
-    Float4x4         m_OBBTransformInverse;
-    uint32_t         m_PrimID;
-    bool             m_CastShadow = false;
+    Float4x4                    m_OBBTransformInverse;
+    uint32_t                    m_PrimID;
+    bool                        m_CastShadow = false;
 
-    Float3           m_Color = Float3(1.0f);
-    float            m_Temperature = 6590.0f;
-    float            m_Lumens = 3000.0f;
-    float            m_LuminousIntensityScale = 1;
-    Float3           m_EffectiveColor; // Composed from Temperature, Lumens, Color
-    uint16_t         m_PhotometricProfileId = 0;
-    bool             m_bPhotometricAsMask = false;
-    float            m_Radius = 15;
-    float            m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
-    float            m_InnerConeAngle = 180;
-    float            m_OuterConeAngle = 180;
-    float            m_CosHalfInnerConeAngle = 0;
-    float            m_CosHalfOuterConeAngle = 0;
-    float            m_SpotExponent = 1.0f;
+    Float3                      m_Color = Float3(1.0f);
+    float                       m_Temperature = 6590.0f;
+    float                       m_Lumens = 3000.0f;
+    float                       m_LuminousIntensityScale = 1;
+    Float3                      m_EffectiveColor; // Composed from Temperature, Lumens, Color
+    uint16_t                    m_PhotometricProfileId = 0;
+    bool                        m_PhotometricAsMask = false;
+    float                       m_Radius = 15;
+    float                       m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);
+    float                       m_InnerConeAngle = 180;
+    float                       m_OuterConeAngle = 180;
+    float                       m_CosHalfInnerConeAngle = 0;
+    float                       m_CosHalfOuterConeAngle = 0;
+    float                       m_SpotExponent = 1.0f;
 };
 
 namespace TickGroup_PostTransform

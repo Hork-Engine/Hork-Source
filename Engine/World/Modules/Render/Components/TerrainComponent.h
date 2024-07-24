@@ -46,9 +46,17 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    TerrainHandle m_Resource;
+    // Public
 
-    void DrawDebug(DebugRenderer& renderer);
+    void                        SetResource(TerrainHandle resource);
+    TerrainHandle               GetResource() const { return m_Resource; }
+
+    // Internal
+
+    void                        DrawDebug(DebugRenderer& renderer);
+
+private:
+    TerrainHandle               m_Resource;
 };
 
 HK_NAMESPACE_END

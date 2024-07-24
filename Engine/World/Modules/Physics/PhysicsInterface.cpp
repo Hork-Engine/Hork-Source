@@ -2136,9 +2136,9 @@ bool PhysicsInterface::CastBoxClosest(Float3 const& inRayStart, Float3 const& in
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2149,9 +2149,9 @@ bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir,
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2161,9 +2161,9 @@ bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& 
     JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
     JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2173,9 +2173,9 @@ bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs,
     JPH::Vec3 pos = ConvertVector((inMins + inMaxs) * 0.5f);
     JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2185,9 +2185,9 @@ bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const&
     JPH::Vec3 pos = ConvertVector(inRayStart);
     JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2197,9 +2197,9 @@ bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayD
     JPH::Vec3 pos = ConvertVector(inRayStart);
     JPH::Vec3 direction = ConvertVector(inRayDir);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2210,9 +2210,9 @@ bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2223,9 +2223,9 @@ bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRay
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2236,9 +2236,9 @@ bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 cons
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2249,9 +2249,9 @@ bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRa
     JPH::Vec3 direction = ConvertVector(inRayDir);
     JPH::Quat rotation = ConvertQuaternion(inRotation);
 
-    JPH::RShapeCast shape_cast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
+    JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shape_cast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
 }
 
 void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
@@ -2320,13 +2320,13 @@ bool PhysicsInterface::CheckBox(Float3 const& inPosition, Float3 const& inHalfEx
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get())
@@ -2354,13 +2354,13 @@ bool PhysicsInterface::CheckBoxMinMax(Float3 const& inMins, Float3 const& inMaxs
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sTranslation(pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get())
@@ -2388,13 +2388,13 @@ bool PhysicsInterface::CheckSphere(Float3 const& inPosition, float inRadius, Sha
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sTranslation(pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get())
@@ -2423,13 +2423,13 @@ bool PhysicsInterface::CheckCapsule(Float3 const& inPosition, float inHalfHeight
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get())
@@ -2458,13 +2458,13 @@ bool PhysicsInterface::CheckCylinder(Float3 const& inPosition, float inHalfHeigh
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get())
@@ -2501,13 +2501,13 @@ void PhysicsInterface::CollideBox(Float3 const& inPosition, Float3 const& inHalf
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = pos;
+    JPH::RVec3 baseOffset = pos;
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
@@ -2541,13 +2541,13 @@ void PhysicsInterface::CollideBoxMinMax(Float3 const& inMins, Float3 const& inMa
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = JPH::RVec3::sZero();
+    JPH::RVec3 baseOffset = JPH::RVec3::sZero();
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sTranslation(pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
@@ -2581,13 +2581,13 @@ void PhysicsInterface::CollideSphere(Float3 const& inPosition, float inRadius, V
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = pos;
+    JPH::RVec3 baseOffset = pos;
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sTranslation(pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
@@ -2622,13 +2622,13 @@ void PhysicsInterface::CollideCapsule(Float3 const& inPosition, float inHalfHeig
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = pos;
+    JPH::RVec3 baseOffset = pos;
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
@@ -2663,13 +2663,13 @@ void PhysicsInterface::CollideCylinder(Float3 const& inPosition, float inHalfHei
     // All hit results will be returned relative to this offset, can be zero to get results in world position,
     // but when you 're testing far from the origin you get better precision by picking a position that' s closer e.g.inCenterOfMassTransform.GetTranslation()
     // since floats are most accurate near the origin
-    JPH::RVec3 base_offset = pos;
+    JPH::RVec3 baseOffset = pos;
 
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollideShape(&shape,
         JPH::Vec3::sReplicate(1.0f),
         JPH::RMat44::sRotationTranslation(rotation, pos),
         settings,
-        base_offset,
+        baseOffset,
         collector,
         BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()),
         CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
