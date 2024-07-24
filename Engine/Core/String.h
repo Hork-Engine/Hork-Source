@@ -54,14 +54,14 @@ class TStringView;
 
 /** Converts the given character to lowercase */
 template <typename CharT>
-CharT ToLower(CharT Ch)
+constexpr CharT ToLower(CharT Ch)
 {
     return (Ch >= 'A' && Ch <= 'Z') ? Ch - 'A' + 'a' : Ch;
 }
 
 /** Converts the given character to uppercase */
 template <typename CharT>
-CharT ToUpper(CharT Ch)
+constexpr CharT ToUpper(CharT Ch)
 {
     return (Ch >= 'a' && Ch <= 'z') ? Ch - 'a' + 'A' : Ch;
 }
@@ -91,14 +91,9 @@ uint32_t StringHashCaseInsensitive(const CharT* pRawStringBegin, const CharT* pR
 }
 
 template <typename CharT>
-StringSizeType StringLength(const CharT* pRawString)
+constexpr StringSizeType StringLength(const CharT* pRawString)
 {
-    const CharT* p = pRawString;
-    while (*p)
-        ++p;
-    size_t size = (size_t)(p - pRawString);
-    HK_ASSERT(size <= MaxStringSize);
-    return static_cast<StringSizeType>(size);
+    return std::char_traits<CharT>::length(pRawString);
 }
 
 template <typename CharT, typename Allocator>
@@ -115,7 +110,7 @@ StringSizeType StringLength(const CharT* pRawStringBegin, const CharT* pRawStrin
 }
 
 template <typename CharT>
-StringSizeType StringLength(TGlobalStringView<CharT> const& Str)
+constexpr StringSizeType StringLength(TGlobalStringView<CharT> const& Str)
 {
     return StringLength(Str.CStr());
 }
@@ -198,7 +193,7 @@ public:
         m_pData(""), m_Size(0 | NullTerminatedBit)
     {}
 
-    HK_FORCEINLINE TStringView(const CharT* pRawString) :
+    HK_FORCEINLINE constexpr TStringView(const CharT* pRawString) :
         m_pData(pRawString ? pRawString : NullStr<CharT>()), m_Size((pRawString ? StringLength(pRawString) : 0) | NullTerminatedBit)
     {}
 
@@ -224,7 +219,7 @@ public:
         m_pData(Str.ToPtr()), m_Size(Str.Size() | NullTerminatedBit)
     {}
 
-    HK_FORCEINLINE TStringView(TGlobalStringView<CharT> Str) :
+    HK_FORCEINLINE constexpr TStringView(TGlobalStringView<CharT> Str) :
         m_pData(Str.CStr()), m_Size(StringLength(Str.CStr()) | NullTerminatedBit)
     {}
 
