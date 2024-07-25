@@ -78,14 +78,14 @@ HK_INLINE Interface& World::GetInterface()
 template <typename Event>
 HK_INLINE void World::SubscribeEvent(GameObject* eventSender, Component* receiver, typename Event::Holder::DelegateType delegate)
 {
-    Event::Holder* eventHolder = eventSender->GetWorld()->GetEventHolder<Event>();
+    typename Event::Holder* eventHolder = eventSender->GetWorld()->GetEventHolder<Event>();
     eventHolder->Add(eventSender, receiver, delegate);
 }
 
 template <typename Event>
 HK_INLINE void World::UnsubscribeEvent(GameObject* eventSender, Component* receiver)
 {
-    Event::Holder* eventHolder = eventSender->GetWorld()->GetEventHolder<Event>();
+    typename Event::Holder* eventHolder = eventSender->GetWorld()->GetEventHolder<Event>();
     eventHolder->Remove(eventSender, receiver);
 }
 
@@ -101,8 +101,48 @@ HK_INLINE typename Event::Holder* World::GetEventHolder()
 {
     auto typeID = WorldEventRTTR::TypeID<Event>;
     if (!m_EventHolders[typeID])
-        m_EventHolders[typeID] = new Event::Holder;
-    return static_cast<Event::Holder*>(m_EventHolders[typeID]);
+        m_EventHolders[typeID] = new typename Event::Holder;
+    return static_cast<typename Event::Holder*>(m_EventHolders[typeID]);
+}
+
+template <typename ComponentType>
+HK_FORCEINLINE Handle32<ComponentType> GameObject::CreateComponent()
+{
+    return m_World->GetComponentManager<ComponentType>().CreateComponent(this);
+}
+
+template <typename ComponentType>
+HK_FORCEINLINE Handle32<ComponentType> GameObject::CreateComponent(ComponentType*& component)
+{
+    return m_World->GetComponentManager<ComponentType>().CreateComponent(this, component);
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::SubscribeEvents(Component* component)
+{
+    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginOverlap))
+    {
+        World::SubscribeEvent<Event_OnBeginOverlap>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnBeginOverlap});
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnEndOverlap))
+    {
+        World::SubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnEndOverlap});
+    }
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::UnsubscribeEvents(Component* component)
+{
+    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginOverlap))
+    {
+        World::UnsubscribeEvent<Event_OnBeginOverlap>(component->GetOwner(), component);
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnEndOverlap))
+    {
+        World::UnsubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component);
+    }
 }
 
 HK_NAMESPACE_END

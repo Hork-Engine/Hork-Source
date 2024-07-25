@@ -261,15 +261,15 @@ struct TVector2
         return &X;
     }
 
-    T& operator[](int index)
+    constexpr T& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
-    T const& operator[](int index) const
+    constexpr T const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -637,15 +637,15 @@ struct TVector3
         return &X;
     }
 
-    T& operator[](int index)
+    constexpr T& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
-    T const& operator[](int index) const
+    constexpr T const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -1264,15 +1264,15 @@ struct TVector4
         return &X;
     }
 
-    T& operator[](int index)
+    constexpr T& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
-    T const& operator[](int index) const
+    constexpr T const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -2119,15 +2119,15 @@ struct Float2x2
         return &Col0.X;
     }
 
-    Float2& operator[](int index)
+    constexpr Float2& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
-    Float2 const& operator[](int index) const
+    constexpr Float2 const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
@@ -2354,15 +2354,15 @@ struct Float3x3
         return &Col0.X;
     }
 
-    Float3& operator[](int index)
+    constexpr Float3& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
-    Float3 const& operator[](int index) const
+    constexpr Float3 const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
@@ -2705,15 +2705,15 @@ struct Float4x4
         return &Col0.X;
     }
 
-    Float4& operator[](int index)
+    constexpr Float4& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
-    Float4 const& operator[](int index) const
+    constexpr Float4 const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
@@ -3441,15 +3441,15 @@ struct Float3x4
         return &Col0.X;
     }
 
-    Float4& operator[](int index)
+    constexpr Float4& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
-    Float4 const& operator[](int index) const
+    constexpr Float4 const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 

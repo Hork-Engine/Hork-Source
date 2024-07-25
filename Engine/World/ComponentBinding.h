@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Component.h>
+#include <Engine/World/World.h>
 
 HK_NAMESPACE_BEGIN
 

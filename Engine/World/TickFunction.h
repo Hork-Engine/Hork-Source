@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Engine/Core/Delegate.h>
 #include <Engine/Core/StringID.h>
 #include <Engine/Core/Containers/Vector.h>
+#include "ComponentRTTR.h"
+#include "InterfaceRTTR.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -69,7 +71,7 @@ struct TickFunction
 {
     TickFunctionDesc            Desc;
     TickGroup                   Group;
-    Delegate<void()>            Delegate;
+    Hk::Delegate<void()>        Delegate;
     uint32_t                    OwnerTypeID;
 };
 

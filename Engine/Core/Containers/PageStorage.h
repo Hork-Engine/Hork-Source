@@ -217,7 +217,7 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::Resize(uint32_t size)
 
 template <typename T, size_t PageSize>
 template <typename... Args>
-HK_FORCEINLINE T* PageStorage<T, PageSize>::EmplaceBack(Args&&...)
+HK_FORCEINLINE T* PageStorage<T, PageSize>::EmplaceBack(Args&&... args)
 {
     m_Data.Grow(m_Size + 1);
     return new (m_Data.GetAddress(m_Size++)) T(std::forward<Args>(args)...);

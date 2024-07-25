@@ -433,31 +433,11 @@ HK_INLINE void ComponentManager<ComponentType>::OnEndOverlap(ComponentHandle han
 }
 
 template <typename ComponentType>
-HK_INLINE void ComponentManager<ComponentType>::SubscribeEvents(Component* component)
+HK_FORCEINLINE ComponentType* Component::Upcast(Component* component)
 {
-    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginOverlap))
-    {
-        World::SubscribeEvent<Event_OnBeginOverlap>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnBeginOverlap});
-    }
-
-    if constexpr (HK_HAS_METHOD(ComponentType, OnEndOverlap))
-    {
-        World::SubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnEndOverlap});
-    }
-}
-
-template <typename ComponentType>
-HK_INLINE void ComponentManager<ComponentType>::UnsubscribeEvents(Component* component)
-{
-    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginOverlap))
-    {
-        World::UnsubscribeEvent<Event_OnBeginOverlap>(component->GetOwner(), component);
-    }
-
-    if constexpr (HK_HAS_METHOD(ComponentType, OnEndOverlap))
-    {
-        World::UnsubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component);
-    }
+    if (component->GetManager()->GetComponentTypeID() == ComponentRTTR::TypeID<ComponentType>)
+        return static_cast<ComponentType*>(component);
+    return nullptr;
 }
 
 HK_NAMESPACE_END

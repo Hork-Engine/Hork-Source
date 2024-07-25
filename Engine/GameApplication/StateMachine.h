@@ -54,9 +54,10 @@ protected:
 
     virtual void        Update(float timeStep) {}
 
+    StateMachine*       m_Machine;
+
 private:
     bool                m_IsActive{};
-    StateMachine*       m_Machine;
 };
 
 class StateMachine : public Noncopyable
@@ -91,6 +92,8 @@ private:
         Delegate<void()>        m_OnEnd;
         Delegate<void(float)>   m_OnUpdate;
 
+                        State(StateMachine* machine);
+
         void            Begin() override;
         void            End() override;
         void            Update(float timeStep) override;
@@ -113,8 +116,7 @@ HK_INLINE void StateMachine::BindObject(StringView name, Args&&... args)
 template <typename T>
 HK_FORCEINLINE void StateMachine::Bind(StringView name, T* object, void (T::*begin)(), void (T::*end)(), void (T::*update)(float))
 {
-    auto state = MakeUnique<State>();
-    state->m_Machine = this;
+    auto state = MakeUnique<State>(this);
     if (begin)
         state->m_OnBegin.Bind(object, begin);
     if (end)

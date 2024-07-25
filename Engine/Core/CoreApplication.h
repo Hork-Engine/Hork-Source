@@ -41,12 +41,12 @@ class ArgumentPack
 public:
     ArgumentPack() = default;
 
-    ArgumentPack(int argc, const char* argv[]) :
+    ArgumentPack(int argc, char* argv[]) :
         Argc(argc), Argv(argv)
     {}
 
     int          Argc{};
-    const char** Argv{};
+    char**       Argv{};
 };
 
 class ApplicationArguments

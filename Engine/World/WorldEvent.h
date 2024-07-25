@@ -109,12 +109,12 @@ private:
 
 struct Event_OnBeginOverlap
 {
-    using Holder = typename EventHolderTempl<Event_OnBeginOverlap, class BodyComponent*>;
+    using Holder = EventHolderTempl<Event_OnBeginOverlap, class BodyComponent*>;
 };
 
 struct Event_OnEndOverlap
 {
-    using Holder = typename EventHolderTempl<Event_OnEndOverlap, class BodyComponent*>;
+    using Holder = EventHolderTempl<Event_OnEndOverlap, class BodyComponent*>;
 };
 
 using WorldEventTypeID = uint32_t;

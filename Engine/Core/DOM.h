@@ -192,6 +192,8 @@ private:
     Vector<Object*> m_Array;
     // String data
     SmallString m_String;
+
+    friend class Member;
 };
 
 class Member final
@@ -392,7 +394,7 @@ struct Convert<type> \
 { \
     static Object Encode(type const& rhs) \
     { \
-        return Core::ToString(rhs); \
+        return Object(Core::ToString(rhs)); \
     } \
     static bool Decode(Object const& object, type& rhs) \
     { \

@@ -156,7 +156,6 @@ bool TerrainCollisionData::IsNoCollision(uint32_t inX, uint32_t inY) const
 
 bool TerrainCollisionData::ProjectOntoSurface(Float3 const& inLocalPosition, Float3& outSurfacePosition, Float3& outSurfaceNormal) const
 {
-    JPH::Vec3 local_position = ConvertVector(inLocalPosition);
     JPH::Vec3 surface_position;
     JPH::SubShapeID sub_shape_id;
 

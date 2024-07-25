@@ -3700,6 +3700,9 @@ bool ImmediateContextGLImpl::CopyFramebufferToTexture(FGRenderPassContext&   Ren
         case TEXTURE_CUBE_ARRAY:
             // FIXME: The specification does not say anything about this texture type.
             return false;
+        default:
+            HK_ASSERT_(0, "Unknown texture type");
+            return false;
     }
 
     return true;
@@ -4824,6 +4827,9 @@ bool ImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                     type,
                                     pSysMem);
             }
+            break;
+        default:
+            HK_ASSERT_(0, "Unknown texture type");
             break;
     }
 

@@ -60,12 +60,4 @@ HK_FORCEINLINE bool Component::IsInitialized() const
     return m_Flags.IsInitialized;
 }
 
-template <typename ComponentType>
-HK_FORCEINLINE ComponentType* Component::Upcast(Component* component)
-{
-    if (component->GetManager()->GetComponentTypeID() == ComponentRTTR::TypeID<ComponentType>)
-        return static_cast<ComponentType*>(component);
-    return nullptr;
-}
-
 HK_NAMESPACE_END

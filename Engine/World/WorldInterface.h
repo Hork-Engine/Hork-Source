@@ -37,10 +37,11 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
+class World;
 
 class WorldInterfaceBase : public Noncopyable
 {
-    friend class World;
+    friend class            World;
 
 public:
     InterfaceTypeID         GetInterfaceTypeID() const;

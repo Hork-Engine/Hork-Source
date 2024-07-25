@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseTypes.h"
+#include "HashFunc.h"
 
 HK_NAMESPACE_BEGIN
 

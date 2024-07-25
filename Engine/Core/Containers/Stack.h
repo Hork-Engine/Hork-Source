@@ -50,7 +50,7 @@ public:
     using Pointer        = typename Container::Pointer;
     using ConstPointer   = typename Container::ConstPointer;
 
-    Container Array;
+    Container m_Array;
 
     Stack()              = default;
     Stack(Stack const&) = default;
@@ -58,61 +58,61 @@ public:
 
     HK_FORCEINLINE void Clear()
     {
-        Array.Clear();
+        m_Array.Clear();
     }
 
     HK_FORCEINLINE void Free()
     {
-        Array.Free();
+        m_Array.Free();
     }
 
     HK_FORCEINLINE void ShrinkToFit()
     {
-        Array.ShrinkToFit();
+        m_Array.ShrinkToFit();
     }
 
     HK_FORCEINLINE void Reserve(SizeType n)
     {
-        Array.Reserve(n);
+        m_Array.Reserve(n);
     }
 
     HK_FORCEINLINE void Flip()
     {
-        Array.Reverse();
+        m_Array.Reverse();
     }
 
     HK_FORCEINLINE bool IsEmpty() const
     {
-        return Array.IsEmpty();
+        return m_Array.IsEmpty();
     }
 
     HK_FORCEINLINE void Push(T const& _Val)
     {
-        Array.Add(_Val);
+        m_Array.Add(_Val);
     }
 
     HK_FORCEINLINE void Push(T&& _Val)
     {
-        Array.Add(std::move(_Val));
+        m_Array.Add(std::move(_Val));
     }
 
     template <class... Args>
     HK_FORCEINLINE void EmplacePush(Args&&... args)
     {
-        Array.EmplaceBack(std::forward<Args>(args)...);
+        m_Array.EmplaceBack(std::forward<Args>(args)...);
     }
 
     HK_FORCEINLINE T& Push()
     {
-        return Array.Add();
+        return m_Array.Add();
     }
 
     HK_FORCEINLINE bool Pop(Reference _Val)
     {
         if (IsEmpty())
             return false;
-        _Val = std::move(Array.Last());
-        Array.RemoveLast();
+        _Val = std::move(m_Array.Last());
+        m_Array.RemoveLast();
         return true;
     }
 
@@ -120,48 +120,48 @@ public:
     {
         if (IsEmpty())
             return false;
-        Array.RemoveLast();
+        m_Array.RemoveLast();
         return true;
     }
 
     HK_FORCEINLINE Reference Top()
     {
-        return Array.Last();
+        return m_Array.Last();
     }
 
     HK_FORCEINLINE ConstReference Top() const
     {
-        return Array.Last();
+        return m_Array.Last();
     }
 
     HK_FORCEINLINE Reference Bottom()
     {
-        return Array.Front();
+        return m_Array.Front();
     }
 
     HK_FORCEINLINE ConstReference Bottom() const
     {
-        return Array.Front();
+        return m_Array.Front();
     }
 
     HK_FORCEINLINE Pointer ToPtr()
     {
-        return Array.ToPtr();
+        return m_Array.ToPtr();
     }
 
     HK_FORCEINLINE ConstPointer ToPtr() const
     {
-        return Array.ToPtr();
+        return m_Array.ToPtr();
     }
 
     HK_FORCEINLINE SizeType Size() const
     {
-        return Array.Size();
+        return m_Array.Size();
     }
 
     HK_FORCEINLINE SizeType Capacity() const
     {
-        return Array.Capacity();
+        return m_Array.Capacity();
     }
 
     HK_FORCEINLINE int StackPoint() const
@@ -171,55 +171,55 @@ public:
 
     HK_FORCEINLINE void Swap(Stack& x)
     {
-        Swap(Array, x.Array);
+        Swap(m_Array, x.m_Array);
     }
 
     Stack& operator=(Stack const&) = default;
     Stack& operator=(Stack&&) = default;
 };
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator==(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator==(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return (lhs.Array == rhs.Array);
+    return (lhs.m_Array == rhs.m_Array);
 }
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator!=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator!=(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return !(lhs.Array == rhs.Array);
+    return (lhs.m_Array != rhs.m_Array);
 }
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator<(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator<(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return (lhs.Array < rhs.Array);
+    return (lhs.m_Array < rhs.m_Array);
 }
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator>(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator>(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return (rhs.Array < lhs.Array);
+    return (rhs.m_Array > lhs.m_Array);
 }
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator<=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator<=(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return !(rhs.Array < lhs.Array);
+    return (rhs.m_Array <= lhs.m_Array);
 }
 
-template <typename T, size_t BaseCapacity, typename Container>
-inline bool operator>=(Stack<T, BaseCapacity, Container> const& lhs, Stack<T, BaseCapacity, Container> const& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline bool operator>=(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return !(lhs.Array < rhs.Array);
+    return (lhs.m_Array >= rhs.m_Array);
 }
 
 HK_NAMESPACE_END
 
 namespace eastl
 {
-template <typename T, size_t BaseCapacity, typename Container>
-inline void swap(Hk::Stack<T, BaseCapacity, Container>& lhs, Hk::Stack<T, BaseCapacity, Container>& rhs)
+template <typename T, size_t BaseCapacity, typename OverflowAllocator>
+inline void swap(Hk::Stack<T, BaseCapacity, OverflowAllocator>& lhs, Hk::Stack<T, BaseCapacity, OverflowAllocator>& rhs)
 {
     lhs.Swap(rhs);
 }

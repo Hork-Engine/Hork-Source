@@ -334,7 +334,7 @@ template <> struct fmt::formatter<Hk::SmallString>
 
     template <typename FormatContext> auto format(Hk::SmallString const& v, FormatContext& ctx) -> decltype(ctx.out())
     {
-        Hk::StringView view = v.GetStringView();
+        Hk::StringView view = v;
         return fmt::detail::copy_str<char, const char*>(view.Begin(), view.End(), ctx.out());
     }
 };

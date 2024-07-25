@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/World/WorldInterface.h>
 #include <Engine/World/Component.h>
+#include <Engine/World/ComponentManager.h>
 #include <Engine/Core/Ref.h>
 #include <Engine/Math/Quat.h>
 

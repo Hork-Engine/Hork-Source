@@ -543,8 +543,8 @@ public:
         return it == end() ? Core::NPOS : (SizeType)(it - begin());
     }
 
-    template <typename T, typename Predicate>
-    HK_FORCEINLINE SizeType IndexOf(T const& value, Predicate predicate) const
+    template <typename U, typename Predicate>
+    HK_FORCEINLINE SizeType IndexOf(U const& value, Predicate predicate) const
     {
         for (auto it = begin(); it != end(); it++)
         {
@@ -1071,8 +1071,8 @@ public:
         return it == end() ? Core::NPOS : (SizeType)(it - begin());
     }
 
-    template <typename T, typename Predicate>
-    HK_FORCEINLINE SizeType IndexOf(T const& value, Predicate predicate) const
+    template <typename U, typename Predicate>
+    HK_FORCEINLINE SizeType IndexOf(U const& value, Predicate predicate) const
     {
         for (auto it = begin(); it != end(); it++)
         {

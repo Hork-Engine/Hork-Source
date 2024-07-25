@@ -35,6 +35,7 @@ SOFTWARE.
 #include "String.h"
 #include "HeapBlob.h"
 #include "Ref.h"
+#include "Logger.h"
 
 HK_NAMESPACE_BEGIN
 

@@ -1384,6 +1384,110 @@ int TStringView<CharT>::CmpN(TStringView<CharT> Str, SizeType Num) const
     return 0;
 }
 
+namespace Core
+{
+
+/** Case insensitive string comparision */
+int Stricmp(const char* _S1, const char* _S2);
+
+/** Case insensitive string comparision */
+int StricmpN(const char* _S1, const char* _S2, int _Num);
+
+/** Case sensitive string comparision */
+int Strcmp(const char* _S1, const char* _S2);
+
+/** Case sensitive string comparision */
+int StrcmpN(const char* _S1, const char* _S2, int _Num);
+
+/** The output is always null-terminated and truncated if necessary.
+The return value is either the number of characters stored or -1 if truncation occurs. */
+int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...);
+
+/** The output is always null-terminated and truncated if necessary.
+The return value is either the number of characters stored or -1 if truncation occurs. */
+int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList);
+
+/** Concatenate strings */
+void Strcat(char* _Dest, size_t _Size, const char* _Src);
+
+/** Concatenate strings */
+void StrcatN(char* _Dest, size_t _Size, const char* _Src, int _Num);
+
+/** Copy string */
+void Strcpy(char* _Dest, size_t _Size, const char* _Src);
+
+/** Copy string */
+void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num);
+
+/** Convert string to lowercase */
+char* ToLower(char* _Str);
+
+/** Convert char to lowercase */
+char ToLower(char Ch);
+
+/** Convert string to uppercase */
+char* ToUpper(char* _Str);
+
+/** Convert char to uppercase */
+char ToUpper(char Ch);
+
+/** Calc string length */
+int Strlen(const char* _Str);
+
+/** Find char in string */
+int StrContains(const char* _String, char _Ch);
+
+/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+int Substring(const char* _Str, const char* _SubStr);
+
+/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+int SubstringIcmp(const char* _Str, const char* _SubStr);
+
+/** Convert hex string to uint32 */
+uint32_t HexToUInt32(const char* _Str, int _Len);
+
+/** Convert hex string to uint64 */
+uint64_t HexToUInt64(const char* _Str, int _Len);
+
+/** Check char is a path separator */
+template <typename CharT>
+HK_FORCEINLINE bool IsPathSeparator(CharT Ch)
+{
+#ifdef HK_OS_WIN32
+    return Ch == '/' || Ch == '\\';
+#else
+    return Ch == '/';
+#endif
+}
+
+/** Replace separator \\ to / */
+HK_INLINE void FixSeparatorInplace(char* path)
+{
+    if (!path)
+        return;
+    while (*path)
+    {
+        if (*path == '\\')
+            *path = '/';
+        path++;
+    }
+}
+
+/**
+Fix path string insitu: replace separator \\ to /, skip series of /,
+skip redunant sequences of dir/../dir2 -> dir2.
+Return length of optimized path.
+*/
+int FixPathInplace(char* path, int length);
+
+/**
+Fix path string insitu: replace separator \\ to /, skip series of /,
+skip redunant sequences of dir/../dir2 -> dir2.
+Return length of optimized path.
+*/
+int FixPathInplace(char* path);
+
+}
 
 /**
 
@@ -1627,111 +1731,6 @@ template <> struct fmt::formatter<Hk::TGlobalStringView<Hk::WideChar>>
 };
 
 HK_NAMESPACE_BEGIN
-
-namespace Core
-{
-
-/** Case insensitive string comparision */
-int Stricmp(const char* _S1, const char* _S2);
-
-/** Case insensitive string comparision */
-int StricmpN(const char* _S1, const char* _S2, int _Num);
-
-/** Case sensitive string comparision */
-int Strcmp(const char* _S1, const char* _S2);
-
-/** Case sensitive string comparision */
-int StrcmpN(const char* _S1, const char* _S2, int _Num);
-
-/** The output is always null-terminated and truncated if necessary.
-The return value is either the number of characters stored or -1 if truncation occurs. */
-int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...);
-
-/** The output is always null-terminated and truncated if necessary.
-The return value is either the number of characters stored or -1 if truncation occurs. */
-int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList);
-
-/** Concatenate strings */
-void Strcat(char* _Dest, size_t _Size, const char* _Src);
-
-/** Concatenate strings */
-void StrcatN(char* _Dest, size_t _Size, const char* _Src, int _Num);
-
-/** Copy string */
-void Strcpy(char* _Dest, size_t _Size, const char* _Src);
-
-/** Copy string */
-void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num);
-
-/** Convert string to lowercase */
-char* ToLower(char* _Str);
-
-/** Convert char to lowercase */
-char ToLower(char Ch);
-
-/** Convert string to uppercase */
-char* ToUpper(char* _Str);
-
-/** Convert char to uppercase */
-char ToUpper(char Ch);
-
-/** Calc string length */
-int Strlen(const char* _Str);
-
-/** Find char in string */
-int StrContains(const char* _String, char _Ch);
-
-/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
-int Substring(const char* _Str, const char* _SubStr);
-
-/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
-int SubstringIcmp(const char* _Str, const char* _SubStr);
-
-/** Convert hex string to uint32 */
-uint32_t HexToUInt32(const char* _Str, int _Len);
-
-/** Convert hex string to uint64 */
-uint64_t HexToUInt64(const char* _Str, int _Len);
-
-/** Check char is a path separator */
-template <typename CharT>
-HK_FORCEINLINE bool IsPathSeparator(CharT Ch)
-{
-#ifdef HK_OS_WIN32
-    return Ch == '/' || Ch == '\\';
-#else
-    return Ch == '/';
-#endif
-}
-
-/** Replace separator \\ to / */
-HK_INLINE void FixSeparatorInplace(char* path)
-{
-    if (!path)
-        return;
-    while (*path)
-    {
-        if (*path == '\\')
-            *path = '/';
-        path++;
-    }
-}
-
-/**
-Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequences of dir/../dir2 -> dir2.
-Return length of optimized path.
-*/
-int FixPathInplace(char* path, int length);
-
-/**
-Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequences of dir/../dir2 -> dir2.
-Return length of optimized path.
-*/
-int FixPathInplace(char* path);
-
-}
 
 template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
 struct TPathUtils

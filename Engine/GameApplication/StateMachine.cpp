@@ -32,6 +32,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+StateMachine::State::State(StateMachine* machine)
+{
+    m_Machine = machine;
+}
+
 void StateMachine::State::Begin()
 {
     m_OnBegin.Invoke();

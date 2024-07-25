@@ -161,7 +161,7 @@ public:
     template <typename T, typename... TArgs>
     UIWidget& WithOnHovered(T* object, void (T::*method)(TArgs...))
     {
-        E_OnHovered.Add(object, method);
+        E_OnHovered.Bind(object, method);
         return *this;
     }
 

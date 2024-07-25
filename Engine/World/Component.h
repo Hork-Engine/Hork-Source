@@ -38,6 +38,8 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class World;
+class GameObject;
+class ComponentManagerBase;
 
 using ComponentHandle = Handle32<class Component>;
 

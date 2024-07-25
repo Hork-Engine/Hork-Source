@@ -40,7 +40,7 @@ private:
     struct Function
     {
         TickFunctionDesc    Desc;
-        Delegate<void()>    Delegate;
+        Hk::Delegate<void()>Delegate;
         uint32_t            OwnerTypeID;
         uint32_t            TraverseID;
     };

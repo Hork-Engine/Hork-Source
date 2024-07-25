@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Engine/Math/Transform.h>
 
 #include "Component.h"
+#include "ComponentManager.h"
 
 HK_NAMESPACE_BEGIN
 

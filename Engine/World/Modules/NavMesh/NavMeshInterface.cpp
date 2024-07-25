@@ -1278,7 +1278,7 @@ void NavMeshInterface::DrawDebug(DebugRenderer& renderer)
     struct DebugDrawCallback final : public duDebugDraw
     {
         DebugRenderer*        DD;
-        AreaDesc*             AreaDesc;
+        NavMeshInterface::AreaDesc* AreaDesc;
         Float3                AccumVertices[3];
         int                   AccumIndex;
         duDebugDrawPrimitives Primitive;

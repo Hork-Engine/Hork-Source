@@ -75,21 +75,21 @@ public:
     template <typename T, typename... TArgs>
     UITextEdit& WithOnEnterPress(T* object, void (T::*method)(TArgs...))
     {
-        E_OnEnterPress.Add(object, method);
+        E_OnEnterPress.Bind(object, method);
         return *this;
     }
 
     template <typename T, typename... TArgs>
     UITextEdit& WithOnEscapePress(T* object, void (T::*method)(TArgs...))
     {
-        E_OnEscapePress.Add(object, method);
+        E_OnEscapePress.Bind(object, method);
         return *this;
     }
 
     template <typename T, typename... TArgs>
     UITextEdit& WithOnTyping(T* object, void (T::*method)(TArgs...))
     {
-        E_OnTyping.Add(object, method);
+        E_OnTyping.Bind(object, method);
         return *this;
     }
 

@@ -132,6 +132,9 @@ TextureGLImpl::TextureGLImpl(DeviceGLImpl* pDevice, TextureDesc const& TextureDe
             case TEXTURE_CUBE_ARRAY:
                 glTextureStorage3D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height, TextureDesc.Resolution.SliceCount);
                 break;
+            default:
+                HK_ASSERT_(0, "Unknown texture type");
+                break;
         }
 
         //glTextureParameteri( id, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -334,6 +337,9 @@ void TextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, TextureMipLevelInfo* pInf
             pInfo->Resoultion.Width      = Math::Max(1u, Desc.Resolution.Width >> MipLevel);
             pInfo->Resoultion.Height     = pInfo->Resoultion.Width;
             pInfo->Resoultion.SliceCount = Desc.Resolution.SliceCount;
+            break;
+        default:
+            HK_ASSERT_(0, "Unknown texture type");
             break;
     }
 

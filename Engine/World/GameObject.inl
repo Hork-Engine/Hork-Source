@@ -86,18 +86,6 @@ HK_FORCEINLINE bool GameObject::IsDynamic() const
 }
 
 template <typename ComponentType>
-HK_FORCEINLINE Handle32<ComponentType> GameObject::CreateComponent()
-{
-    return m_World->GetComponentManager<ComponentType>().CreateComponent(this);
-}
-
-template <typename ComponentType>
-HK_FORCEINLINE Handle32<ComponentType> GameObject::CreateComponent(ComponentType*& component)
-{
-    return m_World->GetComponentManager<ComponentType>().CreateComponent(this, component);
-}
-
-template <typename ComponentType>
 HK_FORCEINLINE ComponentType* GameObject::GetComponent()
 {
     return static_cast<ComponentType*>(GetComponent(ComponentRTTR::TypeID<ComponentType>));
@@ -113,10 +101,14 @@ HK_FORCEINLINE Handle32<ComponentType> GameObject::GetComponentHandle()
 }
 
 template <typename ComponentType>
-HK_FORCEINLINE void GameObject::GetAllComponents(Vector<ComponentType*>& components)
+HK_INLINE void GameObject::GetAllComponents(Vector<ComponentType*>& components)
 {
-    GetAllComponents(ComponentRTTR::TypeID<ComponentType>,
-        static_cast<Vector<ComponenBase*>&>(components));
+    auto typeID = ComponentRTTR::TypeID<ComponentType>;
+    for (auto* component : m_Components)
+    {
+        if (component->GetManager()->GetComponentTypeID() == typeID)
+            components.Add(static_cast<ComponentType*>(component));
+    }
 }
 
 HK_FORCEINLINE GameObject::ComponentVector const& GameObject::GetComponents() const

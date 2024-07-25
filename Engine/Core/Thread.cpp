@@ -256,7 +256,7 @@ void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
         seconds,
         nanoseconds};
 
-    MutexGurad syncGuard(m_Sync);
+    MutexGuard syncGuard(m_Sync);
     while (!m_bSignaled)
     {
         if (pthread_cond_timedwait(&m_Internal, &m_Sync.m_Internal, &ts) == ETIMEDOUT)

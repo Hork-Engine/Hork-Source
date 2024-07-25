@@ -43,6 +43,31 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+namespace
+{
+    void JPH_Trace(const char* inFMT, ...)
+    {
+        // Format the message
+        va_list list;
+        va_start(list, inFMT);
+        char buffer[1024];
+        Core::Sprintf(buffer, sizeof(buffer), inFMT, list);
+        va_end(list);
+
+        // Print to the TTY
+        LOG("{}\n", buffer);
+    }
+
+    bool JPH_AssertFailed(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine)
+    {
+        // Print to the TTY
+        LOG("{}:{}: ({}) {}\n", inFile, inLine, inExpression, (inMessage != nullptr ? inMessage : ""));
+
+        // Breakpoint
+        return true;
+    }
+}
+
 PhysicsModule::PhysicsModule()
 {
     // Register allocation hook
@@ -66,28 +91,10 @@ PhysicsModule::PhysicsModule()
     };
 
     // Install callbacks
-    JPH::Trace = [](const char* inFMT, ...)
-    {
-        // Format the message
-        va_list list;
-        va_start(list, inFMT);
-        char buffer[1024];
-        Core::Sprintf(buffer, sizeof(buffer), inFMT, list);
-        va_end(list);
-
-        // Print to the TTY
-        LOG("{}\n", buffer);
-    };
+    JPH::Trace = JPH_Trace;
 
     #ifdef JPH_ENABLE_ASSERTS
-    JPH::AssertFailed = [](const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine)
-    {
-        // Print to the TTY
-        LOG("{}:{}: ({}) {}\n", inFile, inLine, inExpression, (inMessage != nullptr ? inMessage : ""));
-
-        // Breakpoint
-        return true;
-    };
+    JPH::AssertFailed = JPH_AssertFailed;
     #endif // JPH_ENABLE_ASSERTS
 
     // Create a factory

@@ -39,6 +39,15 @@ SOFTWARE.
 
 #include <SDL/SDL.h>
 
+#ifdef HK_OS_LINUX
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/file.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
+#endif
+
 HK_NAMESPACE_BEGIN
 
 namespace
@@ -295,7 +304,8 @@ ApplicationArguments::ApplicationArguments(ArgumentPack const& args) :
 
     if (m_NumArguments <= 0 || !m_Arguments)
     {
-        static char* dummyArgs[1] = {""};
+        static char emptyStr[] = {'\0'};
+        static char* dummyArgs[1] = {emptyStr};
         m_NumArguments = 1;
         m_Arguments = dummyArgs;
         m_bNeedFree = false;
