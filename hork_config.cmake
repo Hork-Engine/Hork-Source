@@ -110,6 +110,9 @@ if(UNIX)
         -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
         -Wno-maybe-uninitialized
         -Wno-enum-compare
+        -Wno-unused-local-typedefs
+        -Wno-unused-value
+        -Wno-switch
         )
     set(HK_COMPILER_DEFINES "")
 	
