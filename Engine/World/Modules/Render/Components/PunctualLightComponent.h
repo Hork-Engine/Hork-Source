@@ -89,9 +89,9 @@ public:
     bool                        IsPhotometricAsMask() const { return m_PhotometricAsMask; }
 
     /// Luminous intensity scale for photometric profile
-    void                        SetLuminousIntensityScale(float intensityScale) { m_LuminousIntensityScale = intensityScale; }
+    void                        SetPhotometricIntensity(float intensity) { m_PhotometricIntensity = intensity; }
 
-    float                       GetLuminousIntensityScale() const { return m_LuminousIntensityScale; }
+    float                       GetPhotometricIntensity() const { return m_PhotometricIntensity; }
 
     void                        SetCastShadow(bool castShadow) { m_CastShadow = castShadow; }
 
@@ -145,7 +145,7 @@ private:
     Float3                      m_Color = Float3(1.0f);
     float                       m_Temperature = 6590.0f;
     float                       m_Lumens = 3000.0f;
-    float                       m_LuminousIntensityScale = 1;
+    float                       m_PhotometricIntensity = 1;
     Float3                      m_EffectiveColor; // Composed from Temperature, Lumens, Color
     uint16_t                    m_PhotometricProfileID = 0xffff;
     bool                        m_PhotometricAsMask = false;

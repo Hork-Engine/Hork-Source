@@ -99,7 +99,7 @@ void PunctualLightComponent::UpdateEffectiveColor()
 
     if (m_PhotometricProfileID != 0xffff && !m_PhotometricAsMask)
     {
-        candela = m_LuminousIntensityScale;
+        candela = m_PhotometricIntensity;
     }
     else
     {
@@ -192,7 +192,7 @@ void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParamete
     parameters.Position = Float3(viewMatrix * m_RenderTransform.Position);
     parameters.Radius = GetRadius();
     parameters.InverseSquareRadius = m_InverseSquareRadius;
-    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_WorldOrientedBoundingBox.Orient[2]); // Only for photometric light
+    parameters.Direction = viewMatrix.TransformAsFloat3x3(m_RenderTransform.Rotation.ZAxis());// viewMatrix.TransformAsFloat3x3(m_WorldOrientedBoundingBox.Orient[2]); // Only for photometric light
     parameters.RenderMask = ~0u;                                                   //RenderMask; // TODO
     parameters.PhotometricProfile = m_PhotometricProfileID;
 
