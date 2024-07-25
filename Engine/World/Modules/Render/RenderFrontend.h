@@ -120,7 +120,6 @@ private:
 
     RenderFrontendDef m_RenderDef;
 
-    Ref<RenderCore::ITexture> m_PhotometricProfiles;
     //Ref<EnvironmentMap> m_DummyEnvironmentMap;
 
     LightVoxelizer m_LightVoxelizer;

@@ -59,15 +59,7 @@ extern ConsoleVar r_HBAODeinterleaved;
 ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
 RenderFrontend::RenderFrontend()
-{
-    GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
-                                                  .SetResolution(RenderCore::TextureResolution1DArray(256, 256))
-                                                  .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                                                  .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
-                                              &m_PhotometricProfiles);
-
-    m_PhotometricProfiles->SetDebugName("Photometric Profiles");
-}
+{}
 
 void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
 {
@@ -1025,7 +1017,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
 
     view->VTFeedback = &worldRenderView->m_VTFeedback;
 
-    view->PhotometricProfiles = m_PhotometricProfiles;
+    view->PhotometricProfiles = world->GetInterface<RenderInterface>().GetPhotometricPool().GetTexture().RawPtr();
 
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
@@ -1325,10 +1317,6 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         {
             LOG("maxOmnidirectionalShadowMaps hit\n");
         }
-
-        //PhotometricProfile* profile = light->GetPhotometricProfile();
-        //if (profile)
-        //  profile->WritePhotometricData(m_PhotometricProfiles, m_FrameNumber);
 
         ItemInfo* info = m_LightVoxelizer.AllocItem();
         info->Type = ITEM_TYPE_LIGHT;

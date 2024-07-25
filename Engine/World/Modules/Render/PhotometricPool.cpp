@@ -31,79 +31,80 @@ SOFTWARE.
 #include "PhotometricPool.h"
 
 #include <Engine/GameApplication/GameApplication.h>
+#include <Engine/Image/PhotometricData.h>
 
 HK_NAMESPACE_BEGIN
 
-PhotometricPool::PhotometricPool(PhotometricPool::CreateInfo const& createInfo)
+PhotometricPool::PhotometricPool(PhotometricPoolDesc const& desc)
 {
-    m_MaxSize = Math::Min(Math::ToGreaterPowerOfTwo(uint32_t(createInfo.MaxSize)), 2048u);
+    m_MaxCapacity = Math::Min(Math::ToGreaterPowerOfTwo(uint32_t(desc.MaxSize)), 2048u);
 
-    uint32_t size = Math::Clamp(Math::ToGreaterPowerOfTwo(uint32_t(createInfo.InitialSize)), 128u, m_MaxSize);
+    uint32_t capacity = Math::Clamp(Math::ToGreaterPowerOfTwo(uint32_t(desc.InitialSize)), 128u, m_MaxCapacity);
 
-    m_Memory.Resize(size * 256);
+    m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
     GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
-                                                  .SetResolution(RenderCore::TextureResolution1DArray(256, size))
+                                                  .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
                                               &m_Texture);
 
     m_Texture->SetDebugName("PhotometricPool");
-
-    uint8_t invalidData[256] = {};
-    Add(invalidData);
 }
 
 void PhotometricPool::GrowCapacity()
 {
-    uint32_t size = m_Memory.Size() / 256;
+    uint32_t capacity = m_Memory.Size() / PHOTOMETRIC_DATA_SIZE;
 
-    if (size > m_PoolSize)
+    if (capacity > m_PoolSize)
         return;
 
-    while (m_PoolSize >= size)
-    {
-        size += 128;
-    }
+    while (m_PoolSize >= capacity)
+        capacity += 128;
 
-    if (size > m_MaxSize)
-    {
-        size = m_MaxSize;
-    }
+    if (capacity > m_MaxCapacity)
+        capacity = m_MaxCapacity;
 
-    m_Memory.Resize(size * 256);
+    m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
     m_Texture.Reset();
-
     GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
-                                                  .SetResolution(RenderCore::TextureResolution1DArray(256, size))
+                                                  .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
                                               &m_Texture);
     m_Texture->SetDebugName("PhotometricPool");
 
     RenderCore::TextureRect rect;
-    rect.Dimension.X = 256;
+    rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
     rect.Dimension.Y = 1;
     rect.Dimension.Z = m_PoolSize;
-    m_Texture->WriteRect(rect, 256, 4, m_Memory.ToPtr());
+    m_Texture->WriteRect(rect, PHOTOMETRIC_DATA_SIZE, 4, m_Memory.ToPtr());
 }
 
-uint16_t PhotometricPool::Add(uint8_t const* data)
+uint16_t PhotometricPool::Add(ArrayView<uint8_t> samples)
 {
     uint16_t id;
 
+    if (samples.Size() != PHOTOMETRIC_DATA_SIZE)
+    {
+        LOG("PhotometricPool::Add: wrong array size - should be {}\n", PHOTOMETRIC_DATA_SIZE);
+        return 0xffff;
+    }
+
     if (m_FreeList.IsEmpty())
     {
-        if (m_PoolSize >= m_MaxSize)
+        if (m_PoolSize >= m_MaxCapacity)
         {
             LOG("PhotometricPool::Add: Exceeds the maximum pool size\n");
-            return 0;
+            return 0xffff;
         }
+
+        ++m_PoolSize;
 
         GrowCapacity();
 
-        id = m_PoolSize++;
+        id = m_PoolSize - 1;
     }
     else
     {
@@ -113,28 +114,30 @@ uint16_t PhotometricPool::Add(uint8_t const* data)
 
     RenderCore::TextureRect rect;
     rect.Offset.Z = id;
-    rect.Dimension.X = 256;
+    rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
     rect.Dimension.Y = 1;
     rect.Dimension.Z = 1;
-    m_Texture->WriteRect(rect, 256, 4, data);
+    m_Texture->WriteRect(rect, PHOTOMETRIC_DATA_SIZE, 4, samples.ToPtr());
 
-    Core::Memcpy(&m_Memory[id * 256], data, 256);
+    Core::Memcpy(&m_Memory[id * PHOTOMETRIC_DATA_SIZE], samples.ToPtr(), PHOTOMETRIC_DATA_SIZE);
 
     return id;
 }
 
 void PhotometricPool::Remove(uint16_t id)
 {
-    if (!id)
+    if (id == 0xffff)
         return;
 
-    //HK_ASSERT(m_FreeList.IndexOf(id) == Core::NPOS);
-    //m_FreeList.Add(id);
+    HK_IF_NOT_ASSERT(id < m_PoolSize)
+    {
+        return;
+    }
 
     auto iter = std::lower_bound(m_FreeList.begin(), m_FreeList.end(), id);
     if (iter != m_FreeList.end() && *iter == id)
     {
-        HK_ASSERT(0);
+        HK_ASSERT_(0, "Invalid photometric ID");
         return;
     }
     m_FreeList.Insert(iter, id);

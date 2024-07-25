@@ -35,8 +35,14 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void PhotometricData::ReadSamples(uint8_t* Data, float& Intensity) const
+bool PhotometricData::ReadSamples(MutableArrayView<uint8_t> Samples, float& Intensity) const
 {
+    if (Samples.Size() != PHOTOMETRIC_DATA_SIZE)
+    {
+        LOG("PhotometricData::ReadSamples: wrong array size - should be {}\n", PHOTOMETRIC_DATA_SIZE);
+        return false;
+    }
+
     float unnormalizedData[PHOTOMETRIC_DATA_SIZE];
 
     Intensity = 0.0f;
@@ -57,10 +63,12 @@ void PhotometricData::ReadSamples(uint8_t* Data, float& Intensity) const
     for (int i = 0; i < PHOTOMETRIC_DATA_SIZE; i++)
     {
         // NOTE: Store in 2.2 gamma space for best results.
-        Data[i] = Math::Pow(Math::Saturate(unnormalizedData[i] * normalizer), 1.0f / 2.2f) * 255;
+        Samples[i] = Math::Pow(Math::Saturate(unnormalizedData[i] * normalizer), 1.0f / 2.2f) * 255;
     }
 
     Intensity *= m_LampMultiplier * m_ElecBallFactor * m_ElecBlpFactor;
+
+    return true;
 }
 
 float PhotometricData::SampleAvgVertical(float VerticalAgnle) const

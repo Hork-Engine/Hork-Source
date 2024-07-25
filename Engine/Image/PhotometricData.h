@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Containers/Vector.h>
+#include <Engine/Core/Containers/ArrayView.h>
 #include <Engine/Core/String.h>
 
 HK_NAMESPACE_BEGIN
@@ -74,7 +74,7 @@ public:
         return !m_VertAngles.IsEmpty() && !m_HorzAngles.IsEmpty();
     }
 
-    void  ReadSamples(uint8_t* Data, float& Intensity) const;
+    bool  ReadSamples(MutableArrayView<uint8_t> Samples, float& Intensity) const;
     float SampleAvgVertical(float VerticalAgnle) const;
     float Sample2D(float x, float y) const;
     float SampleAvg(float x, float y) const;

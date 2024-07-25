@@ -41,6 +41,10 @@ RenderInterfaceImpl::RenderInterfaceImpl()
 RenderInterface::RenderInterface() :
     m_pImpl(new RenderInterfaceImpl)
 {
+    PhotometricPoolDesc photometricPoolDesc;
+    photometricPoolDesc.InitialSize = 128; // TODO: move to config
+    photometricPoolDesc.MaxSize = 2048; // TODO: move to config
+    m_PhotometricPool = MakeUnique<PhotometricPool>(photometricPoolDesc);
 }
 
 void RenderInterface::Initialize()

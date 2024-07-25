@@ -30,32 +30,38 @@ SOFTWARE.
 
 #pragma once
 
+#include <Engine/Core/Containers/ArrayView.h>
 #include <Engine/RenderCore/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
-class PhotometricPool
+struct PhotometricPoolDesc
+{
+    uint16_t InitialSize = 128;
+    uint16_t MaxSize = 2048;
+};
+
+class PhotometricPool final : public Noncopyable
 {
 public:
-    struct CreateInfo
-    {
-        uint16_t InitialSize;
-        uint16_t MaxSize;
-    };
-    PhotometricPool(CreateInfo const& createInfo);
+    explicit            PhotometricPool(PhotometricPoolDesc const& desc={});
 
-    uint16_t Add(uint8_t const* data);
+    uint16_t            Add(ArrayView<uint8_t> samples);
+    void                Remove(uint16_t id);
 
-    void Remove(uint16_t id);
+    uint32_t            Size() const { return m_PoolSize - m_FreeList.Size(); }
+    uint32_t            Capacity() const { return m_MaxCapacity; }
+
+    Ref<RenderCore::ITexture> GetTexture() { return m_Texture; }
 
 private:
-    void GrowCapacity();
+    void                GrowCapacity();
 
-    Ref<RenderCore::ITexture> m_Texture;
-    Vector<uint8_t> m_Memory;
-    Vector<uint16_t> m_FreeList;
-    uint32_t m_PoolSize{1};
-    uint32_t m_MaxSize{};
+    Ref<RenderCore::ITexture>   m_Texture;
+    Vector<uint8_t>             m_Memory;
+    Vector<uint16_t>            m_FreeList;
+    uint32_t                    m_PoolSize{};
+    uint32_t                    m_MaxCapacity{};
 };
 
 HK_NAMESPACE_END

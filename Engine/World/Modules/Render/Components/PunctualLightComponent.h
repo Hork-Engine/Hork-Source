@@ -80,11 +80,11 @@ public:
 
     float                       GetSpotExponent() const { return m_SpotExponent; }
 
-    void                        SetPhotometric(uint16_t id) { m_PhotometricProfileId = id; }
+    void                        SetPhotometric(uint16_t id) { m_PhotometricProfileID = id; }
 
-    uint16_t                    GetPhotometric() const { return m_PhotometricProfileId; }
+    uint16_t                    GetPhotometric() const { return m_PhotometricProfileID; }
 
-    void                        SetPhotometricAsMask(bool bPhotometricAsMask) { m_PhotometricAsMask = bPhotometricAsMask; }
+    void                        SetPhotometricAsMask(bool photometricAsMask) { m_PhotometricAsMask = photometricAsMask; }
 
     bool                        IsPhotometricAsMask() const { return m_PhotometricAsMask; }
 
@@ -147,7 +147,7 @@ private:
     float                       m_Lumens = 3000.0f;
     float                       m_LuminousIntensityScale = 1;
     Float3                      m_EffectiveColor; // Composed from Temperature, Lumens, Color
-    uint16_t                    m_PhotometricProfileId = 0;
+    uint16_t                    m_PhotometricProfileID = 0xffff;
     bool                        m_PhotometricAsMask = false;
     float                       m_Radius = 15;
     float                       m_InverseSquareRadius = 1.0f / (m_Radius * m_Radius);

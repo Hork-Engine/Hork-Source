@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Ref.h>
 #include <Engine/World/WorldInterface.h>
+#include "PhotometricPool.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -51,6 +52,8 @@ public:
     void                    SetAmbient(float ambient) { m_Ambient = ambient; }
     float                   GetAmbient() const { return m_Ambient; }
 
+    PhotometricPool&        GetPhotometricPool() const { return *m_PhotometricPool.RawPtr(); }
+
     class RenderInterfaceImpl* GetImpl() { return m_pImpl.RawPtr(); }
 
 protected:
@@ -62,6 +65,8 @@ private:
 
     UniqueRef<class RenderInterfaceImpl> m_pImpl;
     float                   m_Ambient = 0.00025f;
+
+    UniqueRef<PhotometricPool> m_PhotometricPool;
 };
 
 HK_NAMESPACE_END

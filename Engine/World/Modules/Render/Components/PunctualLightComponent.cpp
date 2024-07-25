@@ -97,9 +97,9 @@ void PunctualLightComponent::UpdateEffectiveColor()
 
     float candela;
 
-    if (m_PhotometricProfileId && !m_PhotometricAsMask)
+    if (m_PhotometricProfileID != 0xffff && !m_PhotometricAsMask)
     {
-        candela = m_LuminousIntensityScale; // * PhotometricProfile->GetIntensity(); // TODO
+        candela = m_LuminousIntensityScale;
     }
     else
     {
@@ -187,8 +187,6 @@ void PunctualLightComponent::UpdateWorldBoundingBox()
 
 void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParameters& parameters)
 {
-    //PhotometricProfile* profile = GetPhotometricProfile();
-
     UpdateEffectiveColor();
 
     parameters.Position = Float3(viewMatrix * m_RenderTransform.Position);
@@ -196,7 +194,7 @@ void PunctualLightComponent::PackLight(Float4x4 const& viewMatrix, LightParamete
     parameters.InverseSquareRadius = m_InverseSquareRadius;
     parameters.Direction = viewMatrix.TransformAsFloat3x3(m_WorldOrientedBoundingBox.Orient[2]); // Only for photometric light
     parameters.RenderMask = ~0u;                                                   //RenderMask; // TODO
-    parameters.PhotometricProfile = 0xffffffff;//profile ? profile->GetPhotometricProfileIndex() : 0xffffffff; // TODO
+    parameters.PhotometricProfile = m_PhotometricProfileID;
 
     if (m_InnerConeAngle < MaxConeAngle)
     {

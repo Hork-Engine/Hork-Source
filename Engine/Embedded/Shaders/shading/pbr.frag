@@ -232,9 +232,9 @@ vec3 CalcOmnidirectionalLightingPBR(vec3 Diffuse, vec3 F0, float k, float Roughn
                         attenuation *= CalcSpotAttenuation(LdotDir, GetLightCosHalfInnerConeAngle(lightIndex), GetLightCosHalfOuterConeAngle(lightIndex), GetLightSpotExponent(lightIndex));
 
                     #ifdef SUPPORT_PHOTOMETRIC_LIGHT            
-                    uint PhotometricProfile = GetLightPhotometricProfile(lightIndex);            
-                    if (PhotometricProfile < 0xffffffff)
-                        attenuation *= CalcPhotometricAttenuation(LdotDir, PhotometricProfile);// * GetLightIESScale(lightIndex);
+                    uint photometricProfile = GetLightPhotometricProfile(lightIndex);            
+                    if (photometricProfile < 0xffff)
+                        attenuation *= CalcPhotometricAttenuation(LdotDir, photometricProfile);// * GetLightIESScale(lightIndex);
                     #endif
 
                     attenuation *= NdL * shadow;
