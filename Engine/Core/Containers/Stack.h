@@ -199,13 +199,13 @@ inline bool operator<(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stac
 template <typename T, size_t BaseCapacity, typename OverflowAllocator>
 inline bool operator>(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return (rhs.m_Array > lhs.m_Array);
+    return (lhs.m_Array > rhs.m_Array);
 }
 
 template <typename T, size_t BaseCapacity, typename OverflowAllocator>
 inline bool operator<=(Stack<T, BaseCapacity, OverflowAllocator> const& lhs, Stack<T, BaseCapacity, OverflowAllocator> const& rhs)
 {
-    return (rhs.m_Array <= lhs.m_Array);
+    return (lhs.m_Array <= rhs.m_Array);
 }
 
 template <typename T, size_t BaseCapacity, typename OverflowAllocator>
