@@ -270,13 +270,13 @@ HK_FORCEINLINE void ComponentManager<ComponentType>::DestructComponent(Component
 {
     struct HandleFetcher
     {
-        HK_FORCEINLINE static ComponentHandle FetchHandle(ComponentType* component)
+        HK_FORCEINLINE ComponentHandle operator()(ComponentType const* component) const
         {
             return component->GetHandle();
         }
     };
     ComponentType* _movedComponent;
-    m_ComponentStorage.DestroyObject<HandleFetcher>(static_cast<Handle32<ComponentType>>(handle), _movedComponent);
+    m_ComponentStorage.DestroyObject(HandleFetcher{}, static_cast<Handle32<ComponentType>>(handle), _movedComponent);
     movedComponent = _movedComponent;
 }
 

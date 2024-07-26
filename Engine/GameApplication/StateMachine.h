@@ -36,9 +36,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+class StateMachine;
+
 class StateBase : public Noncopyable
 {
-    friend class StateMachine;
+    friend class        StateMachine;
 
 public:
     virtual             ~StateBase() = default;

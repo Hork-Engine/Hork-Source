@@ -359,13 +359,13 @@ void World::DestroyObjectsAndComponents()
         {
             struct HandleFetcher
             {
-                HK_FORCEINLINE static GameObjectHandle FetchHandle(GameObject* object)
+                HK_FORCEINLINE GameObjectHandle operator()(GameObject const* object) const
                 {
                     return object->GetHandle();
                 }
-            };
+            } fetcher;
             for (auto handle : m_ObjectsToDelete)
-                m_ObjectStorage.DestroyObject<HandleFetcher>(handle);
+                m_ObjectStorage.DestroyObject(fetcher, handle);
         }
         m_ObjectsToDelete.Clear();
     }

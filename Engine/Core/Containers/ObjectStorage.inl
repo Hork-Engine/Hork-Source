@@ -117,15 +117,15 @@ HK_INLINE Handle32<T> ObjectStorage<T, PageSize, StorageType, Heap>::CreateObjec
 
 template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename HandleFetcher>
-HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(Handle32<T> handle)
+HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(HandleFetcher const& fetcher, Handle32<T> handle)
 {
     T* movedObject;
-    DestroyObject<HandleFetcher>(handle, movedObject);
+    DestroyObject<HandleFetcher>(fetcher, handle, movedObject);
 }
 
 template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 template <typename HandleFetcher>
-HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(Handle32<T> handle, T*& movedObject)
+HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(HandleFetcher const& fetcher, Handle32<T> handle, T*& movedObject)
 {
     uint32_t handleID = handle.GetID();
     HK_ASSERT(m_RandomAccess[handleID]);
@@ -134,7 +134,7 @@ HK_INLINE void ObjectStorage<T, PageSize, StorageType, Heap>::DestroyObject(Hand
     {
         movedObject = std::launder(reinterpret_cast<T*>(m_Data.GetAddress(--m_Size)));
 
-        uint32_t movedObjectID = HandleFetcher::FetchHandle(movedObject).GetID();
+        uint32_t movedObjectID = fetcher(movedObject).GetID();
 
         if constexpr (!std::is_trivial_v<T>)
         {

@@ -56,10 +56,10 @@ public:
     Handle32<T>     CreateObject(T*& newObject);
 
     template <typename HandleFetcher>
-    void            DestroyObject(Handle32<T> handle);
+    void            DestroyObject(HandleFetcher const& fetcher, Handle32<T> handle);
 
     template <typename HandleFetcher>
-    void            DestroyObject(Handle32<T> handle, T*& movedObject);
+    void            DestroyObject(HandleFetcher const& fetcher, Handle32<T> handle, T*& movedObject);
 
     T*              GetObject(Handle32<T> handle);
 

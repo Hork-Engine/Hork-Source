@@ -61,7 +61,15 @@ class Object final
 public:
     Object() = default;
     Object(StringView str);
+    #if 1
+    Object(Object&& rhs) noexcept :
+        m_Members(std::move(rhs.m_Members)),
+        m_Array(std::move(rhs.m_Array)),
+        m_String(std::move(rhs.m_String))
+    {}
+    #else
     Object(Object&& rhs) noexcept = default;
+    #endif
     ~Object();
 
     Object& operator=(Object&& rhs) noexcept = default;
