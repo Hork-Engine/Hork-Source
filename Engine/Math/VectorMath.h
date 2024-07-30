@@ -153,7 +153,7 @@ HK_FORCEINLINE TVector3<T> Refract(TVector3<T> const& incidentVector, TVector3<T
 template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
 TVector3<T> ProjectVector(TVector3<T> const& vector, TVector3<T> const& normal, T overbounce)
 {
-    return vector - normal * Dot(vector, normal) * overbounce;
+    return vector - normal * (Dot(vector, normal) * overbounce);
 }
 
 template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
