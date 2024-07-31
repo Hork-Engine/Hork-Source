@@ -139,12 +139,13 @@ public:
 			outVertices[i] = first_vertex[i];
 		return face.mNumVertices;
 	}
-
+	
+	// Hork Engine ////
 	inline const uint8*		GetFaceVertices(uint inFaceIndex) const
 	{
-		const Face &face = mFaces[inFaceIndex];
-		return mVertexIdx.data() + face.mFirstVertex;
+		return mVertexIdx.data() + mFaces[inFaceIndex].mFirstVertex;
 	}
+	///////////////////
 
 	// Register shape functions with the registry
 	static void				sRegister();

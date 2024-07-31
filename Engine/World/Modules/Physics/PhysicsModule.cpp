@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Engine/Core/Thread.h>
 #include <Engine/Core/BaseMath.h>
 
+#undef free
+
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
@@ -75,7 +77,11 @@ PhysicsModule::PhysicsModule()
 
     JPH::Allocate = [](size_t inSize)
     {
-        return Core::GetHeapAllocator<HEAP_PHYSICS>().Alloc(inSize);
+        return Core::GetHeapAllocator<HEAP_PHYSICS>().Alloc(inSize, 0);
+    };
+    JPH::Reallocate = [](void *inBlock, size_t inOldSize, size_t inNewSize)
+    {
+        return Core::GetHeapAllocator<HEAP_PHYSICS>().Realloc(inBlock, inNewSize, 0);
     };
     JPH::Free = [](void* inBlock)
     {

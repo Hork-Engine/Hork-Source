@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project(JoltPhysics CXX)
+
+# When turning this option on, the library will be compiled using assertions. By default asserts are enabled in Debug build.
+option(USE_ASSERTS "Enable asserts" OFF)
 
 # When turning this option on, the library will be compiled using doubles for positions. This allows for much bigger worlds.
 option(DOUBLE_PRECISION "Use double precision math" OFF)
@@ -44,6 +47,10 @@ option(USE_TZCNT "Enable TZCNT" ON)
 option(USE_F16C "Enable F16C" ON)
 option(USE_FMADD "Enable FMADD" ON)
 
+# Enable SIMD for the WASM build. Note that this is currently off by default since not all browsers support this.
+# See: https://caniuse.com/?search=WebAssembly%20SIMD (Safari got support in March 2023 and was the last major browser to get support).
+option(USE_WASM_SIMD "Enable SIMD for WASM" OFF)
+
 # Enable all warnings
 option(ENABLE_ALL_WARNINGS "Enable all warnings and warnings as errors" ON)
 
@@ -69,6 +76,12 @@ option(PROFILER_IN_DISTRIBUTION "Enable the profiler in all builds" OFF)
 
 # Setting this option will force the library to use malloc/free instead of allowing the user to override the memory allocator
 option(DISABLE_CUSTOM_ALLOCATOR "Disable support for a custom memory allocator" OFF)
+
+# Setting this option will force the library to use the STL vector instead of the custom Array class
+option(USE_STD_VECTOR "Use std::vector instead of own Array class" OFF)
+
+# Setting this option will compile the ObjectStream class and RTTI attribute information
+option(ENABLE_OBJECT_STREAM "Compile the ObjectStream class and RTTI attribute information" ON)
 
 include(CMakeDependentOption)
 
@@ -122,9 +135,11 @@ if (MSVC)
 	endif()
 
 	# Set compiler flags for various configurations
-	set(CMAKE_CXX_FLAGS_DEBUG "/GS /Od /Ob0 /RTC1")
-	set(CMAKE_CXX_FLAGS_RELEASE "/GS- /Gy /O2 /Oi /Ot")
-	set(CMAKE_CXX_FLAGS_DISTRIBUTION "/GS- /Gy /O2 /Oi /Ot")
+	if (OVERRIDE_CXX_FLAGS)
+		set(CMAKE_CXX_FLAGS_DEBUG "/GS /Od /Ob0 /RTC1")
+		set(CMAKE_CXX_FLAGS_RELEASE "/GS- /Gy /O2 /Oi /Ot")
+	endif()
+	set(CMAKE_CXX_FLAGS_DISTRIBUTION "${CMAKE_CXX_FLAGS_RELEASE}")
 	set(CMAKE_CXX_FLAGS_RELEASEASAN "-fsanitize=address /Od")
 	set(CMAKE_CXX_FLAGS_RELEASEUBSAN "-fsanitize=undefined,implicit-conversion,float-divide-by-zero,local-bounds -fno-sanitize-recover=all")
 	set(CMAKE_CXX_FLAGS_RELEASECOVERAGE "-fprofile-instr-generate -fcoverage-mapping")
@@ -215,7 +230,7 @@ function(SET_INTERPROCEDURAL_OPTIMIZATION)
 			set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON PARENT_SCOPE)
 			set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DISTRIBUTION ON PARENT_SCOPE)
 		else()
-			message(WARNING "Interprocedural optimizations are not supported: ${IPO_CHECK_OUTPUT}")
+			message("Warning: Interprocedural optimizations are not supported for this target, turn off the option INTERPROCEDURAL_OPTIMIZATION to disable this warning")
 		endif()
 	endif()
 endfunction()
@@ -232,7 +247,9 @@ if (XCODE)
 endif()
 
 # Install Jolt library and includes
-install(TARGETS Jolt DESTINATION lib)
+install(TARGETS Jolt
+	EXPORT JoltExport
+	DESTINATION lib)
 foreach(SRC_FILE ${JOLT_PHYSICS_SRC_FILES})
 	string(REPLACE ${PHYSICS_REPO_ROOT} "" RELATIVE_SRC_FILE ${SRC_FILE})
 	get_filename_component(DESTINATION_PATH ${RELATIVE_SRC_FILE} DIRECTORY)
@@ -240,6 +257,15 @@ foreach(SRC_FILE ${JOLT_PHYSICS_SRC_FILES})
 		install(FILES ${SRC_FILE} DESTINATION include/${DESTINATION_PATH})
 	endif()
 endforeach()
+
+# Export Jolt library
+export(TARGETS Jolt
+	NAMESPACE Jolt::
+	FILE JoltConfig.cmake)
+install(EXPORT JoltExport
+	DESTINATION lib/cmake/Jolt/
+	NAMESPACE Jolt::
+	FILE JoltConfig.cmake)
 
 # Check if we're the root CMakeLists.txt, if not we are included by another CMake file and we should disable everything except for the main library
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
