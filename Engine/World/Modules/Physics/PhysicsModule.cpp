@@ -68,6 +68,89 @@ namespace
         // Breakpoint
         return true;
     }
+
+    class TempAllocatorImpl final : public JPH::TempAllocator
+    {
+    public:
+        JPH_OVERRIDE_NEW_DELETE
+
+        /// Constructs the allocator with a maximum allocatable size of inSize
+        explicit                        TempAllocatorImpl(JPH::uint inSize) :
+            mBase(static_cast<JPH::uint8 *>(JPH::AlignedAllocate(inSize, JPH_RVECTOR_ALIGNMENT))),
+            mSize(inSize)
+        {
+        }
+
+        /// Destructor, frees the block
+        virtual							~TempAllocatorImpl() override
+        {
+            JPH_ASSERT(mTop == 0);
+            JPH::AlignedFree(mBase);
+        }
+
+        // See: TempAllocator
+        virtual void *					Allocate(JPH::uint inSize) override
+        {
+            if (inSize == 0)
+            {
+                return nullptr;
+            }
+            else
+            {
+                inSize = JPH::AlignUp(inSize, JPH_RVECTOR_ALIGNMENT);
+                JPH::uint new_top = mTop + inSize;
+                void *address;
+                if (new_top <= mSize)
+                {
+                    address = mBase + mTop;
+                }
+                else
+                {
+                    static bool warn = true;
+                    if (warn)
+                    {
+                        LOG("TempAllocator: The temporary buffer exceeded {:.1f} megabytes. Fallback to general-purpose allocator.\n", static_cast<float>(mSize) / 1024 / 1024);
+                        warn = false;
+                    }
+                    address = JPH::AlignedAllocate(inSize, JPH_RVECTOR_ALIGNMENT);
+                }
+                mTop = new_top;
+                return address;
+            }
+        }
+
+        // See: TempAllocator
+        virtual void					Free(void *inAddress, JPH::uint inSize) override
+        {
+            if (inAddress == nullptr)
+            {
+                JPH_ASSERT(inSize == 0);
+            }
+            else
+            {
+                inSize = JPH::AlignUp(inSize, JPH_RVECTOR_ALIGNMENT);
+                JPH::uint new_top = mTop - inSize;
+                if (mTop <= mSize)
+                {
+                    if (mBase + new_top != inAddress)
+                    {
+                        JPH::Trace("TempAllocator: Freeing in the wrong order");
+                        std::abort();
+                    }
+                }
+                else
+                {
+                    JPH::AlignedFree(inAddress);
+                }
+                mTop = new_top;
+            }
+        }
+
+    private:
+        JPH::uint8 *						mBase;
+        JPH::uint							mSize;
+        JPH::uint							mTop = 0;
+    };
 }
 
 PhysicsModule::PhysicsModule()
@@ -114,7 +197,7 @@ PhysicsModule::PhysicsModule()
     // B.t.w. 10 MB is a typical value you can use.
     // If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
     // malloc / free.
-    m_PhysicsTempAllocator = MakeUnique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
+    m_PhysicsTempAllocator = MakeUnique<TempAllocatorImpl>(10 * 1024 * 1024);
 
     // We need a job system that will execute physics jobs on multiple threads. Typically
     // you would implement the JobSystem interface yourself and let Jolt Physics run on top
