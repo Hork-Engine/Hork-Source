@@ -34,8 +34,6 @@ SOFTWARE.
 #include <Engine/Core/Thread.h>
 #include <Engine/Core/BaseMath.h>
 
-#undef free
-
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>

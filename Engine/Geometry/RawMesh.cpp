@@ -42,8 +42,6 @@ SOFTWARE.
 
 #include <cgltf/cgltf.h>
 
-#undef free
-
 HK_NAMESPACE_BEGIN
 
 RawMesh::Surface* RawMesh::AllocSurface()

@@ -46,9 +46,6 @@ SOFTWARE.
 
 #include <Engine/GameApplication/GameApplication.h>
 
-#undef malloc
-#undef free
-
 #include <Recast/Recast.h>
 #include <Detour/DetourNavMesh.h>
 #include <Detour/DetourNavMeshQuery.h>
