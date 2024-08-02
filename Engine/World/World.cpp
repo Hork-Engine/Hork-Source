@@ -459,9 +459,6 @@ void World::Tick(float timeStep)
 
         m_PostTransform.Dispatch(m_Tick);
 
-        //m_LightingSystem->UpdateBoundingBoxes(m_Tick);
-        //m_RenderSystem->UpdateBoundingBoxes(m_Tick);
-
         //m_GameEvents.SwapReadWrite();
         //if (m_EventHandler)
         //    m_EventHandler->ProcessEvents(m_GameEvents.GetEventsUnlocked());
@@ -474,11 +471,6 @@ void World::Tick(float timeStep)
     }
 
     m_Tick.Interpolate = m_TimeAccumulator / fixedTimeStep;
-
-    //m_LightingSystem->Update(m_Tick);
-
-    //m_SkinningSystem->InterpolatePoses(m_Tick);
-    //m_SkinningSystem->UpdateSkins();
 
     m_LateUpdate.Dispatch(m_Tick);
 
