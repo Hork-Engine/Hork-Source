@@ -256,14 +256,7 @@ bool CharacterControllerComponent::IsInAir() const
     return false;
 }
 
-bool CharacterControllerComponent::IsTouchSupported() const
-{
-    if (m_pImpl)
-        return m_pImpl->IsSupported();
-    return false;
-}
-
-bool CharacterControllerComponent::IsTouchUnsupported() const
+bool CharacterControllerComponent::IsShouldFall() const
 {
     if (m_pImpl)
         return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::NotSupported;

@@ -136,14 +136,11 @@ public:
     /// Character is on a slope that is too steep and can't climb up any further. The caller should start applying downward velocity if sliding from the slope is desired.
     bool                    IsOnSteepGround() const;
 
+    /// Character is touching an object, but is not supported by it and should fall. The GetGroundXXX functions will return information about the touched object.
+    bool                    IsShouldFall() const;
+
     /// Character is in the air and is not touching anything.
     bool                    IsInAir() const;
-
-    /// Returns true if the player is supported by normal or steep ground
-    bool                    IsTouchSupported() const;
-
-    /// Character is touching an object, but is not supported by it and should fall. The GetGroundXXX functions will return information about the touched object.
-    bool                    IsTouchUnsupported() const;
 
     /// Use the ground body ID to get an updated estimate of the ground velocity. This function can be used if the ground body has moved / changed velocity and you want a new estimate of the ground velocity.
     void                    UpdateGroundVelocity();
