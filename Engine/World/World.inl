@@ -129,6 +129,21 @@ HK_INLINE void ComponentManager<ComponentType>::SubscribeEvents(Component* compo
     {
         World::SubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnEndOverlap});
     }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginContact))
+    {
+        World::SubscribeEvent<Event_OnBeginContact>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnBeginContact});
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnUpdateContact))
+    {
+        World::SubscribeEvent<Event_OnUpdateContact>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnUpdateContact});
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnEndContact))
+    {
+        World::SubscribeEvent<Event_OnEndContact>(component->GetOwner(), component, {this, &ComponentManager<ComponentType>::OnEndContact});
+    }
 }
 
 template <typename ComponentType>
@@ -142,6 +157,21 @@ HK_INLINE void ComponentManager<ComponentType>::UnsubscribeEvents(Component* com
     if constexpr (HK_HAS_METHOD(ComponentType, OnEndOverlap))
     {
         World::UnsubscribeEvent<Event_OnEndOverlap>(component->GetOwner(), component);
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnBeginContact))
+    {
+        World::UnsubscribeEvent<Event_OnBeginContact>(component->GetOwner(), component);
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnUpdateContact))
+    {
+        World::UnsubscribeEvent<Event_OnUpdateContact>(component->GetOwner(), component);
+    }
+
+    if constexpr (HK_HAS_METHOD(ComponentType, OnEndContact))
+    {
+        World::UnsubscribeEvent<Event_OnEndContact>(component->GetOwner(), component);
     }
 }
 

@@ -60,6 +60,12 @@ public:
 
     PhysicsMaterial         Material;
 
+    //
+    // Dynamic properties
+    //
+
+    bool                    DispatchContactEvents = false;
+
     // Utilites
     void                    GatherGeometry(Vector<Float3>& vertices, Vector<uint32_t>& indices);
 

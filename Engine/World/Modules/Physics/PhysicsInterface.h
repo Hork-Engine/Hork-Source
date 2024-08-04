@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Engine/World/Component.h>
 #include <Engine/World/ComponentManager.h>
 #include <Engine/Core/Ref.h>
+#include <Engine/Core/Containers/ArrayView.h>
 #include <Engine/Math/Quat.h>
 
 HK_NAMESPACE_BEGIN
@@ -50,7 +51,7 @@ enum class BroadphaseLayer : uint8_t
     // Triggers
     Trigger,
 
-    // Character to collide with triggers
+    // Character presence body (Not used now)
     Character,
 
     Max
@@ -165,7 +166,24 @@ struct ShapeCollideResult
 
 struct ShapeOverlapFilter
 {
-    BroadphaseLayerMask    BroadphaseLayers;
+    BroadphaseLayerMask     BroadphaseLayers;
+};
+
+struct ContactPoint
+{
+    Float3                  PositionSelf;
+    Float3                  PositionOther;
+    Float3                  VelocitySelf;
+    Float3                  VelocityOther;
+    Float3                  Impulse;
+};
+
+struct Collision
+{
+    BodyComponent*          Body = nullptr;
+    Float3                  Normal;
+    float                   Depth = 0;
+    ArrayView<ContactPoint> Contacts;
 };
 
 enum class ScalingMode : uint8_t
@@ -239,10 +257,11 @@ protected:
 
 private:
     void                    Update();
+    void                    UpdateCharacterControllers();
     void                    PostTransform();
     void                    DrawDebug(DebugRenderer& renderer);
     template <typename T>
-    void                    DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID, T* rigidBody);
+    void                    DrawRigidBody(DebugRenderer& renderer, T* rigidBody);
     void                    DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyID, class HeightFieldComponent* heightfield);
 
     UniqueRef<class PhysicsInterfaceImpl> m_pImpl;

@@ -70,8 +70,7 @@ void DynamicBodyComponent::BeginPlay()
         settings.mMaxLinearVelocity = MaxLinearVelocity;
         settings.mMaxAngularVelocity = MaxAngularVelocity;
         settings.mGravityFactor = m_GravityFactor;
-
-        //settings.mEnhancedInternalEdgeRemoval = true;
+        settings.mEnhancedInternalEdgeRemoval = true;
     
         settings.mInertiaMultiplier = InertiaMultiplier;
         if (Mass > 0.0f)

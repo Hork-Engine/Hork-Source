@@ -117,6 +117,21 @@ struct Event_OnEndOverlap
     using Holder = EventHolderTempl<Event_OnEndOverlap, class BodyComponent*>;
 };
 
+struct Event_OnBeginContact
+{
+    using Holder = EventHolderTempl<Event_OnBeginContact, struct Collision&>;
+};
+
+struct Event_OnUpdateContact
+{
+    using Holder = EventHolderTempl<Event_OnUpdateContact, struct Collision&>;
+};
+
+struct Event_OnEndContact
+{
+    using Holder = EventHolderTempl<Event_OnEndContact, class BodyComponent*>;
+};
+
 using WorldEventTypeID = uint32_t;
 
 namespace WorldEventRTTR

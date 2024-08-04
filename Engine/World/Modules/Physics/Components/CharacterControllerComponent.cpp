@@ -30,8 +30,11 @@ SOFTWARE.
 
 #include "CharacterControllerComponent.h"
 #include <Engine/World/Modules/Physics/PhysicsInterfaceImpl.h>
+#include <Engine/World/Modules/Physics/PhysicsModule.h>
 
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 HK_NAMESPACE_BEGIN
@@ -41,43 +44,47 @@ void CharacterControllerComponent::BeginPlay()
     PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
 	GameObject* owner = GetOwner();
 
-    // Create capsule shapes for all stances
-    //switch (ShapeType)
-    //{
-    //case CHARACTER_SHAPE_CAPSULE:
-    //auto standing_shape= JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * HeightStanding, RadiusStanding)).Create().Get();
-    //auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * HeightCrouching, RadiusCrouching)).Create().Get();
-    //        break;
+    JPH::Ref<JPH::Shape> standingShape, crouchingShape;
 
-    //case CHARACTER_SHAPE_CYLINDER:
-    auto standing_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * HeightStanding + RadiusStanding, RadiusStanding)).Create().Get();
-    //auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * HeightCrouching + RadiusCrouching, RadiusCrouching)).Create().Get();
-    //    break;
+    switch (ShapeType)
+    {
+        case CharacterShapeType::Box:
+            standingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(RadiusStanding, 0.5f * HeightStanding + RadiusStanding, RadiusStanding))).Create().Get();
+            crouchingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(RadiusCrouching, 0.5f * HeightCrouching + RadiusCrouching, RadiusCrouching))).Create().Get();
+            break;
 
-    //case CHARACTER_SHAPE_BOX:
-    //auto standing_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(RadiusStanding, 0.5f * HeightStanding + RadiusStanding, RadiusStanding))).Create().Get();
-    //auto crouching_shape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::BoxShape(JPH::Vec3(RadiusCrouching, 0.5f * HeightCrouching + RadiusCrouching, RadiusCrouching))).Create().Get();
-    //    break;
-    //}
-    // 
+        case CharacterShapeType::Cylinder:
+            standingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * HeightStanding + RadiusStanding, RadiusStanding)).Create().Get();
+            crouchingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CylinderShape(0.5f * HeightCrouching + RadiusCrouching, RadiusCrouching)).Create().Get();
+            break;
+
+        case CharacterShapeType::Capsule:
+            standingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightStanding + RadiusStanding, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * HeightStanding, RadiusStanding)).Create().Get();
+            crouchingShape = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0, 0.5f * HeightCrouching + RadiusCrouching, 0), JPH::Quat::sIdentity(), new JPH::CapsuleShape(0.5f * HeightCrouching, RadiusCrouching)).Create().Get();
+            break;
+    }
 
     auto position = ConvertVector(owner->GetWorldPosition());
     auto rotation = ConvertQuaternion(owner->GetWorldRotation().Normalized());
 
     JPH::CharacterVirtualSettings settings;
-    settings.mMaxSlopeAngle = MaxSlopeAngle;
-    settings.mMaxStrength = MaxStrength;
-    settings.mShape = standing_shape;
+    settings.mMass = m_Mass;
+    settings.mMaxSlopeAngle = Math::Radians(m_MaxSlopeAngle);
+    settings.mMaxStrength = m_MaxStrength;
+    settings.mShape = standingShape;
     settings.mCharacterPadding = CharacterPadding;
-    settings.mPenetrationRecoverySpeed = PenetrationRecoverySpeed;
+    settings.mPenetrationRecoverySpeed = m_PenetrationRecoverySpeed;
     settings.mPredictiveContactDistance = PredictiveContactDistance;
     settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -RadiusStanding); // Accept contacts that touch the lower sphere of the capsule
+    settings.mEnhancedInternalEdgeRemoval = true;
 
     m_pImpl = new CharacterControllerImpl(&settings, position, rotation, &physics->m_PhysSystem);
     m_pImpl->SetListener(&physics->m_CharacterContactListener);
-    m_pImpl->m_Component = GetHandle();
-    //m_pImpl->m_StandingShape = standing_shape;
-    //m_pImpl->m_CrouchingShape = crouching_shape;
+    m_pImpl->m_Component = Handle32<CharacterControllerComponent>(GetHandle());
+    m_pImpl->m_StandingShape = standingShape;
+    m_pImpl->m_CrouchingShape = crouchingShape;
+
+    m_pImpl->SetLinearVelocity(ConvertVector(m_LinearVelocity));
 }
 
 void CharacterControllerComponent::EndPlay()
@@ -123,17 +130,171 @@ Quat CharacterControllerComponent::GetWorldRotation() const
     return GetOwner()->GetWorldRotation();
 }
 
+void CharacterControllerComponent::SetMass(float mass)
+{
+    m_Mass = mass;
+    if (m_pImpl)
+        m_pImpl->SetMass(mass);
+}
+
+float CharacterControllerComponent::GetMass() const
+{
+    return m_Mass;
+}
+
+void CharacterControllerComponent::SetMaxStrength(float maxStrength)
+{
+    m_MaxStrength = maxStrength;
+    if (m_pImpl)
+        m_pImpl->SetMaxStrength(maxStrength);
+}
+
+float CharacterControllerComponent::GetMaxStrength() const
+{
+    return m_MaxStrength;
+}
+
+void CharacterControllerComponent::SetMaxSlopeAngle(float maxSlopeAngle)
+{
+    m_MaxSlopeAngle = maxSlopeAngle;
+    if (m_pImpl)
+        m_pImpl->SetMaxSlopeAngle(Math::Radians(maxSlopeAngle));
+}
+
+float CharacterControllerComponent::GetMaxSlopeAngle() const
+{
+    return m_MaxSlopeAngle;
+}
+
+void CharacterControllerComponent::SetPenetrationRecoverySpeed(float speed)
+{
+    m_PenetrationRecoverySpeed = speed;
+    if (m_pImpl)
+        m_pImpl->SetPenetrationRecoverySpeed(speed);
+}
+
+float CharacterControllerComponent::GetPenetrationRecoverySpeed() const
+{
+    return m_PenetrationRecoverySpeed;
+}
+
 void CharacterControllerComponent::SetLinearVelocity(Float3 const& velocity)
 {
+    m_LinearVelocity = velocity;
     if (m_pImpl)
         m_pImpl->SetLinearVelocity(ConvertVector(velocity));
 }
 
-Float3 CharacterControllerComponent::GetLinearVelocity()
+Float3 CharacterControllerComponent::GetLinearVelocity() const
 {
     if (m_pImpl)
         return ConvertVector(m_pImpl->GetLinearVelocity());
     return Float3(0);
+}
+
+bool CharacterControllerComponent::IsSlopeTooSteep(Float3 const& normal) const
+{
+    if (m_pImpl)
+        return m_pImpl->IsSlopeTooSteep(ConvertVector(normal));
+    return false;
+}
+
+Float3 CharacterControllerComponent::GetGroundPosition() const
+{
+    if (m_pImpl)
+        return ConvertVector(m_pImpl->GetGroundPosition());
+    return Float3(0);
+}
+
+Float3 CharacterControllerComponent::GetGroundNormal() const
+{
+    if (m_pImpl)
+        return ConvertVector(m_pImpl->GetGroundNormal());
+    return Float3(0);
+}
+
+Float3 CharacterControllerComponent::GetGroundVelocity() const
+{
+    if (m_pImpl)
+        return ConvertVector(m_pImpl->GetGroundVelocity());
+    return Float3(0);
+}
+
+BodyComponent* CharacterControllerComponent::TryGetGroundBody()
+{
+    if (m_pImpl)
+    {
+        BodyUserData* userData = reinterpret_cast<BodyUserData*>(m_pImpl->GetGroundUserData());
+        if (userData)
+        {
+            if (Component* component = userData->TryGetComponent(GetWorld()))
+                return static_cast<BodyComponent*>(component);
+        }
+    }
+
+    return nullptr;
+}
+
+bool CharacterControllerComponent::IsOnGround() const
+{
+    if (m_pImpl)
+        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+    return false;
+}
+
+bool CharacterControllerComponent::IsOnSteepGround() const
+{
+    if (m_pImpl)
+        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::OnSteepGround;
+    return false;
+}
+
+bool CharacterControllerComponent::IsInAir() const
+{
+    if (m_pImpl)
+        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::InAir;
+    return false;
+}
+
+bool CharacterControllerComponent::IsTouchSupported() const
+{
+    if (m_pImpl)
+        return m_pImpl->IsSupported();
+    return false;
+}
+
+bool CharacterControllerComponent::IsTouchUnsupported() const
+{
+    if (m_pImpl)
+        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::NotSupported;
+    return false;
+}
+
+void CharacterControllerComponent::UpdateGroundVelocity()
+{
+    if (m_pImpl)
+        m_pImpl->UpdateGroundVelocity();
+}
+
+bool CharacterControllerComponent::UpdateStance(CharacterStance stance, float maxPenetrationDepth)
+{
+    // TODO: Add custom stances
+
+    if (!m_pImpl)
+        return false;
+
+    CharacterControllerImpl::BroadphaseLayerFilter broadphaseFilter(
+        HK_BIT(uint32_t(BroadphaseLayer::Static)) |
+        HK_BIT(uint32_t(BroadphaseLayer::Dynamic)) |
+        HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
+        HK_BIT(uint32_t(BroadphaseLayer::Character)));
+
+    ObjectLayerFilter layerFilter(GetWorld()->GetInterface<PhysicsInterface>().GetCollisionFilter(), CollisionLayer);
+    CharacterControllerImpl::BodyFilter bodyFilter;
+    CharacterControllerImpl::ShapeFilter shapeFilter;
+
+    return m_pImpl->SetShape(stance == CharacterStance::Standing ? m_pImpl->m_StandingShape : m_pImpl->m_CrouchingShape,
+                             maxPenetrationDepth, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::Get().GetTempAllocator());
 }
 
 HK_NAMESPACE_END

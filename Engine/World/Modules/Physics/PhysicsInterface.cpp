@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -59,6 +59,7 @@ SOFTWARE.
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
+#include <Jolt/Physics/Collision/EstimateCollisionResponse.h>
 #include <Jolt/AABBTree/TriangleCodec/TriangleCodecIndexed8BitPackSOA4Flags.h>
 #include <Jolt/AABBTree/NodeCodec/NodeCodecQuadTreeHalfFloat.h>
 
@@ -113,24 +114,6 @@ public:
     }
 
     HashSet<uint64_t> m_IgnoreCollisions;
-};
-
-class ObjectLayerFilter final : public JPH::ObjectLayerFilter
-{
-public:
-    ObjectLayerFilter(CollisionFilter const& collisionFilter, uint32_t collisionLayer) :
-        m_CollisionFilter(collisionFilter),
-        m_CollisionLayer(collisionLayer)
-    {}
-
-    bool ShouldCollide(JPH::ObjectLayer inLayer) const override
-    {
-        return m_CollisionFilter.ShouldCollide(m_CollisionLayer, static_cast<uint32_t>(inLayer) & 0xff);
-    }
-
-private:
-    CollisionFilter const& m_CollisionFilter;
-    uint32_t m_CollisionLayer;
 };
 
 class CastObjectLayerFilter final : public JPH::ObjectLayerFilter
@@ -973,14 +956,14 @@ namespace
 
 }
 
-bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::ShapeCastSettings settings;
     settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = inFilter.IgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = true;
 
     JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
+    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, JPH::RVec3::sZero(), collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     if (collector.HadHit())
         CopyShapeCastResult(outResult, collector.mHit);
@@ -988,14 +971,14 @@ bool PhysicsInterfaceImpl::CastShapeClosest(JPH::RShapeCast const& inShapeCast, 
     return collector.HadHit();
 }
 
-bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
+bool PhysicsInterfaceImpl::CastShape(JPH::RShapeCast const& inShapeCast, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
 {
     JPH::ShapeCastSettings settings;
     settings.mBackFaceModeTriangles = settings.mBackFaceModeConvex = inFilter.IgonreBackFaces ? JPH::EBackFaceMode::IgnoreBackFaces : JPH::EBackFaceMode::CollideWithBackFaces;
     settings.mReturnDeepestPoint = false;
 
     JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
-    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, inBaseOffset, collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
+    m_PhysSystem.GetNarrowPhaseQuery().CastShape(inShapeCast, settings, JPH::RVec3::sZero(), collector, BroadphaseLayerFilter(inFilter.BroadphaseLayers.Get()), CastObjectLayerFilter(inFilter.ObjectLayers.Get()));
 
     outResult.Clear();
     if (collector.HadHit())
@@ -1036,6 +1019,22 @@ JPH::ValidateResult	ContactListener::OnContactValidate(const JPH::Body &inBody1,
     return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
 }
 
+namespace
+{
+    bool IsBodyDispatchEvent(BodyComponent* body)
+    {
+        auto typeID = body->GetManager()->GetComponentTypeID();
+        if (typeID == ComponentRTTR::TypeID<StaticBodyComponent>)
+            return static_cast<StaticBodyComponent*>(body)->DispatchContactEvents;
+        if (typeID == ComponentRTTR::TypeID<DynamicBodyComponent>)
+            return static_cast<DynamicBodyComponent*>(body)->DispatchContactEvents;
+        if (typeID == ComponentRTTR::TypeID<HeightFieldComponent>)
+            return static_cast<HeightFieldComponent*>(body)->DispatchContactEvents;
+        return false;
+    }
+}
+
+
 void ContactListener::OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings)
 {
     if (inBody1.IsSensor() || inBody2.IsSensor())
@@ -1045,13 +1044,13 @@ void ContactListener::OnContactAdded(const JPH::Body &inBody1, const JPH::Body &
 
         if (inBody1.IsSensor())
         {
-            trigger = ((BodyUserData*)inBody1.GetUserData())->TryGetComponent<TriggerComponent>(m_World);
-            target  = ((BodyUserData*)inBody2.GetUserData())->GetExtendedHandle();
+            trigger = reinterpret_cast<BodyUserData*>(inBody1.GetUserData())->TryGetComponent<TriggerComponent>(m_World);
+            target  = reinterpret_cast<BodyUserData*>(inBody2.GetUserData())->GetExtendedHandle();
         }
         else if (inBody2.IsSensor())
         {
-            trigger = ((BodyUserData*)inBody2.GetUserData())->TryGetComponent<TriggerComponent>(m_World);
-            target  = ((BodyUserData*)inBody1.GetUserData())->GetExtendedHandle();
+            trigger = reinterpret_cast<BodyUserData*>(inBody2.GetUserData())->TryGetComponent<TriggerComponent>(m_World);
+            target  = reinterpret_cast<BodyUserData*>(inBody1.GetUserData())->GetExtendedHandle();
         }
 
         if (trigger && target)
@@ -1077,7 +1076,7 @@ void ContactListener::OnContactAdded(const JPH::Body &inBody1, const JPH::Body &
         return;
     }
 
-    // TODO: Other contacts
+    AddContactEvents(inBody1, inBody2, inManifold, ioSettings, false);
 }
 
 void ContactListener::OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings)
@@ -1104,6 +1103,8 @@ void ContactListener::OnContactPersisted(const JPH::Body &inBody1, const JPH::Bo
         return;
     }
 #endif
+
+    AddContactEvents(inBody1, inBody2, inManifold, ioSettings, true);
 }
 
 void ContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair)
@@ -1114,23 +1115,160 @@ void ContactListener::OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair
 
     std::lock_guard lock(m_Mutex);
 
-    auto it = m_Triggers.Find(contactID);
-    if (it != m_Triggers.End())
     {
-        TriggerContact& contact = it->second;
-        HK_ASSERT(contact.Count > 0);
-        contact.Count--;
-        if (contact.Count == 0)
+        auto it = m_Triggers.Find(contactID);
+        if (it != m_Triggers.End())
         {
-            auto& event = m_pTriggerEvents->EmplaceBack();
-            event.Type = TriggerEvent::OnEndOverlap;
-            event.Trigger = contact.Trigger;
-            event.Target = contact.Target;
+            TriggerContact& contact = it->second;
+            HK_ASSERT(contact.Count > 0);
+            contact.Count--;
+            if (contact.Count == 0)
+            {
+                auto& event = m_pTriggerEvents->EmplaceBack();
+                event.Type = TriggerEvent::OnEndOverlap;
+                event.Trigger = contact.Trigger;
+                event.Target = contact.Target;
 
-            m_Triggers.Erase(it);
+                m_Triggers.Erase(it);
+            }
+
+            return;
+        }
+    }
+
+    {
+        auto it = m_BodyContacts.Find(contactID);
+        if (it != m_BodyContacts.End())
+        {
+            BodyContact& contact = it->second;
+
+            if (contact.Body1DispatchEvent)
+            {
+                auto& event = m_pContactEvents->EmplaceBack();
+                event.Type = ContactEvent::OnEndContact;
+                event.Self = contact.Body1;
+                event.Other = contact.Body2;
+            }
+
+            if (contact.Body2DispatchEvent)
+            {
+                auto& event = m_pContactEvents->EmplaceBack();
+                event.Type = ContactEvent::OnEndContact;
+                event.Self = contact.Body2;
+                event.Other = contact.Body1;
+            }
+
+            m_BodyContacts.Erase(it);
+        }
+    }
+    //LOG("m_BodyContacts {}\n", m_BodyContacts.Size());
+}
+
+void ContactListener::AddContactEvents(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings, bool isPersisted)
+{
+    BodyUserData* userData1 = reinterpret_cast<BodyUserData*>(inBody1.GetUserData());
+    BodyUserData* userData2 = reinterpret_cast<BodyUserData*>(inBody2.GetUserData());
+
+    ComponentExtendedHandle handle1  = userData1->GetExtendedHandle();
+    ComponentExtendedHandle handle2  = userData2->GetExtendedHandle();
+
+    // We assume that BodyUserData only contains a component that derives from BodyComponent
+    BodyComponent* body1 = static_cast<BodyComponent*>(userData1->TryGetComponent(m_World));
+    BodyComponent* body2 = static_cast<BodyComponent*>(userData2->TryGetComponent(m_World));
+
+    if (!body1 || !body2)
+        return;
+
+    bool body1DispatchEvent = IsBodyDispatchEvent(body1);
+    bool body2DispatchEvent = IsBodyDispatchEvent(body2);
+
+    if (body1DispatchEvent || body2DispatchEvent)
+    {
+        uint32_t body1ID = inBody1.GetID().GetIndexAndSequenceNumber();
+        uint32_t body2ID = inBody2.GetID().GetIndexAndSequenceNumber();
+        uint64_t contactID = body1ID < body2ID ? (body1ID | (uint64_t(body2ID) << 32)) : (body2ID | (uint64_t(body1ID) << 32));
+
+        const float MinVelocityForRestitution = 1.0f; // TODO: Move to config
+        const uint32_t NumIterations = 5;
+
+        JPH::CollisionEstimationResult estimationResult;
+        JPH::EstimateCollisionResponse(inBody1, inBody2, inManifold, estimationResult, ioSettings.mCombinedFriction, ioSettings.mCombinedRestitution, MinVelocityForRestitution, NumIterations);
+
+        std::lock_guard lock(m_Mutex);
+
+        BodyContact& contact = m_BodyContacts[contactID];
+        contact.Body1 = handle1;
+        contact.Body2 = handle2;
+        contact.Body1DispatchEvent = body1DispatchEvent;
+        contact.Body2DispatchEvent = body2DispatchEvent;
+
+        uint32_t numContactPoints = inManifold.mRelativeContactPointsOn1.size();
+
+        uint32_t firstPoint = m_pContactPoints->Size();
+        m_pContactPoints->Resize(firstPoint + ((body1DispatchEvent && body2DispatchEvent) ? numContactPoints * 2 : numContactPoints));
+
+        uint32_t offset = body1DispatchEvent ? numContactPoints : 0;
+
+        for (uint32_t index = 0; index < numContactPoints; ++index)
+        {
+            auto contactPosition1 = inManifold.GetWorldSpaceContactPointOn1(index);
+            auto contactPosition2 = inManifold.GetWorldSpaceContactPointOn2(index);
+
+            auto velocity1 = ConvertVector(inBody1.GetPointVelocity(contactPosition1));
+            auto velocity2 = ConvertVector(inBody2.GetPointVelocity(contactPosition2));
+
+            auto& impulse = estimationResult.mImpulses[index];
+
+            auto frictionImpulse1 = estimationResult.mTangent1 * impulse.mFrictionImpulse1;
+            auto frictionImpulse2 = estimationResult.mTangent2 * impulse.mFrictionImpulse2;
+            auto combinedImpulse = ConvertVector(inManifold.mWorldSpaceNormal * impulse.mContactImpulse + frictionImpulse1 + frictionImpulse2);
+
+            if (body1DispatchEvent)
+            {
+                auto& contactPoint = (*m_pContactPoints)[firstPoint + index];
+
+                contactPoint.PositionSelf = ConvertVector(contactPosition1);
+                contactPoint.PositionOther = ConvertVector(contactPosition2);
+                contactPoint.VelocitySelf = velocity1;
+                contactPoint.VelocityOther = velocity2;
+                contactPoint.Impulse = -combinedImpulse;
+            }
+
+            if (body2DispatchEvent)
+            {
+                auto& contactPoint = (*m_pContactPoints)[firstPoint + index + offset];
+
+                contactPoint.PositionSelf = ConvertVector(contactPosition2);
+                contactPoint.PositionOther = ConvertVector(contactPosition1);
+                contactPoint.VelocitySelf = velocity2;
+                contactPoint.VelocityOther = velocity1;
+                contactPoint.Impulse = combinedImpulse;
+            }
         }
 
-        return;
+        if (body1DispatchEvent)
+        {
+            auto& event = m_pContactEvents->EmplaceBack();
+            event.Type = isPersisted ? ContactEvent::OnUpdateContact : ContactEvent::OnBeginContact;
+            event.Self = handle1;
+            event.Other = handle2;
+            event.Normal = -ConvertVector(inManifold.mWorldSpaceNormal);
+            event.Depth = inManifold.mPenetrationDepth;
+            event.FirstPoint = firstPoint;
+            event.NumPoints = numContactPoints;
+        }
+
+        if (body2DispatchEvent)
+        {
+            auto& event = m_pContactEvents->EmplaceBack();
+            event.Type = isPersisted ? ContactEvent::OnUpdateContact : ContactEvent::OnBeginContact;
+            event.Self = handle2;
+            event.Other = handle1;
+            event.Normal = ConvertVector(inManifold.mWorldSpaceNormal);
+            event.Depth = inManifold.mPenetrationDepth;
+            event.FirstPoint = firstPoint + offset;
+            event.NumPoints = numContactPoints;
+        }        
     }
 }
 
@@ -1139,6 +1277,7 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
     CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(character);
     BodyUserData* userData = nullptr;
     bool isSensor = false;
+    Float3 contactVelocity;
 
     {
         JPH::BodyLockRead lock(m_PhysSystem->GetBodyLockInterface(), inBodyID2);
@@ -1146,8 +1285,11 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
         {
             auto& body = lock.GetBody();
 
-            userData = (BodyUserData*)body.GetUserData();
+            userData = reinterpret_cast<BodyUserData*>(body.GetUserData());
             isSensor = body.IsSensor();
+
+            if (!isSensor)
+                contactVelocity = ConvertVector(body.GetPointVelocity(inContactPosition));
         }
     }
 
@@ -1164,7 +1306,7 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
                 auto& event = m_pTriggerEvents->EmplaceBack();
                 event.Type = TriggerEvent::OnBeginOverlap;
                 event.Trigger = contact.Trigger;
-                event.Target.Handle = characterImpl->m_Component;
+                event.Target.Handle = ComponentHandle(characterImpl->m_Component);
                 event.Target.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
                 m_UpdateOverlap.Add(contactID);
             }
@@ -1177,28 +1319,62 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
         return;
     }
 
+    ioSettings.mCanPushCharacter = false;
+
+    if (userData)
     {
-        // If we encounter an object that can push us, enable sliding
-        if (ioSettings.mCanPushCharacter && m_PhysSystem->GetBodyInterface().GetMotionType(inBodyID2) != JPH::EMotionType::Static)
-            const_cast<CharacterControllerImpl*>(characterImpl)->m_AllowSliding = true;
+        if (BodyComponent* body2 = static_cast<BodyComponent*>(userData->TryGetComponent(m_World)))
+        {
+            bool body2DispatchEvent = IsBodyDispatchEvent(body2);
+            if (body2DispatchEvent)
+            {
+                ComponentExtendedHandle handle2 = userData->GetExtendedHandle();
+                ContactID contactID = inBodyID2.GetIndexAndSequenceNumber() | (static_cast<uint64_t>(characterImpl->m_Component.ToUInt32()) << 32);
+
+                BodyContact& contact = m_BodyContacts[contactID];
+                bool isPersisted = contact.FrameIndex != 0;
+
+                contact.Body = handle2;
+                contact.FrameIndex = m_World->GetTick().FixedFrameNum;
+
+                auto& event = m_pContactEvents->EmplaceBack();
+                event.Type = isPersisted ? ContactEvent::OnUpdateContact : ContactEvent::OnBeginContact;
+                event.Self = handle2;
+                event.Other.Handle = ComponentHandle(characterImpl->m_Component);
+                event.Other.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
+                event.Normal = ConvertVector(inContactNormal);
+                event.Depth = 0;
+                event.FirstPoint = m_pContactPoints->Size();
+                event.NumPoints = 1;
+
+                auto& contactPoint = m_pContactPoints->EmplaceBack();
+                contactPoint.PositionSelf = contactPoint.PositionOther = ConvertVector(inContactPosition);
+                contactPoint.VelocitySelf = contactVelocity;
+
+                // TODO:
+                //contactPoint.VelocityOther;
+                //contactPoint.Impulse;
+
+                if (!isPersisted)
+                    m_UpdateContact.Add(contactID);
+            }
+        }
+
+        if (auto dynamicBody = userData->TryGetComponent<DynamicBodyComponent>(m_World))
+        {
+            ioSettings.mCanPushCharacter = dynamicBody->CanPushCharacter;
+        }
     }
 }
 
 void CharacterContactListener::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
 {
-    CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(character);
-
-    // Don't allow the player to slide down static not-too-steep surfaces when not actively moving and when not on a moving platform
-    if (!characterImpl->m_AllowSliding && inContactVelocity.IsNearZero() && !character->IsSlopeTooSteep(inContactNormal))
-        ioNewCharacterVelocity = JPH::Vec3::sZero();
 }
 
 CharacterControllerImpl::CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem) :
     JPH::CharacterVirtual(inSettings, inPosition, inRotation, inSystem)
 {
 }
-
-
 
 PhysicsInterface::PhysicsInterface() :
     m_pImpl(new PhysicsInterfaceImpl)
@@ -1234,10 +1410,14 @@ void PhysicsInterface::Initialize()
 
     m_pImpl->m_ContactListener.m_World = GetWorld();
     m_pImpl->m_ContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
+    m_pImpl->m_ContactListener.m_pContactEvents = &m_pImpl->m_ContactEvents;
+    m_pImpl->m_ContactListener.m_pContactPoints = &m_pImpl->m_ContactPoints;
 
     m_pImpl->m_CharacterContactListener.m_World = GetWorld();
     m_pImpl->m_CharacterContactListener.m_PhysSystem = &m_pImpl->m_PhysSystem;
     m_pImpl->m_CharacterContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
+    m_pImpl->m_CharacterContactListener.m_pContactEvents = &m_pImpl->m_ContactEvents;
+    m_pImpl->m_CharacterContactListener.m_pContactPoints = &m_pImpl->m_ContactPoints;
 
     {
         TickFunction tickFunc;
@@ -1274,9 +1454,138 @@ void PhysicsInterface::Purge()
     m_pImpl->m_QueueToAdd[1].Clear();
 }
 
-HK_FORCEINLINE bool IsNearZero(Float3 const& vec, float inMaxDistSq = 1.0e-12f)
+void PhysicsInterface::UpdateCharacterControllers()
 {
-    return vec.LengthSqr() < inMaxDistSq;
+    auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
+    auto& tick = GetWorld()->GetTick();
+    float timeStep = tick.FixedTimeStep;
+
+    auto& characterControllerManager = GetWorld()->GetComponentManager<CharacterControllerComponent>();
+
+    struct Visitor
+    {
+        JPH::BodyInterface&     m_BodyInterface;
+        CollisionFilter const&  m_CollisionFilter;
+        JPH::Vec3               m_Gravity;
+        float                   m_TimeStep;
+
+        Visitor(float timeStep, JPH::Vec3 const& gravity, CollisionFilter const& collisionFilter, JPH::BodyInterface& bodyInterface) :
+            m_BodyInterface(bodyInterface),
+            m_CollisionFilter(collisionFilter),
+            m_Gravity(gravity),
+            m_TimeStep(timeStep)
+        {}
+
+        HK_FORCEINLINE void Visit(CharacterControllerComponent& character)
+        {
+            GameObject* owner = character.GetOwner();
+
+            auto* physCharacter = character.m_pImpl;
+
+            JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
+            if (character.EnableStickToFloor)
+                updateSettings.mStickToFloorStepDown = JPH::Vec3(0,character.StickToFloorStepDown,0);
+            else
+                updateSettings.mStickToFloorStepDown = JPH::Vec3::sZero();
+
+            if (character.EnableWalkStairs)
+                updateSettings.mWalkStairsStepUp = JPH::Vec3(0,character.StairsStepUp,0);
+            else
+                updateSettings.mWalkStairsStepUp = JPH::Vec3::sZero();
+
+            updateSettings.mWalkStairsMinStepForward = 0.2f;
+
+            // TODO: Move these settings to CharacterControllerComponent
+            //mWalkStairsMinStepForward { 0.02f };									// See WalkStairs inStepForward parameter. Note that the parameter only indicates a magnitude, direction is taken from current velocity.
+            //mWalkStairsStepForwardTest { 0.15f };									// See WalkStairs inStepForwardTest parameter. Note that the parameter only indicates a magnitude, direction is taken from current velocity.
+            //mWalkStairsCosAngleForwardContact { Cos(DegreesToRadians(75.0f)) };	// Cos(angle) where angle is the maximum angle between the ground normal in the horizontal plane and the character forward vector where we're willing to adjust the step forward test towards the contact normal.
+            //mWalkStairsStepDownExtra { Vec3::sZero() };							// See WalkStairs inStepDownExtra
+
+            CharacterControllerImpl::BroadphaseLayerFilter broadphaseFilter(
+                HK_BIT(uint32_t(BroadphaseLayer::Static)) |
+                HK_BIT(uint32_t(BroadphaseLayer::Dynamic)) |
+                HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
+                HK_BIT(uint32_t(BroadphaseLayer::Character)));
+
+            ObjectLayerFilter layerFilter(m_CollisionFilter, character.CollisionLayer);
+            CharacterControllerImpl::BodyFilter bodyFilter;
+            CharacterControllerImpl::ShapeFilter shapeFilter;
+
+            // Update the character position
+            physCharacter->ExtendedUpdate(m_TimeStep, m_Gravity, updateSettings, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::Get().GetTempAllocator());
+
+            owner->SetWorldPositionAndRotation(ConvertVector(physCharacter->GetPosition()), ConvertQuaternion(physCharacter->GetRotation()));
+
+            if (physCharacter->GetGroundState() != JPH::CharacterVirtual::EGroundState::OnGround &&
+                physCharacter->GetGroundState() != JPH::CharacterVirtual::EGroundState::OnSteepGround)
+            {
+                const float Overbounce = 1;
+                auto velocity = physCharacter->GetLinearVelocity();
+                for (JPH::CharacterVirtual::Contact const &c : physCharacter->GetActiveContacts())
+                    if (c.mHadCollision)
+                        velocity = velocity - c.mContactNormal * (velocity.Dot(c.mContactNormal) * Overbounce);
+                physCharacter->SetLinearVelocity(velocity);
+            }
+        }
+    };
+
+    Visitor visitor(timeStep, m_pImpl->m_PhysSystem.GetGravity(), m_pImpl->m_CollisionFilter, bodyInterface);
+    characterControllerManager.IterateComponents(visitor);
+
+    for (auto contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.begin(); contactIt != m_pImpl->m_CharacterContactListener.m_UpdateOverlap.end();)
+    {
+        auto contactID = *contactIt;
+        bool removeContact = false;
+
+        auto it = m_pImpl->m_CharacterContactListener.m_Triggers.Find(contactID);
+        if (it != m_pImpl->m_CharacterContactListener.m_Triggers.End())
+        {
+            auto& contact = it->second;
+            if (contact.FrameIndex != tick.FixedFrameNum)
+            {
+                auto& event = m_pImpl->m_TriggerEvents.EmplaceBack();
+                event.Type = TriggerEvent::OnEndOverlap;
+                event.Trigger = contact.Trigger;
+                event.Target.Handle = ComponentHandle(contactID >> 32);
+                event.Target.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
+
+                m_pImpl->m_CharacterContactListener.m_Triggers.Erase(it);
+                removeContact = true;
+            }
+        }
+
+        if (removeContact)
+            contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.Erase(contactIt);
+        else
+            ++contactIt;
+    }
+
+    for (auto contactIt = m_pImpl->m_CharacterContactListener.m_UpdateContact.begin(); contactIt != m_pImpl->m_CharacterContactListener.m_UpdateContact.end();)
+    {
+        auto contactID = *contactIt;
+        bool removeContact = false;
+
+        auto it = m_pImpl->m_CharacterContactListener.m_BodyContacts.Find(contactID);
+        if (it != m_pImpl->m_CharacterContactListener.m_BodyContacts.End())
+        {
+            auto& contact = it->second;
+            if (contact.FrameIndex != tick.FixedFrameNum)
+            {
+                auto& event = m_pImpl->m_ContactEvents.EmplaceBack();
+                event.Type = ContactEvent::OnEndContact;
+                event.Self = contact.Body;
+                event.Other.Handle = ComponentHandle(contactID >> 32);
+                event.Other.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
+                m_pImpl->m_CharacterContactListener.m_BodyContacts.Erase(it);
+                removeContact = true;
+            }
+        }
+
+        if (removeContact)
+            contactIt = m_pImpl->m_CharacterContactListener.m_UpdateContact.Erase(contactIt);
+        else
+            ++contactIt;
+    }
 }
 
 void PhysicsInterface::Update()
@@ -1300,172 +1609,8 @@ void PhysicsInterface::Update()
     if (tick.IsPaused)
         return;
 
-    // Update character controller
-    {
-        float timeStep = tick.FixedTimeStep;
-
-        auto& characterControllerManager = GetWorld()->GetComponentManager<CharacterControllerComponent>();
-
-        struct Visitor
-        {
-            float m_TimeStep;
-            JPH::Vec3 m_Gravity;
-            CollisionFilter const& m_CollisionFilter;
-            JPH::BodyInterface& m_BodyInterface;
-
-            Visitor(float timeStep, JPH::Vec3 const& gravity, CollisionFilter const& collisionFilter, JPH::BodyInterface& bodyInterface) :
-                m_TimeStep(timeStep),
-                m_Gravity(gravity),
-                m_CollisionFilter(collisionFilter),
-                m_BodyInterface(bodyInterface)
-            {}
-
-            HK_FORCEINLINE void Visit(CharacterControllerComponent& character)
-            {
-                GameObject* owner = character.GetOwner();
-
-                auto& temp_allocator = *PhysicsModule::Get().GetTempAllocator();
-
-                auto* phys_character = character.m_pImpl;
-
-                // Smooth the player input
-                character.DesiredVelocity = 0.25f * character.MovementDirection * character.MoveSpeed + 0.75f * character.DesiredVelocity;
-
-                // True if the player intended to move
-                phys_character->m_AllowSliding = !IsNearZero(character.MovementDirection);
-
-                // Determine new basic velocity
-                JPH::Vec3 current_vertical_velocity = JPH::Vec3(0, phys_character->GetLinearVelocity().GetY(), 0);
-                JPH::Vec3 ground_velocity = phys_character->GetGroundVelocity();
-                JPH::Vec3 new_velocity;
-                if (phys_character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround // If on ground
-                    && (current_vertical_velocity.GetY() - ground_velocity.GetY()) < 0.1f)       // And not moving away from ground
-                {
-                    // Assume velocity of ground when on ground
-                    new_velocity = ground_velocity;
-
-                    // Jump
-                    if (character.Jump)
-                        new_velocity += JPH::Vec3(0, character.JumpSpeed, 0);
-                }
-                else
-                    new_velocity = current_vertical_velocity;
-
-                // Gravity
-                new_velocity += m_Gravity * m_TimeStep;
-
-                // Player input
-                new_velocity += ConvertVector(character.DesiredVelocity);
-
-                // Update character velocity
-                phys_character->SetLinearVelocity(new_velocity);
-
-                // Stance switch
-                //if (inSwitchStance)
-                //    phys_character->SetShape(phys_character->GetShape() == mStandingShape? mCrouchingShape : mStandingShape, 1.5f * m_PhysicsInterface.GetPhysicsSettings().mPenetrationSlop, m_PhysicsInterface.GetDefaultBroadPhaseLayerFilter(Layers::MOVING), m_PhysicsInterface.GetDefaultLayerFilter(Layers::MOVING), { }, *mTempAllocator);
-
-                // Settings for our update function
-                JPH::CharacterVirtual::ExtendedUpdateSettings update_settings;
-                if (!character.EnableStickToFloor)
-                    update_settings.mStickToFloorStepDown = JPH::Vec3::sZero();
-                if (!character.EnableWalkStairs)
-                    update_settings.mWalkStairsStepUp = JPH::Vec3::sZero();
-                else
-                    update_settings.mWalkStairsStepUp = JPH::Vec3(0,0.5f,0);
-
-                class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
-                {
-                public:
-                    BroadphaseLayerFilter(uint32_t inCollisionMask) :
-                        m_CollisionMask(inCollisionMask)
-                    {}
-
-                    uint32_t m_CollisionMask;
-
-                    bool ShouldCollide(JPH::BroadPhaseLayer inLayer) const override
-                    {
-                        return (HK_BIT(static_cast<uint8_t>(inLayer)) & m_CollisionMask) != 0;
-                    }
-                };
-                BroadphaseLayerFilter broadphase_filter(
-                    HK_BIT(uint32_t(BroadphaseLayer::Static)) |
-                    HK_BIT(uint32_t(BroadphaseLayer::Dynamic)) |
-                    HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
-                    HK_BIT(uint32_t(BroadphaseLayer::Character)));
-
-                ObjectLayerFilter layer_filter(m_CollisionFilter, character.CollisionLayer);
-
-                class BodyFilter final : public JPH::BodyFilter
-                {
-                public:
-                    //uint32_t m_ObjectFilterIDToIgnore = 0xFFFFFFFF - 1;
-
-                    //BodyFilter(uint32_t uiBodyFilterIdToIgnore = 0xFFFFFFFF - 1) :
-                    //    m_ObjectFilterIDToIgnore(uiBodyFilterIdToIgnore)
-                    //{
-                    //}
-
-                    //void ClearFilter()
-                    //{
-                    //    m_ObjectFilterIDToIgnore = 0xFFFFFFFF - 1;
-                    //}
-
-                    //JPH::BodyID m_IgoreBodyID;
-
-                    bool ShouldCollideLocked(const JPH::Body& body) const override
-                    {
-                        return true;//body.GetID() != m_IgoreBodyID;
-                    }
-                };
-
-                BodyFilter body_filter;
-                //body_filter.m_IgoreBodyID = JPH::BodyID(character.m_BodyID.ID);
-
-                // Update the character position
-                phys_character->ExtendedUpdate(m_TimeStep,
-                    m_Gravity,
-                    update_settings,
-                    broadphase_filter,
-                    layer_filter,
-                    body_filter,
-                    {},
-                    temp_allocator);
-
-                owner->SetWorldPositionAndRotation(ConvertVector(phys_character->GetPosition()), ConvertQuaternion(phys_character->GetRotation()));
-            }
-        };
-
-        Visitor visitor(timeStep, m_pImpl->m_PhysSystem.GetGravity(), m_pImpl->m_CollisionFilter, bodyInterface);
-        characterControllerManager.IterateComponents(visitor);
-
-        for (auto contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.begin(); contactIt != m_pImpl->m_CharacterContactListener.m_UpdateOverlap.end();)
-        {
-            auto contactID = *contactIt;
-            bool removeContact = false;
-
-            auto it = m_pImpl->m_CharacterContactListener.m_Triggers.Find(contactID);
-            if (it != m_pImpl->m_CharacterContactListener.m_Triggers.End())
-            {
-                auto& contact = it->second;
-                if (contact.FrameIndex != tick.FixedFrameNum)
-                {
-                    auto& event = m_pImpl->m_CharacterContactListener.m_pTriggerEvents->EmplaceBack();
-                    event.Type = TriggerEvent::OnEndOverlap;
-                    event.Trigger = contact.Trigger;
-                    event.Target.Handle = ComponentHandle(contactID >> 32);
-                    event.Target.TypeID = ComponentRTTR::TypeID<CharacterControllerComponent>;
-
-                    m_pImpl->m_CharacterContactListener.m_Triggers.Erase(it);
-                    removeContact = true;
-                }
-            }
-
-            if (removeContact)
-                contactIt = m_pImpl->m_CharacterContactListener.m_UpdateOverlap.Erase(contactIt);
-            else
-                ++contactIt;
-        }
-    }
+    // Update character controllers
+    UpdateCharacterControllers();
 
     // Update dynmaic scaling
     // TODO: Update scale with lower framerate to save performance
@@ -1733,10 +1878,58 @@ void PhysicsInterface::PostTransform()
         }
     }
     m_pImpl->m_TriggerEvents.Clear();
+
+    for (auto& event : m_pImpl->m_ContactEvents)
+    {
+        BodyComponent* self = nullptr;
+        BodyComponent* other = nullptr;
+
+        if (auto body1ComponentManager = GetWorld()->TryGetComponentManager(event.Self.TypeID))
+            if (auto body1Component = body1ComponentManager->GetComponent(event.Self.Handle))
+                self = static_cast<BodyComponent*>(body1Component);
+
+        if (auto body2ComponentManager = GetWorld()->TryGetComponentManager(event.Other.TypeID))
+            if (auto body2Component = body2ComponentManager->GetComponent(event.Other.Handle))
+                other = static_cast<BodyComponent*>(body2Component);
+
+        if (!self || !other)
+            continue;
+
+        switch (event.Type)
+        {
+            case ContactEvent::OnBeginContact:
+            {
+                Collision collision;
+                collision.Body = other;
+                collision.Normal = event.Normal;
+                collision.Depth = event.Depth;
+                collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
+                World::DispatchEvent<Event_OnBeginContact>(self->GetOwner(), collision);
+                break;
+            }
+            case ContactEvent::OnUpdateContact:
+            {
+                Collision collision;
+                collision.Body = other;
+                collision.Normal = event.Normal;
+                collision.Depth = event.Depth;
+                collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
+                World::DispatchEvent<Event_OnUpdateContact>(self->GetOwner(), collision);
+                break;
+            }
+            case ContactEvent::OnEndContact:
+            {
+                World::DispatchEvent<Event_OnEndContact>(self->GetOwner(), other);
+                break;
+            }
+        }
+    }
+    m_pImpl->m_ContactEvents.Clear();
+    m_pImpl->m_ContactPoints.Clear();
 }
 
 template <typename T>
-void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, PhysBodyID bodyID, T* rigidBody)
+void PhysicsInterface::DrawRigidBody(DebugRenderer& renderer, T* rigidBody)
 {
     m_DebugDrawVertices.Clear();
     m_DebugDrawIndices.Clear();
@@ -1802,11 +1995,11 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
 
             if (auto staticBody = userData->TryGetComponent<StaticBodyComponent>(GetWorld()))
             {
-                DrawRigidBody(renderer, bodyID, staticBody);
+                DrawRigidBody(renderer, staticBody);
             }
             else if (auto dynamicBody = userData->TryGetComponent<DynamicBodyComponent>(GetWorld()))
             {
-                DrawRigidBody(renderer, bodyID, dynamicBody);
+                DrawRigidBody(renderer, dynamicBody);
             }
             else if (auto heightfield = userData->TryGetComponent<HeightFieldComponent>(GetWorld()))
             {
@@ -2023,19 +2216,6 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
     }
 }
 
-namespace
-{
-
-JPH::RVec3 CalcBaseOffset(JPH::Vec3 const& pos, JPH::Vec3 const& direction)
-{
-    // Define a base offset that is halfway the probe to test getting the collision results relative to some offset.
-    // Note that this is not necessarily the best choice for a base offset, but we want something that's not zero
-    // and not the start of the collision test either to ensure that we'll see errors in the algorithm.
-    return pos + 0.5f * direction;
-}
-
-} // namespace
-
 bool PhysicsInterface::CastRayClosest(Float3 const& inRayStart, Float3 const& inRayDir, RayCastResult& outResult, RayCastFilter const& inFilter)
 {
     JPH::RRayCast raycast;
@@ -2138,7 +2318,7 @@ bool PhysicsInterface::CastBoxClosest(Float3 const& inRayStart, Float3 const& in
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir, Float3 const& inHalfExtent, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2151,7 +2331,7 @@ bool PhysicsInterface::CastBox(Float3 const& inRayStart, Float3 const& inRayDir,
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2163,7 +2343,7 @@ bool PhysicsInterface::CastBoxMinMaxClosest(Float3 const& inMins, Float3 const& 
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs, Float3 const& inRayDir, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2175,7 +2355,7 @@ bool PhysicsInterface::CastBoxMinMax(Float3 const& inMins, Float3 const& inMaxs,
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos), direction);
 
-    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2187,7 +2367,7 @@ bool PhysicsInterface::CastSphereClosest(Float3 const& inRayStart, Float3 const&
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayDir, float inRadius, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2199,7 +2379,7 @@ bool PhysicsInterface::CastSphere(Float3 const& inRayStart, Float3 const& inRayD
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(pos) /* * rotation*/, direction);
 
-    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2212,7 +2392,7 @@ bool PhysicsInterface::CastCapsuleClosest(Float3 const& inRayStart, Float3 const
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2225,7 +2405,7 @@ bool PhysicsInterface::CastCapsule(Float3 const& inRayStart, Float3 const& inRay
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, ShapeCastResult& outResult, ShapeCastFilter const& inFilter)
@@ -2238,7 +2418,7 @@ bool PhysicsInterface::CastCylinderClosest(Float3 const& inRayStart, Float3 cons
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShapeClosest(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShapeClosest(shapeCast, outResult, inFilter);
 }
 
 bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRayDir, float inHalfHeight, float inRadius, Quat const& inRotation, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter)
@@ -2251,7 +2431,7 @@ bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRa
 
     JPH::RShapeCast shapeCast = JPH::RShapeCast::sFromWorldTransform(&shape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(rotation, pos), direction);
 
-    return m_pImpl->CastShape(shapeCast, CalcBaseOffset(pos, direction), outResult, inFilter);
+    return m_pImpl->CastShape(shapeCast, outResult, inFilter);
 }
 
 void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
@@ -2477,7 +2657,7 @@ bool PhysicsInterface::CheckPoint(Float3 const& inPosition, BroadphaseLayerMask 
 {
     JPH::AnyHitCollisionCollector<JPH::CollidePointCollector> collector;
     m_pImpl->m_PhysSystem.GetNarrowPhaseQuery().CollidePoint(ConvertVector(inPosition), collector, BroadphaseLayerFilter(inBroadphaseLayers.Get()), CastObjectLayerFilter(inObjectLayers.Get())
-    /* TODO: objectLayerFilter, bodyFilter, shapeFilter*/);
+    /* TODO: bodyFilter, shapeFilter*/);
     return collector.HadHit();
 }
 

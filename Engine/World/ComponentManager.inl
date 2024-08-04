@@ -80,6 +80,9 @@ HK_FIND_METHOD(LateUpdate)
 HK_FIND_METHOD(DrawDebug)
 HK_FIND_METHOD(OnBeginOverlap)
 HK_FIND_METHOD(OnEndOverlap)
+HK_FIND_METHOD(OnBeginContact)
+HK_FIND_METHOD(OnUpdateContact)
+HK_FIND_METHOD(OnEndContact)
 
 template <typename ComponentType>
 HK_FORCEINLINE ComponentManager<ComponentType>::ComponentManager(World* world) :
@@ -430,6 +433,27 @@ HK_INLINE void ComponentManager<ComponentType>::OnEndOverlap(ComponentHandle han
 {
     if (auto component = GetComponent(Handle32<ComponentType>(handle)))
         component->OnEndOverlap(body);
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::OnBeginContact(ComponentHandle handle, Collision& collision)
+{
+    if (auto component = GetComponent(Handle32<ComponentType>(handle)))
+        component->OnBeginContact(collision);
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::OnUpdateContact(ComponentHandle handle, Collision& collision)
+{
+    if (auto component = GetComponent(Handle32<ComponentType>(handle)))
+        component->OnUpdateContact(collision);
+}
+
+template <typename ComponentType>
+HK_INLINE void ComponentManager<ComponentType>::OnEndContact(ComponentHandle handle, class BodyComponent* body)
+{
+    if (auto component = GetComponent(Handle32<ComponentType>(handle)))
+        component->OnEndContact(body);
 }
 
 template <typename ComponentType>

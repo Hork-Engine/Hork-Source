@@ -148,6 +148,10 @@ private:
     void                    OnBeginOverlap(ComponentHandle handle, class BodyComponent* body);
     void                    OnEndOverlap(ComponentHandle handle, class BodyComponent* body);
 
+    void                    OnBeginContact(ComponentHandle handle, struct Collision& collision);
+    void                    OnUpdateContact(ComponentHandle handle, struct Collision& collision);
+    void                    OnEndContact(ComponentHandle handle, class BodyComponent* body);
+
     ComponentStorage        m_ComponentStorage;
 };
 

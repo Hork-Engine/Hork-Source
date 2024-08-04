@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Engine/World/World.h>
 #include <Engine/Core/Handle.h>
 #include <Engine/Core/Allocators/PoolAllocator.h>
+
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
@@ -205,6 +206,24 @@ public:
     }
 };
 
+class ObjectLayerFilter final : public JPH::ObjectLayerFilter
+{
+public:
+    ObjectLayerFilter(CollisionFilter const& collisionFilter, uint32_t collisionLayer) :
+        m_CollisionFilter(collisionFilter),
+        m_CollisionLayer(collisionLayer)
+    {}
+
+    bool ShouldCollide(JPH::ObjectLayer inLayer) const override
+    {
+        return m_CollisionFilter.ShouldCollide(m_CollisionLayer, static_cast<uint32_t>(inLayer) & 0xff);
+    }
+
+private:
+    CollisionFilter const& m_CollisionFilter;
+    uint32_t m_CollisionLayer;
+};
+
 class TriggerComponent;
 
 struct TriggerEvent
@@ -218,6 +237,24 @@ struct TriggerEvent
     EventType                   Type;
     Handle32<TriggerComponent>  Trigger;
     ComponentExtendedHandle     Target;
+};
+
+struct ContactEvent
+{
+    enum EventType
+    {
+        OnBeginContact,
+        OnUpdateContact,
+        OnEndContact
+    };
+
+    EventType                   Type;
+    ComponentExtendedHandle     Self;
+    ComponentExtendedHandle     Other;
+    Float3                      Normal;
+    float                       Depth;
+    uint32_t                    FirstPoint;
+    uint32_t                    NumPoints;
 };
 
 class BodyActivationListener final : public JPH::BodyActivationListener
@@ -236,18 +273,31 @@ public:
 class ContactListener final : public JPH::ContactListener
 {
 public:
+    using ContactID = uint64_t;
+
     struct TriggerContact
     {
         Handle32<TriggerComponent>  Trigger;
         ComponentExtendedHandle     Target;
         uint32_t                    Count;
     };
-    using ContactID = uint64_t;
     using TriggerContacts = HashMap<ContactID, TriggerContact>;
+
+    struct BodyContact
+    {
+        ComponentExtendedHandle     Body1;
+        ComponentExtendedHandle     Body2;
+        bool                        Body1DispatchEvent;
+        bool                        Body2DispatchEvent;
+    };
+    using BodyContacts = HashMap<ContactID, BodyContact>;
 
     World*                  m_World;
     TriggerContacts         m_Triggers;
+    BodyContacts            m_BodyContacts;
     Vector<TriggerEvent>*   m_pTriggerEvents;
+    Vector<ContactEvent>*   m_pContactEvents;
+    Vector<ContactPoint>*   m_pContactPoints;
     JPH::Mutex              m_Mutex;
 
     virtual JPH::ValidateResult	OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override;
@@ -257,24 +307,38 @@ public:
     virtual void			OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override;
 
     virtual void			OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override;
+
+    void                    AddContactEvents(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings, bool isPersisted);
 };
 
 class CharacterContactListener final : public JPH::CharacterContactListener
 {
 public:
+    using ContactID = uint64_t;
+
     struct TriggerContact
     {
         Handle32<TriggerComponent>  Trigger;
         uint32_t                    FrameIndex;
     };
-    using ContactID = uint64_t;
     using TriggerContacts = HashMap<ContactID, TriggerContact>;
+
+    struct BodyContact
+    {
+        ComponentExtendedHandle     Body;
+        uint32_t                    FrameIndex;
+    };
+    using BodyContacts = HashMap<ContactID, BodyContact>;
 
     World*                  m_World;
     JPH::PhysicsSystem*     m_PhysSystem;
     TriggerContacts         m_Triggers;
+    BodyContacts            m_BodyContacts;
     Vector<TriggerEvent>*   m_pTriggerEvents;
+    Vector<ContactEvent>*   m_pContactEvents;
+    Vector<ContactPoint>*   m_pContactPoints;
     Vector<ContactID>       m_UpdateOverlap;
+    Vector<ContactID>       m_UpdateContact;
 
     // Called whenever the character collides with a body. Returns true if the contact can push the character.
     void                    OnContactAdded(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings) override;
@@ -320,14 +384,14 @@ struct DynamicBodyMessage
 class MeshCollisionDataInternal
 {
 public:
-    JPH::Ref<JPH::Shape> m_Shape;
+    JPH::Ref<JPH::Shape>    m_Shape;
 };
 
 struct CreateCollisionSettings
 {
     GameObject* Object = nullptr;
-    Float3 CenterOfMassOffset;
-    bool ConvexOnly = false;
+    Float3      CenterOfMassOffset;
+    bool        ConvexOnly = false;
 };
 
 class PhysicsInterfaceImpl final
@@ -345,8 +409,8 @@ public:
 
     static void                         GatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& vertices, Vector<uint32_t>& indices);
 
-    bool                                CastShapeClosest(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, ShapeCastResult& outResult, ShapeCastFilter const& inFilter);
-    bool                                CastShape(JPH::RShapeCast const& inShapeCast, JPH::RVec3Arg inBaseOffset, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter);
+    bool                                CastShapeClosest(JPH::RShapeCast const& inShapeCast, ShapeCastResult& outResult, ShapeCastFilter const& inFilter);
+    bool                                CastShape(JPH::RShapeCast const& inShapeCast, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter);
 
     JPH::PhysicsSystem                  m_PhysSystem;
 
@@ -355,6 +419,8 @@ public:
     CharacterContactListener            m_CharacterContactListener;
 
     Vector<TriggerEvent>                m_TriggerEvents;
+    Vector<ContactEvent>                m_ContactEvents;
+    Vector<ContactPoint>                m_ContactPoints;
 
     Vector<Handle32<class DynamicBodyComponent>> m_KinematicBodies;
     Vector<Handle32<class DynamicBodyComponent>> m_DynamicScaling;
@@ -394,15 +460,44 @@ public:
     JPH::StaticCompoundShapeSettings    m_TempCompoundShapeSettings;
 };
 
+class CharacterControllerComponent;
+
 class CharacterControllerImpl : public JPH::CharacterVirtual
 {
 public:
     JPH_OVERRIDE_NEW_DELETE
 
-    ComponentHandle             m_Component;
-    //JPH::RefConst<JPH::Shape>   m_StandingShape;
-    //JPH::RefConst<JPH::Shape>   m_CrouchingShape;
-    bool                        m_AllowSliding = false;
+    class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
+    {
+    public:
+        BroadphaseLayerFilter(uint32_t inCollisionMask) :
+            m_CollisionMask(inCollisionMask)
+        {}
+
+        uint32_t m_CollisionMask;
+
+        bool ShouldCollide(JPH::BroadPhaseLayer inLayer) const override
+        {
+            return (HK_BIT(static_cast<uint8_t>(inLayer)) & m_CollisionMask) != 0;
+        }
+    };
+
+    class BodyFilter final : public JPH::BodyFilter
+    {
+    public:
+        //JPH::BodyID m_IgoreBodyID;
+
+        bool ShouldCollideLocked(const JPH::Body& body) const override
+        {
+            return true;//body.GetID() != m_IgoreBodyID;
+        }
+    };
+
+    using ShapeFilter = JPH::ShapeFilter;
+
+    Handle32<CharacterControllerComponent> m_Component;
+    JPH::RefConst<JPH::Shape>   m_StandingShape;
+    JPH::RefConst<JPH::Shape>   m_CrouchingShape;
 
     CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem);
 };

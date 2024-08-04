@@ -98,6 +98,9 @@ public:
     // Dynamic properties
     //
 
+    bool                    DispatchContactEvents = false;
+    bool                    CanPushCharacter = true;
+
     /// Set motion behavior kinematic or dynamic
     void                    SetKinematic(bool isKinematic);
     bool                    IsKinematic() const { return m_IsKinematic; }

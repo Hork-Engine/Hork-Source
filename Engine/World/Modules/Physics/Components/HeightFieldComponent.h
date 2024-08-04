@@ -57,6 +57,12 @@ public:
 
     Ref<TerrainCollisionData> Data;
 
+    //
+    // Dynamic properties
+    //
+
+    bool                    DispatchContactEvents = false;
+
     // Utilites
 
     /// Gather geometry inside crop box. Note that some triangles may be outside the box.
