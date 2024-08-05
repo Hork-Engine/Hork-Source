@@ -135,7 +135,6 @@ public:
     bool                        bAllowHBAO       = true;
     bool                        bAllowMotionBlur = true;
     ANTIALIASING_TYPE           AntialiasingType = ANTIALIASING_SMAA;
-    VISIBILITY_GROUP            VisibilityMask   = VISIBILITY_GROUP_ALL;
     Ref<ColorGradingParameters> ColorGrading;
     Ref<VignetteParameters>     Vignette;
 

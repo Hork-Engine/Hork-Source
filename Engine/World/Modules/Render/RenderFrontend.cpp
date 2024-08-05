@@ -461,6 +461,9 @@ void RenderFrontend::AddMeshes()
         if (!mesh.IsInitialized())
             continue;
 
+        if (!(m_RenderDef.VisibilityMask & (1 << mesh.GetVisibilityLayer())))
+            continue;
+
         mesh.PreRender(context);
 
         Float4x4 instanceMatrix = m_View->ViewProjection * mesh.GetRenderTransform();
@@ -682,6 +685,9 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
         MeshComponentType& mesh = *it;
 
         if (!mesh.IsInitialized())
+            continue;
+
+        if (!(m_RenderDef.VisibilityMask & (1 << mesh.GetVisibilityLayer())))
             continue;
 
         mesh.PreRender(context);
@@ -1056,7 +1062,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     m_RenderDef.FrameNumber = m_FrameNumber;
     m_RenderDef.View = view;
     m_RenderDef.Frustum = &frustum;
-    m_RenderDef.VisibilityMask = worldRenderView->VisibilityMask;
+    m_RenderDef.VisibilityMask = (VISIBILITY_GROUP)camera->GetVisibilityMask();
     m_RenderDef.PolyCount = 0;
     m_RenderDef.ShadowMapPolyCount = 0;
     m_RenderDef.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();

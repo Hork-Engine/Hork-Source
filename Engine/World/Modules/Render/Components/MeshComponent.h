@@ -66,6 +66,9 @@ public:
     void                        SetCascadeMask(uint32_t cascadeMask) { m_CascadeMask = cascadeMask; }
     uint32_t                    GetCascadeMask() const { return m_CascadeMask; }
 
+    void                        SetVisibilityLayer(uint8_t layer) { m_VisibilityLayer = Math::Min(layer, uint8_t(31)); }
+    uint8_t                     GetVisibilityLayer() const { return m_VisibilityLayer; }
+
     void                        SetLocalBoundingBox(BvAxisAlignedBox const& boundingBox);
     BvAxisAlignedBox const&     GetLocalBoundingBox() const { return m_LocalBoundingBox; }
 
@@ -81,6 +84,7 @@ protected:
     MeshHandle                  m_Resource;
     Vector<Ref<Material>>       m_Materials; // NOTE: pointers will be replaced by handles!
     Ref<ProceduralMesh>         m_ProceduralData;
+    uint8_t                     m_VisibilityLayer = 0;
     bool                        m_Outline = false;
     bool                        m_CastShadow = true;
     uint32_t                    m_CascadeMask = 0;

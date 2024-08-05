@@ -125,6 +125,9 @@ public:
 
     bool                    ScreenPointToRay(Float2 const& screenPoint, Float3& rayStart, Float3& rayDir) const;
 
+    void                    SetVisibilityMask(uint32_t mask) { m_VisibilityMask = mask; }
+    uint32_t                GetVisibilityMask() const { return m_VisibilityMask; }
+
     /// Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
     void                    SkipInterpolation();
 
@@ -151,6 +154,7 @@ public:
 
 private:
     CameraProjection        m_Projection = CameraProjection::PerspectiveFovYWithAspectRatio;
+    uint32_t                m_VisibilityMask = 0xffffffff;
     float                   m_FovX = 90.0f;
     float                   m_FovY = 90.0f;
     float                   m_ZNear = 0.04f;
