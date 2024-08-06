@@ -89,8 +89,8 @@ private:
     template <typename MeshComponentType>
     void AddMeshes();
 
-    template <typename MeshComponentType>
-    void AddMeshesShadow(LightShadowmap* shadowMap);
+    template <typename MeshComponentType, typename LightComponentType>
+    void AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds={});
 
     bool AddLightShadowmap(class PunctualLightComponent* Light, float Radius);
 

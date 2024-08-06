@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <Engine/Core/Profiler.h>
 #include <Engine/Core/Platform.h>
+#include <Engine/Geometry/BV/BvIntersect.h>
 
 #include <Engine/World/Modules/Render/Components/CameraComponent.h>
 #include <Engine/World/Modules/Render/Components/MeshComponent.h>
@@ -425,12 +426,15 @@ void RenderFrontend::AddDirectionalLightShadows(LightShadowmap* shadowmap, Direc
         }
     }
 #endif
-    AddMeshesShadow<StaticMeshComponent>(shadowmap);
-    AddMeshesShadow<DynamicMeshComponent>(shadowmap);
+    AddMeshesShadow<StaticMeshComponent, DirectionalLightComponent>(shadowmap);
+    AddMeshesShadow<DynamicMeshComponent, DirectionalLightComponent>(shadowmap);
 }
 
 template <typename MeshComponentType>
 constexpr bool IsDynamicMesh();
+
+template <typename LightComponentType>
+constexpr bool IsPunctualLight() { return false; }
 
 template <>
 constexpr bool IsDynamicMesh<StaticMeshComponent>()
@@ -440,6 +444,12 @@ constexpr bool IsDynamicMesh<StaticMeshComponent>()
 
 template <>
 constexpr bool IsDynamicMesh<DynamicMeshComponent>()
+{
+    return true;
+}
+
+template <>
+constexpr bool IsPunctualLight<PunctualLightComponent>()
 {
     return true;
 }
@@ -465,6 +475,9 @@ void RenderFrontend::AddMeshes()
             continue;
 
         mesh.PreRender(context);
+
+        if (!m_RenderDef.Frustum->IsBoxVisible(mesh.GetWorldBoundingBox()))
+            continue;
 
         Float4x4 instanceMatrix = m_View->ViewProjection * mesh.GetRenderTransform();
         Float4x4 instanceMatrixP = m_View->ViewProjectionP * mesh.GetRenderTransformPrev();
@@ -670,8 +683,8 @@ void RenderFrontend::AddMeshes()
     }
 }
 
-template <typename MeshComponentType>
-void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
+template <typename MeshComponentType, typename LightComponentType>
+void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds)
 {
     PreRenderContext context;
     context.FrameNum = m_RenderDef.FrameNumber;
@@ -691,6 +704,12 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap)
             continue;
 
         mesh.PreRender(context);
+
+        if constexpr (IsPunctualLight<LightComponentType>())
+        {
+            if (!BvBoxOverlapBox(mesh.GetWorldBoundingBox(), lightBounds))
+                continue;
+        }
 
         Float3x4 const& instanceMatrix = mesh.GetRenderTransform();
 
@@ -839,10 +858,10 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radi
         shadowMap->FirstLightPortal = m_FrameData.LightPortals.Size();
         shadowMap->LightPortalsCount = 0;
         shadowMap->LightPosition = lightPos;
-
+        
         // TODO: Add only visible objects
-        AddMeshesShadow<StaticMeshComponent>(shadowMap);
-        AddMeshesShadow<DynamicMeshComponent>(shadowMap);
+        AddMeshesShadow<StaticMeshComponent, PunctualLightComponent>(shadowMap, light->GetWorldBoundingBox());
+        AddMeshesShadow<DynamicMeshComponent, PunctualLightComponent>(shadowMap, light->GetWorldBoundingBox());
 
         SortShadowInstances(shadowMap);
 
@@ -878,6 +897,10 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         ClearRenderView(view);
         return;
     }
+
+    auto* cullingCamera = cameraManager.GetComponent(worldRenderView->GetCullingCamera());
+    if (!cullingCamera)
+        cullingCamera = camera;
 
     StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
@@ -1056,7 +1079,14 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->TerrainInstanceCount = 0;
 
     BvFrustum frustum;
-    frustum.FromMatrix(view->ViewProjection, true);
+    if (camera == cullingCamera)
+    {
+        frustum.FromMatrix(view->ViewProjection, true);
+    }
+    else
+    {
+        frustum = cullingCamera->GetFrustum();
+    }
 
     m_RenderDef.WorldRV = worldRenderView;
     m_RenderDef.FrameNumber = m_FrameNumber;
@@ -1305,6 +1335,10 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
             continue;
 
         light.PreRender(context);
+
+        if (!m_RenderDef.Frustum->IsBoxVisible(light.GetWorldBoundingBox())) // TODO: Check bounding sphere for point lights
+            continue;
+
         light.PackLight(view->ViewMatrix, view->PointLights[index]);
 
         view->PointLights[index].ShadowmapIndex = -1;

@@ -152,12 +152,9 @@ public:
     World*                  GetWorld() { return m_World; }
 
     void                    SetCamera(Handle32<CameraComponent> camera);
-
     Handle32<CameraComponent> GetCamera() const { return m_Camera; }
 
-    // NOTE: The culling camera has not yet been implemented. It is reserved for the future.
     void                    SetCullingCamera(Handle32<CameraComponent> camera);
-
     Handle32<CameraComponent> GetCullingCamera() const { return m_CullingCamera; }
 
     RenderCore::ITexture*   GetCurrentExposure() { return m_CurrentExposure; }
