@@ -229,7 +229,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
     {
         m_TempCompoundShapeSettings.mSubShapes.reserve(m_TempShapes.Size());
         for (int i = 0, count = m_TempShapes.Size(); i < count; ++i)
-            m_TempCompoundShapeSettings.AddShape(m_TempShapeTransform[i].Position, m_TempShapeTransform[i].Rotation, m_TempShapes[i]);
+            m_TempCompoundShapeSettings.AddShape(m_TempShapeTransform[i].Position, m_TempShapeTransform[i].Rotation.Normalized(), m_TempShapes[i]);
 
         JPH::ShapeSettings::ShapeResult result;
         outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, *PhysicsModule::Get().GetTempAllocator(), result);
@@ -239,7 +239,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
     }
     else if (m_TempShapeTransform[0].Position.LengthSq() > 0.001f || m_TempShapeTransform[0].Rotation != JPH::Quat::sIdentity())
     {
-        outShape = new JPH::RotatedTranslatedShape(m_TempShapeTransform[0].Position, m_TempShapeTransform[0].Rotation, m_TempShapes[0]);
+        outShape = new JPH::RotatedTranslatedShape(m_TempShapeTransform[0].Position, m_TempShapeTransform[0].Rotation.Normalized(), m_TempShapes[0]);
         outShape->AddRef();
     }
     else
