@@ -47,6 +47,16 @@ struct ResourceHandle
         HK_ASSERT(id.GetType() == T::Type);
     }
 
+    bool operator==(ResourceHandle const& rhs) const
+    {
+        return ID == rhs.ID;
+    }
+
+    bool operator!=(ResourceHandle const& rhs) const
+    {
+        return ID != rhs.ID;
+    }
+
     operator ResourceID() const
     {
         return ID;
