@@ -954,6 +954,7 @@ void GltfReader::ReadPrimitive(cgltf_primitive* prim, cgltf_skin* skin, uint16_t
         UnpackVec2(texcoord2, surface->TexCoords2.ToPtr(), sizeof(Float2));
     }
 
+    bool calcTangents = false;
     if (normal && (normal->type == cgltf_type_vec2 || normal->type == cgltf_type_vec3) && normal->count == vertexCount)
     {
         surface->Normals.Resize(vertexCount);
@@ -968,6 +969,9 @@ void GltfReader::ReadPrimitive(cgltf_primitive* prim, cgltf_skin* skin, uint16_t
         {
             // Form GLTF2 spec: When tangents are not specified, client implementations SHOULD calculate tangents using default MikkTSpace
             //                  algorithms with the specified vertex positions, normals, and texture coordinates associated with the normal texture.
+
+            if (texcoord)
+                calcTangents = true;
         }
     }
     else
@@ -998,6 +1002,12 @@ void GltfReader::ReadPrimitive(cgltf_primitive* prim, cgltf_skin* skin, uint16_t
         unsigned int* ind = surface->Indices.ToPtr();
         for (int index = 0; index < indexCount; index++)
             ind[index] = index;
+    }
+
+    if (calcTangents)
+    {
+        surface->Tangents.Resize(surface->Positions.Size());
+        Geometry::CalcTangentSpace(surface->Positions.ToPtr(), surface->TexCoords.ToPtr(), surface->Normals.ToPtr(), surface->Tangents.ToPtr(), surface->Indices.ToPtr(), surface->Indices.Size());
     }
 
     surface->BoundingBox.Clear();
