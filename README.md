@@ -71,7 +71,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * Image resampling
 * sRGB / Premultiplied alpha aware
 * WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR
-* 3D formats: GLTF 2.0, OBJ
+* 3D formats: FBX, GLTF 2.0, OBJ
 * IES profiles
 * SVG rasterization
 * Various geometry processing: convex decomposition, triangulation, polygon clipping
