@@ -102,18 +102,20 @@ UniqueRef<MeshResource> MeshResource::Load(IBinaryStreamReadInterface& stream)
 {
     StringView extension = PathUtils::GetExt(stream.GetName());
 
-    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb"))
+    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx") || !extension.Icmp(".obj"))
     {
         RawMesh mesh;
-        if (!mesh.LoadGLTF(stream, RawMeshLoadFlags::Surfaces | RawMeshLoadFlags::Skins | RawMeshLoadFlags::Skeleton))
-            return {};
+        RawMeshLoadFlags flags = RawMeshLoadFlags::Surfaces | RawMeshLoadFlags::Skins | RawMeshLoadFlags::Skeleton;
 
-        return MeshResourceBuilder().Build(mesh);
-    }
-    if (!extension.Icmp(".obj"))
-    {
-        RawMesh mesh;
-        if (!mesh.LoadOBJ(stream, RawMeshLoadFlags::Surfaces))
+        bool result;
+        if (!extension.Icmp(".fbx"))
+            result = mesh.LoadFBX(stream, flags);
+        else if (!extension.Icmp(".obj"))
+            result = mesh.LoadOBJ(stream, flags);
+        else
+            result = mesh.LoadGLTF(stream, flags);
+
+        if (!result)
             return {};
 
         return MeshResourceBuilder().Build(mesh);

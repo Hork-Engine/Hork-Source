@@ -105,6 +105,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * SDL2
 * stb
 * tinyexr
+* ufbx
 * V-HACD
 * FXAA
 * SMAA

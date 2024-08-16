@@ -96,6 +96,10 @@ message(STATUS "CLIPPER.................................")
 add_subdirectory_with_folder("ThirdParty" clipper)
 install_thirdparty_includes(clipper/ clipper)
 
+message(STATUS "UFBX.................................")
+add_subdirectory_with_folder("ThirdParty" ufbx)
+install_thirdparty_includes(ufbx/ ufbx)
+
 message(STATUS "CGLTF.................................")
 add_subdirectory_with_folder("ThirdParty" cgltf)
 install_thirdparty_includes(cgltf/ cgltf)

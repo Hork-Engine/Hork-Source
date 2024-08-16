@@ -199,6 +199,9 @@ public:
     /// Load mesh from GLTF/GLB format
     bool                            LoadGLTF(IBinaryStreamReadInterface& stream, RawMeshLoadFlags flags = RawMeshLoadFlags::All);
 
+    /// Load mesh from FBX format
+    bool                            LoadFBX(IBinaryStreamReadInterface& stream, RawMeshLoadFlags flags = RawMeshLoadFlags::All);
+
     void                            CreateBox(Float3 const& extents, float texCoordScale = 1.0f);
     void                            CreateSphere(float radius, float texCoordScale = 1.0f, int numVerticalSubdivs = 32, int numHorizontalSubdivs = 32);
     void                            CreatePlaneXZ(float width, float height, Float2 const& texCoordScale = Float2(1));

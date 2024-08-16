@@ -54,14 +54,18 @@ UniqueRef<AnimationResource> AnimationResource::Load(IBinaryStreamReadInterface&
 {
     StringView extension = PathUtils::GetExt(stream.GetName());
 
-    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb"))
+    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx"))
     {
         RawMesh mesh;
+        RawMeshLoadFlags flags = RawMeshLoadFlags::Skeleton | RawMeshLoadFlags::SingleAnimation;
 
-        if (!mesh.LoadGLTF(stream, RawMeshLoadFlags::Skeleton | RawMeshLoadFlags::SingleAnimation))
-            return {};
+        bool result;
+        if (!extension.Icmp(".fbx"))
+            result = mesh.LoadFBX(stream, flags);
+        else
+            result = mesh.LoadGLTF(stream, flags);
 
-        if (mesh.Animations.IsEmpty())
+        if (!result || mesh.Animations.IsEmpty())
             return {};
 
         return AnimationResourceBuilder().Build(*mesh.Animations[0].RawPtr(), mesh.Skeleton);

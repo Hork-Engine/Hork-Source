@@ -39,6 +39,7 @@ target_link_libraries(${PROJECT_NAME}
     polyclipping
     tinyexr
     cgltf
+    ufbx
     bc7enc
     bcdec
     lunasvg
