@@ -97,29 +97,8 @@ macro(HK_COPY_FILES target file_list source_dir target_dir)
   endforeach()
 endmacro()
 
-# Compiler flags and defines
-if(UNIX)
-    set(HK_COMPILER_FLAGS
-        -fvisibility=hidden
-        -fno-exceptions                 # Disable exceptions
-        -Werror                         # Treat warnings as errors
-        -Wall                           # Enable all warnings
-        -Wno-unused-parameter           # Don't warn about unused parameters
-        -Wno-unused-function            # Don't warn about unused local function
-        -Wno-sign-compare               # Don't warn about about mixed signed/unsigned type comparisons
-        -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
-        -Wno-maybe-uninitialized
-        -Wno-enum-compare
-        -Wno-unused-local-typedefs
-        -Wno-unused-value
-        -Wno-switch
-        )
-    set(HK_COMPILER_DEFINES "")
-	
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-endif()
-
-if(WIN32)
+# Compiler flags
+if(MSVC)
     set(HK_COMPILER_FLAGS
         /W4                 # Warning level 4
         /WX                 # Treat warnings as errors
@@ -142,7 +121,31 @@ if(WIN32)
         /utf-8
         /FC                 # __FILE__ contains full path
     )
+else()
+    set(HK_COMPILER_FLAGS
+        -fvisibility=hidden
+        -fno-exceptions                 # Disable exceptions
+        -Werror                         # Treat warnings as errors
+        -Wall                           # Enable all warnings
+        -Wno-unused-parameter           # Don't warn about unused parameters
+        -Wno-unused-function            # Don't warn about unused local function
+        -Wno-sign-compare               # Don't warn about about mixed signed/unsigned type comparisons
+        -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
+        -Wno-maybe-uninitialized
+        -Wno-enum-compare
+        -Wno-unused-local-typedefs
+        -Wno-unused-value
+        -Wno-switch
+        )
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+endif()
 
+# Compiler defines
+if(UNIX)
+    set(HK_COMPILER_DEFINES "")
+endif()
+
+if(WIN32)
     set(HK_COMPILER_DEFINES
         WIN32
         _WIN32
