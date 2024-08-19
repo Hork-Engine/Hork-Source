@@ -35,9 +35,10 @@ add_subdirectory_with_folder("ThirdParty" mimalloc)
 install_thirdparty_includes(mimalloc/include/ mimalloc)
 
 message(STATUS "EASTL.................................")
+add_subdirectory_with_folder("ThirdParty" EABase)
 add_subdirectory_with_folder("ThirdParty" EASTL)
+install_thirdparty_includes(EABase/include/Common/EABase/ EABase)
 install_thirdparty_includes(EASTL/include/EASTL/ EASTL)
-install_thirdparty_includes(EASTL/EABase/include/Common/EABase/ EABase)
 
 message(STATUS "FMT.................................")
 add_subdirectory(fmt)
