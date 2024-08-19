@@ -36,7 +36,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"s);
+ConsoleVar r_LightTextureFormat("r_LightTextureFormat"_s, "0"_s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"_s);
 
 using namespace RenderCore;
 

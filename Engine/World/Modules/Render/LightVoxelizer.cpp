@@ -40,9 +40,9 @@ HK_NAMESPACE_BEGIN
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-ConsoleVar com_ClusterSSE("com_ClusterSSE"s, "1"s, CVAR_CHEAT);
-ConsoleVar com_ReverseNegativeZ("com_ReverseNegativeZ"s, "1"s, CVAR_CHEAT);
-ConsoleVar com_FreezeFrustumClusters("com_FreezeFrustumClusters"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_ClusterSSE("com_ClusterSSE"_s, "1"_s, CVAR_CHEAT);
+ConsoleVar com_ReverseNegativeZ("com_ReverseNegativeZ"_s, "1"_s, CVAR_CHEAT);
+ConsoleVar com_FreezeFrustumClusters("com_FreezeFrustumClusters"_s, "0"_s, CVAR_CHEAT);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //

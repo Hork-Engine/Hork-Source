@@ -41,8 +41,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-//ConsoleVar Snd_RefreshRate("Snd_RefreshRate"s, "16"s); // TODO
-ConsoleVar Snd_MasterVolume("Snd_MasterVolume"s, "1"s);
+//ConsoleVar Snd_RefreshRate("Snd_RefreshRate"_s, "16"_s); // TODO
+ConsoleVar Snd_MasterVolume("Snd_MasterVolume"_s, "1"_s);
 
 AudioInterface::AudioInterface()
 {}

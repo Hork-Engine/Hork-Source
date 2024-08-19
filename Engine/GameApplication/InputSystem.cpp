@@ -35,13 +35,13 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
-ConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);
-ConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
-ConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
-ConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
-ConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
-ConsoleVar in_GamepadAxisPressThreshold("in_GamepadAxisPressThreshold"s, "0.5"s);
+ConsoleVar in_MouseSensitivity("in_MouseSensitivity"_s, "6.8"_s);
+ConsoleVar in_MouseSensX("in_MouseSensX"_s, "0.022"_s);
+ConsoleVar in_MouseSensY("in_MouseSensY"_s, "0.022"_s);
+ConsoleVar in_MouseFilter("in_MouseFilter"_s, "1"_s);
+ConsoleVar in_MouseInvertY("in_MouseInvertY"_s, "0"_s);
+ConsoleVar in_MouseAccel("in_MouseAccel"_s, "0"_s);
+ConsoleVar in_GamepadAxisPressThreshold("in_GamepadAxisPressThreshold"_s, "0.5"_s);
 
 InputSystem::InputSystem()
 {

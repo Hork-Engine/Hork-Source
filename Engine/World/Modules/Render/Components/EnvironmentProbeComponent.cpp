@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"_s, "0"_s, CVAR_CHEAT);
 
 void EnvironmentProbeComponent::DrawDebug(DebugRenderer& renderer)
 {

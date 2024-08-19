@@ -32,6 +32,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar rt_ScopedTimeCheck("rt_ScopedTimeCheck"s, "0"s);
+ConsoleVar rt_ScopedTimeCheck("rt_ScopedTimeCheck"_s, "0"_s);
 
 HK_NAMESPACE_END

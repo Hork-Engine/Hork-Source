@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawNavMeshAreas("com_DrawNavMeshAreas"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshAreas("com_DrawNavMeshAreas"_s, "0"_s, CVAR_CHEAT);
 
 BvAxisAlignedBox NavMeshAreaComponent::CalcBoundingBox() const
 {

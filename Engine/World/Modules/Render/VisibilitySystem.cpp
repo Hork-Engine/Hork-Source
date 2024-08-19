@@ -38,11 +38,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawLevelAreaBounds("com_DrawLevelAreaBounds"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawLevelIndoorBounds("com_DrawLevelIndoorBounds"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawLevelPortals("com_DrawLevelPortals"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawLevelAreaBounds("com_DrawLevelAreaBounds"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawLevelIndoorBounds("com_DrawLevelIndoorBounds"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawLevelPortals("com_DrawLevelPortals"_s, "0"_s, CVAR_CHEAT);
 
-//ConsoleVar vsd_FrustumCullingType("vsd_FrustumCullingType"s, "0"s, 0, "0 - combined, 1 - separate, 2 - simple"s);
+//ConsoleVar vsd_FrustumCullingType("vsd_FrustumCullingType"_s, "0"_s, 0, "0 - combined, 1 - separate, 2 - simple"_s);
 
 #define MAX_HULL_POINTS 128
 struct PortalHull

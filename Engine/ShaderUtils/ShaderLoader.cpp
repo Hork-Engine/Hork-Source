@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"s, "1"s);
+ConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"_s, "1"_s);
 
 #define CSTYLE_LINE_DIRECTIVE
 

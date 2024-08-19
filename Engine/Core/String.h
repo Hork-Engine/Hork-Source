@@ -143,7 +143,7 @@ HK_NAMESPACE_END
 #    pragma GCC diagnostic ignored "-Wliteral-suffix"
 #endif
 
-HK_FORCEINLINE Hk::GlobalStringView operator"" s(const char* s, size_t sz)
+HK_FORCEINLINE Hk::GlobalStringView operator"" _s(const char* s, size_t sz)
 {
     Hk::GlobalStringView v;
     v.pRawString = s;

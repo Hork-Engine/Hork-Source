@@ -60,11 +60,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawNavMesh("com_DrawNavMesh"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawOffMeshLinks("com_DrawOffMeshLinks"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMesh("com_DrawNavMesh"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawOffMeshLinks("com_DrawOffMeshLinks"_s, "0"_s, CVAR_CHEAT);
 
 HK_VALIDATE_TYPE_SIZE(NavPolyRef, sizeof(dtPolyRef));
 

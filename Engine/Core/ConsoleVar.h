@@ -65,13 +65,13 @@ public:
     static int EnvironmentFlags;
 
     ConsoleVar(GlobalStringView _Name) :
-        ConsoleVar(_Name, "0"s, 0, ""s) {}
+        ConsoleVar(_Name, "0"_s, 0, ""_s) {}
 
     ConsoleVar(GlobalStringView _Name, GlobalStringView _Value) :
-        ConsoleVar(_Name, _Value, 0, ""s) {}
+        ConsoleVar(_Name, _Value, 0, ""_s) {}
 
     ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags) :
-        ConsoleVar(_Name, _Value, _Flags, ""s) {}
+        ConsoleVar(_Name, _Value, _Flags, ""_s) {}
 
     ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment);
 

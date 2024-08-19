@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"_s, "0"_s, CVAR_CHEAT);
 
 void DirectionalLightComponent::UpdateEffectiveColor()
 {

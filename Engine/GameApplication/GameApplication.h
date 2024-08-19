@@ -72,7 +72,7 @@ public:
     void TakeScreenshot(StringView filename);
 
     /// Add global console command
-    void AddCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment = ""s);
+    void AddCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment = ""_s);
 
     /// Remove global console command
     void RemoveCommand(StringView name);

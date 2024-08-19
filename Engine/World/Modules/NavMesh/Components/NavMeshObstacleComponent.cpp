@@ -36,7 +36,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawNavMeshObstacles("com_DrawNavMeshObstacles"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawNavMeshObstacles("com_DrawNavMeshObstacles"_s, "0"_s, CVAR_CHEAT);
 
 void NavMeshObstacleComponent::BeginPlay()
 {

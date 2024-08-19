@@ -42,7 +42,7 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_ResetCacheVT("r_ResetCacheVT"s, "0"s);
+ConsoleVar r_ResetCacheVT("r_ResetCacheVT"_s, "0"_s);
 
 VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
 {

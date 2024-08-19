@@ -46,9 +46,9 @@ static constexpr int CLIPMAP_BLOCK_WIDTH = TERRAIN_CLIPMAP_SIZE / 4 - 1;
 static constexpr int CLIPMAP_GRID_SIZE = TERRAIN_CLIPMAP_SIZE - 2;
 static constexpr int CLIPMAP_HALF_GRID_SIZE = CLIPMAP_GRID_SIZE >> 1;
 
-ConsoleVar com_TerrainMinLod("com_TerrainMinLod"s, "0"s);
-ConsoleVar com_TerrainMaxLod("com_TerrainMaxLod"s, "5"s);
-ConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"s, "0"s);
+ConsoleVar com_TerrainMinLod("com_TerrainMinLod"_s, "0"_s);
+ConsoleVar com_TerrainMaxLod("com_TerrainMaxLod"_s, "5"_s);
+ConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"_s, "0"_s);
 
 UniqueRef<TerrainMesh> TerrainView::s_TerrainMesh;
 uint32_t TerrainView::s_InstanceCount{};

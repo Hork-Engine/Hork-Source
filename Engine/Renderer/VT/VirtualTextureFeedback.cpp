@@ -49,8 +49,8 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s);
-ConsoleVar r_RenderFeedback("r_RenderFeedback"s, "1"s);
+ConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"_s, "16"_s);
+ConsoleVar r_RenderFeedback("r_RenderFeedback"_s, "1"_s);
 
 // TODO: Move to project settings?
 //static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D16;

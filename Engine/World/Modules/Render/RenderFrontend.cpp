@@ -45,19 +45,19 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
-ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
-ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
-ConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
-ConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
-ConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
-ConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
-ConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
+ConsoleVar r_RenderView("r_RenderView"_s, "1"_s, CVAR_CHEAT);
+ConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"_s, "1"_s);
+ConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"_s, "1"_s);
+ConsoleVar r_RenderLightPortals("r_RenderLightPortals"_s, "1"_s);
+ConsoleVar r_VertexLight("r_VertexLight"_s, "0"_s);
+ConsoleVar r_MotionBlur("r_MotionBlur"_s, "1"_s);
+ConsoleVar r_RenderMeshes("r_RenderMeshes"_s, "1"_s, CVAR_CHEAT);
+ConsoleVar r_RenderTerrain("r_RenderTerrain"_s, "1"_s, CVAR_CHEAT);
 
 extern ConsoleVar r_HBAO;
 extern ConsoleVar r_HBAODeinterleaved;
 
-ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"_s, "0"_s, CVAR_CHEAT);
 
 RenderFrontend::RenderFrontend()
 {}

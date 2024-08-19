@@ -38,7 +38,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
+ConsoleVar ui_showLayout("ui_showLayout"_s, "0"_s);
 
 extern int UIVisibilityFrame;
 

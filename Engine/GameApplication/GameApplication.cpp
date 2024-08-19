@@ -55,18 +55,18 @@ extern "C" const uint64_t EmbeddedResources_Data[];
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
-ConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
-ConsoleVar com_AppDataPath("com_AppDataPath"s, ""s, CVAR_NOSAVE);
+ConsoleVar com_ShowStat("com_ShowStat"_s, "0"_s);
+ConsoleVar com_ShowFPS("com_ShowFPS"_s, "0"_s);
+ConsoleVar com_AppDataPath("com_AppDataPath"_s, ""_s, CVAR_NOSAVE);
 
-ConsoleVar rt_VidWidth("rt_VidWidth"s, "0"s);
-ConsoleVar rt_VidHeight("rt_VidHeight"s, "0"s);
+ConsoleVar rt_VidWidth("rt_VidWidth"_s, "0"_s);
+ConsoleVar rt_VidHeight("rt_VidHeight"_s, "0"_s);
 #ifdef HK_DEBUG
-ConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "0"s);
+ConsoleVar rt_VidFullscreen("rt_VidFullscreen"_s, "0"_s);
 #else
-ConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "1"s);
+ConsoleVar rt_VidFullscreen("rt_VidFullscreen"_s, "1"_s);
 #endif
-ConsoleVar rt_SwapInterval("rt_SwapInterval"s, "0"s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"s);
+ConsoleVar rt_SwapInterval("rt_SwapInterval"_s, "0"_s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"_s);
 
 enum
 {
@@ -280,7 +280,7 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
 
     m_FrameLoop->SetGenerateInputEvents(true);
 
-    AddCommand("quit"s, {this, &GameApplication::Cmd_Quit}, "Quit the game"s);
+    AddCommand("quit"_s, {this, &GameApplication::Cmd_Quit}, "Quit the game"_s);
 }
 
 GameApplication::~GameApplication()

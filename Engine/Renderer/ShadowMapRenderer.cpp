@@ -5,7 +5,7 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "32"s); // Allowed 16, 32 bits
+ConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"_s, "32"_s); // Allowed 16, 32 bits
 
 static const float  EVSM_positiveExponent = 40.0;
 static const float  EVSM_negativeExponent = 5.0;

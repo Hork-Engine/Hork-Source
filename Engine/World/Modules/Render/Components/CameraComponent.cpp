@@ -37,7 +37,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"_s, "0"_s, CVAR_CHEAT);
 
 namespace
 {

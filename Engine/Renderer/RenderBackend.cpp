@@ -51,23 +51,23 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"s, "0"s);
-ConsoleVar r_RenderSnapshot("r_RenderSnapshot"s, "0"s, CVAR_CHEAT);
-ConsoleVar r_DebugRenderMode("r_DebugRenderMode"s, "0"s, CVAR_CHEAT);
-ConsoleVar r_BloomScale("r_BloomScale"s, "1"s);
-ConsoleVar r_Bloom("r_Bloom"s, "1"s);
-ConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
-ConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
-ConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
-ConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
-ConsoleVar r_ExposureScale("r_ExposureScale"s, "1.0"s);
-ConsoleVar r_Brightness("r_Brightness"s, "1"s);
-ConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
-ConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
-ConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"s, "10"s);
-ConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"s, "0.1"s);
-ConsoleVar r_HBAO("r_HBAO"s, "1"s, 0, "Required to rebuld materials to apply"s);
-ConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
+ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"_s, "0"_s);
+ConsoleVar r_RenderSnapshot("r_RenderSnapshot"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar r_DebugRenderMode("r_DebugRenderMode"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar r_BloomScale("r_BloomScale"_s, "1"_s);
+ConsoleVar r_Bloom("r_Bloom"_s, "1"_s);
+ConsoleVar r_BloomParam0("r_BloomParam0"_s, "0.5"_s);
+ConsoleVar r_BloomParam1("r_BloomParam1"_s, "0.3"_s);
+ConsoleVar r_BloomParam2("r_BloomParam2"_s, "0.04"_s);
+ConsoleVar r_BloomParam3("r_BloomParam3"_s, "0.01"_s);
+ConsoleVar r_ExposureScale("r_ExposureScale"_s, "1.0"_s);
+ConsoleVar r_Brightness("r_Brightness"_s, "1"_s);
+ConsoleVar r_TessellationLevel("r_TessellationLevel"_s, "0.05"_s);
+ConsoleVar r_SSLR("r_SSLR"_s, "1"_s, 0, "Required to rebuld materials to apply"_s);
+ConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"_s, "10"_s);
+ConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"_s, "0.1"_s);
+ConsoleVar r_HBAO("r_HBAO"_s, "1"_s, 0, "Required to rebuld materials to apply"_s);
+ConsoleVar r_ShowGPUTime("r_ShowGPUTime"_s, "0"_s);
 
 void TestVT();
 

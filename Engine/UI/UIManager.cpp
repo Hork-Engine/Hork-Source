@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"s, "1"s);
+static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"_s, "1"_s);
 
 UIManager* GUIManager = nullptr;
 

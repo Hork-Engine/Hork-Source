@@ -46,8 +46,8 @@ See ThridParty.md for details.
 
 HK_NAMESPACE_BEGIN
 
-static ConsoleVar vg_EdgeAntialias("vg_EdgeAntialias"s, "1"s);
-static ConsoleVar vg_StencilStrokes("vg_StencilStrokes"s, "1"s);
+static ConsoleVar vg_EdgeAntialias("vg_EdgeAntialias"_s, "1"_s);
+static ConsoleVar vg_StencilStrokes("vg_StencilStrokes"_s, "1"_s);
 
 constexpr float NVG_KAPPA90 = 0.5522847493f; // Length proportional to radius of a cubic bezier handle for 90deg arcs.
 

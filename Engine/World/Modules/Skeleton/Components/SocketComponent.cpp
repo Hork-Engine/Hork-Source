@@ -36,7 +36,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
+ConsoleVar com_DrawSockets("com_DrawSockets"_s, "0"_s, CVAR_CHEAT);
 
 void SocketComponent::LateUpdate()
 {

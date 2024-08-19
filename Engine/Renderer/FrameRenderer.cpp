@@ -36,9 +36,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_ShowNormals("r_ShowNormals"s, "0"s, CVAR_CHEAT);
-ConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"s, "0"s);
-ConsoleVar r_ShowCacheVT("r_ShowCacheVT"s, "-1"s);
+ConsoleVar r_ShowNormals("r_ShowNormals"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"_s, "0"_s);
+ConsoleVar r_ShowCacheVT("r_ShowCacheVT"_s, "-1"_s);
 
 using namespace RenderCore;
 

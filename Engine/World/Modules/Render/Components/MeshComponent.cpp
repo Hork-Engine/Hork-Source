@@ -38,9 +38,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"s, "0"s);
-ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s);
-ConsoleVar com_DrawSkeletons("com_DrawSkeletons"s, "0"s);
+ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"_s, "0"_s);
+ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"_s, "0"_s);
+ConsoleVar com_DrawSkeletons("com_DrawSkeletons"_s, "0"_s);
 
 void MeshComponent::SetMaterial(Material* material)
 {

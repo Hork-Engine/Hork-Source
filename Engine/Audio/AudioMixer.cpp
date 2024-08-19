@@ -38,16 +38,16 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar Snd_MixAhead("Snd_MixAhead"s, "0.1"s);
-ConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"s, "16"s);
-ConsoleVar Snd_HRTF("Snd_HRTF"s, "1"s);
+ConsoleVar Snd_MixAhead("Snd_MixAhead"_s, "0.1"_s);
+ConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"_s, "16"_s);
+ConsoleVar Snd_HRTF("Snd_HRTF"_s, "1"_s);
 
 #if 0
-ConsoleVar Rev_RoomSize( "Rev_RoomSize"s,"0.5"s );
-ConsoleVar Rev_Damp(  "Rev_Damp"s,  "0.5"s );
-ConsoleVar Rev_Wet(  "Rev_Wet"s,  "0.33"s );
-ConsoleVar Rev_Dry(  "Rev_Dry"s,  "1"s );
-ConsoleVar Rev_Width(  "Rev_Width"s,  "1"s );
+ConsoleVar Rev_RoomSize( "Rev_RoomSize"s,"0.5"_s );
+ConsoleVar Rev_Damp(  "Rev_Damp"_s,  "0.5"_s );
+ConsoleVar Rev_Wet(  "Rev_Wet"_s,  "0.33"_s );
+ConsoleVar Rev_Dry(  "Rev_Dry"_s,  "1"_s );
+ConsoleVar Rev_Width(  "Rev_Width"_s,  "1"_s );
 #endif
 
 // u8 to s32 sample convertion

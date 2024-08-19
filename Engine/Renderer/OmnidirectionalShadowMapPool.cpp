@@ -5,7 +5,7 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_OmniShadowmapBits("r_OmniShadowmapBits"s, "16"s); // Allowed 16 or 32 bits
+ConsoleVar r_OmniShadowmapBits("r_OmniShadowmapBits"_s, "16"_s); // Allowed 16 or 32 bits
 
 OmnidirectionalShadowMapPool::OmnidirectionalShadowMapPool()
 {

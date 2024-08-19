@@ -43,7 +43,7 @@ public:
     CommandContext();
     ~CommandContext();
 
-    void AddCommand(GlobalStringView _Name, Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment = ""s);
+    void AddCommand(GlobalStringView _Name, Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment = ""_s);
 
     void RemoveCommand(StringView _Name);
 

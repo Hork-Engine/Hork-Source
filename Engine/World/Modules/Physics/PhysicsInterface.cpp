@@ -65,12 +65,12 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawCollisionModel("com_DrawCollisionModel"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawCollisionShape("com_DrawCollisionShape"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawTriggers("com_DrawTriggers"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawCenterOfMass("com_DrawCenterOfMass"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawWaterVolume("com_DrawWaterVolume"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_DrawCharacterController("com_DrawCharacterController"s, "0"s);
+ConsoleVar com_DrawCollisionModel("com_DrawCollisionModel"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawCollisionShape("com_DrawCollisionShape"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawTriggers("com_DrawTriggers"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawCenterOfMass("com_DrawCenterOfMass"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawWaterVolume("com_DrawWaterVolume"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_DrawCharacterController("com_DrawCharacterController"_s, "0"_s);
 
 class BroadphaseLayerFilter final : public JPH::BroadPhaseLayerFilter
 {

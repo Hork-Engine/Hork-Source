@@ -39,8 +39,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-static ConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"s, "5"s);
-static ConsoleVar ui_consoleHeight("ui_consoleHeight"s, "0.8"s);
+static ConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"_s, "5"_s);
+static ConsoleVar ui_consoleHeight("ui_consoleHeight"_s, "0.8"_s);
 
 UIConsole::UIConsole() :
     m_ConsoleBuffer(CoreApplication::GetConsoleBuffer())

@@ -376,7 +376,7 @@ public:                                                                         
     class ThisClassMeta : public Hk::ClassMeta                                                              \
     {                                                                                                       \
     public:                                                                                                 \
-        ThisClassMeta() : Hk::ClassMeta(Factory, HK_CONCAT(HK_STRINGIFY(Class), s), &Super::GetClassMeta()) \
+        ThisClassMeta() : Hk::ClassMeta(Factory, HK_CONCAT(HK_STRINGIFY(Class),_s), &Super::GetClassMeta()) \
         {                                                                                                   \
             RegisterProperties();                                                                           \
         }                                                                                                   \
@@ -413,7 +413,7 @@ private:
             *this,                                                                                           \
             VariantTraits::GetVariantType<PropertyType>(),                                                   \
             VariantTraits::GetVariantEnum<PropertyType>(),                                                   \
-            #TheProperty##s,                                                                                 \
+            #TheProperty##_s,                                                                                \
             [](BaseObject* pObject, Variant const& Value) {                                                  \
                 auto* pValue = Value.Get<PropertyType>();                                                    \
                 if (pValue)                                                                                  \
@@ -450,7 +450,7 @@ struct RemoveCVRef
             *this,                                                                                              \
             VariantTraits::GetVariantType<PropertyType>(),                                                      \
             VariantTraits::GetVariantEnum<PropertyType>(),                                                      \
-            #TheProperty##s,                                                                                    \
+            #TheProperty##_s,                                                                                   \
             [](BaseObject* pObject, Variant const& Value) {                                                     \
                 auto* pValue = Value.Get<PropertyType>();                                                       \
                 if (pValue)                                                                                     \

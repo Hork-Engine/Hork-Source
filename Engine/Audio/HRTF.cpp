@@ -45,7 +45,7 @@ HK_NAMESPACE_BEGIN
 
 #define FILTER_SIZE_POW2
 
-ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
+ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"_s, "1"_s);
 
 AudioHRTF::AudioHRTF(int SampleRate)
 {

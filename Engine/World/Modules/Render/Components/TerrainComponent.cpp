@@ -38,7 +38,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"s, "0"s);
+ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"_s, "0"_s);
 
 void TerrainComponent::SetResource(TerrainHandle resource)
 {

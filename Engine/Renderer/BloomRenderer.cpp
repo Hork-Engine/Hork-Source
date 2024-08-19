@@ -33,9 +33,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"s);
-ConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
-ConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
+ConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"_s, "0"_s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"_s);
+ConsoleVar r_BloomStart("r_BloomStart"_s, "1"_s);
+ConsoleVar r_BloomThreshold("r_BloomThreshold"_s, "1"_s);
 
 using namespace RenderCore;
 

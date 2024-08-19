@@ -39,11 +39,11 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-ConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
+ConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"_s,
 #ifdef HK_DEBUG
-    "1"s,
+    "1"_s,
 #else
-    "0"s,
+    "0"_s,
 #endif
     CVAR_CHEAT);
 

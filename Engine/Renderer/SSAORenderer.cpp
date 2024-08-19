@@ -35,11 +35,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar r_HBAODeinterleaved("r_HBAODeinterleaved"s, "1"s);
-ConsoleVar r_HBAOBlur("r_HBAOBlur"s, "1"s);
-ConsoleVar r_HBAORadius("r_HBAORadius"s, "2"s);
-ConsoleVar r_HBAOBias("r_HBAOBias"s, "0.1"s);
-ConsoleVar r_HBAOPowExponent("r_HBAOPowExponent"s, "1.5"s);
+ConsoleVar r_HBAODeinterleaved("r_HBAODeinterleaved"_s, "1"_s);
+ConsoleVar r_HBAOBlur("r_HBAOBlur"_s, "1"_s);
+ConsoleVar r_HBAORadius("r_HBAORadius"_s, "2"_s);
+ConsoleVar r_HBAOBias("r_HBAOBias"_s, "0.1"_s);
+ConsoleVar r_HBAOPowExponent("r_HBAOPowExponent"_s, "1.5"_s);
 
 using namespace RenderCore;
 

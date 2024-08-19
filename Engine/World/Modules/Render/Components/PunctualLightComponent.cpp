@@ -37,8 +37,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_DrawPunctualLights("com_DrawPunctualLights"s, "0"s, CVAR_CHEAT);
-ConsoleVar com_LightEnergyScale("com_LightEnergyScale"s, "16"s);
+ConsoleVar com_DrawPunctualLights("com_DrawPunctualLights"_s, "0"_s, CVAR_CHEAT);
+ConsoleVar com_LightEnergyScale("com_LightEnergyScale"_s, "16"_s);
 
 void PunctualLightComponent::SetRadius(float radius)
 {

@@ -42,10 +42,10 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-ConsoleVar com_SyncGPU("com_SyncGPU"s, "0"s);
-ConsoleVar com_MaxFPS("com_MaxFPS"s, "120"s);
-ConsoleVar com_FrameSleep("com_FrameSleep"s, "0"s);
-ConsoleVar in_StickDeadZone("in_StickDeadZone"s, "0.23"s);
+ConsoleVar com_SyncGPU("com_SyncGPU"_s, "0"_s);
+ConsoleVar com_MaxFPS("com_MaxFPS"_s, "120"_s);
+ConsoleVar com_FrameSleep("com_FrameSleep"_s, "0"_s);
+ConsoleVar in_StickDeadZone("in_StickDeadZone"_s, "0.23"_s);
 
 FrameLoop::FrameLoop(RenderCore::IDevice* renderDevice) :
     m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
