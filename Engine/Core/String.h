@@ -1533,7 +1533,12 @@ public:
     {
         m_Buffer.clear();
         fmt::detail::vformat_to(m_Buffer, fmt::string_view(Format), fmt::make_format_args(args...));
-        return StringView(m_Buffer.begin(), m_Buffer.end());
+
+        // Append '\0' but don't change buffer size, just capacity
+        m_Buffer.try_reserve(m_Buffer.size() + 1);
+        m_Buffer[m_Buffer.size()] = '\0';
+
+        return StringView(m_Buffer.begin(), m_Buffer.end(), true);
     }
 
     template <typename T>
