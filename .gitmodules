@@ -4,9 +4,6 @@
 [submodule "ThirdParty/mimalloc"]
 	path = ThirdParty/mimalloc
 	url = https://github.com/0xc0de/mimalloc.git
-[submodule "ThirdParty/SDL2"]
-	path = ThirdParty/SDL2
-	url = https://github.com/0xc0de/SDL2.git
 [submodule "ThirdParty/bcdec"]
 	path = ThirdParty/bcdec
 	url = https://github.com/0xc0de/bcdec.git
