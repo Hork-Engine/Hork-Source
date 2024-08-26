@@ -92,14 +92,12 @@ bool GetProcAddress(void* handle, T** procPtr, const char* procName)
     return nullptr != ((*procPtr) = (T*)GetProcAddress(handle, procName));
 }
 
-void SetCursorEnabled(bool bEnabled);
+/** Returns x and y coordinate of the mouse cursor position relative to the focus window. */
+void GetCursorPosition(float& x, float& y);
 
-bool IsCursorEnabled();
-
-void GetCursorPosition(int& _X, int& _Y);
+/** Returns x and y coordinate of the mouse cursor position relative to the desktop. */
+void GetGlobalCursorPosition(float& x, float& y);
 
 } // namespace Core
-
-
 
 HK_NAMESPACE_END

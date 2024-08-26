@@ -80,6 +80,8 @@ public:
 private:
     void                RenderAudio(uint8_t* pStream, int StreamLength);
 
+    // Internal audio stream
+    void*               m_AudioStream;
     // Internal device id
     uint32_t            m_AudioDeviceId;
     // Transfer buffer memory

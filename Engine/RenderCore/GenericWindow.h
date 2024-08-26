@@ -34,46 +34,33 @@ SOFTWARE.
 #include "SwapChain.h"
 
 struct SDL_Window;
-union SDL_Event;
+struct SDL_WindowEvent;
 
 HK_NAMESPACE_BEGIN
 
-struct DisplayVideoMode
+enum class WindowMode : uint8_t
 {
-    /** Horizontal position on display (read only) */
-    int X;
-    /** Vertical position on display (read only) */
-    int Y;
-    /** Horizontal position on display in windowed mode. */
+    Windowed,
+    BorderlessFullscreen,
+    ExclusiveFullscreen
+};
+
+struct WindowSettings
+{
+    /// Horizontal position on display in windowed mode
     int WindowedX;
-    /** Vertical position on display in windowed mode. */
+    /// Vertical position on display in windowed mode
     int WindowedY;
-    /** Horizontal display resolution */
+    /// Horizontal display resolution
     int Width;
-    /** Vertical display resolution */
+    /// Vertical display resolution
     int Height;
-    /** Video mode framebuffer width (for Retina displays, read only) */
-    int FramebufferWidth;
-    /** Video mode framebuffer width (for Retina displays, read only) */
-    int FramebufferHeight;
-    /** Physical monitor (read only) */
-    int DisplayId;
-    /** Display refresh rate (read only) */
-    int RefreshRate;
-    /** Display dots per inch (read only) */
-    float DPI_X;
-    /** Display dots per inch (read only) */
-    float DPI_Y;
-    /** Viewport aspect ratio scale (read only) */
-    float AspectScale;
-    /** Window opacity */
-    float Opacity;
-    /** Fullscreen or Windowed mode */
-    bool bFullscreen;
-    /** Move window to center of the screen. WindowedX and WindowedY will be ignored. */
+    /// Refresh rate
+    float RefreshRate;
+    /// Fullscreen or Windowed mode
+    WindowMode Mode;
+    /// Move window to center of the screen. WindowedX and WindowedY will be ignored
     bool bCentrized;
-    /** Window title */
-    char Title[128];
 };
 
 namespace RenderCore
@@ -84,20 +71,65 @@ class IGenericWindow : public IDeviceObject
 public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_WINDOW;
 
-    IGenericWindow(IDevice* pDevice) :
-        IDeviceObject(pDevice, PROXY_TYPE)
-    {}
+                        IGenericWindow(IDevice* pDevice);
 
-    virtual void      SetVideoMode(DisplayVideoMode const& DesiredMode) = 0;
-    DisplayVideoMode const& GetVideoMode() const { return VideoMode; }
+    void                SetTitle(StringView title);
 
-    void ParseEvent(SDL_Event const& Event);
+    void                ChangeWindowSettings(WindowSettings const& windowSettings);
 
-    static IGenericWindow* GetWindowFromNativeHandle(SDL_Window* Handle);
+    float               GetWindowDPI() const;
+
+    float               GetRefreshRate() const;
+
+    float               GetWideScreenCorrection() const { return m_WideScreenCorrection; }
+
+    WindowMode          GetWindowMode() const { return m_WindowMode; }
+
+    bool                IsFullscreenMode() const { return m_FullscreenMode; }
+
+    /// Horizontal position on display
+    int                 GetX() const { return m_X; }
+
+    /// Vertical position on display
+    int                 GetY() const { return m_Y; }
+
+    /// Horizontal position on display in windowed mode
+    int                 GetWindowedX() const { return m_WindowedX; }
+
+    /// Vertical position on display in windowed mode
+    int                 GetWindowedY() const { return m_WindowedY; }
+
+    int                 GetWidth() const { return m_Width; }
+    int                 GetHeight() const { return m_Height; }
+
+    int                 GetFramebufferWidth() const { return m_FramebufferWidth; }
+    int                 GetFramebufferHeight() const { return m_FramebufferHeight; }
+
+    void                SetOpacity(float opacity);
+    float               GetOpacity() const { return m_Opacity; }
+
+    void                SetCursorEnabled(bool bEnabled);
+    bool                IsCursorEnabled() const;
+
+    void                ParseEvent(SDL_WindowEvent const& event);
+
+    static IGenericWindow* GetWindowFromNativeHandle(SDL_Window* handle);
 
 protected:
-    DisplayVideoMode  VideoMode;
-    WeakRef<ISwapChain> SwapChain;
+    WeakRef<ISwapChain> m_SwapChain;
+    float               m_RefreshRate = 1.0f / 60;
+    int                 m_FramebufferWidth = 0;
+    int                 m_FramebufferHeight = 0;
+    float               m_WideScreenCorrection = 1.0f;
+    int                 m_X = 0;
+    int                 m_Y = 0;
+    int                 m_WindowedX = 0;
+    int                 m_WindowedY = 0;
+    int                 m_Width = 0;
+    int                 m_Height = 0;
+    WindowMode          m_WindowMode = WindowMode::Windowed;
+    bool                m_FullscreenMode = false;
+    float               m_Opacity = 1.0f;
 };
 
 } // namespace RenderCore

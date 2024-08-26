@@ -33,8 +33,6 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
-#include <SDL/SDL.h>
-
 HK_NAMESPACE_BEGIN
 
 namespace RenderCore

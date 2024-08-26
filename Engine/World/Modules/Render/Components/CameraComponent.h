@@ -83,7 +83,7 @@ public:
     void                    SetViewportPosition(Float2 const& viewportPos);
     Float2 const&           GetViewportPosition() const { return m_ViewportPosition; }
 
-    void                    SetViewportSize(Float2 const& viewportSize);
+    void                    SetViewportSize(Float2 const& viewportSize, float aspectScale = 1.0f);
     Float2 const&           GetViewportSize() const { return m_ViewportSize; }
 
     float                   GetAspectRatio() const { return m_AspectRatio; }

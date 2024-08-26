@@ -55,13 +55,13 @@ struct DisplayMode
     /** Height, in screen coordinates */
     int Height;
     /** Refresh rate */
-    int RefreshRate;
+    float RefreshRate;
 };
 
 struct DisplayInfo
 {
     /** Internal identifier */
-    int Id;
+    uint32_t Id;
     /** Display name */
     const char* Name;
     /** Display bounds */
@@ -82,31 +82,25 @@ struct DisplayInfo
     int DisplayUsableH;
     /** Display orientation */
     DISPLAY_ORIENTATION Orientation;
-    /** Diagonal DPI */
-    float ddpi;
-    /** Horizontal DPI */
-    float hdpi;
-    /** Vertical DPI */
-    float vdpi;
 };
 
 namespace Core
 {
 
 /** Get list of displays */
-void GetDisplays(Vector<DisplayInfo>& Displays);
+void GetDisplays(Vector<DisplayInfo>& displays);
 
 /** Get list of display modes */
-void GetDisplayModes(DisplayInfo const& Display, Vector<DisplayMode>& Modes);
+void GetDisplayModes(DisplayInfo const& display, Vector<DisplayMode>& modes);
 
 /** Get information about the desktop display mode */
-void GetDesktopDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);
+void GetDesktopDisplayMode(DisplayInfo const& display, DisplayMode& mode);
 
 /** Get information about the current display mode */
-void GetCurrentDisplayMode(DisplayInfo const& Display, DisplayMode& Mode);
+void GetCurrentDisplayMode(DisplayInfo const& display, DisplayMode& mode);
 
 /** Get the closest match to the requested display mode */
-bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, int RefreshRate, DisplayMode& Mode);
+bool GetClosestDisplayMode(DisplayInfo const& display, int width, int height, float refreshRate, bool includeHightDensityModes, DisplayMode& mode);
 
 } // namespace Core
 

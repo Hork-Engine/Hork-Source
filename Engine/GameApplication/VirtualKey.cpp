@@ -200,7 +200,12 @@ const GamepadKeyDesc GamepadKeyTable[] =
 { "Gamepad Paddle2" },
 { "Gamepad Paddle3" },
 { "Gamepad Paddle4" },
-{ "Gamepad Touchpad" }
+{ "Gamepad Touchpad" },
+{ "Gamepad Misc2" },
+{ "Gamepad Misc3" },
+{ "Gamepad Misc4" },
+{ "Gamepad Misc5" },
+{ "Gamepad Misc6" }
 };
 
 const GamepadAxisDesc GamepadAxisTable[] =

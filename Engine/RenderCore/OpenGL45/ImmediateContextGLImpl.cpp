@@ -45,7 +45,7 @@ SOFTWARE.
 
 #include "GL/glew.h"
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 #define DEFAULT_STENCIL_REF 0
 
@@ -506,7 +506,7 @@ void ImmediateContextGLImpl::MakeCurrent(ImmediateContextGLImpl* pContext)
 {
     if (pContext)
     {
-        SDL_GL_MakeCurrent(pContext->Window.Handle, pContext->Window.GLContext);
+        SDL_GL_MakeCurrent(pContext->Window.Handle, (SDL_GLContext)pContext->Window.GLContext);
     }
     else
     {

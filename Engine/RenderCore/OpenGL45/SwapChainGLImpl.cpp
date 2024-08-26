@@ -32,7 +32,7 @@ SOFTWARE.
 #include "DeviceGLImpl.h"
 #include "GenericWindowGLImpl.h"
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -42,7 +42,7 @@ namespace RenderCore
 SwapChainGLImpl::SwapChainGLImpl(DeviceGLImpl* pDevice, GenericWindowGLImpl* pWindow) :
     ISwapChain(pDevice), pWindow(pWindow)
 {
-    SDL_GL_GetDrawableSize((SDL_Window*)pWindow->GetHandle(), &Width, &Height);
+    SDL_GetWindowSizeInPixels((SDL_Window*)pWindow->GetHandle(), &Width, &Height);
 
     TextureDesc textureDesc;
     textureDesc.SetResolution(TextureResolution2D(Width, Height));

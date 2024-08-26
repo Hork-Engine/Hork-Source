@@ -63,8 +63,8 @@ public:
 
     void DestroyWorld(World* world);
 
-    /// Set main window video mode.
-    void PostChangeVideoMode(DisplayVideoMode const& mode);
+    /// Set main window settings.
+    void ChangeMainWindowSettings(WindowSettings const& windowSettings);
 
     /// Terminate the application
     void PostTerminateEvent();
@@ -85,12 +85,6 @@ public:
     static GameApplication* Instance()
     {
         return static_cast<GameApplication*>(CoreApplication::Instance());
-    }
-
-    /// Current video mode
-    static DisplayVideoMode const& GetVideoMode()
-    {
-        return static_cast<GameApplication*>(Instance())->m_Window->GetVideoMode();
     }
 
     static String const& GetApplicationLocalData()
@@ -255,13 +249,13 @@ private:
     CommandProcessor                m_CommandProcessor;
     CommandContext                  m_CommandContext;
     StateMachine                    m_StateMachine;
-    Vector<World*>                  m_Worlds; 
-    DisplayVideoMode                m_DesiredMode;
+    Vector<World*>                  m_Worlds;
+    WindowSettings                  m_WindowSettings;
     MersenneTwisterRand             m_Random;
     String                          m_Screenshot;
     float                           m_FrameDurationInSeconds{};
     bool                            m_bIsWindowVisible{};
-    bool                            m_bPostChangeVideoMode{};
+    bool                            m_bPostChangeWindowSettings{};
     bool                            m_bPostTerminateEvent{};
     bool                            m_bPostTakeScreenshot{};
     FontHandle                      m_DefaultFontHandle;

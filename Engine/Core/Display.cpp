@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -31,108 +31,125 @@ SOFTWARE.
 #include "Display.h"
 #include "Logger.h"
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
 
 namespace Core
 {
 
-void GetDisplays(Vector<DisplayInfo>& Displays)
+void GetDisplays(Vector<DisplayInfo>& displays)
 {
-    SDL_Rect rect;
-    int      displayCount = SDL_GetNumVideoDisplays();
+    displays.Clear();
 
-    Displays.ResizeInvalidate(displayCount);
-
-    for (int i = 0; i < displayCount; i++)
+    int displayCount = 0;
+    if (SDL_DisplayID *displayIDs = SDL_GetDisplays(&displayCount))
     {
-        DisplayInfo& d = Displays[i];
+        SDL_Rect rect;
 
-        d.Id   = i;
-        d.Name = SDL_GetDisplayName(i);
+        displays.Reserve(displayCount);
 
-        SDL_GetDisplayBounds(i, &rect);
-
-        d.DisplayX = rect.x;
-        d.DisplayY = rect.y;
-        d.DisplayW = rect.w;
-        d.DisplayH = rect.h;
-
-        SDL_GetDisplayUsableBounds(i, &rect);
-
-        d.DisplayUsableX = rect.x;
-        d.DisplayUsableY = rect.y;
-        d.DisplayUsableW = rect.w;
-        d.DisplayUsableH = rect.h;
-
-        d.Orientation = (DISPLAY_ORIENTATION)SDL_GetDisplayOrientation(i);
-
-        SDL_GetDisplayDPI(i, &d.ddpi, &d.hdpi, &d.vdpi);
-    }
-}
-
-void GetDisplayModes(DisplayInfo const& Display, Vector<DisplayMode>& Modes)
-{
-    SDL_DisplayMode modeSDL;
-
-    int numModes = SDL_GetNumDisplayModes(Display.Id);
-
-    Modes.Clear();
-    for (int i = 0; i < numModes; i++)
-    {
-        SDL_GetDisplayMode(Display.Id, i, &modeSDL);
-
-        if (modeSDL.format == SDL_PIXELFORMAT_RGB888)
+        for (int i = 0; i < displayCount; ++i)
         {
-            DisplayMode& mode = Modes.Add();
+            SDL_DisplayID instanceID = displayIDs[i];
 
-            mode.Width       = modeSDL.w;
-            mode.Height      = modeSDL.h;
-            mode.RefreshRate = modeSDL.refresh_rate;
+            DisplayInfo& d = displays.Add();
+
+            d.Id   = instanceID;
+            d.Name = SDL_GetDisplayName(instanceID);
+
+            SDL_GetDisplayBounds(instanceID, &rect);
+
+            d.DisplayX = rect.x;
+            d.DisplayY = rect.y;
+            d.DisplayW = rect.w;
+            d.DisplayH = rect.h;
+
+            SDL_GetDisplayUsableBounds(instanceID, &rect);
+
+            d.DisplayUsableX = rect.x;
+            d.DisplayUsableY = rect.y;
+            d.DisplayUsableW = rect.w;
+            d.DisplayUsableH = rect.h;
+
+            d.Orientation = (DISPLAY_ORIENTATION)SDL_GetCurrentDisplayOrientation(instanceID);
         }
+        SDL_free(displayIDs);
     }
 }
 
-void GetDesktopDisplayMode(DisplayInfo const& Display, DisplayMode& Mode)
+void GetDisplayModes(DisplayInfo const& display, Vector<DisplayMode>& modes)
 {
-    SDL_DisplayMode modeSDL;
-    SDL_GetDesktopDisplayMode(Display.Id, &modeSDL);
+    modes.Clear();
 
-    Mode.Width       = modeSDL.w;
-    Mode.Height      = modeSDL.h;
-    Mode.RefreshRate = modeSDL.refresh_rate;
-}
-
-void GetCurrentDisplayMode(DisplayInfo const& Display, DisplayMode& Mode)
-{
-    SDL_DisplayMode modeSDL;
-    SDL_GetCurrentDisplayMode(Display.Id, &modeSDL);
-
-    Mode.Width       = modeSDL.w;
-    Mode.Height      = modeSDL.h;
-    Mode.RefreshRate = modeSDL.refresh_rate;
-}
-
-bool GetClosestDisplayMode(DisplayInfo const& Display, int Width, int Height, int RefreshRate, DisplayMode& Mode)
-{
-    SDL_DisplayMode modeSDL, closestSDL;
-
-    modeSDL.w            = Width;
-    modeSDL.h            = Height;
-    modeSDL.refresh_rate = RefreshRate;
-    modeSDL.format       = SDL_PIXELFORMAT_RGB888;
-    modeSDL.driverdata   = nullptr;
-    if (!SDL_GetClosestDisplayMode(Display.Id, &modeSDL, &closestSDL) || closestSDL.format != modeSDL.format)
+    int numModes = 0;
+    if (SDL_DisplayMode** dispModes = SDL_GetFullscreenDisplayModes(display.Id, &numModes))
     {
-        LOG("Couldn't find closest display mode to {} x {} {}Hz\n", Width, Height, RefreshRate);
-        Core::ZeroMem(&Mode, sizeof(Mode));
+        modes.Reserve(numModes);
+        for (int i = 0; i < numModes; ++i)
+        {
+            SDL_DisplayMode const *modeSDL = dispModes[i];
+
+            //if (modeSDL->format == SDL_PIXELFORMAT_XRGB8888)
+            {
+                DisplayMode& mode = modes.Add();
+                mode.Width       = modeSDL->w;
+                mode.Height      = modeSDL->h;
+                mode.RefreshRate = modeSDL->refresh_rate;
+            }
+        }
+        SDL_free(dispModes);
+    }
+}
+
+void GetDesktopDisplayMode(DisplayInfo const& display, DisplayMode& mode)
+{
+    SDL_DisplayMode const* modeSDL = SDL_GetDesktopDisplayMode(display.Id);
+    HK_ASSERT(modeSDL);
+
+    if (modeSDL)
+    {
+        mode.Width       = modeSDL->w;
+        mode.Height      = modeSDL->h;
+        mode.RefreshRate = modeSDL->refresh_rate;
+    }
+    else
+    {
+        Core::ZeroMem(&mode, sizeof(mode));
+    }
+}
+
+void GetCurrentDisplayMode(DisplayInfo const& display, DisplayMode& mode)
+{
+    SDL_DisplayMode const* modeSDL = SDL_GetCurrentDisplayMode(display.Id);
+    HK_ASSERT(modeSDL);
+
+    if (modeSDL)
+    {
+        mode.Width       = modeSDL->w;
+        mode.Height      = modeSDL->h;
+        mode.RefreshRate = modeSDL->refresh_rate;
+    }
+    else
+    {
+        Core::ZeroMem(&mode, sizeof(mode));
+    }
+}
+
+bool GetClosestDisplayMode(DisplayInfo const& display, int width, int height, float refreshRate, bool includeHightDensityModes, DisplayMode& mode)
+{
+    SDL_DisplayMode modeSDL = {};
+
+    if (SDL_GetClosestFullscreenDisplayMode(display.Id, width, height, refreshRate, includeHightDensityModes, &modeSDL) != 0)
+    {
+        LOG("Couldn't find closest display mode to {} x {} {:.2f}Hz\n", width, height, refreshRate);
+        Core::ZeroMem(&mode, sizeof(mode));
         return false;
     }
 
-    Mode.Width       = closestSDL.w;
-    Mode.Height      = closestSDL.h;
-    Mode.RefreshRate = closestSDL.refresh_rate;
+    mode.Width       = modeSDL.w;
+    mode.Height      = modeSDL.h;
+    mode.RefreshRate = modeSDL.refresh_rate;
 
     return true;
 }

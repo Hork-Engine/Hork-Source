@@ -107,9 +107,9 @@ public:
 
     IImmediateContext* GetImmediateContext() override;
 
-    void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) override;
+    void GetOrCreateMainWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow) override;
 
-    void CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) override;
+    void CreateGenericWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow) override;
 
     void CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain) override;
 

@@ -36,6 +36,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+ConsoleVar rt_UseWideScreenCorrection("rt_UseWideScreenCorrection"_s, "0"_s);
+
 bool GUILockViewportScaling = false;
 
 UIViewport::UIViewport()
@@ -176,8 +178,12 @@ void UIViewport::Draw(Canvas& canvas)
         return;
     }
 
+    float aspectScale = 1;
+    if (rt_UseWideScreenCorrection)
+        aspectScale = GUIManager->GetGenericWindow()->GetWideScreenCorrection();
+
     camera->SetViewportPosition(m_Geometry.Mins);
-    camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)});
+    camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)}, aspectScale);
 
     GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
 

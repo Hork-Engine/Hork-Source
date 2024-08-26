@@ -113,19 +113,21 @@ void CameraComponent::SetViewportPosition(Float2 const& viewportPos)
     m_ViewportPosition = viewportPos;
 }
 
-void CameraComponent::SetViewportSize(Float2 const& viewportSize)
+void CameraComponent::SetViewportSize(Float2 const& viewportSize, float aspectScale)
 {
-    if (m_ViewportSize != viewportSize)
+    float aspectRatio;
+
+    if (viewportSize.X <= 0.0f || viewportSize.Y <= 0.0f)
+        aspectRatio = 1;
+    else
+        aspectRatio = viewportSize.X / viewportSize.Y;
+
+    aspectRatio *= aspectScale;
+
+    if (m_ViewportSize != viewportSize || m_AspectRatio != aspectRatio)
     {
         m_ViewportSize = viewportSize;
-        if (viewportSize.X <= 0.0f || viewportSize.Y <= 0.0f)
-            m_AspectRatio = 1;
-        else
-            m_AspectRatio = viewportSize.X / viewportSize.Y;
-
-        // TODO: check this
-        //DisplayVideoMode const& vidMode = GameApplication::GetVideoMode();
-        //m_AspectRatio *= vidMode.AspectScale;
+        m_AspectRatio = aspectRatio;
 
         m_ProjectionDirty = true;
     }

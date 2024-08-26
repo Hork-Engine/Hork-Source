@@ -38,7 +38,7 @@ SOFTWARE.
 
 #include <Engine/RenderCore/GPUSync.h>
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -337,22 +337,22 @@ static KeyModifierMask FromKeymodSDL(Uint16 mod)
 {
     KeyModifierMask modMask;
 
-    if (mod & (KMOD_LSHIFT | KMOD_RSHIFT))
+    if (mod & (SDL_KMOD_LSHIFT | SDL_KMOD_RSHIFT))
     {
         modMask.Shift = true;
     }
 
-    if (mod & (KMOD_LCTRL | KMOD_RCTRL))
+    if (mod & (SDL_KMOD_LCTRL | SDL_KMOD_RCTRL))
     {
         modMask.Control = true;
     }
 
-    if (mod & (KMOD_LALT | KMOD_RALT))
+    if (mod & (SDL_KMOD_LALT | SDL_KMOD_RALT))
     {
         modMask.Alt = true;
     }
 
-    if (mod & (KMOD_LGUI | KMOD_RGUI))
+    if (mod & (SDL_KMOD_LGUI | SDL_KMOD_RGUI))
     {
         modMask.Super = true;
     }
@@ -364,32 +364,32 @@ static KeyModifierMask FromKeymodSDL_Char(Uint16 mod)
 {
     KeyModifierMask modMask;
 
-    if (mod & (KMOD_LSHIFT | KMOD_RSHIFT))
+    if (mod & (SDL_KMOD_LSHIFT | SDL_KMOD_RSHIFT))
     {
         modMask.Shift = true;
     }
 
-    if (mod & (KMOD_LCTRL | KMOD_RCTRL))
+    if (mod & (SDL_KMOD_LCTRL | SDL_KMOD_RCTRL))
     {
         modMask.Control = true;
     }
 
-    if (mod & (KMOD_LALT | KMOD_RALT))
+    if (mod & (SDL_KMOD_LALT | SDL_KMOD_RALT))
     {
         modMask.Alt = true;
     }
 
-    if (mod & (KMOD_LGUI | KMOD_RGUI))
+    if (mod & (SDL_KMOD_LGUI | SDL_KMOD_RGUI))
     {
         modMask.Super = true;
     }
 
-    if (mod & KMOD_CAPS)
+    if (mod & SDL_KMOD_CAPS)
     {
         modMask.CapsLock = true;
     }
 
-    if (mod & KMOD_NUM)
+    if (mod & SDL_KMOD_NUM)
     {
         modMask.NumLock = true;
     }
@@ -413,178 +413,185 @@ void FrameLoop::PollEvents(IEventListener* listener)
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+        // Handle window events
+        if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST)
+        {
+            RenderCore::IGenericWindow* window = RenderCore::IGenericWindow::GetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
+            if (window)
+            {
+                window->ParseEvent(event.window);
+
+                switch (event.type)
+                {
+                    // Window has been shown
+                    case SDL_EVENT_WINDOW_SHOWN:
+                        listener->OnWindowVisible(true);
+                        break;
+                    // Window has been hidden
+                    case SDL_EVENT_WINDOW_HIDDEN:
+                        listener->OnWindowVisible(false);
+                        break;
+                    // Window has been exposed and should be redrawn
+                    case SDL_EVENT_WINDOW_EXPOSED:
+                        break;
+                    // Window has been moved to data1, data2
+                    case SDL_EVENT_WINDOW_MOVED:
+                        break;
+                    // Window has been resized to data1xdata2
+                    case SDL_EVENT_WINDOW_RESIZED:
+                        break;
+                    // The window size has changed, either as
+                    // a result of an API call or through the
+                    // system or user changing the window size.
+                    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                        CoreApplication::GetConsoleBuffer().Resize(window->GetFramebufferWidth());
+                        listener->OnResize();
+                        break;
+                    // Window has been minimized
+                    case SDL_EVENT_WINDOW_MINIMIZED:
+                        listener->OnWindowVisible(false);
+                        break;
+                    // Window has been maximized
+                    case SDL_EVENT_WINDOW_MAXIMIZED:
+                        break;
+                    // Window has been restored to normal size and position
+                    case SDL_EVENT_WINDOW_RESTORED:
+                        listener->OnWindowVisible(true);
+                        break;
+                    // Window has gained mouse focus
+                    case SDL_EVENT_WINDOW_MOUSE_ENTER:
+                        break;
+                    // Window has lost mouse focus
+                    case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                        break;
+                    // Window has gained keyboard focus
+                    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                        IgnoreFalseMouseMotionHack = true;
+                        break;
+                    // Window has lost keyboard focus
+                    case SDL_EVENT_WINDOW_FOCUS_LOST:
+                        break;
+                    // The window manager requests that the window be closed
+                    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                        break;
+                    // Window had a hit test that wasn't SDL_HITTEST_NORMAL.
+                    case SDL_EVENT_WINDOW_HIT_TEST:
+                        break;
+                }
+            }
+            continue;
+        }
+
+        // Handle general events
         switch (event.type)
         {
             // User-requested quit
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 listener->OnCloseEvent();
                 break;
 
             // The application is being terminated by the OS
             // Called on iOS in applicationWillTerminate()
             // Called on Android in onDestroy()
-            case SDL_APP_TERMINATING:
+            case SDL_EVENT_TERMINATING:
                 LOG("PollEvent: Terminating\n");
                 break;
 
             // The application is low on memory, free memory if possible.
             // Called on iOS in applicationDidReceiveMemoryWarning()
             // Called on Android in onLowMemory()
-            case SDL_APP_LOWMEMORY:
+            case SDL_EVENT_LOW_MEMORY:
                 LOG("PollEvent: Low memory\n");
                 break;
 
             // The application is about to enter the background
             // Called on iOS in applicationWillResignActive()
             // Called on Android in onPause()
-            case SDL_APP_WILLENTERBACKGROUND:
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:
                 LOG("PollEvent: Will enter background\n");
                 break;
 
             // The application did enter the background and may not get CPU for some time
             // Called on iOS in applicationDidEnterBackground()
             // Called on Android in onPause()
-            case SDL_APP_DIDENTERBACKGROUND:
+            case SDL_EVENT_DID_ENTER_BACKGROUND:
                 LOG("PollEvent: Did enter background\n");
                 break;
 
             // The application is about to enter the foreground
             // Called on iOS in applicationWillEnterForeground()
             // Called on Android in onResume()
-            case SDL_APP_WILLENTERFOREGROUND:
+            case SDL_EVENT_WILL_ENTER_FOREGROUND:
                 LOG("PollEvent: Will enter foreground\n");
                 break;
 
             // The application is now interactive
             // Called on iOS in applicationDidBecomeActive()
             // Called on Android in onResume()
-            case SDL_APP_DIDENTERFOREGROUND:
+            case SDL_EVENT_DID_ENTER_FOREGROUND:
                 LOG("PollEvent: Did enter foreground\n");
                 break;
 
-            // Display state change
-            case SDL_DISPLAYEVENT:
-                switch (event.display.event)
+            // Display orientation has changed to data1
+            case SDL_EVENT_DISPLAY_ORIENTATION:
+                switch (event.display.data1)
                 {
-                    // Display orientation has changed to data1
-                    case SDL_DISPLAYEVENT_ORIENTATION:
-                        switch (event.display.data1)
-                        {
-                            // The display is in landscape mode, with the right side up, relative to portrait mode
-                            case SDL_ORIENTATION_LANDSCAPE:
-                                LOG("PollEvent: Display orientation has changed to landscape mode\n");
-                                break;
-                            // The display is in landscape mode, with the left side up, relative to portrait mode
-                            case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
-                                LOG("PollEvent: Display orientation has changed to flipped landscape mode\n");
-                                break;
-                            // The display is in portrait mode
-                            case SDL_ORIENTATION_PORTRAIT:
-                                LOG("PollEvent: Display orientation has changed to portrait mode\n");
-                                break;
-                            // The display is in portrait mode, upside down
-                            case SDL_ORIENTATION_PORTRAIT_FLIPPED:
-                                LOG("PollEvent: Display orientation has changed to flipped portrait mode\n");
-                                break;
-                            // The display orientation can't be determined
-                            case SDL_ORIENTATION_UNKNOWN:
-                            default:
-                                LOG("PollEvent: The display orientation can't be determined\n");
-                                break;
-                        }
+                    // The display is in landscape mode, with the right side up, relative to portrait mode
+                    case SDL_ORIENTATION_LANDSCAPE:
+                        LOG("PollEvent: Display orientation has changed to landscape mode\n");
                         break;
+                    // The display is in landscape mode, with the left side up, relative to portrait mode
+                    case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
+                        LOG("PollEvent: Display orientation has changed to flipped landscape mode\n");
+                        break;
+                    // The display is in portrait mode
+                    case SDL_ORIENTATION_PORTRAIT:
+                        LOG("PollEvent: Display orientation has changed to portrait mode\n");
+                        break;
+                    // The display is in portrait mode, upside down
+                    case SDL_ORIENTATION_PORTRAIT_FLIPPED:
+                        LOG("PollEvent: Display orientation has changed to flipped portrait mode\n");
+                        break;
+                    // The display orientation can't be determined
+                    case SDL_ORIENTATION_UNKNOWN:
                     default:
-                        LOG("PollEvent: Unknown display event type\n");
+                        LOG("PollEvent: The display orientation can't be determined\n");
                         break;
                 }
                 break;
-
-            // Window state change
-            case SDL_WINDOWEVENT: {
-                RenderCore::IGenericWindow* window = RenderCore::IGenericWindow::GetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
-                if (window)
-                {
-                    window->ParseEvent(event);
-
-                    switch (event.window.event)
-                    {
-                        // Window has been shown
-                        case SDL_WINDOWEVENT_SHOWN:
-                            listener->OnWindowVisible(true);
-                            break;
-                        // Window has been hidden
-                        case SDL_WINDOWEVENT_HIDDEN:
-                            listener->OnWindowVisible(false);
-                            break;
-                        // Window has been exposed and should be redrawn
-                        case SDL_WINDOWEVENT_EXPOSED:
-                            break;
-                        // Window has been moved to data1, data2
-                        case SDL_WINDOWEVENT_MOVED:
-                            break;
-                        // Window has been resized to data1xdata2
-                        case SDL_WINDOWEVENT_RESIZED:
-                        // The window size has changed, either as
-                        // a result of an API call or through the
-                        // system or user changing the window size.
-                        case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                            auto& videoMode = window->GetVideoMode();
-                            CoreApplication::GetConsoleBuffer().Resize(videoMode.FramebufferWidth);
-                            listener->OnResize();
-                            break;
-                        }
-                        // Window has been minimized
-                        case SDL_WINDOWEVENT_MINIMIZED:
-                            listener->OnWindowVisible(false);
-                            break;
-                        // Window has been maximized
-                        case SDL_WINDOWEVENT_MAXIMIZED:
-                            break;
-                        // Window has been restored to normal size and position
-                        case SDL_WINDOWEVENT_RESTORED:
-                            listener->OnWindowVisible(true);
-                            break;
-                        // Window has gained mouse focus
-                        case SDL_WINDOWEVENT_ENTER:
-                            break;
-                        // Window has lost mouse focus
-                        case SDL_WINDOWEVENT_LEAVE:
-                            break;
-                        // Window has gained keyboard focus
-                        case SDL_WINDOWEVENT_FOCUS_GAINED:
-                            IgnoreFalseMouseMotionHack = true;
-                            break;
-                        // Window has lost keyboard focus
-                        case SDL_WINDOWEVENT_FOCUS_LOST:
-                            break;
-                        // The window manager requests that the window be closed
-                        case SDL_WINDOWEVENT_CLOSE:
-                            break;
-                        // Window is being offered a focus (should SetWindowInputFocus() on itself or a subwindow, or ignore)
-                        case SDL_WINDOWEVENT_TAKE_FOCUS:
-                            break;
-                        // Window had a hit test that wasn't SDL_HITTEST_NORMAL.
-                        case SDL_WINDOWEVENT_HIT_TEST:
-                            break;
-                    }
-                }
+            // Display has been added to the system
+            case SDL_EVENT_DISPLAY_ADDED:
                 break;
-            }
-
-            // System specific event
-            case SDL_SYSWMEVENT:
+            // Display has been removed from the system
+            case SDL_EVENT_DISPLAY_REMOVED:
                 break;
+            // Display has changed position
+            case SDL_EVENT_DISPLAY_MOVED:
+                break;
+            // Display has changed desktop mode
+            case SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED:
+                break;
+            // Display has changed current mode
+            case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+                break;
+            // Display has changed content scale
+            case SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED:
+                break;
+
+            // System specific event (Removed in SDL3, migration note: "You can use SDL_SetWindowsMessageHook() and SDL_SetX11EventHook() to watch and modify system events before SDL sees them.")
+            //case SDL_SYSWMEVENT:
+            //    break;
 
             // Key pressed/released
-            case SDL_KEYDOWN:
-            case SDL_KEYUP: {
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     KeyEvent keyEvent;
-                    keyEvent.Key      = SDLKeyMappings[event.key.keysym.scancode];
-                    keyEvent.Scancode = event.key.keysym.scancode;
+                    keyEvent.Key      = SDLKeyMappings[event.key.scancode];
+                    keyEvent.Scancode = event.key.scancode;
                     keyEvent.Action   = (event.key.state == SDL_PRESSED) ? (event.key.repeat ? InputAction::Repeat : InputAction::Pressed) : InputAction::Released;
-                    keyEvent.ModMask  = FromKeymodSDL(event.key.keysym.mod);
+                    keyEvent.ModMask  = FromKeymodSDL(event.key.mod);
                     if (keyEvent.Key != InvalidKey)
                         listener->OnKeyEvent(keyEvent);
                 }
@@ -592,11 +599,11 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // Keyboard text editing (composition)
-            case SDL_TEXTEDITING:
+            case SDL_EVENT_TEXT_EDITING:
                 break;
 
             // Keyboard text input
-            case SDL_TEXTINPUT: {
+            case SDL_EVENT_TEXT_INPUT: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     CharEvent charEvent;
@@ -619,11 +626,11 @@ void FrameLoop::PollEvents(IEventListener* listener)
 
             // Keymap changed due to a system event such as an
             // input language or keyboard layout change.
-            case SDL_KEYMAPCHANGED:
+            case SDL_EVENT_KEYMAP_CHANGED:
                 break;
 
             // Mouse moved
-            case SDL_MOUSEMOTION: {
+            case SDL_EVENT_MOUSE_MOTION: {
                 if (!IgnoreFalseMouseMotionHack && m_ShouldGenerateInputEvents)
                 {
                     MouseMoveEvent moveEvent;
@@ -636,8 +643,8 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // Mouse button pressed/released
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP: {
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            case SDL_EVENT_MOUSE_BUTTON_UP: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     MouseButtonEvent mouseEvent;
@@ -665,7 +672,7 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // Mouse wheel motion
-            case SDL_MOUSEWHEEL: {
+            case SDL_EVENT_MOUSE_WHEEL: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     MouseWheelEvent wheelEvent;
@@ -721,44 +728,44 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // Joystick axis motion
-            case SDL_JOYAXISMOTION:
+            case SDL_EVENT_JOYSTICK_AXIS_MOTION:
                 break;
 
             // Joystick trackball motion
-            case SDL_JOYBALLMOTION:
+            case SDL_EVENT_JOYSTICK_BALL_MOTION:
                 break;
 
             // Joystick hat position change
-            case SDL_JOYHATMOTION:
+            case SDL_EVENT_JOYSTICK_HAT_MOTION:
                 break;
 
             // Joystick button pressed/released
-            case SDL_JOYBUTTONDOWN:
-            case SDL_JOYBUTTONUP:
+            case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+            case SDL_EVENT_JOYSTICK_BUTTON_UP:
                 break;
 
             // A new joystick has been inserted into the system
-            case SDL_JOYDEVICEADDED:
+            case SDL_EVENT_JOYSTICK_ADDED:
                 break;
 
             // An opened joystick has been removed
-            case SDL_JOYDEVICEREMOVED:
+            case SDL_EVENT_JOYSTICK_REMOVED:
                 break;
 
             // Game controller axis motion
-            case SDL_CONTROLLERAXISMOTION: {
+            case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     float deadzone = Math::Clamp(in_StickDeadZone.GetFloat(), 0.0f, 0.999f);
-                    float value = static_cast<float>(event.caxis.value) / 32767;
+                    float value = static_cast<float>(event.gaxis.value) / 32767;
 
                     value = value > 0.0f ? Math::Max(0.0f, value - deadzone)
                                          : Math::Min(0.0f, value + deadzone);
 
                     GamepadAxisMotionEvent gamepadEvent;
-                    gamepadEvent.GamepadID = event.caxis.which;
-                    gamepadEvent.AssignedPlayerIndex = SDL_GameControllerGetPlayerIndex(SDL_GameControllerFromInstanceID(event.caxis.which));
-                    gamepadEvent.Axis = GamepadAxis(event.caxis.axis);
+                    gamepadEvent.GamepadID = event.gaxis.which;
+                    gamepadEvent.AssignedPlayerIndex = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(event.gaxis.which));
+                    gamepadEvent.Axis = GamepadAxis(event.gaxis.axis);
                     gamepadEvent.Value = Math::Clamp(value / (1.0f - deadzone), -1.0f, 1.0f);
 
                     // Invert Y axis
@@ -787,15 +794,15 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // Game controller button pressed / released
-            case SDL_CONTROLLERBUTTONDOWN:
-            case SDL_CONTROLLERBUTTONUP: {
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            case SDL_EVENT_GAMEPAD_BUTTON_UP: {
                 if (m_ShouldGenerateInputEvents)
                 {
                     GamepadKeyEvent gamepadEvent;
-                    gamepadEvent.GamepadID = event.cbutton.which;
-                    gamepadEvent.AssignedPlayerIndex = SDL_GameControllerGetPlayerIndex(SDL_GameControllerFromInstanceID(event.cbutton.which));
-                    gamepadEvent.Key = GamepadKey(event.cbutton.button);
-                    gamepadEvent.Action = (event.cbutton.state == SDL_PRESSED) ? InputAction::Pressed : InputAction::Released;
+                    gamepadEvent.GamepadID = event.gbutton.which;
+                    gamepadEvent.AssignedPlayerIndex = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(event.gbutton.which));
+                    gamepadEvent.Key = GamepadKey(event.gbutton.button);
+                    gamepadEvent.Action = (event.gbutton.state == SDL_PRESSED) ? InputAction::Pressed : InputAction::Released;
 
                     // Fix player index
                     if (gamepadEvent.AssignedPlayerIndex == -1)
@@ -817,22 +824,22 @@ void FrameLoop::PollEvents(IEventListener* listener)
             }
 
             // A new Game controller has been inserted into the system
-            case SDL_CONTROLLERDEVICEADDED: {
-                SDL_GameController* controller = SDL_GameControllerOpen(event.cdevice.which);
-                LOG("Input device added: {}\n", SDL_GameControllerName(controller));
+            case SDL_EVENT_GAMEPAD_ADDED: {
+                SDL_Gamepad* gamepad = SDL_OpenGamepad(event.gdevice.which);
+                LOG("Input device added: {}\n", SDL_GetGamepadName(gamepad));
                 break;
             }
 
             // An opened Game controller has been removed
-            case SDL_CONTROLLERDEVICEREMOVED: {
-                SDL_GameController* controller = SDL_GameControllerFromInstanceID(event.cdevice.which);
+            case SDL_EVENT_GAMEPAD_REMOVED: {
+                SDL_Gamepad* gamepad = SDL_GetGamepadFromID(event.gdevice.which);
 
                 if (m_ShouldGenerateInputEvents)
                 {
-                    int assignedPlayerIndex = SDL_GameControllerGetPlayerIndex(controller);
+                    int assignedPlayerIndex = SDL_GetGamepadPlayerIndex(gamepad);
 
                     // Try to restore player index from last event
-                    auto it = m_GamepadIDToPlayerIndex.Find(event.cdevice.which);
+                    auto it = m_GamepadIDToPlayerIndex.Find(event.gdevice.which);
                     if (it != m_GamepadIDToPlayerIndex.End())
                     {
                         if (assignedPlayerIndex == -1)
@@ -844,13 +851,13 @@ void FrameLoop::PollEvents(IEventListener* listener)
                     {
                         {
                             GamepadKeyEvent gamepadEvent;
-                            gamepadEvent.GamepadID = event.cdevice.which;
+                            gamepadEvent.GamepadID = event.gdevice.which;
                             gamepadEvent.AssignedPlayerIndex = assignedPlayerIndex;
                             gamepadEvent.Action = InputAction::Released;
 
-                            for (int button = 0; button < SDL_CONTROLLER_BUTTON_MAX; ++button)
+                            for (int button = 0; button < SDL_GAMEPAD_BUTTON_MAX; ++button)
                             {                   
-                                if (SDL_GameControllerGetButton(controller, (SDL_GameControllerButton)button) == SDL_PRESSED)
+                                if (SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)button) == SDL_PRESSED)
                                 {
                                     gamepadEvent.Key = GamepadKey(button);                            
                                     listener->OnGamepadButtonEvent(gamepadEvent);
@@ -860,12 +867,12 @@ void FrameLoop::PollEvents(IEventListener* listener)
 
                         {
                             GamepadAxisMotionEvent gamepadEvent;
-                            gamepadEvent.GamepadID = event.cdevice.which;
+                            gamepadEvent.GamepadID = event.gdevice.which;
                             gamepadEvent.AssignedPlayerIndex = assignedPlayerIndex;
                             gamepadEvent.Value = 0;
-                            for (int axis = 0; axis < SDL_CONTROLLER_AXIS_MAX; ++axis)
+                            for (int axis = 0; axis < SDL_GAMEPAD_AXIS_MAX; ++axis)
                             {                   
-                                if (SDL_GameControllerGetAxis(controller, (SDL_GameControllerAxis)axis))
+                                if (SDL_GetGamepadAxis(gamepad, (SDL_GamepadAxis)axis))
                                 {
                                     gamepadEvent.Axis = GamepadAxis(axis);
                                     listener->OnGamepadAxisMotionEvent(gamepadEvent);
@@ -874,79 +881,68 @@ void FrameLoop::PollEvents(IEventListener* listener)
                         }
                     }
                 }
-                LOG("Input device removed: {}\n", SDL_GameControllerName(controller));
-                SDL_GameControllerClose(controller);                
+                LOG("Input device removed: {}\n", SDL_GetGamepadName(gamepad));
+                SDL_CloseGamepad(gamepad);                
                 break;
             }
 
             // The controller mapping was updated
-            case SDL_CONTROLLERDEVICEREMAPPED:
+            case SDL_EVENT_GAMEPAD_REMAPPED:
                 LOG("PollEvent: Gamepad device mapped\n");
                 break;
 
             // Touch events
-            case SDL_FINGERDOWN:
+            case SDL_EVENT_FINGER_DOWN:
                 LOG("PollEvent: Touch press\n");
                 break;
-            case SDL_FINGERUP:
+            case SDL_EVENT_FINGER_UP:
                 LOG("PollEvent: Touch release\n");
                 break;
-            case SDL_FINGERMOTION:
+            case SDL_EVENT_FINGER_MOTION:
                 LOG("PollEvent: Touch move\n");
                 break;
 
-            // Gesture events
-            case SDL_DOLLARGESTURE:
-                LOG("PollEvent: Dollar gesture\n");
-                break;
-            case SDL_DOLLARRECORD:
-                LOG("PollEvent: Dollar record\n");
-                break;
-            case SDL_MULTIGESTURE:
-                LOG("PollEvent: Multigesture\n");
-                break;
-
             // The clipboard changed
-            case SDL_CLIPBOARDUPDATE:
+            case SDL_EVENT_CLIPBOARD_UPDATE:
                 LOG("PollEvent: Clipboard update\n");
                 break;
 
             // The system requests a file open
-            case SDL_DROPFILE:
+            case SDL_EVENT_DROP_FILE:
                 LOG("PollEvent: Drop file\n");
                 break;
             // text/plain drag-and-drop event
-            case SDL_DROPTEXT:
+            case SDL_EVENT_DROP_TEXT:
                 LOG("PollEvent: Drop text\n");
                 break;
             // A new set of drops is beginning (NULL filename)
-            case SDL_DROPBEGIN:
+            case SDL_EVENT_DROP_BEGIN:
                 LOG("PollEvent: Drop begin\n");
                 break;
             // Current set of drops is now complete (NULL filename)
-            case SDL_DROPCOMPLETE:
+            case SDL_EVENT_DROP_COMPLETE:
                 LOG("PollEvent: Drop complete\n");
                 break;
 
             // A new audio device is available
-            case SDL_AUDIODEVICEADDED:
-                LOG("Audio {} device added: {}\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
+            case SDL_EVENT_AUDIO_DEVICE_ADDED:
+                LOG("Audio {} device added: {}\n", event.adevice.recording ? "recording" : "playback", SDL_GetAudioDeviceName(event.adevice.which));
                 break;
             // An audio device has been removed
-            case SDL_AUDIODEVICEREMOVED:
-                LOG("Audio {} device removed: {}\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
+            case SDL_EVENT_AUDIO_DEVICE_REMOVED:
+                LOG("Audio {} device removed: {}\n", event.adevice.recording ? "recording" : "playback", SDL_GetAudioDeviceName(event.adevice.which));
                 break;
 
             // A sensor was updated
-            case SDL_SENSORUPDATE:
+            case SDL_EVENT_SENSOR_UPDATE:
                 LOG("PollEvent: Sensor update\n");
                 break;
 
             // The render targets have been reset and their contents need to be updated
-            case SDL_RENDER_TARGETS_RESET:
+            case SDL_EVENT_RENDER_TARGETS_RESET:
                 LOG("PollEvent: Render targets reset\n");
                 break;
-            case SDL_RENDER_DEVICE_RESET:
+            case SDL_EVENT_RENDER_DEVICE_RESET:
                 LOG("PollEvent: Render device reset\n");
                 break;
         }

@@ -112,9 +112,9 @@ public:
 
     virtual IImmediateContext* GetImmediateContext() = 0;
 
-    virtual void GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) = 0;
+    virtual void GetOrCreateMainWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow) = 0;
 
-    virtual void CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow) = 0;
+    virtual void CreateGenericWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow) = 0;
 
     virtual void CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain) = 0;
 

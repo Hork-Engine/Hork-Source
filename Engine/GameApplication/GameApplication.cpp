@@ -45,7 +45,7 @@ SOFTWARE.
 #include <Engine/Core/WindowsDefs.h>
 #endif
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 #include <ozz/base/memory/allocator.h>
 #include <Recast/RecastAlloc.h>
 #include <Detour/DetourAlloc.h>
@@ -61,10 +61,13 @@ ConsoleVar com_AppDataPath("com_AppDataPath"_s, ""_s, CVAR_NOSAVE);
 
 ConsoleVar rt_VidWidth("rt_VidWidth"_s, "0"_s);
 ConsoleVar rt_VidHeight("rt_VidHeight"_s, "0"_s);
+//ConsoleVar rt_VidWidth("rt_VidWidth"_s, "1024"_s);
+//ConsoleVar rt_VidHeight("rt_VidHeight"_s, "768"_s);
+ConsoleVar rt_VidHz("rt_VidHz"_s, "0"_s);
 #ifdef HK_DEBUG
-ConsoleVar rt_VidFullscreen("rt_VidFullscreen"_s, "0"_s);
+ConsoleVar rt_VidMode("rt_VidMode"_s, "exclusive"_s);
 #else
-ConsoleVar rt_VidFullscreen("rt_VidFullscreen"_s, "1"_s);
+ConsoleVar rt_VidMode("rt_VidMode"_s, "exclusive"_s, 0, "windowed/borderless/exclusive"_s);
 #endif
 ConsoleVar rt_SwapInterval("rt_SwapInterval"_s, "0"_s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"_s);
 
@@ -209,6 +212,32 @@ void InitializeThirdPartyLibraries()
     }
 }
 
+GlobalStringView GetWindowModeString(WindowMode mode)
+{
+    switch (mode)
+    {
+    case WindowMode::Windowed:
+        return "windowed"_s;
+    case WindowMode::BorderlessFullscreen:
+        return "borderless"_s;
+    case WindowMode::ExclusiveFullscreen:
+        return "exclusive"_s;
+    }
+    return "windowed"_s;
+}
+
+WindowMode GetWindowModeFromString(StringView str)
+{
+    if (!str.Icmp("windowed"))
+        return WindowMode::Windowed;
+    if (!str.Icmp("borderless"))
+        return WindowMode::BorderlessFullscreen;
+    if (!str.Icmp("exclusive"))
+        return WindowMode::ExclusiveFullscreen;
+
+    return WindowMode::Windowed;
+}
+
 } // namespace
 
 GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
@@ -219,7 +248,7 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
     LoadConfigFile(GetRootPath() / "default.cfg");
 
     if (com_AppDataPath.GetString().IsEmpty())
-        com_AppDataPath = GetApplicationUserPath() / "Cool Games Software" / title;
+        com_AppDataPath = GetApplicationUserPath() / "Hork Games" / title;
 
     m_ApplicationLocalData = com_AppDataPath.GetString();
 
@@ -348,11 +377,11 @@ void GameApplication::RunMainLoop()
             TakeScreenshot();
         }
 
-        if (m_bPostChangeVideoMode)
+        if (m_bPostChangeWindowSettings)
         {
-            m_bPostChangeVideoMode = false;
+            m_bPostChangeWindowSettings = false;
 
-            m_Window->SetVideoMode(m_DesiredMode);
+            m_Window->ChangeWindowSettings(m_WindowSettings);
 
             // Swap buffers to prevent flickering
             m_SwapChain->Present(rt_SwapInterval.GetInteger());
@@ -551,28 +580,36 @@ void GameApplication::CreateMainWindowAndSwapChain()
         Core::GetDisplays(displays);
         if (!displays.IsEmpty())
         {
-            Core::GetDesktopDisplayMode(displays[0], mode);
-
-            rt_VidWidth.ForceInteger(mode.Width);
-            rt_VidHeight.ForceInteger(mode.Height);
+            if (GetWindowModeFromString(rt_VidMode.GetString()) == WindowMode::Windowed)
+            {
+                rt_VidWidth.ForceInteger(displays[0].DisplayUsableW);
+                rt_VidHeight.ForceInteger(displays[0].DisplayUsableH);
+            }
+            else
+            {
+                Core::GetDesktopDisplayMode(displays[0], mode);
+                rt_VidWidth.ForceInteger(mode.Width);
+                rt_VidHeight.ForceInteger(mode.Height);
+            }
         }
         else
         {
-            rt_VidWidth.ForceInteger(1024);
-            rt_VidHeight.ForceInteger(768);
+            rt_VidWidth.ForceInteger(1920);
+            rt_VidHeight.ForceInteger(1080);
         }
     }
 
-    DisplayVideoMode desiredMode  = {};
-    desiredMode.Width       = rt_VidWidth.GetInteger();
-    desiredMode.Height      = rt_VidHeight.GetInteger();
-    desiredMode.Opacity     = 1;
-    desiredMode.bFullscreen = rt_VidFullscreen;
-    desiredMode.bCentrized  = true;
-    Core::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), m_Title.CStr());
+    WindowSettings windowSettings  = {};
+    windowSettings.Width       = rt_VidWidth.GetInteger();
+    windowSettings.Height      = rt_VidHeight.GetInteger();
+    windowSettings.Mode        = GetWindowModeFromString(rt_VidMode.GetString());
+    windowSettings.RefreshRate = rt_VidHz.GetFloat();
+    windowSettings.bCentrized  = true;
 
-    m_RenderDevice->GetOrCreateMainWindow(desiredMode, &m_Window);
+    m_RenderDevice->GetOrCreateMainWindow(windowSettings, &m_Window);
     m_RenderDevice->CreateSwapChain(m_Window, &m_SwapChain);
+
+    m_Window->SetTitle(m_Title);
 
     // Swap buffers to prevent flickering
     m_SwapChain->Present(rt_SwapInterval.GetInteger());
@@ -585,9 +622,15 @@ void GameApplication::OnKeyEvent(KeyEvent const& event)
     {
         if (event.Action == InputAction::Pressed && event.Key == VirtualKey::Enter && event.ModMask.Alt)
         {
-            DisplayVideoMode videoMode  = m_Window->GetVideoMode();
-            videoMode.bFullscreen = !videoMode.bFullscreen;
-            PostChangeVideoMode(videoMode);
+            WindowSettings windowSettings = {};
+
+            windowSettings.Width = rt_VidWidth.GetInteger();
+            windowSettings.Height = rt_VidHeight.GetInteger();
+            windowSettings.Mode = m_Window->IsFullscreenMode() ? WindowMode::Windowed : WindowMode::ExclusiveFullscreen;
+            windowSettings.RefreshRate = rt_VidHz.GetFloat();
+            windowSettings.bCentrized = true;
+
+            ChangeMainWindowSettings(windowSettings);
         }
     }
 
@@ -636,16 +679,19 @@ void GameApplication::OnCloseEvent()
 
 void GameApplication::OnResize()
 {
-    DisplayVideoMode const& videoMode = m_Window->GetVideoMode();
-
-    m_RetinaScale = Float2(static_cast<float>(videoMode.FramebufferWidth) / videoMode.Width,
-                           static_cast<float>(videoMode.FramebufferHeight) / videoMode.Height);
+    m_RetinaScale = Float2(static_cast<float>(m_Window->GetFramebufferWidth()) / m_Window->GetWidth(),
+                           static_cast<float>(m_Window->GetFramebufferHeight()) / m_Window->GetHeight());
 }
 
-void GameApplication::PostChangeVideoMode(DisplayVideoMode const& mode)
+void GameApplication::ChangeMainWindowSettings(WindowSettings const& windowSettings)
 {
-    m_DesiredMode          = mode;
-    m_bPostChangeVideoMode = true;
+    m_WindowSettings = windowSettings;
+    m_bPostChangeWindowSettings = true;
+
+    rt_VidWidth.ForceInteger(windowSettings.Width);
+    rt_VidHeight.ForceInteger(windowSettings.Height);
+    rt_VidHz.ForceFloat(windowSettings.RefreshRate);
+    rt_VidMode.ForceString(GetWindowModeString(windowSettings.Mode));
 }
 
 void GameApplication::PostTerminateEvent()

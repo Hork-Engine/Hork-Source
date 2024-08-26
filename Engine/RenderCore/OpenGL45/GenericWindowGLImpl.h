@@ -43,22 +43,20 @@ class DeviceGLImpl;
 class GenericWindowGLImpl final : public IGenericWindow
 {
 public:
-    GenericWindowGLImpl(DeviceGLImpl* pDevice, DisplayVideoMode const& VideoMode, WindowPoolGL& WindowPool, WindowPoolGL::WindowGL WindowHandle);
-    ~GenericWindowGLImpl();
-
-    void SetVideoMode(DisplayVideoMode const& DesiredMode) override;
+                            GenericWindowGLImpl(DeviceGLImpl* pDevice, WindowSettings const& windowSettings, WindowPoolGL& windowPool, WindowPoolGL::WindowGL windowHandle);
+                            ~GenericWindowGLImpl();
 
     ImmediateContextGLImpl* GetImmediateContext() { return WindowGL.ImmediateCtx; }
 
-    void SetSwapChain(ISwapChain* SwapChain);
+    void                    SetSwapChain(ISwapChain* SwapChain);
 
     // For caching interval switches
-    int CurrentSwapInterval = 666;
+    int                     CurrentSwapInterval = 666;
 
 private:
-    WindowPoolGL& WindowPool;
-    WindowPoolGL::WindowGL WindowGL;
-    bool bUseExternalHandle;
+    WindowPoolGL&           WindowPool;
+    WindowPoolGL::WindowGL  WindowGL;
+    bool                    bUseExternalHandle;
 };
 
 } // namespace RenderCore

@@ -56,7 +56,7 @@ SOFTWARE.
 #    include "GL/glxew.h"
 #endif
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -165,7 +165,7 @@ DeviceGLImpl::DeviceGLImpl()
     MainWindowHandle = WindowPool.NewWindow();
 
     SDL_Window*   pWindow   = MainWindowHandle.Handle; //pMainWindow->GetNativeHandle();
-    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.RawPtr())->GetGLContext();
+    SDL_GLContext windowCtx = (SDL_GLContext)MainWindowHandle.GLContext; //static_cast<GenericWindowGLImpl*>(pMainWindow.RawPtr())->GetGLContext();
 
     SDL_GL_MakeCurrent(pWindow, windowCtx);
 
@@ -447,11 +447,11 @@ IImmediateContext* DeviceGLImpl::GetImmediateContext()
     return MainWindowHandle.ImmediateCtx;
 }
 
-void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
+void DeviceGLImpl::GetOrCreateMainWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow)
 {
     if (pMainWindow.IsExpired())
     {
-        *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, MainWindowHandle);
+        *ppWindow = MakeRef<GenericWindowGLImpl>(this, windowSettings, WindowPool, MainWindowHandle);
         pMainWindow = *ppWindow;
     }
     else
@@ -460,11 +460,11 @@ void DeviceGLImpl::GetOrCreateMainWindow(DisplayVideoMode const& VideoMode, Ref<
     }
 }
 
-void DeviceGLImpl::CreateGenericWindow(DisplayVideoMode const& VideoMode, Ref<IGenericWindow>* ppWindow)
+void DeviceGLImpl::CreateGenericWindow(WindowSettings const& windowSettings, Ref<IGenericWindow>* ppWindow)
 {
     WindowPoolGL::WindowGL dummyHandle = {};
 
-    *ppWindow = MakeRef<GenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
+    *ppWindow = MakeRef<GenericWindowGLImpl>(this, windowSettings, WindowPool, dummyHandle);
 }
 
 void DeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, Ref<ISwapChain>* ppSwapChain)
@@ -999,7 +999,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
 
     if (bInitSDLSubsystems)
     {
-        SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS);
+        SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMEPAD | SDL_INIT_EVENTS);
         bInitSDLSubsystems = false;
     }
 
@@ -1008,21 +1008,16 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_EGL, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
                         SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
 #ifdef HK_DEBUG
-                            | SDL_GL_CONTEXT_DEBUG_FLAG
+                        | SDL_GL_CONTEXT_DEBUG_FLAG
 #endif
     );
-    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, prevContext ? 1 : 0);
     SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
-    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
-    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RESET_NOTIFICATION,  );
-    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_NO_ERROR,  );
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -1038,15 +1033,22 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     SDL_GL_SetAttribute(SDL_GL_STEREO, 0);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-    //SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
-    //SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
 
     WindowGL window;
-    window.Handle = SDL_CreateWindow("", 0, 0, 1, 1, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, 0);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, 0);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, 1);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, 1);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    window.Handle = SDL_CreateWindowWithProperties(props);
+    SDL_DestroyProperties(props);
     if (!window.Handle)
     {
         CoreApplication::TerminateWithError("Failed to create window\n");
     }
+
+    SDL_StartTextInput(window.Handle);
 
     window.GLContext = SDL_GL_CreateContext(window.Handle);
     if (!window.GLContext)
@@ -1054,7 +1056,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
         CoreApplication::TerminateWithError("Failed to initialize OpenGL context\n");
     }
 
-    SDL_GL_MakeCurrent(window.Handle, window.GLContext);
+    SDL_GL_MakeCurrent(window.Handle, (SDL_GLContext)window.GLContext);
 
     // Set glewExperimental=true to allow extension entry points to be loaded even if extension isn't present
     // in the driver's extensions string
@@ -1099,9 +1101,11 @@ void WindowPoolGL::Free(WindowPoolGL::WindowGL Window)
     SDL_Window*   prevWindow  = SDL_GL_GetCurrentWindow();
     SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
 
+    SDL_StopTextInput(Window.Handle);
+
     if (Window.GLContext)
     {
-        SDL_GL_DeleteContext(Window.GLContext);
+        SDL_GL_DestroyContext((SDL_GLContext)Window.GLContext);
     }
 
     if (Window.Handle)

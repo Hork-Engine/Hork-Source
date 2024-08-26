@@ -30,7 +30,7 @@ target_link_libraries(${PROJECT_NAME}
     fmt::fmt-header-only
     HACD
     vhacd
-    SDL2-static
+    SDL3-static
     MikkTSpace
     mimalloc-static
     miniz

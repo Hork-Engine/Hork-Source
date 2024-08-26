@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Memory.h"
 #include "WindowsDefs.h"
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 #ifdef HK_OS_LINUX
 #    include <unistd.h>
@@ -191,20 +191,14 @@ MemoryInfo GetPhysMemoryInfo()
     return info;
 }
 
-void SetCursorEnabled(bool bEnabled)
+void GetCursorPosition(float& x, float& y)
 {
-    //SDL_SetWindowGrab( Wnd, (SDL_bool)!bEnabled ); // FIXME: Always grab in fullscreen?
-    SDL_SetRelativeMouseMode((SDL_bool)!bEnabled);
+    (void)SDL_GetMouseState(&x, &y);
 }
 
-bool IsCursorEnabled()
+void GetGlobalCursorPosition(float& x, float& y)
 {
-    return !SDL_GetRelativeMouseMode();
-}
-
-void GetCursorPosition(int& _X, int& _Y)
-{
-    (void)SDL_GetMouseState(&_X, &_Y);
+    (void)SDL_GetGlobalMouseState(&x, &y);
 }
 
 } // namespace Core

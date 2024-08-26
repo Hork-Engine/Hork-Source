@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -36,8 +36,9 @@ SOFTWARE.
 #include "Logger.h"
 #include "ConsoleVar.h"
 #include "HashFunc.h"
-
-#include <SDL/SDL.h>
+#include<Engine/Core/Containers/Hash.h>
+#include <malloc.h>
+#include <SDL3/SDL.h>
 
 #ifdef HK_OS_LINUX
 #include <sys/stat.h>
@@ -399,6 +400,20 @@ enum PROCESS_ATTRIBUTE
 
 CoreApplication* CoreApplication::s_Instance = {};
 
+/*
+
+NOTE:
+
+The current version of SDL3 is still quite crude and contains several minor memory leaks.
+I added this macro to make it easier to find memory leaks if the SDL authors don't fix it first.
+
+*/
+//#define DEBUG_SDL_ALLOCS
+#ifdef DEBUG_SDL_ALLOCS
+HashMap<size_t, size_t> SDLAllocs;
+int SDLAllocIndex = 0;
+#endif
+
 CoreApplication::CoreApplication(ArgumentPack const& args) :
     m_Arguments(args)
 {
@@ -566,22 +581,51 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
     SDL_SetMemoryFunctions(
         [](size_t size) -> void*
         {
+#ifdef DEBUG_SDL_ALLOCS
+            void* ptr = Core::GetHeapAllocator<HEAP_MISC>().Alloc(size, 0);
+            if (SDLAllocIndex==3762 || SDLAllocIndex==3182) // Problem allocs
+                DebugBreak();
+            SDLAllocs[(size_t)ptr] = SDLAllocIndex++;
+            return ptr;
+#else
             return Core::GetHeapAllocator<HEAP_MISC>().Alloc(size, 0);
+#endif
         },
         [](size_t nmemb, size_t size) -> void*
         {
+#ifdef DEBUG_SDL_ALLOCS
+            void* ptr = Core::GetHeapAllocator<HEAP_MISC>().Alloc(nmemb * size, 0, MALLOC_ZERO);
+            if (SDLAllocIndex==3762 || SDLAllocIndex==3182) // Problem allocs
+                DebugBreak();
+            SDLAllocs[(size_t)ptr] = SDLAllocIndex++;
+            return ptr;
+#else
             return Core::GetHeapAllocator<HEAP_MISC>().Alloc(nmemb * size, 0, MALLOC_ZERO);
+#endif
         },
         [](void* mem, size_t size) -> void*
         {
+#ifdef DEBUG_SDL_ALLOCS
+            if (mem)
+                SDLAllocs.Erase((size_t)mem);
+            void* ptr = Core::GetHeapAllocator<HEAP_MISC>().Realloc(mem, size, 0);
+            if (SDLAllocIndex==3762 || SDLAllocIndex==3182) // Problem allocs
+                DebugBreak();
+            SDLAllocs[(size_t)ptr] = SDLAllocIndex++;
+            return ptr;
+#else
             return Core::GetHeapAllocator<HEAP_MISC>().Realloc(mem, size, 0);
+#endif
         },
         [](void* mem)
         {
+#ifdef DEBUG_SDL_ALLOCS
+            SDLAllocs.Erase((size_t)mem);
+#endif
             Core::GetHeapAllocator<HEAP_MISC>().Free(mem);
         });
 
-    SDL_LogSetOutputFunction(
+    SDL_SetLogOutputFunction(
         [](void* userdata, int category, SDL_LogPriority priority, const char* message)
         {
             LOG("SDL: {} : {}\n", category, message);
@@ -669,6 +713,17 @@ void CoreApplication::Cleanup()
     }
 
     SDL_Quit();
+
+    if (SDL_GetNumAllocations() != 0)
+    {
+        Core::WriteDebugString(HK_FORMAT("SDL Memory leaks: {}\n", SDL_GetNumAllocations()).ToPtr());
+    }
+
+#ifdef DEBUG_SDL_ALLOCS
+    auto& allocs = SDLAllocs;
+    HK_UNUSED(allocs);
+    DebugBreak();
+#endif
 }
 
 void CoreApplication::_WriteMessage(const char* message)
@@ -781,7 +836,9 @@ void AssertFunction(const char* _File, int _Line, const char* _Function, const c
         "============================\n",
         _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "");
 
-    SDL_SetRelativeMouseMode(SDL_FALSE); // FIXME: Is it threadsafe?
+    // FIXME: I'm not sure. Сan we call this from a random thread?
+    //if (SDL_Window* window = SDL_GL_GetCurrentWindow())
+    //    SDL_SetWindowRelativeMouseMode(window, SDL_FALSE);
 
 #    ifdef HK_OS_WIN32
     DebugBreak();

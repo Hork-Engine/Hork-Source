@@ -43,21 +43,21 @@ SOFTWARE.
 #    include "GL/glxew.h"
 #endif
 
-#include <SDL/SDL.h>
+#include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
 
 namespace RenderCore
 {
 
-GenericWindowGLImpl::GenericWindowGLImpl(DeviceGLImpl* pDevice, DisplayVideoMode const& InVideoMode, WindowPoolGL& WindowPool, WindowPoolGL::WindowGL WindowHandle) :
+GenericWindowGLImpl::GenericWindowGLImpl(DeviceGLImpl* pDevice, WindowSettings const& windowSettings, WindowPoolGL& windowPool, WindowPoolGL::WindowGL windowHandle) :
     IGenericWindow(pDevice),
-    WindowPool(WindowPool),
-    bUseExternalHandle(WindowHandle.Handle != nullptr)
+    WindowPool(windowPool),
+    bUseExternalHandle(windowHandle.Handle != nullptr)
 {
     if (bUseExternalHandle)
     {
-        WindowGL = WindowHandle;
+        WindowGL = windowHandle;
     }
     else
     {
@@ -70,14 +70,14 @@ GenericWindowGLImpl::GenericWindowGLImpl(DeviceGLImpl* pDevice, DisplayVideoMode
 
     SetHandle(WindowGL.Handle);
 
-    SDL_SetWindowData(WindowGL.Handle, "p", this);
+    SDL_SetPointerProperty(SDL_GetWindowProperties(WindowGL.Handle), "p", this);
 
-    SetVideoMode(InVideoMode);
+    ChangeWindowSettings(windowSettings);
 }
 
 GenericWindowGLImpl::~GenericWindowGLImpl()
 {
-    SDL_SetWindowData((SDL_Window*)GetHandle(), "p", nullptr);
+    SDL_SetPointerProperty(SDL_GetWindowProperties(WindowGL.Handle), "p", nullptr);
 
     if (bUseExternalHandle)
     {
@@ -97,58 +97,7 @@ GenericWindowGLImpl::~GenericWindowGLImpl()
 
 void GenericWindowGLImpl::SetSwapChain(ISwapChain* InSwapChain)
 {
-    SwapChain = InSwapChain;
-}
-
-void GenericWindowGLImpl::SetVideoMode(DisplayVideoMode const& DesiredMode)
-{
-    SDL_Window* handle = (SDL_Window*)GetHandle();
-
-    Core::Memcpy(&VideoMode, &DesiredMode, sizeof(VideoMode));
-
-    SDL_SetWindowTitle(WindowGL.Handle, DesiredMode.Title);
-    SDL_ShowWindow(handle);
-    SDL_SetWindowFullscreen(handle, DesiredMode.bFullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-    SDL_SetWindowSize(handle, DesiredMode.Width, DesiredMode.Height);
-    if (!DesiredMode.bFullscreen)
-    {
-        if (DesiredMode.bCentrized)
-        {
-            SDL_SetWindowPosition(handle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-        }
-        else
-        {
-            SDL_SetWindowPosition(handle, DesiredMode.WindowedX, DesiredMode.WindowedY);
-        }
-    }
-    //SDL_SetWindowDisplayMode( handle, &mode );
-    SDL_GL_GetDrawableSize(handle, &VideoMode.FramebufferWidth, &VideoMode.FramebufferHeight);
-
-    VideoMode.bFullscreen = !!(SDL_GetWindowFlags(handle) & SDL_WINDOW_FULLSCREEN);
-
-    VideoMode.Opacity = Math::Clamp(VideoMode.Opacity, 0.0f, 1.0f);
-
-    float opacity = 1.0f;
-    SDL_GetWindowOpacity(handle, &opacity);
-    if (Math::Abs(VideoMode.Opacity - opacity) > 1.0f / 255.0f)
-    {
-        SDL_SetWindowOpacity(handle, VideoMode.Opacity);
-    }
-
-    VideoMode.DisplayId = SDL_GetWindowDisplayIndex(handle);
-    /*if ( VideoMode.bFullscreen ) {
-        const float MM_To_Inch = 0.0393701f;
-        VideoMode.DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
-        VideoMode.DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
-
-    } else */
-    {
-        SDL_GetDisplayDPI(VideoMode.DisplayId, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y);
-    }
-
-    SDL_DisplayMode mode;
-    SDL_GetWindowDisplayMode(handle, &mode);
-    VideoMode.RefreshRate = mode.refresh_rate;
+    m_SwapChain = InSwapChain;
 }
 
 } // namespace RenderCore

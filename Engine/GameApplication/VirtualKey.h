@@ -319,7 +319,12 @@ enum class GamepadKey : uint16_t
     Paddle2,  // Xbox Elite paddle P3
     Paddle3,  // Xbox Elite paddle P2
     Paddle4,  // Xbox Elite paddle P4
-    Touchpad  // PS4/PS5 touchpad button
+    Touchpad, // PS4/PS5 touchpad button
+    Misc2,    // Additional button
+    Misc3,    // Additional button
+    Misc4,    // Additional button
+    Misc5,    // Additional button
+    Misc6,    // Additional button
 };
 
 enum class GamepadAxis : uint16_t
@@ -345,7 +350,7 @@ struct GamepadAxisDesc
 extern const GamepadKeyDesc GamepadKeyTable[];
 extern const GamepadAxisDesc GamepadAxisTable[];
 
-constexpr uint32_t GAMEPAD_KEY_COUNT = 21;
+constexpr uint32_t GAMEPAD_KEY_COUNT = 26;
 constexpr uint32_t GAMEPAD_AXIS_COUNT = 6;
 
 struct GamepadKeyOrAxis

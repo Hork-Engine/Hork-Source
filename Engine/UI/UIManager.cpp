@@ -183,28 +183,19 @@ void UIManager::Tick(float timeStep)
 {
     HK_PROFILER_EVENT("Tick UI");
 
-    DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
-
     m_Console.SetFullscreen(m_ActiveDesktop ? false : true);
     m_Console.Update(timeStep);
 
     switch (CursorMode)
     {
         case UI_CURSOR_MODE_AUTO:
-            if (!videoMode.bFullscreen && m_Console.IsActive())
-            {
-                Core::SetCursorEnabled(true);
-            }
-            else
-            {
-                Core::SetCursorEnabled(false);
-            }
+            m_MainWindow->SetCursorEnabled(!m_MainWindow->IsFullscreenMode() && m_Console.IsActive());
             break;
         case UI_CURSOR_MODE_FORCE_ENABLED:
-            Core::SetCursorEnabled(true);
+            m_MainWindow->SetCursorEnabled(true);
             break;
         case UI_CURSOR_MODE_FORCE_DISABLED:
-            Core::SetCursorEnabled(false);
+            m_MainWindow->SetCursorEnabled(false);
             break;
         default:
             HK_ASSERT(0);
@@ -212,7 +203,7 @@ void UIManager::Tick(float timeStep)
 
     if (m_ActiveDesktop)
     {
-        Float2 desktopSize(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+        Float2 desktopSize(m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
 
         m_ActiveDesktop->UpdateGeometry(desktopSize.X, desktopSize.Y);
 
@@ -335,31 +326,32 @@ void UIManager::GenerateMouseWheelEvents(MouseWheelEvent const& event)
 
 void UIManager::GenerateMouseMoveEvents(MouseMoveEvent const& event)
 {
-    DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
-
-    if (Core::IsCursorEnabled())
+    if (m_MainWindow->IsCursorEnabled())
     {
-        int    x, y;
+        float x, y;
 
         Core::GetCursorPosition(x, y);
 
-        CursorPosition.X = Math::Clamp(x, 0, videoMode.FramebufferWidth - 1);
-        CursorPosition.Y = Math::Clamp(y, 0, videoMode.FramebufferHeight - 1);
+        CursorPosition.X = Math::Clamp(x, 0, m_MainWindow->GetFramebufferWidth() - 1);
+        CursorPosition.Y = Math::Clamp(y, 0, m_MainWindow->GetFramebufferHeight() - 1);
     }
     else
     {
         // Simulate ballistics
         if (ui_SimulateCursorBallistics)
         {
-            CursorPosition.X += event.X / videoMode.RefreshRate * videoMode.DPI_X;
-            CursorPosition.Y -= event.Y / videoMode.RefreshRate * videoMode.DPI_Y;
+            float dpi = m_MainWindow->GetWindowDPI();
+            float refreshRate = m_MainWindow->GetRefreshRate();
+            float scale = refreshRate > 0.0f ? 1.0f / refreshRate : 1.0f / 60.0f;
+            CursorPosition.X += event.X * scale * dpi;
+            CursorPosition.Y -= event.Y * scale * dpi;
         }
         else
         {
             CursorPosition.X += event.X;
             CursorPosition.Y -= event.Y;
         }
-        CursorPosition = Math::Clamp(CursorPosition, Float2(0.0f), Float2(videoMode.FramebufferWidth - 1, videoMode.FramebufferHeight - 1));
+        CursorPosition = Math::Clamp(CursorPosition, Float2(0.0f), Float2(m_MainWindow->GetFramebufferWidth() - 1, m_MainWindow->GetFramebufferHeight() - 1));
     }
 
     if (m_Console.IsActive())
@@ -400,25 +392,23 @@ void UIManager::GenerateCharEvents(CharEvent const& event)
 
 void UIManager::Draw(Canvas& cv)
 {
-    DisplayVideoMode const& videoMode = m_MainWindow->GetVideoMode();
-
     if (m_ActiveDesktop)
         m_ActiveDesktop->Draw(cv);
 
     if (m_TooltipWidget && m_TooltipTime < 0)
     {
         Float2 clipMins(0.0f);
-        Float2 clipMaxs(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+        Float2 clipMaxs(m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
 
         m_TooltipWidget->Draw(cv, clipMins, clipMaxs, 1.0f);
     }
 
-    if (!Core::IsCursorEnabled())
+    if (!m_MainWindow->IsCursorEnabled())
     {
         DrawCursor(cv);
     }
 
-    m_Console.Draw(cv, ConsoleBackground, videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+    m_Console.Draw(cv, ConsoleBackground, m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
 }
 
 void UIManager::DrawCursor(Canvas& cv)
