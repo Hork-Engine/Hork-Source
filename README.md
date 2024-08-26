@@ -102,7 +102,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * Optick
 * ozz-animation
 * Recast & Detour
-* SDL2
+* SDL3
 * stb
 * tinyexr
 * ufbx
