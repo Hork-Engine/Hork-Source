@@ -279,7 +279,7 @@ GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
 
     PhysicsModule::Initialize();
 
-    m_AudioDevice = MakeRef<AudioDevice>(44100);
+    m_AudioDevice = MakeRef<AudioDevice>();
     m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
     m_AudioMixer->StartAsync();
 

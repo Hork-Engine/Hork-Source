@@ -34,22 +34,20 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+enum class AudioTransferFormat : uint8_t
+{
+    INT16,
+    FLOAT32
+};
+
 class AudioDevice final : public RefCounted
 {
 public:
-                        AudioDevice(int sampleRate);
+                        AudioDevice();
                         ~AudioDevice();
 
     /// Playback frequency
     int                 GetSampleRate() const { return m_SampleRate; }
-
-    /// Bits per sample (8, 16 or 32)
-    int                 GetSampleBits() const { return m_SampleBits; }
-
-    /// Sample size in bytes
-    int                 GetSampleWidth() const { return m_SampleBits >> 3; }
-
-    bool                IsSigned8Bit() const { return m_bSigned8; }
 
     int                 GetChannels() const { return m_Channels; }
 
@@ -57,12 +55,17 @@ public:
 
     bool                IsStereo() const { return m_Channels == 2; }
 
+    /// Transfer buffer format (See AudioTransferFormat)
+    AudioTransferFormat GetTransferFormat() const { return m_TransferFormat; }
+
     int                 GetTransferBufferSizeInFrames() const { return m_NumFrames; }
 
     int                 GetTransferBufferSizeInBytes() const { return m_TransferBufferSizeInBytes; }
 
+    /// Pause device
     void                BlockSound();
 
+    /// Resume device
     void                UnblockSound();
 
     /// Clear transfer buffer. It calls MapTransferBuffer() and UnmapTransferBuffer() internally.
@@ -83,7 +86,9 @@ private:
     // Internal audio stream
     void*               m_AudioStream;
     // Internal device id
-    uint32_t            m_AudioDeviceId;
+    uint32_t            m_DeviceID;
+    // Transfer buffer format
+    AudioTransferFormat m_TransferFormat;
     // Transfer buffer memory
     uint8_t*            m_TransferBuffer;
     // Transfer buffer size in bytes
@@ -100,12 +105,8 @@ private:
     int64_t             m_BufferWraps;
     // Playback frequency
     int                 m_SampleRate;
-    // Bits per sample (8 or 16)
-    int                 m_SampleBits;
     // Channels (1 or 2)
     int                 m_Channels;
-    // Is signed 8bit audio (desired is unsigned)
-    bool                m_bSigned8;
     // Callback for async mixing
     std::function<void(uint8_t*, int, int, int)> m_MixerCallback;
 };

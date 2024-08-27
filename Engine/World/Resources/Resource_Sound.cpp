@@ -52,7 +52,7 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
 {
     AudioDevice* device = GameApplication::GetAudioDevice();
 
-    auto sample_rate = device->GetSampleRate();
+    auto sampleRate = device->GetSampleRate();
 
     // TODO: Audio config file:
     // {
@@ -75,7 +75,7 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
     bool cfg_encoded = false;
 
     AudioResample resample;
-    resample.SampleRate = sample_rate;
+    resample.SampleRate = sampleRate;
     resample.bForceMono = cfg_force_mono || device->GetChannels() == 1;
     resample.bForce8Bit = cfg_force_8bit;
 
@@ -96,7 +96,7 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
             return false;
         }
 
-        m_Source = MakeRef<AudioSource>(info.FrameCount, sample_rate, info.SampleBits, info.Channels, stream.AsBlob());
+        m_Source = MakeRef<AudioSource>(info.FrameCount, sampleRate, info.SampleBits, info.Channels, stream.AsBlob());
     }
     return true;
 }

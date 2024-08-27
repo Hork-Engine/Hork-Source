@@ -43,39 +43,42 @@ ConsoleVar Snd_VolumeRampSize("Snd_VolumeRampSize"_s, "16"_s);
 ConsoleVar Snd_HRTF("Snd_HRTF"_s, "1"_s);
 
 #if 0
-ConsoleVar Rev_RoomSize( "Rev_RoomSize"s,"0.5"_s );
-ConsoleVar Rev_Damp(  "Rev_Damp"_s,  "0.5"_s );
-ConsoleVar Rev_Wet(  "Rev_Wet"_s,  "0.33"_s );
-ConsoleVar Rev_Dry(  "Rev_Dry"_s,  "1"_s );
-ConsoleVar Rev_Width(  "Rev_Width"_s,  "1"_s );
+ConsoleVar Rev_RoomSize("Rev_RoomSize"s, "0.5"_s);
+ConsoleVar Rev_Damp("Rev_Damp"_s, "0.5"_s);
+ConsoleVar Rev_Wet("Rev_Wet"_s, "0.33"_s);
+ConsoleVar Rev_Dry("Rev_Dry"_s, "1"_s);
+ConsoleVar Rev_Width("Rev_Width"_s, "1"_s);
 #endif
 
-// u8 to s32 sample convertion
-struct SampleLookup8BitTable
+namespace
 {
-    int Data[32][256];
-
-    int16_t ToShort[256];
-
-    SampleLookup8BitTable()
+    // u8 to s32 sample convertion
+    struct SampleLookup8BitTable
     {
-        for (int v = 0; v < 32; v++)
+        int Data[32][256];
+
+        int16_t ToShort[256];
+
+        SampleLookup8BitTable()
         {
-            int vol = v * 8 * 256;
+            for (int v = 0; v < 32; v++)
+            {
+                int vol = v * 8 * 256;
+                for (int s = 0; s < 256; s++)
+                {
+                    Data[v][(s + 128) & 0xff] = ((s < 128) ? s : s - 256) * vol;
+                }
+            }
+
             for (int s = 0; s < 256; s++)
             {
-                Data[v][(s + 128) & 0xff] = ((s < 128) ? s : s - 256) * vol;
+                ToShort[(s + 128) & 0xff] = ((s < 128) ? s : s - 256) * 255;
             }
         }
+    };
 
-        for (int s = 0; s < 256; s++)
-        {
-            ToShort[(s + 128) & 0xff] = ((s < 128) ? s : s - 256) * 255;
-        }
-    }
-};
-
-static const SampleLookup8BitTable SampleLookup8Bit;
+    const SampleLookup8BitTable SampleLookup8Bit;
+}
 
 AudioMixer::AudioMixer(AudioDevice* device) :
     m_Device(device), m_DeviceRawPtr(device), m_IsAsync(false), m_RenderFrame(0)
@@ -379,82 +382,85 @@ void AudioMixer::RenderTracks(int64_t endFrame)
     m_NumActiveTracks.Store(numActiveTracks);
 }
 
-static void ConvertFramesToMonoF32(const void* inFrames, int frameCount, int sampleBits, int channels, float* outFrames)
+namespace
 {
-    if (sampleBits == 8)
+    void ConvertFramesToMonoF32(const void* inFrames, int frameCount, int sampleBits, int channels, float* outFrames)
     {
-        // Lookup at max volume
-        int const*  lookup     = SampleLookup8Bit.Data[31];
-        const float intToFloat = 1.0f / 256 / 32767;
-
-        uint8_t const* frames = (uint8_t const*)inFrames;
-
-        // Mono
-        if (channels == 1)
+        if (sampleBits == 8)
         {
+            // Lookup at max volume
+            int const*  lookup     = SampleLookup8Bit.Data[31];
+            const float intToFloat = 1.0f / 256 / 32767;
+
+            uint8_t const* frames = (uint8_t const*)inFrames;
+
+            // Mono
+            if (channels == 1)
+            {
+                for (int i = 0; i < frameCount; i++)
+                {
+                    outFrames[i] = lookup[frames[i]] * intToFloat;
+                }
+                return;
+            }
+
+            // Combine stereo channels
             for (int i = 0; i < frameCount; i++)
             {
-                outFrames[i] = lookup[frames[i]] * intToFloat;
+                outFrames[i] = (lookup[frames[0]] + lookup[frames[1]]) * (intToFloat * 0.5f); // average
+                frames += 2;
             }
             return;
         }
 
-        // Combine stereo channels
-        for (int i = 0; i < frameCount; i++)
+        if (sampleBits == 16)
         {
-            outFrames[i] = (lookup[frames[0]] + lookup[frames[1]]) * (intToFloat * 0.5f); // average
-            frames += 2;
-        }
-        return;
-    }
+            const float intToFloat = 1.0f / 32767;
 
-    if (sampleBits == 16)
-    {
-        const float intToFloat = 1.0f / 32767;
+            int16_t const* frames = (int16_t const*)inFrames;
 
-        int16_t const* frames = (int16_t const*)inFrames;
+            // Mono
+            if (channels == 1)
+            {
+                for (int i = 0; i < frameCount; i++)
+                {
+                    outFrames[i] = frames[i] * intToFloat;
+                }
+                return;
+            }
 
-        // Mono
-        if (channels == 1)
-        {
+            // Combine stereo channels
             for (int i = 0; i < frameCount; i++)
             {
-                outFrames[i] = frames[i] * intToFloat;
+                outFrames[i] = ((int)frames[0] + (int)frames[1]) * (intToFloat * 0.5f); // average
+                frames += 2;
             }
             return;
         }
 
-        // Combine stereo channels
-        for (int i = 0; i < frameCount; i++)
+        if (sampleBits == 32)
         {
-            outFrames[i] = ((int)frames[0] + (int)frames[1]) * (intToFloat * 0.5f); // average
-            frames += 2;
-        }
-        return;
-    }
+            float const* frames = (float const*)inFrames;
 
-    if (sampleBits == 32)
-    {
-        float const* frames = (float const*)inFrames;
+            // Mono
+            if (channels == 1)
+            {
+                Core::Memcpy(outFrames, inFrames, frameCount * sizeof(float));
+                return;
+            }
 
-        // Mono
-        if (channels == 1)
-        {
-            Core::Memcpy(outFrames, inFrames, frameCount * sizeof(float));
+            // Combine stereo channels
+            for (int i = 0; i < frameCount; i++)
+            {
+                outFrames[i] = (frames[0] + frames[1]) * 0.5f; // average
+                frames += 2;
+            }
             return;
         }
 
-        // Combine stereo channels
-        for (int i = 0; i < frameCount; i++)
-        {
-            outFrames[i] = (frames[0] + frames[1]) * 0.5f; // average
-            frames += 2;
-        }
-        return;
+        // Should never happen, but just in case...
+        HK_ASSERT(0);
     }
-
-    // Should never happen, but just in case...
-    HK_ASSERT(0);
 }
 
 // Read frames from current playback position and convert to f32 format.
@@ -1023,158 +1029,82 @@ void AudioMixer::RenderFrames(AudioTrack* track, const void* inFrames, int frame
     // TODO: Add code pass for 32F ?
 }
 
-static void WriteSamplesS8(int const* in, int8_t* out, int count)
+namespace
 {
-    int v;
 
-    for (int i = 0; i < count; i += 2)
+    void WriteSamples_FLOAT32(int const* in, float* out, int count)
     {
-        v = in[i] / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
+        const float scale = 1.0f / 256 / 32767;
 
-        out[i] = v / 256;
+        __m128 minVal = _mm_set_ss(-1.0f);
+        __m128 maxVal = _mm_set_ss(1.0f);
 
-        v = in[i + 1] / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
+        for (int i = 0; i < count; i += 2)
+        {
+            float val1 = static_cast<float>(in[i]) * scale;
+            float val2 = static_cast<float>(in[i + 1]) * scale;
 
-        out[i + 1] = v / 256;
+            _mm_store_ss(&out[i], _mm_min_ss(_mm_max_ss(_mm_set_ss(val1), minVal), maxVal));
+            _mm_store_ss(&out[i + 1], _mm_min_ss(_mm_max_ss(_mm_set_ss(val2), minVal), maxVal));
+        }
     }
-}
 
-static void WriteSamplesS8_Mono(int const* in, int8_t* out, int count)
-{
-    int v;
-
-    while (count--)
+    void WriteSamples_FLOAT32_Mono(int const* in, float* out, int count)
     {
-        v = *in / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
-        *out++ = v / 256;
-        in += 2;
+        const float scale = 1.0f / 256 / 32767;
+
+        __m128 minVal = _mm_set_ss(-1.0f);
+        __m128 maxVal = _mm_set_ss(1.0f);
+
+        while (count--)
+        {
+            float val = static_cast<float>(*in) * scale;
+
+            _mm_store_ss(out, _mm_min_ss(_mm_max_ss(_mm_set_ss(val), minVal), maxVal));
+
+            out++;
+            in += 2;
+        }
     }
-}
 
-static void WriteSamplesU8(int const* in, uint8_t* out, int count)
-{
-    int v;
-
-    for (int i = 0; i < count; i += 2)
+    void WriteSamples_INT16_Mono(int const* in, short* out, int count)
     {
-        v = in[i] / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
+        int v;
 
-        out[i] = (v / 256) + 128;
-
-        v = in[i + 1] / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
-
-        out[i + 1] = (v / 256) + 128;
+        while (count--)
+        {
+            v = *in / 256;
+            if (v > 32767)
+                v = 32767;
+            else if (v < -32768)
+                v = -32768;
+            *out++ = v;
+            in += 2;
+        }
     }
-}
 
-static void WriteSamplesU8_Mono(int const* in, uint8_t* out, int count)
-{
-    int v;
-
-    while (count--)
+    void WriteSamples_INT16(int const* in, short* out, int count)
     {
-        v = *in / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
-        *out++ = (v / 256) + 128;
-        in += 2;
-    }
-}
+        int v;
 
-static void WriteSamples16(int const* in, short* out, int count)
-{
-    int v;
+        for (int i = 0; i < count; i += 2)
+        {
+            v = in[i] / 256;
+            if (v > 32767)
+                out[i] = 32767;
+            else if (v < -32768)
+                out[i] = -32768;
+            else
+                out[i] = v;
 
-    for (int i = 0; i < count; i += 2)
-    {
-        v = in[i] / 256;
-        if (v > 32767)
-            out[i] = 32767;
-        else if (v < -32768)
-            out[i] = -32768;
-        else
-            out[i] = v;
-
-        v = in[i + 1] / 256;
-        if (v > 32767)
-            out[i + 1] = 32767;
-        else if (v < -32768)
-            out[i + 1] = -32768;
-        else
-            out[i + 1] = v;
-    }
-}
-
-static void WriteSamples16_Mono(int const* in, short* out, int count)
-{
-    int v;
-
-    while (count--)
-    {
-        v = *in / 256;
-        if (v > 32767)
-            v = 32767;
-        else if (v < -32768)
-            v = -32768;
-        *out++ = v;
-        in += 2;
-    }
-}
-
-static void WriteSamples32(int const* in, float* out, int count)
-{
-    const float scale = 1.0f / 256 / 32767;
-
-    __m128 minVal = _mm_set_ss(-1.0f);
-    __m128 maxVal = _mm_set_ss(1.0f);
-
-    for (int i = 0; i < count; i += 2)
-    {
-        float val1 = static_cast<float>(in[i]) * scale;
-        float val2 = static_cast<float>(in[i + 1]) * scale;
-
-        _mm_store_ss(&out[i], _mm_min_ss(_mm_max_ss(_mm_set_ss(val1), minVal), maxVal));
-        _mm_store_ss(&out[i + 1], _mm_min_ss(_mm_max_ss(_mm_set_ss(val2), minVal), maxVal));
-    }
-}
-
-static void WriteSamples32_Mono(int const* in, float* out, int count)
-{
-    const float scale = 1.0f / 256 / 32767;
-
-    __m128 minVal = _mm_set_ss(-1.0f);
-    __m128 maxVal = _mm_set_ss(1.0f);
-
-    while (count--)
-    {
-        float val = static_cast<float>(*in) * scale;
-
-        _mm_store_ss(out, _mm_min_ss(_mm_max_ss(_mm_set_ss(val), minVal), maxVal));
-
-        out++;
-        in += 2;
+            v = in[i + 1] / 256;
+            if (v > 32767)
+                out[i + 1] = 32767;
+            else if (v < -32768)
+                out[i + 1] = -32768;
+            else
+                out[i + 1] = v;
+        }
     }
 }
 
@@ -1194,21 +1124,10 @@ void AudioMixer::WriteToTransferBuffer(int const* samples, int64_t endFrame)
 
         if (m_DeviceRawPtr->GetChannels() == 1)
         {
-            switch (m_DeviceRawPtr->GetSampleBits())
-            {
-                case 8:
-                    if (m_DeviceRawPtr->IsSigned8Bit())
-                        WriteSamplesS8_Mono(samples, (int8_t*)m_TransferBuffer + frameOffset, frameCount);
-                    else
-                        WriteSamplesU8_Mono(samples, (uint8_t*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-                case 16:
-                    WriteSamples16_Mono(samples, (short*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-                case 32:
-                    WriteSamples32_Mono(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-            }
+            if (m_DeviceRawPtr->GetTransferFormat() == AudioTransferFormat::FLOAT32)
+                WriteSamples_FLOAT32_Mono(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
+            else
+                WriteSamples_INT16_Mono(samples, (int16_t*)m_TransferBuffer + frameOffset, frameCount);
 
             samples += frameCount << 1;
         }
@@ -1217,21 +1136,10 @@ void AudioMixer::WriteToTransferBuffer(int const* samples, int64_t endFrame)
             frameOffset <<= 1;
             frameCount <<= 1;
 
-            switch (m_DeviceRawPtr->GetSampleBits())
-            {
-                case 8:
-                    if (m_DeviceRawPtr->IsSigned8Bit())
-                        WriteSamplesS8(samples, (int8_t*)m_TransferBuffer + frameOffset, frameCount);
-                    else
-                        WriteSamplesU8(samples, (uint8_t*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-                case 16:
-                    WriteSamples16(samples, (short*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-                case 32:
-                    WriteSamples32(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
-                    break;
-            }
+            if (m_DeviceRawPtr->GetTransferFormat() == AudioTransferFormat::FLOAT32)
+                WriteSamples_FLOAT32(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
+            else
+                WriteSamples_INT16(samples, (int16_t*)m_TransferBuffer + frameOffset, frameCount);
 
             samples += frameCount;
         }
