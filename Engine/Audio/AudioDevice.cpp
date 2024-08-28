@@ -53,7 +53,7 @@ AudioDevice::AudioDevice()
         SDL_setenv("SDL_AUDIO_DRIVER", driver, SDL_TRUE);
     }
 
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
         CoreApplication::TerminateWithError("Failed to init audio system: {}\n", SDL_GetError());
 
     int numdrivers = SDL_GetNumAudioDrivers();

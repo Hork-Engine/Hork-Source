@@ -140,7 +140,7 @@ bool GetClosestDisplayMode(DisplayInfo const& display, int width, int height, fl
 {
     SDL_DisplayMode modeSDL = {};
 
-    if (SDL_GetClosestFullscreenDisplayMode(display.Id, width, height, refreshRate, includeHightDensityModes, &modeSDL) != 0)
+    if (!SDL_GetClosestFullscreenDisplayMode(display.Id, width, height, refreshRate, includeHightDensityModes, &modeSDL))
     {
         LOG("Couldn't find closest display mode to {} x {} {:.2f}Hz\n", width, height, refreshRate);
         Core::ZeroMem(&mode, sizeof(mode));

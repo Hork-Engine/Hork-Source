@@ -81,7 +81,7 @@ void IGenericWindow::ChangeWindowSettings(WindowSettings const& windowSettings)
             break;
         case WindowMode::ExclusiveFullscreen: {
             SDL_DisplayMode mode = {};
-            if (SDL_GetClosestFullscreenDisplayMode(SDL_GetDisplayForWindow(handle), windowSettings.Width, windowSettings.Height, windowSettings.RefreshRate, SDL_TRUE, &mode) == 0)
+            if (SDL_GetClosestFullscreenDisplayMode(SDL_GetDisplayForWindow(handle), windowSettings.Width, windowSettings.Height, windowSettings.RefreshRate, SDL_TRUE, &mode))
             {
                 SDL_SetWindowFullscreenMode(handle, &mode);
                 m_RefreshRate = mode.refresh_rate;

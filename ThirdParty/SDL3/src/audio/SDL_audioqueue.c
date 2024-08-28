@@ -121,13 +121,13 @@ static void InitMemoryPool(SDL_MemoryPool *pool, size_t block_size, size_t max_f
 }
 
 // Allocates a number of blocks and adds them to the pool
-static int ReserveMemoryPoolBlocks(SDL_MemoryPool *pool, size_t num_blocks)
+static bool ReserveMemoryPoolBlocks(SDL_MemoryPool *pool, size_t num_blocks)
 {
     for (; num_blocks; --num_blocks) {
         void *block = AllocNewMemoryPoolBlock(pool);
 
         if (block == NULL) {
-            return -1;
+            return false;
         }
 
         *(void **)block = pool->free_blocks;
@@ -135,7 +135,7 @@ static int ReserveMemoryPoolBlocks(SDL_MemoryPool *pool, size_t num_blocks)
         ++pool->num_free;
     }
 
-    return 0;
+    return true;
 }
 
 void SDL_DestroyAudioQueue(SDL_AudioQueue *queue)
@@ -160,7 +160,7 @@ SDL_AudioQueue *SDL_CreateAudioQueue(size_t chunk_size)
     InitMemoryPool(&queue->track_pool, sizeof(SDL_AudioTrack), 8);
     InitMemoryPool(&queue->chunk_pool, chunk_size, 4);
 
-    if (ReserveMemoryPoolBlocks(&queue->track_pool, 2) != 0) {
+    if (!ReserveMemoryPoolBlocks(&queue->track_pool, 2)) {
         SDL_DestroyAudioQueue(queue);
         return NULL;
     }
@@ -233,7 +233,7 @@ SDL_AudioTrack *SDL_CreateAudioTrack(
     Uint8 *data, size_t len, size_t capacity,
     SDL_ReleaseAudioBufferCallback callback, void *userdata)
 {
-    SDL_AudioTrack *track = AllocMemoryPoolBlock(&queue->track_pool);
+    SDL_AudioTrack *track = (SDL_AudioTrack *)AllocMemoryPoolBlock(&queue->track_pool);
 
     if (!track) {
         return NULL;
@@ -261,14 +261,14 @@ SDL_AudioTrack *SDL_CreateAudioTrack(
 
 static void SDLCALL FreeChunkedAudioBuffer(void *userdata, const void *buf, int len)
 {
-    SDL_AudioQueue *queue = userdata;
+    SDL_AudioQueue *queue = (SDL_AudioQueue *)userdata;
 
     FreeMemoryPoolBlock(&queue->chunk_pool, (void *)buf);
 }
 
 static SDL_AudioTrack *CreateChunkedAudioTrack(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, const int *chmap)
 {
-    void *chunk = AllocMemoryPoolBlock(&queue->chunk_pool);
+    Uint8 *chunk = (Uint8 *)AllocMemoryPoolBlock(&queue->chunk_pool);
 
     if (!chunk) {
         return NULL;
@@ -318,10 +318,10 @@ static size_t WriteToAudioTrack(SDL_AudioTrack *track, const Uint8 *data, size_t
     return len;
 }
 
-int SDL_WriteToAudioQueue(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, const int *chmap, const Uint8 *data, size_t len)
+bool SDL_WriteToAudioQueue(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, const int *chmap, const Uint8 *data, size_t len)
 {
     if (len == 0) {
-        return 0;
+        return true;
     }
 
     SDL_AudioTrack *track = queue->tail;
@@ -335,7 +335,7 @@ int SDL_WriteToAudioQueue(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, cons
         track = CreateChunkedAudioTrack(queue, spec, chmap);
 
         if (!track) {
-            return -1;
+            return false;
         }
 
         queue->head = track;
@@ -354,7 +354,7 @@ int SDL_WriteToAudioQueue(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, cons
         SDL_AudioTrack *new_track = CreateChunkedAudioTrack(queue, spec, chmap);
 
         if (!new_track) {
-            return -1;
+            return false;
         }
 
         track->next = new_track;
@@ -362,7 +362,7 @@ int SDL_WriteToAudioQueue(SDL_AudioQueue *queue, const SDL_AudioSpec *spec, cons
         track = new_track;
     }
 
-    return 0;
+    return true;
 }
 
 void *SDL_BeginAudioQueueIter(SDL_AudioQueue *queue)
@@ -624,21 +624,21 @@ size_t SDL_GetAudioQueueQueued(SDL_AudioQueue *queue)
     return total;
 }
 
-int SDL_ResetAudioQueueHistory(SDL_AudioQueue *queue, int num_frames)
+bool SDL_ResetAudioQueueHistory(SDL_AudioQueue *queue, int num_frames)
 {
     SDL_AudioTrack *track = queue->head;
 
     if (!track) {
-        return -1;
+        return false;
     }
 
     size_t length = num_frames * SDL_AUDIO_FRAMESIZE(track->spec);
     Uint8 *history_buffer = queue->history_buffer;
 
     if (queue->history_capacity < length) {
-        history_buffer = SDL_aligned_alloc(SDL_GetSIMDAlignment(), length);
+        history_buffer = (Uint8 *)SDL_aligned_alloc(SDL_GetSIMDAlignment(), length);
         if (!history_buffer) {
-            return -1;
+            return false;
         }
         SDL_aligned_free(queue->history_buffer);
         queue->history_buffer = history_buffer;
@@ -648,5 +648,5 @@ int SDL_ResetAudioQueueHistory(SDL_AudioQueue *queue, int num_frames)
     queue->history_length = length;
     SDL_memset(history_buffer, SDL_GetSilenceValueForFormat(track->spec.format), length);
 
-    return 0;
+    return true;
 }

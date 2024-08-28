@@ -70,6 +70,10 @@ static void VIRTUAL_FreeHWData(joystick_hwdata *hwdata)
         return;
     }
 
+    if (hwdata->desc.Cleanup) {
+        hwdata->desc.Cleanup(hwdata->desc.userdata);
+    }
+
     // Remove hwdata from SDL-global list
     for (cur = g_VJoys; cur; prev = cur, cur = cur->next) {
         if (hwdata == cur) {
@@ -135,7 +139,8 @@ SDL_JoystickID SDL_JoystickAttachVirtualInner(const SDL_VirtualJoystickDesc *des
     SDL_AssertJoysticksLocked();
 
     if (!desc) {
-        return SDL_InvalidParamError("desc");
+        SDL_InvalidParamError("desc");
+        return 0;
     }
 
     hwdata = (joystick_hwdata *)SDL_calloc(1, sizeof(joystick_hwdata));
@@ -317,7 +322,7 @@ SDL_JoystickID SDL_JoystickAttachVirtualInner(const SDL_VirtualJoystickDesc *des
     return hwdata->instance_id;
 }
 
-int SDL_JoystickDetachVirtualInner(SDL_JoystickID instance_id)
+bool SDL_JoystickDetachVirtualInner(SDL_JoystickID instance_id)
 {
     joystick_hwdata *hwdata = VIRTUAL_HWDataForInstance(instance_id);
     if (!hwdata) {
@@ -325,10 +330,10 @@ int SDL_JoystickDetachVirtualInner(SDL_JoystickID instance_id)
     }
     VIRTUAL_FreeHWData(hwdata);
     SDL_PrivateJoystickRemoved(instance_id);
-    return 0;
+    return true;
 }
 
-int SDL_SetJoystickVirtualAxisInner(SDL_Joystick *joystick, int axis, Sint16 value)
+bool SDL_SetJoystickVirtualAxisInner(SDL_Joystick *joystick, int axis, Sint16 value)
 {
     joystick_hwdata *hwdata;
 
@@ -346,10 +351,10 @@ int SDL_SetJoystickVirtualAxisInner(SDL_Joystick *joystick, int axis, Sint16 val
     hwdata->axes[axis] = value;
     hwdata->changes |= AXES_CHANGED;
 
-    return 0;
+    return true;
 }
 
-int SDL_SetJoystickVirtualBallInner(SDL_Joystick *joystick, int ball, Sint16 xrel, Sint16 yrel)
+bool SDL_SetJoystickVirtualBallInner(SDL_Joystick *joystick, int ball, Sint16 xrel, Sint16 yrel)
 {
     joystick_hwdata *hwdata;
 
@@ -370,10 +375,10 @@ int SDL_SetJoystickVirtualBallInner(SDL_Joystick *joystick, int ball, Sint16 xre
     hwdata->balls[ball].dy = SDL_clamp(hwdata->balls[ball].dy, SDL_MIN_SINT16, SDL_MAX_SINT16);
     hwdata->changes |= BALLS_CHANGED;
 
-    return 0;
+    return true;
 }
 
-int SDL_SetJoystickVirtualButtonInner(SDL_Joystick *joystick, int button, Uint8 value)
+bool SDL_SetJoystickVirtualButtonInner(SDL_Joystick *joystick, int button, Uint8 value)
 {
     joystick_hwdata *hwdata;
 
@@ -391,10 +396,10 @@ int SDL_SetJoystickVirtualButtonInner(SDL_Joystick *joystick, int button, Uint8 
     hwdata->buttons[button] = value;
     hwdata->changes |= BUTTONS_CHANGED;
 
-    return 0;
+    return true;
 }
 
-int SDL_SetJoystickVirtualHatInner(SDL_Joystick *joystick, int hat, Uint8 value)
+bool SDL_SetJoystickVirtualHatInner(SDL_Joystick *joystick, int hat, Uint8 value)
 {
     joystick_hwdata *hwdata;
 
@@ -412,10 +417,10 @@ int SDL_SetJoystickVirtualHatInner(SDL_Joystick *joystick, int hat, Uint8 value)
     hwdata->hats[hat] = value;
     hwdata->changes |= HATS_CHANGED;
 
-    return 0;
+    return true;
 }
 
-int SDL_SetJoystickVirtualTouchpadInner(SDL_Joystick *joystick, int touchpad, int finger, Uint8 state, float x, float y, float pressure)
+bool SDL_SetJoystickVirtualTouchpadInner(SDL_Joystick *joystick, int touchpad, int finger, Uint8 state, float x, float y, float pressure)
 {
     joystick_hwdata *hwdata;
 
@@ -440,10 +445,10 @@ int SDL_SetJoystickVirtualTouchpadInner(SDL_Joystick *joystick, int touchpad, in
     info->pressure = pressure;
     hwdata->changes |= TOUCHPADS_CHANGED;
 
-    return 0;
+    return true;
 }
 
-int SDL_SendJoystickVirtualSensorDataInner(SDL_Joystick *joystick, SDL_SensorType type, Uint64 sensor_timestamp, const float *data, int num_values)
+bool SDL_SendJoystickVirtualSensorDataInner(SDL_Joystick *joystick, SDL_SensorType type, Uint64 sensor_timestamp, const float *data, int num_values)
 {
     joystick_hwdata *hwdata;
 
@@ -458,7 +463,7 @@ int SDL_SendJoystickVirtualSensorDataInner(SDL_Joystick *joystick, SDL_SensorTyp
         int new_max_sensor_events = (hwdata->max_sensor_events + 1);
         VirtualSensorEvent *sensor_events = (VirtualSensorEvent *)SDL_realloc(hwdata->sensor_events, new_max_sensor_events * sizeof(*sensor_events));
         if (!sensor_events) {
-            return -1;
+            return false;
         }
         hwdata->sensor_events = sensor_events;
         hwdata->max_sensor_events = hwdata->max_sensor_events;
@@ -470,12 +475,12 @@ int SDL_SendJoystickVirtualSensorDataInner(SDL_Joystick *joystick, SDL_SensorTyp
     event->num_values = SDL_min(num_values, SDL_arraysize(event->data));
     SDL_memcpy(event->data, data, (event->num_values * sizeof(*event->data)));
 
-    return 0;
+    return true;
 }
 
-static int VIRTUAL_JoystickInit(void)
+static bool VIRTUAL_JoystickInit(void)
 {
-    return 0;
+    return true;
 }
 
 static int VIRTUAL_JoystickGetCount(void)
@@ -549,12 +554,12 @@ static SDL_JoystickID VIRTUAL_JoystickGetDeviceInstanceID(int device_index)
 {
     joystick_hwdata *hwdata = VIRTUAL_HWDataForIndex(device_index);
     if (!hwdata) {
-        return 0;
+        return true;
     }
     return hwdata->instance_id;
 }
 
-static int VIRTUAL_JoystickOpen(SDL_Joystick *joystick, int device_index)
+static bool VIRTUAL_JoystickOpen(SDL_Joystick *joystick, int device_index)
 {
     joystick_hwdata *hwdata;
 
@@ -588,12 +593,12 @@ static int VIRTUAL_JoystickOpen(SDL_Joystick *joystick, int device_index)
     if (hwdata->desc.RumbleTriggers) {
         SDL_SetBooleanProperty(SDL_GetJoystickProperties(joystick), SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN, true);
     }
-    return 0;
+    return true;
 }
 
-static int VIRTUAL_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
+static bool VIRTUAL_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
-    int result;
+    bool result;
 
     SDL_AssertJoysticksLocked();
 
@@ -611,9 +616,9 @@ static int VIRTUAL_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_r
     return result;
 }
 
-static int VIRTUAL_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left_rumble, Uint16 right_rumble)
+static bool VIRTUAL_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left_rumble, Uint16 right_rumble)
 {
-    int result;
+    bool result;
 
     SDL_AssertJoysticksLocked();
 
@@ -631,9 +636,9 @@ static int VIRTUAL_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left_ru
     return result;
 }
 
-static int VIRTUAL_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue)
+static bool VIRTUAL_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue)
 {
-    int result;
+    bool result;
 
     SDL_AssertJoysticksLocked();
 
@@ -651,9 +656,9 @@ static int VIRTUAL_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green
     return result;
 }
 
-static int VIRTUAL_JoystickSendEffect(SDL_Joystick *joystick, const void *data, int size)
+static bool VIRTUAL_JoystickSendEffect(SDL_Joystick *joystick, const void *data, int size)
 {
-    int result;
+    bool result;
 
     SDL_AssertJoysticksLocked();
 
@@ -671,9 +676,9 @@ static int VIRTUAL_JoystickSendEffect(SDL_Joystick *joystick, const void *data, 
     return result;
 }
 
-static int VIRTUAL_JoystickSetSensorsEnabled(SDL_Joystick *joystick, bool enabled)
+static bool VIRTUAL_JoystickSetSensorsEnabled(SDL_Joystick *joystick, bool enabled)
 {
-    int result;
+    bool result;
 
     SDL_AssertJoysticksLocked();
 
@@ -682,9 +687,9 @@ static int VIRTUAL_JoystickSetSensorsEnabled(SDL_Joystick *joystick, bool enable
         if (hwdata->desc.SetSensorsEnabled) {
             result = hwdata->desc.SetSensorsEnabled(hwdata->desc.userdata, enabled);
         } else {
-            result = 0;
+            result = true;
         }
-        if (result == 0) {
+        if (result) {
             hwdata->sensors_enabled = enabled;
         }
     } else {

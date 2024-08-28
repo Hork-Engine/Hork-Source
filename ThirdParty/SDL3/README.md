@@ -1,3 +1,4 @@
+Commit 37b4aac https://github.com/libsdl-org/SDL/commit/37b4aac3acf0563247bb83ab6c618c777a3d5525
 
 # Simple DirectMedia Layer (SDL) Version 3.0
 

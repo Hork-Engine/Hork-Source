@@ -218,7 +218,7 @@ static bool WriteOutput(SDL_DriverWii_Context *ctx, const Uint8 *data, int size,
         return SDL_hid_write(ctx->device->dev, data, size) >= 0;
     } else {
         // Use the rumble thread for general asynchronous writes
-        if (SDL_HIDAPI_LockRumble() < 0) {
+        if (!SDL_HIDAPI_LockRumble()) {
             return false;
         }
         return SDL_HIDAPI_SendRumbleAndUnlock(ctx->device, data, size) >= 0;
@@ -257,7 +257,7 @@ static bool WriteRegister(SDL_DriverWii_Context *ctx, Uint32 address, const Uint
 
     SDL_zeroa(writeRequest);
     writeRequest[0] = k_eWiiOutputReportIDs_WriteMemory;
-    writeRequest[1] = (Uint8)(0x04 | ctx->m_bRumbleActive);
+    writeRequest[1] = (Uint8)(0x04 | (Uint8)ctx->m_bRumbleActive);
     writeRequest[2] = (address >> 16) & 0xff;
     writeRequest[3] = (address >> 8) & 0xff;
     writeRequest[4] = address & 0xff;
@@ -286,7 +286,7 @@ static bool ReadRegister(SDL_DriverWii_Context *ctx, Uint32 address, int size, b
     Uint8 readRequest[7];
 
     readRequest[0] = k_eWiiOutputReportIDs_ReadMemory;
-    readRequest[1] = (Uint8)(0x04 | ctx->m_bRumbleActive);
+    readRequest[1] = (Uint8)(0x04 | (Uint8)ctx->m_bRumbleActive);
     readRequest[2] = (address >> 16) & 0xff;
     readRequest[3] = (address >> 8) & 0xff;
     readRequest[4] = address & 0xff;
@@ -820,7 +820,7 @@ static bool HIDAPI_DriverWii_OpenJoystick(SDL_HIDAPI_Device *device, SDL_Joystic
     return true;
 }
 
-static int HIDAPI_DriverWii_RumbleJoystick(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
+static bool HIDAPI_DriverWii_RumbleJoystick(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
     SDL_DriverWii_Context *ctx = (SDL_DriverWii_Context *)device->context;
     bool active = (low_frequency_rumble || high_frequency_rumble);
@@ -834,10 +834,10 @@ static int HIDAPI_DriverWii_RumbleJoystick(SDL_HIDAPI_Device *device, SDL_Joysti
 
         ctx->m_bRumbleActive = active;
     }
-    return 0;
+    return true;
 }
 
-static int HIDAPI_DriverWii_RumbleJoystickTriggers(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint16 left_rumble, Uint16 right_rumble)
+static bool HIDAPI_DriverWii_RumbleJoystickTriggers(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint16 left_rumble, Uint16 right_rumble)
 {
     return SDL_Unsupported();
 }
@@ -847,17 +847,17 @@ static Uint32 HIDAPI_DriverWii_GetJoystickCapabilities(SDL_HIDAPI_Device *device
     return SDL_JOYSTICK_CAP_RUMBLE;
 }
 
-static int HIDAPI_DriverWii_SetJoystickLED(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue)
+static bool HIDAPI_DriverWii_SetJoystickLED(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue)
 {
     return SDL_Unsupported();
 }
 
-static int HIDAPI_DriverWii_SendJoystickEffect(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, const void *data, int size)
+static bool HIDAPI_DriverWii_SendJoystickEffect(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, const void *data, int size)
 {
     return SDL_Unsupported();
 }
 
-static int HIDAPI_DriverWii_SetJoystickSensorsEnabled(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, bool enabled)
+static bool HIDAPI_DriverWii_SetJoystickSensorsEnabled(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, bool enabled)
 {
     SDL_DriverWii_Context *ctx = (SDL_DriverWii_Context *)device->context;
 
@@ -874,7 +874,7 @@ static int HIDAPI_DriverWii_SetJoystickSensorsEnabled(SDL_HIDAPI_Device *device,
 
         ResetButtonPacketType(ctx);
     }
-    return 0;
+    return true;
 }
 
 static void PostStickCalibrated(Uint64 timestamp, SDL_Joystick *joystick, StickCalibrationData *calibration, Uint8 axis, Uint16 data)
@@ -1573,7 +1573,7 @@ static bool HIDAPI_DriverWii_UpdateDevice(SDL_HIDAPI_Device *device)
         // Read error, device is disconnected
         HIDAPI_JoystickDisconnected(device, device->joysticks[0]);
     }
-    return size >= 0;
+    return (size >= 0);
 }
 
 static void HIDAPI_DriverWii_CloseJoystick(SDL_HIDAPI_Device *device, SDL_Joystick *joystick)
