@@ -83,14 +83,32 @@ void CharacterControllerComponent::BeginPlay()
     m_pImpl->m_Component = Handle32<CharacterControllerComponent>(GetHandle());
     m_pImpl->m_StandingShape = standingShape;
     m_pImpl->m_CrouchingShape = crouchingShape;
+    m_pImpl->m_CollisionLayer = m_CollisionLayer;
 
     m_pImpl->SetLinearVelocity(ConvertVector(m_LinearVelocity));
+
+    m_pImpl->SetCharacterVsCharacterCollision(&physics->m_CharacterVsCharacterCollision);
+    physics->m_CharacterVsCharacterCollision.Add(m_pImpl);
 }
 
 void CharacterControllerComponent::EndPlay()
 {
-    delete m_pImpl;
-    m_pImpl = nullptr;
+    if (m_pImpl)
+    {
+        PhysicsInterfaceImpl* physics = GetWorld()->GetInterface<PhysicsInterface>().GetImpl();
+        physics->m_CharacterVsCharacterCollision.Remove(m_pImpl);
+
+        delete m_pImpl;
+        m_pImpl = nullptr;
+    }
+}
+
+void CharacterControllerComponent::SetCollisionLayer(uint8_t collisionLayer)
+{
+    m_CollisionLayer = collisionLayer;
+
+    if (m_pImpl)
+        m_pImpl->m_CollisionLayer = collisionLayer;
 }
 
 void CharacterControllerComponent::SetWorldPosition(Float3 const& position)
@@ -249,17 +267,17 @@ bool CharacterControllerComponent::IsOnSteepGround() const
     return false;
 }
 
+bool CharacterControllerComponent::ShouldFall() const
+{
+    if (m_pImpl)
+        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::NotSupported;
+    return false;
+}
+
 bool CharacterControllerComponent::IsInAir() const
 {
     if (m_pImpl)
         return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::InAir;
-    return false;
-}
-
-bool CharacterControllerComponent::IsShouldFall() const
-{
-    if (m_pImpl)
-        return m_pImpl->GetGroundState() == JPH::CharacterBase::EGroundState::NotSupported;
     return false;
 }
 
@@ -282,7 +300,7 @@ bool CharacterControllerComponent::UpdateStance(CharacterStance stance, float ma
         HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
         HK_BIT(uint32_t(BroadphaseLayer::Character)));
 
-    ObjectLayerFilter layerFilter(GetWorld()->GetInterface<PhysicsInterface>().GetCollisionFilter(), CollisionLayer);
+    ObjectLayerFilter layerFilter(GetWorld()->GetInterface<PhysicsInterface>().GetCollisionFilter(), m_CollisionLayer);
     CharacterControllerImpl::BodyFilter bodyFilter;
     CharacterControllerImpl::ShapeFilter shapeFilter;
 

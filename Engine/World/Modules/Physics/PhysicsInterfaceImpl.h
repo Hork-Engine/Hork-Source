@@ -318,34 +318,57 @@ public:
 
     struct TriggerContact
     {
-        Handle32<TriggerComponent>  Trigger;
-        uint32_t                    FrameIndex;
+        Handle32<TriggerComponent>      Trigger;
+        uint32_t                        FrameIndex;
     };
     using TriggerContacts = HashMap<ContactID, TriggerContact>;
 
     struct BodyContact
     {
-        ComponentExtendedHandle     Body;
-        uint32_t                    FrameIndex;
+        ComponentExtendedHandle         Body;
+        uint32_t                        FrameIndex;
     };
     using BodyContacts = HashMap<ContactID, BodyContact>;
 
-    World*                  m_World;
-    JPH::PhysicsSystem*     m_PhysSystem;
-    TriggerContacts         m_Triggers;
-    BodyContacts            m_BodyContacts;
-    Vector<TriggerEvent>*   m_pTriggerEvents;
-    Vector<ContactEvent>*   m_pContactEvents;
-    Vector<ContactPoint>*   m_pContactPoints;
-    Vector<ContactID>       m_UpdateOverlap;
-    Vector<ContactID>       m_UpdateContact;
+    World*                              m_World;
+    JPH::PhysicsSystem*                 m_PhysSystem;
+    TriggerContacts                     m_Triggers;
+    BodyContacts                        m_BodyContacts;
+    Vector<TriggerEvent>*               m_pTriggerEvents;
+    Vector<ContactEvent>*               m_pContactEvents;
+    Vector<ContactPoint>*               m_pContactPoints;
+    Vector<ContactID>                   m_UpdateOverlap;
+    Vector<ContactID>                   m_UpdateContact;
 
     // Called whenever the character collides with a body. Returns true if the contact can push the character.
-    void                    OnContactAdded(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings) override;
+    void                                OnContactAdded(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings) override;
+
+    // Same as OnContactAdded but when colliding with a CharacterVirtual
+    void                                OnCharacterContactAdded(const JPH::CharacterVirtual *inCharacter, const JPH::CharacterVirtual *inOtherCharacter, const JPH::SubShapeID &inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings &ioSettings) override;
 
     // Called whenever the character movement is solved and a constraint is hit. Allows the listener to override the resulting character velocity (e.g. by preventing sliding along certain surfaces).
-    void                    OnContactSolve(const JPH::CharacterVirtual*, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity);
+    void                                OnContactSolve(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity) override;
+
+    // Same as OnContactSolve but when colliding with a CharacterVirtual
+    void                                OnCharacterContactSolve(const JPH::CharacterVirtual *inCharacter, const JPH::CharacterVirtual *inOtherCharacter, const JPH::SubShapeID &inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial *inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3 &ioNewCharacterVelocity) override;
 };
+
+class CharacterVsCharacterCollision : public JPH::CharacterVsCharacterCollision
+{
+public:
+    // Add a character to the list of characters to check collision against.
+    void                                Add(JPH::CharacterVirtual *inCharacter);
+
+    // Remove a character from the list of characters to check collision against.
+    void                                Remove(const JPH::CharacterVirtual *inCharacter);
+
+    virtual void                        CollideCharacter(const JPH::CharacterVirtual *inCharacter, JPH::RMat44Arg inCenterOfMassTransform, const JPH::CollideShapeSettings &inCollideShapeSettings, JPH::RVec3Arg inBaseOffset, JPH::CollideShapeCollector &ioCollector) const override;
+    virtual void                        CastCharacter(const JPH::CharacterVirtual *inCharacter, JPH::RMat44Arg inCenterOfMassTransform, JPH::Vec3Arg inDirection, const JPH::ShapeCastSettings &inShapeCastSettings, JPH::RVec3Arg inBaseOffset, JPH::CastShapeCollector &ioCollector) const override;
+
+    CollisionFilter*                    m_pCollisionFilter;
+    JPH::Array<JPH::CharacterVirtual*>  m_Characters;
+};
+
 
 class DynamicBodyComponent;
 struct DynamicBodyMessage
@@ -417,6 +440,7 @@ public:
     BodyActivationListener              m_BodyActivationListener;
     ContactListener                     m_ContactListener;
     CharacterContactListener            m_CharacterContactListener;
+    CharacterVsCharacterCollision       m_CharacterVsCharacterCollision;
 
     Vector<TriggerEvent>                m_TriggerEvents;
     Vector<ContactEvent>                m_ContactEvents;
@@ -498,6 +522,7 @@ public:
     Handle32<CharacterControllerComponent> m_Component;
     JPH::RefConst<JPH::Shape>   m_StandingShape;
     JPH::RefConst<JPH::Shape>   m_CrouchingShape;
+    uint8_t                     m_CollisionLayer = 0;
 
     CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem);
 };

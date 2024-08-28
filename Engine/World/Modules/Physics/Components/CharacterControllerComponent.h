@@ -76,13 +76,15 @@ public:
     // Dynamic properties
     //
 
-    /// The collision group this body belongs to (determines if two objects can collide)
-    uint8_t                 CollisionLayer = 0;
-
     bool                    EnableWalkStairs = true;
     bool                    EnableStickToFloor = true;
     float                   StairsStepUp = 0.5f;
     float                   StickToFloorStepDown = -0.5f;
+    bool                    CanPushCharacter = false;
+
+    /// The collision group this body belongs to (determines if two objects can collide)
+    void                    SetCollisionLayer(uint8_t collisionLayer);
+    uint8_t                 GetCollisionLayer() const { return m_CollisionLayer; }
 
     /// Teleport character to specified position / rotation
     void                    SetWorldPosition(Float3 const& position);
@@ -137,7 +139,7 @@ public:
     bool                    IsOnSteepGround() const;
 
     /// Character is touching an object, but is not supported by it and should fall. The GetGroundXXX functions will return information about the touched object.
-    bool                    IsShouldFall() const;
+    bool                    ShouldFall() const;
 
     /// Character is in the air and is not touching anything.
     bool                    IsInAir() const;
@@ -156,6 +158,7 @@ public:
 
 private:
     class CharacterControllerImpl* m_pImpl;
+    uint8_t                 m_CollisionLayer = 0;
     float                   m_Mass = 70;
     float                   m_MaxStrength = 100.0f;
     float                   m_MaxSlopeAngle = 45.0f;

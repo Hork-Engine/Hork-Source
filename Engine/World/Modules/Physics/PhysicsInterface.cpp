@@ -60,6 +60,7 @@ SOFTWARE.
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Collision/EstimateCollisionResponse.h>
+#include <Jolt/Physics/Collision/CollisionDispatch.h>
 #include <Jolt/AABBTree/TriangleCodec/TriangleCodecIndexed8BitPackSOA4Flags.h>
 #include <Jolt/AABBTree/NodeCodec/NodeCodecQuadTreeHalfFloat.h>
 
@@ -1272,9 +1273,9 @@ void ContactListener::AddContactEvents(const JPH::Body &inBody1, const JPH::Body
     }
 }
 
-void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings)
+void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings)
 {
-    CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(character);
+    CharacterControllerImpl const* characterImpl = static_cast<CharacterControllerImpl const*>(inCharacter);
     BodyUserData* userData = nullptr;
     bool isSensor = false;
     Float3 contactVelocity;
@@ -1367,8 +1368,101 @@ void CharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* chara
     }
 }
 
-void CharacterContactListener::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
+void CharacterContactListener::OnCharacterContactAdded(const JPH::CharacterVirtual *inCharacter, const JPH::CharacterVirtual *inOtherCharacter, const JPH::SubShapeID &inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings &ioSettings)
 {
+    CharacterControllerImpl const* otherCharacterImpl = static_cast<CharacterControllerImpl const*>(inOtherCharacter);
+    CharacterControllerComponent* otherCharacter = m_World->GetComponent(otherCharacterImpl->m_Component);
+
+    ioSettings.mCanPushCharacter = otherCharacter->CanPushCharacter;
+}
+
+void CharacterContactListener::OnContactSolve(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::Vec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity)
+{
+}
+
+void CharacterContactListener::OnCharacterContactSolve(const JPH::CharacterVirtual *inCharacter, const JPH::CharacterVirtual *inOtherCharacter, const JPH::SubShapeID &inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial *inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3 &ioNewCharacterVelocity)
+{
+}
+
+void CharacterVsCharacterCollision::Add(JPH::CharacterVirtual *inCharacter)
+{
+    m_Characters.push_back(inCharacter);
+}
+
+void CharacterVsCharacterCollision::Remove(const JPH::CharacterVirtual *inCharacter)
+{
+    JPH::Array<JPH::CharacterVirtual *>::iterator i = std::find(m_Characters.begin(), m_Characters.end(), inCharacter);
+    if (i != m_Characters.end())
+        m_Characters.erase(i);
+}
+
+void CharacterVsCharacterCollision::CollideCharacter(const JPH::CharacterVirtual *inCharacter, JPH::RMat44Arg inCenterOfMassTransform, const JPH::CollideShapeSettings &inCollideShapeSettings, JPH::RVec3Arg inBaseOffset, JPH::CollideShapeCollector &ioCollector) const
+{
+    // Make shape 1 relative to inBaseOffset
+    JPH::Mat44 transform1 = inCenterOfMassTransform.PostTranslated(-inBaseOffset).ToMat44();
+
+    const JPH::Shape *shape = inCharacter->GetShape();
+    JPH::CollideShapeSettings settings = inCollideShapeSettings;
+
+    uint8_t collisionLayer = static_cast<CharacterControllerImpl const*>(inCharacter)->m_CollisionLayer;
+
+    // Iterate over all characters
+    for (const JPH::CharacterVirtual *c : m_Characters)
+        if (c != inCharacter
+            && !ioCollector.ShouldEarlyOut())
+        {
+            uint8_t collisionLayer2 = static_cast<CharacterControllerImpl const*>(c)->m_CollisionLayer;
+
+            if (m_pCollisionFilter->ShouldCollide(collisionLayer, collisionLayer2))
+            {
+                // Collector needs to know which character we're colliding with
+                ioCollector.SetUserData(reinterpret_cast<JPH::uint64>(c));
+
+                // Make shape 2 relative to inBaseOffset
+                JPH::Mat44 transform2 = c->GetCenterOfMassTransform().PostTranslated(-inBaseOffset).ToMat44();
+
+                // We need to add the padding of character 2 so that we will detect collision with its outer shell
+                settings.mMaxSeparationDistance = inCollideShapeSettings.mMaxSeparationDistance + c->GetCharacterPadding();
+
+                // Note that this collides against the character's shape without padding, this will be corrected for in CharacterVirtual::GetContactsAtPosition
+                JPH::CollisionDispatch::sCollideShapeVsShape(shape, c->GetShape(), JPH::Vec3::sReplicate(1.0f), JPH::Vec3::sReplicate(1.0f), transform1, transform2, JPH::SubShapeIDCreator(), JPH::SubShapeIDCreator(), settings, ioCollector);
+            }
+        }
+
+    // Reset the user data
+    ioCollector.SetUserData(0);
+}
+
+void CharacterVsCharacterCollision::CastCharacter(const JPH::CharacterVirtual *inCharacter, JPH::RMat44Arg inCenterOfMassTransform, JPH::Vec3Arg inDirection, const JPH::ShapeCastSettings &inShapeCastSettings, JPH::RVec3Arg inBaseOffset, JPH::CastShapeCollector &ioCollector) const
+{
+    // Convert shape cast relative to inBaseOffset
+    JPH::Mat44 transform1 = inCenterOfMassTransform.PostTranslated(-inBaseOffset).ToMat44();
+    JPH::ShapeCast shape_cast(inCharacter->GetShape(), JPH::Vec3::sReplicate(1.0f), transform1, inDirection);
+
+    uint8_t collisionLayer = static_cast<CharacterControllerImpl const*>(inCharacter)->m_CollisionLayer;
+
+    // Iterate over all characters
+    for (const JPH::CharacterVirtual *c : m_Characters)
+        if (c != inCharacter
+            && !ioCollector.ShouldEarlyOut())
+        {
+            uint8_t collisionLayer2 = static_cast<CharacterControllerImpl const*>(c)->m_CollisionLayer;
+
+            if (m_pCollisionFilter->ShouldCollide(collisionLayer, collisionLayer2))
+            {
+                // Collector needs to know which character we're colliding with
+                ioCollector.SetUserData(reinterpret_cast<JPH::uint64>(c));
+
+                // Make shape 2 relative to inBaseOffset
+                JPH::Mat44 transform2 = c->GetCenterOfMassTransform().PostTranslated(-inBaseOffset).ToMat44();
+
+                // Note that this collides against the character's shape without padding, this will be corrected for in CharacterVirtual::GetFirstContactForSweep
+                JPH::CollisionDispatch::sCastShapeVsShapeWorldSpace(shape_cast, inShapeCastSettings, c->GetShape(), JPH::Vec3::sReplicate(1.0f), { }, transform2, JPH::SubShapeIDCreator(), JPH::SubShapeIDCreator(), ioCollector);
+            }
+        }
+
+    // Reset the user data
+    ioCollector.SetUserData(0);
 }
 
 CharacterControllerImpl::CharacterControllerImpl(const JPH::CharacterVirtualSettings* inSettings, JPH::Vec3Arg inPosition, JPH::QuatArg inRotation, JPH::PhysicsSystem* inSystem) :
@@ -1418,6 +1512,8 @@ void PhysicsInterface::Initialize()
     m_pImpl->m_CharacterContactListener.m_pTriggerEvents = &m_pImpl->m_TriggerEvents;
     m_pImpl->m_CharacterContactListener.m_pContactEvents = &m_pImpl->m_ContactEvents;
     m_pImpl->m_CharacterContactListener.m_pContactPoints = &m_pImpl->m_ContactPoints;
+
+    m_pImpl->m_CharacterVsCharacterCollision.m_pCollisionFilter = &m_pImpl->m_CollisionFilter;
 
     {
         TickFunction tickFunc;
@@ -1507,7 +1603,7 @@ void PhysicsInterface::UpdateCharacterControllers()
                 HK_BIT(uint32_t(BroadphaseLayer::Trigger)) |
                 HK_BIT(uint32_t(BroadphaseLayer::Character)));
 
-            ObjectLayerFilter layerFilter(m_CollisionFilter, character.CollisionLayer);
+            ObjectLayerFilter layerFilter(m_CollisionFilter, character.m_CollisionLayer);
             CharacterControllerImpl::BodyFilter bodyFilter;
             CharacterControllerImpl::ShapeFilter shapeFilter;
 
