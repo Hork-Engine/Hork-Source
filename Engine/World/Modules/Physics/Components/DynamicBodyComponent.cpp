@@ -45,7 +45,7 @@ void DynamicBodyComponent::BeginPlay()
 
     CreateCollisionSettings collisionSettings;
     collisionSettings.Object = GetOwner();
-    //collisionSettings.CenterOfMassOffset = CenterOfMassOffset; TODO
+    collisionSettings.CenterOfMassOverride = CenterOfMassOverride;
     collisionSettings.ConvexOnly = true;
 
     if (physics->CreateCollision(collisionSettings, m_Shape, m_ScalingMode))

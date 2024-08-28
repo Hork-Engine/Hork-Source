@@ -249,9 +249,16 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
         outShape->AddRef();
     }
 
-    if (settings.CenterOfMassOffset != Float3(0.0f))
+    if (!settings.CenterOfMassOverride.IsNan().Any())
     {
-        // TODO: Use OffsetCenterOfMassShape
+        JPH::Vec3 newCenterOfMass = ConvertVector(settings.CenterOfMassOverride);
+        JPH::Vec3 centerOfMassOffset = newCenterOfMass - outShape->GetCenterOfMass();
+
+        JPH::Shape* offsetShape = new JPH::OffsetCenterOfMassShape(outShape, centerOfMassOffset);
+        offsetShape->AddRef();
+
+        outShape->Release();
+        outShape = offsetShape;
     }
 
     return true;
@@ -749,7 +756,8 @@ namespace
                 break;
             }
             case JPH::EShapeSubType::OffsetCenterOfMass:
-                HK_ASSERT_(0, "TODO: Add OffsetCenterOfMass\n");
+                JPH::OffsetCenterOfMassShape const* offsetShape = static_cast<JPH::OffsetCenterOfMassShape const*>(shape);
+                GatherShapeGeometry(offsetShape->GetInnerShape(), outVertices, outIndices);
                 break;
         }
     }
@@ -915,9 +923,11 @@ namespace
                 DrawShape(renderer, scaledShape->GetInnerShape(), transform * Float3x4::Scale(ConvertVector(scaledShape->GetScale())));
                 break;
             }
-            case JPH::EShapeSubType::OffsetCenterOfMass:
-                HK_ASSERT_(0, "TODO: Add OffsetCenterOfMass\n");
+            case JPH::EShapeSubType::OffsetCenterOfMass: {
+                JPH::OffsetCenterOfMassShape const* offsetShape = static_cast<JPH::OffsetCenterOfMassShape const*>(shape);
+                DrawShape(renderer, offsetShape->GetInnerShape(), transform);
                 break;
+            }
         }
     }
 

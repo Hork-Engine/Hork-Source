@@ -60,6 +60,9 @@ public:
     /// The collision layer this body belongs to (determines if two objects can collide)
     uint8_t                 CollisionLayer = 0;
 
+    /// Set a custom center of mass if you want to override the default, otherwise set it to Nan.
+    Float3                  CenterOfMassOverride{std::numeric_limits<float>::quiet_NaN()};
+
     /// World space linear velocity of the center of mass (m/s)
     Float3                  LinearVelocity;
 

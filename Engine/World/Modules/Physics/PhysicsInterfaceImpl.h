@@ -413,7 +413,7 @@ public:
 struct CreateCollisionSettings
 {
     GameObject* Object = nullptr;
-    Float3      CenterOfMassOffset;
+    Float3      CenterOfMassOverride{std::numeric_limits<float>::quiet_NaN()};
     bool        ConvexOnly = false;
 };
 
