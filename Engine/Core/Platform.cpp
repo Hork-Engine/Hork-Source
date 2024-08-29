@@ -153,7 +153,7 @@ void UnloadDynamicLib(void* handle)
 
 void* GetProcAddress(void* handle, const char* procName)
 {
-    return handle ? SDL_LoadFunction(handle, procName) : nullptr;
+    return handle ? (void*)SDL_LoadFunction(handle, procName) : nullptr;
 }
 
 MemoryInfo GetPhysMemoryInfo()

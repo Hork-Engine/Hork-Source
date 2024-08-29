@@ -52,6 +52,7 @@ SOFTWARE.
 #ifdef __GNUC__
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wunused-variable"
+#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #include <EASTL/internal/config.h>
