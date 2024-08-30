@@ -241,14 +241,22 @@ WindowMode GetWindowModeFromString(StringView str)
 } // namespace
 
 GameApplication::GameApplication(ArgumentPack const& args, StringView title) :
+    GameApplication(args,
+                    ApplicationDesc{}
+                        .SetTitle(title)
+                        .SetCompany("Hork Games"))
+{
+}
+
+GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const& appDesc) :
     CoreApplication(args),
-    m_Title(title),
+    m_Title(appDesc.Title),
     m_Random(Core::RandomSeed())
 {
     LoadConfigFile(GetRootPath() / "default.cfg");
 
     if (com_AppDataPath.GetString().IsEmpty())
-        com_AppDataPath = GetApplicationUserPath() / "Hork Games" / title;
+        com_AppDataPath = GetApplicationUserPath() / appDesc.Company / m_Title;
 
     m_ApplicationLocalData = com_AppDataPath.GetString();
 

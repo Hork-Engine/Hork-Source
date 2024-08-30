@@ -53,10 +53,30 @@ class AsyncJobList;
 class AudioDevice;
 class AudioMixer;
 
+class ApplicationDesc
+{
+public:
+    StringView Title;
+    StringView Company;
+
+    ApplicationDesc& SetTitle(StringView title)
+    {
+        Title = title;
+        return *this;
+    }
+
+    ApplicationDesc& SetCompany(StringView company)
+    {
+        Company = company;
+        return *this;
+    }
+};
+
 class GameApplication : public CoreApplication, public IEventListener
 {
 public:
     GameApplication(ArgumentPack const& args, StringView title);
+    GameApplication(ArgumentPack const& args, ApplicationDesc const& appDesc);
     ~GameApplication();
 
     World* CreateWorld();
