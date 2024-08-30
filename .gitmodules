@@ -1,6 +1,3 @@
-[submodule "ThirdParty/fmt"]
-	path = ThirdParty/fmt
-	url = https://github.com/0xc0de/fmt.git
 [submodule "ThirdParty/mimalloc"]
 	path = ThirdParty/mimalloc
 	url = https://github.com/0xc0de/mimalloc.git
