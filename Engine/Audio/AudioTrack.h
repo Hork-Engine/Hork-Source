@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "AudioStream.h"
+#include "AudioDecoder.h"
 
 #include <Engine/Math/VectorMath.h>
 #include <Engine/Core/Allocators/PoolAllocator.h>
@@ -48,8 +48,8 @@ struct AudioTrack final : public Noncopyable
     /// Audio source. Read only
     Ref<AudioSource> pSource;
 
-    /// Stream interface for partial audio streaming. Read only
-    Ref<AudioStream> pStream;
+    /// Interface for audio decoding. Read only
+    Ref<AudioDecoder> pDecoder;
 
     /// Playback position in frames.
     /// Read only for main thread. Modified by mixer thread.

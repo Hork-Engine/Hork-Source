@@ -29,11 +29,9 @@ SOFTWARE.
 */
 
 #include "AudioDevice.h"
+#include "AudioStream.h"
 
-#include <Engine/Core/Platform.h>
 #include <Engine/Core/Logger.h>
-#include <Engine/Core/Memory.h>
-#include <Engine/Core/BaseMath.h>
 
 #include <SDL3/SDL.h>
 
@@ -261,6 +259,18 @@ void AudioDevice::ClearBuffer()
     MapTransferBuffer();
     Core::ZeroMem(m_TransferBuffer, m_TransferBufferSizeInBytes);
     UnmapTransferBuffer();
+}
+
+Ref<AudioStream> AudioDevice::CreateStream(AudioStreamDesc const& desc)
+{
+    const SDL_AudioSpec spec = {desc.Format == AudioTransferFormat::FLOAT32 ? SDL_AUDIO_F32 : SDL_AUDIO_S16, desc.NumChannels, desc.SampleRate};
+    SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    if (!stream)
+        return {};
+
+    Ref<AudioStream> result = Ref<AudioStream>::Create(new AudioStream);
+    result->m_AudioStream = stream;
+    return result;
 }
 
 HK_NAMESPACE_END

@@ -30,154 +30,83 @@ SOFTWARE.
 
 #include "AudioDecoder.h"
 
-#include <Engine/Core/Logger.h>
-#include <Engine/Core/BaseMath.h>
-
 #include <miniaudio/miniaudio.h>
 
 HK_NAMESPACE_BEGIN
 
-namespace
+AudioDecoder::AudioDecoder(AudioSource* inSource) :
+    m_Source(inSource)
 {
-size_t Read(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead)
-{
-    IBinaryStreamReadInterface* file = (IBinaryStreamReadInterface*)pDecoder->pUserData;
-    return file->Read(pBufferOut, bytesToRead);
-}
-
-ma_bool32 Seek(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin)
-{
-    IBinaryStreamReadInterface* file = (IBinaryStreamReadInterface*)pDecoder->pUserData;
-    switch (origin)
+    if (m_Source->IsEncoded())
     {
-        case ma_seek_origin_start:
-            return file->SeekSet(byteOffset);
-        case ma_seek_origin_current:
-            return file->SeekCur(byteOffset);
-        case ma_seek_origin_end: // Not used by decoders.
-            return file->SeekEnd(byteOffset);
-    }
-    return false;
-}
-} // namespace
+        ma_format format = ma_format_unknown;
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource)
-{
-    ma_decoder_config config = ma_decoder_config_init(inResample.bForce8Bit ? ma_format_u8 : ma_format_s16, inResample.bForceMono ? 1 : 0, inResample.SampleRate);
-
-    ma_decoder decoder;
-    ma_result result = ma_decoder_init(Read, Seek, &inStream, &config, &decoder);
-    if (result != MA_SUCCESS)
-    {
-        LOG("DecodeAudio: failed to load {}\n", inStream.GetName());
-        return false;
-    }
-
-    MemoryHeap& tempHeap = Core::GetHeapAllocator<HEAP_TEMP>();
-
-    const size_t tempSize = 8192;
-    byte* temp = (byte*)tempHeap.Alloc(tempSize);
-
-    ma_uint64 totalFramesRead = 0;
-    ma_uint64 framesCapacity = 0;
-    void* pFrames = nullptr;
-    const int sampleBits = inResample.bForce8Bit ? 8 : 16;
-    const int stride = (sampleBits >> 3) * decoder.outputChannels;
-    const ma_uint64 framesToReadRightNow = tempSize / stride;
-    for (;;)
-    {
-        ma_uint64 framesJustRead = ma_decoder_read_pcm_frames(&decoder, temp, framesToReadRightNow);
-        if (framesJustRead == 0)
+        switch (m_Source->GetSampleBits())
+        {
+        case 8:
+            format = ma_format_u8;
             break;
-
-        ma_uint64 currentFrameCount = totalFramesRead + framesJustRead;
-
-        // resize dest buffer
-        if (framesCapacity < currentFrameCount)
-        {
-            ma_uint64 newFramesCap = framesCapacity * 2;
-            if (newFramesCap < currentFrameCount)
-                newFramesCap = currentFrameCount;
-            ma_uint64 newFramesBufferSize = newFramesCap * stride;
-            if (newFramesBufferSize > MA_SIZE_MAX)
-                break;
-            pFrames = tempHeap.Realloc(pFrames, (size_t)newFramesBufferSize, 16);
-            framesCapacity = newFramesCap;
-        }
-
-        // Copy frames
-        Core::Memcpy((ma_int8*)pFrames + totalFramesRead * stride, temp, (size_t)(framesJustRead * stride));
-        totalFramesRead += framesJustRead;
-
-        // Check EOF
-        if (framesJustRead != framesToReadRightNow)
-        {
-            // EOF reached
+        case 16:
+            format = ma_format_s16;
             break;
+        case 32:
+            format = ma_format_f32;
+            break;
+        default:
+            // Shouldn't happen
+            CoreApplication::TerminateWithError("AudioDecoder: expected 8, 16 or 32 sample bits\n");
         }
+
+        m_Decoder = (ma_decoder*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(*m_Decoder));
+
+        ma_decoder_config config = ma_decoder_config_init(format, m_Source->GetChannels(), m_Source->GetSampleRate());
+
+        ma_result result = ma_decoder_init_memory(inSource->GetHeapPtr(), inSource->GetSizeInBytes(), &config, m_Decoder);
+        if (result != MA_SUCCESS)
+            CoreApplication::TerminateWithError("AudioDecoder: failed to initialize decoder\n");
     }
-
-    tempHeap.Free(temp);
-    ma_decoder_uninit(&decoder);
-
-    if (totalFramesRead == 0)
-        return false;
-
-    outSource = MakeRef<AudioSource>(totalFramesRead, inResample.SampleRate, sampleBits, decoder.outputChannels, pFrames);
-
-    tempHeap.Free(pFrames);
-
-    return true;
 }
 
-bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo)
+AudioDecoder::~AudioDecoder()
 {
-    ma_decoder_config config = ma_decoder_config_init(inResample.bForce8Bit ? ma_format_u8 : ma_format_s16, inResample.bForceMono ? 1 : 0, inResample.SampleRate);
-
-    ma_decoder decoder;
-    ma_result result = ma_decoder_init(Read, Seek, &inStream, &config, &decoder);
-    if (result != MA_SUCCESS)
+    if (m_Decoder)
     {
-        LOG("ReadAudioInfo: failed to load {}\n", inStream.GetName());
-        return false;
+        ma_decoder_uninit(m_Decoder);
+        Core::GetHeapAllocator<HEAP_MISC>().Free(m_Decoder);
+    }
+}
+
+void AudioDecoder::SeekToFrame(int inFrameNum)
+{
+    m_FrameIndex = Math::Clamp(inFrameNum, 0, m_Source->GetFrameCount());
+    if (m_Decoder)
+        ma_decoder_seek_to_pcm_frame(m_Decoder, m_FrameIndex);
+}
+
+int AudioDecoder::ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes)
+{
+    if (inFrameCount <= 0)
+        return 0;
+
+    auto sampleStride = m_Source->GetSampleStride();
+    if ((size_t)inFrameCount * sampleStride > inSizeInBytes)
+        inFrameCount = inSizeInBytes / sampleStride;
+
+    int framesRead;
+    if (m_Decoder)
+        framesRead = ma_decoder_read_pcm_frames(m_Decoder, outFrames, inFrameCount);
+    else
+    {
+        framesRead = inFrameCount;
+        if (m_FrameIndex + framesRead > m_Source->GetFrameCount())
+            framesRead = m_Source->GetFrameCount() - m_FrameIndex;
+        Core::Memcpy(outFrames, reinterpret_cast<const uint8_t*>(m_Source->GetFrames()) + m_FrameIndex * sampleStride, framesRead * sampleStride);
     }
 
-    outInfo->Channels = decoder.outputChannels;
-    outInfo->SampleBits = inResample.bForce8Bit ? 8 : 16;
-    outInfo->FrameCount = ma_decoder_get_length_in_pcm_frames(&decoder); // For MP3's, this will decode the entire file
+    m_FrameIndex += framesRead;
+    HK_ASSERT(m_FrameIndex <= m_Source->GetFrameCount());
 
-    // ma_decoder_get_length_in_pcm_frames will always return 0 for Vorbis decoders.
-    // This is due to a limitation with stb_vorbis in push mode which is what miniaudio
-    // uses internally.
-    if (outInfo->FrameCount == 0)
-    { // stb_vorbis :(
-
-        MemoryHeap& tempHeap = Core::GetHeapAllocator<HEAP_TEMP>();
-
-        const size_t tempSize = 8192;
-        byte* temp = (byte*)tempHeap.Alloc(tempSize);
-
-        ma_uint64 totalFramesRead = 0;
-        const int stride = (outInfo->SampleBits >> 3) * outInfo->Channels;
-        const ma_uint64 framesToReadRightNow = tempSize / stride;
-        for (;;)
-        {
-            ma_uint64 framesJustRead = ma_decoder_read_pcm_frames(&decoder, temp, framesToReadRightNow);
-            if (framesJustRead == 0)
-                break;
-            totalFramesRead += framesJustRead;
-            // Check EOF
-            if (framesJustRead != framesToReadRightNow)
-                break;
-        }
-        outInfo->FrameCount = totalFramesRead;
-
-        tempHeap.Free(temp);
-    }
-
-    ma_decoder_uninit(&decoder);
-
-    return outInfo->FrameCount > 0;
+    return framesRead;
 }
 
 HK_NAMESPACE_END

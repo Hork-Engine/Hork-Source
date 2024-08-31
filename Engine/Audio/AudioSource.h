@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Ref.h>
 #include <Engine/Core/HeapBlob.h>
+#include <Engine/Core/BinaryStream.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -94,5 +95,22 @@ private:
 
     int                         m_SampleRate;
 };
+
+struct AudioFileInfo
+{
+    int FrameCount;
+    int Channels;
+    int SampleBits;
+};
+
+struct AudioResample
+{
+    int  SampleRate;
+    bool bForceMono;
+    bool bForce8Bit;
+};
+
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource);
+bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo);
 
 HK_NAMESPACE_END

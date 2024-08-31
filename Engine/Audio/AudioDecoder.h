@@ -30,26 +30,30 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/BinaryStream.h>
 #include "AudioSource.h"
+
+struct ma_decoder;
 
 HK_NAMESPACE_BEGIN
 
-struct AudioFileInfo
+class AudioDecoder final : public InterlockedRef
 {
-    int FrameCount;
-    int Channels;
-    int SampleBits;
-};
+public:
+                        AudioDecoder(AudioSource* inSource);
+                        ~AudioDecoder();
 
-struct AudioResample
-{
-    int  SampleRate;
-    bool bForceMono;
-    bool bForce8Bit;
-};
+    AudioSource*        GetSource() const { return m_Source; }
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource);
-bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo);
+    /// Seeks to a PCM frame based on it's absolute index.
+    void                SeekToFrame(int inFrameNum);
+
+    /// Reads PCM frames from the stream.
+    int                 ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
+
+private:
+    Ref<AudioSource>    m_Source;
+    ma_decoder*         m_Decoder = nullptr;
+    int                 m_FrameIndex = 0;
+};
 
 HK_NAMESPACE_END

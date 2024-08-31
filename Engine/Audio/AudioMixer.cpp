@@ -166,9 +166,9 @@ void AudioMixer::AddPendingTracks()
     int count = 0;
     for (AudioTrack* track = submittedTracks; track; track = track->Next)
     {
-        if (track->pStream && !track->bVirtual)
+        if (track->pDecoder && !track->bVirtual)
         {
-            track->pStream->SeekToFrame(track->PlaybackPos.Load());
+            track->pDecoder->SeekToFrame(track->PlaybackPos.Load());
         }
         count++;
     }
@@ -310,9 +310,9 @@ void AudioMixer::RenderTracks(int64_t endFrame)
                 }
             }
 
-            if (bSeek && !track->bVirtual && track->pStream)
+            if (bSeek && !track->bVirtual && track->pDecoder)
             {
-                track->pStream->SeekToFrame(m_PlaybackPos);
+                track->pDecoder->SeekToFrame(m_PlaybackPos);
             }
 
             if (m_NewVol[0] == 0 && m_NewVol[1] == 0 && track->Volume[0] == 0 && track->Volume[1] == 0)
@@ -337,9 +337,9 @@ void AudioMixer::RenderTracks(int64_t endFrame)
                 // Devirtualize
                 if (track->bVirtual)
                 {
-                    if (track->pStream)
+                    if (track->pDecoder)
                     {
-                        track->pStream->SeekToFrame(m_PlaybackPos);
+                        track->pDecoder->SeekToFrame(m_PlaybackPos);
                     }
                     track->bVirtual = false;
                 }
@@ -363,7 +363,7 @@ void AudioMixer::RenderTracks(int64_t endFrame)
                 track->PlaybackEnd = m_RenderFrame + (track->FrameCount - m_PlaybackPos);
             }
 
-            if (track->pStream)
+            if (track->pDecoder)
             {
                 RenderStream(track, end);
             }
@@ -645,7 +645,7 @@ void AudioMixer::RenderStream(AudioTrack* track, int64_t endFrame)
             {
                 m_TempFrames.ResizeInvalidate(framesToRender * stride);
 
-                framesToRender = track->pStream->ReadFrames(m_TempFrames.ToPtr(), framesToRender, framesToRender * stride);
+                framesToRender = track->pDecoder->ReadFrames(m_TempFrames.ToPtr(), framesToRender, framesToRender * stride);
 
                 if (framesToRender > 0)
                 {
@@ -667,7 +667,7 @@ void AudioMixer::RenderStream(AudioTrack* track, int64_t endFrame)
             {
                 if (!track->bVirtual)
                 {
-                    track->pStream->SeekToFrame(track->GetLoopStart());
+                    track->pDecoder->SeekToFrame(track->GetLoopStart());
                 }
                 m_PlaybackPos = track->GetLoopStart();
                 track->PlaybackEnd = frameNum + (clipFrameCount - m_PlaybackPos);

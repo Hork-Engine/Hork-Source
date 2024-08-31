@@ -40,7 +40,7 @@ AudioTrack::AudioTrack(AudioSource* inSource, int inStartFrame, int inLoopStart,
 {
     pSource = inSource;
     if (inSource->IsEncoded())
-        pStream = MakeRef<AudioStream>(inSource);
+        pDecoder = MakeRef<AudioDecoder>(inSource);
 
     FrameCount = inSource->GetFrameCount();
     Channels = inSource->GetChannels();

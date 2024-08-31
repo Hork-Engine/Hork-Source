@@ -30,30 +30,27 @@ SOFTWARE.
 
 #pragma once
 
-#include "AudioSource.h"
-
-struct ma_decoder;
+#include <Engine/Core/Ref.h>
 
 HK_NAMESPACE_BEGIN
 
-class AudioStream final : public InterlockedRef
+class AudioStream : public RefCounted
 {
 public:
-                        AudioStream(AudioSource* inSource);
-                        ~AudioStream();
+                        ~AudioStream();    
 
-    AudioSource*        GetSource() const { return m_Source; }
+    void                Clear();
+    void                QueueAudio(void const* data, size_t size);
 
-    /// Seeks to a PCM frame based on it's absolute index.
-    void                SeekToFrame(int inFrameNum);
-
-    /// Reads PCM frames from the stream.
-    int                 ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
+    void                BlockSound();
+    void                UnblockSound();
 
 private:
-    Ref<AudioSource>    m_Source;
-    ma_decoder*         m_Decoder = nullptr;
-    int                 m_FrameIndex = 0;
+                        AudioStream() {}
+
+    void*               m_AudioStream = nullptr;
+
+    friend class        AudioDevice;
 };
 
 HK_NAMESPACE_END

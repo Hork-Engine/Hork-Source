@@ -40,6 +40,15 @@ enum class AudioTransferFormat : uint8_t
     FLOAT32
 };
 
+class AudioStream;
+
+struct AudioStreamDesc
+{
+    AudioTransferFormat Format;
+    int                 NumChannels;
+    int                 SampleRate;
+};
+
 class AudioDevice final : public RefCounted
 {
 public:
@@ -79,6 +88,8 @@ public:
 
     /// Pass MixerCallback for async mixing
     void                SetMixerCallback(std::function<void(uint8_t*, int, int, int)> MixerCallback);
+
+    Ref<AudioStream>    CreateStream(AudioStreamDesc const& desc);
 
 private:
     void                RenderAudio(uint8_t* pStream, int StreamLength);
