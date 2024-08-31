@@ -48,6 +48,9 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * OGG, FLAC, MP3, WAV
 * Audio resampling
 
+## Cinematic
+* MPEG1 Video decoder
+
 ## Input system
 * Keyboard, Mouse, Game controllers
 * Mapping to Axes and Actions
@@ -101,6 +104,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * nanovg
 * Optick
 * ozz-animation
+* pl_mpeg
 * Recast & Detour
 * SDL3
 * stb

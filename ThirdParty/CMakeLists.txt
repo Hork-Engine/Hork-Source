@@ -143,6 +143,9 @@ message(STATUS "TINYEXR.................................")
 add_subdirectory_with_folder("ThirdParty" tinyexr)
 install_thirdparty_includes(tinyexr/ tinyexr)
 
+message(STATUS "PL_MPEG.................................")
+install_thirdparty_includes(pl_mpeg/ pl_mpeg)
+
 message(STATUS "OPTICK.................................")
 add_subdirectory_with_folder("ThirdParty" optick)
 install_thirdparty_includes(optick/src/ optick)
