@@ -37,13 +37,21 @@ struct plm_t;
 
 HK_NAMESPACE_BEGIN
 
+enum class CinematicFlags
+{
+    Default,
+    NoAudio
+};
+
+HK_FLAG_ENUM_OPERATORS(CinematicFlags)
+
 class Cinematic final : public Noncopyable
 {
 public:
-                    Cinematic();
+                    Cinematic(StringView resourceName);
                     ~Cinematic();
 
-    bool            Open(StringView filename);
+    bool            Open(StringView filename, CinematicFlags flags = CinematicFlags::Default);
     void            Close();
 
     bool            IsOpened() const;

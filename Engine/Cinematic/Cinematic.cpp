@@ -88,10 +88,9 @@ struct Cinematic::Frame
     plm_frame_t*  data;
 };
 
-Cinematic::Cinematic()
+Cinematic::Cinematic(StringView resourceName)
 {
-    if (!m_Texture)
-        m_Texture = GameApplication::GetResourceManager().CreateResource<TextureResource>("internal_cinematic");
+    m_Texture = GameApplication::GetResourceManager().CreateResource<TextureResource>(resourceName);
 }
 
 Cinematic::~Cinematic()
@@ -99,7 +98,7 @@ Cinematic::~Cinematic()
     Close();
 }
 
-bool Cinematic::Open(StringView filename)
+bool Cinematic::Open(StringView filename, CinematicFlags flags)
 {
     Close();
 
@@ -168,18 +167,22 @@ bool Cinematic::Open(StringView filename)
                 ((Cinematic*)user)->OnVideoDecode(f);
         },
         this);
-
-    plm_set_audio_decode_callback(
-        m_pImpl, [](plm_t* self, plm_samples_t* samples, void* user)
-        { ((Cinematic*)user)->OnAudioDecode(samples->count, samples->interleaved); },
-        this);
-
     plm_set_video_enabled(m_pImpl, true);
-    plm_set_audio_enabled(m_pImpl, true);
-    plm_set_audio_stream(m_pImpl, 0);
 
-    if (plm_get_num_audio_streams(m_pImpl) > 0)
+    bool audioEnabled = !(flags & CinematicFlags::NoAudio) && plm_get_num_audio_streams(m_pImpl) > 0;
+    plm_set_audio_enabled(m_pImpl, audioEnabled);
+
+    if (audioEnabled)
     {
+        plm_set_audio_decode_callback(
+            m_pImpl, [](plm_t* self, plm_samples_t* samples, void* user)
+            {
+                ((Cinematic*)user)->OnAudioDecode(samples->count, samples->interleaved);
+            },
+            this);
+
+        plm_set_audio_stream(m_pImpl, 0);
+
         int audioSamples = 4096;
 
         // Adjust the audio lead time according to the audio_spec buffer size
@@ -192,15 +195,18 @@ bool Cinematic::Open(StringView filename)
     if (!texture->GetTextureGPU() || texture->GetWidth() != m_Width || texture->GetHeight() != m_Height)
         texture->Allocate2D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Width, m_Height);
 
-    AudioDevice* audio = GameApplication::GetAudioDevice();
+    if (audioEnabled)
+    {
+        AudioDevice* audio = GameApplication::GetAudioDevice();
 
-    AudioStreamDesc streamDesc{};
-    streamDesc.Format = AudioTransferFormat::FLOAT32;
-    streamDesc.NumChannels = 2;
-    streamDesc.SampleRate = m_SampleRate;
+        AudioStreamDesc streamDesc{};
+        streamDesc.Format = AudioTransferFormat::FLOAT32;
+        streamDesc.NumChannels = 2;
+        streamDesc.SampleRate = m_SampleRate;
 
-    m_AudioStream = audio->CreateStream(streamDesc);
-    m_AudioStream->UnblockSound();
+        m_AudioStream = audio->CreateStream(streamDesc);
+        m_AudioStream->UnblockSound();
+    }
 
     return true;
 }
