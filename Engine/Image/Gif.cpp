@@ -137,7 +137,7 @@ bool GifImage::DecodeNextFrame(DecodeContext& context) const
     int bpp = GetBytesPerPixel(context.Format);
     bool bgr = IsBGR(context.Format);
 
-    if (context.Data.Size() < (frame.Left + frame.Width) * (frame.Top + frame.Height) * bpp)
+    if (context.Data.Size() < m_Width * m_Height * bpp)
         return false;
 
     if (context.FrameIndex == 0)
@@ -201,7 +201,7 @@ uint32_t GifImage::FindFrame(float timeStamp) const
 
     for (uint32_t index = 0; index < m_Frames.Size(); ++index)
     {
-        if (timeStamp < m_Frames[index].TimeStamp)
+        if (timeStamp <= m_Frames[index].TimeStamp)
             return index;
     }
 

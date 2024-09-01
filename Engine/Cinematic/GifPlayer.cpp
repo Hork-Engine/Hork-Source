@@ -52,7 +52,7 @@ bool GifPlayer::Open(StringView filename)
     if (!file)
         return false;
 
-    m_Image = CreateGif(file.ReadInterface());
+    m_Image = CreateGif(file);
     if (!m_Image)
         return false;
 
@@ -144,7 +144,7 @@ void GifPlayer::Tick(float timeStep)
     {
         if (m_Loop)
         {
-            targetTime = std::fmod(targetTime, duration);
+            targetTime = Math::FMod(targetTime, duration);
             m_Image.StartDecode(m_DecContext);
         }
         else
