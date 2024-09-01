@@ -42,7 +42,7 @@ SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #define STBI_NO_STDIO
-#define STBI_NO_GIF // Maybe in future gif will be used, but not now
+#define STBI_NO_GIF // giflib is used to decode GIF images (see GifImage)
 #include <stb/stb_image.h>
 
 #define STBIW_MALLOC(sz)        Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)

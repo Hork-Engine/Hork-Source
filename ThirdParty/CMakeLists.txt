@@ -143,6 +143,10 @@ message(STATUS "TINYEXR.................................")
 add_subdirectory_with_folder("ThirdParty" tinyexr)
 install_thirdparty_includes(tinyexr/ tinyexr)
 
+message(STATUS "GIFLIB.................................")
+add_subdirectory_with_folder("ThirdParty" giflib)
+install_thirdparty_includes(giflib/ giflib)
+
 message(STATUS "PL_MPEG.................................")
 install_thirdparty_includes(pl_mpeg/ pl_mpeg)
 

@@ -50,6 +50,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 
 ## Cinematic
 * MPEG1 Video decoder
+* Animated Gif
 
 ## Input system
 * Keyboard, Mouse, Game controllers
@@ -73,7 +74,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * All types of block compression and decompression: BC1-7
 * Image resampling
 * sRGB / Premultiplied alpha aware
-* WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR
+* WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR, GIF
 * 3D formats: FBX, GLTF 2.0, OBJ
 * IES profiles
 * SVG rasterization
@@ -90,6 +91,7 @@ https://github.com/Hork-Engine/Hork-Source-Archive
 * fast_obj
 * {fmt}
 * GLEW
+* giflib
 * glslang
 * glutess
 * HACD

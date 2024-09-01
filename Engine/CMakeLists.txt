@@ -44,6 +44,7 @@ target_link_libraries(${PROJECT_NAME}
     bcdec
     lunasvg
     webp
+    giflib
     OptickCore
     Jolt
     OpenGL::GL
