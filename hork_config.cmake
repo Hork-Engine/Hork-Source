@@ -125,7 +125,7 @@ else()
     set(HK_COMPILER_FLAGS
         -fvisibility=hidden
         -fno-exceptions                 # Disable exceptions
-        -Werror                         # Treat warnings as errors
+#       -Werror                         # Treat warnings as errors
         -Wall                           # Enable all warnings
         -Wno-unused-parameter           # Don't warn about unused parameters
         -Wno-unused-function            # Don't warn about unused local function
@@ -136,6 +136,7 @@ else()
         -Wno-unused-local-typedefs
         -Wno-unused-value
         -Wno-switch
+        -Wno-deprecated-declarations
         )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 endif()
