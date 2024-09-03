@@ -283,7 +283,6 @@ RenderBackend::~RenderBackend()
 {
     LOG("Deinitializing render backend...\n");
 
-    //SDL_SetRelativeMouseMode( SDL_FALSE );
     //VirtualTexture * vt = TestVT.RawPtr();
     //TestVT.Reset();
     m_PhysCacheVT.Reset();
