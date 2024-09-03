@@ -38,7 +38,7 @@ HK_NAMESPACE_BEGIN
 class GifPlayer final : public Noncopyable
 {
 public:
-                    GifPlayer(StringView resourceName);
+    explicit        GifPlayer(StringView resourceName);
                     ~GifPlayer();
 
     bool            Open(StringView filename);

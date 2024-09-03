@@ -48,7 +48,7 @@ HK_FLAG_ENUM_OPERATORS(CinematicFlags)
 class Cinematic final : public Noncopyable
 {
 public:
-                    Cinematic(StringView resourceName);
+    explicit        Cinematic(StringView resourceName);
                     ~Cinematic();
 
     bool            Open(StringView filename, CinematicFlags flags = CinematicFlags::Default);
