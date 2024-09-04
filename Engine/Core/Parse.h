@@ -238,7 +238,8 @@ HK_INLINE StringView GetToken(StringView& token, StringView string, bool bCrossL
 
         if (*p == '(' || *p == ')')
         {
-            ++p;
+            if (p == tokenBegin)
+                ++p;            
             break;
         }
 
