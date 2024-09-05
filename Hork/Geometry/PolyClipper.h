@@ -49,12 +49,12 @@ struct ClipperPolygon
     Vector<ClipperContour>  Holes;
 };
 
-enum POLY_CLIP_TYPE
+enum class PolyClip
 {
-    POLY_CLIP_TYPE_INTERSECT,
-    POLY_CLIP_TYPE_UNION,
-    POLY_CLIP_TYPE_DIFF,
-    POLY_CLIP_TYPE_XOR
+    Intersect,
+    Union,
+    Diff,
+    XOR
 };
 
 class PolyClipper final : public Noncopyable
@@ -88,10 +88,10 @@ public:
     void                            AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
     /// Execute and build polygons
-    bool                            Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons);
+    bool                            Execute(PolyClip clipType, Vector<ClipperPolygon>& polygons);
 
     /// Execute and build contours
-    bool                            Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours);
+    bool                            Execute(PolyClip clipType, Vector<ClipperContour>& contours);
 
 private:
     UniqueRef<ClipperLib::Clipper>  m_pImpl;

@@ -204,7 +204,7 @@ void PolyClipper::AddClip3D(Double3 const* points, int pointsCount, bool closed)
     m_pImpl->AddPath(Path, ClipperLib::ptClip, closed);
 }
 
-bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons)
+bool PolyClipper::Execute(PolyClip clipType, Vector<ClipperPolygon>& polygons)
 {
     ClipperLib::PolyTree polygonTree;
 
@@ -219,7 +219,7 @@ bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polyg
     return true;
 }
 
-bool PolyClipper::Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours)
+bool PolyClipper::Execute(PolyClip clipType, Vector<ClipperContour>& contours)
 {
     ClipperPaths resultPaths;
 
