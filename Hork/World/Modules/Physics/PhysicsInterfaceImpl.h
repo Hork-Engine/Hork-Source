@@ -145,12 +145,12 @@ public:
     virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override
     {
         using namespace JPH;
-        switch ((BroadPhaseLayer::Type)inLayer)
+        switch (inLayer.GetValue())
         {
-        case BroadphaseLayer::Static: return "Static";
-        case BroadphaseLayer::Dynamic: return "Dynamic";
-        case BroadphaseLayer::Trigger: return "Trigger";
-        case BroadphaseLayer::Character: return "Character";
+        case uint8_t(BroadphaseLayer::Static): return "Static";
+        case uint8_t(BroadphaseLayer::Dynamic): return "Dynamic";
+        case uint8_t(BroadphaseLayer::Trigger): return "Trigger";
+        case uint8_t(BroadphaseLayer::Character): return "Character";
         default: JPH_ASSERT(false); return "INVALID";
         }
     }
@@ -178,7 +178,7 @@ public:
             HK_BIT(uint32_t(BroadphaseLayer::Character)) | HK_BIT(uint32_t(BroadphaseLayer::Trigger)) | HK_BIT(uint32_t(BroadphaseLayer::Static)) | HK_BIT(uint32_t(BroadphaseLayer::Dynamic)),
         };
 
-        return mask[broadphaseLayer.operator unsigned char()];
+        return mask[broadphaseLayer.GetValue()];
     }
 
     virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override
