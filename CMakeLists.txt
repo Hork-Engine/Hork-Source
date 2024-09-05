@@ -10,4 +10,4 @@ include_directories(.)
 add_subdirectory_with_folder("BuildTools" BuildTools)
 
 add_subdirectory(ThirdParty)
-add_subdirectory(Engine)
+add_subdirectory(Hork)
