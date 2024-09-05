@@ -33,8 +33,8 @@ SOFTWARE.
 #include <Engine/World/Component.h>
 #include <Engine/World/Modules/Render/ProceduralMesh.h>
 #include <Engine/World/Modules/Skeleton/SkeletonPose.h>
-#include <Engine/World/Resources/Resource_Mesh.h>
-#include <Engine/World/Resources/Materials/Material.h>
+#include <Engine/Resources/Resource_Mesh.h>
+#include <Engine/Materials/Material.h>
 
 #include <Engine/World/GameObject.h>
 #include <Engine/World/World.h>

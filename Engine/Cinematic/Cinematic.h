@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Audio/AudioStream.h>
-#include <Engine/World/Resources/Resource_Texture.h>
+#include <Engine/Resources/Resource_Texture.h>
 
 struct plm_t;
 

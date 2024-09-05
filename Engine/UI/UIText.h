@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "UIWidget.h"
-#include <Engine/World/Resources/Resource_Font.h>
+#include <Engine/Resources/Resource_Font.h>
 
 HK_NAMESPACE_BEGIN
 

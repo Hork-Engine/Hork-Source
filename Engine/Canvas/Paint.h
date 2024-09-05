@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Renderer/RenderDefs.h>
-#include <Engine/World/Resources/Resource_Texture.h>
+#include <Engine/Resources/Resource_Texture.h>
 #include "Transform2D.h"
 
 HK_NAMESPACE_BEGIN

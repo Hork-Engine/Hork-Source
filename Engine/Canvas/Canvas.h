@@ -33,8 +33,8 @@ SOFTWARE.
 #include <Engine/Core/Containers/Vector.h>
 #include <Engine/Renderer/RenderDefs.h>
 
-#include <Engine/World/Resources/ResourceManager.h>
-#include <Engine/World/Resources/Resource_Font.h>
+#include <Engine/Resources/ResourceManager.h>
+#include <Engine/Resources/Resource_Font.h>
 
 #include "Paint.h"
 #include "Transform2D.h"

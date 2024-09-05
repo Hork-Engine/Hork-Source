@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "ResourceHandle.h"
 #include "ResourceBase.h"
-#include "Materials/MaterialGraph/MaterialBinary.h"
+#include <Engine/MaterialGraph/MaterialBinary.h>
 
 HK_NAMESPACE_BEGIN
 

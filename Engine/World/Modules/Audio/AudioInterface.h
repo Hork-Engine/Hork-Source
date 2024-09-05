@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/WorldInterface.h>
-#include <Engine/World/Resources/Resource_Sound.h>
+#include <Engine/Resources/Resource_Sound.h>
 #include <Engine/World/GameObject.h>
 
 #include <Engine/Audio/AudioMixer.h>

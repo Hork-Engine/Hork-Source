@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Resources/Resource_Material.h>
-#include <Engine/World/Resources/Resource_Texture.h>
+#include <Engine/Resources/Resource_Material.h>
+#include <Engine/Resources/Resource_Texture.h>
 
 #include <Engine/Renderer/RenderDefs.h>
 

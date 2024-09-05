@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Geometry/Utilites.h>
 #include <Engine/RenderCore/Buffer.h>
-#include <Engine/World/Resources/Resource_Mesh.h>
+#include <Engine/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
 

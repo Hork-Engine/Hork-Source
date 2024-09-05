@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "FrameLoop.h"
 #include <Engine/World/Modules/Render/WorldRenderView.h>
-#include <Engine/World/Resources/Resource_Font.h>
+#include <Engine/Resources/Resource_Font.h>
 
 #include <Engine/Core/Platform.h>
 #include <Engine/Core/Profiler.h>

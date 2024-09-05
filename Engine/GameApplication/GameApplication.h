@@ -36,8 +36,8 @@ SOFTWARE.
 #include <Engine/Core/Random.h>
 
 #include <Engine/World/Modules/Render/RenderFrontend.h>
-#include <Engine/World/Resources/Materials/MaterialManager.h>
 
+#include <Engine/Materials/MaterialManager.h>
 #include <Engine/UI/UIManager.h>
 #include <Engine/Renderer/RenderBackend.h>
 

@@ -31,9 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Renderer/VT/VirtualTextureFeedback.h>
-#include <Engine/World/Resources/ResourceManager.h>
-#include <Engine/World/Resources/Resource_Texture.h>
-#include <Engine/World/Resources/Resource_Terrain.h>
+#include <Engine/Resources/ResourceManager.h>
+#include <Engine/Resources/Resource_Texture.h>
+#include <Engine/Resources/Resource_Terrain.h>
 #include <Engine/World/World.h>
 #include <Engine/World/Modules/Render/Components/CameraComponent.h>
 

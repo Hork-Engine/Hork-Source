@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Image/Gif.h>
-#include <Engine/World/Resources/Resource_Texture.h>
+#include <Engine/Resources/Resource_Texture.h>
 
 HK_NAMESPACE_BEGIN
 

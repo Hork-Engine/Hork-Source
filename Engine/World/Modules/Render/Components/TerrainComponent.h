@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Resources/Resource_Terrain.h>
+#include <Engine/Resources/Resource_Terrain.h>
 #include <Engine/World/Component.h>
 
 HK_NAMESPACE_BEGIN

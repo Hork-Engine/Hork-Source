@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Engine/Math/Quat.h>
 #include <Engine/Audio/AudioTrack.h>
-#include <Engine/World/Resources/Resource_Sound.h>
+#include <Engine/Resources/Resource_Sound.h>
 
 #include <EASTL/queue.h>
 

@@ -32,7 +32,7 @@ SOFTWARE.
 #include "ResourceManager.h"
 #include "Resource_Mesh.h"
 #include <Engine/GameApplication/GameApplication.h>
-#include <Engine/World/Resources/Materials/MaterialGraph/MaterialGraph.h>
+#include <Engine/MaterialGraph/MaterialGraph.h>
 
 HK_NAMESPACE_BEGIN
 

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "MaterialManager.h"
 
 #include <Engine/Core/DOM.h>
-#include <Engine/World/Resources/ResourceManager.h>
+#include <Engine/Resources/ResourceManager.h>
 #include <Engine/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN

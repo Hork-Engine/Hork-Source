@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "Resource_Material.h"
 
-#include "Materials/MaterialGraph/MaterialGraph.h"
+#include <Engine/MaterialGraph/MaterialGraph.h>
 
 HK_NAMESPACE_BEGIN
 
