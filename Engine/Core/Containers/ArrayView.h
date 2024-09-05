@@ -54,57 +54,57 @@ public:
         m_Data(nullptr), m_Size(0)
     {}
 
-    constexpr HK_FORCEINLINE ArrayView(ConstPointer _Data, SizeType _Size) :
-        m_Data(_Data), m_Size(_Size)
+    constexpr HK_FORCEINLINE ArrayView(ConstPointer data, SizeType size) :
+        m_Data(data), m_Size(size)
     {}
 
-    constexpr HK_FORCEINLINE ArrayView(ConstPointer pBegin, ConstPointer pEnd) :
-        m_Data(pBegin), m_Size(static_cast<SizeType>(pEnd - pBegin))
-    {}
-
-    template <size_t N>
-    constexpr HK_FORCEINLINE ArrayView(T const (&Array)[N]) :
-        m_Data(Array), m_Size(N)
+    constexpr HK_FORCEINLINE ArrayView(ConstPointer begin, ConstPointer end) :
+        m_Data(begin), m_Size(static_cast<SizeType>(end - begin))
     {}
 
     template <size_t N>
-    constexpr HK_FORCEINLINE ArrayView(Array<ValueType, N> const& Array) :
-        m_Data(Array.ToPtr()), m_Size(Array.Size())
+    constexpr HK_FORCEINLINE ArrayView(T const (&array)[N]) :
+        m_Data(array), m_Size(N)
+    {}
+
+    template <size_t N>
+    constexpr HK_FORCEINLINE ArrayView(Array<ValueType, N> const& array) :
+        m_Data(array.ToPtr()), m_Size(array.Size())
     {}
 
     template <typename Allocator>
-    constexpr HK_FORCEINLINE ArrayView(Vector<ValueType, Allocator> const& Vector) :
-        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    constexpr HK_FORCEINLINE ArrayView(Vector<ValueType, Allocator> const& vector) :
+        m_Data(vector.ToPtr()), m_Size(vector.Size())
     {}
 
     template <size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
-    constexpr HK_FORCEINLINE ArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator> const& Vector) :
-        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    constexpr HK_FORCEINLINE ArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator> const& vector) :
+        m_Data(vector.ToPtr()), m_Size(vector.Size())
     {}
 
-    constexpr ArrayView(ArrayView const& Rhs) = default;
-    constexpr ArrayView& operator=(ArrayView const& Rhs) = default;
+    constexpr ArrayView(ArrayView const& rhs) = default;
+    constexpr ArrayView& operator=(ArrayView const& rhs) = default;
 
-    constexpr HK_FORCEINLINE bool operator==(ArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator==(ArrayView rhs) const
     {
-        return (m_Size == Rhs.m_Size) && eastl::equal(begin(), end(), Rhs.begin());
+        return (m_Size == rhs.m_Size) && eastl::equal(begin(), end(), rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator!=(ArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator!=(ArrayView rhs) const
     {
-        return (m_Size != Rhs.m_Size) || !eastl::equal(begin(), end(), Rhs.begin());
+        return (m_Size != rhs.m_Size) || !eastl::equal(begin(), end(), rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator<(ArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator<(ArrayView rhs) const
     {
-        return eastl::lexicographical_compare(begin(), end(), Rhs.begin(), Rhs.end());
+        return eastl::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
     }
 
-    constexpr HK_FORCEINLINE bool operator<=(ArrayView Rhs) const { return !(Rhs < *this); }
+    constexpr HK_FORCEINLINE bool operator<=(ArrayView rhs) const { return !(rhs < *this); }
 
-    constexpr HK_FORCEINLINE bool operator>(ArrayView Rhs) const { return Rhs < *this; }
+    constexpr HK_FORCEINLINE bool operator>(ArrayView rhs) const { return rhs < *this; }
 
-    constexpr HK_FORCEINLINE bool operator>=(ArrayView Rhs) const { return !(*this < Rhs); }
+    constexpr HK_FORCEINLINE bool operator>=(ArrayView rhs) const { return !(*this < rhs); }
 
     constexpr HK_FORCEINLINE ConstPointer ToPtr() const
     {
@@ -278,57 +278,57 @@ public:
         m_Data(nullptr), m_Size(0)
     {}
 
-    constexpr HK_FORCEINLINE MutableArrayView(Pointer _Data, SizeType _Size) :
-        m_Data(_Data), m_Size(_Size)
+    constexpr HK_FORCEINLINE MutableArrayView(Pointer data, SizeType size) :
+        m_Data(data), m_Size(size)
     {}
 
-    constexpr HK_FORCEINLINE MutableArrayView(Pointer pBegin, Pointer pEnd) :
-        m_Data(pBegin), m_Size(static_cast<SizeType>(pEnd - pBegin))
-    {}
-
-    template <size_t N>
-    constexpr HK_FORCEINLINE MutableArrayView(T (&Array)[N]) :
-        m_Data(Array), m_Size(N)
+    constexpr HK_FORCEINLINE MutableArrayView(Pointer begin, Pointer end) :
+        m_Data(begin), m_Size(static_cast<SizeType>(end - begin))
     {}
 
     template <size_t N>
-    constexpr HK_FORCEINLINE MutableArrayView(Array<ValueType, N>& Array) :
-        m_Data(Array.ToPtr()), m_Size(Array.Size())
+    constexpr HK_FORCEINLINE MutableArrayView(T (&array)[N]) :
+        m_Data(array), m_Size(N)
+    {}
+
+    template <size_t N>
+    constexpr HK_FORCEINLINE MutableArrayView(Array<ValueType, N>& array) :
+        m_Data(array.ToPtr()), m_Size(array.Size())
     {}
 
     template <typename Allocator>
-    constexpr HK_FORCEINLINE MutableArrayView(Vector<ValueType, Allocator>& Vector) :
-        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    constexpr HK_FORCEINLINE MutableArrayView(Vector<ValueType, Allocator>& vector) :
+        m_Data(vector.ToPtr()), m_Size(vector.Size())
     {}
 
     template <size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
-    constexpr HK_FORCEINLINE MutableArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator>& Vector) :
-        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    constexpr HK_FORCEINLINE MutableArrayView(FixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator>& vector) :
+        m_Data(vector.ToPtr()), m_Size(vector.Size())
     {}
 
-    constexpr MutableArrayView(MutableArrayView const& Rhs) = default;
-    constexpr MutableArrayView& operator=(MutableArrayView const& Rhs) = default;
+    constexpr MutableArrayView(MutableArrayView const& rhs) = default;
+    constexpr MutableArrayView& operator=(MutableArrayView const& rhs) = default;
 
-    constexpr HK_FORCEINLINE bool operator==(MutableArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator==(MutableArrayView rhs) const
     {
-        return (m_Size == Rhs.m_Size) && eastl::equal(begin(), end(), Rhs.begin());
+        return (m_Size == rhs.m_Size) && eastl::equal(begin(), end(), rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator!=(MutableArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator!=(MutableArrayView rhs) const
     {
-        return (m_Size != Rhs.m_Size) || !eastl::equal(begin(), end(), Rhs.begin());
+        return (m_Size != rhs.m_Size) || !eastl::equal(begin(), end(), rhs.begin());
     }
 
-    constexpr HK_FORCEINLINE bool operator<(MutableArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator<(MutableArrayView rhs) const
     {
-        return eastl::lexicographical_compare(begin(), end(), Rhs.begin(), Rhs.end());
+        return eastl::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
     }
 
-    constexpr HK_FORCEINLINE bool operator<=(MutableArrayView Rhs) const { return !(Rhs < *this); }
+    constexpr HK_FORCEINLINE bool operator<=(MutableArrayView rhs) const { return !(rhs < *this); }
 
-    constexpr HK_FORCEINLINE bool operator>(MutableArrayView Rhs) const { return Rhs < *this; }
+    constexpr HK_FORCEINLINE bool operator>(MutableArrayView rhs) const { return rhs < *this; }
 
-    constexpr HK_FORCEINLINE bool operator>=(MutableArrayView Rhs) const { return !(*this < Rhs); }
+    constexpr HK_FORCEINLINE bool operator>=(MutableArrayView rhs) const { return !(*this < rhs); }
 
     constexpr HK_FORCEINLINE Pointer ToPtr()
     {

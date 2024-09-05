@@ -374,23 +374,23 @@ public:
 
     UIWidget& BringOnTop(bool bRecursiveForParents = true);
 
-     /** Get widget visibility type */
+    /// Get widget visibility type
     UI_WIDGET_VISIBILITY GetVisibility() const { return Visibility; }
 
-    /** Is widget visible */
+    /// Is widget visible
     bool IsVisible() const { return Visibility == UI_WIDGET_VISIBILITY_VISIBLE; }
 
-    /** Is widget not visible */
+    /// Is widget not visible
     bool IsInvisible() const { return Visibility != UI_WIDGET_VISIBILITY_VISIBLE; }
 
-    /** Is widget collapsed */
+    /// Is widget collapsed
     bool IsCollapsed() const { return Visibility == UI_WIDGET_VISIBILITY_COLLAPSED; }
 
     bool HasFocus() const;
 
     virtual bool IsDisabled() const;
 
-    /** Helper. Add a child widget */
+    /// Helper. Add a child widget
     UIWidget& operator[](UIWidget* widget)
     {
         return AddWidget(widget);

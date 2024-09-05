@@ -226,7 +226,7 @@ Quat NodeMotion::SampleQuaternion(Sampler& sampler, float time)
         }
     }
 
-    return Quat::Identity();
+    return Quat::sIdentity();
 }
 
 HK_NAMESPACE_END

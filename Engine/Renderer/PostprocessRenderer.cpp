@@ -92,7 +92,7 @@ PostprocessRenderer::PostprocessRenderer()
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout);
 }
 
 void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,

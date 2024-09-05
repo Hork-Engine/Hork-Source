@@ -110,7 +110,7 @@ void Hk::GUID::Generate()
 #    error "GenerateGUID is not implemented on current platform"
 #endif
 
-Hk::GUID& Hk::GUID::FromString(StringView String)
+Hk::GUID& Hk::GUID::FromString(StringView string)
 {
     char ch;
     int  n = 0;
@@ -119,7 +119,7 @@ Hk::GUID& Hk::GUID::FromString(StringView String)
 
     byte* bytes = GetBytes();
 
-    for (const char* s = String.Begin(); s < String.End() && n < 32; s++)
+    for (const char* s = string.Begin(); s < string.End() && n < 32; s++)
     {
         if (*s == '-')
         {

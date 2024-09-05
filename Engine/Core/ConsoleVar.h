@@ -49,13 +49,13 @@ enum CVAR_FLAGS
 
 enum CVAR_ENVIRONMENT_FLAGS
 {
-    /** Is cheats allowed for the game. This allow to change console variables with flag CVAR_CHEAT */
+    /// Is cheats allowed for the game. This allow to change console variables with flag CVAR_CHEAT
     CVAR_CHEATS_ALLOWED = HK_BIT(0),
 
-    /** Is game server. This allow to change console variables with flag CVAR_SERVERONLY */
+    /// Is game server. This allow to change console variables with flag CVAR_SERVERONLY
     CVAR_SERVER_ACTIVE  = HK_BIT(1),
 
-    /** Is in game. This blocks changing console variables with flag CVAR_NOINGAME */
+    /// Is in game. This blocks changing console variables with flag CVAR_NOINGAME
     CVAR_INGAME_STATUS  = HK_BIT(2)
 };
 
@@ -64,16 +64,16 @@ class ConsoleVar final : public Noncopyable
 public:
     static int EnvironmentFlags;
 
-    ConsoleVar(GlobalStringView _Name) :
-        ConsoleVar(_Name, "0"_s, 0, ""_s) {}
+    ConsoleVar(GlobalStringView name) :
+        ConsoleVar(name, "0"_s, 0, ""_s) {}
 
-    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value) :
-        ConsoleVar(_Name, _Value, 0, ""_s) {}
+    ConsoleVar(GlobalStringView name, GlobalStringView value) :
+        ConsoleVar(name, value, 0, ""_s) {}
 
-    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags) :
-        ConsoleVar(_Name, _Value, _Flags, ""_s) {}
+    ConsoleVar(GlobalStringView name, GlobalStringView value, uint16_t flags) :
+        ConsoleVar(name, value, flags, ""_s) {}
 
-    ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment);
+    ConsoleVar(GlobalStringView name, GlobalStringView value, uint16_t flags, GlobalStringView comment);
 
     ~ConsoleVar();
 
@@ -111,21 +111,21 @@ public:
 
     bool IsNoInGame() const { return !!(m_Flags & CVAR_NOINGAME); }
 
-    void SetString(StringView _String);
+    void SetString(StringView string);
 
-    void SetBool(bool _Bool);
+    void SetBool(bool b);
 
-    void SetInteger(int32_t _Integer);
+    void SetInteger(int32_t i);
 
-    void SetFloat(float _Float);
+    void SetFloat(float f);
 
-    void ForceString(StringView _String);
+    void ForceString(StringView string);
 
-    void ForceBool(bool _Bool);
+    void ForceBool(bool b);
 
-    void ForceInteger(int32_t _Integer);
+    void ForceInteger(int32_t i);
 
-    void ForceFloat(float _Float);
+    void ForceFloat(float f);
 
     void SetLatched();
 
@@ -157,13 +157,13 @@ public:
 
     ConsoleVar* GetNext() { return m_Next; }
 
-    static ConsoleVar* GlobalVariableList();
+    static ConsoleVar* sGlobalVariableList();
 
-    static ConsoleVar* FindVariable(StringView _Name);
+    static ConsoleVar* sFindVariable(StringView name);
 
     // Internal
-    static void AllocateVariables();
-    static void FreeVariables();
+    static void sAllocateVariables();
+    static void sFreeVariables();
 
 private:
     char const* const m_Name;

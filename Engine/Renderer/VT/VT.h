@@ -47,16 +47,16 @@ using VTPageBitfield = BitMask<>;
 
 enum VT_PAGE_FLAGS_4BIT
 {
-    /** Page in cache */
+    /// Page in cache
     PF_CACHED = 1,
 
-    /** Page pending to load from hard drive. Used during feedback analyzing */
+    /// Page pending to load from hard drive. Used during feedback analyzing
     PF_PENDING = 2, //Unused
 
-    /** Page queued for loading from hard drive */
+    /// Page queued for loading from hard drive
     PF_QUEUED = 4, //Unused
 
-    /** Page exist on hard drive */
+    /// Page exist on hard drive
     PF_STORED = 8 // FIXME: PF_STORED is used only in constructor, therefore we can remove it and free one bit for other needs
 };
 
@@ -99,12 +99,10 @@ struct VirtualTexturePIT
     SFileOffset Write(VTFileHandle* File, SFileOffset Offset) const;
     SFileOffset Read(VTFileHandle* File, SFileOffset Offset);
 
-    /**
-    Page info table
-    [xxxxyyyy]
-    xxxx - max LOD
-    yyyy - PageFlags4bit
-    */
+    /// Page info table
+    /// [xxxxyyyy]
+    /// xxxx - max LOD
+    /// yyyy - PageFlags4bit
     byte* Data;
 
     unsigned int NumPages;   // total size of data[]

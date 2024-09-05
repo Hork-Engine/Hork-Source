@@ -83,7 +83,7 @@ public:
     bool                    IsInitialized() const;
 
     template <typename ComponentType>
-    static ComponentType*   Upcast(Component* component);
+    static ComponentType*   sUpcast(Component* component);
 
 protected:
                             Component() = default;

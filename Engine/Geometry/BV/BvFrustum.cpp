@@ -43,7 +43,7 @@ BvFrustum::BvFrustum()
 BvFrustum::~BvFrustum()
 {}
 
-void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
+void BvFrustum::FromMatrix(Float4x4 const& matrix, bool reversedDepth)
 {
     Float4x4 flipZ;
 
@@ -51,7 +51,7 @@ void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
     flipZ[2][2] = -1.0f;
     flipZ[3][2] = 1.0f;
 
-    Float4x4 m = bReversedDepth ? flipZ * matrix : matrix;
+    Float4x4 m = reversedDepth ? flipZ * matrix : matrix;
 
     m_Planes[FRUSTUM_PLANE_RIGHT].Normal.X = m[0][3] - m[0][0];
     m_Planes[FRUSTUM_PLANE_RIGHT].Normal.Y = m[1][3] - m[1][0];

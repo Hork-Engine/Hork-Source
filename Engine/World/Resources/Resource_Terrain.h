@@ -48,7 +48,7 @@ public:
                                 TerrainResource() = default;
                                 ~TerrainResource();
 
-    static UniqueRef<TerrainResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<TerrainResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 

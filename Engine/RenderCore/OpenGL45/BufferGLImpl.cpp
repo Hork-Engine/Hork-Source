@@ -167,7 +167,7 @@ void BufferGLImpl::Read(void* _SysMem)
 
 void BufferGLImpl::ReadRange(size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
 {
-    ImmediateContextGLImpl::GetCurrent()->ReadBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
+    ImmediateContextGLImpl::sGetCurrent()->ReadBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
 }
 
 void BufferGLImpl::Write(const void* _SysMem)
@@ -177,7 +177,7 @@ void BufferGLImpl::Write(const void* _SysMem)
 
 void BufferGLImpl::WriteRange(size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
 {
-    ImmediateContextGLImpl::GetCurrent()->WriteBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
+    ImmediateContextGLImpl::sGetCurrent()->WriteBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
 }
 
 } // namespace RenderCore

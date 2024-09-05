@@ -263,20 +263,20 @@ struct TVector2
 
     constexpr T& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     constexpr T const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     template <int Index>
     constexpr T const& Get() const
     {
-        static_assert(Index >= 0 && Index < NumComponents(), "Index out of range");
+        static_assert(Index >= 0 && Index < sNumComponents(), "Index out of range");
         return (&X)[Index];
     }
 
@@ -587,15 +587,15 @@ struct TVector2
         Reader(stream, Y);
     }
 
-    static constexpr int   NumComponents() { return 2; }
-    static TVector2 const& Zero()
+    static constexpr int   sNumComponents() { return 2; }
+    static TVector2 const& sZero()
     {
         static constexpr TVector2<T> ZeroVec(T(0));
         return ZeroVec;
     }
 
-    static HK_FORCEINLINE TVector2 AxisX() { return TVector2(1, 0); }
-    static HK_FORCEINLINE TVector2 AxisY() { return TVector2(0, 1); }
+    static HK_FORCEINLINE TVector2 sAxisX() { return TVector2(1, 0); }
+    static HK_FORCEINLINE TVector2 sAxisY() { return TVector2(0, 1); }
 };
 
 template <typename T>
@@ -639,20 +639,20 @@ struct TVector3
 
     constexpr T& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     constexpr T const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     template <int Index>
     constexpr T const& Get() const
     {
-        static_assert(Index >= 0 && Index < NumComponents(), "Index out of range");
+        static_assert(Index >= 0 && Index < sNumComponents(), "Index out of range");
         return (&X)[Index];
     }
 
@@ -1208,16 +1208,16 @@ struct TVector3
         Reader(stream, Z);
     }
 
-    static constexpr int   NumComponents() { return 3; }
-    static TVector3 const& Zero()
+    static constexpr int   sNumComponents() { return 3; }
+    static TVector3 const& sZero()
     {
         static constexpr TVector3 ZeroVec(T(0));
         return ZeroVec;
     }
 
-    static HK_FORCEINLINE TVector3 AxisX() { return TVector3(1, 0, 0); }
-    static HK_FORCEINLINE TVector3 AxisY() { return TVector3(0, 1, 0); }
-    static HK_FORCEINLINE TVector3 AxisZ() { return TVector3(0, 0, 1); }
+    static HK_FORCEINLINE TVector3 sAxisX() { return TVector3(1, 0, 0); }
+    static HK_FORCEINLINE TVector3 sAxisY() { return TVector3(0, 1, 0); }
+    static HK_FORCEINLINE TVector3 sAxisZ() { return TVector3(0, 0, 1); }
 };
 
 template <typename T>
@@ -1266,20 +1266,20 @@ struct TVector4
 
     constexpr T& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     constexpr T const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     template <int Index>
     constexpr T const& Get() const
     {
-        static_assert(Index >= 0 && Index < NumComponents(), "Index out of range");
+        static_assert(Index >= 0 && Index < sNumComponents(), "Index out of range");
         return (&X)[Index];
     }
 
@@ -1703,17 +1703,17 @@ struct TVector4
         Reader(stream, W);
     }
 
-    static constexpr int   NumComponents() { return 4; }
-    static TVector4 const& Zero()
+    static constexpr int   sNumComponents() { return 4; }
+    static TVector4 const& sZero()
     {
         static constexpr TVector4 ZeroVec(T(0));
         return ZeroVec;
     }
 
-    static HK_FORCEINLINE TVector4 AxisX() { return TVector4(1, 0, 0, 0); }
-    static HK_FORCEINLINE TVector4 AxisY() { return TVector4(0, 1, 0, 0); }
-    static HK_FORCEINLINE TVector4 AxisZ() { return TVector4(0, 0, 1, 0); }
-    static HK_FORCEINLINE TVector4 AxisW() { return TVector4(0, 0, 0, 1); }
+    static HK_FORCEINLINE TVector4 sAxisX() { return TVector4(1, 0, 0, 0); }
+    static HK_FORCEINLINE TVector4 sAxisY() { return TVector4(0, 1, 0, 0); }
+    static HK_FORCEINLINE TVector4 sAxisZ() { return TVector4(0, 0, 1, 0); }
+    static HK_FORCEINLINE TVector4 sAxisW() { return TVector4(0, 0, 0, 1); }
 };
 
 namespace Math
@@ -2121,19 +2121,19 @@ struct Float2x2
 
     constexpr Float2& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     constexpr Float2 const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float2 GetRow(int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return Float2(Col0[index], Col1[index]);
     }
 
@@ -2211,7 +2211,7 @@ struct Float2x2
         Col0.X = Col1.Y = 1;
     }
 
-    static constexpr Float2x2 Scale(Float2 const& scale)
+    static constexpr Float2x2 sScale(Float2 const& scale)
     {
         return Float2x2(scale);
     }
@@ -2222,7 +2222,7 @@ struct Float2x2
     }
 
     // Return rotation around Z axis
-    static Float2x2 Rotation(float angleInRadians)
+    static Float2x2 sRotation(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2313,9 +2313,9 @@ struct Float2x2
         Col1.Read(stream);
     }
 
-    static constexpr int   NumComponents() { return 2; }
+    static constexpr int   sNumComponents() { return 2; }
 
-    static Float2x2 const& Identity()
+    static Float2x2 const& sIdentity()
     {
         static constexpr Float2x2 IdentityMat(1);
         return IdentityMat;
@@ -2356,19 +2356,19 @@ struct Float3x3
 
     constexpr Float3& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     constexpr Float3 const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -2461,10 +2461,10 @@ struct Float3x3
 
     void SetIdentity()
     {
-        *this = Identity();
+        *this = sIdentity();
     }
 
-    static constexpr Float3x3 Scale(Float3 const& scale)
+    static constexpr Float3x3 sScale(Float3 const& scale)
     {
         return Float3x3(scale);
     }
@@ -2475,7 +2475,7 @@ struct Float3x3
     }
 
     // Return rotation around normalized axis
-    static Float3x3 RotationAroundNormal(float angleInRadians, Float3 const& normal)
+    static Float3x3 sRotationAroundNormal(float angleInRadians, Float3 const& normal)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2499,9 +2499,9 @@ struct Float3x3
     }
 
     // Return rotation around unnormalized vector
-    static Float3x3 RotationAroundVector(float angleInRadians, Float3 const& vector)
+    static Float3x3 sRotationAroundVector(float angleInRadians, Float3 const& vector)
     {
-        return RotationAroundNormal(angleInRadians, vector.Normalized());
+        return sRotationAroundNormal(angleInRadians, vector.Normalized());
     }
 
     // Return rotation around unnormalized vector
@@ -2511,7 +2511,7 @@ struct Float3x3
     }
 
     // Return rotation around X axis
-    static Float3x3 RotationX(float angleInRadians)
+    static Float3x3 sRotationX(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2521,7 +2521,7 @@ struct Float3x3
     }
 
     // Return rotation around Y axis
-    static Float3x3 RotationY(float angleInRadians)
+    static Float3x3 sRotationY(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2531,7 +2531,7 @@ struct Float3x3
     }
 
     // Return rotation around Z axis
-    static Float3x3 RotationZ(float angleInRadians)
+    static Float3x3 sRotationZ(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2663,9 +2663,9 @@ struct Float3x3
         Col2.Read(stream);
     }
 
-    static constexpr int   NumComponents() { return 3; }
+    static constexpr int   sNumComponents() { return 3; }
 
-    static Float3x3 const& Identity()
+    static Float3x3 const& sIdentity()
     {
         static constexpr Float3x3 IdentityMat(1);
         return IdentityMat;
@@ -2707,19 +2707,19 @@ struct Float4x4
 
     constexpr Float4& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     constexpr Float4 const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 GetRow(int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return Float4(Col0[index], Col1[index], Col2[index], Col3[index]);
     }
 
@@ -2879,10 +2879,10 @@ struct Float4x4
 
     void SetIdentity()
     {
-        *this = Identity();
+        *this = sIdentity();
     }
 
-    static constexpr Float4x4 Translation(Float3 const& vec)
+    static constexpr Float4x4 sTranslation(Float3 const& vec)
     {
         return Float4x4(Float4(1, 0, 0, 0),
                         Float4(0, 1, 0, 0),
@@ -2895,7 +2895,7 @@ struct Float4x4
         return Float4x4(Col0, Col1, Col2, Col0 * vec[0] + Col1 * vec[1] + Col2 * vec[2] + Col3);
     }
 
-    static constexpr Float4x4 Scale(Float3 const& scale)
+    static constexpr Float4x4 sScale(Float3 const& scale)
     {
         return Float4x4(Float4(scale[0], 0, 0, 0),
                         Float4(0, scale[1], 0, 0),
@@ -2910,7 +2910,7 @@ struct Float4x4
 
 
     // Return rotation around normalized axis
-    static Float4x4 RotationAroundNormal(float angleInRadians, Float3 const& normal)
+    static Float4x4 sRotationAroundNormal(float angleInRadians, Float3 const& normal)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2936,9 +2936,9 @@ struct Float4x4
     }
 
     // Return rotation around unnormalized vector
-    static Float4x4 RotationAroundVector(float angleInRadians, Float3 const& vector)
+    static Float4x4 sRotationAroundVector(float angleInRadians, Float3 const& vector)
     {
-        return RotationAroundNormal(angleInRadians, vector.Normalized());
+        return sRotationAroundNormal(angleInRadians, vector.Normalized());
     }
 
     // Return rotation around unnormalized vector
@@ -2948,7 +2948,7 @@ struct Float4x4
     }
 
     // Return rotation around X axis
-    static Float4x4 RotationX(float angleInRadians)
+    static Float4x4 sRotationX(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2959,7 +2959,7 @@ struct Float4x4
     }
 
     // Return rotation around Y axis
-    static Float4x4 RotationY(float angleInRadians)
+    static Float4x4 sRotationY(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -2970,7 +2970,7 @@ struct Float4x4
     }
 
     // Return rotation around Z axis
-    static Float4x4 RotationZ(float angleInRadians)
+    static Float4x4 sRotationZ(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -3229,15 +3229,15 @@ struct Float4x4
         Col3.Read(stream);
     }
 
-    static constexpr int   NumComponents() { return 4; }
+    static constexpr int   sNumComponents() { return 4; }
 
-    static Float4x4 const& Identity()
+    static Float4x4 const& sIdentity()
     {
         static constexpr Float4x4 IdentityMat(1);
         return IdentityMat;
     }
 
-    static HK_FORCEINLINE Float4x4 LookAt(Float3 const& eye, Float3 const& center, Float3 const& up)
+    static HK_FORCEINLINE Float4x4 sLookAt(Float3 const& eye, Float3 const& center, Float3 const& up)
     {
         Float3 const f((center - eye).Normalized());
         Float3 const s(Math::Cross(up, f).Normalized());
@@ -3276,7 +3276,7 @@ struct Float4x4
     };
 
     // Reversed-depth with clip control "upper-left & zero-to-one"
-    static HK_INLINE Float4x4 GetPerspectiveMatrix(PerspectiveMatrixDesc const& desc)
+    static HK_INLINE Float4x4 sGetPerspectiveMatrix(PerspectiveMatrixDesc const& desc)
     {
         float focalLength;
 
@@ -3316,7 +3316,7 @@ struct Float4x4
     };
 
     // Reversed-depth with clip control "upper-left & zero-to-one"
-    static HK_INLINE Float4x4 GetPerspectiveMatrix(PerspectiveMatrixDesc2 const& desc)
+    static HK_INLINE Float4x4 sGetPerspectiveMatrix(PerspectiveMatrixDesc2 const& desc)
     {
         float x =  1.0f / std::tan(Math::Radians(desc.FieldOfViewX) * 0.5f);
         float y = -1.0f / std::tan(Math::Radians(desc.FieldOfViewY) * 0.5f);
@@ -3350,7 +3350,7 @@ struct Float4x4
     };
 
     // Reversed-depth with clip control "upper-left & zero-to-one"
-    static HK_FORCEINLINE Float4x4 GetOrthoMatrix(OrthoMatrixDesc const& desc)
+    static HK_FORCEINLINE Float4x4 sGetOrthoMatrix(OrthoMatrixDesc const& desc)
     {
         float invX = 1.0f / (desc.Maxs.X - desc.Mins.X);
         float invY = 1.0f / (desc.Maxs.Y - desc.Mins.Y);
@@ -3379,31 +3379,31 @@ struct Float4x4
                         tx,      -ty,       tz * 0.5f + 0.5f, 1);
     }
 
-    static HK_INLINE void GetCubeFaceMatrices(Float4x4& _PositiveX,
+    static HK_INLINE void sGetCubeFaceMatrices(Float4x4& _PositiveX,
                                               Float4x4& _NegativeX,
                                               Float4x4& _PositiveY,
                                               Float4x4& _NegativeY,
                                               Float4x4& _PositiveZ,
                                               Float4x4& _NegativeZ)
     {
-        _PositiveX = Float4x4::RotationZ(Math::_PI).RotateAroundNormal(Math::_HALF_PI, Float3(0, 1, 0));
-        _NegativeX = Float4x4::RotationZ(Math::_PI).RotateAroundNormal(-Math::_HALF_PI, Float3(0, 1, 0));
-        _PositiveY = Float4x4::RotationX(-Math::_HALF_PI);
-        _NegativeY = Float4x4::RotationX(Math::_HALF_PI);
-        _PositiveZ = Float4x4::RotationX(Math::_PI);
-        _NegativeZ = Float4x4::RotationZ(Math::_PI);
+        _PositiveX = Float4x4::sRotationZ(Math::_PI).RotateAroundNormal(Math::_HALF_PI, Float3(0, 1, 0));
+        _NegativeX = Float4x4::sRotationZ(Math::_PI).RotateAroundNormal(-Math::_HALF_PI, Float3(0, 1, 0));
+        _PositiveY = Float4x4::sRotationX(-Math::_HALF_PI);
+        _NegativeY = Float4x4::sRotationX(Math::_HALF_PI);
+        _PositiveZ = Float4x4::sRotationX(Math::_PI);
+        _NegativeZ = Float4x4::sRotationZ(Math::_PI);
     }
 
-    static HK_INLINE Float4x4 const* GetCubeFaceMatrices()
+    static HK_INLINE Float4x4 const* sGetCubeFaceMatrices()
     {
         // TODO: Precompute this matrices
         static Float4x4 const CubeFaceMatrices[6] = {
-            Float4x4::RotationZ(Math::_PI).RotateAroundNormal(Math::_HALF_PI, Float3(0, 1, 0)),
-            Float4x4::RotationZ(Math::_PI).RotateAroundNormal(-Math::_HALF_PI, Float3(0, 1, 0)),
-            Float4x4::RotationX(-Math::_HALF_PI),
-            Float4x4::RotationX(Math::_HALF_PI),
-            Float4x4::RotationX(Math::_PI),
-            Float4x4::RotationZ(Math::_PI)};
+            Float4x4::sRotationZ(Math::_PI).RotateAroundNormal(Math::_HALF_PI, Float3(0, 1, 0)),
+            Float4x4::sRotationZ(Math::_PI).RotateAroundNormal(-Math::_HALF_PI, Float3(0, 1, 0)),
+            Float4x4::sRotationX(-Math::_HALF_PI),
+            Float4x4::sRotationX(Math::_HALF_PI),
+            Float4x4::sRotationX(Math::_PI),
+            Float4x4::sRotationZ(Math::_PI)};
         return CubeFaceMatrices;
     }
 };
@@ -3443,19 +3443,19 @@ struct Float3x4
 
     constexpr Float4& operator[](int index)
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     constexpr Float4 const& operator[](int index) const
     {
-        //HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        //HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        HK_ASSERT_(index >= 0 && index < ElementType::NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < ElementType::sNumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -3699,17 +3699,17 @@ struct Float3x4
 
     void SetIdentity()
     {
-        *this = Identity();
+        *this = sIdentity();
     }
 
-    static constexpr Float3x4 Translation(Float3 const& vec)
+    static constexpr Float3x4 sTranslation(Float3 const& vec)
     {
         return Float3x4(Float4(1, 0, 0, vec[0]),
                         Float4(0, 1, 0, vec[1]),
                         Float4(0, 0, 1, vec[2]));
     }
 
-    static constexpr Float3x4 Scale(Float3 const& scale)
+    static constexpr Float3x4 sScale(Float3 const& scale)
     {
         return Float3x4(Float4(scale[0], 0, 0, 0),
                         Float4(0, scale[1], 0, 0),
@@ -3717,7 +3717,7 @@ struct Float3x4
     }
 
     // Return rotation around normalized axis
-    static Float3x4 RotationAroundNormal(float angleInRadians, Float3 const& normal)
+    static Float3x4 sRotationAroundNormal(float angleInRadians, Float3 const& normal)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -3729,13 +3729,13 @@ struct Float3x4
     }
 
     // Return rotation around unnormalized vector
-    static Float3x4 RotationAroundVector(float angleInRadians, Float3 const& vector)
+    static Float3x4 sRotationAroundVector(float angleInRadians, Float3 const& vector)
     {
-        return RotationAroundNormal(angleInRadians, vector.Normalized());
+        return sRotationAroundNormal(angleInRadians, vector.Normalized());
     }
 
     // Return rotation around X axis
-    static Float3x4 RotationX(float angleInRadians)
+    static Float3x4 sRotationX(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -3745,7 +3745,7 @@ struct Float3x4
     }
 
     // Return rotation around Y axis
-    static Float3x4 RotationY(float angleInRadians)
+    static Float3x4 sRotationY(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -3755,7 +3755,7 @@ struct Float3x4
     }
 
     // Return rotation around Z axis
-    static Float3x4 RotationZ(float angleInRadians)
+    static Float3x4 sRotationZ(float angleInRadians)
     {
         float s, c;
         Math::SinCos(angleInRadians, s, c);
@@ -3873,9 +3873,9 @@ struct Float3x4
         Col2.Read(stream);
     }
 
-    static constexpr int   NumComponents() { return 3; }
+    static constexpr int   sNumComponents() { return 3; }
 
-    static Float3x4 const& Identity()
+    static Float3x4 const& sIdentity()
     {
         static constexpr Float3x4 IdentityMat(1);
         return IdentityMat;

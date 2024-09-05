@@ -79,7 +79,7 @@ void AudioTrack::SetPlaybackPosition(int inPosition)
     PlaybackPos_LOCK = inPosition;
 }
 
-void AudioTrack::FreePool()
+void AudioTrack::sFreePool()
 {
     TrackPool.Free();
 }

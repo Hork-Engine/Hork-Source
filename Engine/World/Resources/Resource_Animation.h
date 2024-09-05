@@ -54,7 +54,7 @@ public:
                                 AnimationResource() = default;
                                 ~AnimationResource();
 
-    static UniqueRef<AnimationResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<AnimationResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
     void                        Write(IBinaryStreamWriteInterface& stream) const;

@@ -543,16 +543,16 @@ UITextEdit& UITextEdit::ShouldKeepSelection(bool bShouldKeepSelection)
 
 FontResource* UITextEdit::GetFont() const
 {
-    FontResource* resource = GameApplication::GetResourceManager().TryGet(m_Font);
+    FontResource* resource = GameApplication::sGetResourceManager().TryGet(m_Font);
 
-    return resource ? resource : GameApplication::GetDefaultFont();
+    return resource ? resource : GameApplication::sGetDefaultFont();
 }
 
 FontHandle UITextEdit::GetFontHandle() const
 {
-    FontResource* resource = GameApplication::GetResourceManager().TryGet(m_Font);
+    FontResource* resource = GameApplication::sGetResourceManager().TryGet(m_Font);
 
-    return resource ? m_Font : GameApplication::GetDefaultFontHandle();
+    return resource ? m_Font : GameApplication::sGetDefaultFontHandle();
 }
 
 float UITextEdit::GetFontSize() const
@@ -903,7 +903,7 @@ bool UITextEdit::Copy()
     WideChar* const start    = m_Text.ToPtr() + startOfs;
     WideChar* const end      = m_Text.ToPtr() + endOfs;
 
-    CoreApplication::SetClipboard(Core::GetString(WideStringView(start, end)));
+    CoreApplication::sSetClipboard(Core::GetString(WideStringView(start, end)));
 
     return true;
 }
@@ -916,7 +916,7 @@ bool UITextEdit::Paste()
         return false;
     }
 
-    const char* s = CoreApplication::GetClipboard();
+    const char* s = CoreApplication::sGetClipboard();
 
     int len = Core::UTF8StrLength(s);
 
@@ -1440,7 +1440,7 @@ void UITextEdit::Draw(Canvas& cv)
     m_State->insert_mode = GUIManager->IsInsertMode();
 
     FontHandle fontHandle = GetFontHandle();
-    FontResource* font = GameApplication::GetResourceManager().TryGet(fontHandle);
+    FontResource* font = GameApplication::sGetResourceManager().TryGet(fontHandle);
 
     HK_ASSERT(font);
 

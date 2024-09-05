@@ -262,7 +262,7 @@ void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light
         orthoDesc.Maxs = Float2(cascadeMaxs);
         orthoDesc.ZNear = cascadeMins[2];
         orthoDesc.ZFar = cascadeMaxs[2];
-        Float4x4 cascadeMatrix = Float4x4::GetOrthoMatrix(orthoDesc) * lightViewMatrix;
+        Float4x4 cascadeMatrix = Float4x4::sGetOrthoMatrix(orthoDesc) * lightViewMatrix;
 
 #if 0
         // Calc pixel fraction in texture space
@@ -356,7 +356,7 @@ void RenderFrontend::AddDirectionalLightShadows(LightShadowmap* shadowmap, Direc
         if (!mesh.m_CastShadow)
             continue;
 
-        auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.m_Resource);
+        auto* meshResource = GameApplication::sGetResourceManager().TryGet(mesh.m_Resource);
         if (!meshResource)
             continue;
 
@@ -484,7 +484,7 @@ void RenderFrontend::AddMeshes()
 
         Float3x3 modelNormalToViewSpace = m_View->NormalToViewMatrix * mesh.GetRotationMatrix();
 
-        if (auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.GetMesh()))
+        if (auto* meshResource = GameApplication::sGetResourceManager().TryGet(mesh.GetMesh()))
         {
             int surfaceCount = meshResource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
@@ -493,7 +493,7 @@ void RenderFrontend::AddMeshes()
                 if (!materialInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
+                MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
                 if (!material)
                     continue;
 
@@ -618,7 +618,7 @@ void RenderFrontend::AddMeshes()
             if (!materialInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
+            MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
             if (!material)
                 continue;
 
@@ -713,7 +713,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox
 
         Float3x4 const& instanceMatrix = mesh.GetRenderTransform();
 
-        auto* meshResource = GameApplication::GetResourceManager().TryGet(mesh.GetMesh());
+        auto* meshResource = GameApplication::sGetResourceManager().TryGet(mesh.GetMesh());
         if (meshResource)
         {
             int surfaceCount = meshResource->GetSurfaceCount();
@@ -723,7 +723,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox
                 if (!materialInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
+                MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
                 if (!material)
                     continue;
 
@@ -796,7 +796,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox
             if (!materialInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::GetResourceManager().TryGet(materialInstance->GetResource());
+            MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
             if (!material)
                 continue;
 
@@ -1152,7 +1152,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
         {
             TerrainComponent& terrain = *it;
 
-            auto* terrainResource = GameApplication::GetResourceManager().TryGet(terrain.GetResource());
+            auto* terrainResource = GameApplication::sGetResourceManager().TryGet(terrain.GetResource());
             if (!terrainResource)
                 continue;
 
@@ -1208,7 +1208,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
             //Float4x4 instanceMatrix = view->ViewProjection * componentWorldTransform;
             //Float4x4 instanceMatrixP = view->ViewProjectionP * componentWorldTransformP;
 
-            auto& frameLoop = GameApplication::GetFrameLoop();
+            auto& frameLoop = GameApplication::sGetFrameLoop();
 
             TerrainRenderInstance* instance = (TerrainRenderInstance*)frameLoop.AllocFrameMem(sizeof(TerrainRenderInstance));
 
@@ -1318,7 +1318,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     view->FirstOmnidirectionalShadowMap = m_FrameData.LightShadowmaps.Size();
     view->NumOmnidirectionalShadowMaps = 0;
 
-    int maxOmnidirectionalShadowMaps = GameApplication::GetRenderBackend().MaxOmnidirectionalShadowMapsPerView();
+    int maxOmnidirectionalShadowMaps = GameApplication::sGetRenderBackend().MaxOmnidirectionalShadowMapsPerView();
 
     uint32_t index = 0;
     for (auto it = lightManager.GetComponents(); it.IsValid(); ++it)

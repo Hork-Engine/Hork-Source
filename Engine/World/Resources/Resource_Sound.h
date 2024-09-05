@@ -48,7 +48,7 @@ public:
                                 SoundResource() = default;
                                 ~SoundResource();
 
-    static UniqueRef<SoundResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<SoundResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 

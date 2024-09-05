@@ -47,43 +47,43 @@ public:
 
                     ~ReadWriteBuffer();
 
-    void            SetName(StringView Name);
+    void            SetName(StringView name);
 
     StringView      GetName() const override;
 
-    void            SetExternalBuffer(void* pMemoryBuffer, size_t SizeInBytes);
+    void            SetExternalBuffer(void* memoryBuffer, size_t sizeInBytes);
 
-    void            SetInternalBuffer(size_t BaseCapacity);
+    void            SetInternalBuffer(size_t baseCapacity);
 
     void            Reset();
 
-    void            Reserve(size_t Capacity);
+    void            Reserve(size_t capacity);
 
     void            Clear();
 
-    void            Resize(size_t Size);
+    void            Resize(size_t size);
  
     void*           RawPtr();
 
     size_t          Capacity() const;
 
-    void            SetGranularity(uint32_t Granularity);
+    void            SetGranularity(uint32_t granularity);
 
-    size_t          Read(void* pBuffer, size_t SizeInBytes) override;
+    size_t          Read(void* data, size_t sizeInBytes) override;
 
-    size_t          Write(const void* pBuffer, size_t SizeInBytes) override;
+    size_t          Write(const void* data, size_t sizeInBytes) override;
 
-    char*           Gets(char* pBuffer, size_t SizeInBytes) override;
+    char*           Gets(char* str, size_t sizeInBytes) override;
 
     void            Flush() override;
 
     size_t          GetOffset() const override;
 
-    bool            SeekSet(int32_t Offset) override;
+    bool            SeekSet(int32_t offset) override;
 
-    bool            SeekCur(int32_t Offset) override;
+    bool            SeekCur(int32_t offset) override;
 
-    bool            SeekEnd(int32_t Offset) override;
+    bool            SeekEnd(int32_t offset) override;
 
     size_t          SizeInBytes() const override;
 

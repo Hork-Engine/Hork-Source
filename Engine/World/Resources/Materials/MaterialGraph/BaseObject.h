@@ -50,7 +50,7 @@ public:
     {
     public:
         ThisClassMeta() :
-            ClassMeta(ClassMeta::DummyFactory(), "BaseObject"_s, nullptr)
+            ClassMeta(ClassMeta::sDummyFactory(), "BaseObject"_s, nullptr)
         {}
 
         Ref<BaseObject> CreateInstance() const override

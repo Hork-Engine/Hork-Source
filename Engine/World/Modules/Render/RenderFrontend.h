@@ -69,7 +69,7 @@ public:
 
     void Render(class FrameLoop* FrameLoop, Canvas* InCanvas);
 
-    /** Get render frame data */
+    /// Get render frame data
     RenderFrameData* GetFrameData() { return &m_FrameData; }
 
     RenderFrontendStat const& GetStat() const { return m_Stat; }

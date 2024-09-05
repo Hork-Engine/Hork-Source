@@ -48,8 +48,8 @@ struct ScopedTimer
     const char* Name;
     int64_t     Milliseconds;
 
-    ScopedTimer(const char* _Name) :
-        Name(_Name)
+    ScopedTimer(const char* name) :
+        Name(name)
     {
         if (rt_ScopedTimeCheck)
         {

@@ -87,7 +87,7 @@ void MeshComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawMeshDebug)
     {
-        if (MeshResource* resource = GameApplication::GetResourceManager().TryGet(m_Resource))
+        if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             renderer.PushTransform(GetOwner()->GetWorldTransformMatrix());
             resource->DrawDebug(renderer);
@@ -176,7 +176,7 @@ void DynamicMeshComponent::UpdateSkinningMatrices()
     if (m_Pose)
     {
         m_Pose->m_StreamBuffers.Clear();
-        if (MeshResource const* meshResource = GameApplication::GetResourceManager().TryGet(m_Resource))
+        if (MeshResource const* meshResource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             auto& allJointRemaps = meshResource->GetJointRemaps();
             auto& allInverseBindPoses = meshResource->GetInverseBindPoses();
@@ -191,7 +191,7 @@ void DynamicMeshComponent::UpdateSkinningMatrices()
                 buffer.Size = skin.MatrixCount * sizeof(Float3x4);
                 HK_ASSERT(buffer.Size > 0);
 
-                StreamedMemoryGPU* streamedMemory = GameApplication::GetFrameLoop().GetStreamedMemoryGPU();
+                StreamedMemoryGPU* streamedMemory = GameApplication::sGetFrameLoop().GetStreamedMemoryGPU();
 
                 buffer.Offset = streamedMemory->AllocateJoint(buffer.Size);
                 buffer.OffsetP = streamedMemory->AllocateJoint(buffer.Size);
@@ -221,7 +221,7 @@ void DynamicMeshComponent::DrawDebug(DebugRenderer& renderer)
 
     if (com_DrawSkeletons && m_Pose)
     {
-        if (MeshResource* resource = GameApplication::GetResourceManager().TryGet(m_Resource))
+        if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             Float3x4 worldTransform = GetOwner()->GetWorldTransformMatrix();
             alignas(16) Float4x4 jointTransform;

@@ -37,17 +37,17 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void ShaderCompiler::Initialize()
+void ShaderCompiler::sInitialize()
 {
     glslang::InitializeProcess();
 }
 
-void ShaderCompiler::Deinitialize()
+void ShaderCompiler::sDeinitialize()
 {
     glslang::FinalizeProcess();
 }
 
-bool ShaderCompiler::CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv)
+bool ShaderCompiler::sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv)
 {
     const char* shaderTypeMacro[] =
     {
@@ -180,7 +180,7 @@ namespace
     }
 }
 
-bool ShaderCompiler::CreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv)
+bool ShaderCompiler::sCreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv)
 {
     SourceList _sources;
     String attribs = ShaderStringForVertexAttribs(vertexAttribs);
@@ -189,7 +189,7 @@ bool ShaderCompiler::CreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttrib
         _sources.Add(attribs.CStr());
     _sources.Add(sources);
 
-    return CreateSpirV(RenderCore::VERTEX_SHADER, _sources, spirv);
+    return sCreateSpirV(RenderCore::VERTEX_SHADER, _sources, spirv);
 }
 
 HK_NAMESPACE_END

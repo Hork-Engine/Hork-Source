@@ -245,7 +245,7 @@ void UIDesktop::SetFocusWidget(UIWidget* widget)
 
 void UIDesktop::Draw(Canvas& cv)
 {
-    cv.Push(CANVAS_PUSH_FLAG_RESET);
+    cv.Push(CanvasPushFlag::Reset);
 
     cv.Scissor(m_Geometry.Mins, m_Geometry.Maxs);
 

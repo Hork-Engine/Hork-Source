@@ -60,41 +60,41 @@ enum POLY_CLIP_TYPE
 class PolyClipper final : public Noncopyable
 {
 public:
-    PolyClipper();
-    ~PolyClipper();
+                                    PolyClipper();
+                                    ~PolyClipper();
 
-    /** Transform matrix for 2D <-> 3D conversion */
-    void SetTransform(Float3x3 const& transform3D);
+    /// Transform matrix for 2D <-> 3D conversion
+    void                            SetTransform(Float3x3 const& transform3D);
 
-    /** Transform matrix for 2D <-> 3D conversion */
-    Float3x3 const& GetTransform() const { return m_Transform3D; }
+    /// Transform matrix for 2D <-> 3D conversion
+    Float3x3 const&                 GetTransform() const { return m_Transform3D; }
 
-    /** Set transform matrix from polygon normal */
-    void SetTransformFromNormal(Float3 const& normal);
+    /// Set transform matrix from polygon normal
+    void                            SetTransformFromNormal(Float3 const& normal);
 
-    /** Remove all contours */
-    void Clear();
+    /// Remove all contours
+    void                            Clear();
 
-    /** Add subject contour */
-    void AddSubj2D(Double2 const* points, int pointsCount, bool closed = true);
+    /// Add subject contour
+    void                            AddSubj2D(Double2 const* points, int pointsCount, bool closed = true);
 
-    /** Add clip contour */
-    void AddClip2D(Double2 const* points, int pointsCount, bool closed = true);
+    /// Add clip contour
+    void                            AddClip2D(Double2 const* points, int pointsCount, bool closed = true);
 
-    /** Add subject contour */
-    void AddSubj3D(Double3 const* points, int pointsCount, bool closed = true);
+    /// Add subject contour
+    void                            AddSubj3D(Double3 const* points, int pointsCount, bool closed = true);
 
-    /** Add clip contour */
-    void AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
+    /// Add clip contour
+    void                            AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
-    /** Execute and build polygons */
-    bool Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons);
+    /// Execute and build polygons
+    bool                            Execute(POLY_CLIP_TYPE clipType, Vector<ClipperPolygon>& polygons);
 
-    /** Execute and build contours */
-    bool Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours);
+    /// Execute and build contours
+    bool                            Execute(POLY_CLIP_TYPE clipType, Vector<ClipperContour>& contours);
 
 private:
-    UniqueRef<ClipperLib::Clipper> m_pImpl;
+    UniqueRef<ClipperLib::Clipper>  m_pImpl;
     Float3x3                        m_Transform3D;
     Float3x3                        m_InvTransform3D;
 };

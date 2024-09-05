@@ -238,7 +238,7 @@ VertexHandle* VertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, 
 
         if (!bAllowHugeAllocs)
         {
-            CoreApplication::TerminateWithError("VertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
+            CoreApplication::sTerminateWithError("VertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
         }
 
         return AllocateHuge(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
@@ -267,7 +267,7 @@ VertexHandle* VertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data, 
 
         if (MaxBlocks && m_Blocks.Size() >= MaxBlocks)
         {
-            CoreApplication::TerminateWithError("VertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
+            CoreApplication::sTerminateWithError("VertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
         }
 
         Block newBlock;
@@ -432,7 +432,7 @@ StreamedMemoryGPU::StreamedMemoryGPU(RenderCore::IDevice* pDevice) :
 
     if (!m_pMappedMemory)
     {
-        CoreApplication::TerminateWithError("StreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
+        CoreApplication::sTerminateWithError("StreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
     Core::ZeroMem(m_ChainBuffer, sizeof(m_ChainBuffer));
@@ -549,7 +549,7 @@ size_t StreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const vo
 
     if (alignedOffset + _SizeInBytes > STREAMED_MEMORY_GPU_BLOCK_SIZE)
     {
-        CoreApplication::TerminateWithError("StreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
+        CoreApplication::sTerminateWithError("StreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
     }
 
     m_LastAllocatedBlockSize = _SizeInBytes;

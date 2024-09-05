@@ -52,14 +52,14 @@ struct TGlobalStringView;
 template <typename CharT>
 class TStringView;
 
-/** Converts the given character to lowercase */
+/// Converts the given character to lowercase
 template <typename CharT>
 constexpr CharT ToLower(CharT Ch)
 {
     return (Ch >= 'A' && Ch <= 'Z') ? Ch - 'A' + 'a' : Ch;
 }
 
-/** Converts the given character to uppercase */
+/// Converts the given character to uppercase
 template <typename CharT>
 constexpr CharT ToUpper(CharT Ch)
 {
@@ -241,19 +241,19 @@ public:
         return !IsEmpty();
     }
 
-    /** Is string empty. */
+    /// Is string empty.
     HK_FORCEINLINE bool IsEmpty() const
     {
         return Size() == 0;
     }
 
-    /** The number of characters in the string. */
+    /// The number of characters in the string.
     HK_FORCEINLINE SizeType Length() const
     {
         return m_Size & StringSizeMask;
     }
 
-    /** The number of characters in the string. */
+    /// The number of characters in the string.
     HK_FORCEINLINE SizeType Size() const
     {
         return m_Size & StringSizeMask;
@@ -264,25 +264,25 @@ public:
         return !!(m_Size & NullTerminatedBit);
     }
 
-    /** Gives a raw pointer to the beginning of the substring. */
+    /// Gives a raw pointer to the beginning of the substring.
     HK_FORCEINLINE const CharT* Begin() const
     {
         return m_pData;
     }
 
-    /** Gives a raw pointer to the end of the substring. */
+    /// Gives a raw pointer to the end of the substring.
     HK_FORCEINLINE const CharT* End() const
     {
         return m_pData + Size();
     }
 
-    /** Gives a raw pointer to the beginning of the substring. */
+    /// Gives a raw pointer to the beginning of the substring.
     HK_FORCEINLINE const CharT* ToPtr() const
     {
         return m_pData;
     }
 
-    /** Finds a character. Returns the position of a character in a string, or -1. */
+    /// Finds a character. Returns the position of a character in a string, or -1.
     HK_NODISCARD SizeType Contains(CharT Char) const
     {
         for (const CharT *s = m_pData, *end = m_pData + Size(); s < end; s++)
@@ -291,7 +291,7 @@ public:
         return (SizeType)-1;
     }
 
-    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    /// Finds a substring. Returns the position of the substring in the string, or -1.
     HK_NODISCARD SizeType FindSubstring(TStringView Substr) const
     {
         size_t size = Substr.Size();
@@ -309,7 +309,7 @@ public:
         return (SizeType)-1;
     }
 
-    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    /// Finds a substring. Returns the position of the substring in the string, or -1.
     HK_NODISCARD SizeType FindSubstringIcmp(TStringView Substr) const
     {
         size_t size = Substr.Size();
@@ -352,16 +352,16 @@ public:
         return TStringView(m_pData + _Pos, Size() - _Pos, IsNullTerminated() && _Pos == 0);
     }
 
-    /** Compares strings (case insensitive). */
+    /// Compares strings (case insensitive).
     HK_NODISCARD int Icmp(TStringView Rhs) const;
 
-    /** Compares strings (case sensitive). */
+    /// Compares strings (case sensitive).
     HK_NODISCARD int Cmp(TStringView Rhs) const;
 
-    /** Compares strings (case insensitive). */
+    /// Compares strings (case insensitive).
     HK_NODISCARD int IcmpN(TStringView Rhs, SizeType Num) const;
 
-    /** Compares strings (case sensitive). */
+    /// Compares strings (case sensitive).
     HK_NODISCARD int CmpN(TStringView Rhs, SizeType Num) const;
 
     HK_NODISCARD bool Icompare(TStringView Rhs) const
@@ -410,13 +410,13 @@ public:
         return TStringView(m_pData, Count, IsNullTerminated() && Count == size);
     }
 
-    /** Gives a string hash. */
+    /// Gives a string hash.
     HK_NODISCARD HK_FORCEINLINE uint32_t Hash() const
     {
         return StringHash(Begin(), End());
     }
 
-    /** Gives a string hash (case insensitive). */
+    /// Gives a string hash (case insensitive).
     HK_NODISCARD HK_FORCEINLINE uint32_t HashCaseInsensitive() const
     {
         return StringHashCaseInsensitive(Begin(), End());
@@ -443,7 +443,7 @@ public:
 
     using SizeType = typename TStringView<CharT>::SizeType;
 
-    static constexpr bool IsWideString()
+    static constexpr bool sIsWideString()
     {
         return sizeof(CharT) == 2;
     }
@@ -474,75 +474,75 @@ public:
     TString& operator/=(TString const& Rhs);
     TString& operator/=(const CharT* Rhs);
 
-    /** Clears the string, but does not free the memory. */
+    /// Clears the string, but does not free the memory.
     void Clear();
 
-    /** Clears the string and frees memory. */
+    /// Clears the string and frees memory.
     void Free();
 
-    /** Sets the new length of the string.
-        If the new number of characters is less than the current one, the string will be truncated.
-        If the new character count is greater than the current one, it will fill the newly added characters with spaces. */
+    /// Sets the new length of the string.
+    /// If the new number of characters is less than the current one, the string will be truncated.
+    /// If the new character count is greater than the current one, it will fill the newly added characters with spaces.
     void Resize(SizeType Size, STRING_RESIZE_FLAGS Flags = STRING_RESIZE_DEFAULT);
 
-    /** Reserve memory for the specified number of characters. */
+    /// Reserve memory for the specified number of characters.
     void Reserve(SizeType NumCharacters);
 
-    /** Is string empty. */
+    /// Is string empty.
     HK_FORCEINLINE bool IsEmpty() const
     {
         return m_Size == 0;
     }
 
-    /** The number of characters in the string. */
+    /// The number of characters in the string.
     HK_FORCEINLINE SizeType Length() const
     {
         return m_Size;
     }
 
-    /** The number of characters in the string. */
+    /// The number of characters in the string.
     HK_FORCEINLINE SizeType Size() const
     {
         return m_Size;
     }
 
-    /** Gives a raw pointer to the beginning of the string. */
+    /// Gives a raw pointer to the beginning of the string.
     const CharT* CStr() const;
 
-    /** Gives a raw pointer to the beginning of the string. */
+    /// Gives a raw pointer to the beginning of the string.
     const CharT* CBegin() const;
 
-    /** Gives a raw pointer to the beginning of the string. */
+    /// Gives a raw pointer to the beginning of the string.
     CharT* Begin() const;
 
-    /** Gives a raw pointer to the end of the string. */
+    /// Gives a raw pointer to the end of the string.
     const CharT* CEnd() const;
 
-    /** Gives a raw pointer to the end of the string. */
+    /// Gives a raw pointer to the end of the string.
     CharT* End() const;
 
-    /** Gives a raw pointer to the beginning of the string. */
+    /// Gives a raw pointer to the beginning of the string.
     CharT* ToPtr() const;
 
-    /** Adds a string to the end of a string. */
+    /// Adds a string to the end of a string.
     void Concat(TStringView<CharT> Rhs);
 
-    /** Adds a character to the end of a string. */
+    /// Adds a character to the end of a string.
     void Concat(CharT Char);
 
-    /** Inserts a string at the specified index. */
+    /// Inserts a string at the specified index.
     void InsertAt(SizeType Index, TStringView<CharT> Str);
 
-    /** Inserts a character at the specified index. */
+    /// Inserts a character at the specified index.
     void InsertAt(SizeType Index, CharT Char);
 
-    /** Replaces the string at the specified index. */
+    /// Replaces the string at the specified index.
     void ReplaceAt(SizeType Index, TStringView<CharT> Str);
 
-    /** Replaces all substrings with a new string. */
+    /// Replaces all substrings with a new string.
     void Replace(TStringView<CharT> Substr, TStringView<CharT> NewStr);
 
-    /** Cuts the substring at the specified index. */
+    /// Cuts the substring at the specified index.
     void Cut(SizeType Index, SizeType Count);
 
     HK_NODISCARD TStringView<CharT> TruncateHead(SizeType Count) const
@@ -559,19 +559,19 @@ public:
         return TStringView<CharT>(m_pData, Count, Count == m_Size);
     }
 
-    /** Finds a character. Returns the position of a character in a string, or -1. */
+    /// Finds a character. Returns the position of a character in a string, or -1.
     HK_NODISCARD HK_FORCEINLINE SizeType Contains(CharT Char) const
     {
         return TStringView<CharT>(m_pData, m_Size).Contains(Char);
     }
 
-    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    /// Finds a substring. Returns the position of the substring in the string, or -1.
     HK_NODISCARD HK_FORCEINLINE SizeType FindSubstring(TStringView<CharT> Substr) const
     {
         return TStringView<CharT>(m_pData, m_Size).FindSubstring(Substr);
     }
 
-    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    /// Finds a substring. Returns the position of the substring in the string, or -1.
     HK_NODISCARD HK_FORCEINLINE SizeType FindSubstringIcmp(TStringView<CharT> Substr) const
     {
         return TStringView<CharT>(m_pData, m_Size).FindSubstringIcmp(Substr);
@@ -582,13 +582,13 @@ public:
         return TStringView<CharT>(m_pData, m_Size).FindCharacter(Char);
     }
 
-    /** Get substring. */
+    /// Get substring.
     HK_NODISCARD HK_FORCEINLINE TStringView<CharT> GetSubstring(SizeType _Pos, SizeType _Size) const
     {
         return TStringView<CharT>(m_pData, m_Size, true).GetSubstring(_Pos, _Size);
     }
 
-    /** Convert the string to lowercase. */
+    /// Convert the string to lowercase.
     void ToLower()
     {
         CharT* p = m_pData;
@@ -596,7 +596,7 @@ public:
             *p = Hk::ToLower(*p), p++;
     }
 
-    /** Convert the string to uppercase. */
+    /// Convert the string to uppercase.
     void ToUpper()
     {
         CharT* p = m_pData;
@@ -604,25 +604,25 @@ public:
             *p = Hk::ToUpper(*p), p++;
     }
 
-    /** Compares strings (case insensitive). */
+    /// Compares strings (case insensitive).
     HK_NODISCARD HK_FORCEINLINE int Icmp(TStringView<CharT> Rhs) const
     {
         return TStringView<CharT>(m_pData, m_Size).Icmp(Rhs);
     }
 
-    /** Compares strings (case sensitive). */
+    /// Compares strings (case sensitive).
     HK_NODISCARD HK_FORCEINLINE int Cmp(TStringView<CharT> Rhs) const
     {
         return TStringView<CharT>(m_pData, m_Size).Cmp(Rhs);
     }
 
-    /** Compares strings (case insensitive). */
+    /// Compares strings (case insensitive).
     HK_NODISCARD HK_FORCEINLINE int IcmpN(TStringView<CharT> Rhs, SizeType Num) const
     {
         return TStringView<CharT>(m_pData, m_Size).IcmpN(Rhs, Num);
     }
 
-    /** Compares strings (case sensitive). */
+    /// Compares strings (case sensitive).
     HK_NODISCARD HK_FORCEINLINE int CmpN(TStringView<CharT> Rhs, SizeType Num) const
     {
         return TStringView<CharT>(m_pData, m_Size).CmpN(Rhs, Num);
@@ -638,13 +638,13 @@ public:
         return TStringView<CharT>(m_pData, m_Size).Compare(Rhs);
     }
 
-    /** Gives a string hash. */
+    /// Gives a string hash.
     HK_NODISCARD HK_FORCEINLINE uint32_t Hash() const
     {
         return StringHash(Begin(), End());
     }
 
-    /** Gives a string hash (case insensitive). */
+    /// Gives a string hash (case insensitive).
     HK_NODISCARD HK_FORCEINLINE uint32_t HashCaseInsensitive() const
     {
         return StringHashCaseInsensitive(Begin(), End());
@@ -1053,7 +1053,7 @@ HK_INLINE void TString<CharT, Allocator>::Resize(SizeType Size, STRING_RESIZE_FL
         if (!(Flags & STRING_RESIZE_NO_FILL_SPACES))
         {
             // Fill rest of the line by spaces
-            if (IsWideString())
+            if (sIsWideString())
             {
                 CharT* p = &m_pData[m_Size];
                 CharT* e = &m_pData[Size];
@@ -1387,69 +1387,69 @@ int TStringView<CharT>::CmpN(TStringView<CharT> Str, SizeType Num) const
 namespace Core
 {
 
-/** Case insensitive string comparision */
+/// Case insensitive string comparision
 int Stricmp(const char* _S1, const char* _S2);
 
-/** Case insensitive string comparision */
+/// Case insensitive string comparision
 int StricmpN(const char* _S1, const char* _S2, int _Num);
 
-/** Case sensitive string comparision */
+/// Case sensitive string comparision
 int Strcmp(const char* _S1, const char* _S2);
 
-/** Case sensitive string comparision */
+/// Case sensitive string comparision
 int StrcmpN(const char* _S1, const char* _S2, int _Num);
 
-/** The output is always null-terminated and truncated if necessary.
-The return value is either the number of characters stored or -1 if truncation occurs. */
+/// The output is always null-terminated and truncated if necessary.
+/// The return value is either the number of characters stored or -1 if truncation occurs.
 int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...);
 
-/** The output is always null-terminated and truncated if necessary.
-The return value is either the number of characters stored or -1 if truncation occurs. */
+/// The output is always null-terminated and truncated if necessary.
+/// The return value is either the number of characters stored or -1 if truncation occurs.
 int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList);
 
-/** Concatenate strings */
+/// Concatenate strings
 void Strcat(char* _Dest, size_t _Size, const char* _Src);
 
-/** Concatenate strings */
+/// Concatenate strings
 void StrcatN(char* _Dest, size_t _Size, const char* _Src, int _Num);
 
-/** Copy string */
+/// Copy string
 void Strcpy(char* _Dest, size_t _Size, const char* _Src);
 
-/** Copy string */
+/// Copy string
 void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num);
 
-/** Convert string to lowercase */
+/// Convert string to lowercase
 char* ToLower(char* _Str);
 
-/** Convert char to lowercase */
+/// Convert char to lowercase
 char ToLower(char Ch);
 
-/** Convert string to uppercase */
+/// Convert string to uppercase
 char* ToUpper(char* _Str);
 
-/** Convert char to uppercase */
+/// Convert char to uppercase
 char ToUpper(char Ch);
 
-/** Calc string length */
+/// Calc string length
 int Strlen(const char* _Str);
 
-/** Find char in string */
+/// Find char in string
 int StrContains(const char* _String, char _Ch);
 
-/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+/// Find substring. Return -1 if substring wasn't found. Return substring offset on success.
 int Substring(const char* _Str, const char* _SubStr);
 
-/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+/// Find substring. Return -1 if substring wasn't found. Return substring offset on success.
 int SubstringIcmp(const char* _Str, const char* _SubStr);
 
-/** Convert hex string to uint32 */
+/// Convert hex string to uint32
 uint32_t HexToUInt32(const char* _Str, int _Len);
 
-/** Convert hex string to uint64 */
+/// Convert hex string to uint64
 uint64_t HexToUInt64(const char* _Str, int _Len);
 
-/** Check char is a path separator */
+/// Check char is a path separator
 template <typename CharT>
 HK_FORCEINLINE bool IsPathSeparator(CharT Ch)
 {
@@ -1460,7 +1460,7 @@ HK_FORCEINLINE bool IsPathSeparator(CharT Ch)
 #endif
 }
 
-/** Replace separator \\ to / */
+/// Replace separator \\ to /
 HK_INLINE void FixSeparatorInplace(char* path)
 {
     if (!path)
@@ -1473,18 +1473,14 @@ HK_INLINE void FixSeparatorInplace(char* path)
     }
 }
 
-/**
-Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequences of dir/../dir2 -> dir2.
-Return length of optimized path.
-*/
+/// Fix path string insitu: replace separator \\ to /, skip series of /,
+/// skip redunant sequences of dir/../dir2 -> dir2.
+/// Return length of optimized path.
 int FixPathInplace(char* path, int length);
 
-/**
-Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequences of dir/../dir2 -> dir2.
-Return length of optimized path.
-*/
+/// Fix path string insitu: replace separator \\ to /, skip series of /,
+/// skip redunant sequences of dir/../dir2 -> dir2.
+/// Return length of optimized path.
 int FixPathInplace(char* path);
 
 }
@@ -1742,8 +1738,8 @@ struct TPathUtils
 {
     TPathUtils() = delete;
 
-    /** Path utility. Return index of the path end. */
-    static StringSizeType FindPath(TStringView<CharT> Path)
+    /// Path utility. Return index of the path end.
+    static StringSizeType sFindPath(TStringView<CharT> Path)
     {
         const CharT* p = Path.End();
         while (--p >= Path.Begin())
@@ -1752,8 +1748,8 @@ struct TPathUtils
         return 0;
     }
 
-    /** Path utility. Get filename without path. */
-    static TStringView<CharT> GetFilenameNoPath(TStringView<CharT> Path)
+    /// Path utility. Get filename without path.
+    static TStringView<CharT> sGetFilenameNoPath(TStringView<CharT> Path)
     {
         const CharT* e = Path.End();
         const CharT* p = e;
@@ -1763,8 +1759,8 @@ struct TPathUtils
         return TStringView<CharT>(p, (StringSizeType)(e - p), Path.IsNullTerminated());
     }
 
-    /** Path utility. Get full filename without extension. */
-    static TStringView<CharT> GetFilenameNoExt(TStringView<CharT> Path)
+    /// Path utility. Get full filename without extension.
+    static TStringView<CharT> sGetFilenameNoExt(TStringView<CharT> Path)
     {
         StringSizeType size = Path.Size();
         const CharT*   p    = Path.Begin() + size;
@@ -1781,8 +1777,8 @@ struct TPathUtils
         return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
     }
 
-    /** Path utility. Get path without file name. */
-    static TStringView<CharT> GetFilePath(TStringView<CharT> Path)
+    /// Path utility. Get path without file name.
+    static TStringView<CharT> sGetFilePath(TStringView<CharT> Path)
     {
         const CharT* p = Path.End();
         while (--p > Path.Begin() && !Core::IsPathSeparator(*p))
@@ -1791,8 +1787,8 @@ struct TPathUtils
         return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
     }
 
-    /** Path utility. Check file extension. */
-    static bool CompareExt(TStringView<CharT> Path, TStringView<CharT> Ext, bool bCaseInsensitive = true)
+    /// Path utility. Check file extension.
+    static bool sCompareExt(TStringView<CharT> Path, TStringView<CharT> Ext, bool bCaseInsensitive = true)
     {
         if (Ext.IsEmpty())
             return false;
@@ -1830,8 +1826,8 @@ struct TPathUtils
         return true;
     }
 
-    /** Path utility. Return index where the extension begins. */
-    static StringSizeType FindExt(TStringView<CharT> Path)
+    /// Path utility. Return index where the extension begins.
+    static StringSizeType sFindExt(TStringView<CharT> Path)
     {
         StringSizeType size = Path.Size();
         const CharT*   p    = Path.Begin() + size;
@@ -1841,8 +1837,8 @@ struct TPathUtils
         return size;
     }
 
-    /** Path utility. Return index where the extension begins after dot. */
-    static StringSizeType FindExtWithoutDot(TStringView<CharT> Path)
+    /// Path utility. Return index where the extension begins after dot.
+    static StringSizeType sFindExtWithoutDot(TStringView<CharT> Path)
     {
         StringSizeType size = Path.Size();
         const CharT*   p    = Path.Begin() + size;
@@ -1852,22 +1848,22 @@ struct TPathUtils
         return size;
     }
 
-    /** Path utility. Get filename extension. */
-    static TStringView<CharT> GetExt(TStringView<CharT> Path)
+    /// Path utility. Get filename extension.
+    static TStringView<CharT> sGetExt(TStringView<CharT> Path)
     {
-        const CharT* p = Path.Begin() + FindExt(Path);
+        const CharT* p = Path.Begin() + sFindExt(Path);
         return TStringView<CharT>(p, (StringSizeType)(Path.End() - p), Path.IsNullTerminated());
     }
 
-    /** Path utility. Get filename extension without dot. */
-    static TStringView<CharT> GetExtWithoutDot(TStringView<CharT> Path)
+    /// Path utility. Get filename extension without dot.
+    static TStringView<CharT> sGetExtWithoutDot(TStringView<CharT> Path)
     {
-        const CharT* p = Path.Begin() + FindExtWithoutDot(Path);
+        const CharT* p = Path.Begin() + sFindExtWithoutDot(Path);
         return TStringView<CharT>(p, (StringSizeType)(Path.End() - p), Path.IsNullTerminated());
     }
 
-    /** Path utility. Fix OS-specific separator. */
-    static void FixSeparatorInplace(TString<CharT, Allocator>& Path)
+    /// Path utility. Fix OS-specific separator.
+    static void sFixSeparatorInplace(TString<CharT, Allocator>& Path)
     {
         CharT* p = Path.ToPtr();
         while (*p)
@@ -1878,27 +1874,27 @@ struct TPathUtils
         }
     }
 
-    /** Path utility. Fix OS-specific separator. */
-    static TString<CharT, Allocator> FixSeparator(TStringView<CharT> Path)
+    /// Path utility. Fix OS-specific separator.
+    static TString<CharT, Allocator> sFixSeparator(TStringView<CharT> Path)
     {
         TString<CharT, Allocator> fixedPath(Path);
-        FixSeparatorInplace(fixedPath);
+        sFixSeparatorInplace(fixedPath);
         return fixedPath;
     }
 
-    /** Path utility.
-    Fix path string: replace separator \\ to /, skip series of /,
-    skip redunant sequences of dir/../dir2 -> dir. */
-    static void FixPathInplace(TString<CharT, Allocator>& Path)
+    /// Path utility.
+    /// Fix path string: replace separator \\ to /, skip series of /,
+    /// skip redunant sequences of dir/../dir2 -> dir.
+    static void sFixPathInplace(TString<CharT, Allocator>& Path)
     {
         StringSizeType newSize = Core::FixPathInplace(Path.ToPtr(), Path.Size());
         Path.Resize(newSize);
     }
 
-    /** Path utility.
-    Fix path string: replace separator \\ to /, skip series of /,
-    skip redunant sequences of dir/../dir2 -> dir. */
-    static TString<CharT, Allocator> FixPath(TStringView<CharT> Path)
+    /// Path utility.
+    /// Fix path string: replace separator \\ to /, skip series of /,
+    /// skip redunant sequences of dir/../dir2 -> dir.
+    static TString<CharT, Allocator> sFixPath(TStringView<CharT> Path)
     {
         TString<CharT, Allocator> fixedPath(Path);
         StringSizeType newSize = Core::FixPathInplace(fixedPath.ToPtr(), fixedPath.Size());
@@ -1906,10 +1902,10 @@ struct TPathUtils
         return fixedPath;
     }
 
-    /** Path utility. Add or replace existing file extension. */
-    static void SetExtensionInplace(TString<CharT, Allocator>& Path, TStringView<CharT> Extension, bool bReplace)
+    /// Path utility. Add or replace existing file extension.
+    static void sSetExtensionInplace(TString<CharT, Allocator>& Path, TStringView<CharT> Extension, bool bReplace)
     {
-        StringSizeType pos = FindExtWithoutDot(Path);
+        StringSizeType pos = sFindExtWithoutDot(Path);
         if (pos == Path.Size())
         {
             Path.Reserve(pos + Extension.Size() + 1);
@@ -1926,10 +1922,10 @@ struct TPathUtils
         }
     }
 
-    /** Path utility. Add or replace existing file extension. */
-    static TString<CharT, Allocator> SetExtension(TStringView<CharT> Path, TStringView<CharT> Extension, bool bReplace)
+    /// Path utility. Add or replace existing file extension.
+    static TString<CharT, Allocator> sSetExtension(TStringView<CharT> Path, TStringView<CharT> Extension, bool bReplace)
     {
-        StringSizeType pos = FindExtWithoutDot(Path);
+        StringSizeType pos = sFindExtWithoutDot(Path);
 
         if (pos == Path.Size())
         {

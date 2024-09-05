@@ -50,8 +50,8 @@ namespace Traits
 template <typename T>
 struct Convert
 {
-    static Object Encode(T const& rhs);
-    static bool Decode(Object const& object, T& rhs);
+    static Object sEncode(T const& rhs);
+    static bool sDecode(Object const& object, T& rhs);
 };
 
 } // namespace Traits
@@ -172,16 +172,16 @@ public:
     T As() const
     {
         T v;
-        Traits::Convert<T>::Decode(*this, v);
+        Traits::Convert<T>::sDecode(*this, v);
         return v;
     }
 
     // Encoding
 
     template <typename T>
-    static Object From(T const& rhs)
+    static Object sFrom(T const& rhs)
     {
-        return Traits::Convert<T>::Encode(rhs);
+        return Traits::Convert<T>::sEncode(rhs);
     }
 
 private:
@@ -319,7 +319,7 @@ public:
         if (m_ObjectPtr)
         {
             T v;
-            Traits::Convert<T>::Decode(*m_ObjectPtr, v);
+            Traits::Convert<T>::sDecode(*m_ObjectPtr, v);
             return v;
         }
 
@@ -400,11 +400,11 @@ namespace Traits
 template <> \
 struct Convert<type> \
 { \
-    static Object Encode(type const& rhs) \
+    static Object sEncode(type const& rhs) \
     { \
         return Object(Core::ToString(rhs)); \
     } \
-    static bool Decode(Object const& object, type& rhs) \
+    static bool sDecode(Object const& object, type& rhs) \
     { \
         rhs = Core::Parse<type>(object.AsString()); \
         return true; \
@@ -564,45 +564,45 @@ public:
     }
 };
 
-Object Serialize(TR::TypeRegistry const& inTypeRegistry, void const* inObjectPtr, TR::TypeInfo const* inTypeInfo);
-void Deserialize(Object const& dobject, TR::TypeRegistry const& inTypeRegistry, void* inObjectPtr, TR::TypeInfo const* inTypeInfo);
+Object Serialize(TR::TypeRegistry const& typeRegistry, void const* objectPtr, TR::TypeInfo const* typeInfo);
+void Deserialize(Object const& dobject, TR::TypeRegistry const& typeRegistry, void* objectPtr, TR::TypeInfo const* typeInfo);
 
 template <typename T>
-HK_FORCEINLINE Object Serialize(T const& inObject, TR::TypeRegistry const& inTypeRegistry)
+HK_FORCEINLINE Object Serialize(T const& object, TR::TypeRegistry const& typeRegistry)
 {
-    auto type_id = TR::TypeID<T>::GetID();
-    auto type_info = inTypeRegistry.FindType(type_id);
+    auto typeID = TR::TypeID<T>::GetID();
+    auto typeInfo = typeRegistry.FindType(typeID);
 
-    return Serialize(inTypeRegistry, &inObject, type_info);
+    return Serialize(typeRegistry, &object, typeInfo);
 }
 
 template <typename T>
-HK_FORCEINLINE T Deserialize(Object const& dobject, TR::TypeRegistry const& inTypeRegistry)
+HK_FORCEINLINE T Deserialize(Object const& dobject, TR::TypeRegistry const& typeRegistry)
 {
     T object;
 
-    auto type_id = TR::TypeID<T>::GetID();
-    auto type_info = inTypeRegistry.FindType(type_id);
+    auto typeID = TR::TypeID<T>::GetID();
+    auto typeInfo = typeRegistry.FindType(typeID);
 
-    Deserialize(dobject, inTypeRegistry, &object, type_info);
+    Deserialize(dobject, typeRegistry, &object, typeInfo);
 
     return object;
 }
 
 template <typename T>
-HK_FORCEINLINE T Deserialize(ObjectView dobjectView, TR::TypeRegistry const& inTypeRegistry)
+HK_FORCEINLINE T Deserialize(ObjectView dobjectView, TR::TypeRegistry const& typeRegistry)
 {
     DOM::Object const* dobject = dobjectView.GetObjectPtr();
     if (!dobject)
         return {};
-    return Deserialize<T>(*dobject, inTypeRegistry);
+    return Deserialize<T>(*dobject, typeRegistry);
 }
 
 class Parser
 {
 public:
-    Object Parse(const char* inStr);
-    Object Parse(String const& inStr);
+    Object Parse(const char* str);
+    Object Parse(String const& str);
 
 private:
     enum TOKEN_TYPE : uint8_t
@@ -626,7 +626,7 @@ private:
     public:
         Tokenizer();
 
-        void Reset(const char* pDocumentData);
+        void Reset(const char* text);
         void NextToken();
         Token GetToken() const { return m_Token; }
 
@@ -634,11 +634,10 @@ private:
         void SkipWhitespaces();
 
         const char* m_Cur;
-        //int m_LineNumber;
         Token m_Token;
     };
 
-    Object ParseStructure(bool bExpectClosedBracket);
+    Object ParseStructure(bool expectClosedBracket);
     Object ParseArray();
 
     Tokenizer m_Tokenizer;

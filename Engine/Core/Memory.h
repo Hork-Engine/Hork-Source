@@ -75,19 +75,19 @@ struct MemoryStat
 
 struct MemoryHeap
 {
-    static void       MemoryNewFrame();
-    static void       MemoryCleanup();
-    static MemoryStat MemoryGetStat();
+    static void       sMemoryNewFrame();
+    static void       sMemoryCleanup();
+    static MemoryStat sMemoryGetStat();
 
-    void*      Alloc(size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
-    void*      Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
-    void       Free(void* Ptr);
-    size_t     GetSize(void* Ptr);
+    void*      Alloc(size_t sizeInBytes, size_t alignment = 16, MALLOC_FLAGS flags = MALLOC_FLAGS_DEFAULT);
+    void*      Realloc(void* ptr, size_t sizeInBytes, size_t alignment = 16, MALLOC_FLAGS flags = MALLOC_FLAGS_DEFAULT);
+    void       Free(void* ptr);
+    size_t     GetSize(void* ptr);
     MemoryStat GetStat();
 
 private:
-    void* _Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
-    void* _Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
+    void* _Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags);
+    void* _Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags);
 
     AtomicLong m_MemoryAllocated{};
     AtomicLong m_MemoryAllocs{};
@@ -106,58 +106,58 @@ MemoryHeap& GetHeapAllocator()
     return MemoryHeaps[Heap];
 }
 
-/** Built-in memcpy function replacement */
-void _MemcpySSE(byte* _Dst, const byte* _Src, size_t _SizeInBytes);
+/// Built-in memcpy function replacement
+void _MemcpySSE(byte* dst, const byte* src, size_t sizeInBytes);
 
-/** Built-in memset function replacement */
-void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes);
+/// Built-in memset function replacement
+void _MemsetSSE(byte* dst, int val, size_t sizeInBytes);
 
-/** Built-in memset function replacement */
-void _ZeroMemSSE(byte* _Dst, size_t _SizeInBytes);
+/// Built-in memset function replacement
+void _ZeroMemSSE(byte* dst, size_t sizeInBytes);
 
-/** Built-in memcpy function replacement */
-HK_FORCEINLINE void Memcpy(void* _Dst, const void* _Src, size_t _SizeInBytes)
+/// Built-in memcpy function replacement
+HK_FORCEINLINE void Memcpy(void* dst, const void* src, size_t sizeInBytes)
 {
-    if (IsSSEAligned((size_t)_Dst) && IsSSEAligned((size_t)_Src))
+    if (IsSSEAligned((size_t)dst) && IsSSEAligned((size_t)src))
     {
-        _MemcpySSE((byte*)_Dst, (const byte*)_Src, _SizeInBytes);
+        _MemcpySSE((byte*)dst, (const byte*)src, sizeInBytes);
     }
     else
     {
-        std::memcpy(_Dst, _Src, _SizeInBytes);
+        std::memcpy(dst, src, sizeInBytes);
     }
 }
 
-/** Built-in memset function replacement */
-HK_FORCEINLINE void Memset(void* _Dst, int _Val, size_t _SizeInBytes)
+/// Built-in memset function replacement
+HK_FORCEINLINE void Memset(void* dst, int val, size_t sizeInBytes)
 {
-    if (IsSSEAligned((size_t)_Dst))
+    if (IsSSEAligned((size_t)dst))
     {
-        _MemsetSSE((byte*)_Dst, _Val, _SizeInBytes);
+        _MemsetSSE((byte*)dst, val, sizeInBytes);
     }
     else
     {
-        std::memset(_Dst, _Val, _SizeInBytes);
+        std::memset(dst, val, sizeInBytes);
     }
 }
 
-/** Built-in memset function replacement */
-HK_FORCEINLINE void ZeroMem(void* _Dst, size_t _SizeInBytes)
+/// Built-in memset function replacement
+HK_FORCEINLINE void ZeroMem(void* dst, size_t sizeInBytes)
 {
-    if (IsSSEAligned((size_t)_Dst))
+    if (IsSSEAligned((size_t)dst))
     {
-        _ZeroMemSSE((byte*)_Dst, _SizeInBytes);
+        _ZeroMemSSE((byte*)dst, sizeInBytes);
     }
     else
     {
-        std::memset(_Dst, 0, _SizeInBytes);
+        std::memset(dst, 0, sizeInBytes);
     }
 }
 
-/** Built-in memmove function replacement */
-HK_FORCEINLINE void* Memmove(void* _Dst, const void* _Src, size_t _SizeInBytes)
+/// Built-in memmove function replacement
+HK_FORCEINLINE void* Memmove(void* dst, const void* src, size_t sizeInBytes)
 {
-    return std::memmove(_Dst, _Src, _SizeInBytes);
+    return std::memmove(dst, src, sizeInBytes);
 }
 
 } // namespace Core
@@ -185,7 +185,7 @@ public:
         return "MemoryAllocator";
     }
 
-    void set_name(const char* pName)
+    void set_name(const char* name)
     {}
 };
 
@@ -193,13 +193,13 @@ template <MEMORY_HEAP Heap>
 class HeapMemoryAllocator : public MemoryAllocatorBase
 {
 public:
-    explicit HeapMemoryAllocator(const char* pName = nullptr)
+    explicit HeapMemoryAllocator(const char* name = nullptr)
     {}
 
     HeapMemoryAllocator(HeapMemoryAllocator const& rhs)
     {}
 
-    HeapMemoryAllocator(HeapMemoryAllocator const& x, const char* pName)
+    HeapMemoryAllocator(HeapMemoryAllocator const& x, const char* name)
     {}
 
     HeapMemoryAllocator& operator=(HeapMemoryAllocator const& rhs)
@@ -248,16 +248,16 @@ struct StdHeapAllocator
     StdHeapAllocator() = default;
     template <typename U> constexpr StdHeapAllocator(StdHeapAllocator<U, Heap> const&) noexcept {}
 
-    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
+    HK_NODISCARD T* allocate(std::size_t count) noexcept
     {
-        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+        HK_ASSERT(count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
 
-        return static_cast<T*>(Core::GetHeapAllocator<Heap>().Alloc(_Count * sizeof(T)));
+        return static_cast<T*>(Core::GetHeapAllocator<Heap>().Alloc(count * sizeof(T)));
     }
 
-    void deallocate(T* _Bytes, std::size_t _Count) noexcept
+    void deallocate(T* bytes, std::size_t count) noexcept
     {
-        Core::GetHeapAllocator<Heap>().Free(_Bytes);
+        Core::GetHeapAllocator<Heap>().Free(bytes);
     }
 };
 template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(StdHeapAllocator<T, Heap> const&, StdHeapAllocator<U, Heap> const&) { return true; }

@@ -211,8 +211,8 @@ public:
 
 private:
     Vector<Float3>      m_Vertices;
-    BvAxisAlignedBox    m_BoundingBox = BvAxisAlignedBox::Empty();
-    BvAxisAlignedBox    m_MaxCropBox  = BvAxisAlignedBox::Empty();
+    BvAxisAlignedBox    m_BoundingBox = BvAxisAlignedBox::sEmpty();
+    BvAxisAlignedBox    m_MaxCropBox  = BvAxisAlignedBox::sEmpty();
     SmallVector<BvAxisAlignedBox, 8> m_CropBoxes;
 };
 
@@ -870,7 +870,7 @@ namespace
 {
     float NavRandom()
     {
-        return GameApplication::GetRandom().GetFloat();
+        return GameApplication::sGetRandom().GetFloat();
     }
 } // namespace
 

@@ -41,26 +41,26 @@ public:
     static constexpr int Padding        = 8;
     static constexpr int CharacterWidth = 14;
 
-    /** Set console width */
-    void Resize(int _VidWidth);
+    /// Set console width
+    void Resize(int width);
 
-    /** Print Utf8 text */
-    void Print(const char* _Text);
+    /// Print Utf8 text
+    void Print(const char* text);
 
-    /** Print WideChar text */
-    void WidePrint(WideChar const* _Text);
+    /// Print WideChar text
+    void WidePrint(WideChar const* text);
 
-    /** Clear text and reset scrolling */
+    /// Clear text and reset scrolling
     void Clear();
 
-    /** Scroll to top */
+    /// Scroll to top
     void ScrollStart();
 
-    /** Scroll to bottom */
+    /// Scroll to bottom
     void ScrollEnd();
 
-    /** Scroll by delta */
-    void ScrollDelta(int Delta);
+    /// Scroll by delta
+    void ScrollDelta(int delta);
 
     struct LockedData
     {
@@ -71,14 +71,14 @@ public:
         int       MaxLineChars;
     };
 
-    /** Lock console mutex before draw */
+    /// Lock console mutex before draw
     LockedData Lock();
 
-    /** Unlock console mutex */
+    /// Unlock console mutex
     void Unlock();
 
 private:
-    void _Resize(int _VidWidth);
+    void _Resize(int width);
 
     static constexpr int CON_IMAGE_SIZE = 1024 * 1024;
 

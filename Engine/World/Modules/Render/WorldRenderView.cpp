@@ -141,7 +141,7 @@ WorldRenderView::WorldRenderView()
         textureDesc.SetFormat(TEXTURE_FORMAT_RGBA16_FLOAT);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-        GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_CurrentColorGradingLUT);
+        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_CurrentColorGradingLUT);
 
         RenderCore::TextureRect rect;
         rect.Offset.X = 0;
@@ -161,7 +161,7 @@ WorldRenderView::WorldRenderView()
         textureDesc.SetFormat(TEXTURE_FORMAT_RG32_FLOAT);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-        GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_CurrentExposure);
+        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_CurrentExposure);
 
         RenderCore::TextureRect rect;
         rect.Offset.X = 0;
@@ -177,12 +177,12 @@ WorldRenderView::WorldRenderView()
     Hk::GUID renderTargetGUID;
     renderTargetGUID.Generate();
 
-    m_HandleRT = GameApplication::GetResourceManager().CreateResource<TextureResource>(renderTargetGUID.ToString());
+    m_HandleRT = GameApplication::sGetResourceManager().CreateResource<TextureResource>(renderTargetGUID.ToString());
 }
 
 WorldRenderView::~WorldRenderView()
 {
-    GameApplication::GetResourceManager().UnloadResource(m_HandleRT);
+    GameApplication::sGetResourceManager().UnloadResource(m_HandleRT);
 
     for (auto& it : m_TerrainViews)
     {
@@ -225,7 +225,7 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
         return nullptr;
     }
 
-    TextureResource* renderTarget = GameApplication::GetResourceManager().TryGet(m_HandleRT);
+    TextureResource* renderTarget = GameApplication::sGetResourceManager().TryGet(m_HandleRT);
     HK_ASSERT(renderTarget);
 
     auto* texture = renderTarget->GetTextureGPU();
@@ -241,7 +241,7 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
 
         Ref<RenderCore::ITexture> newTex;
-        GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &newTex);
+        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &newTex);
 
         renderTarget->SetTextureGPU(newTex);
 
@@ -267,11 +267,11 @@ RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
 
         m_LightTexture.Reset();
-        GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_LightTexture);
+        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_LightTexture);
 
         RenderCore::ClearValue clearVal;
         memset(&clearVal.Float4, 0, sizeof(clearVal.Float4));
-        GameApplication::GetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RenderCore::FORMAT_FLOAT4, &clearVal);
+        GameApplication::sGetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RenderCore::FORMAT_FLOAT4, &clearVal);
     }
 
     return m_LightTexture;
@@ -288,7 +288,7 @@ RenderCore::ITexture* WorldRenderView::AcquireDepthTexture()
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
 
         m_DepthTexture.Reset();
-        GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_DepthTexture);
+        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_DepthTexture);
     }
 
     return m_DepthTexture;
@@ -305,7 +305,7 @@ RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
         if (!m_HBAOMaps || (m_HBAOMaps->GetWidth() != width || m_HBAOMaps->GetHeight() != height))
         {
             m_HBAOMaps.Reset();
-            GameApplication::GetRenderDevice()->CreateTexture(
+            GameApplication::sGetRenderDevice()->CreateTexture(
                 RenderCore::TextureDesc()
                     .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
                     .SetResolution(RenderCore::TextureResolution2DArray(width, height, hbaoMapsCount))

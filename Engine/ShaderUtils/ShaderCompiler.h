@@ -39,11 +39,11 @@ class ShaderCompiler
 public:
     using SourceList = SmallVector<const char*, 64>;
 
-    static void Initialize();
-    static void Deinitialize();
+    static void sInitialize();
+    static void sDeinitialize();
 
-    static bool CreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv);
-    static bool CreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv);
+    static bool sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv);
+    static bool sCreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv);
 };
 
 HK_NAMESPACE_END

@@ -83,7 +83,7 @@ TerrainView::TerrainView(TerrainHandle resource)
                                                                                  TERRAIN_CLIPMAP_SIZE,
                                                                                  MAX_TERRAIN_LODS))
                              .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-    GameApplication::GetRenderDevice()->CreateTexture(textureFormat, &m_ClipmapArray);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureFormat, &m_ClipmapArray);
     m_ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
     auto normalMapFormat = RenderCore::TextureDesc()
@@ -92,7 +92,7 @@ TerrainView::TerrainView(TerrainHandle resource)
                                                                                    TERRAIN_CLIPMAP_SIZE,
                                                                                    MAX_TERRAIN_LODS))
                                .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-    GameApplication::GetRenderDevice()->CreateTexture(normalMapFormat, &m_NormalMapArray);
+    GameApplication::sGetRenderDevice()->CreateTexture(normalMapFormat, &m_NormalMapArray);
     m_NormalMapArray->SetDebugName("Terrain Normal Map Array");
 }
 
@@ -117,7 +117,7 @@ void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustu
 
     m_StartInstanceLocation = 0;
 
-    auto& rm = GameApplication::GetResourceManager();
+    auto& rm = GameApplication::sGetResourceManager();
 
     auto* resource = rm.TryGet(m_Terrain);
     if (!resource)
@@ -129,7 +129,7 @@ void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustu
  
     MakeView(ViewPosition, ViewFrustum);
 
-    StreamedMemoryGPU* streamedMemory = GameApplication::GetFrameLoop().GetStreamedMemoryGPU();
+    StreamedMemoryGPU* streamedMemory = GameApplication::sGetFrameLoop().GetStreamedMemoryGPU();
 
     m_InstanceBufferStreamHandle = streamedMemory->AllocateVertex(m_InstanceBuffer.Size() * sizeof(TerrainPatchInstance),
                                                                   m_InstanceBuffer.ToPtr());
@@ -351,7 +351,7 @@ void TerrainView::MakeView(Float3 const& ViewPosition, BvFrustum const& ViewFrus
     int minLod = Math::Max(com_TerrainMinLod.GetInteger(), 0);
     int maxLod = Math::Min(com_TerrainMaxLod.GetInteger(), MAX_TERRAIN_LODS - 1);
 
-    auto& rm = GameApplication::GetResourceManager();
+    auto& rm = GameApplication::sGetResourceManager();
 
     auto* resource = rm.TryGet(m_Terrain);
 
@@ -853,7 +853,7 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
 
     const float InvGridSizeCoarse = 1.0f / CoarserLod.GridScale;
 
-    auto& rm = GameApplication::GetResourceManager();
+    auto& rm = GameApplication::sGetResourceManager();
 
     auto* resource = rm.TryGet(m_Terrain); // TODO: ѕереместить куда-нибудь выше
     if (!resource)
@@ -1181,7 +1181,7 @@ void TerrainView::DrawTerrainTriangle(TerrainVertex const& a, TerrainVertex cons
     v0.Y += 0.01f;
     v1.Y += 0.01f;
     v2.Y += 0.01f;
-    m_TerrainRenderer->SetColor(Color4::White());
+    m_TerrainRenderer->SetColor(Color4::sWhite());
     //m_TerrainRenderer->SetColor( pDrawCallUniformData->QuadColor );
     m_TerrainRenderer->DrawLine(v0, v1);
     m_TerrainRenderer->DrawLine(v1, v2);

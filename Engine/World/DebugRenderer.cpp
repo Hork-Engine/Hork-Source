@@ -38,7 +38,7 @@ HK_NAMESPACE_BEGIN
 
 DebugRenderer::DebugRenderer()
 {
-    m_TransformStack.Push(Float3x4::Identity());
+    m_TransformStack.Push(Float3x4::sIdentity());
     m_pColors = &m_CurrentColor;
 }
 
@@ -67,7 +67,7 @@ void DebugRenderer::Reset()
     m_pView = nullptr;
 
     m_TransformStack.Clear();
-    m_TransformStack.Push(Float3x4::Identity());
+    m_TransformStack.Push(Float3x4::sIdentity());
 
     m_pColors = &m_CurrentColor;
     m_ColorMask = 0;
@@ -709,7 +709,7 @@ void DebugRenderer::DrawOrientedBoxFilled(Float3 const& position, Float3x3 const
 
 void DebugRenderer::DrawSphere(Float3 const& position, float radius)
 {
-    DrawOrientedSphere(position, Float3x3::Identity(), radius);
+    DrawOrientedSphere(position, Float3x3::sIdentity(), radius);
 }
 
 void DebugRenderer::DrawOrientedSphere(Float3 const& position, Float3x3 const& orientation, float radius)
@@ -841,7 +841,7 @@ void DebugRenderer::DrawCircle(Float3 const& position, Float3 const& up, float r
     for (int i = 1; i < NumCirclePoints; ++i)
     {
         const float angle = Math::_2PI / NumCirclePoints * i;
-        points[i] = position + Float3x3::RotationAroundNormal(angle, up) * v;
+        points[i] = position + Float3x3::sRotationAroundNormal(angle, up) * v;
     }
 
     DrawLine(points, true);
@@ -859,7 +859,7 @@ void DebugRenderer::DrawCircleFilled(Float3 const& position, Float3 const& up, f
     for (int i = 1; i < NumCirclePoints; ++i)
     {
         const float angle = Math::_2PI / NumCirclePoints * i;
-        points[i] = position + Float3x3::RotationAroundNormal(angle, up) * v;
+        points[i] = position + Float3x3::sRotationAroundNormal(angle, up) * v;
     }
 
     DrawConvexPoly(points, twoSided);
@@ -870,7 +870,7 @@ void DebugRenderer::DrawCone(Float3 const& position, Float3x3 const& orientation
     const Float3 coneDirection = -orientation[2];
     const float halfAngle = Math::Clamp(Math::Radians(halfAngleDegrees), 0.0f, Math::_HALF_PI);
     const float R = radius / Math::Max(0.001f, Math::Cos(halfAngle));
-    const Float3 v = Float3x3::RotationAroundNormal(halfAngle, orientation[0]) * coneDirection * R;
+    const Float3 v = Float3x3::sRotationAroundNormal(halfAngle, orientation[0]) * coneDirection * R;
 
     const int NumCirclePoints = 32;
     Float3 points[NumCirclePoints];
@@ -879,7 +879,7 @@ void DebugRenderer::DrawCone(Float3 const& position, Float3x3 const& orientation
     for (int i = 1; i < NumCirclePoints; ++i)
     {
         const float angle = Math::_2PI / NumCirclePoints * i;
-        points[i] = position + Float3x3::RotationAroundNormal(angle, coneDirection) * v;
+        points[i] = position + Float3x3::sRotationAroundNormal(angle, coneDirection) * v;
     }
 
     // Draw cone circle
@@ -905,7 +905,7 @@ void DebugRenderer::DrawCylinder(Float3 const& position, Float3x3 const& orienta
     for (int i = 1; i < NumCirclePoints; ++i)
     {
         const float angle = Math::_2PI / NumCirclePoints * i;
-        points[i] = pos + Float3x3::RotationAroundNormal(angle, orientation[1]) * v;
+        points[i] = pos + Float3x3::sRotationAroundNormal(angle, orientation[1]) * v;
     }
 
     // Draw bottom circle

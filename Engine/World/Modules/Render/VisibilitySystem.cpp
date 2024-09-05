@@ -480,7 +480,7 @@ void VisibilityLevel::AddSphereRecursive(int NodeIndex, PrimitiveDef* Primitive)
     } while (NodeIndex != 0);
 }
 
-void VisibilityLevel::AddPrimitiveToLevelAreas(Vector<VisibilityLevel*> const& levels, PrimitiveDef* Primitive)
+void VisibilityLevel::sAddPrimitiveToLevelAreas(Vector<VisibilityLevel*> const& levels, PrimitiveDef* Primitive)
 {
     bool bInsideArea{};
 
@@ -918,7 +918,7 @@ bool VisibilityLevel::CalcPortalStack(PortalStack* OutStack, PortalStack const* 
 //
 
 static float ClipDistances[MAX_HULL_POINTS];
-static PLANE_SIDE ClipSides[MAX_HULL_POINTS];
+static PlaneSide ClipSides[MAX_HULL_POINTS];
 
 static bool ClipPolygonFast(Float3 const* InPoints, const int InNumPoints, PortalHull* Out, PlaneF const& InClipPlane, const float InEpsilon)
 {
@@ -938,17 +938,17 @@ static bool ClipPolygonFast(Float3 const* InPoints, const int InNumPoints, Porta
 
         if (d > InEpsilon)
         {
-            ClipSides[i] = PLANE_SIDE_FRONT;
+            ClipSides[i] = PlaneSide::Front;
             front++;
         }
         else if (d < -InEpsilon)
         {
-            ClipSides[i] = PLANE_SIDE_BACK;
+            ClipSides[i] = PlaneSide::Back;
             back++;
         }
         else
         {
-            ClipSides[i] = PLANE_SIDE_ON;
+            ClipSides[i] = PlaneSide::On;
         }
     }
 
@@ -974,20 +974,20 @@ static bool ClipPolygonFast(Float3 const* InPoints, const int InNumPoints, Porta
     {
         Float3 const& v = InPoints[i];
 
-        if (ClipSides[i] == PLANE_SIDE_ON)
+        if (ClipSides[i] == PlaneSide::On)
         {
             Out->Points[Out->NumPoints++] = v;
             continue;
         }
 
-        if (ClipSides[i] == PLANE_SIDE_FRONT)
+        if (ClipSides[i] == PlaneSide::Front)
         {
             Out->Points[Out->NumPoints++] = v;
         }
 
-        PLANE_SIDE nextSide = ClipSides[i + 1];
+        PlaneSide nextSide = ClipSides[i + 1];
 
-        if (nextSide == PLANE_SIDE_ON || nextSide == ClipSides[i])
+        if (nextSide == PlaneSide::On || nextSide == ClipSides[i])
         {
             continue;
         }
@@ -1260,7 +1260,7 @@ void VisibilityLevel::CullPrimitives(VisArea const* InArea, PlaneF const* InCull
 */
 }
 
-void VisibilityLevel::QueryVisiblePrimitives(Vector<VisibilityLevel*> const& m_Levels, Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& InQuery)
+void VisibilityLevel::sQueryVisiblePrimitives(Vector<VisibilityLevel*> const& m_Levels, Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& InQuery)
 {
     //int QueryVisiblePrimitivesTime = SysMicroseconds();
     VisibilityQueryContext QueryContext;
@@ -1860,7 +1860,7 @@ void VisibilityLevel::ProcessLevelRaycastClosestBounds(VisRaycast& Raycast)
     LevelRaycastBoundsPortals_r(area);
 }
 
-bool VisibilityLevel::RaycastTriangles(Vector<VisibilityLevel*> const& levels, WorldRaycastResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::sRaycastTriangles(Vector<VisibilityLevel*> const& levels, WorldRaycastResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -1911,7 +1911,7 @@ bool VisibilityLevel::RaycastTriangles(Vector<VisibilityLevel*> const& levels, W
     return true;
 }
 
-bool VisibilityLevel::RaycastClosest(Vector<VisibilityLevel*> const& levels, WorldRaycastClosestResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::sRaycastClosest(Vector<VisibilityLevel*> const& levels, WorldRaycastClosestResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -1999,7 +1999,7 @@ bool VisibilityLevel::RaycastClosest(Vector<VisibilityLevel*> const& levels, Wor
     return true;
 }
 
-bool VisibilityLevel::RaycastBounds(Vector<VisibilityLevel*> const& levels, Vector<BoxHitResult>& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::sRaycastBounds(Vector<VisibilityLevel*> const& levels, Vector<BoxHitResult>& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -2058,7 +2058,7 @@ bool VisibilityLevel::RaycastBounds(Vector<VisibilityLevel*> const& levels, Vect
     return true;
 }
 
-bool VisibilityLevel::RaycastClosestBounds(Vector<VisibilityLevel*> const& levels, BoxHitResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
+bool VisibilityLevel::sRaycastClosestBounds(Vector<VisibilityLevel*> const& levels, BoxHitResult& Result, Float3 const& InRayStart, Float3 const& InRayEnd, WorldRaycastFilter const* InFilter)
 {
     VisRaycast Raycast;
 
@@ -2128,13 +2128,13 @@ bool VisibilityLevel::RaycastClosestBounds(Vector<VisibilityLevel*> const& level
 PoolAllocator<PrimitiveDef> VisibilitySystem::PrimitivePool;
 PoolAllocator<PrimitiveLink> VisibilitySystem::PrimitiveLinkPool;
 
-PrimitiveDef* VisibilitySystem::AllocatePrimitive()
+PrimitiveDef* VisibilitySystem::sAllocatePrimitive()
 {
     PrimitiveDef* primitive = new (PrimitivePool.Allocate()) PrimitiveDef;
     return primitive;
 }
 
-void VisibilitySystem::DeallocatePrimitive(PrimitiveDef* Primitive)
+void VisibilitySystem::sDeallocatePrimitive(PrimitiveDef* Primitive)
 {
     Primitive->~PrimitiveDef();
     PrimitivePool.Deallocate(Primitive);
@@ -2182,7 +2182,7 @@ void VisibilitySystem::AddPrimitive(PrimitiveDef* Primitive)
 
     INTRUSIVE_ADD(Primitive, Next, Prev, m_PrimitiveList, m_PrimitiveListTail);
 
-    VisibilityLevel::AddPrimitiveToLevelAreas(m_Levels, Primitive);
+    VisibilityLevel::sAddPrimitiveToLevelAreas(m_Levels, Primitive);
 }
 
 void VisibilitySystem::RemovePrimitive(PrimitiveDef* Primitive)
@@ -2258,7 +2258,7 @@ void VisibilitySystem::UpdatePrimitiveLinks()
     // Second Pass: add primitives to the areas
     for (PrimitiveDef* primitive = m_PrimitiveDirtyList; primitive; primitive = next)
     {
-        VisibilityLevel::AddPrimitiveToLevelAreas(m_Levels, primitive);
+        VisibilityLevel::sAddPrimitiveToLevelAreas(m_Levels, primitive);
 
         next = primitive->NextUpd;
         primitive->PrevUpd = primitive->NextUpd = nullptr;
@@ -2330,27 +2330,27 @@ void VisibilitySystem::QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea
 
 void VisibilitySystem::QueryVisiblePrimitives(Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const
 {
-    VisibilityLevel::QueryVisiblePrimitives(m_Levels, VisPrimitives, VisPass, Query);
+    VisibilityLevel::sQueryVisiblePrimitives(m_Levels, VisPrimitives, VisPass, Query);
 }
 
 bool VisibilitySystem::RaycastTriangles(WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
-    return VisibilityLevel::RaycastTriangles(m_Levels, Result, RayStart, RayEnd, Filter);
+    return VisibilityLevel::sRaycastTriangles(m_Levels, Result, RayStart, RayEnd, Filter);
 }
 
 bool VisibilitySystem::RaycastClosest(WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
-    return VisibilityLevel::RaycastClosest(m_Levels, Result, RayStart, RayEnd, Filter);
+    return VisibilityLevel::sRaycastClosest(m_Levels, Result, RayStart, RayEnd, Filter);
 }
 
 bool VisibilitySystem::RaycastBounds(Vector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
-    return VisibilityLevel::RaycastBounds(m_Levels, Result, RayStart, RayEnd, Filter);
+    return VisibilityLevel::sRaycastBounds(m_Levels, Result, RayStart, RayEnd, Filter);
 }
 
 bool VisibilitySystem::RaycastClosestBounds(BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter) const
 {
-    return VisibilityLevel::RaycastClosestBounds(m_Levels, Result, RayStart, RayEnd, Filter);
+    return VisibilityLevel::sRaycastClosestBounds(m_Levels, Result, RayStart, RayEnd, Filter);
 }
 
 HK_NAMESPACE_END

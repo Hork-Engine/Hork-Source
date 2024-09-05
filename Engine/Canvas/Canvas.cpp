@@ -514,7 +514,7 @@ VGPath* VGPathCache::AddPath()
     VGPath& path = Paths.Add();
     Core::ZeroMem(&path, sizeof(path));
     path.First   = Points.Size();
-    path.Winding = CANVAS_PATH_WINDING_CCW;
+    path.Winding = CanvasPathWinding::CCW;
     return &path;
 }
 
@@ -562,8 +562,8 @@ CanvasVertex* VGPathCache::AllocVerts(int nverts)
 }
 
 Canvas::Canvas() :
-    m_bEdgeAntialias(true), // TODO: Set from config?
-    m_bStencilStrokes(true) // TODO: Set from config?
+    m_EdgeAntialias(true), // TODO: Set from config?
+    m_StencilStrokes(true) // TODO: Set from config?
 {
     m_FontStash = GetSharedInstance<FontStash>();
 
@@ -584,13 +584,13 @@ void Canvas::NewFrame()
 {
     ClearDrawData();
 
-    m_bEdgeAntialias  = vg_EdgeAntialias.GetBool();
-    m_bStencilStrokes = vg_StencilStrokes.GetBool();
+    m_EdgeAntialias  = vg_EdgeAntialias.GetBool();
+    m_StencilStrokes = vg_StencilStrokes.GetBool();
 
     m_NumStates = 0;
-    Push(CANVAS_PUSH_FLAG_RESET);
+    Push(CanvasPushFlag::Reset);
 
-    m_DevicePxRatio = GameApplication::GetRetinaScale().X;
+    m_DevicePxRatio = GameApplication::sGetRetinaScale().X;
 
     m_TessTol     = 0.25f / m_DevicePxRatio;
     m_DistTol     = 0.01f / m_DevicePxRatio;
@@ -607,7 +607,7 @@ void Canvas::NewFrame()
     FontFace(FontHandle{});
 }
 
-void Canvas::Push(CANVAS_PUSH_FLAG ResetFlag)
+void Canvas::Push(CanvasPushFlag resetFlag)
 {
     bool bNeedReset = false;
 
@@ -617,14 +617,14 @@ void Canvas::Push(CANVAS_PUSH_FLAG ResetFlag)
         bNeedReset = true;
     }
 
-    if (m_NumStates > 0 && ResetFlag == CANVAS_PUSH_FLAG_KEEP)
+    if (m_NumStates > 0 && resetFlag == CanvasPushFlag::Keep)
     {
         Core::Memcpy(&m_States[m_NumStates], &m_States[m_NumStates - 1], sizeof(VGState));
         bNeedReset = false;
     }
 
     m_NumStates++;
-    if (ResetFlag == CANVAS_PUSH_FLAG_RESET || bNeedReset)
+    if (resetFlag == CanvasPushFlag::Reset || bNeedReset)
         Reset();
 }
 
@@ -650,8 +650,8 @@ void Canvas::Reset()
     state->bShapeAntiAlias    = true;
     state->StrokeWidth        = 1.0f;
     state->MiterLimit         = 10.0f;
-    state->LineCap            = CANVAS_LINE_CAP_BUTT;
-    state->LineJoin           = CANVAS_LINE_JOIN_MITER;
+    state->LineCap            = CanvasLineCap::Butt;
+    state->LineJoin           = CanvasLineJoin::Miter;
     state->Alpha              = 1.0f;
 
     state->Xform.SetIdentity();
@@ -905,7 +905,7 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
         frag->Feather = 0;
 
         if ((paint->ImageFlags & CANVAS_IMAGE_FLIPY) != 0)
-            invxform = (Transform2D::Translation({0.0f, -frag->Extent[1] * 0.5f}) * Transform2D::Scaling({1.0f, -1.0f}) * Transform2D::Translation({0.0f, frag->Extent[1] * 0.5f}) * paint->Xform).Inversed();
+            invxform = (Transform2D::sTranslation({0.0f, -frag->Extent[1] * 0.5f}) * Transform2D::sScaling({1.0f, -1.0f}) * Transform2D::sTranslation({0.0f, frag->Extent[1] * 0.5f}) * paint->Xform).Inversed();
         else
             invxform = paint->Xform.Inversed();
     }
@@ -924,7 +924,7 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
 
 RenderCore::ITexture* Canvas::GetTexture(CanvasPaint const* paint)
 {
-    auto* textureResource = GameApplication::GetResourceManager().TryGet(paint->TexHandle);
+    auto* textureResource = GameApplication::sGetResourceManager().TryGet(paint->TexHandle);
     if (!textureResource)
     {
         return nullptr;
@@ -1042,7 +1042,7 @@ void Canvas::RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScis
         pathNum++;
     }
 
-    if (m_bStencilStrokes)
+    if (m_StencilStrokes)
     {
         drawCommand->Type = CANVAS_DRAW_COMMAND_STENCIL_STROKE;
 
@@ -1213,14 +1213,14 @@ void Canvas::StrokeWidth(float size)
     state->StrokeWidth = size;
 }
 
-void Canvas::LineCap(CANVAS_LINE_CAP cap)
+void Canvas::LineCap(CanvasLineCap cap)
 {
     VGState* state = GetState();
 
     state->LineCap = cap;
 }
 
-void Canvas::LineJoin(CANVAS_LINE_JOIN join)
+void Canvas::LineJoin(CanvasLineJoin join)
 {
     VGState* state = GetState();
 
@@ -1252,35 +1252,35 @@ void Canvas::Translate(float x, float y)
 {
     VGState* state = GetState();
 
-    state->Xform = Transform2D::Translation({x, y}) * state->Xform;
+    state->Xform = Transform2D::sTranslation({x, y}) * state->Xform;
 }
 
 void Canvas::Rotate(float angle)
 {
     VGState* state = GetState();
 
-    state->Xform = Transform2D::Rotation(angle) * state->Xform;
+    state->Xform = Transform2D::sRotation(angle) * state->Xform;
 }
 
 void Canvas::SkewX(float angle)
 {
     VGState* state = GetState();
 
-    state->Xform = Transform2D::SkewX(angle) * state->Xform;
+    state->Xform = Transform2D::sSkewX(angle) * state->Xform;
 }
 
 void Canvas::SkewY(float angle)
 {
     VGState* state = GetState();
 
-    state->Xform = Transform2D::SkewY(angle) * state->Xform;
+    state->Xform = Transform2D::sSkewY(angle) * state->Xform;
 }
 
 void Canvas::Scale(float x, float y)
 {
     VGState* state = GetState();
 
-    state->Xform = Transform2D::Scaling({x, y}) * state->Xform;
+    state->Xform = Transform2D::sScaling({x, y}) * state->Xform;
 }
 
 Transform2D const& Canvas::CurrentTransform()
@@ -1445,7 +1445,7 @@ void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
 
     float dx0, dy0, dx1, dy1, a, d, cx, cy, a0, a1;
 
-    CANVAS_PATH_WINDING dir;
+    CanvasPathWinding dir;
 
     if (m_Commands.IsEmpty())
     {
@@ -1484,7 +1484,7 @@ void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
         cy  = y1 + dy0 * d + -dx0 * radius;
         a0  = std::atan2(dx0, -dy0);
         a1  = std::atan2(-dx1, dy1);
-        dir = CANVAS_PATH_WINDING_CW;
+        dir = CanvasPathWinding::CW;
     }
     else
     {
@@ -1492,7 +1492,7 @@ void Canvas::ArcTo(float x1, float y1, float x2, float y2, float radius)
         cy  = y1 + dy0 * d + dx0 * radius;
         a0  = std::atan2(-dx0, dy0);
         a1  = std::atan2(dx1, -dy1);
-        dir = CANVAS_PATH_WINDING_CCW;
+        dir = CanvasPathWinding::CCW;
     }
 
     Arc(cx, cy, radius, a0, a1, dir);
@@ -1504,13 +1504,13 @@ void Canvas::ClosePath()
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void Canvas::PathWinding(CANVAS_PATH_WINDING winding)
+void Canvas::PathWinding(CanvasPathWinding winding)
 {
     const float vals[] = {VG_WINDING, (float)winding};
     AppendCommands(vals, HK_ARRAY_SIZE(vals));
 }
 
-void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WINDING dir)
+void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CanvasPathWinding dir)
 {
     float a = 0, da = 0, hda = 0, kappa = 0;
     float dx = 0, dy = 0, x = 0, y = 0, tanx = 0, tany = 0;
@@ -1521,7 +1521,7 @@ void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WI
 
     // Clamp angles
     da = a1 - a0;
-    if (dir == CANVAS_PATH_WINDING_CW)
+    if (dir == CanvasPathWinding::CW)
     {
         if (Math::Abs(da) >= Math::_PI * 2)
         {
@@ -1549,7 +1549,7 @@ void Canvas::Arc(float cx, float cy, float r, float a0, float a1, CANVAS_PATH_WI
     hda   = (da / (float)ndivs) / 2.0f;
     kappa = Math::Abs(4.0f / 3.0f * (1.0f - std::cos(hda)) / std::sin(hda));
 
-    if (dir == CANVAS_PATH_WINDING_CCW)
+    if (dir == CanvasPathWinding::CCW)
         kappa = -kappa;
 
     nvals = 0;
@@ -1730,9 +1730,9 @@ void Canvas::FlattenPaths()
         if (path.Count > 2)
         {
             float area = nvg__polyArea(pts, path.Count);
-            if (path.Winding == CANVAS_PATH_WINDING_CCW && area < 0.0f)
+            if (path.Winding == CanvasPathWinding::CCW && area < 0.0f)
                 nvg__polyReverse(pts, path.Count);
-            if (path.Winding == CANVAS_PATH_WINDING_CW && area > 0.0f)
+            if (path.Winding == CanvasPathWinding::CW && area > 0.0f)
                 nvg__polyReverse(pts, path.Count);
         }
 
@@ -1759,10 +1759,10 @@ void Canvas::Fill()
     CanvasPaint fillPaint = state->Fill;
 
     FlattenPaths();
-    if (m_bEdgeAntialias && state->bShapeAntiAlias && state->CompositeOperation != CANVAS_COMPOSITE_COPY)
-        ExpandFill(m_FringeWidth, CANVAS_LINE_JOIN_MITER, 2.4f);
+    if (m_EdgeAntialias && state->bShapeAntiAlias && state->CompositeOperation != CANVAS_COMPOSITE_COPY)
+        ExpandFill(m_FringeWidth, CanvasLineJoin::Miter, 2.4f);
     else
-        ExpandFill(0.0f, CANVAS_LINE_JOIN_MITER, 2.4f);
+        ExpandFill(0.0f, CanvasLineJoin::Miter, 2.4f);
 
     // Apply global alpha
     fillPaint.InnerColor.A *= state->Alpha;
@@ -1802,7 +1802,7 @@ void Canvas::Stroke()
 
     FlattenPaths();
 
-    if (m_bEdgeAntialias && state->bShapeAntiAlias && state->CompositeOperation != CANVAS_COMPOSITE_COPY)
+    if (m_EdgeAntialias && state->bShapeAntiAlias && state->CompositeOperation != CANVAS_COMPOSITE_COPY)
         ExpandStroke(strokeWidth * 0.5f, m_FringeWidth, state->LineCap, state->LineJoin, state->MiterLimit);
     else
         ExpandStroke(strokeWidth * 0.5f, 0.0f, state->LineCap, state->LineJoin, state->MiterLimit);
@@ -1826,7 +1826,7 @@ void Canvas::FontFace(FontHandle font)
 
 void Canvas::FontFace(StringView font)
 {
-    FontFace(GameApplication::GetResourceManager().GetResource<FontResource>(font));
+    FontFace(GameApplication::sGetResourceManager().GetResource<FontResource>(font));
 }
 
 float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, StringView string)
@@ -1951,7 +1951,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
         }
     }
 
-    m_bUpdateFontTexture = true;
+    m_UpdateFontTexture = true;
 
     RenderText(verts, nverts);
 
@@ -2080,7 +2080,7 @@ float Canvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAG
         }
     }
 
-    m_bUpdateFontTexture = true;
+    m_UpdateFontTexture = true;
 
     //Push();
     //ResetScissor();
@@ -2096,9 +2096,9 @@ FontResource* Canvas::CurrentFont()
 {
     VGState* state = GetState();
 
-    FontResource* resource = GameApplication::GetResourceManager().TryGet(state->Font);
+    FontResource* resource = GameApplication::sGetResourceManager().TryGet(state->Font);
 
-    return resource ? resource : GameApplication::GetDefaultFont();
+    return resource ? resource : GameApplication::sGetDefaultFont();
 }
 
 void Canvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, StringView text)
@@ -2290,14 +2290,14 @@ static const char CursorMap[CURSOR_MAP_HALF_WIDTH * CURSOR_MAP_HEIGHT + 1] =
 static const Float2 CursorTexData[][3] =
     {
         // Pos ........  Size .........  Offset ......
-        {Float2(0, 3), Float2(12, 19), Float2(0, 0)},    // DRAW_CURSOR_ARROW
-        {Float2(13, 0), Float2(7, 16), Float2(1, 8)},    // DRAW_CURSOR_TEXT_INPUT
-        {Float2(31, 0), Float2(23, 23), Float2(11, 11)}, // DRAW_CURSOR_RESIZE_ALL
-        {Float2(21, 0), Float2(9, 23), Float2(4, 11)},   // DRAW_CURSOR_RESIZE_NS
-        {Float2(55, 18), Float2(23, 9), Float2(11, 4)},  // DRAW_CURSOR_RESIZE_EW
-        {Float2(73, 0), Float2(17, 17), Float2(8, 8)},   // DRAW_CURSOR_RESIZE_NESW
-        {Float2(55, 0), Float2(17, 17), Float2(8, 8)},   // DRAW_CURSOR_RESIZE_NWSE
-        {Float2(91, 0), Float2(17, 22), Float2(5, 0)},   // DRAW_CURSOR_RESIZE_HAND
+        {Float2(0, 3), Float2(12, 19), Float2(0, 0)},    // CanvasCursor::Arrow
+        {Float2(13, 0), Float2(7, 16), Float2(1, 8)},    // CanvasCursor::TextInput
+        {Float2(31, 0), Float2(23, 23), Float2(11, 11)}, // CanvasCursor::ResizeAll
+        {Float2(21, 0), Float2(9, 23), Float2(4, 11)},   // CanvasCursor::ResizeNS
+        {Float2(55, 18), Float2(23, 9), Float2(11, 4)},  // CanvasCursor::ResizeEW
+        {Float2(73, 0), Float2(17, 17), Float2(8, 8)},   // CanvasCursor::ResizeNESW
+        {Float2(55, 0), Float2(17, 17), Float2(8, 8)},   // CanvasCursor::ResizeNWSE
+        {Float2(91, 0), Float2(17, 22), Float2(5, 0)},   // CanvasCursor::Hand
 };
 
 void Canvas::CreateCursorMap()
@@ -2323,24 +2323,25 @@ void Canvas::CreateCursorMap()
     UniqueRef<TextureResource> cursorMap = MakeUnique<TextureResource>(CreateImage(image, nullptr));
     cursorMap->Upload();
 
-    m_CursorMap = GameApplication::GetResourceManager().CreateResourceWithData("internal_cursor_map", std::move(cursorMap));
+    m_CursorMap = GameApplication::sGetResourceManager().CreateResourceWithData("internal_cursor_map", std::move(cursorMap));
     m_CursorMapWidth = w;
     m_CursorMapHeight = h;
 }
 
-static void GetMouseCursorData(DRAW_CURSOR cursor, Float2& offset, Float2& size, Float2& uvfill, Float2& uvborder)
+static void GetMouseCursorData(CanvasCursor cursor, Float2& offset, Float2& size, Float2& uvfill, Float2& uvborder)
 {
-    HK_ASSERT(cursor >= DRAW_CURSOR_ARROW && cursor <= DRAW_CURSOR_RESIZE_HAND);
+    int index = int(cursor);
+    HK_ASSERT(index >= int(CanvasCursor::Arrow) && index <= int(CanvasCursor::Hand));
 
-    Float2 pos = CursorTexData[cursor][0];
-    size       = CursorTexData[cursor][1];
-    offset     = CursorTexData[cursor][2];
+    Float2 pos = CursorTexData[index][0];
+    size       = CursorTexData[index][1];
+    offset     = CursorTexData[index][2];
     uvfill     = pos;
     pos.X += CURSOR_MAP_HALF_WIDTH + 1;
     uvborder = pos;
 }
 
-void Canvas::DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 const& fillColor, Color4 const& borderColor, bool bShadow)
+void Canvas::DrawCursor(CanvasCursor cursor, Float2 const& position, Color4 const& fillColor, Color4 const& borderColor, bool bShadow)
 {
     Float2 offset, size, uvfill, uvborder;
 
@@ -2531,7 +2532,7 @@ void Canvas::TesselateBezier(float x1,
     TesselateBezier(x1234, y1234, x234, y234, x34, y34, x4, y4, level + 1, type);
 }
 
-void Canvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+void Canvas::CalculateJoins(float w, CanvasLineJoin lineJoin, float miterLimit)
 {
     int   j;
     float iw = 0.0f;
@@ -2589,7 +2590,7 @@ void Canvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit
             // Check to see if the corner needs to be beveled.
             if (p1->flags & VG_PT_CORNER)
             {
-                if ((dmr2 * miterLimit * miterLimit) < 1.0f || lineJoin == CANVAS_LINE_JOIN_BEVEL || lineJoin == CANVAS_LINE_JOIN_ROUND)
+                if ((dmr2 * miterLimit * miterLimit) < 1.0f || lineJoin == CanvasLineJoin::Bevel || lineJoin == CanvasLineJoin::Round)
                 {
                     p1->flags |= VG_PT_BEVEL;
                 }
@@ -2606,7 +2607,7 @@ void Canvas::CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit
 }
 
 
-int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+int Canvas::ExpandStroke(float w, float fringe, CanvasLineCap lineCap, CanvasLineJoin lineJoin, float miterLimit)
 {
     CanvasVertex* verts;
     CanvasVertex* dst;
@@ -2631,14 +2632,14 @@ int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_
     for (VGPath& path : m_PathCache.Paths)
     {
         bool loop = path.bClosed;
-        if (lineJoin == CANVAS_LINE_JOIN_ROUND)
+        if (lineJoin == CanvasLineJoin::Round)
             cverts += (path.Count + path.NumBevel * (ncap + 2) + 1) * 2; // plus one for loop
         else
             cverts += (path.Count + path.NumBevel * 5 + 1) * 2; // plus one for loop
         if (!loop)
         {
             // space for caps
-            if (lineCap == CANVAS_LINE_CAP_ROUND)
+            if (lineCap == CanvasLineCap::Round)
             {
                 cverts += (ncap * 2 + 2) * 2;
             }
@@ -2692,11 +2693,11 @@ int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_
             dx = p1->x - p0->x;
             dy = p1->y - p0->y;
             nvg__normalize(&dx, &dy);
-            if (lineCap == CANVAS_LINE_CAP_BUTT)
+            if (lineCap == CanvasLineCap::Butt)
                 dst = nvg__buttCapStart(dst, p0, dx, dy, w, -aa * 0.5f, aa, u0, u1);
-            else if (lineCap == CANVAS_LINE_CAP_BUTT || lineCap == CANVAS_LINE_CAP_SQUARE)
+            else if (lineCap == CanvasLineCap::Butt || lineCap == CanvasLineCap::Square)
                 dst = nvg__buttCapStart(dst, p0, dx, dy, w, w - aa, aa, u0, u1);
-            else if (lineCap == CANVAS_LINE_CAP_ROUND)
+            else if (lineCap == CanvasLineCap::Round)
                 dst = nvg__roundCapStart(dst, p0, dx, dy, w, ncap, aa, u0, u1);
         }
 
@@ -2704,7 +2705,7 @@ int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_
         {
             if ((p1->flags & (VG_PT_BEVEL | VG_PR_INNERBEVEL)) != 0)
             {
-                if (lineJoin == CANVAS_LINE_JOIN_ROUND)
+                if (lineJoin == CanvasLineJoin::Round)
                 {
                     dst = nvg__roundJoin(dst, p0, p1, w, w, u0, u1, ncap, aa);
                 }
@@ -2737,11 +2738,11 @@ int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_
             dx = p1->x - p0->x;
             dy = p1->y - p0->y;
             nvg__normalize(&dx, &dy);
-            if (lineCap == CANVAS_LINE_CAP_BUTT)
+            if (lineCap == CanvasLineCap::Butt)
                 dst = nvg__buttCapEnd(dst, p1, dx, dy, w, -aa * 0.5f, aa, u0, u1);
-            else if (lineCap == CANVAS_LINE_CAP_BUTT || lineCap == CANVAS_LINE_CAP_SQUARE)
+            else if (lineCap == CanvasLineCap::Butt || lineCap == CanvasLineCap::Square)
                 dst = nvg__buttCapEnd(dst, p1, dx, dy, w, w - aa, aa, u0, u1);
-            else if (lineCap == CANVAS_LINE_CAP_ROUND)
+            else if (lineCap == CanvasLineCap::Round)
                 dst = nvg__roundCapEnd(dst, p1, dx, dy, w, ncap, aa, u0, u1);
         }
 
@@ -2753,7 +2754,7 @@ int Canvas::ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_
     return 1;
 }
 
-int Canvas::ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
+int Canvas::ExpandFill(float w, CanvasLineJoin lineJoin, float miterLimit)
 {
     CanvasVertex* verts;
     CanvasVertex* dst;
@@ -2902,9 +2903,9 @@ int Canvas::ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit)
 
 CanvasDrawData const* Canvas::GetDrawData() const
 {
-    if (m_bUpdateFontTexture)
+    if (m_UpdateFontTexture)
     {
-        m_bUpdateFontTexture = false;
+        m_UpdateFontTexture = false;
         m_FontStash->UpdateTexture();
     }
     return &m_DrawData;

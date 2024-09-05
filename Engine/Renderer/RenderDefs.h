@@ -45,34 +45,34 @@ HK_NAMESPACE_BEGIN
 // Common constants
 //
 
-/** Max textures per material */
+/// Max textures per material
 constexpr int MAX_MATERIAL_TEXTURES = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
 constexpr int MAX_MATERIAL_UNIFORMS        = 16;
 constexpr int MAX_MATERIAL_UNIFORM_VECTORS = 16 >> 2;
 
-/** Frustum width */
+/// Frustum width
 constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
 
-/** Frustum height */
+/// Frustum height
 constexpr int MAX_FRUSTUM_CLUSTERS_Y = 8;
 
-/** Frustum depth */
+/// Frustum depth
 constexpr int MAX_FRUSTUM_CLUSTERS_Z = 24;
 
-/** Frustum projection matrix ZNear */
+/// Frustum projection matrix ZNear
 constexpr float FRUSTUM_CLUSTER_ZNEAR = 0.0125f;
 
-/** Frustum projection matrix ZFar */
+/// Frustum projection matrix ZFar
 constexpr float FRUSTUM_CLUSTER_ZFAR = 512;
 
-/** Frustum projection matrix ZRange */
+/// Frustum projection matrix ZRange
 constexpr float FRUSTUM_CLUSTER_ZRANGE = FRUSTUM_CLUSTER_ZFAR - FRUSTUM_CLUSTER_ZNEAR;
 
-/** Width of single cluster */
+/// Width of single cluster
 constexpr float FRUSTUM_CLUSTER_WIDTH = 2.0f / MAX_FRUSTUM_CLUSTERS_X;
 
-/** Height of single cluster */
+/// Height of single cluster
 constexpr float FRUSTUM_CLUSTER_HEIGHT = 2.0f / MAX_FRUSTUM_CLUSTERS_Y;
 
 constexpr int FRUSTUM_SLICE_OFFSET = 20;
@@ -83,30 +83,30 @@ extern float FRUSTUM_SLICE_BIAS;
 
 extern float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];
 
-/** Max lights, Max decals, Max probes per cluster */
+/// Max lights, Max decals, Max probes per cluster
 constexpr int MAX_CLUSTER_ITEMS = 256;
 
-/** Max lights per cluster */
+/// Max lights per cluster
 constexpr int MAX_CLUSTER_LIGHTS = MAX_CLUSTER_ITEMS;
 
-/** Max decals per cluster */
+/// Max decals per cluster
 constexpr int MAX_CLUSTER_DECALS = MAX_CLUSTER_ITEMS;
 
-/** Max probes per cluster */
+/// Max probes per cluster
 constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
 
 constexpr int MAX_TOTAL_CLUSTER_ITEMS = 512 * 1024; // NOTE: must be power of two // TODO: подобрать оптимальный размер
 
-/** Max lights per view. Indexed by 12 bit integer, limited by shader max constant buffer block size. */
+/// Max lights per view. Indexed by 12 bit integer, limited by shader max constant buffer block size.
 constexpr int MAX_LIGHTS = 768; //1024
 
-/** Max decals per view. Indexed by 12 bit integer. */
+/// Max decals per view. Indexed by 12 bit integer.
 constexpr int MAX_DECALS = 1024;
 
-/** Max probes per view. Indexed by 8 bit integer */
+/// Max probes per view. Indexed by 8 bit integer
 constexpr int MAX_PROBES = 256;
 
-/** Total max items per view. */
+/// Total max items per view.
 constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 constexpr int TERRAIN_CLIPMAP_SIZE = 256;
@@ -208,15 +208,15 @@ enum TESSELLATION_METHOD : uint8_t
     TESSELLATION_PN
 };
 
-/** Rendering priorities for materials. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY. */
+/// Rendering priorities for materials. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY.
 enum RENDERING_PRIORITY : uint8_t
 {
-    /** Weapon rendered first */
+    /// Weapon rendered first
     RENDERING_PRIORITY_WEAPON = 0 << 4,
 
     RENDERING_PRIORITY_FOLIAGE  = 1 << 4,
 
-    /** Default priority */
+    /// Default priority
     RENDERING_PRIORITY_DEFAULT    = 2 << 4,
 
     RENDERING_PRIORITY_RESERVED3  = 3 << 4,
@@ -232,17 +232,17 @@ enum RENDERING_PRIORITY : uint8_t
     RENDERING_PRIORITY_RESERVED13 = 13 << 4,
     RENDERING_PRIORITY_RESERVED14 = 14 << 4,
 
-    /** Skybox rendered last */
+    /// Skybox rendered last
     RENDERING_PRIORITY_SKYBOX = 15 << 4,
 };
 
-/** Rendering priorities for geometry. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY. */
+/// Rendering priorities for geometry. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY.
 enum RENDERING_GEOMETRY_PRIORITY : uint8_t
 {
-    /** Static geometry */
+    /// Static geometry
     RENDERING_GEOMETRY_PRIORITY_STATIC = 0,
 
-    /** Dynamic geometry */
+    /// Dynamic geometry
     RENDERING_GEOMETRY_PRIORITY_DYNAMIC = 1,
 
     RENDERING_GEOMETRY_PRIORITY_RESERVED2  = 2,
@@ -357,19 +357,19 @@ enum CANVAS_IMAGE_FLAGS : uint32_t
 {
     CANVAS_IMAGE_DEFAULT = 0,
 
-    /** Repeat image in X direction. */
+    /// Repeat image in X direction.
     CANVAS_IMAGE_REPEATX = 1 << 1,
 
-    /** Repeat image in Y direction. */
+    /// Repeat image in Y direction.
     CANVAS_IMAGE_REPEATY = 1 << 2,
 
-    /** Flips(inverses) image in Y direction when rendered. */
+    /// Flips(inverses) image in Y direction when rendered.
     CANVAS_IMAGE_FLIPY = 1 << 3,
 
-    /** Image data has premultiplied alpha. */
+    /// Image data has premultiplied alpha.
     CANVAS_IMAGE_PREMULTIPLIED = 1 << 4,
 
-    /** Image interpolation is Nearest, default is Linear. */
+    /// Image interpolation is Nearest, default is Linear.
     CANVAS_IMAGE_NEAREST = 1 << 5,
 };
 
@@ -408,72 +408,50 @@ enum CANVAS_DRAW_COMMAND : uint8_t
 
 enum CANVAS_COMPOSITE : uint8_t
 {
-    /**
-    Display the source image wherever the source image is opaque.
-    Display the destination image elsewhere.
-    */
+    /// Display the source image wherever the source image is opaque.
+    /// Display the destination image elsewhere.
     CANVAS_COMPOSITE_SOURCE_OVER,
 
-    /**
-    Display the source image wherever both the source image and destination image are opaque.
-    Display transparency elsewhere.
-    */
+    /// Display the source image wherever both the source image and destination image are opaque.
+    /// Display transparency elsewhere.
     CANVAS_COMPOSITE_SOURCE_IN,
 
-    /**
-    The source image is copied out of the destination image.
-    The source image is displayed where the source is opaque and the destination is transparent.
-    Other regions are transparent.
-    */
+    /// The source image is copied out of the destination image.
+    /// The source image is displayed where the source is opaque and the destination is transparent.
+    /// Other regions are transparent.
     CANVAS_COMPOSITE_SOURCE_OUT,
 
-    /**
-    Display the source image wherever both images are opaque.
-    Display the destination image wherever the destination image is opaque but the source image is transparent.
-    Display transparency elsewhere.
-    */
+    /// Display the source image wherever both images are opaque.
+    /// Display the destination image wherever the destination image is opaque but the source image is transparent.
+    /// Display transparency elsewhere.
     CANVAS_COMPOSITE_ATOP,
 
-    /**
-    Display the source image wherever the source image is opaque.
-    Display the destination image elsewhere.
-    lighter	A plus B
-    */
+    /// Display the source image wherever the source image is opaque.
+    /// Display the destination image elsewhere.
+    /// lighter A plus B
     CANVAS_COMPOSITE_DESTINATION_OVER,
 
-    /**
-    Display the source image wherever both the source image and destination image are opaque.
-    Display transparency elsewhere.
-    */
+    /// Display the source image wherever both the source image and destination image are opaque.
+    /// Display transparency elsewhere.
     CANVAS_COMPOSITE_DESTINATION_IN,
 
-    /**
-    The source image is copied out of the destination image.
-    The source image is displayed where the source is opaque and the destination is transparent.
-    Other regions are transparent.
-    */
+    /// The source image is copied out of the destination image.
+    /// The source image is displayed where the source is opaque and the destination is transparent.
+    /// Other regions are transparent.
     CANVAS_COMPOSITE_DESTINATION_OUT,
 
-    /**
-    Display the source image wherever both images are opaque.
-    Display the destination image wherever the destination image is opaque but the source image is transparent.
-    Display transparency elsewhere.
-    */
+    /// Display the source image wherever both images are opaque.
+    /// Display the destination image wherever the destination image is opaque but the source image is transparent.
+    /// Display transparency elsewhere.
     CANVAS_COMPOSITE_DESTINATION_ATOP,
 
-    /**
-    Display the sum of the source image and destination image, with color values approaching 255 (100%) as a limit.
-    */
+    /// Display the sum of the source image and destination image, with color values approaching 255 (100%) as a limit.
     CANVAS_COMPOSITE_LIGHTER,
 
-    /**
-    Display the source image instead of the destination image.
-    */
+    /// Display the source image instead of the destination image.
     CANVAS_COMPOSITE_COPY,
 
-    /**
-    Exclusive OR of the source image and destination image.
-    */
+    /// Exclusive OR of the source image and destination image.
     CANVAS_COMPOSITE_XOR,
 
     CANVAS_COMPOSITE_LAST = CANVAS_COMPOSITE_XOR
@@ -825,30 +803,30 @@ Keep it POD
 */
 struct RenderViewData
 {
-    /** Local frame number */
+    /// Local frame number
     int FrameNumber;
 
-    /** Viewport size (scaled by dynamic resolution) */
+    /// Viewport size (scaled by dynamic resolution)
     uint32_t Width;
-    /** Viewport size (scaled by dynamic resolution) */
+    /// Viewport size (scaled by dynamic resolution)
     uint32_t Height;
 
-    /** Viewport size on previous frame (scaled by dynamic resolution) */
+    /// Viewport size on previous frame (scaled by dynamic resolution)
     uint32_t WidthP;
-    /** Viewport size on previous frame (scaled by dynamic resolution) */
+    /// Viewport size on previous frame (scaled by dynamic resolution)
     uint32_t HeightP;
 
-    /** Real viewport size */
+    /// Real viewport size
     uint32_t WidthR;
-    /** Real viewport size */
+    /// Real viewport size
     uint32_t HeightR;
 
-    /** Time parameters */
+    /// Time parameters
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
     float GameplayTimeStep;
 
-    /** View parameters */
+    /// View parameters
     Float3   ViewPosition;
     Quat     ViewRotation;
     Float3   ViewRightVec;
@@ -881,25 +859,25 @@ struct RenderViewData
     bool     bAllowMotionBlur;
     ANTIALIASING_TYPE AntialiasingType;
 
-    /** Farthest distance to geometry in view */
+    /// Farthest distance to geometry in view
     float MaxVisibleDistance;
 
-    /** Vignette parameters */
+    /// Vignette parameters
     Float4 VignetteColorIntensity;
     float  VignetteOuterRadiusSqr;
     float  VignetteInnerRadiusSqr;
 
     float Exposure;
 
-    /** Source color grading texture */
+    /// Source color grading texture
     RenderCore::ITexture* ColorGradingLUT;
-    /** Current color grading texture */
+    /// Current color grading texture
     RenderCore::ITexture* CurrentColorGradingLUT;
 
-    /** Blending speed between current and source color grading textures */
+    /// Blending speed between current and source color grading textures
     float ColorGradingAdaptationSpeed;
 
-    /** Procedural color grading */
+    /// Procedural color grading
     Float3 ColorGradingGrain;
     Float3 ColorGradingGamma;
     Float3 ColorGradingLift;
@@ -908,57 +886,57 @@ struct RenderViewData
     Float3 ColorGradingTemperatureStrength;
     float  ColorGradingBrightnessNormalization;
 
-    /** Current exposure texture */
+    /// Current exposure texture
     RenderCore::ITexture* CurrentExposure;
 
-    /** Light photometric lookup map (IES) */
+    /// Light photometric lookup map (IES)
     RenderCore::ITexture* PhotometricProfiles;
 
-    /** Texture with light data */
+    /// Texture with light data
     RenderCore::ITexture* LightTexture;
 
-    /** Texture with depth data */
+    /// Texture with depth data
     RenderCore::ITexture* DepthTexture;
 
-    /** Final texture data */
+    /// Final texture data
     RenderCore::ITexture* RenderTarget;
 
-    /** Deinterleaved depth buffers for HBAO rendering */
+    /// Deinterleaved depth buffers for HBAO rendering
     RenderCore::ITexture* HBAOMaps;
 
-    /** Virtual texture feedback data (experimental) */
+    /// Virtual texture feedback data (experimental)
     class VirtualTextureFeedback* VTFeedback;
 
-    /** Total cascades for all shadow maps in view */
+    /// Total cascades for all shadow maps in view
     int NumShadowMapCascades;
-    /** Total shadow maps in view */
+    /// Total shadow maps in view
     int NumCascadedShadowMaps;
 
-    /** Opaque geometry */
+    /// Opaque geometry
     int FirstInstance;
     int InstanceCount;
 
-    /** Translucent geometry */
+    /// Translucent geometry
     int FirstTranslucentInstance;
     int TranslucentInstanceCount;
 
-    /** Outlined geometry */
+    /// Outlined geometry
     int FirstOutlineInstance;
     int OutlineInstanceCount;
 
-    /** Directional lights */
+    /// Directional lights
     int FirstDirectionalLight;
     int NumDirectionalLights;
 
-    /** Debug draw commands */
+    /// Debug draw commands
     int FirstDebugDrawCommand;
     int DebugDrawCommandCount;
 
-    /** Transform from view clip space to texture space */
+    /// Transform from view clip space to texture space
     Float4x4* ShadowMapMatrices;
     size_t    ShadowMapMatricesStreamHandle;
 
-    /** Point and spot lights for render view */
+    /// Point and spot lights for render view
     LightParameters* PointLights;
     int              NumPointLights;
     size_t           PointLightsStreamHandle;
@@ -967,26 +945,26 @@ struct RenderViewData
     int FirstOmnidirectionalShadowMap;
     int NumOmnidirectionalShadowMaps;
 
-    /** Reflection probes for render view */
+    /// Reflection probes for render view
     ProbeParameters* Probes;
     int              NumProbes;
     size_t           ProbeStreamHandle;
     size_t           ProbeStreamSize;
 
-    /** Cluster headers */
+    /// Cluster headers
     ClusterHeader* ClusterLookup;
     size_t         ClusterLookupStreamHandle;
 
-    /** Cluster packed indices */
+    /// Cluster packed indices
     ClusterPackedIndex* ClusterPackedIndices;
     size_t              ClusterPackedIndicesStreamHandle;
     int                 ClusterPackedIndexCount;
 
-    /** Terrain instances */
+    /// Terrain instances
     int FirstTerrainInstance;
     int TerrainInstanceCount;
 
-    /** Global reflection & irradiance */
+    /// Global reflection & irradiance
     uint64_t GlobalIrradianceMap;
     uint64_t GlobalReflectionMap;
 
@@ -1001,36 +979,36 @@ Rendering data for one frame
 */
 struct RenderFrameData
 {
-    /** Game tick */
+    /// Game tick
     int FrameNumber;
 
-    /** Render views */
+    /// Render views
     RenderViewData* RenderViews;
-    /** Render view count */
+    /// Render view count
     int NumViews;
 
-    /** Opaque instances */
+    /// Opaque instances
     Vector<RenderInstance*> Instances;
-    /** Translucent instances */
+    /// Translucent instances
     Vector<RenderInstance*> TranslucentInstances;
-    /** Outline instances */
+    /// Outline instances
     Vector<RenderInstance*> OutlineInstances;
-    /** Shadowmap instances */
+    /// Shadowmap instances
     Vector<ShadowRenderInstance*> ShadowInstances;
-    /** Light portal instances */
+    /// Light portal instances
     Vector<LightPortalRenderInstance*> LightPortals;
-    /** Directional light instances */
+    /// Directional light instances
     Vector<DirectionalLightInstance*> DirectionalLights;
-    /** Shadow maps */
+    /// Shadow maps
     Vector<LightShadowmap> LightShadowmaps;
-    /** Terrain instances */
+    /// Terrain instances
     Vector<TerrainRenderInstance*> TerrainInstances;
 
-    /** Canvas draw commands */
+    /// Canvas draw commands
     CanvasDrawData const* pCanvasDrawData;
     size_t CanvasVertexData;
 
-    /** Debug draw commands */
+    /// Debug draw commands
     DebugDrawCmd const* DbgCmds;
     size_t DbgVertexStreamOffset;
     size_t DbgIndexStreamOffset;

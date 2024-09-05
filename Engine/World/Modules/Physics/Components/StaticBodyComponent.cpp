@@ -117,7 +117,7 @@ void StaticBodyComponent::GatherGeometry(Vector<Float3>& vertices, Vector<uint32
     transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
     auto firstVert = vertices.Size();
-    PhysicsInterfaceImpl::GatherShapeGeometry(bodyInterface.GetShape(bodyID), vertices, indices);
+    PhysicsInterfaceImpl::sGatherShapeGeometry(bodyInterface.GetShape(bodyID), vertices, indices);
 
     if (firstVert != vertices.Size())
         TransformVertices(&vertices[firstVert], vertices.Size() - firstVert, transformMatrix);

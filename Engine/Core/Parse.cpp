@@ -36,16 +36,16 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-uint64_t ParseHex(StringView Str, const size_t SizeOf)
+uint64_t ParseHex(StringView str, const size_t sizeOf)
 {
-    HK_ASSERT(SizeOf > 1 && SizeOf <= 8);
+    HK_ASSERT(sizeOf > 1 && sizeOf <= 8);
     
     uint64_t val = 0;
     
-    const char* s = Str.Begin();
-    const char* e = Str.End();
+    const char* s = str.Begin();
+    const char* e = str.End();
     
-    if (e - s > SizeOf * 2)
+    if (e - s > sizeOf * 2)
     {   
         LOG("ParseHex: too long number\n");
         return 0;
@@ -75,102 +75,102 @@ uint64_t ParseHex(StringView Str, const size_t SizeOf)
     return val;
 }
 
-float ParseFloat(StringView Str)
+float ParseFloat(StringView str)
 {
     // Cast from boolean
-    if (Str.Icompare("false"))
+    if (str.Icompare("false"))
         return 0.0f;
-    else if (Str.Icompare("true"))
+    else if (str.Icompare("true"))
         return 1.0f;
     
-    const char* s = Str.Begin();
-    const char* e = Str.End();
+    const char* s = str.Begin();
+    const char* e = str.End();
 
     // check for hex
     if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
     {
-        uint32_t hex = ParseHex32(Str.TruncateHead(2));
+        uint32_t hex = ParseHex32(str.TruncateHead(2));
         float fval = *reinterpret_cast<float*>(&hex);
         if (std::isnan(fval))
         {
-            LOG("ParseFloat: invalid number {}\n", Str);
+            LOG("ParseFloat: invalid number {}\n", str);
             return 0.0f;
         }
         return fval;
     }
     
     double val = 0;
-    auto result = fast_float::from_chars(Str.Begin(), Str.End(), val);
+    auto result = fast_float::from_chars(str.Begin(), str.End(), val);
     if (result.ec != std::errc())
     {
-        LOG("ParseFloat: failed to parse number {}\n", Str);
+        LOG("ParseFloat: failed to parse number {}\n", str);
         return 0.0f;
     }
     return static_cast<float>(val);
 }
 
-double ParseDouble(StringView Str)
+double ParseDouble(StringView str)
 {
     // Cast from boolean
-    if (Str.Icompare("false"))
+    if (str.Icompare("false"))
         return 0.0;
-    else if (Str.Icompare("true"))
+    else if (str.Icompare("true"))
         return 1.0;
     
-    const char* s = Str.Begin();
-    const char* e = Str.End();
+    const char* s = str.Begin();
+    const char* e = str.End();
     
     double val = 0;
 
     // check for hex
     if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
     {
-        uint64_t hex = ParseHex64(Str.TruncateHead(2));
+        uint64_t hex = ParseHex64(str.TruncateHead(2));
         val = *reinterpret_cast<double*>(&hex);
         if (std::isnan(val))
         {
-            LOG("ParseDouble: invalid number {}\n", Str);
+            LOG("ParseDouble: invalid number {}\n", str);
             return 0.0;
         }
         return val;
     }
     
-    auto result = fast_float::from_chars(Str.Begin(), Str.End(), val);
+    auto result = fast_float::from_chars(str.Begin(), str.End(), val);
     if (result.ec != std::errc())
     {
-        LOG("ParseDouble: failed to parse number {}\n", Str);
+        LOG("ParseDouble: failed to parse number {}\n", str);
         return 0.0;
     }
     return val;
 }
 
-float ParseCvar(StringView Str)
+float ParseCvar(StringView str)
 {
     // Cast from boolean
-    if (Str.Icompare("false"))
+    if (str.Icompare("false"))
         return 0.0f;
-    else if (Str.Icompare("true"))
+    else if (str.Icompare("true"))
         return 1.0f;
     double val = 0;
-    auto result = fast_float::from_chars(Str.Begin(), Str.End(), val);
+    auto result = fast_float::from_chars(str.Begin(), str.End(), val);
     return (result.ec != std::errc()) ? 0.0f : static_cast<float>(val);
 }
 
-int64_t ParseSigned(StringView Str)
+int64_t ParseSigned(StringView str)
 {
     // Cast from boolean
-    if (Str.Icompare("false"))
+    if (str.Icompare("false"))
         return 0;
-    else if (Str.Icompare("true"))
+    else if (str.Icompare("true"))
         return 1;
     
-    const char* s = Str.Begin();
-    const char* e = Str.End();
+    const char* s = str.Begin();
+    const char* e = str.End();
 
     // check for hex
     if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
     {
-        return ParseHex64(Str.TruncateHead(2));
+        return ParseHex64(str.TruncateHead(2));
     }
     
     if (s == e)
@@ -192,7 +192,7 @@ int64_t ParseSigned(StringView Str)
             if (*p == '.')
             {
                 // Try cast from double
-                return static_cast<int64_t>(ParseDouble(Str));
+                return static_cast<int64_t>(ParseDouble(str));
             }
             LOG("ParseSigned: invalid character {}\n", *p);
             return 0;
@@ -223,21 +223,21 @@ int64_t ParseSigned(StringView Str)
     return bNegative ? (~val+1) : val;
 }
 
-uint64_t ParseUnsigned(StringView Str)
+uint64_t ParseUnsigned(StringView str)
 {
     // Cast from boolean
-    if (Str.Icompare("false"))
+    if (str.Icompare("false"))
         return 0;
-    else if (Str.Icompare("true"))
+    else if (str.Icompare("true"))
         return 1;
     
-    const char* s = Str.Begin();
-    const char* e = Str.End();
+    const char* s = str.Begin();
+    const char* e = str.End();
 
     // check for hex
     if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
     {
-        return ParseHex64(Str.TruncateHead(2));
+        return ParseHex64(str.TruncateHead(2));
     }
     
     uint64_t val = 0;
@@ -251,7 +251,7 @@ uint64_t ParseUnsigned(StringView Str)
             if (*p == '.')
             {
                 // Try cast from double
-                return static_cast<uint64_t>(ParseDouble(Str));
+                return static_cast<uint64_t>(ParseDouble(str));
             }
             LOG("ParseUnsigned: Warning: invalid character {}\n", *p);
             return 0;
@@ -283,9 +283,9 @@ uint64_t ParseUnsigned(StringView Str)
     return val;
 }
 
-bool ParseBool(StringView Str)
+bool ParseBool(StringView str)
 {
-    return ParseSigned(Str) != 0;
+    return ParseSigned(str) != 0;
 }
 
 }

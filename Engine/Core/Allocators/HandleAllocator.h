@@ -58,19 +58,19 @@ private:
 
     void AllocatePool(size_t poolNum);
 
-    static uint32_t MakeId(uint32_t poolNum, uint32_t index);
+    static uint32_t sMakeId(uint32_t poolNum, uint32_t index);
 
-    static HK_INLINE size_t GetPoolMaxEntities(size_t poolNum)
+    static HK_INLINE size_t sGetPoolMaxEntities(size_t poolNum)
     {
         return (size_t(1) << poolNum) * 1024;
     }
 
-    static HK_INLINE uint32_t GetPoolNum(uint32_t id)
+    static HK_INLINE uint32_t sGetPoolNum(uint32_t id)
     {
         return (id >> 26) & 0xf;
     }
 
-    static HK_INLINE uint32_t GetIndex(uint32_t id)
+    static HK_INLINE uint32_t sGetIndex(uint32_t id)
     {
         uint32_t index = id & 0x3ffffff;
         HK_ASSERT(index > 0);
@@ -86,13 +86,13 @@ private:
     Pool                m_Pools[MAX_POOLS];
     int                 m_NumPools{};
     SpinLock            m_Mutex;
-    Vector<uint32_t>   m_FreeList;
+    Vector<uint32_t>    m_FreeList;
 };
 
 template <typename Entity>
-uint32_t HandleAllocator<Entity>::MakeId(uint32_t poolNum, uint32_t index)
+uint32_t HandleAllocator<Entity>::sMakeId(uint32_t poolNum, uint32_t index)
 {
-    HK_ASSERT(index < GetPoolMaxEntities(poolNum));
+    HK_ASSERT(index < sGetPoolMaxEntities(poolNum));
     HK_ASSERT(poolNum < HandleAllocator::MAX_POOLS);
 
     return (index + 1) | (poolNum << 26);
@@ -115,7 +115,7 @@ HandleAllocator<Entity>::~HandleAllocator()
 template <typename Entity>
 void HandleAllocator<Entity>::AllocatePool(size_t poolNum)
 {
-    m_Pools[poolNum].Entities = (Entity*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Entity) * GetPoolMaxEntities(poolNum));
+    m_Pools[poolNum].Entities = (Entity*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Entity) * sGetPoolMaxEntities(poolNum));
     m_Pools[poolNum].Total = 0;
 }
 
@@ -133,8 +133,8 @@ Handle<Entity> HandleAllocator<Entity>::EntityAlloc()
             id = m_FreeList.Last();
             m_FreeList.RemoveLast();
 
-            auto poolNum = GetPoolNum(id);
-            auto index = GetIndex(id);
+            auto poolNum = sGetPoolNum(id);
+            auto index = sGetIndex(id);
 
             version = m_Pools[poolNum].Entities[index].Version;
 
@@ -144,7 +144,7 @@ Handle<Entity> HandleAllocator<Entity>::EntityAlloc()
         else
         {
             uint32_t poolNum = m_NumPools - 1;
-            if (m_Pools[poolNum].Total >= GetPoolMaxEntities(poolNum))
+            if (m_Pools[poolNum].Total >= sGetPoolMaxEntities(poolNum))
             {
                 HK_ASSERT(m_NumPools < MAX_POOLS);
                 if (m_NumPools == MAX_POOLS)
@@ -161,7 +161,7 @@ Handle<Entity> HandleAllocator<Entity>::EntityAlloc()
 
             auto index = m_Pools[poolNum].Total++;
 
-            id = MakeId(poolNum, index);
+            id = sMakeId(poolNum, index);
 
             version = 1;
             new (m_Pools[poolNum].Entities + index) Entity;
@@ -177,14 +177,14 @@ void HandleAllocator<Entity>::EntityFreeUnlocked(EntityHandle handle)
 {
     auto version = handle.GetVersion();
     auto id = handle.GetID();
-    auto poolNum = GetPoolNum(id);
-    auto index = GetIndex(id);
+    auto poolNum = sGetPoolNum(id);
+    auto index = sGetIndex(id);
 
     Entity& e = m_Pools[poolNum].Entities[index];
 
     HK_ASSERT(handle);
     HK_ASSERT(version == e.Version);
-    HK_ASSERT(index < GetPoolMaxEntities(poolNum));
+    HK_ASSERT(index < sGetPoolMaxEntities(poolNum));
 
     if (version != e.Version)
         return;
@@ -201,11 +201,11 @@ template <typename Entity>
 Entity& HandleAllocator<Entity>::GetEntityRef(EntityHandle handle)
 {
     auto id = handle.GetID();
-    auto poolNum = GetPoolNum(id);
-    auto index = GetIndex(id);
+    auto poolNum = sGetPoolNum(id);
+    auto index = sGetIndex(id);
 
     HK_ASSERT(handle);
-    HK_ASSERT(index < GetPoolMaxEntities(poolNum));
+    HK_ASSERT(index < sGetPoolMaxEntities(poolNum));
 
     return m_Pools[poolNum].Entities[index];
 }

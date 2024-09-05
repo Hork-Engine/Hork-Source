@@ -32,7 +32,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void MersenneTwisterRand::Initialize(uint32_t InSeed)
+void MersenneTwisterRand::Initialize(uint32_t seed)
 {
     // Initialize generator state with seed
     // See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
@@ -41,7 +41,7 @@ void MersenneTwisterRand::Initialize(uint32_t InSeed)
     uint32_t* s = m_State;
     uint32_t* r = m_State;
     int       i = 1;
-    *s++        = InSeed & 0xffffffffUL;
+    *s++        = seed & 0xffffffffUL;
     for (; i < N; ++i)
     {
         *s++ = (1812433253UL * (*r ^ (*r >> 30)) + i) & 0xffffffffUL;

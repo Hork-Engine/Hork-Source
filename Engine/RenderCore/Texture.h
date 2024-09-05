@@ -175,12 +175,12 @@ struct TextureCopy
 
 struct TextureMultisampleInfo
 {
-    /** The number of samples in the multisample texture's image. */
+    /// The number of samples in the multisample texture's image.
     uint8_t NumSamples = 1;
 
-    /** Specifies whether the image will use identical sample locations
-    and the same number of samples for all texels in the image,
-    and the sample locations will not depend on the internal format or size of the image. */
+    /// Specifies whether the image will use identical sample locations
+    /// and the same number of samples for all texels in the image,
+    /// and the sample locations will not depend on the internal format or size of the image.
     bool bFixedSampleLocations = false;
 
     TextureMultisampleInfo() = default;
@@ -419,7 +419,7 @@ enum SAMPLER_ADDRESS_MODE : uint8_t
 
 struct SamplerDesc
 {
-    /** Filtering method to use when sampling a texture */
+    /// Filtering method to use when sampling a texture
     SAMPLER_FILTER Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
 
     SAMPLER_ADDRESS_MODE AddressU = SAMPLER_ADDRESS_WRAP;
@@ -428,7 +428,7 @@ struct SamplerDesc
 
     uint8_t MaxAnisotropy = 0;
 
-    /** a function that compares sampled data against existing sampled data */
+    /// a function that compares sampled data against existing sampled data
     COMPARISON_FUNCTION ComparisonFunc = CMPFUNC_LEQUAL;
 
     bool bCompareRefToTexture = false;
@@ -696,7 +696,7 @@ public:
     // Utilites
     //
 
-    static int CalcMaxMipLevels(TEXTURE_TYPE Type, TextureResolution const& Resolution);
+    static int sCalcMaxMipLevels(TEXTURE_TYPE Type, TextureResolution const& Resolution);
 
 protected:
     TextureDesc Desc;
@@ -731,7 +731,7 @@ HK_FORCEINLINE ITextureView* ITexture::GetUnorderedAccessView()
     return pUnorderedAccesView;
 }
 
-HK_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, TextureResolution const& Resolution)
+HK_INLINE int ITexture::sCalcMaxMipLevels(TEXTURE_TYPE Type, TextureResolution const& Resolution)
 {
     uint32_t maxDimension = (Type == TEXTURE_3D) ? Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount) :
                                                    Math::Max(Resolution.Width, Resolution.Height);

@@ -1976,7 +1976,7 @@ void MGTextureLoad::Compute(MaterialBuildContext& Context)
     if (texSlotCon)
     {
         MGNode* node = Texture.ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
+        if (node->FinalClassId() == MGTextureSlot::sClassId() && node->Build(Context))
         {
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
@@ -2094,7 +2094,7 @@ void MGNormalLoad::Compute(MaterialBuildContext& Context)
     if (texSlotCon)
     {
         MGNode* node = Texture.ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
+        if (node->FinalClassId() == MGTextureSlot::sClassId() && node->Build(Context))
         {
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
@@ -2181,7 +2181,7 @@ void MGParallaxMapLoad::Compute(MaterialBuildContext& Context)
     if (texSlotCon)
     {
         MGNode* node = Texture.ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
+        if (node->FinalClassId() == MGTextureSlot::sClassId() && node->Build(Context))
         {
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
@@ -2757,14 +2757,14 @@ static void GenerateBuiltinSource()
     for (int i = MG_VALUE_TYPE_FLOAT1; i <= MG_VALUE_TYPE_FLOAT4; i++)
         builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
 
-    File f = File::OpenWrite("material_builtin.glsl");
+    File f = File::sOpenWrite("material_builtin.glsl");
     if (f)
         f.Write(builtin.CStr(), builtin.Size());
 }
 
 static void WriteDebugShaders(Vector<CodeBlock> const& codeBlocks)
 {
-    File f = File::OpenWrite("debug.glsl");
+    File f = File::sOpenWrite("debug.glsl");
     if (!f)
         return;
 
@@ -3798,55 +3798,55 @@ public:
 
     MGNodeRegistry()
     {
-        Register(MGSaturate::GetClassMeta(), "Saturate");
-        Register(MGSinus::GetClassMeta(), "Sinus");
-        Register(MGCosinus::GetClassMeta(), "Cosinus");
-        Register(MGFract::GetClassMeta(), "Fract");
-        Register(MGNegate::GetClassMeta(), "Negate");
-        Register(MGNormalize::GetClassMeta(), "Normalize");
-        Register(MGMul::GetClassMeta(), "Mul");
-        Register(MGDiv::GetClassMeta(), "Div");
-        Register(MGAdd::GetClassMeta(), "Add");
-        Register(MGSub::GetClassMeta(), "Sub");
-        Register(MGMAD::GetClassMeta(), "MAD");
-        Register(MGStep::GetClassMeta(), "Step");
-        Register(MGPow::GetClassMeta(), "Pow");
-        Register(MGMod::GetClassMeta(), "Mod");
-        Register(MGMin::GetClassMeta(), "Min");
-        Register(MGMax::GetClassMeta(), "Max");
-        Register(MGLerp::GetClassMeta(), "Lerp");
-        Register(MGClamp::GetClassMeta(), "Clamp");
-        Register(MGLength::GetClassMeta(), "Length");
-        Register(MGDecomposeVector::GetClassMeta(), "DecomposeVector");
-        Register(MGMakeVector::GetClassMeta(), "MakeVector");
-        Register(MGSpheremapCoord::GetClassMeta(), "SpheremapCoord");
-        Register(MGLuminance::GetClassMeta(), "Luminance");
-        Register(MGPI::GetClassMeta(), "PI");
-        Register(MG2PI::GetClassMeta(), "2PI");
-        Register(MGBoolean::GetClassMeta(), "Boolean");
-        Register(MGBoolean2::GetClassMeta(), "Boolean2");
-        Register(MGBoolean3::GetClassMeta(), "Boolean3");
-        Register(MGBoolean4::GetClassMeta(), "Boolean4");
-        Register(MGFloat::GetClassMeta(), "Float");
-        Register(MGFloat2::GetClassMeta(), "Float2");
-        Register(MGFloat3::GetClassMeta(), "Float3");
-        Register(MGFloat4::GetClassMeta(), "Float4");
-        Register(MGTextureSlot::GetClassMeta(), "TextureSlot");
-        Register(MGUniformAddress::GetClassMeta(), "UniformAddress");
-        Register(MGTextureLoad::GetClassMeta(), "TextureLoad");
-        Register(MGNormalLoad::GetClassMeta(), "NormalLoad");
-        Register(MGParallaxMapLoad::GetClassMeta(), "ParallaxMapLoad", MG_NODE_SINGLETON);
-        Register(MGVirtualTextureLoad::GetClassMeta(), "VirtualTextureLoad");
-        Register(MGVirtualTextureNormalLoad::GetClassMeta(), "VirtualTextureNormalLoad");
-        Register(MGInFragmentCoord::GetClassMeta(), "InFragmentCoord", MG_NODE_SINGLETON);
-        Register(MGInPosition::GetClassMeta(), "InPosition", MG_NODE_SINGLETON);
-        Register(MGInNormal::GetClassMeta(), "InNormal", MG_NODE_SINGLETON);
-        Register(MGInColor::GetClassMeta(), "InColor", MG_NODE_SINGLETON);
-        Register(MGInTexCoord::GetClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
-        Register(MGInTimer::GetClassMeta(), "InTimer", MG_NODE_SINGLETON);
-        Register(MGInViewPosition::GetClassMeta(), "InViewPosition", MG_NODE_SINGLETON);
-        Register(MGCondLess::GetClassMeta(), "CondLess");
-        Register(MGAtmosphere::GetClassMeta(), "Atmosphere");
+        Register(MGSaturate::sGetClassMeta(), "Saturate");
+        Register(MGSinus::sGetClassMeta(), "Sinus");
+        Register(MGCosinus::sGetClassMeta(), "Cosinus");
+        Register(MGFract::sGetClassMeta(), "Fract");
+        Register(MGNegate::sGetClassMeta(), "Negate");
+        Register(MGNormalize::sGetClassMeta(), "Normalize");
+        Register(MGMul::sGetClassMeta(), "Mul");
+        Register(MGDiv::sGetClassMeta(), "Div");
+        Register(MGAdd::sGetClassMeta(), "Add");
+        Register(MGSub::sGetClassMeta(), "Sub");
+        Register(MGMAD::sGetClassMeta(), "MAD");
+        Register(MGStep::sGetClassMeta(), "Step");
+        Register(MGPow::sGetClassMeta(), "Pow");
+        Register(MGMod::sGetClassMeta(), "Mod");
+        Register(MGMin::sGetClassMeta(), "Min");
+        Register(MGMax::sGetClassMeta(), "Max");
+        Register(MGLerp::sGetClassMeta(), "Lerp");
+        Register(MGClamp::sGetClassMeta(), "Clamp");
+        Register(MGLength::sGetClassMeta(), "Length");
+        Register(MGDecomposeVector::sGetClassMeta(), "DecomposeVector");
+        Register(MGMakeVector::sGetClassMeta(), "MakeVector");
+        Register(MGSpheremapCoord::sGetClassMeta(), "SpheremapCoord");
+        Register(MGLuminance::sGetClassMeta(), "Luminance");
+        Register(MGPI::sGetClassMeta(), "PI");
+        Register(MG2PI::sGetClassMeta(), "2PI");
+        Register(MGBoolean::sGetClassMeta(), "Boolean");
+        Register(MGBoolean2::sGetClassMeta(), "Boolean2");
+        Register(MGBoolean3::sGetClassMeta(), "Boolean3");
+        Register(MGBoolean4::sGetClassMeta(), "Boolean4");
+        Register(MGFloat::sGetClassMeta(), "Float");
+        Register(MGFloat2::sGetClassMeta(), "Float2");
+        Register(MGFloat3::sGetClassMeta(), "Float3");
+        Register(MGFloat4::sGetClassMeta(), "Float4");
+        Register(MGTextureSlot::sGetClassMeta(), "TextureSlot");
+        Register(MGUniformAddress::sGetClassMeta(), "UniformAddress");
+        Register(MGTextureLoad::sGetClassMeta(), "TextureLoad");
+        Register(MGNormalLoad::sGetClassMeta(), "NormalLoad");
+        Register(MGParallaxMapLoad::sGetClassMeta(), "ParallaxMapLoad", MG_NODE_SINGLETON);
+        Register(MGVirtualTextureLoad::sGetClassMeta(), "VirtualTextureLoad");
+        Register(MGVirtualTextureNormalLoad::sGetClassMeta(), "VirtualTextureNormalLoad");
+        Register(MGInFragmentCoord::sGetClassMeta(), "InFragmentCoord", MG_NODE_SINGLETON);
+        Register(MGInPosition::sGetClassMeta(), "InPosition", MG_NODE_SINGLETON);
+        Register(MGInNormal::sGetClassMeta(), "InNormal", MG_NODE_SINGLETON);
+        Register(MGInColor::sGetClassMeta(), "InColor", MG_NODE_SINGLETON);
+        Register(MGInTexCoord::sGetClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
+        Register(MGInTimer::sGetClassMeta(), "InTimer", MG_NODE_SINGLETON);
+        Register(MGInViewPosition::sGetClassMeta(), "InViewPosition", MG_NODE_SINGLETON);
+        Register(MGCondLess::sGetClassMeta(), "CondLess");
+        Register(MGAtmosphere::sGetClassMeta(), "Atmosphere");
     }
 
     Vector<StringView> GetTypes() const
@@ -3911,7 +3911,7 @@ MGTextureSlot* MaterialGraph::GetTexture(uint32_t Slot)
     return m_TextureSlots[Slot];
 }
 
-Ref<MaterialGraph> MaterialGraph::Load(IBinaryStreamReadInterface& Stream)
+Ref<MaterialGraph> MaterialGraph::sLoad(IBinaryStreamReadInterface& Stream)
 {
     if (!Stream.IsValid())
         return {};

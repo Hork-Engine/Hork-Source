@@ -95,14 +95,14 @@ void NavMeshAreaComponent::DrawDebug(DebugRenderer& renderer)
         return;
 
     renderer.SetDepthTest(false);
-    renderer.SetColor(Color4::Blue());
+    renderer.SetColor(Color4::sBlue());
     switch (m_Shape)
     {
         case NavMeshAreaShape::Box:
             renderer.DrawBox(GetOwner()->GetWorldPosition(), m_HalfExtents);
             break;
         case NavMeshAreaShape::Cylinder:
-            renderer.DrawCylinder(GetOwner()->GetWorldPosition(), Float3x3::Identity(), GetCylinderRadius(), GetHeight());
+            renderer.DrawCylinder(GetOwner()->GetWorldPosition(), Float3x3::sIdentity(), GetCylinderRadius(), GetHeight());
             break;
         case NavMeshAreaShape::ConvexVolume:
         {

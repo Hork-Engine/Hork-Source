@@ -158,7 +158,7 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
     desc.ResourceLayout.Samplers = pass.Samplers.ToPtr();
 
     Ref<IPipeline> pipeline;
-    GameApplication::GetRenderDevice()->CreatePipeline(desc, &pipeline);
+    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -193,8 +193,8 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::CreateVertexShader("terrain_depth.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::CreateFragmentShader("terrain_depth.frag", desc.pFS);
+    ShaderFactory::sCreateVertexShader("terrain_depth.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderFactory::sCreateFragmentShader("terrain_depth.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -213,7 +213,7 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::GetRenderDevice()->CreatePipeline(desc, &pipeline);
+    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -247,8 +247,8 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialLight()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::CreateVertexShader("terrain_color.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::CreateFragmentShader("terrain_color.frag", desc.pFS);
+    ShaderFactory::sCreateVertexShader("terrain_color.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderFactory::sCreateFragmentShader("terrain_color.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -300,7 +300,7 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialLight()
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::GetRenderDevice()->CreatePipeline(desc, &pipeline);
+    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -336,9 +336,9 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::CreateVertexShader("terrain_wireframe.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::CreateGeometryShader("terrain_wireframe.geom", desc.pGS);
-    ShaderFactory::CreateFragmentShader("terrain_wireframe.frag", desc.pFS);
+    ShaderFactory::sCreateVertexShader("terrain_wireframe.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderFactory::sCreateGeometryShader("terrain_wireframe.geom", desc.pGS);
+    ShaderFactory::sCreateFragmentShader("terrain_wireframe.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -357,7 +357,7 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::GetRenderDevice()->CreatePipeline(desc, &pipeline);
+    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -368,7 +368,7 @@ Ref<MaterialGPU> MaterialBinary::Compile()
     compiledShaders.Reserve(Shaders.Size());
     for (Shader const& shader : Shaders)
     {
-        compiledShaders.Add(ShaderFactory::CreateShaderSpirV(shader.m_Type, shader.m_Blob));
+        compiledShaders.Add(ShaderFactory::sCreateShaderSpirV(shader.m_Type, shader.m_Blob));
         if (!compiledShaders.Last())
             return {};
     }

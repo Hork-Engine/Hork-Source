@@ -43,7 +43,7 @@ static ConsoleVar ui_consoleDropSpeed("ui_consoleDropSpeed"_s, "5"_s);
 static ConsoleVar ui_consoleHeight("ui_consoleHeight"_s, "0.8"_s);
 
 UIConsole::UIConsole() :
-    m_ConsoleBuffer(CoreApplication::GetConsoleBuffer())
+    m_ConsoleBuffer(CoreApplication::sGetConsoleBuffer())
 {}
 
 void UIConsole::Clear()
@@ -139,7 +139,7 @@ void UIConsole::InsertUTF8Text(StringView utf8)
 
 void UIConsole::InsertClipboardText()
 {
-    InsertUTF8Text(CoreApplication::GetClipboard());
+    InsertUTF8Text(CoreApplication::sGetClipboard());
 }
 
 void UIConsole::CompleteString(CommandContext& commandCtx, StringView _Str)
@@ -402,13 +402,13 @@ void UIConsole::DrawCmdLine(Canvas& cv, int x, int y, int maxLineChars)
 
     if ((Core::SysMicroseconds() >> 18) & 1)
     {
-        FontResource* font = GameApplication::GetDefaultFont();
+        FontResource* font = GameApplication::sGetDefaultFont();
         for (int i = 0; i < m_CmdLinePos - offset; i++)
             x += font->GetCharAdvance(fontStyle, m_CmdLine[i]);
 
         if (GUIManager->IsInsertMode())
         {
-            cv.DrawRectFilled(Float2(x, y), Float2(x + ConsoleBuffer::CharacterWidth * 0.7f, y + ConsoleBuffer::CharacterWidth), Color4::White());
+            cv.DrawRectFilled(Float2(x, y), Float2(x + ConsoleBuffer::CharacterWidth * 0.7f, y + ConsoleBuffer::CharacterWidth), Color4::sWhite());
         }
         else
         {
@@ -461,7 +461,7 @@ void UIConsole::Draw(Canvas& cv, UIBrush* background, float width, float height)
     const float fontSize = ConsoleBuffer::CharacterWidth;
 
     cv.ResetScissor();
-    cv.FontFace(GameApplication::GetDefaultFontHandle());
+    cv.FontFace(GameApplication::sGetDefaultFontHandle());
 
     FontStyle fontStyle;
     fontStyle.FontSize = fontSize;
@@ -480,14 +480,14 @@ void UIConsole::Draw(Canvas& cv, UIBrush* background, float width, float height)
     if (background)
         DrawBrush(cv, geometry.Mins, geometry.Maxs, {}, background);
     else
-        cv.DrawRectFilled(geometry.Mins, geometry.Maxs, Color4::Black());
+        cv.DrawRectFilled(geometry.Mins, geometry.Maxs, Color4::sBlack());
 
-    cv.DrawLine(Float2(0, halfVidHeight), Float2(width, halfVidHeight), Color4::White(), 2.0f);
+    cv.DrawLine(Float2(0, halfVidHeight), Float2(width, halfVidHeight), Color4::sWhite(), 2.0f);
 
     int x = ConsoleBuffer::Padding;
     int y = halfVidHeight - verticalStride;
 
-    cv.FillColor(Color4::White());
+    cv.FillColor(Color4::sWhite());
 
     ConsoleBuffer::LockedData lock = m_ConsoleBuffer.Lock();
 
@@ -524,7 +524,7 @@ void UIConsole::WriteStoryLines()
         return;
     }
 
-    File f = File::OpenWrite("console_story.txt");
+    File f = File::sOpenWrite("console_story.txt");
     if (!f)
     {
         LOG("Failed to write console story\n");
@@ -553,7 +553,7 @@ void UIConsole::ReadStoryLines()
     char     buf[MAX_CMD_LINE_CHARS * 3 + 2]; // In worst case WideChar transforms to 3 bytes,
                                               // two additional bytes are reserved for trailing '\n\0'
 
-    File f = File::OpenRead("console_story.txt");
+    File f = File::sOpenRead("console_story.txt");
     if (!f)
     {
         return;

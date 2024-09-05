@@ -87,12 +87,12 @@ ExposureRenderer::ExposureRenderer()
     resourceLayout.NumBuffers = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers = bufferInfo;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, BLENDING_ALPHA);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 0;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout);
 }
 
 void ExposureRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppExposure)

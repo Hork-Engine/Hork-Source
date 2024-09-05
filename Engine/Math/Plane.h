@@ -46,28 +46,28 @@ struct TPlane
     TVector3<T> Normal{0,0,1};
     T           D{0};
 
-    /** Construct uninitialized */
+    /// Construct
     TPlane() = default;
 
-    /** Construct from plane equalation: A * X + B * Y + C * Z + D = 0 */
+    /// Construct from plane equalation: A * X + B * Y + C * Z + D = 0
     constexpr explicit TPlane(T a, T b, T c, T d) :
         Normal(a, b, c), D(d) {}
 
-    /** Construct from normal and distance to plane */
+    /// Construct from normal and distance to plane
     constexpr explicit TPlane(TVector3<T> const& normal, T dist) :
         Normal(normal), D(-dist) {}
 
-    /** Construct from normal and point on plane */
+    /// Construct from normal and point on plane
     constexpr explicit TPlane(TVector3<T> const& normal, TVector3<T> const& point) :
         Normal(normal), D(-Math::Dot(point, normal)) {}
 
-    /** Construct from three points on plane */
+    /// Construct from three points on plane
     constexpr explicit TPlane(TVector3<T> const& p0, TVector3<T> const& p1, TVector3<T> const& p2) :
         Normal(Math::Cross(p0 - p1, p2 - p1).Normalized()),
         D(-Math::Dot(Normal, p1))
     {}
 
-    /** Construct from another plane */
+    /// Construct from another plane
     template <typename T2>
     constexpr explicit TPlane(TPlane<T2> const& plane) :
         Normal(plane.Normal), D(plane.D) {}

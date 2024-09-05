@@ -63,7 +63,7 @@ UICursor* UIManager::ArrowCursor() const
 UICursor* UIManager::TextInputCursor() const
 {
     if (!m_TextInputCursor)
-        m_TextInputCursor = UINew(UIDefaultCursor).WithDrawCursor(DRAW_CURSOR_TEXT_INPUT);
+        m_TextInputCursor = UINew(UIDefaultCursor).WithDrawCursor(CanvasCursor::TextInput);
 
     return m_TextInputCursor;
 }

@@ -37,9 +37,22 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+SvgDocument::SvgDocument(SvgDocument&& Rhs) noexcept :
+    m_Root(Rhs.m_Root)
+{
+    Rhs.m_Root = nullptr;
+}
+
 SvgDocument::~SvgDocument()
 {
     delete m_Root;
+}
+
+SvgDocument& SvgDocument::operator=(SvgDocument&& Rhs) noexcept
+{
+    Reset();
+    Core::Swap(m_Root, Rhs.m_Root);
+    return *this;
 }
 
 void SvgDocument::Reset()

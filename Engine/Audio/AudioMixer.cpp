@@ -110,7 +110,7 @@ AudioMixer::~AudioMixer()
         track->RemoveRef();
     }
 
-    AudioTrack::FreePool();
+    AudioTrack::sFreePool();
 }
 
 void AudioMixer::StartAsync()

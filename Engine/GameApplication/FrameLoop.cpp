@@ -48,7 +48,7 @@ ConsoleVar com_FrameSleep("com_FrameSleep"_s, "0"_s);
 ConsoleVar in_StickDeadZone("in_StickDeadZone"_s, "0.23"_s);
 
 FrameLoop::FrameLoop(RenderCore::IDevice* renderDevice) :
-    m_FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
+    m_FrameMemory(Allocators::FrameMemoryAllocator::sGetAllocator()),
     m_RenderDevice(renderDevice)
 {
     m_GPUSync = MakeUnique<GPUSync>(m_RenderDevice->GetImmediateContext());
@@ -115,7 +115,7 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swap
 {
     HK_PROFILER_EVENT("Setup new frame");
 
-    MemoryHeap::MemoryNewFrame();
+    MemoryHeap::sMemoryNewFrame();
 
     m_GPUSync->SetEvent();
 
@@ -134,7 +134,7 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swap
 
     if (com_FrameSleep.GetInteger() > 0)
     {
-        Thread::WaitMilliseconds(com_FrameSleep.GetInteger());
+        Thread::sWaitMilliseconds(com_FrameSleep.GetInteger());
     }
 
     int64_t prevTimeStamp = m_FrameTimeStamp;
@@ -163,7 +163,7 @@ void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swap
 
             if (m_FrameDuration < maxFrameRate)
             {
-                Thread::WaitMicroseconds(maxFrameRate - m_FrameDuration);
+                Thread::sWaitMicroseconds(maxFrameRate - m_FrameDuration);
 
                 m_FrameTimeStamp = Core::SysMicroseconds();
                 m_FrameDuration = m_FrameTimeStamp - prevTimeStamp;
@@ -416,7 +416,7 @@ void FrameLoop::PollEvents(IEventListener* listener)
         // Handle window events
         if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST)
         {
-            RenderCore::IGenericWindow* window = RenderCore::IGenericWindow::GetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
+            RenderCore::IGenericWindow* window = RenderCore::IGenericWindow::sGetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
             if (window)
             {
                 window->ParseEvent(event.window);
@@ -444,7 +444,7 @@ void FrameLoop::PollEvents(IEventListener* listener)
                     // a result of an API call or through the
                     // system or user changing the window size.
                     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                        CoreApplication::GetConsoleBuffer().Resize(window->GetFramebufferWidth());
+                        CoreApplication::sGetConsoleBuffer().Resize(window->GetFramebufferWidth());
                         listener->OnResize();
                         break;
                     // Window has been minimized

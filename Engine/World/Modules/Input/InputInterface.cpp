@@ -53,19 +53,19 @@ void InputInterface::Update()
 {
     if (m_IsActive)
     {
-        auto& actionPool = GameApplication::GetInputSystem().GetActionPool();
+        auto& actionPool = GameApplication::sGetInputSystem().GetActionPool();
         for (auto& action : actionPool)
         {
             InvokeAction(action.Name, action.IsPressed ? InputEvent::OnPress : InputEvent::OnRelease, action.Owner);
         }
 
-        auto& axisPool = GameApplication::GetInputSystem().GetAxisPool();
+        auto& axisPool = GameApplication::sGetInputSystem().GetAxisPool();
         for (auto& axis : axisPool)
         {
             InvokeAxis(axis.Name, axis.Amount, axis.Owner);
         }
 
-        auto& chars = GameApplication::GetInputSystem().GetChars();
+        auto& chars = GameApplication::sGetInputSystem().GetChars();
         for (auto& ch : chars)
         {
             for (int playerIndex = 0; playerIndex < int(PlayerController::MAX_PLAYER_CONTROLLERS); ++playerIndex)

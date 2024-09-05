@@ -41,7 +41,7 @@ namespace TR {
 
 struct MakeID
 {
-    static uint32_t Generate()
+    static uint32_t sGenerate()
     {
         static uint32_t gen = 0;
         return ++gen;
@@ -51,7 +51,7 @@ struct MakeID
 template <typename T>
 struct TypeID
 {
-    static uint32_t GetID()
+    static uint32_t sGetID()
     {
         return ID;
     }
@@ -61,7 +61,7 @@ private:
 };
 
 template <typename T>
-uint32_t TypeID<T>::ID = MakeID::Generate();
+uint32_t TypeID<T>::ID = MakeID::sGenerate();
 
 class StructureBase;
 
@@ -91,12 +91,12 @@ struct TypeInfo
 class BasePointerDefinition
 {
 public:
-    BasePointerDefinition(uint32_t inTypeId, StringView inName) :
-        m_TypeId(inTypeId), m_Name(inName)
+    BasePointerDefinition(uint32_t typeId, StringView name) :
+        m_TypeId(typeId), m_Name(name)
     {}
     virtual ~BasePointerDefinition() {}
 
-    virtual void *DereferencePtr(void* inObjectPtr) = 0;
+    virtual void *DereferencePtr(void* objectPtr) = 0;
 
     uint32_t GetTypeId() const { return m_TypeId; }
     StringID GetName() const { return m_Name; }
@@ -109,13 +109,13 @@ private:
 template<typename Object, typename MemberType>
 class MemberObjectDefinition final : public BasePointerDefinition {
 public:
-    MemberObjectDefinition(StringView inName, MemberType Object::* inMemberPtr)
-        : BasePointerDefinition(TypeID<MemberType>::GetID(), inName), m_MemberPtr(inMemberPtr) {}
+    MemberObjectDefinition(StringView name, MemberType Object::* memberPtr)
+        : BasePointerDefinition(TypeID<MemberType>::GetID(), name), m_MemberPtr(memberPtr) {}
 
 protected:
-    void* DereferencePtr(void* inObjectPtr) override
+    void* DereferencePtr(void* objectPtr) override
     {
-        return &(static_cast<Object*>(inObjectPtr)->*m_MemberPtr);
+        return &(static_cast<Object*>(objectPtr)->*m_MemberPtr);
     }
 
 private:
@@ -138,10 +138,10 @@ class Structure : public StructureBase
 {
 public:
     template <typename MemberType>
-    void RegisterMember(StringView inName, MemberType Object::* inMemberObjectPtr)
+    void RegisterMember(StringView name, MemberType Object::* memberObjectPtr)
     {
         UniqueRef<MemberObjectDefinition<Object, MemberType>> member =
-            MakeUnique<MemberObjectDefinition<Object, MemberType>>(inName, inMemberObjectPtr);
+            MakeUnique<MemberObjectDefinition<Object, MemberType>>(name, memberObjectPtr);
 
         m_Members.Add(std::move(member));
     }
@@ -188,43 +188,43 @@ class TypeRegistry
 {
 public:
     template <typename T>
-    void RegisterType(StringView inName);
+    void RegisterType(StringView name);
 
     template <typename T>
-    Structure<T>* RegisterStruct(StringView inName);
+    Structure<T>* RegisterStruct(StringView name);
 
     template <typename ArrayType>
-    void RegisterArray(StringView inName);
+    void RegisterArray(StringView name);
 
     template <typename T>
     StringID FindType() const;
 
-    TypeInfo const* FindType(uint32_t inTypeId) const;
+    TypeInfo const* FindType(uint32_t typeId) const;
 
 private:
     HashMap<uint32_t, TypeInfo> m_TypeInfos;
 };
 
 template <typename T>
-HK_INLINE void TypeRegistry::RegisterType(StringView inName)
+HK_INLINE void TypeRegistry::RegisterType(StringView name)
 {
     uint32_t id = TypeID<T>::GetID();
 
-    TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringID(inName);
+    TypeInfo& typeInfo = m_TypeInfos[id];
+    typeInfo.Name = StringID(name);
 
-    type_info.Value.ToString = [](void const* inObjectPtr)
+    typeInfo.Value.ToString = [](void const* objectPtr)
     {
-        return Traits::ToString(*static_cast<T const*>(inObjectPtr));
+        return Traits::ToString(*static_cast<T const*>(objectPtr));
     };
-    type_info.Value.FromString = [](void* inObjectPtr, StringView inStr)
+    typeInfo.Value.FromString = [](void* objectPtr, StringView inStr)
     {
-        *static_cast<T*>(inObjectPtr) = Traits::FromString<T>(inStr);
+        *static_cast<T*>(objectPtr) = Traits::FromString<T>(inStr);
     };
 }
 
 template <typename T>
-HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
+HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView name)
 {
     UniqueRef<Structure<T>> structure = MakeUnique<Structure<T>>();
 
@@ -232,15 +232,15 @@ HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
 
     uint32_t id = TypeID<T>::GetID();
 
-    TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringID(inName);
-    type_info.Struct = std::move(structure);
+    TypeInfo& typeInfo = m_TypeInfos[id];
+    typeInfo.Name = StringID(name);
+    typeInfo.Struct = std::move(structure);
 
-    type_info.Value.ToString = [](void const*) -> String
+    typeInfo.Value.ToString = [](void const*) -> String
     {
         return {};
     };
-    type_info.Value.FromString = [](void*, StringView)
+    typeInfo.Value.FromString = [](void*, StringView)
     {
     };
 
@@ -248,44 +248,44 @@ HK_INLINE Structure<T>* TypeRegistry::RegisterStruct(StringView inName)
 }
 
 template <typename ArrayType>
-HK_INLINE void TypeRegistry::RegisterArray(StringView inName)
+HK_INLINE void TypeRegistry::RegisterArray(StringView name)
 {
     using T = typename ArrayType::value_type;
 
     uint32_t id = TypeID<ArrayType>::GetID();
 
-    TypeInfo& type_info = m_TypeInfos[id];
-    type_info.Name = StringID(inName);
-    type_info.ArrayElementTypeId = TypeID<T>::GetID();
-    type_info.Array.GetArraySize = [](void const* inObjectPtr)
+    TypeInfo& typeInfo = m_TypeInfos[id];
+    typeInfo.Name = StringID(name);
+    typeInfo.ArrayElementTypeId = TypeID<T>::GetID();
+    typeInfo.Array.GetArraySize = [](void const* objectPtr)
     {
-        return static_cast<ArrayType const*>(inObjectPtr)->Size();
+        return static_cast<ArrayType const*>(objectPtr)->Size();
     };
-    type_info.Array.GetArrayAt = [](int inIndex, void* inObjectPtr) -> void*
+    typeInfo.Array.GetArrayAt = [](int index, void* objectPtr) -> void*
     {
-        T& element = (*static_cast<ArrayType*>(inObjectPtr))[inIndex];
+        T& element = (*static_cast<ArrayType*>(objectPtr))[index];
         return &element;
     };
-    type_info.Array.TryResize = [](size_t inSize, void* inObjectPtr) -> bool
+    typeInfo.Array.TryResize = [](size_t size, void* objectPtr) -> bool
     {
-        auto& arr = *static_cast<ArrayType*>(inObjectPtr);
-        Internal::ArrayResize(arr, inSize);
-        return arr.Size() == inSize;
+        auto& arr = *static_cast<ArrayType*>(objectPtr);
+        Internal::ArrayResize(arr, size);
+        return arr.Size() == size;
     };
 }
 
 template <typename T>
 HK_INLINE StringID TypeRegistry::FindType() const
 {
-    TypeInfo* type_info = FindType(TypeID<T>::GetID());
-    if (type_info)
-        return type_info->Name;
+    TypeInfo* typeInfo = FindType(TypeID<T>::GetID());
+    if (typeInfo)
+        return typeInfo->Name;
     return {};
 }
 
-HK_INLINE TypeInfo const* TypeRegistry::FindType(uint32_t inTypeId) const
+HK_INLINE TypeInfo const* TypeRegistry::FindType(uint32_t typeId) const
 {
-    auto it = m_TypeInfos.Find(inTypeId);
+    auto it = m_TypeInfos.Find(typeId);
     if (it == m_TypeInfos.End())
         return nullptr;
     return &it->second;

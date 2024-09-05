@@ -177,7 +177,7 @@ void UIWindow::Draw(Canvas& canvas)
         CanvasPaint shadowPaint;
         float       cornerRadius = 3;
 
-        canvas.Push(CANVAS_PUSH_FLAG_RESET);
+        canvas.Push(CanvasPushFlag::Reset);
 
         if (m_Parent)
             canvas.Scissor(m_Parent->m_Geometry.PaddedMins, m_Parent->m_Geometry.PaddedMaxs);
@@ -193,7 +193,7 @@ void UIWindow::Draw(Canvas& canvas)
         canvas.BeginPath();
         canvas.Rect(x - 10, y - 10, w + 20, h + 30);
         canvas.RoundedRectVarying(x, y, w, h, rounding.RoundingTL, rounding.RoundingTR, rounding.RoundingBR, rounding.RoundingBL);
-        canvas.PathWinding(CANVAS_PATH_WINDING_HOLE);
+        canvas.PathWinding(CanvasPathWinding::Hole);
         canvas.FillPaint(shadowPaint);
         canvas.Fill();
 

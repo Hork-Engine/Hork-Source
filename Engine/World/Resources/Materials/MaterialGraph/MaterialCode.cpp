@@ -262,14 +262,14 @@ private:
 
     bool CreateVertexShaders(ShaderCompiler::SourceList const& sources)
     {
-        if (!ShaderCompiler::CreateSpirV_VertexShader(g_VertexAttribsStatic, sources, VertexShader_Static))
+        if (!ShaderCompiler::sCreateSpirV_VertexShader(g_VertexAttribsStatic, sources, VertexShader_Static))
             return false;
 
         ShaderCompiler::SourceList _sources;
         _sources.Add("#define SKINNED_MESH\n");
         _sources.Add(sources);
 
-        if (!ShaderCompiler::CreateSpirV_VertexShader(g_VertexAttribsSkinned, _sources, VertexShader_Skinned))
+        if (!ShaderCompiler::sCreateSpirV_VertexShader(g_VertexAttribsSkinned, _sources, VertexShader_Skinned))
             return false;
 
         return true;
@@ -277,10 +277,10 @@ private:
 
     bool CreateTessShaders(ShaderCompiler::SourceList const& sources)
     {
-        if (!ShaderCompiler::CreateSpirV(RenderCore::TESS_CONTROL_SHADER, sources, TessControlShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::TESS_CONTROL_SHADER, sources, TessControlShader))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::TESS_EVALUATION_SHADER, sources, TessEvalShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::TESS_EVALUATION_SHADER, sources, TessEvalShader))
             return false;
 
         return true;
@@ -317,7 +317,7 @@ public:
 
         if (properties.AlphaMasking)
         {
-            if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+            if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
                 return false;
         }
 
@@ -343,7 +343,7 @@ public:
                 return false;
         }
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         return true;
@@ -361,14 +361,14 @@ public:
         if (!CreateVertexShaders(sources))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         sources.InsertAt(0, "#define SKINNED_MESH\n");
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader2))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader2))
             return false;
 
         if (properties.Tessellation)
@@ -392,10 +392,10 @@ public:
         if (!CreateVertexShaders(sources))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         return true;
@@ -413,7 +413,7 @@ public:
         if (!CreateVertexShaders(sources))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         if (properties.Tessellation)
@@ -435,10 +435,10 @@ public:
         sources.Add("#define USE_LIGHTMAP\n");
         sources.Add(properties.Code.CStr());
 
-        if (!ShaderCompiler::CreateSpirV_VertexShader(g_VertexAttribsStaticLightmap, sources, VertexShader_Static))
+        if (!ShaderCompiler::sCreateSpirV_VertexShader(g_VertexAttribsStaticLightmap, sources, VertexShader_Static))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         if (properties.Tessellation)
@@ -460,10 +460,10 @@ public:
         sources.Add("#define USE_VERTEX_LIGHT\n");
         sources.Add(properties.Code.CStr());
 
-        if (!ShaderCompiler::CreateSpirV_VertexShader(g_VertexAttribsStaticVertexLight, sources, VertexShader_Static))
+        if (!ShaderCompiler::sCreateSpirV_VertexShader(g_VertexAttribsStaticVertexLight, sources, VertexShader_Static))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         if (properties.Tessellation)
@@ -487,7 +487,7 @@ public:
         if (!CreateVertexShaders(sources))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::GEOMETRY_SHADER, sources, GeometryShader))
             return false;
 
         if (properties.TessellationShadowMap)
@@ -503,7 +503,7 @@ public:
 #endif
         if (properties.ShadowMasking || bVSM)
         {
-            if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+            if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
                 return false;
         }
 
@@ -528,7 +528,7 @@ public:
                 return false;
         }
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         return true;
@@ -546,7 +546,7 @@ public:
         if (!CreateVertexShaders(sources))
             return false;
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         return true;
@@ -570,7 +570,7 @@ public:
                 return false;
         }
 
-        if (!ShaderCompiler::CreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
+        if (!ShaderCompiler::sCreateSpirV(RenderCore::FRAGMENT_SHADER, sources, FragmentShader))
             return false;
 
         return true;

@@ -65,12 +65,12 @@ struct Bool2
 
     bool& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -97,10 +97,10 @@ struct Bool2
     }
 
     // Static methods
-    static constexpr int   NumComponents() { return 2; }
-    static constexpr Bool2 MinValue() { return Bool2(std::numeric_limits<bool>::min()); }
-    static constexpr Bool2 MaxValue() { return Bool2(std::numeric_limits<bool>::max()); }
-    static Bool2 const&    Zero()
+    static constexpr int   sNumComponents() { return 2; }
+    static constexpr Bool2 sMinValue() { return Bool2(std::numeric_limits<bool>::min()); }
+    static constexpr Bool2 sMaxValue() { return Bool2(std::numeric_limits<bool>::max()); }
+    static Bool2 const&    sZero()
     {
         static constexpr Bool2 ZeroVec(false);
         return ZeroVec;
@@ -139,12 +139,12 @@ struct Bool3
 
     bool& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -173,8 +173,8 @@ struct Bool3
     }
 
     // Static methods
-    static constexpr int NumComponents() { return 3; }
-    static Bool3 const&  Zero()
+    static constexpr int sNumComponents() { return 3; }
+    static Bool3 const&  sZero()
     {
         static constexpr Bool3 ZeroVec(false);
         return ZeroVec;
@@ -215,12 +215,12 @@ struct Bool4
 
     bool& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -250,8 +250,8 @@ struct Bool4
     }
 
     // Static methods
-    static constexpr int NumComponents() { return 4; }
-    static Bool4 const&  Zero()
+    static constexpr int sNumComponents() { return 4; }
+    static Bool4 const&  sZero()
     {
         static constexpr Bool4 ZeroVec(false);
         return ZeroVec;

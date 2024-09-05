@@ -196,7 +196,7 @@ void CommandProcessor::Execute(ICommandContext& ctx)
     m_Cmdbuf.Clear();
 }
 
-bool CommandProcessor::IsValidCommandName(const char* name)
+bool CommandProcessor::sIsValidCommandName(const char* name)
 {
     if (!name || !*name)
     {

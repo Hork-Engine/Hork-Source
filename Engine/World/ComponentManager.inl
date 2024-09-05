@@ -457,7 +457,7 @@ HK_INLINE void ComponentManager<ComponentType>::OnEndContact(ComponentHandle han
 }
 
 template <typename ComponentType>
-HK_FORCEINLINE ComponentType* Component::Upcast(Component* component)
+HK_FORCEINLINE ComponentType* Component::sUpcast(Component* component)
 {
     if (component->GetManager()->GetComponentTypeID() == ComponentRTTR::TypeID<ComponentType>)
         return static_cast<ComponentType*>(component);

@@ -60,7 +60,7 @@ struct TextureViewDesc
     uint16_t FirstMipLevel = 0;
     uint16_t NumMipLevels  = 0;
 
-    /** Slice is an array layer or depth for a 3D texture. Cubemap has 6 slices, cubemap array has num_layers * 6 slices. */
+    /// Slice is an array layer or depth for a 3D texture. Cubemap has 6 slices, cubemap array has num_layers * 6 slices.
     uint16_t FirstSlice = 0;
     uint16_t NumSlices  = 0;
 

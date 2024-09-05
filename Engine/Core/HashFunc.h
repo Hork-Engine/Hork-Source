@@ -37,7 +37,7 @@ HK_NAMESPACE_BEGIN
 namespace HashTraits
 {
 
-/** Algorithm is used in the open source SDBM project */
+/// Algorithm is used in the open source SDBM project
 HK_FORCEINLINE uint32_t SDBMHash(const char* data, size_t size, uint32_t seed = 0)
 {
     uint32_t hash = seed;
@@ -46,7 +46,7 @@ HK_FORCEINLINE uint32_t SDBMHash(const char* data, size_t size, uint32_t seed = 
     return hash;
 }
 
-/** Murmur3 hash */
+/// Murmur3 hash
 HK_INLINE uint32_t Murmur3Hash(const char* data, size_t size, uint32_t seed = 0)
 {
     uint32_t h = seed;
@@ -87,7 +87,7 @@ HK_INLINE uint32_t Murmur3Hash(const char* data, size_t size, uint32_t seed = 0)
     return h;
 }
 
-/** Modified version Murmur3 hash for 32-bit integers */
+/// Modified version Murmur3 hash for 32-bit integers
 HK_FORCEINLINE uint32_t Murmur3Hash32(uint32_t k, uint32_t seed = 0)
 {
     uint32_t h = seed;
@@ -106,7 +106,7 @@ HK_FORCEINLINE uint32_t Murmur3Hash32(uint32_t k, uint32_t seed = 0)
     return h;
 }
 
-/** Modified version Murmur3 hash for 64-bit integers */
+/// Modified version Murmur3 hash for 64-bit integers
 HK_FORCEINLINE uint32_t Murmur3Hash64(uint64_t key, uint32_t seed = 0)
 {
     uint32_t h = seed;
@@ -133,46 +133,46 @@ HK_FORCEINLINE uint32_t Murmur3Hash64(uint64_t key, uint32_t seed = 0)
     return h;
 }
 
-HK_FORCEINLINE uint32_t Hash(bool Key)
+HK_FORCEINLINE uint32_t Hash(bool key)
 {
-    return std::hash<bool>()(Key);
+    return std::hash<bool>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(int8_t Key)
+HK_FORCEINLINE uint32_t Hash(int8_t key)
 {
-    return std::hash<int8_t>()(Key);
+    return std::hash<int8_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(int16_t Key)
+HK_FORCEINLINE uint32_t Hash(int16_t key)
 {
-    return std::hash<int16_t>()(Key);
+    return std::hash<int16_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(int32_t Key)
+HK_FORCEINLINE uint32_t Hash(int32_t key)
 {
-    return std::hash<int32_t>()(Key);
+    return std::hash<int32_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(int64_t Key)
+HK_FORCEINLINE uint32_t Hash(int64_t key)
 {
-    return std::hash<int64_t>()(Key);
+    return std::hash<int64_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(uint8_t Key)
+HK_FORCEINLINE uint32_t Hash(uint8_t key)
 {
-    return std::hash<uint8_t>()(Key);
+    return std::hash<uint8_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(uint16_t Key)
+HK_FORCEINLINE uint32_t Hash(uint16_t key)
 {
-    return std::hash<uint16_t>()(Key);
+    return std::hash<uint16_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(uint32_t Key)
+HK_FORCEINLINE uint32_t Hash(uint32_t key)
 {
-    return std::hash<uint32_t>()(Key);
+    return std::hash<uint32_t>()(key);
 }
-HK_FORCEINLINE uint32_t Hash(uint64_t Key)
+HK_FORCEINLINE uint32_t Hash(uint64_t key)
 {
-    return std::hash<uint64_t>()(Key);
+    return std::hash<uint64_t>()(key);
 }
 template <typename T>
-HK_FORCEINLINE uint32_t Hash(T const& Key)
+HK_FORCEINLINE uint32_t Hash(T const& key)
 {
-    return Key.Hash();
+    return key.Hash();
 }
 template <typename T>
 HK_FORCEINLINE uint32_t HashCombine(uint32_t seed, T const& v)

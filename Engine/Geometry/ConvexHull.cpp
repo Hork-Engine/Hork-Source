@@ -88,10 +88,10 @@ void ConvexHull::Reverse()
     m_Points.Reverse();
 }
 
-PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
+PlaneSide ConvexHull::Classify(PlaneF const& plane, float epsilon) const
 {
-    int front   = 0;
-    int back    = 0;
+    int front = 0;
+    int back = 0;
     int onplane = 0;
 
     for (Float3 const& point : m_Points)
@@ -101,7 +101,7 @@ PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
         {
             if (back > 0 || onplane > 0)
             {
-                return PLANE_SIDE_CROSS;
+                return PlaneSide::Cross;
             }
             front++;
         }
@@ -109,7 +109,7 @@ PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
         {
             if (front > 0 || onplane > 0)
             {
-                return PLANE_SIDE_CROSS;
+                return PlaneSide::Cross;
             }
             back++;
         }
@@ -117,7 +117,7 @@ PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
         {
             if (back > 0 || front > 0)
             {
-                return PLANE_SIDE_CROSS;
+                return PlaneSide::Cross;
             }
             onplane++;
         }
@@ -125,20 +125,20 @@ PLANE_SIDE ConvexHull::Classify(PlaneF const& plane, float epsilon) const
 
     if (onplane)
     {
-        return PLANE_SIDE_ON;
+        return PlaneSide::On;
     }
 
     if (front)
     {
-        return PLANE_SIDE_FRONT;
+        return PlaneSide::Front;
     }
 
     if (back)
     {
-        return PLANE_SIDE_BACK;
+        return PlaneSide::Back;
     }
 
-    return PLANE_SIDE_CROSS;
+    return PlaneSide::Cross;
 }
 
 bool ConvexHull::IsTiny(float minEdgeLength) const
@@ -178,7 +178,7 @@ float ConvexHull::CalcArea() const
 BvAxisAlignedBox ConvexHull::CalcBounds() const
 {
     if (m_Points.IsEmpty())
-        return BvAxisAlignedBox::Empty();
+        return BvAxisAlignedBox::sEmpty();
 
     BvAxisAlignedBox bounds(m_Points[0], m_Points[0]);
     for (size_t i = 1, count = m_Points.Size(); i < count; ++i)
@@ -242,18 +242,18 @@ Float3 ConvexHull::CalcCenter() const
     return center * (1.0f / m_Points.Size());
 }
 
-PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& frontHull, ConvexHull& backHull) const
+PlaneSide ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& frontHull, ConvexHull& backHull) const
 {
     size_t i;
     size_t count = m_Points.Size();
 
     int front = 0;
-    int back  = 0;
+    int back = 0;
 
     constexpr size_t MaxHullVerts = 128;
 
-    SmallVector<float, MaxHullVerts>  distances(count + 1);
-    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<float, MaxHullVerts> distances(count + 1);
+    SmallVector<PlaneSide, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
     backHull.Clear();
@@ -267,21 +267,21 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
 
         if (dist > epsilon)
         {
-            sides[i] = PLANE_SIDE_FRONT;
+            sides[i] = PlaneSide::Front;
             front++;
         }
         else if (dist < -epsilon)
         {
-            sides[i] = PLANE_SIDE_BACK;
+            sides[i] = PlaneSide::Back;
             back++;
         }
         else
         {
-            sides[i] = PLANE_SIDE_ON;
+            sides[i] = PlaneSide::On;
         }
     }
 
-    sides[i]     = sides[0];
+    sides[i] = sides[0];
     distances[i] = distances[0];
 
     // If all points on the plane
@@ -292,12 +292,12 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
         if (Math::Dot(hullNormal, plane.Normal) > 0)
         {
             frontHull = *this;
-            return PLANE_SIDE_FRONT;
+            return PlaneSide::Front;
         }
         else
         {
             backHull = *this;
-            return PLANE_SIDE_BACK;
+            return PlaneSide::Back;
         }
     }
 
@@ -305,14 +305,14 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
     {
         // All poins at the back side of the plane
         backHull = *this;
-        return PLANE_SIDE_BACK;
+        return PlaneSide::Back;
     }
 
     if (!back)
     {
         // All poins at the front side of the plane
         frontHull = *this;
-        return PLANE_SIDE_FRONT;
+        return PlaneSide::Front;
     }
 
     frontHull.m_Points.Reserve(count + 4);
@@ -324,28 +324,28 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
 
         switch (sides[i])
         {
-            case PLANE_SIDE_ON:
+            case PlaneSide::On:
                 frontHull.m_Points.Add(p);
                 backHull.m_Points.Add(p);
                 continue;
-            case PLANE_SIDE_FRONT:
+            case PlaneSide::Front:
                 frontHull.m_Points.Add(p);
                 break;
-            case PLANE_SIDE_BACK:
+            case PlaneSide::Back:
                 backHull.m_Points.Add(p);
                 break;
         }
 
         auto nextSide = sides[i + 1];
 
-        if (nextSide == PLANE_SIDE_ON || nextSide == sides[i])
+        if (nextSide == PlaneSide::On || nextSide == sides[i])
         {
             continue;
         }
 
         Float3 newVertex = m_Points[(i + 1) % count];
 
-        if (sides[i] == PLANE_SIDE_FRONT)
+        if (sides[i] == PlaneSide::Front)
         {
             float dist = distances[i] / (distances[i] - distances[i + 1]);
             for (int j = 0; j < 3; j++)
@@ -376,21 +376,21 @@ PLANE_SIDE ConvexHull::Split(PlaneF const& plane, float epsilon, ConvexHull& fro
         backHull.m_Points.Add(newVertex);
     }
 
-    return PLANE_SIDE_CROSS;
+    return PlaneSide::Cross;
 }
 
-PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& frontHull) const
+PlaneSide ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& frontHull) const
 {
     size_t i;
     size_t count = m_Points.Size();
 
     int front = 0;
-    int back  = 0;
+    int back = 0;
 
     constexpr size_t MaxHullVerts = 128;
 
     SmallVector<float, MaxHullVerts> distances(count + 1);
-    SmallVector<int8_t, MaxHullVerts> sides(count + 1);
+    SmallVector<PlaneSide, MaxHullVerts> sides(count + 1);
 
     frontHull.Clear();
 
@@ -403,34 +403,34 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
 
         if (dist > epsilon)
         {
-            sides[i] = PLANE_SIDE_FRONT;
+            sides[i] = PlaneSide::Front;
             front++;
         }
         else if (dist < -epsilon)
         {
-            sides[i] = PLANE_SIDE_BACK;
+            sides[i] = PlaneSide::Back;
             back++;
         }
         else
         {
-            sides[i] = PLANE_SIDE_ON;
+            sides[i] = PlaneSide::On;
         }
     }
 
-    sides[i]     = sides[0];
+    sides[i] = sides[0];
     distances[i] = distances[0];
 
     if (!front)
     {
         // All poins at the back side of the plane
-        return PLANE_SIDE_BACK;
+        return PlaneSide::Back;
     }
 
     if (!back)
     {
         // All poins at the front side of the plane
         frontHull = *this;
-        return PLANE_SIDE_FRONT;
+        return PlaneSide::Front;
     }
 
     frontHull.m_Points.Reserve(count + 4);
@@ -441,17 +441,17 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
 
         switch (sides[i])
         {
-            case PLANE_SIDE_ON:
+            case PlaneSide::On:
                 frontHull.m_Points.Add(p);
                 continue;
-            case PLANE_SIDE_FRONT:
+            case PlaneSide::Front:
                 frontHull.m_Points.Add(p);
                 break;
         }
 
         auto nextSide = sides[i + 1];
 
-        if (nextSide == PLANE_SIDE_ON || nextSide == sides[i])
+        if (nextSide == PlaneSide::On || nextSide == sides[i])
         {
             continue;
         }
@@ -472,7 +472,7 @@ PLANE_SIDE ConvexHull::Clip(PlaneF const& plane, float epsilon, ConvexHull& fron
         frontHull.m_Points.Add(newVertex);
     }
 
-    return PLANE_SIDE_CROSS;
+    return PlaneSide::Cross;
 }
 
 HK_NAMESPACE_END

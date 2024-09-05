@@ -79,7 +79,7 @@ public:
 
     void                    ShrinkToFit();
 
-    static constexpr size_t GetPageSize();
+    static constexpr size_t sGetPageSize();
 
     template <typename Visitor>
     void                    Iterate(Visitor& visitor);
@@ -253,7 +253,7 @@ HK_FORCEINLINE void PageStorage<T, PageSize>::ShrinkToFit()
 }
 
 template <typename T, size_t PageSize>
-constexpr size_t PageStorage<T, PageSize>::GetPageSize()
+constexpr size_t PageStorage<T, PageSize>::sGetPageSize()
 {
     return PageSize;
 }

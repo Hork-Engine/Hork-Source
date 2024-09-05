@@ -53,22 +53,22 @@ struct CanvasPaint
     TextureHandle         TexHandle;
     CANVAS_IMAGE_FLAGS    ImageFlags = CANVAS_IMAGE_DEFAULT;
 
-    /** Creates and returns a linear gradient.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
+    /// Creates and returns a linear gradient.
+    /// The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint().
     CanvasPaint& LinearGradient(Float2 const& startPoint, Float2 const& endPoint, Color4 const& innerColor, Color4 const& outerColor);
 
-    /** Creates and returns a radial gradient.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
+    /// Creates and returns a radial gradient.
+    /// The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint().
     CanvasPaint& RadialGradient(Float2 const& center, float innerRadius, float outerRadius, Color4 const& innerColor, Color4 const& outerColor);
 
-    /** Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
-    drop shadows or highlights for boxes. Feather defines how blurry the border of the rectangle is.
-    Parameter innerColor specifies the inner color and outerColor the outer color of the gradient.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
+    /// Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
+    /// drop shadows or highlights for boxes. Feather defines how blurry the border of the rectangle is.
+    /// Parameter innerColor specifies the inner color and outerColor the outer color of the gradient.
+    /// The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint().
     CanvasPaint& BoxGradient(Float2 const& boxTopLeft, float w, float h, float cornerRadius, float feather, Color4 const& innerColor, Color4 const& outerColor);
 
-    /** Creates and returns an image patter. Angle is a rotation around the top-left corner.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
+    /// Creates and returns an image patter. Angle is a rotation around the top-left corner.
+    /// The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint().
     CanvasPaint& ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, TextureHandle texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
 
     CanvasPaint& Solid(Color4 const& color);

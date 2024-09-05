@@ -1035,7 +1035,7 @@ static ExtensionToFileFormatMapping ExtensionToFileFormatMappings[] = {
 
 IMAGE_FILE_FORMAT GetImageFileFormat(StringView FileName)
 {
-    StringView extension = PathUtils::GetExt(FileName);
+    StringView extension = PathUtils::sGetExt(FileName);
 
     for (ExtensionToFileFormatMapping& mapping : ExtensionToFileFormatMappings)
     {
@@ -1166,7 +1166,7 @@ RawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT For
 
 RawImage CreateRawImage(StringView FileName, RAW_IMAGE_FORMAT Format)
 {
-    return CreateRawImage(File::OpenRead(FileName).ReadInterface(), Format);
+    return CreateRawImage(File::sOpenRead(FileName).ReadInterface(), Format);
 }
 
 RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
@@ -1230,7 +1230,7 @@ RawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
 
 RawImage LoadNormalMapAsRawVectors(StringView FileName)
 {
-    File f = File::OpenRead(FileName);
+    File f = File::sOpenRead(FileName);
     if (!f)
     {
         LOG("LoadNormalMapAsRawVectors: couldn't open {}\n", FileName);
@@ -1670,7 +1670,7 @@ bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Hei
 
 bool WriteImage(StringView FileName, ImageWriteConfig const& Config)
 {
-    StringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::sGetExt(FileName);
 
     if (ext.Icompare(".hdr") || ext.Icompare(".exr"))
     {
@@ -1684,7 +1684,7 @@ bool WriteImage(StringView FileName, ImageWriteConfig const& Config)
         return false;
     }
 
-    File f = File::OpenWrite(FileName);
+    File f = File::sOpenWrite(FileName);
     if (!f)
         return false;
 
@@ -1711,7 +1711,7 @@ bool WriteImage(StringView FileName, ImageWriteConfig const& Config)
 
 bool WriteImageHDRI(StringView FileName, ImageWriteConfig const& Config)
 {
-    StringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::sGetExt(FileName);
 
     if (!(ext.Icompare(".hdr") || ext.Icompare(".exr")))
     {
@@ -1719,7 +1719,7 @@ bool WriteImageHDRI(StringView FileName, ImageWriteConfig const& Config)
         return false;
     }
 
-    File f = File::OpenWrite(FileName);
+    File f = File::sOpenWrite(FileName);
     if (!f)
         return false;
 
@@ -1763,7 +1763,7 @@ bool WriteImage(StringView FileName, RawImage const& Image)
             return false;
     }
 
-    StringView ext = PathUtils::GetExt(FileName);
+    StringView ext = PathUtils::sGetExt(FileName);
     bool        bHDRIExt = ext.Icompare(".hdr") || ext.Icompare(".exr");
 
     ImageWriteConfig config;

@@ -90,7 +90,7 @@ struct Cinematic::Frame
 
 Cinematic::Cinematic(StringView resourceName)
 {
-    m_Texture = GameApplication::GetResourceManager().CreateResource<TextureResource>(resourceName);
+    m_Texture = GameApplication::sGetResourceManager().CreateResource<TextureResource>(resourceName);
 }
 
 Cinematic::~Cinematic()
@@ -102,7 +102,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
 {
     Close();
 
-    m_File = GameApplication::GetResourceManager().OpenFile(filename);
+    m_File = GameApplication::sGetResourceManager().OpenFile(filename);
     if (!m_File)
     {
         LOG("Cinematic::Open: Couldn't open {}\n", filename);
@@ -189,7 +189,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
         plm_set_audio_lead_time(m_pImpl, (double)audioSamples / (double)m_SampleRate);
     }
 
-    TextureResource* texture = GameApplication::GetResourceManager().TryGet(m_Texture);
+    TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
     HK_ASSERT(texture);
 
     if (!texture->GetTextureGPU() || texture->GetWidth() != m_Width || texture->GetHeight() != m_Height)
@@ -197,7 +197,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
 
     if (audioEnabled)
     {
-        AudioDevice* audio = GameApplication::GetAudioDevice();
+        AudioDevice* audio = GameApplication::sGetAudioDevice();
 
         AudioStreamDesc streamDesc{};
         streamDesc.Format = AudioTransferFormat::FLOAT32;
@@ -221,7 +221,7 @@ void Cinematic::Close()
 
     if (m_Texture)
     {
-        TextureResource* texture = GameApplication::GetResourceManager().TryGet(m_Texture);
+        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
         HK_ASSERT(texture);
 
         texture->SetTextureGPU(nullptr);
@@ -349,7 +349,7 @@ void Cinematic::OnVideoDecode(Frame& frame)
 
     plm_frame_to_bgra(frame.data, (uint8_t*)m_Blob.GetData(), frame.data->width * 4);
 
-    TextureResource* texture = GameApplication::GetResourceManager().TryGet(m_Texture);
+    TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
     texture->WriteData2D(0, 0, width, height, 0, m_Blob.GetData());
 }
 

@@ -68,7 +68,7 @@ ResourceManager::ResourceManager()
     m_Thread.Start([this]()
                    { UpdateAsync(); });
 
-    Core::TraverseDirectory(CoreApplication::GetRootPath(), false,
+    Core::TraverseDirectory(CoreApplication::sGetRootPath(), false,
                             [this](StringView fileName, bool bIsDirectory)
                             {
                                 if (bIsDirectory)
@@ -76,7 +76,7 @@ ResourceManager::ResourceManager()
                                     return;
                                 }
 
-                                if (PathUtils::CompareExt(fileName, ".resources"))
+                                if (PathUtils::sCompareExt(fileName, ".resources"))
                                 {
                                     AddResourcePack(fileName);
                                 }
@@ -95,7 +95,7 @@ ResourceManager::~ResourceManager()
 
 void ResourceManager::AddResourcePack(StringView fileName)
 {
-    m_ResourcePacks.EmplaceBack<Archive>(Archive::Open(fileName, true));
+    m_ResourcePacks.EmplaceBack<Archive>(Archive::sOpen(fileName, true));
 }
 
 bool ResourceManager::FindFile(StringView fileName, int* pResourcePackIndex, FileHandle* pFileHandle) const
@@ -132,10 +132,10 @@ File ResourceManager::OpenFile(StringView path)
         }
         #endif
         // try to load from file system
-        String fileSystemPath = CoreApplication::GetRootPath() + path;
+        String fileSystemPath = CoreApplication::sGetRootPath() + path;
         if (Core::IsFileExists(fileSystemPath))
         {
-            return File::OpenRead(fileSystemPath);
+            return File::sOpenRead(fileSystemPath);
         }
 
         // try to load from resource pack
@@ -143,7 +143,7 @@ File ResourceManager::OpenFile(StringView path)
         FileHandle fileHandle;
         if (FindFile(path, &resourcePack, &fileHandle))
         {
-            return File::OpenRead(fileHandle, m_ResourcePacks[resourcePack]);
+            return File::sOpenRead(fileHandle, m_ResourcePacks[resourcePack]);
         }
 
         LOG("File not found /Root/{}\n", path);
@@ -168,14 +168,14 @@ File ResourceManager::OpenFile(StringView path)
     {
         path = path.TruncateHead(4);
 
-        return File::OpenRead(path);
+        return File::sOpenRead(path);
     }
 
     if (!path.IcmpN("/Embedded/", 10))
     {
         path = path.TruncateHead(10);
 
-        return File::OpenRead(path, GameApplication::GetEmbeddedArchive());
+        return File::sOpenRead(path, GameApplication::sGetEmbeddedArchive());
     }
 
     LOG("Invalid path \"{}\"\n", path);
@@ -209,19 +209,19 @@ UniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, S
     switch (type)
     {
         case RESOURCE_MESH:
-            return MeshResource::Load(f);
+            return MeshResource::sLoad(f);
         case RESOURCE_ANIMATION:
-            return AnimationResource::Load(f);
+            return AnimationResource::sLoad(f);
         case RESOURCE_TEXTURE:
-            return TextureResource::Load(f);
+            return TextureResource::sLoad(f);
         case RESOURCE_MATERIAL:
-            return MaterialResource::Load(f);
+            return MaterialResource::sLoad(f);
         case RESOURCE_SOUND:
-            return SoundResource::Load(f);
+            return SoundResource::sLoad(f);
         case RESOURCE_FONT:
-            return FontResource::Load(f);
+            return FontResource::sLoad(f);
         case RESOURCE_TERRAIN:
-            return TerrainResource::Load(f);
+            return TerrainResource::sLoad(f);
         default:
             break;
     }

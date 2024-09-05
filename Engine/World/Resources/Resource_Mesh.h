@@ -61,7 +61,7 @@ struct MeshSurface
     int16_t             SkinIndex = -1;
     uint16_t            JointIndex = 0;
     SimdFloat4x4        InverseTransform = SimdFloat4x4::identity();
-    BvAxisAlignedBox    BoundingBox = BvAxisAlignedBox::Empty();
+    BvAxisAlignedBox    BoundingBox = BvAxisAlignedBox::sEmpty();
     BvhTree             Bvh;
 
     void                Read(IBinaryStreamReadInterface& stream);
@@ -110,7 +110,7 @@ public:
                                 MeshResource() = default;
                                 ~MeshResource();
 
-    static UniqueRef<MeshResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<MeshResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
     void                        Write(IBinaryStreamWriteInterface& stream) const;
@@ -174,10 +174,10 @@ public:
     void                        DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) const;
 
 private:
-    static void*                GetVertexMemory(void* _This);
-    static void*                GetSkinMemory(void* _This);
-    static void*                GetLightmapUVMemory(void* _This);
-    static void*                GetIndexMemory(void* _This);
+    static void*                sGetVertexMemory(void* _This);
+    static void*                sGetSkinMemory(void* _This);
+    static void*                sGetLightmapUVMemory(void* _This);
+    static void*                sGetIndexMemory(void* _This);
 
     void                        Clear();
     void                        AddLightmapUVs();

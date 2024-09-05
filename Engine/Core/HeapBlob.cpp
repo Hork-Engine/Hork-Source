@@ -37,27 +37,27 @@ HeapBlob::~HeapBlob()
     Core::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 }
 
-void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
+void HeapBlob::Reset(size_t sizeInBytes, void const* data, MALLOC_FLAGS flags)
 {
-    if (m_HeapSize == SizeInBytes)
+    if (m_HeapSize == sizeInBytes)
     {
-        if (pData && m_HeapSize > 0)
-            Core::Memcpy(m_HeapPtr, pData, m_HeapSize);
+        if (data && m_HeapSize > 0)
+            Core::Memcpy(m_HeapPtr, data, m_HeapSize);
         return;
     }
 
     Core::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 
-    m_HeapSize = SizeInBytes;
+    m_HeapSize = sizeInBytes;
 
-    if (SizeInBytes > 0)
+    if (sizeInBytes > 0)
     {
-        m_HeapPtr = Core::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1, 16, Flags);
+        m_HeapPtr = Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeInBytes + 1, 16, flags);
         if (m_HeapPtr)
         {
-            if (pData)
-                Core::Memcpy(m_HeapPtr, pData, SizeInBytes);
-            ((uint8_t*)m_HeapPtr)[SizeInBytes] = 0;
+            if (data)
+                Core::Memcpy(m_HeapPtr, data, sizeInBytes);
+            ((uint8_t*)m_HeapPtr)[sizeInBytes] = 0;
         }
         else
             m_HeapSize = 0;

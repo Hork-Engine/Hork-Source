@@ -178,7 +178,7 @@ void CameraComponent::SetOrthoZoom(float zoom)
     }
 }
 
-void CameraComponent::GetOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs)
+void CameraComponent::sGetOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs)
 {
     if (aspectRatio > 0.0f)
     {
@@ -208,7 +208,7 @@ Float4x4 CameraComponent::GetClusterProjectionMatrix() const
             desc.ZNear = FRUSTUM_CLUSTER_ZNEAR;
             desc.ZFar = FRUSTUM_CLUSTER_ZFAR;
             desc.ReversedDepth = true;
-            return Float4x4::GetOrthoMatrix(desc);
+            return Float4x4::sGetOrthoMatrix(desc);
         }
         case CameraProjection::OrthoZoomWithAspectRatio:
         {
@@ -216,8 +216,8 @@ Float4x4 CameraComponent::GetClusterProjectionMatrix() const
             desc.ZNear = FRUSTUM_CLUSTER_ZNEAR;
             desc.ZFar = FRUSTUM_CLUSTER_ZFAR;
             desc.ReversedDepth = true;
-            CameraComponent::GetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, desc.Mins, desc.Maxs);
-            return Float4x4::GetOrthoMatrix(desc);
+            CameraComponent::sGetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, desc.Mins, desc.Maxs);
+            return Float4x4::sGetOrthoMatrix(desc);
         }
         case CameraProjection::PerspectiveFovProvided:
         {
@@ -226,7 +226,7 @@ Float4x4 CameraComponent::GetClusterProjectionMatrix() const
             desc.FieldOfViewY = m_FovY;
             desc.ZNear = FRUSTUM_CLUSTER_ZNEAR;
             desc.ZFar = FRUSTUM_CLUSTER_ZFAR;
-            return Float4x4::GetPerspectiveMatrix(desc);
+            return Float4x4::sGetPerspectiveMatrix(desc);
         }
         case CameraProjection::PerspectiveFovXWithAspectRatio:
         {
@@ -235,7 +235,7 @@ Float4x4 CameraComponent::GetClusterProjectionMatrix() const
             desc.FieldOfView = CalcFovYFromFovX(m_FovX, m_AspectRatio);
             desc.ZNear = FRUSTUM_CLUSTER_ZNEAR;
             desc.ZFar = FRUSTUM_CLUSTER_ZFAR;
-            return Float4x4::GetPerspectiveMatrix(desc);
+            return Float4x4::sGetPerspectiveMatrix(desc);
         }
         case CameraProjection::PerspectiveFovYWithAspectRatio:
         {
@@ -244,11 +244,11 @@ Float4x4 CameraComponent::GetClusterProjectionMatrix() const
             desc.FieldOfView = m_FovY;
             desc.ZNear = FRUSTUM_CLUSTER_ZNEAR;
             desc.ZFar = FRUSTUM_CLUSTER_ZFAR;
-            return Float4x4::GetPerspectiveMatrix(desc);
+            return Float4x4::sGetPerspectiveMatrix(desc);
         }
     }
 
-    return Float4x4::Identity();
+    return Float4x4::sIdentity();
 }
 
 Float4x4 const& CameraComponent::GetProjectionMatrix() const
@@ -265,7 +265,7 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 desc.ZNear = m_ZNear;
                 desc.ZFar = m_ZFar;
                 desc.ReversedDepth = true;
-                m_ProjectionMatrix = Float4x4::GetOrthoMatrix(desc);
+                m_ProjectionMatrix = Float4x4::sGetOrthoMatrix(desc);
                 break;
             }
             case CameraProjection::OrthoZoomWithAspectRatio:
@@ -274,8 +274,8 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 desc.ZNear = m_ZNear;
                 desc.ZFar = m_ZFar;
                 desc.ReversedDepth = true;
-                GetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, desc.Mins, desc.Maxs);
-                m_ProjectionMatrix = Float4x4::GetOrthoMatrix(desc);
+                sGetOrthoRect(m_AspectRatio, 1.0f / m_OrthoZoom, desc.Mins, desc.Maxs);
+                m_ProjectionMatrix = Float4x4::sGetOrthoMatrix(desc);
                 break;
             }
             case CameraProjection::PerspectiveFovProvided:
@@ -285,7 +285,7 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 desc.FieldOfViewY = m_FovY;
                 desc.ZNear = m_ZNear;
                 desc.ZFar = m_ZFar;
-                m_ProjectionMatrix = Float4x4::GetPerspectiveMatrix(desc);
+                m_ProjectionMatrix = Float4x4::sGetPerspectiveMatrix(desc);
                 break;
             }
             case CameraProjection::PerspectiveFovXWithAspectRatio:
@@ -295,7 +295,7 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 desc.FieldOfView = CalcFovYFromFovX(m_FovX, m_AspectRatio);
                 desc.ZNear = m_ZNear;
                 desc.ZFar = m_ZFar;
-                m_ProjectionMatrix = Float4x4::GetPerspectiveMatrix(desc);
+                m_ProjectionMatrix = Float4x4::sGetPerspectiveMatrix(desc);
                 break;
             }
             case CameraProjection::PerspectiveFovYWithAspectRatio:
@@ -305,7 +305,7 @@ Float4x4 const& CameraComponent::GetProjectionMatrix() const
                 desc.FieldOfView = m_FovY;
                 desc.ZNear = m_ZNear;
                 desc.ZFar = m_ZFar;
-                m_ProjectionMatrix = Float4x4::GetPerspectiveMatrix(desc);
+                m_ProjectionMatrix = Float4x4::sGetPerspectiveMatrix(desc);
                 break;
             }
         }

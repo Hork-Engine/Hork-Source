@@ -47,42 +47,42 @@ public:
     PoolAllocator();
     ~PoolAllocator();
 
-    PoolAllocator(PoolAllocator&& Rhs) noexcept
+    PoolAllocator(PoolAllocator&& rhs) noexcept
     {
-        Core::Swap(m_Blocks, Rhs.m_Blocks);
-        Core::Swap(m_CurBlock, Rhs.m_CurBlock);
-        Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
-        Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
+        Core::Swap(m_Blocks, rhs.m_Blocks);
+        Core::Swap(m_CurBlock, rhs.m_CurBlock);
+        Core::Swap(m_TotalChunks, rhs.m_TotalChunks);
+        Core::Swap(m_TotalBlocks, rhs.m_TotalBlocks);
     }
 
-    PoolAllocator& operator=(PoolAllocator&& Rhs) noexcept
+    PoolAllocator& operator=(PoolAllocator&& rhs) noexcept
     {
         Free();
 
-        Core::Swap(m_Blocks, Rhs.m_Blocks);
-        Core::Swap(m_CurBlock, Rhs.m_CurBlock);
-        Core::Swap(m_TotalChunks, Rhs.m_TotalChunks);
-        Core::Swap(m_TotalBlocks, Rhs.m_TotalBlocks);
+        Core::Swap(m_Blocks, rhs.m_Blocks);
+        Core::Swap(m_CurBlock, rhs.m_CurBlock);
+        Core::Swap(m_TotalChunks, rhs.m_TotalChunks);
+        Core::Swap(m_TotalBlocks, rhs.m_TotalBlocks);
 
         return *this;
     }
 
-    /** Allocates an object from the pool. Doesn't call constructors. */
+    /// Allocates an object from the pool. Doesn't call constructors.
     T* Allocate();
 
-    /** Deallocate object from pool */
+    /// Deallocate object from pool
     void Deallocate(void* _Bytes);
 
-    /** Free pool. */
+    /// Free pool.
     void Free();
 
-    /** Remove empty blocks. */
+    /// Remove empty blocks.
     void CleanupEmptyBlocks();
 
-    /** Returns the total number of allocated blocks. */
+    /// Returns the total number of allocated blocks.
     int GetTotalBlocks() const { return m_TotalBlocks; }
 
-    /**Returns the total number of allocated chunks. */
+    /// Returns the total number of allocated chunks.
     int GetTotalChunks() const { return m_TotalChunks; }
 
 private:
@@ -103,7 +103,7 @@ private:
     int m_TotalChunks;
     int m_TotalBlocks;
 
-    /** Create a new block */
+    // Create a new block
     Block* AllocateBlock();
 };
 

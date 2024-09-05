@@ -47,217 +47,217 @@ namespace Core
 
 MemoryHeap MemoryHeaps[HEAP_MAX];
 
-void _MemcpySSE(byte* _Dst, const byte* _Src, size_t _SizeInBytes)
+void _MemcpySSE(byte* dst, const byte* src, size_t sizeInBytes)
 {
-    HK_ASSERT(IsSSEAligned((size_t)_Dst));
-    HK_ASSERT(IsSSEAligned((size_t)_Src));
+    HK_ASSERT(IsSSEAligned((size_t)dst));
+    HK_ASSERT(IsSSEAligned((size_t)src));
 
     int n = 0;
 
-    while (n + 256 <= _SizeInBytes)
+    while (n + 256 <= sizeInBytes)
     {
-        __m128i d0 = _mm_load_si128((__m128i*)&_Src[n + 0 * 16]);
-        __m128i d1 = _mm_load_si128((__m128i*)&_Src[n + 1 * 16]);
-        __m128i d2 = _mm_load_si128((__m128i*)&_Src[n + 2 * 16]);
-        __m128i d3 = _mm_load_si128((__m128i*)&_Src[n + 3 * 16]);
-        __m128i d4 = _mm_load_si128((__m128i*)&_Src[n + 4 * 16]);
-        __m128i d5 = _mm_load_si128((__m128i*)&_Src[n + 5 * 16]);
-        __m128i d6 = _mm_load_si128((__m128i*)&_Src[n + 6 * 16]);
-        __m128i d7 = _mm_load_si128((__m128i*)&_Src[n + 7 * 16]);
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], d0);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], d1);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], d2);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], d3);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], d4);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], d5);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], d6);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], d7);
-        d0 = _mm_load_si128((__m128i*)&_Src[n + 8 * 16]);
-        d1 = _mm_load_si128((__m128i*)&_Src[n + 9 * 16]);
-        d2 = _mm_load_si128((__m128i*)&_Src[n + 10 * 16]);
-        d3 = _mm_load_si128((__m128i*)&_Src[n + 11 * 16]);
-        d4 = _mm_load_si128((__m128i*)&_Src[n + 12 * 16]);
-        d5 = _mm_load_si128((__m128i*)&_Src[n + 13 * 16]);
-        d6 = _mm_load_si128((__m128i*)&_Src[n + 14 * 16]);
-        d7 = _mm_load_si128((__m128i*)&_Src[n + 15 * 16]);
-        _mm_stream_si128((__m128i*)&_Dst[n + 8 * 16], d0);
-        _mm_stream_si128((__m128i*)&_Dst[n + 9 * 16], d1);
-        _mm_stream_si128((__m128i*)&_Dst[n + 10 * 16], d2);
-        _mm_stream_si128((__m128i*)&_Dst[n + 11 * 16], d3);
-        _mm_stream_si128((__m128i*)&_Dst[n + 12 * 16], d4);
-        _mm_stream_si128((__m128i*)&_Dst[n + 13 * 16], d5);
-        _mm_stream_si128((__m128i*)&_Dst[n + 14 * 16], d6);
-        _mm_stream_si128((__m128i*)&_Dst[n + 15 * 16], d7);
+        __m128i d0 = _mm_load_si128((__m128i*)&src[n + 0 * 16]);
+        __m128i d1 = _mm_load_si128((__m128i*)&src[n + 1 * 16]);
+        __m128i d2 = _mm_load_si128((__m128i*)&src[n + 2 * 16]);
+        __m128i d3 = _mm_load_si128((__m128i*)&src[n + 3 * 16]);
+        __m128i d4 = _mm_load_si128((__m128i*)&src[n + 4 * 16]);
+        __m128i d5 = _mm_load_si128((__m128i*)&src[n + 5 * 16]);
+        __m128i d6 = _mm_load_si128((__m128i*)&src[n + 6 * 16]);
+        __m128i d7 = _mm_load_si128((__m128i*)&src[n + 7 * 16]);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], d0);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], d1);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], d2);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], d3);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], d4);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], d5);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], d6);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], d7);
+        d0 = _mm_load_si128((__m128i*)&src[n + 8 * 16]);
+        d1 = _mm_load_si128((__m128i*)&src[n + 9 * 16]);
+        d2 = _mm_load_si128((__m128i*)&src[n + 10 * 16]);
+        d3 = _mm_load_si128((__m128i*)&src[n + 11 * 16]);
+        d4 = _mm_load_si128((__m128i*)&src[n + 12 * 16]);
+        d5 = _mm_load_si128((__m128i*)&src[n + 13 * 16]);
+        d6 = _mm_load_si128((__m128i*)&src[n + 14 * 16]);
+        d7 = _mm_load_si128((__m128i*)&src[n + 15 * 16]);
+        _mm_stream_si128((__m128i*)&dst[n + 8 * 16], d0);
+        _mm_stream_si128((__m128i*)&dst[n + 9 * 16], d1);
+        _mm_stream_si128((__m128i*)&dst[n + 10 * 16], d2);
+        _mm_stream_si128((__m128i*)&dst[n + 11 * 16], d3);
+        _mm_stream_si128((__m128i*)&dst[n + 12 * 16], d4);
+        _mm_stream_si128((__m128i*)&dst[n + 13 * 16], d5);
+        _mm_stream_si128((__m128i*)&dst[n + 14 * 16], d6);
+        _mm_stream_si128((__m128i*)&dst[n + 15 * 16], d7);
         n += 256;
     }
 
-    while (n + 128 <= _SizeInBytes)
+    while (n + 128 <= sizeInBytes)
     {
-        __m128i d0 = _mm_load_si128((__m128i*)&_Src[n + 0 * 16]);
-        __m128i d1 = _mm_load_si128((__m128i*)&_Src[n + 1 * 16]);
-        __m128i d2 = _mm_load_si128((__m128i*)&_Src[n + 2 * 16]);
-        __m128i d3 = _mm_load_si128((__m128i*)&_Src[n + 3 * 16]);
-        __m128i d4 = _mm_load_si128((__m128i*)&_Src[n + 4 * 16]);
-        __m128i d5 = _mm_load_si128((__m128i*)&_Src[n + 5 * 16]);
-        __m128i d6 = _mm_load_si128((__m128i*)&_Src[n + 6 * 16]);
-        __m128i d7 = _mm_load_si128((__m128i*)&_Src[n + 7 * 16]);
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], d0);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], d1);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], d2);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], d3);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], d4);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], d5);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], d6);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], d7);
+        __m128i d0 = _mm_load_si128((__m128i*)&src[n + 0 * 16]);
+        __m128i d1 = _mm_load_si128((__m128i*)&src[n + 1 * 16]);
+        __m128i d2 = _mm_load_si128((__m128i*)&src[n + 2 * 16]);
+        __m128i d3 = _mm_load_si128((__m128i*)&src[n + 3 * 16]);
+        __m128i d4 = _mm_load_si128((__m128i*)&src[n + 4 * 16]);
+        __m128i d5 = _mm_load_si128((__m128i*)&src[n + 5 * 16]);
+        __m128i d6 = _mm_load_si128((__m128i*)&src[n + 6 * 16]);
+        __m128i d7 = _mm_load_si128((__m128i*)&src[n + 7 * 16]);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], d0);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], d1);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], d2);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], d3);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], d4);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], d5);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], d6);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], d7);
         n += 128;
     }
 
-    while (n + 16 <= _SizeInBytes)
+    while (n + 16 <= sizeInBytes)
     {
-        __m128i d0 = _mm_load_si128((__m128i*)&_Src[n]);
-        _mm_stream_si128((__m128i*)&_Dst[n], d0);
+        __m128i d0 = _mm_load_si128((__m128i*)&src[n]);
+        _mm_stream_si128((__m128i*)&dst[n], d0);
         n += 16;
     }
 
-    while (n + 4 <= _SizeInBytes)
+    while (n + 4 <= sizeInBytes)
     {
-        *(uint32_t*)&_Dst[n] = *(const uint32_t*)&_Src[n];
+        *(uint32_t*)&dst[n] = *(const uint32_t*)&src[n];
         n += 4;
     }
 
-    while (n < _SizeInBytes)
+    while (n < sizeInBytes)
     {
-        _Dst[n] = _Src[n];
+        dst[n] = src[n];
         n++;
     }
 
     _mm_sfence();
 }
 
-void _ZeroMemSSE(byte* _Dst, size_t _SizeInBytes)
+void _ZeroMemSSE(byte* dst, size_t sizeInBytes)
 {
-    HK_ASSERT(IsSSEAligned((size_t)_Dst));
+    HK_ASSERT(IsSSEAligned((size_t)dst));
 
     int n = 0;
 
     __m128i zero = _mm_setzero_si128();
 
-    while (n + 256 <= _SizeInBytes)
+    while (n + 256 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 8 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 9 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 10 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 11 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 12 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 13 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 14 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 15 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 8 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 9 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 10 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 11 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 12 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 13 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 14 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 15 * 16], zero);
         n += 256;
     }
 
-    while (n + 128 <= _SizeInBytes)
+    while (n + 128 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], zero);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], zero);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], zero);
         n += 128;
     }
 
-    while (n + 16 <= _SizeInBytes)
+    while (n + 16 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n], zero);
+        _mm_stream_si128((__m128i*)&dst[n], zero);
         n += 16;
     }
 
-    while (n + 4 <= _SizeInBytes)
+    while (n + 4 <= sizeInBytes)
     {
-        *(uint32_t*)&_Dst[n] = 0;
+        *(uint32_t*)&dst[n] = 0;
         n += 4;
     }
 
-    while (n < _SizeInBytes)
+    while (n < sizeInBytes)
     {
-        _Dst[n] = 0;
+        dst[n] = 0;
         n++;
     }
 
     _mm_sfence();
 }
 
-void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes)
+void _MemsetSSE(byte* dst, int _val, size_t sizeInBytes)
 {
-    HK_ASSERT(IsSSEAligned((size_t)_Dst));
+    HK_ASSERT(IsSSEAligned((size_t)dst));
 
     alignas(16) int32_t data[4];
 
-    std::memset(data, _Val, sizeof(data));
+    std::memset(data, _val, sizeof(data));
 
     __m128i val = _mm_load_si128((__m128i*)&data[0]);
 
     int n = 0;
 
-    while (n + 256 <= _SizeInBytes)
+    while (n + 256 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 8 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 9 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 10 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 11 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 12 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 13 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 14 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 15 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 8 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 9 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 10 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 11 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 12 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 13 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 14 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 15 * 16], val);
         n += 256;
     }
 
-    while (n + 128 <= _SizeInBytes)
+    while (n + 128 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n + 0 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 1 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 2 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 3 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 4 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 5 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 6 * 16], val);
-        _mm_stream_si128((__m128i*)&_Dst[n + 7 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 0 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 1 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 2 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 3 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 4 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 5 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 6 * 16], val);
+        _mm_stream_si128((__m128i*)&dst[n + 7 * 16], val);
         n += 128;
     }
 
-    while (n + 16 <= _SizeInBytes)
+    while (n + 16 <= sizeInBytes)
     {
-        _mm_stream_si128((__m128i*)&_Dst[n], val);
+        _mm_stream_si128((__m128i*)&dst[n], val);
         n += 16;
     }
 
-    while (n + 4 <= _SizeInBytes)
+    while (n + 4 <= sizeInBytes)
     {
-        *(uint32_t*)&_Dst[n] = data[0];
+        *(uint32_t*)&dst[n] = data[0];
         n += 4;
     }
 
-    while (n < _SizeInBytes)
+    while (n < sizeInBytes)
     {
-        _Dst[n] = data[0];
+        dst[n] = data[0];
         n++;
     }
 
@@ -274,9 +274,9 @@ struct HeapChunk
     uint32_t Offset;
 };
 
-void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::_Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    HK_VERIFY(SizeInBytes <= std::numeric_limits<uint32_t>::max(), "MemoryAlloc: Too large allocation\n");
+    HK_VERIFY(sizeInBytes <= std::numeric_limits<uint32_t>::max(), "MemoryAlloc: Too large allocation\n");
 
     constexpr size_t DefaultAlignment =
 #    if defined(__GNUC__)
@@ -285,75 +285,75 @@ void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flag
         16;
 #    endif
 
-    if (Alignment == 0)
+    if (alignment == 0)
     {
-        Alignment = DefaultAlignment;
+        alignment = DefaultAlignment;
     }
     else
     {
-        HK_VERIFY(IsPowerOfTwo(Alignment), "MemoryAlloc: Alignment must be power of two\n");
+        HK_VERIFY(IsPowerOfTwo(alignment), "MemoryAlloc: Alignment must be power of two\n");
     }
 
-    size_t size = SizeInBytes + sizeof(HeapChunk) + (Alignment - 1);
+    size_t size = sizeInBytes + sizeof(HeapChunk) + (alignment - 1);
 
     byte* p = (byte*)malloc(size);
     if (HK_UNLIKELY(!p))
         return nullptr;
 
-    void* aligned = AlignPtr(p + sizeof(HeapChunk), Alignment);
+    void* aligned = AlignPtr(p + sizeof(HeapChunk), alignment);
 
     size_t offset = ((byte*)aligned - p);
     HK_VERIFY(offset <= std::numeric_limits<uint32_t>::max(), "MemoryAlloc: Too big alignment\n");
 
     (((HeapChunk*)aligned) - 1)->Offset = (uint32_t)offset;
-    (((HeapChunk*)aligned) - 1)->Size   = SizeInBytes;
+    (((HeapChunk*)aligned) - 1)->Size   = sizeInBytes;
 
-    if (Flags & MALLOC_ZERO)
-        Core::ZeroMem(aligned, SizeInBytes);
+    if (flags & MALLOC_ZERO)
+        Core::ZeroMem(aligned, sizeInBytes);
 
-    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
+    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(sizeInBytes)));
     m_MemoryAllocs.Increment();
     m_PerFrameAllocs.Increment();
 
     return aligned;
 }
 
-void MemoryHeap::Free(void* Ptr)
+void MemoryHeap::Free(void* ptr)
 {
-    if (!Ptr)
+    if (!ptr)
         return;
 
-    m_MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
+    m_MemoryAllocated.Sub((((HeapChunk*)ptr) - 1)->Size);
     m_MemoryAllocs.Decrement();
     m_PerFrameFrees.Increment();
 
-    free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
+    free((byte*)ptr - (((HeapChunk*)ptr) - 1)->Offset);
 }
 
-size_t MemoryHeap::GetSize(void* Ptr)
+size_t MemoryHeap::GetSize(void* ptr)
 {
-    return Ptr ? (((HeapChunk*)Ptr) - 1)->Size : 0;
+    return ptr ? (((HeapChunk*)ptr) - 1)->Size : 0;
 }
 
-void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::_Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    if (!Ptr)
-        return _Alloc(SizeInBytes, Alignment, Flags);
+    if (!ptr)
+        return _Alloc(sizeInBytes, alignment, flags);
 
-    size_t OldSize = (((HeapChunk*)Ptr) - 1)->Size;
-    if (OldSize >= SizeInBytes && IsAlignedPtr(Ptr, Alignment))
-        return Ptr;
+    size_t OldSize = (((HeapChunk*)ptr) - 1)->Size;
+    if (OldSize >= sizeInBytes && IsAlignedPtr(ptr, alignment))
+        return ptr;
 
-    void* NewPtr = _Alloc(SizeInBytes, Alignment, Flags);
+    void* NewPtr = _Alloc(sizeInBytes, alignment, flags);
     if (HK_LIKELY(NewPtr))
     {
-        if (!(Flags & MALLOC_DISCARD))
-            Core::Memcpy(NewPtr, Ptr, OldSize);
+        if (!(flags & MALLOC_DISCARD))
+            Core::Memcpy(NewPtr, ptr, OldSize);
     }
 
-    m_MemoryAllocated.Sub((((HeapChunk*)Ptr) - 1)->Size);
+    m_MemoryAllocated.Sub((((HeapChunk*)ptr) - 1)->Size);
 
-    free((byte*)Ptr - (((HeapChunk*)Ptr) - 1)->Offset);
+    free((byte*)ptr - (((HeapChunk*)ptr) - 1)->Offset);
     m_PerFrameFrees.Increment();
     m_MemoryAllocs.Decrement();
 
@@ -362,68 +362,68 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
 
 #else
 
-void* MemoryHeap::_Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::_Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    void* Ptr;
+    void* ptr;
 
-    if (Alignment == 0)
+    if (alignment == 0)
     {
-        Ptr = (Flags & MALLOC_ZERO) ? mi_zalloc(SizeInBytes) : mi_malloc(SizeInBytes);
+        ptr = (flags & MALLOC_ZERO) ? mi_zalloc(sizeInBytes) : mi_malloc(sizeInBytes);
     }
     else
     {
-        HK_VERIFY(IsPowerOfTwo(Alignment), "MemoryAlloc: Alignment must be power of two\n");
-        HK_VERIFY(Alignment <= MI_ALIGNMENT_MAX, "MemoryAlloc: Too big alignment\n");
+        HK_VERIFY(IsPowerOfTwo(alignment), "MemoryAlloc: Alignment must be power of two\n");
+        HK_VERIFY(alignment <= MI_ALIGNMENT_MAX, "MemoryAlloc: Too big alignment\n");
 
-        Ptr = (Flags & MALLOC_ZERO) ? mi_zalloc_aligned(SizeInBytes, Alignment) : mi_malloc_aligned(SizeInBytes, Alignment);
+        ptr = (flags & MALLOC_ZERO) ? mi_zalloc_aligned(sizeInBytes, alignment) : mi_malloc_aligned(sizeInBytes, alignment);
     }
 
-    if (HK_UNLIKELY(!Ptr))
+    if (HK_UNLIKELY(!ptr))
         return nullptr;
-    HK_ASSERT(SizeInBytes <= mi_malloc_size(Ptr));
-    SizeInBytes = mi_malloc_size(Ptr);
-    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
+    HK_ASSERT(sizeInBytes <= mi_malloc_size(ptr));
+    sizeInBytes = mi_malloc_size(ptr);
+    m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(sizeInBytes)));
     m_MemoryAllocs.Increment();
     m_PerFrameAllocs.Increment();
 
-    return Ptr;
+    return ptr;
 }
 
-void MemoryHeap::Free(void* Ptr)
+void MemoryHeap::Free(void* ptr)
 {
-    if (!Ptr)
+    if (!ptr)
         return;
 
-    m_MemoryAllocated.Sub(mi_malloc_size(Ptr));
+    m_MemoryAllocated.Sub(mi_malloc_size(ptr));
     m_MemoryAllocs.Decrement();
     m_PerFrameFrees.Increment();
-    mi_free(Ptr);
+    mi_free(ptr);
 }
 
-size_t MemoryHeap::GetSize(void* Ptr)
+size_t MemoryHeap::GetSize(void* ptr)
 {
-    return Ptr ? mi_malloc_size(Ptr) : 0;
+    return ptr ? mi_malloc_size(ptr) : 0;
 }
 
-void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::_Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    if (!Ptr)
-        return _Alloc(SizeInBytes, Alignment, Flags);
+    if (!ptr)
+        return _Alloc(sizeInBytes, alignment, flags);
 
-    if (Flags & MALLOC_DISCARD)
+    if (flags & MALLOC_DISCARD)
     {
-        Free(Ptr);
-        return _Alloc(SizeInBytes, Alignment, Flags);
+        Free(ptr);
+        return _Alloc(sizeInBytes, alignment, flags);
     }
 
-    m_MemoryAllocated.Sub(mi_malloc_size(Ptr));
+    m_MemoryAllocated.Sub(mi_malloc_size(ptr));
 
-    Ptr = Alignment == 0 ? mi_realloc(Ptr, SizeInBytes) : mi_realloc_aligned(Ptr, SizeInBytes, Alignment);
-    if (HK_LIKELY(Ptr))
+    ptr = alignment == 0 ? mi_realloc(ptr, sizeInBytes) : mi_realloc_aligned(ptr, sizeInBytes, alignment);
+    if (HK_LIKELY(ptr))
     {
-        HK_ASSERT(SizeInBytes <= mi_malloc_size(Ptr));
-        SizeInBytes = mi_malloc_size(Ptr);
-        m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(SizeInBytes)));
+        HK_ASSERT(sizeInBytes <= mi_malloc_size(ptr));
+        sizeInBytes = mi_malloc_size(ptr);
+        m_PeakAllocated.Store(std::max(m_PeakAllocated.Load(), m_MemoryAllocated.Add(sizeInBytes)));
 
         m_PerFrameAllocs.Increment();
         m_MemoryAllocs.Increment();
@@ -432,38 +432,38 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
     m_PerFrameFrees.Increment();
     m_MemoryAllocs.Decrement();
 
-    return Ptr;
+    return ptr;
 }
 
 #endif
 
-void* MemoryHeap::Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    HK_IF_NOT_ASSERT(SizeInBytes != 0)
+    HK_IF_NOT_ASSERT(sizeInBytes != 0)
     {
-        SizeInBytes = 1;
+        sizeInBytes = 1;
     }
 
-    void* Ptr = _Alloc(SizeInBytes, Alignment, Flags);
-    if (HK_UNLIKELY(!Ptr))
-        CoreApplication::TerminateWithError("Failed on allocation of {} bytes\n", SizeInBytes);
-    return Ptr;
+    void* ptr = _Alloc(sizeInBytes, alignment, flags);
+    if (HK_UNLIKELY(!ptr))
+        CoreApplication::sTerminateWithError("Failed on allocation of {} bytes\n", sizeInBytes);
+    return ptr;
 }
 
-void* MemoryHeap::Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags)
+void* MemoryHeap::Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags)
 {
-    HK_IF_NOT_ASSERT(SizeInBytes != 0)
+    HK_IF_NOT_ASSERT(sizeInBytes != 0)
     {
-        SizeInBytes = 1;
+        sizeInBytes = 1;
     }
 
-    Ptr = _Realloc(Ptr, SizeInBytes, Alignment, Flags);
-    if (HK_UNLIKELY(!Ptr))
-        CoreApplication::TerminateWithError("Failed on allocation of {} bytes\n", SizeInBytes);
-    return Ptr;
+    ptr = _Realloc(ptr, sizeInBytes, alignment, flags);
+    if (HK_UNLIKELY(!ptr))
+        CoreApplication::sTerminateWithError("Failed on allocation of {} bytes\n", sizeInBytes);
+    return ptr;
 }
 
-MemoryStat MemoryHeap::MemoryGetStat()
+MemoryStat MemoryHeap::sMemoryGetStat()
 {
     MemoryStat stat = {};
     for (int n = 0; n < HEAP_MAX; n++)
@@ -490,7 +490,7 @@ MemoryStat MemoryHeap::GetStat()
     return stat;
 }
 
-void MemoryHeap::MemoryNewFrame()
+void MemoryHeap::sMemoryNewFrame()
 {
     using namespace Core;
     for (int n = 0; n < HEAP_MAX; n++)
@@ -500,7 +500,7 @@ void MemoryHeap::MemoryNewFrame()
     }
 }
 
-void MemoryHeap::MemoryCleanup()
+void MemoryHeap::sMemoryCleanup()
 {
 }
 

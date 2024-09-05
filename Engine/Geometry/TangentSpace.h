@@ -40,7 +40,7 @@ namespace Geometry
 bool CalcTangentSpace(MeshVertex* vertices, unsigned int const* indices, unsigned int indexCount);
 bool CalcTangentSpace(Float3 const* positions, Float2 const* texCoords, Float3 const* normals, Float4* tangents, unsigned int const* indices, unsigned int indexCount);
 
-/** binormal = cross( normal, tangent ) * handedness */
+/// binormal = cross( normal, tangent ) * handedness
 HK_FORCEINLINE float CalcHandedness(Float3 const& tangent, Float3 const& binormal, Float3 const& normal)
 {
     return (Math::Dot(Math::Cross(normal, tangent), binormal) < 0.0f) ? -1.0f : 1.0f;

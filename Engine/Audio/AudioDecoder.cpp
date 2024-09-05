@@ -54,7 +54,7 @@ AudioDecoder::AudioDecoder(AudioSource* inSource) :
             break;
         default:
             // Shouldn't happen
-            CoreApplication::TerminateWithError("AudioDecoder: expected 8, 16 or 32 sample bits\n");
+            CoreApplication::sTerminateWithError("AudioDecoder: expected 8, 16 or 32 sample bits\n");
         }
 
         m_Decoder = (ma_decoder*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(*m_Decoder));
@@ -63,7 +63,7 @@ AudioDecoder::AudioDecoder(AudioSource* inSource) :
 
         ma_result result = ma_decoder_init_memory(inSource->GetHeapPtr(), inSource->GetSizeInBytes(), &config, m_Decoder);
         if (result != MA_SUCCESS)
-            CoreApplication::TerminateWithError("AudioDecoder: failed to initialize decoder\n");
+            CoreApplication::sTerminateWithError("AudioDecoder: failed to initialize decoder\n");
     }
 }
 

@@ -43,7 +43,7 @@ PhotometricPool::PhotometricPool(PhotometricPoolDesc const& desc)
 
     m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
-    GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
+    GameApplication::sGetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
                                                   .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
@@ -68,7 +68,7 @@ void PhotometricPool::GrowCapacity()
     m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
     m_Texture.Reset();
-    GameApplication::GetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
+    GameApplication::sGetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
                                                   .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),

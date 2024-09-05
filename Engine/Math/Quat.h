@@ -62,13 +62,13 @@ struct Quat
 
     float& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     float const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -259,7 +259,7 @@ struct Quat
     }
 
     // Return rotation around normalized axis
-    static Quat RotationAroundNormal(float angleInRadians, Float3 const& normal)
+    static Quat sRotationAroundNormal(float angleInRadians, Float3 const& normal)
     {
         float s, c;
         Math::SinCos(angleInRadians * 0.5f, s, c);
@@ -267,13 +267,13 @@ struct Quat
     }
 
     // Return rotation around unnormalized vector
-    static Quat RotationAroundVector(float angleInRadians, Float3 const& vector)
+    static Quat sRotationAroundVector(float angleInRadians, Float3 const& vector)
     {
-        return RotationAroundNormal(angleInRadians, vector.Normalized());
+        return sRotationAroundNormal(angleInRadians, vector.Normalized());
     }
 
     // Return rotation around X axis
-    static Quat RotationX(float angleInRadians)
+    static Quat sRotationX(float angleInRadians)
     {
         Quat Result;
         Math::SinCos(angleInRadians * 0.5f, Result.X, Result.W);
@@ -283,7 +283,7 @@ struct Quat
     }
 
     // Return rotation around Y axis
-    static Quat RotationY(float angleInRadians)
+    static Quat sRotationY(float angleInRadians)
     {
         Quat Result;
         Math::SinCos(angleInRadians * 0.5f, Result.Y, Result.W);
@@ -293,7 +293,7 @@ struct Quat
     }
 
     // Return rotation around Z axis
-    static Quat RotationZ(float angleInRadians)
+    static Quat sRotationZ(float angleInRadians)
     {
         Quat Result;
         Math::SinCos(angleInRadians * 0.5f, Result.Z, Result.W);
@@ -484,15 +484,15 @@ struct Quat
     }
 
     // Static methods
-    static constexpr int NumComponents() { return 4; }
+    static constexpr int sNumComponents() { return 4; }
 
-    static Quat const& Zero()
+    static Quat const& sZero()
     {
         static constexpr Quat ZeroQuat(0.0f, 0.0f, 0.0f, 0.0f);
         return ZeroQuat;
     }
 
-    static Quat const& Identity()
+    static Quat const& sIdentity()
     {
         static constexpr Quat Q(1, 0, 0, 0);
         return Q;

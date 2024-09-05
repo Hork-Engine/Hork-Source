@@ -47,83 +47,83 @@ static HK_FORCEINLINE char Encode85Byte(unsigned int x)
 namespace Core
 {
 
-size_t DecodeBase85(byte const* _Base85, byte* _Dst)
+size_t DecodeBase85(byte const* base85, byte* dst)
 {
-    size_t size = ((Core::Strlen((const char*)_Base85) + 4) / 5) * 4;
+    size_t rsize = ((Core::Strlen((const char*)base85) + 4) / 5) * 4;
 
-    if (_Dst)
+    if (dst)
     {
-        while (*_Base85)
+        while (*base85)
         {
             uint32_t d = 0;
 
-            d += Decode85Byte(_Base85[4]);
+            d += Decode85Byte(base85[4]);
             d *= 85;
-            d += Decode85Byte(_Base85[3]);
+            d += Decode85Byte(base85[3]);
             d *= 85;
-            d += Decode85Byte(_Base85[2]);
+            d += Decode85Byte(base85[2]);
             d *= 85;
-            d += Decode85Byte(_Base85[1]);
+            d += Decode85Byte(base85[1]);
             d *= 85;
-            d += Decode85Byte(_Base85[0]);
+            d += Decode85Byte(base85[0]);
 
-            _Dst[0] = d & 0xff;
-            _Dst[1] = (d >> 8) & 0xff;
-            _Dst[2] = (d >> 16) & 0xff;
-            _Dst[3] = (d >> 24) & 0xff;
+            dst[0] = d & 0xff;
+            dst[1] = (d >> 8) & 0xff;
+            dst[2] = (d >> 16) & 0xff;
+            dst[3] = (d >> 24) & 0xff;
 
-            _Base85 += 5;
-            _Dst += 4;
+            base85 += 5;
+            dst += 4;
         }
     }
 
-    return size;
+    return rsize;
 }
 
-size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85)
+size_t EncodeBase85(byte const* src, size_t size, byte* base85)
 {
-    size_t size = ((_SourceSize + 3) / 4) * 5 + 1;
+    size_t rsize = ((size + 3) / 4) * 5 + 1;
 
-    if (_Base85)
+    if (base85)
     {
-        size_t chunks = _SourceSize / 4;
+        size_t chunks = size / 4;
         for (size_t chunk = 0; chunk < chunks; chunk++)
         {
-            uint32_t d = ((uint32_t*)_Source)[chunk];
+            uint32_t d = ((uint32_t*)src)[chunk];
 
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
         }
-        int residual = _SourceSize - chunks * 4;
+        int residual = size - chunks * 4;
         if (residual > 0)
         {
             uint32_t d = 0;
 
-            Core::Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
+            Core::Memcpy(&d, ((uint32_t*)src) + chunks, residual);
 
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte(d);
+            *base85++ = Encode85Byte(d);
             d /= 85;
         }
-        *_Base85 = 0;
+        *base85 = 0;
     }
 
-    return size;
+    return rsize;
 }
 
 }

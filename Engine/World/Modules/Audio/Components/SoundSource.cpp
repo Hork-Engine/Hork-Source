@@ -55,7 +55,7 @@ void SoundSource::AddToQueue(SoundHandle inSound)
         return;
     }
 
-    auto resource = GameApplication::GetResourceManager().TryGet(inSound);
+    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
     if (!resource)
     {
         LOG("SoundComponent::AddToQueue: Sound is not loaded\n");
@@ -69,8 +69,8 @@ void SoundSource::AddToQueue(SoundHandle inSound)
         return;
     }
 
-    bool play_now = IsSilent();
-    if (play_now && m_AudioQueue.empty())
+    bool playNow = IsSilent();
+    if (playNow && m_AudioQueue.empty())
     {
         StartPlay(inSound, 0, -1);
         return;
@@ -78,25 +78,25 @@ void SoundSource::AddToQueue(SoundHandle inSound)
 
     m_AudioQueue.push(inSound);
 
-    if (play_now)
+    if (playNow)
         SelectNextSound();
 }
 
 bool SoundSource::SelectNextSound()
 {
-    bool was_selected = false;
+    bool wasSelected = false;
 
     m_Track.Reset();
     m_SoundHandle = {};
 
-    while (!m_AudioQueue.empty() && !was_selected)
+    while (!m_AudioQueue.empty() && !wasSelected)
     {
         SoundHandle playSound = m_AudioQueue.front();
         m_AudioQueue.pop();
-        was_selected = StartPlay(playSound, 0, -1);
+        wasSelected = StartPlay(playSound, 0, -1);
     }
 
-    return was_selected;
+    return wasSelected;
 }
 
 void SoundSource::ClearQueue()
@@ -122,7 +122,7 @@ void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inSt
         return;
     }
 
-    auto resource = GameApplication::GetResourceManager().TryGet(inSound);
+    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
     if (!resource)
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
@@ -148,10 +148,10 @@ void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inSt
     if (inStartFrame >= source->GetFrameCount())
         return;
 
-    PlayOneShotData& one_shot = m_PlayOneShot.EmplaceBack();
-    one_shot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, m_VirtualizeWhenSilent));
-    one_shot.NeedToSubmit = true;
-    one_shot.VolumeScale = Math::Saturate(inVolumeScale);
+    PlayOneShotData& oneShot = m_PlayOneShot.EmplaceBack();
+    oneShot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, m_VirtualizeWhenSilent));
+    oneShot.NeedToSubmit = true;
+    oneShot.VolumeScale = Math::Saturate(inVolumeScale);
 }
 
 bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopStart)
@@ -162,7 +162,7 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
         return false;
     }
 
-    auto resource = GameApplication::GetResourceManager().TryGet(inSound);
+    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
     if (!resource)
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
@@ -188,19 +188,19 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
     if (inStartFrame < 0)
         inStartFrame = 0;
 
-    int loops_count = 0;
+    int loopsCount = 0;
 
     if (inStartFrame >= source->GetFrameCount())
     {
         if (inLoopStart < 0)
             return false;
         inStartFrame = inLoopStart;
-        loops_count++;
+        loopsCount++;
     }
 
     m_SoundHandle = inSound;
 
-    m_Track.Attach(new AudioTrack(source, inStartFrame, inLoopStart, loops_count, m_VirtualizeWhenSilent));
+    m_Track.Attach(new AudioTrack(source, inStartFrame, inLoopStart, loopsCount, m_VirtualizeWhenSilent));
     m_NeedToSubmit = true;
  
     return true;
@@ -208,14 +208,14 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
 
 bool SoundSource::RestartSound()
 {
-    SoundHandle new_sound = m_SoundHandle;
+    SoundHandle newSound = m_SoundHandle;
 
     int loop_start = m_Track ? m_Track->GetLoopStart() : -1;
 
     m_Track.Reset();
     m_SoundHandle = {};
 
-    return StartPlay(new_sound, 0, loop_start);
+    return StartPlay(newSound, 0, loop_start);
 }
 
 void SoundSource::SetPlaybackPosition(int inFrameNum)
@@ -237,7 +237,7 @@ int SoundSource::GetPlaybackPosition() const
 
 void SoundSource::SetPlaybackTime(float inTime)
 {
-    AudioDevice* device = GameApplication::GetAudioDevice();
+    AudioDevice* device = GameApplication::sGetAudioDevice();
 
     int frameNum = Math::Round(inTime * device->GetSampleRate());
     SetPlaybackPosition(frameNum);
@@ -245,7 +245,7 @@ void SoundSource::SetPlaybackTime(float inTime)
 
 float SoundSource::GetPlaybackTime() const
 {
-    AudioDevice* device = GameApplication::GetAudioDevice();
+    AudioDevice* device = GameApplication::sGetAudioDevice();
     if (!m_Track)
         return 0;
     return (float)m_Track->GetPlaybackPos() / device->GetSampleRate();
@@ -333,23 +333,23 @@ HK_FORCEINLINE float FalloffDistance(float inMaxDistance)
 
 float SoundSource::GetCullDistance() const
 {
-    float max_dist = Math::Clamp(m_MaxDistance, m_ReferenceDistance, MaxSoundDsitance);
-    float falloff = FalloffDistance(max_dist);
-    return max_dist + falloff;
+    float maxDist = Math::Clamp(m_MaxDistance, m_ReferenceDistance, MaxSoundDsitance);
+    float falloff = FalloffDistance(maxDist);
+    return maxDist + falloff;
 }
 
 void CalcAttenuation(SoundSourceType SourceType,
-                            Float3 const& SoundPosition,
-                            Float3 const& SoundDirection,
-                            Float3 const& ListenerPosition,
-                            Float3 const& ListenerRightVec,
-                            float ReferenceDistance,
-                            float MaxDistance,
-                            float RolloffRate,
-                            float ConeInnerAngle,
-                            float ConeOuterAngle,
-                            float* pLeftVol,
-                            float* pRightVol)
+                     Float3 const& SoundPosition,
+                     Float3 const& SoundDirection,
+                     Float3 const& ListenerPosition,
+                     Float3 const& ListenerRightVec,
+                     float ReferenceDistance,
+                     float MaxDistance,
+                     float RolloffRate,
+                     float ConeInnerAngle,
+                     float ConeOuterAngle,
+                     float* pLeftVol,
+                     float* pRightVol)
 {
     Float3 dir = SoundPosition - ListenerPosition;
     float distance = dir.NormalizeSelf();
@@ -359,14 +359,14 @@ void CalcAttenuation(SoundSourceType SourceType,
     if (SourceType == SoundSourceType::Directional && ConeInnerAngle < 360.0f)
     {
         float angle = -2.0f * Math::Degrees(std::acos(Math::Dot(SoundDirection, dir)));
-        float angle_interval = ConeOuterAngle - ConeInnerAngle;
+        float angleInterval = ConeOuterAngle - ConeInnerAngle;
 
         if (angle > ConeInnerAngle)
         {
-            if (angle_interval > 0.0f)
+            if (angleInterval > 0.0f)
             {
                 //attenuation = std::powf(1.0f - Math::Clamp(angle - ConeInnerAngle, 0.0f, angleInterval) / angleInterval, RolloffFactor);
-                attenuation = 1.0f - (angle - ConeInnerAngle) / angle_interval;
+                attenuation = 1.0f - (angle - ConeInnerAngle) / angleInterval;
             }
             else
             {
@@ -379,7 +379,7 @@ void CalcAttenuation(SoundSourceType SourceType,
     float d = Math::Clamp(distance, ReferenceDistance, MaxDistance);
 
     // Linear distance clamped model
-    //attenuation *= ( 1.0f - RolloffRate * (d - ReferenceDistance) / (MaxDistance - ReferenceDistance) );
+    //attenuation *= (1.0f - RolloffRate * (d - ReferenceDistance) / (MaxDistance - ReferenceDistance));
 
     // Inverse distance clamped model
     attenuation *= ReferenceDistance / (ReferenceDistance + RolloffRate * (d - ReferenceDistance));
@@ -396,7 +396,7 @@ void CalcAttenuation(SoundSourceType SourceType,
     }
 
     // Panning
-    if (Snd_HRTF || GameApplication::GetAudioDevice()->IsMono())
+    if (Snd_HRTF || GameApplication::sGetAudioDevice()->IsMono())
     {
         *pLeftVol = *pRightVol = attenuation;
     }
@@ -404,11 +404,11 @@ void CalcAttenuation(SoundSourceType SourceType,
     {
         float panning = Math::Dot(ListenerRightVec, dir);
 
-        float left_pan = 1.0f - panning;
-        float right_pan = 1.0f + panning;
+        float leftPan = 1.0f - panning;
+        float rightPan = 1.0f + panning;
 
-        *pLeftVol = attenuation * left_pan;
-        *pRightVol = attenuation * right_pan;
+        *pLeftVol = attenuation * leftPan;
+        *pRightVol = attenuation * rightPan;
     }
 }
 
@@ -458,7 +458,7 @@ void SoundSource::Spatialize(AudioListener const& inListener)
         return;
     }
 
-    float left_vol, right_vol;
+    float leftVol, rightVol;
 
     auto* owner = GetOwner();
     Float3 position = owner->GetWorldPosition();
@@ -474,11 +474,11 @@ void SoundSource::Spatialize(AudioListener const& inListener)
                     m_RolloffRate,
                     m_ConeInnerAngle,
                     m_ConeOuterAngle,
-                    &left_vol,
-                    &right_vol);
+                    &leftVol,
+                    &rightVol);
 
-    m_ChanVolume[0] = (int)(volume * left_vol);
-    m_ChanVolume[1] = (int)(volume * right_vol);
+    m_ChanVolume[0] = (int)(volume * leftVol);
+    m_ChanVolume[1] = (int)(volume * rightVol);
 
     // Should never happen, but just in case
     if (m_ChanVolume[0] < 0)
@@ -490,7 +490,7 @@ void SoundSource::Spatialize(AudioListener const& inListener)
     if (m_ChanVolume[1] > 65535)
         m_ChanVolume[1] = 65535;
 
-    m_SpatializedStereo = !GameApplication::GetAudioDevice()->IsMono();
+    m_SpatializedStereo = !GameApplication::sGetAudioDevice()->IsMono();
 
     if (Snd_HRTF)
     {
@@ -507,8 +507,8 @@ void SoundSource::Spatialize(AudioListener const& inListener)
 void SoundSource::UpdateTrack(AudioMixerSubmitQueue& submitQueue, bool inPaused)
 {
     bool paused = m_IsPaused;
-    bool play_even_when_paused = m_Group ? m_Group->ShouldPlayEvenWhenPaused() : false;
-    if (!play_even_when_paused)
+    bool playEvenWhenPaused = m_Group ? m_Group->ShouldPlayEvenWhenPaused() : false;
+    if (!playEvenWhenPaused)
         paused = paused || inPaused;
     if (m_Group)
         paused = paused || m_Group->IsPaused();
@@ -521,17 +521,17 @@ void SoundSource::UpdateTrack(AudioMixerSubmitQueue& submitQueue, bool inPaused)
             continue;
         }
 
-        int chan_vol[2];
-        chan_vol[0] = m_ChanVolume[0] * it->VolumeScale;
-        chan_vol[1] = m_ChanVolume[1] * it->VolumeScale;
+        int chanVol[2];
+        chanVol[0] = m_ChanVolume[0] * it->VolumeScale;
+        chanVol[1] = m_ChanVolume[1] * it->VolumeScale;
 
-        if (it->NeedToSubmit && !m_VirtualizeWhenSilent && chan_vol[0] == 0 && chan_vol[1] == 0)
+        if (it->NeedToSubmit && !m_VirtualizeWhenSilent && chanVol[0] == 0 && chanVol[1] == 0)
         {
             it = m_PlayOneShot.Erase(it);
             continue;
         }
 
-        it->Track->SetPlaybackParameters(chan_vol, m_LocalDir, m_SpatializedStereo, paused);
+        it->Track->SetPlaybackParameters(chanVol, m_LocalDir, m_SpatializedStereo, paused);
 
         if (it->NeedToSubmit)
         {

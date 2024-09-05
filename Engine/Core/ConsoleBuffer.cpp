@@ -33,19 +33,19 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void ConsoleBuffer::Resize(int _VidWidth)
+void ConsoleBuffer::Resize(int vidWidth)
 {
     MutexGuard syncGuard(m_Mutex);
 
-    _Resize(_VidWidth);
+    _Resize(vidWidth);
 }
 
-void ConsoleBuffer::_Resize(int _VidWidth)
+void ConsoleBuffer::_Resize(int vidWidth)
 {
     int prevMaxLines = m_MaxLines;
     int prevMaxLineChars = m_MaxLineChars;
 
-    m_MaxLineChars = (_VidWidth - Padding * 2) / CharacterWidth;
+    m_MaxLineChars = (vidWidth - Padding * 2) / CharacterWidth;
 
     if (m_MaxLineChars == prevMaxLineChars)
     {
@@ -80,11 +80,11 @@ void ConsoleBuffer::_Resize(int _VidWidth)
     m_Scroll = 0;
 }
 
-void ConsoleBuffer::Print(const char* _Text)
+void ConsoleBuffer::Print(const char* text)
 {
     const char* wordStr;
     int         wordLength;
-    WideChar   ch;
+    WideChar    ch;
     int         byteLen;
 
     MutexGuard syncGuard(m_Mutex);
@@ -95,7 +95,7 @@ void ConsoleBuffer::Print(const char* _Text)
         m_bInitialized = true;
     }
 
-    const char* s = _Text;
+    const char* s = text;
 
     while (*s)
     {
@@ -188,7 +188,7 @@ void ConsoleBuffer::Print(const char* _Text)
     }
 }
 
-void ConsoleBuffer::WidePrint(WideChar const* _Text)
+void ConsoleBuffer::WidePrint(WideChar const* text)
 {
     WideChar const* wordStr;
     int             wordLength;
@@ -201,9 +201,9 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
         m_bInitialized = true;
     }
 
-    while (*_Text)
+    while (*text)
     {
-        switch (*_Text)
+        switch (*text)
         {
             case ' ':
                 m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
@@ -213,7 +213,7 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
                     m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
                     m_NumLines++;
                 }
-                _Text++;
+                text++;
                 break;
             case '\t':
                 if (m_CurWidth + 4 >= m_MaxLineChars)
@@ -229,7 +229,7 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
                     m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
                     m_pImage[m_PrintLine * m_MaxLineChars + m_CurWidth++] = ' ';
                 }
-                _Text++;
+                text++;
                 break;
             case '\n':
             case '\r':
@@ -237,22 +237,22 @@ void ConsoleBuffer::WidePrint(WideChar const* _Text)
                 m_CurWidth = 0;
                 m_PrintLine = (m_PrintLine + 1) % m_MaxLines;
                 m_NumLines++;
-                _Text++;
+                text++;
                 break;
             default:
-                wordStr    = _Text;
+                wordStr    = text;
                 wordLength = 0;
 
-                if (*_Text > ' ')
+                if (*text > ' ')
                 {
                     do {
-                        _Text++;
+                        text++;
                         wordLength++;
-                    } while (*_Text > ' ');
+                    } while (*text > ' ');
                 }
                 else
                 {
-                    _Text++;
+                    text++;
                 }
 
                 if (m_CurWidth + wordLength > m_MaxLineChars)
@@ -302,11 +302,11 @@ void ConsoleBuffer::ScrollEnd()
     m_Scroll = 0;
 }
 
-void ConsoleBuffer::ScrollDelta(int Delta)
+void ConsoleBuffer::ScrollDelta(int delta)
 {
     MutexGuard syncGuard(m_Mutex);
 
-    m_Scroll += Delta;
+    m_Scroll += delta;
     if (m_Scroll < 0)
     {
         m_Scroll = 0;

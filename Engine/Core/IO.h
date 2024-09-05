@@ -36,39 +36,19 @@ HK_NAMESPACE_BEGIN
 
 struct FileHandle
 {
-    FileHandle() = default;
+                                FileHandle() = default;    
+    constexpr explicit          FileHandle(int h) : m_Handle(h) {}
     
-    constexpr explicit FileHandle(int h) :
-        h(h)
-    {}
+                                operator bool() const { return m_Handle != -1; }
+                                operator int() const { return m_Handle; }
     
-    operator bool() const
-    {
-        return h != -1;
-    }
+    bool                        IsValid() const { return m_Handle != -1; }
+    void                        Reset() { m_Handle = -1; }
     
-    bool IsValid() const
-    {
-        return h != -1;
-    }
-    
-    operator int() const
-    {
-        return h;
-    }
-
-    void Reset()
-    {
-        h = -1;
-    }
-    
-    constexpr static FileHandle Invalid()
-    {
-        return FileHandle(-1);
-    }
+    constexpr static FileHandle sInvalid() { return FileHandle(-1); }
     
 private:
-    int h{-1};
+    int                         m_Handle{-1};
 };
 
 
@@ -82,260 +62,187 @@ Read file from archive
 class Archive final : public Noncopyable
 {
 public:
-    Archive() = default;
-    ~Archive();
+                                Archive() = default;
+                                ~Archive();
 
-    Archive(Archive&& Rhs) noexcept :
-        m_Handle(Rhs.m_Handle)
-    {
-        Rhs.m_Handle = nullptr;
-    }
+                                Archive(Archive&& rhs) noexcept;
 
-    Archive& operator=(Archive&& Rhs) noexcept
-    {
-        Close();
-        Core::Swap(m_Handle, Rhs.m_Handle);
-        return *this;
-    }
+    Archive&                    operator=(Archive&& rhs) noexcept;
 
-    operator bool() const
-    {
-        return IsOpened();
-    }
+                                operator bool() const { return IsOpened(); }
 
-    /** Open archive from file */
-    static Archive Open(StringView ArchiveName, bool bResourcePack = false);
+    /// Open archive from file
+    static Archive              sOpen(StringView archiveName, bool isResourcePack = false);
 
-    /** Open archive from memory */
-    static Archive OpenFromMemory(const void* pMemory, size_t SizeInBytes);
+    /// Open archive from memory
+    static Archive              sOpenFromMemory(const void* memory, size_t sizeInBytes);
 
-    /** Close archive */
-    void Close();
+    /// Close archive
+    void                        Close();
 
-    /** Check is archive opened */
-    bool IsOpened() const { return !!m_Handle; }
+    /// Check is archive opened
+    bool                        IsOpened() const { return !!m_Handle; }
     
-    bool IsClosed() const { return !m_Handle; }
+    bool                        IsClosed() const { return !m_Handle; }
 
-    /** Get total files in archive */
-    int GetNumFiles() const;
+    /// Get total files in archive
+    int                         GetNumFiles() const;
 
-    /** Get file handle. Returns an invalid handle if file wasn't found. */
-    FileHandle LocateFile(StringView FileName) const;
+    /// Get file handle. Returns an invalid handle if file wasn't found.
+    FileHandle                  LocateFile(StringView fileName) const;
 
-    /** Get file compressed and uncompressed size */
-    bool GetFileSize(FileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const;
+    /// Get file compressed and decompressed size
+    bool                        GetFileSize(FileHandle fileHandle, size_t* compressedSize, size_t* decompressedSize) const;
 
-    /** Get file name by index */
-    bool GetFileName(FileHandle FileHandle, String& FileName) const;
+    /// Get file name by index
+    bool                        GetFileName(FileHandle fileHandle, String& fileName) const;
 
-    /** Decompress file to memory buffer */
-    bool ExtractFileToMemory(FileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const;
+    /// Decompress file to memory buffer
+    bool                        ExtractFileToMemory(FileHandle fileHandle, void* memory, size_t sizeInBytes) const;
 
-    /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(StringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
+    /// Decompress file to heap memory
+    bool                        ExtractFileToHeapMemory(StringView fileName, void** heapMemory, size_t* sizeInBytes, MemoryHeap& heap) const;
 
-    /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(FileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
+    /// Decompress file to heap memory
+    bool                        ExtractFileToHeapMemory(FileHandle fileHandle, void** heapMemory, size_t* sizeInBytes, MemoryHeap& heap) const;
 
 private:
-    void* m_Handle{};
+    void*                       m_Handle{};
 };
 
 class File final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
 {
 public:
-    /** Open file for reading form specified path. */
-    static File OpenRead(StringView FileName);
+    /// Open file for reading form specified path.
+    static File                 sOpenRead(StringView fileName);
 
-    /** Read from specified memory buffer. */
-    static File OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
+    /// Read from specified memory buffer.
+    static File                 sOpenRead(StringView fileName, const void* memory, size_t sizeInBytes);
 
-    /** Read from specified memory buffer. */
-    //static File OpenRead(StringView FileName, BlobRef Blob);
+    /// Read file from archive by file name.
+    static File                 sOpenRead(StringView fileName, Archive const& archive);
 
-    /** Read file from archive by file name. */
-    static File OpenRead(StringView FileName, Archive const& Archive);
+    /// Read file from archive by file index.
+    static File                 sOpenRead(FileHandle fileHandle, Archive const& archive);
 
-    /** Read file from archive by file index. */
-    static File OpenRead(FileHandle FileHandle, Archive const& Archive);
+    /// Open file for writing.
+    static File                 sOpenWrite(StringView fileName);
 
-    /** Open file for writing. */
-    static File OpenWrite(StringView FileName);
+    /// Write to specified memory buffer
+    static File                 sOpenWrite(StringView streamName, void* memory, size_t sizeInBytes);
 
-    /** Write to specified memory buffer */
-    static File OpenWrite(StringView StreamName, void* pMemoryBuffer, size_t SizeInBytes);
+    /// Write to inner memory buffer
+    static File                 sOpenWriteToMemory(StringView streamName, size_t reservedSize = 32);
 
-    /** Write to inner memory buffer */
-    static File OpenWriteToMemory(StringView StreamName, size_t ReservedSize = 32);
+    /// Open or create file for writing at end-of-file.
+    static File                 sOpenAppend(StringView fileName);
 
-    /** Open or create file for writing at end-of-file. */
-    static File OpenAppend(StringView FileName);
+                                File() = default;
+                                File(File&& rhs) noexcept;
+                                ~File();
 
-    File() = default;
+    File&                       operator=(File&& rhs) noexcept;
+                                operator bool() const { return IsOpened(); }
 
-    File(File&& Rhs) noexcept :
-        m_Name(std::move(Rhs.m_Name)),
-        m_Type(Rhs.m_Type),
-        m_Handle(Rhs.m_Handle),
-        m_RWOffset(Rhs.m_RWOffset),
-        m_FileSize(Rhs.m_FileSize),
-        m_ReservedSize(Rhs.m_ReservedSize),
-        m_Granularity(Rhs.m_Granularity),
-        m_bMemoryBufferOwner(Rhs.m_bMemoryBufferOwner)
-    {
-        Rhs.m_Type               = FILE_TYPE_UNDEFINED;
-        Rhs.m_Handle             = nullptr;
-        Rhs.m_RWOffset           = 0;
-        Rhs.m_FileSize           = 0;
-        Rhs.m_ReservedSize       = 0;
-        Rhs.m_Granularity        = 0;
-        Rhs.m_bMemoryBufferOwner = true;
-    }
 
-    File& operator=(File&& Rhs) noexcept
-    {
-        Close();
+    /// Close file
+    void                        Close();
 
-        m_Name               = std::move(Rhs.m_Name);
-        m_Type               = Rhs.m_Type;
-        m_Handle             = Rhs.m_Handle;
-        m_RWOffset           = Rhs.m_RWOffset;
-        m_FileSize           = Rhs.m_FileSize;
-        m_ReservedSize       = Rhs.m_ReservedSize;
-        m_Granularity        = Rhs.m_Granularity;
-        m_bMemoryBufferOwner = Rhs.m_bMemoryBufferOwner;
+    bool                        IsOpened() const { return m_Type != FileType::Undefined; }
 
-        Rhs.m_Type               = FILE_TYPE_UNDEFINED;
-        Rhs.m_Handle             = nullptr;
-        Rhs.m_RWOffset           = 0;
-        Rhs.m_FileSize           = 0;
-        Rhs.m_ReservedSize       = 0;
-        Rhs.m_Granularity        = 0;
-        Rhs.m_bMemoryBufferOwner = true;
+    bool                        IsClosed() const { return !IsOpened(); }
 
-        return *this;
-    }
+    bool                        IsValid() const override { return IsOpened(); }
 
-    ~File();
+    bool                        IsMemory() const { return m_Type == FileType::ReadMemory || m_Type == FileType::WriteMemory; }
 
-    /** Close file */
-    void Close();
+    bool                        IsFileSystem() const { return m_Type == FileType::ReadFS || m_Type == FileType::WriteFS || m_Type == FileType::AppendFS; }
 
-    bool IsOpened() const { return m_Type != FILE_TYPE_UNDEFINED; }
+    bool                        IsReadable() const { return m_Type == FileType::ReadFS || m_Type == FileType::ReadMemory; }
 
-    bool IsClosed() const { return !IsOpened(); }
+    bool                        IsWritable() const { return m_Type == FileType::WriteFS || m_Type == FileType::AppendFS || m_Type == FileType::WriteMemory; }
 
-    bool IsValid() const override { return IsOpened(); }
 
-    bool IsMemory() const
-    {
-        return m_Type == FILE_TYPE_READ_MEMORY || m_Type == FILE_TYPE_WRITE_MEMORY;
-    }
+    IBinaryStreamReadInterface& ReadInterface() { HK_ASSERT(IsReadable()); return *this; }
 
-    bool IsFileSystem() const
-    {
-        return m_Type == FILE_TYPE_READ_FILE_SYSTEM || m_Type == FILE_TYPE_WRITE_FILE_SYSTEM || m_Type == FILE_TYPE_APPEND_FILE_SYSTEM;
-    }
+    IBinaryStreamWriteInterface&WriteInterface() { HK_ASSERT(IsWritable()); return *this; }
 
-    bool IsReadable() const
-    {
-        return m_Type == FILE_TYPE_READ_FILE_SYSTEM || m_Type == FILE_TYPE_READ_MEMORY;
-    }
+    /// Get memory buffer.
+    void*                       GetHeapPtr();
 
-    bool IsWritable() const
-    {
-        return m_Type == FILE_TYPE_WRITE_FILE_SYSTEM || m_Type == FILE_TYPE_APPEND_FILE_SYSTEM || m_Type == FILE_TYPE_WRITE_MEMORY;
-    }
+    size_t                      GetMemoryReservedSize() const;
 
-    operator bool() const
-    {
-        return IsOpened();
-    }
+    void                        SetMemoryGrowGranularity(uint32_t granularity) { m_Granularity = granularity; }
 
-    IBinaryStreamReadInterface& ReadInterface()
-    {
-        HK_ASSERT(IsReadable());
-        return *this;
-    }
+    StringView                  GetName() const override { return m_Name; }
 
-    IBinaryStreamWriteInterface& WriteInterface()
-    {
-        HK_ASSERT(IsWritable());
-        return *this;
-    }
+    size_t                      Read(void* data, size_t sizeInBytes) override;
 
-    /** Get memory buffer. */
-    void* GetHeapPtr();
+    size_t                      Write(const void* data, size_t sizeInBytes) override;
 
-    size_t GetMemoryReservedSize() const;
+    char*                       Gets(char* str, size_t sizeInBytes) override;
 
-    void SetMemoryGrowGranularity(uint32_t Granularity) { m_Granularity = Granularity; }
+    void                        Flush() override;
 
-    StringView GetName() const override
-    {
-        return m_Name;
-    }
+    size_t                      GetOffset() const override;
 
-    size_t Read(void* pBuffer, size_t SizeInBytes) override;
-    size_t Write(const void* pBuffer, size_t SizeInBytes) override;
-    char*  Gets(char* pBuffer, size_t SizeInBytes) override;
-    void   Flush() override;
-    size_t GetOffset() const override;
-    bool   SeekSet(int32_t Offset) override;
-    bool   SeekCur(int32_t Offset) override;
-    bool   SeekEnd(int32_t Offset) override;
-    size_t SizeInBytes() const override;
-    bool   IsEOF() const override;
+    bool                        SeekSet(int32_t offset) override;
+
+    bool                        SeekCur(int32_t offset) override;
+    bool                        SeekEnd(int32_t offset) override;
+
+    size_t                      SizeInBytes() const override;
+
+    bool                        IsEOF() const override;
 
 private:
-    enum FILE_TYPE : uint8_t
+    enum class FileType : uint8_t
     {
-        FILE_TYPE_UNDEFINED,
-        FILE_TYPE_READ_FILE_SYSTEM,
-        FILE_TYPE_READ_MEMORY,
-        FILE_TYPE_WRITE_MEMORY,
-        FILE_TYPE_WRITE_FILE_SYSTEM,
-        FILE_TYPE_APPEND_FILE_SYSTEM
+        Undefined,
+        ReadFS,
+        WriteFS,
+        AppendFS,
+        ReadMemory,
+        WriteMemory
     };
 
-    static File OpenFromFileSystem(StringView FileName, FILE_TYPE Type);
-    static void* Alloc(size_t SizeInBytes);
-    static void* Realloc(void* pMemory, size_t SizeInBytes);
-    static void  Free(void* pMemory);
+    static File                 sOpenFromFileSystem(StringView fileName, FileType type);
+    static void*                sAlloc(size_t sizeInBytes);
+    static void*                sRealloc(void* memory, size_t sizeInBytes);
+    static void                 sFree(void* memory);
 
-    String    m_Name;
-    FILE_TYPE m_Type{FILE_TYPE_UNDEFINED};
+    String                      m_Name;
+    FileType                    m_Type{FileType::Undefined};
     union
     {
-        FILE* m_Handle{};
-        byte* m_pHeapPtr;
+        FILE*                   m_Handle{};
+        byte*                   m_pHeapPtr;
     };
-    size_t         m_RWOffset{};
-    mutable size_t m_FileSize{};
-    size_t         m_ReservedSize{};
-    uint32_t       m_Granularity{1024};
-    bool           m_bMemoryBufferOwner{true};
+    size_t                      m_RWOffset{};
+    mutable size_t              m_FileSize{};
+    size_t                      m_ReservedSize{};
+    uint32_t                    m_Granularity{1024};
+    bool                        m_IsMemoryBufferOwner{true};
 };
 
 namespace Core
 {
 
-/** Make file system directory */
-void CreateDirectory(StringView Directory, bool bFileName);
+/// Make file system directory
+void CreateDirectory(StringView directory, bool isFileName);
 
-/** Check is file exists */
-bool IsFileExists(StringView FileName);
+/// Check is file exists
+bool IsFileExists(StringView fileName);
 
-/** Remove file from disk */
-void RemoveFile(StringView FileName);
+/// Remove file from disk
+void RemoveFile(StringView fileName);
 
-using STraverseDirectoryCB = std::function<void(StringView FileName, bool bIsDirectory)>;
-/** Traverse the directory */
-void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback);
+using STraverseDirectoryCB = std::function<void(StringView fileName, bool isDirectory)>;
+/// Traverse the directory
+void TraverseDirectory(StringView path, bool recursive, STraverseDirectoryCB callback);
 
-/** Write game resource pack */
-bool WriteResourcePack(StringView SourcePath, StringView ResultFile);
+/// Write game resource pack
+bool WriteResourcePack(StringView sourcePath, StringView resultFile);
 
 } // namespace Core
 

@@ -108,15 +108,15 @@ HK_FLAG_ENUM_OPERATORS(VISIBILITY_GROUP)
 
 enum SURFACE_FLAGS : uint8_t
 {
-    /** Planar surface */
+    /// Planar surface
     SURF_PLANAR = HK_BIT(0),
 
-    /** Two sided surface
-    NOTE: This flags affects only CPU culling and raycasting.
-    You must also use a material with twosided property on to have visual effect. */
+    /// Two sided surface
+    /// NOTE: This flags affects only CPU culling and raycasting.
+    /// You must also use a material with twosided property on to have visual effect.
     SURF_TWOSIDED = HK_BIT(1),
 
-    /** Planar tow sided surface */
+    /// Planar tow sided surface
     SURF_PLANAR_TWOSIDED_MASK = SURF_PLANAR | SURF_TWOSIDED
 };
 
@@ -156,60 +156,60 @@ using PRIMITIVE_EVALUATE_RAYCAST_RESULT = void (*)(PrimitiveDef* Self,
                                                    Float3& LightmapSample);
 struct PrimitiveDef
 {
-    /** Owner component */
+    /// Owner component
     SceneComponent* Owner{};
 
-    /** List of areas where primitive located */
+    /// List of areas where primitive located
     PrimitiveLink* Links{};
 
-    /** Next primitive in level */
+    /// Next primitive in level
     PrimitiveDef* Next{};
 
-    /** Prev primitive in level */
+    /// Prev primitive in level
     PrimitiveDef* Prev{};
 
-    /** Next primitive in update list */
+    /// Next primitive in update list
     PrimitiveDef* NextUpd{};
 
-    /** Prev primitive in update list */
+    /// Prev primitive in update list
     PrimitiveDef* PrevUpd{};
 
-    /** Callback for local raycast */
+    /// Callback for local raycast
     PRIMITIVE_RAYCAST_CALLBACK RaycastCallback{};
 
-    /** Callback for closest local raycast */
+    /// Callback for closest local raycast
     PRIMITIVE_RAYCAST_CLOSEST_CALLBACK RaycastClosestCallback{};
 
     PRIMITIVE_EVALUATE_RAYCAST_RESULT EvaluateRaycastResult{};
 
-    /** Primitive type */
+    /// Primitive type
     VSD_PRIMITIVE Type{VSD_PRIMITIVE_BOX};
 
-    /** Primitive bounding shape. Used if type = VSD_PRIMITIVE_BOX */
-    BvAxisAlignedBox Box{BvAxisAlignedBox::Empty()};
+    /// Primitive bounding shape. Used if type = VSD_PRIMITIVE_BOX
+    BvAxisAlignedBox Box{BvAxisAlignedBox::sEmpty()};
 
-    /** Primitive bounding shape. Used if type = VSD_PRIMITIVE_SPHERE */
+    /// Primitive bounding shape. Used if type = VSD_PRIMITIVE_SPHERE
     BvSphere Sphere;
 
-    /** Face plane. Used to perform face culling for planar surfaces */
+    /// Face plane. Used to perform face culling for planar surfaces
     PlaneF Face;
 
-    /** Visibility query group. See VSD_QUERY_MASK enum. */
+    /// Visibility query group. See VSD_QUERY_MASK enum.
     VSD_QUERY_MASK QueryGroup{};
 
-    /** Visibility group. See VISIBILITY_GROUP enum. */
+    /// Visibility group. See VISIBILITY_GROUP enum.
     VISIBILITY_GROUP VisGroup{VISIBILITY_GROUP_DEFAULT};
 
-    /** Visibility/raycast processed marker. Used by VSD. */
+    /// Visibility/raycast processed marker. Used by VSD.
     int VisMark{};
 
-    /** Primitve marked as visible. Used by VSD. */
+    /// Primitve marked as visible. Used by VSD.
     int VisPass{};
 
-    /** Surface flags (SURFACE_FLAGS) */
+    /// Surface flags (SURFACE_FLAGS)
     SURFACE_FLAGS Flags{};
 
-    /** Is primitive outdoor/indoor */
+    /// Is primitive outdoor/indoor
     bool bIsOutdoor : 1;
 
     PrimitiveDef() :
@@ -228,107 +228,107 @@ struct PrimitiveDef
 
 struct PrimitiveLink
 {
-    /** The area */
+    /// The area
     VisArea* Area;
 
-    /** The primitive */
+    /// The primitive
     PrimitiveDef* Primitive;
 
-    /** Next primitive in the area */
+    /// Next primitive in the area
     PrimitiveLink* NextInArea;
 
-    /** Next link for the primitive */
+    /// Next link for the primitive
     PrimitiveLink* Next;
 };
 
 struct PortalDef
 {
-    /** First hull vertex in array of vertices */
+    /// First hull vertex in array of vertices
     int FirstVert;
 
-    /** Hull vertex count */
+    /// Hull vertex count
     int NumVerts;
 
-    /** Linked areas (front and back) */
+    /// Linked areas (front and back)
     int Areas[2];
 };
 
 struct VisPortal
 {
-    /** Portal to areas */
+    /// Portal to areas
     PortalLink* Portals[2];
 
-    /** Visibility marker */
+    /// Visibility marker
     int VisMark;
 
-    /** Block visibility (for doors) */
+    /// Block visibility (for doors)
     bool bBlocked;
 };
 
 struct PortalLink
 {
-    /** Area visible from the portal */
+    /// Area visible from the portal
     VisArea* ToArea;
 
-    /** Portal hull */
+    /// Portal hull
     ConvexHull* Hull;
 
-    /** Portal plane */
+    /// Portal plane
     PlaneF Plane;
 
-    /** Next portal inside an area */
+    /// Next portal inside an area
     PortalLink* Next;
 
-    /** Visibility portal */
+    /// Visibility portal
     VisPortal* Portal;
 };
 
 struct VisArea
 {
-    /** Area bounding box */
+    /// Area bounding box
     BvAxisAlignedBox Bounds; // FIXME: will be removed later?
 
-    /** Linked portals */
+    /// Linked portals
     PortalLink* PortalList;
 
-    /** Movable primitives inside the area */
+    /// Movable primitives inside the area
     PrimitiveLink* Links;
 
-    /** Non-movable primitives if AABB tree is not present */
+    /// Non-movable primitives if AABB tree is not present
     //PrimitiveLink * NonMovableLinks;
 
-    /** AABB tree for non-movable primitives */
+    /// AABB tree for non-movable primitives
     //BvhTree * AABBTree;
 
-    /** Visibility/raycast processed marker. Used by VSD. */
+    /// Visibility/raycast processed marker. Used by VSD.
     int VisMark;
 };
 
 struct VisibilityQuery
 {
-    /** View frustum planes */
+    /// View frustum planes
     PlaneF const* FrustumPlanes[6];
 
-    /** View origin */
+    /// View origin
     Float3 ViewPosition;
 
-    /** View right vector */
+    /// View right vector
     Float3 ViewRightVec;
 
-    /** View up vector */
+    /// View up vector
     Float3 ViewUpVec;
 
-    /** Result filter */
+    /// Result filter
     VISIBILITY_GROUP VisibilityMask;
 
-    /** Result filter */
+    /// Result filter
     VSD_QUERY_MASK QueryMask;
 };
 
-/** Box hit result */
+/// Box hit result
 struct BoxHitResult
 {
-    /** Box owner. */
+    /// Box owner.
     SceneComponent* Object;
 
     Float3 LocationMin;
@@ -342,32 +342,32 @@ struct BoxHitResult
     }
 };
 
-/** Raycast primitive */
+/// Raycast primitive
 struct WorldRaycastPrimitive
 {
-    /** Primitive owner. */
+    /// Primitive owner.
     SceneComponent* Object;
 
-    /** First hit in array of hits */
+    /// First hit in array of hits
     int FirstHit;
 
-    /** Hits count */
+    /// Hits count
     int NumHits;
 
-    /** Closest hit num */
+    /// Closest hit num
     int ClosestHit;
 };
 
-/** Raycast result */
+/// Raycast result
 struct WorldRaycastResult
 {
-    /** Array of hits */
+    /// Array of hits
     Vector<TriangleHitResult> Hits;
 
-    /** Array of primitives */
+    /// Array of primitives
     Vector<WorldRaycastPrimitive> Primitives;
 
-    /** Sort raycast result by hit distance */
+    /// Sort raycast result by hit distance
     void Sort()
     {
         struct SortPrimitives
@@ -405,7 +405,7 @@ struct WorldRaycastResult
         }
     }
 
-    /** Clear raycast result */
+    /// Clear raycast result
     void Clear()
     {
         Hits.Clear();
@@ -413,41 +413,41 @@ struct WorldRaycastResult
     }
 };
 
-/** Closest hit result */
+/// Closest hit result
 struct WorldRaycastClosestResult
 {
-    /** Primitive owner. */
+    /// Primitive owner.
     SceneComponent* Object;
 
-    /** Hit */
+    /// Hit
     TriangleHitResult TriangleHit;
 
-    /** Hit fraction */
+    /// Hit fraction
     float Fraction;
 
-    /** Triangle vertices in world coordinates */
+    /// Triangle vertices in world coordinates
     Float3 Vertices[3];
 
-    /** Triangle texture coordinate for the hit */
+    /// Triangle texture coordinate for the hit
     Float2 Texcoord;
 
     Float3 LightmapSample_Experimental;
 
-    /** Clear raycast result */
+    /// Clear raycast result
     void Clear()
     {
         Core::ZeroMem(this, sizeof(*this));
     }
 };
 
-/** World raycast filter */
+/// World raycast filter
 struct WorldRaycastFilter
 {
-    /** Filter objects by mask */
+    /// Filter objects by mask
     VISIBILITY_GROUP VisibilityMask;
-    /** VSD query mask */
+    /// VSD query mask
     VSD_QUERY_MASK QueryMask;
-    /** Sort result by the distance */
+    /// Sort result by the distance
     bool bSortByDistance;
 
     WorldRaycastFilter()
@@ -460,7 +460,7 @@ struct WorldRaycastFilter
 
 struct BinarySpacePlane : PlaneF
 {
-    /** Plane axial type */
+    /// Plane axial type
     uint8_t Type;
 
     HK_FORCEINLINE float DistFast(Float3 const& InPoint) const
@@ -471,31 +471,31 @@ struct BinarySpacePlane : PlaneF
 
 struct NodeBase
 {
-    /** Parent node */
+    /// Parent node
     struct BinarySpaceNode* Parent;
 
-    /** Visited mark */
+    /// Visited mark
     int ViewMark;
 
-    /** Node bounding box (for culling) */
+    /// Node bounding box (for culling)
     BvAxisAlignedBox Bounds;
 };
 
 struct BinarySpaceNode : NodeBase
 {
-    /** Node split plane */
+    /// Node split plane
     BinarySpacePlane* Plane;
 
-    /** Child indices */
+    /// Child indices
     int ChildrenIdx[2];
 };
 
 struct BinarySpaceLeaf : NodeBase
 {
-    /** Baked audio */
+    /// Baked audio
     int AudioArea;
 
-    /** Visibility area */
+    /// Visibility area
     VisArea* Area;
 };
 
@@ -508,10 +508,10 @@ enum FRUSTUM_CULLING_TYPE
 
 struct LightPortalDef
 {
-    /** First mesh vertex in array of vertices */
+    /// First mesh vertex in array of vertices
     int FirstVert;
 
-    /** Mesh vertex count */
+    /// Mesh vertex count
     int NumVerts;
 
     int FirstIndex;
@@ -527,34 +527,34 @@ enum LIGHTMAP_FORMAT
 
 struct NodeBaseDef
 {
-    /** Parent node */
+    /// Parent node
     int Parent;
 
-    /** Node bounding box (for culling) */
+    /// Node bounding box (for culling)
     BvAxisAlignedBox Bounds;
 };
 
 struct BinarySpaceNodeDef : NodeBaseDef
 {
-    /** Node split plane */
+    /// Node split plane
     int PlaneIndex;
 
-    /** Child indices */
+    /// Child indices
     int ChildrenIdx[2];
 };
 
 struct BinarySpaceLeafDef : NodeBaseDef
 {
-    /** Baked audio */
+    /// Baked audio
     int AudioArea;
 
-    /** Visibility area */
+    /// Visibility area
     int AreaNum;
 };
 
 struct VisibilityAreaDef
 {
-    /** Area bounding box */
+    /// Area bounding box
     BvAxisAlignedBox Bounds;
 };
 
@@ -613,32 +613,32 @@ public:
     void RegisterLevel(VisibilityLevel* Level);
     void UnregisterLevel(VisibilityLevel* Level);
 
-    /** Add primitive to the level */
+    /// Add primitive to the level
     void AddPrimitive(PrimitiveDef* Primitive);
 
-    /** Remove primitive from the level */
+    /// Remove primitive from the level
     void RemovePrimitive(PrimitiveDef* Primitive);
 
-    /** Remove all primitives in the level */
+    /// Remove all primitives in the level
     void RemovePrimitives();
 
-    /** Mark primitive dirty */
+    /// Mark primitive dirty
     void MarkPrimitive(PrimitiveDef* Primitive);
 
-    /** Mark all primitives in the level */
+    /// Mark all primitives in the level
     void MarkPrimitives();
 
-    /** Unmark all primitives in the level */
+    /// Unmark all primitives in the level
     void UnmarkPrimitives();
 
     void UpdatePrimitiveLinks();
 
     void DrawDebug(DebugRenderer* Renderer);
 
-    /** Query vis areas by bounding box */
+    /// Query vis areas by bounding box
     void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, Vector<VisArea*>& Areas) const;
 
-    /** Query vis areas by bounding sphere */
+    /// Query vis areas by bounding sphere
     void QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea*>& Areas) const;
 
     void QueryVisiblePrimitives(Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query) const;
@@ -656,11 +656,11 @@ public:
     static PoolAllocator<PrimitiveDef> PrimitivePool;
     static PoolAllocator<PrimitiveLink> PrimitiveLinkPool;
 
-    static PrimitiveDef* AllocatePrimitive();
-    static void DeallocatePrimitive(PrimitiveDef* Primitive);
+    static PrimitiveDef* sAllocatePrimitive();
+    static void sDeallocatePrimitive(PrimitiveDef* Primitive);
 
 private:
-    /** Unlink primitive from the level areas */
+    /// Unlink primitive from the level areas
     void UnlinkPrimitive(PrimitiveDef* Primitive);
 
     Vector<VisibilityLevel*> m_Levels;
@@ -680,44 +680,44 @@ public:
     VisibilityLevel(VisibilitySystemCreateInfo const& CreateInfo);
     virtual ~VisibilityLevel();
 
-    /** Get level indoor bounding box */
+    /// Get level indoor bounding box
     BvAxisAlignedBox const& GetIndoorBounds() const { return m_IndoorBounds; }
 
-    /** Get level areas */
+    /// Get level areas
     Vector<VisArea> const& GetAreas() const { return m_Areas; }
 
-    /** Get level outdoor area */
+    /// Get level outdoor area
     VisArea const* GetOutdoorArea() const { return m_pOutdoorArea; }
 
-    /** Find level leaf */
+    /// Find level leaf
     int FindLeaf(Float3 const& _Position);
 
-    /** Find level area */
+    /// Find level area
     VisArea* FindArea(Float3 const& _Position);
 
-    /** BSP leafs */
+    /// BSP leafs
     ArrayOfLeafs const& GetLeafs() const { return m_Leafs; }
 
-    /** Query vis areas by bounding box */
+    /// Query vis areas by bounding box
     void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, Vector<VisArea*>& Areas);
 
-    /** Query vis areas by bounding sphere */
+    /// Query vis areas by bounding sphere
     void QueryOverplapAreas(BvSphere const& Bounds, Vector<VisArea*>& Areas);
 
-    /** Add primitive to the level areas */
-    static void AddPrimitiveToLevelAreas(Vector<VisibilityLevel*> const& Levels, PrimitiveDef* Primitive);
+    /// Add primitive to the level areas
+    static void sAddPrimitiveToLevelAreas(Vector<VisibilityLevel*> const& Levels, PrimitiveDef* Primitive);
 
     void DrawDebug(DebugRenderer* Renderer);
 
-    static void QueryVisiblePrimitives(Vector<VisibilityLevel*> const& Levels, Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query);
+    static void sQueryVisiblePrimitives(Vector<VisibilityLevel*> const& Levels, Vector<PrimitiveDef*>& VisPrimitives, int* VisPass, VisibilityQuery const& Query);
 
-    static bool RaycastTriangles(Vector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool sRaycastTriangles(Vector<VisibilityLevel*> const& Levels, WorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosest(Vector<VisibilityLevel*> const& Levels, WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool sRaycastClosest(Vector<VisibilityLevel*> const& Levels, WorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastBounds(Vector<VisibilityLevel*> const& Levels, Vector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool sRaycastBounds(Vector<VisibilityLevel*> const& Levels, Vector<BoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
-    static bool RaycastClosestBounds(Vector<VisibilityLevel*> const& Levels, BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
+    static bool sRaycastClosestBounds(Vector<VisibilityLevel*> const& Levels, BoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, WorldRaycastFilter const* Filter);
 
 private:
     void CreatePortals(PortalDef const* Portals, int PortalsCount, Float3 const* HullVertices);
@@ -784,30 +784,30 @@ private:
 
     VisibilityLevel* m_PersistentLevel{};
 
-    /** Level portals */
+    /// Level portals
     Vector<VisPortal> m_Portals;
 
     Vector<ConvexHull> m_PortalHulls;
 
-    /** Links between the portals and areas */
+    /// Links between the portals and areas
     Vector<PortalLink> m_AreaLinks;
 
-    /** Level indoor areas */
+    /// Level indoor areas
     Vector<VisArea> m_Areas;
 
-    /** Level outdoor area */
+    /// Level outdoor area
     VisArea m_OutdoorArea;
     VisArea* m_pOutdoorArea;
 
     BvAxisAlignedBox m_IndoorBounds;
 
-    /** Node split planes */
+    /// Node split planes
     Vector<BinarySpacePlane> m_SplitPlanes;
 
-    /** BSP nodes */
+    /// BSP nodes
     ArrayOfNodes m_Nodes;
 
-    /** BSP leafs */
+    /// BSP leafs
     ArrayOfLeafs m_Leafs;
 
     // Visibility query temp vars:

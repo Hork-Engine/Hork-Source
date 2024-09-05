@@ -34,10 +34,10 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-/** Max levels of detail */
+/// Max levels of detail
 constexpr int QUADTREE_MAX_LODS_32 = 16;
 
-/** Max levels of detail */
+/// Max levels of detail
 constexpr int QUADTREE_MAX_LODS_64 = 32;
 
 struct QuadTreeRemapTable
@@ -62,7 +62,7 @@ struct QuadTreeRemapTable
         }
     }
 
-    /** Table for conversion from relative to absolute indices */
+    /// Table for conversion from relative to absolute indices
     uint32_t Rel2Abs[QUADTREE_MAX_LODS_32];
     uint64_t Rel2Abs64[QUADTREE_MAX_LODS_64];
 };

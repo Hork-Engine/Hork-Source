@@ -56,11 +56,11 @@ public:
     BitMask()               = default;
     BitMask(BitMask const&) = default;
 
-    BitMask(BitMask&& Rhs) :
-        m_Bits(std::move(Rhs.m_Bits)),
-        m_NumBits(Rhs.m_NumBits)
+    BitMask(BitMask&& rhs) :
+        m_Bits(std::move(rhs.m_Bits)),
+        m_NumBits(rhs.m_NumBits)
     {
-        Rhs.m_NumBits = 0;
+        rhs.m_NumBits = 0;
     }
 
     HK_FORCEINLINE void Clear()
@@ -80,10 +80,10 @@ public:
         m_Bits.ShrinkToFit();
     }
 
-    HK_FORCEINLINE void Reserve(size_t _NewCapacity)
+    HK_FORCEINLINE void Reserve(size_t capacity)
     {
-        size_t capacityWords = _NewCapacity / BitCount;
-        if (_NewCapacity & BitWrapMask)
+        size_t capacityWords = capacity / BitCount;
+        if (capacity & BitWrapMask)
             ++capacityWords;
         m_Bits.Reserve(capacityWords);
     }
@@ -98,21 +98,21 @@ public:
 
     BitMask& operator=(BitMask const&) = default;
 
-    BitMask& operator=(BitMask&& Rhs)
+    BitMask& operator=(BitMask&& rhs)
     {
-        m_Bits = std::move(Rhs.m_Bits);
-        m_NumBits = Rhs.m_NumBits;
-        Rhs.m_NumBits = 0;
+        m_Bits = std::move(rhs.m_Bits);
+        m_NumBits = rhs.m_NumBits;
+        rhs.m_NumBits = 0;
     }
 
-    void Resize(size_t _NumBits)
+    void Resize(size_t numBits)
     {
         const size_t oldsize = m_Bits.Size();
-        const size_t newsize = _NumBits / BitCount + ((_NumBits & BitWrapMask) ? 1 : 0);
+        const size_t newsize = numBits / BitCount + ((numBits & BitWrapMask) ? 1 : 0);
 
         m_Bits.Resize(newsize);
 
-        if (_NumBits > m_NumBits)
+        if (numBits > m_NumBits)
         {
             Core::ZeroMem(m_Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
 
@@ -122,13 +122,13 @@ public:
                 m_Bits[i >> BitExponent] &= ~(1 << (i & BitWrapMask));
             }
         }
-        m_NumBits = _NumBits;
+        m_NumBits = numBits;
     }
 
-    HK_FORCEINLINE void ResizeInvalidate(size_t _NumBits)
+    HK_FORCEINLINE void ResizeInvalidate(size_t numBits)
     {
-        m_Bits.ResizeInvalidate(_NumBits / BitCount + ((_NumBits & BitWrapMask) ? 1 : 0));
-        m_NumBits = _NumBits;
+        m_Bits.ResizeInvalidate(numBits / BitCount + ((numBits & BitWrapMask) ? 1 : 0));
+        m_NumBits = numBits;
     }
 
     HK_FORCEINLINE size_t Size() const
@@ -151,26 +151,26 @@ public:
         m_Bits.ZeroMem();
     }
 
-    HK_FORCEINLINE void Mark(size_t _BitIndex)
+    HK_FORCEINLINE void Mark(size_t bitIndex)
     {
-        if (_BitIndex >= Size())
+        if (bitIndex >= Size())
         {
-            Resize(_BitIndex + 1);
+            Resize(bitIndex + 1);
         }
-        m_Bits[_BitIndex >> BitExponent] |= 1 << (_BitIndex & BitWrapMask);
+        m_Bits[bitIndex >> BitExponent] |= 1 << (bitIndex & BitWrapMask);
     }
 
-    HK_FORCEINLINE void Unmark(size_t _BitIndex)
+    HK_FORCEINLINE void Unmark(size_t bitIndex)
     {
-        if (_BitIndex < Size())
+        if (bitIndex < Size())
         {
-            m_Bits[_BitIndex >> BitExponent] &= ~(1 << (_BitIndex & BitWrapMask));
+            m_Bits[bitIndex >> BitExponent] &= ~(1 << (bitIndex & BitWrapMask));
         }
     }
 
-    HK_FORCEINLINE bool IsMarked(size_t _BitIndex) const
+    HK_FORCEINLINE bool IsMarked(size_t bitIndex) const
     {
-        return _BitIndex < Size() && (m_Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
+        return bitIndex < Size() && (m_Bits[bitIndex >> BitExponent] & (1 << (bitIndex & BitWrapMask)));
     }
 
     HK_FORCEINLINE void Swap(BitMask& x)
@@ -180,20 +180,20 @@ public:
     }
 
     // Byte serialization
-    void Write(IBinaryStreamWriteInterface& _Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        _Stream.WriteUInt32(m_NumBits);
-        _Stream.WriteArray(m_Bits);
+        stream.WriteUInt32(m_NumBits);
+        stream.WriteArray(m_Bits);
     }
 
-    void Read(IBinaryStreamReadInterface& _Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        m_NumBits = _Stream.ReadUInt32();
-        _Stream.ReadArray(m_Bits);
+        m_NumBits = stream.ReadUInt32();
+        stream.ReadArray(m_Bits);
     }
 
 private:
-    SmallVector<T, BaseCapacityInBytes, OverflowAllocator> m_Bits;
+    SmallVector<T, BaseCapacityInBytes, OverflowAllocator>  m_Bits;
     size_t                                                  m_NumBits{};
 };
 

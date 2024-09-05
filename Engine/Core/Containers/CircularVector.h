@@ -56,32 +56,32 @@ public:
             Add(value);
     }
 
-    CircularVector(ThisType const& Rhs) :
-        m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
+    CircularVector(ThisType const& rhs) :
+        m_Head(rhs.Size() & (MaxCapacity - 1)), m_Size(rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
+            Construct(i, *rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
-    CircularVector(ThisType&& Rhs) noexcept :
-        m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
+    CircularVector(ThisType&& rhs) noexcept :
+        m_Head(rhs.Size() & (MaxCapacity - 1)), m_Size(rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, std::move(*Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1))));
+            Construct(i, std::move(*rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1))));
 
-        Rhs.m_Head = 0;
-        Rhs.m_Size = 0;
+        rhs.m_Head = 0;
+        rhs.m_Size = 0;
     }
 
-    ThisType& operator=(ThisType&& Rhs) noexcept
+    ThisType& operator=(ThisType&& rhs) noexcept
     {
         Resize(0);
 
-        m_Head = Rhs.m_Size & (MaxCapacity - 1);
-        m_Size = Rhs.m_Size;
+        m_Head = rhs.m_Size & (MaxCapacity - 1);
+        m_Size = rhs.m_Size;
 
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
+            Construct(i, *rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
     ~CircularVector()
@@ -153,13 +153,13 @@ public:
         m_Head = 0;
     }
 
-    void Resize(SizeType NewSize)
+    void Resize(SizeType size)
     {
-        HK_ASSERT(NewSize >= 0 && NewSize <= MaxCapacity);
+        HK_ASSERT(size >= 0 && size <= MaxCapacity);
 
-        if (NewSize < m_Size)
+        if (size < m_Size)
         {
-            for (SizeType i = NewSize; i < m_Size; ++i)
+            for (SizeType i = size; i < m_Size; ++i)
             {
                 SizeType offset = (m_Head + i) & (MaxCapacity - 1);
                 Destruct(offset);
@@ -167,14 +167,14 @@ public:
         }
         else
         {
-            for (SizeType i = m_Size; i < NewSize; ++i)
+            for (SizeType i = m_Size; i < size; ++i)
             {
                 SizeType offset = (m_Head + i) & (MaxCapacity - 1);
                 Construct(offset);
             }
         }
 
-        m_Size = NewSize;
+        m_Size = size;
     }
 
     Reference First()

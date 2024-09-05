@@ -127,7 +127,7 @@ public:
 
     virtual void CreateTexture(TextureDesc const& Desc, Ref<ITexture>* ppTexture) = 0;
 
-    /** FEATURE_SPARSE_TEXTURES must be supported */
+    /// FEATURE_SPARSE_TEXTURES must be supported
     virtual void CreateSparseTexture(SparseTextureDesc const& Desc, Ref<ISparseTexture>* ppTexture) = 0;
 
     virtual void CreateTransformFeedback(TransformFeedbackDesc const& Desc, Ref<ITransformFeedback>* ppTransformFeedback) = 0;
@@ -143,10 +143,10 @@ public:
 
     virtual void DestroyShaderBinaryData(ShaderBinaryData* _BinaryData) = 0;
 
-    /** Get total available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
+    /// Get total available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported
     virtual int32_t GetGPUMemoryTotalAvailable() = 0;
 
-    /** Get current available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
+    /// Get current available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported
     virtual int32_t GetGPUMemoryCurrentAvailable() = 0;
 
     virtual bool EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int* NumPageSizes, int* PageSizesX, int* PageSizesY, int* PageSizesZ) = 0;

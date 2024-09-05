@@ -34,13 +34,13 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-UniqueRef<MaterialResource> MaterialResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<MaterialResource> MaterialResource::sLoad(IBinaryStreamReadInterface& stream)
 {
-    StringView extension = PathUtils::GetExt(stream.GetName());
+    StringView extension = PathUtils::sGetExt(stream.GetName());
 
     if (!extension.Icmp(".mg"))
     {
-        auto graph = MaterialGraph::Load(stream);
+        auto graph = MaterialGraph::sLoad(stream);
         if (!graph)
             return {};
 

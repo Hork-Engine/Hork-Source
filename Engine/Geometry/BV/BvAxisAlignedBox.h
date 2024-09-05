@@ -282,7 +282,7 @@ struct BvAxisAlignedBox
 
     void GetVertices(Float3 vertices[8]) const;
 
-    /** faceNum 0..5 corresponds to +X, -X, +Y, -Y, +Z, -Z */
+    /// faceNum 0..5 corresponds to +X, -X, +Y, -Y, +Z, -Z
     void GetFaceVertices(int faceNum, Float3 vertices[4]) const;
 
     constexpr bool IsEmpty() const
@@ -324,13 +324,13 @@ struct BvAxisAlignedBox
         return BvAxisAlignedBox(origin - OutEdge, origin + OutEdge);
     }
 
-    static BvAxisAlignedBox const& Empty()
+    static BvAxisAlignedBox const& sEmpty()
     {
         static BvAxisAlignedBox EmptyBox(Float3(FLT_MAX), Float3(-FLT_MAX));
         return EmptyBox;
     }
 
-    static HK_FORCEINLINE BvAxisAlignedBox Biggest()
+    static HK_FORCEINLINE BvAxisAlignedBox sBiggest()
     {
         return BvAxisAlignedBox(Float3(-FLT_MAX), Float3(-FLT_MAX));
     }

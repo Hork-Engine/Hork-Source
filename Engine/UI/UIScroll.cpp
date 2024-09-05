@@ -490,7 +490,7 @@ void UIScroll::DrawButton(Canvas& canvas, int buttonNum)
 
 void UIScroll::Draw(Canvas& canvas)
 {
-    double delta = static_cast<double>(GameApplication::GetFrameLoop().SysFrameDuration()) * 0.000001;
+    double delta = static_cast<double>(GameApplication::sGetFrameLoop().SysFrameDuration()) * 0.000001;
 
     const float ScrollSpeed = static_cast<float>(delta) * 200;
 

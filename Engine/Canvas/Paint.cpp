@@ -73,7 +73,7 @@ CanvasPaint& CanvasPaint::LinearGradient(Float2 const& startPoint, Float2 const&
 
 CanvasPaint& CanvasPaint::RadialGradient(Float2 const& center, float innerRadius, float outerRadius, Color4 const& innerColor, Color4 const& outerColor)
 {
-    Xform = Transform2D::Translation(center);
+    Xform = Transform2D::sTranslation(center);
 
     Extent[0] = Extent[1] = Radius = (innerRadius + outerRadius) * 0.5f;
 
@@ -90,7 +90,7 @@ CanvasPaint& CanvasPaint::RadialGradient(Float2 const& center, float innerRadius
 
 CanvasPaint& CanvasPaint::BoxGradient(Float2 const& boxTopLeft, float w, float h, float cornerRadius, float feather, Color4 const& innerColor, Color4 const& outerColor)
 {
-    Xform = Transform2D::Translation({boxTopLeft.X + w * 0.5f, boxTopLeft.Y + h * 0.5f});
+    Xform = Transform2D::sTranslation({boxTopLeft.X + w * 0.5f, boxTopLeft.Y + h * 0.5f});
 
     Extent[0] = w * 0.5f;
     Extent[1] = h * 0.5f;
@@ -112,12 +112,12 @@ CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float 
 {
     if (angleInRadians != 0.0f)
     {
-        Xform = Transform2D::Rotation(angleInRadians);
+        Xform = Transform2D::sRotation(angleInRadians);
 
         Xform[2] = posTopLeft;
     }
     else
-        Xform = Transform2D::Translation(posTopLeft);    
+        Xform = Transform2D::sTranslation(posTopLeft);    
 
     Extent[0] = w;
     Extent[1] = h;

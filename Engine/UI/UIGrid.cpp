@@ -178,7 +178,7 @@ void UIGrid::Draw(Canvas& cv)
     else
     {
         auto splitter = UIGrid::TraceSplitter(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
-        cv.DrawRectFilled(splitter.Mins, splitter.Maxs, Color4::Orange());
+        cv.DrawRectFilled(splitter.Mins, splitter.Maxs, Color4::sOrange());
     }
 }
 

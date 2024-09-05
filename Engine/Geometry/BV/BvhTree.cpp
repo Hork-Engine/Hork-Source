@@ -51,29 +51,29 @@ struct BvhBuildContext
     Vector<BvhPrimitiveBounds> Primitives[3];
 };
 
-static void CalcNodeBounds(BvhPrimitiveBounds const* Primitives, int PrimCount, BvAxisAlignedBox& Bounds)
+static void CalcNodeBounds(BvhPrimitiveBounds const* primitives, int primCount, BvAxisAlignedBox& bounds)
 {
-    HK_ASSERT(PrimCount > 0);
+    HK_ASSERT(primCount > 0);
 
-    BvhPrimitiveBounds const* primitive = Primitives;
+    BvhPrimitiveBounds const* primitive = primitives;
 
-    Bounds = primitive->Bounds;
+    bounds = primitive->Bounds;
 
     primitive++;
 
-    for (; primitive < &Primitives[PrimCount]; primitive++)
+    for (; primitive < &primitives[primCount]; primitive++)
     {
-        Bounds.AddAABB(primitive->Bounds);
+        bounds.AddAABB(primitive->Bounds);
     }
 }
 
-static float CalcAABBVolume(BvAxisAlignedBox const& Bounds)
+static float CalcAABBVolume(BvAxisAlignedBox const& bounds)
 {
-    Float3 extents = Bounds.Size();
+    Float3 extents = bounds.Size();
     return extents.X * extents.Y * extents.Z;
 }
 
-static BvhSplit FindBestSplitPrimitive(BvhBuildContext& Build, int Axis, int FirstPrimitive, int PrimCount)
+static BvhSplit FindBestSplitPrimitive(BvhBuildContext& build, int Axis, int firstPrimitive, int primCount)
 {
     struct CompareBoundsMax
     {
@@ -87,15 +87,15 @@ static BvhSplit FindBestSplitPrimitive(BvhBuildContext& Build, int Axis, int Fir
     };
 
     BvhPrimitiveBounds* primitives[3] = {
-        Build.Primitives[0].ToPtr() + FirstPrimitive,
-        Build.Primitives[1].ToPtr() + FirstPrimitive,
-        Build.Primitives[2].ToPtr() + FirstPrimitive};
+        build.Primitives[0].ToPtr() + firstPrimitive,
+        build.Primitives[1].ToPtr() + firstPrimitive,
+        build.Primitives[2].ToPtr() + firstPrimitive};
 
     for (int i = 0; i < 3; i++)
     {
         if (i != Axis)
         {
-            Core::Memcpy(primitives[i], primitives[Axis], sizeof(BvhPrimitiveBounds) * PrimCount);
+            Core::Memcpy(primitives[i], primitives[Axis], sizeof(BvhPrimitiveBounds) * primCount);
         }
     }
 
@@ -113,21 +113,21 @@ static BvhSplit FindBestSplitPrimitive(BvhBuildContext& Build, int Axis, int Fir
     {
         BvhPrimitiveBounds* primBounds = primitives[axis];
 
-        std::sort(primBounds, primBounds + PrimCount, CompareBoundsMax(axis));
+        std::sort(primBounds, primBounds + primCount, CompareBoundsMax(axis));
 
         right.Clear();
-        for (size_t i = PrimCount - 1; i > 0; i--)
+        for (size_t i = primCount - 1; i > 0; i--)
         {
             right.AddAABB(primBounds[i].Bounds);
-            Build.RightBounds[i - 1] = right;
+            build.RightBounds[i - 1] = right;
         }
 
         left.Clear();
-        for (size_t i = 1; i < PrimCount; i++)
+        for (size_t i = 1; i < primCount; i++)
         {
             left.AddAABB(primBounds[i - 1].Bounds);
 
-            float sah = emptyCost + CalcAABBVolume(left) * i + CalcAABBVolume(Build.RightBounds[i - 1]) * (PrimCount - i);
+            float sah = emptyCost + CalcAABBVolume(left) * i + CalcAABBVolume(build.RightBounds[i - 1]) * (primCount - i);
             if (bestSAH > sah)
             {
                 bestSAH               = sah;
@@ -147,14 +147,14 @@ BvhTree::BvhTree()
     m_BoundingBox.Clear();
 }
 
-BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, ArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf)
+BvhTree::BvhTree(Float3 const* vertices, size_t numVertices, size_t vertexStride, ArrayView<unsigned int> Indices, int baseVertex, unsigned int primitivesPerLeaf)
 {
-    PrimitivesPerLeaf = Math::Max(PrimitivesPerLeaf, 16u);
+    primitivesPerLeaf = Math::Max(primitivesPerLeaf, 16u);
 
     int indexCount = Indices.Size();
     int primCount  = indexCount / 3;
 
-    int numLeafs = (primCount + PrimitivesPerLeaf - 1) / PrimitivesPerLeaf;
+    int numLeafs = (primCount + primitivesPerLeaf - 1) / primitivesPerLeaf;
 
     m_Nodes.Reserve(numLeafs * 4);
 
@@ -169,13 +169,13 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
     int primitiveIndex = 0;
     for (unsigned int i = 0; i < indexCount; i += 3, primitiveIndex++)
     {
-        const size_t i0 = BaseVertex + Indices[i];
-        const size_t i1 = BaseVertex + Indices[i + 1];
-        const size_t i2 = BaseVertex + Indices[i + 2];
+        const size_t i0 = baseVertex + Indices[i];
+        const size_t i1 = baseVertex + Indices[i + 1];
+        const size_t i2 = baseVertex + Indices[i + 2];
 
-        Float3 const& v0 = *(Float3 const*)((byte const*)Vertices + i0 * VertexStride);
-        Float3 const& v1 = *(Float3 const*)((byte const*)Vertices + i1 * VertexStride);
-        Float3 const& v2 = *(Float3 const*)((byte const*)Vertices + i2 * VertexStride);
+        Float3 const& v0 = *(Float3 const*)((byte const*)vertices + i0 * vertexStride);
+        Float3 const& v1 = *(Float3 const*)((byte const*)vertices + i1 * vertexStride);
+        Float3 const& v2 = *(Float3 const*)((byte const*)vertices + i2 * vertexStride);
 
         BvhPrimitiveBounds& primitive = build.Primitives[0][primitiveIndex];
         primitive.PrimitiveIndex    = i; //primitiveIndex * 3; // FIXME *3
@@ -190,7 +190,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
     }
 
     primitiveIndex = 0;
-    Subdivide(build, 0, 0, primCount, PrimitivesPerLeaf, primitiveIndex);
+    Subdivide(build, 0, 0, primCount, primitivesPerLeaf, primitiveIndex);
     m_Nodes.ShrinkToFit();
 
     m_BoundingBox = m_Nodes[0].Bounds;
@@ -207,12 +207,12 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
 }
 
 #if 0
-BvhTree::BvhTree(ArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerLeaf)
+BvhTree::BvhTree(ArrayView<PrimitiveDef> primitives, unsigned int primitivesPerLeaf)
 {
-    PrimitivesPerLeaf = Math::Max(PrimitivesPerLeaf, 16u);
+    primitivesPerLeaf = Math::Max(primitivesPerLeaf, 16u);
 
-    int numPrimitives = Primitives.Size();
-    int numLeafs      = (numPrimitives + PrimitivesPerLeaf - 1) / PrimitivesPerLeaf;
+    int numPrimitives = primitives.Size();
+    int numLeafs      = (numPrimitives + primitivesPerLeaf - 1) / primitivesPerLeaf;
 
     m_Nodes.Reserve(numLeafs * 4);
 
@@ -227,7 +227,7 @@ BvhTree::BvhTree(ArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerL
     int primitiveIndex;
     for (primitiveIndex = 0; primitiveIndex < numPrimitives; primitiveIndex++)
     {
-        PrimitiveDef const* primitiveDef = &Primitives[primitiveIndex];
+        PrimitiveDef const* primitiveDef = &primitives[primitiveIndex];
         BvhPrimitiveBounds&    primitive    = build.Primitives[0][primitiveIndex];
 
         switch (primitiveDef->Type)
@@ -245,16 +245,16 @@ BvhTree::BvhTree(ArrayView<PrimitiveDef> Primitives, unsigned int PrimitivesPerL
     }
 
     primitiveIndex = 0;
-    Subdivide(build, 0, 0, numPrimitives, PrimitivesPerLeaf, primitiveIndex);
+    Subdivide(build, 0, 0, numPrimitives, primitivesPerLeaf, primitiveIndex);
     m_Nodes.ShrinkToFit();
 
     m_BoundingBox = m_Nodes[0].Bounds;
 }
 #endif
 
-int BvhTree::MarkBoxOverlappingLeafs(BvAxisAlignedBox const& Bounds, unsigned int* MarkLeafs, int MaxLeafs) const
+int BvhTree::MarkBoxOverlappingLeafs(BvAxisAlignedBox const& bounds, unsigned int* markLeafs, int maxLeafs) const
 {
-    if (!MaxLeafs)
+    if (!maxLeafs)
     {
         return 0;
     }
@@ -263,13 +263,13 @@ int BvhTree::MarkBoxOverlappingLeafs(BvAxisAlignedBox const& Bounds, unsigned in
     {
         BvhNode const* node = &m_Nodes[nodeIndex];
 
-        const bool bOverlap = BvBoxOverlapBox(Bounds, node->Bounds);
+        const bool bOverlap = BvBoxOverlapBox(bounds, node->Bounds);
         const bool bLeaf    = node->IsLeaf();
 
         if (bLeaf && bOverlap)
         {
-            MarkLeafs[n++] = nodeIndex;
-            if (n == MaxLeafs)
+            markLeafs[n++] = nodeIndex;
+            if (n == maxLeafs)
             {
                 return n;
             }
@@ -279,14 +279,14 @@ int BvhTree::MarkBoxOverlappingLeafs(BvAxisAlignedBox const& Bounds, unsigned in
     return n;
 }
 
-int BvhTree::MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEnd, unsigned int* MarkLeafs, int MaxLeafs) const
+int BvhTree::MarkRayOverlappingLeafs(Float3 const& rayStart, Float3 const& rayEnd, unsigned int* markLeafs, int maxLeafs) const
 {
-    if (!MaxLeafs)
+    if (!maxLeafs)
     {
         return 0;
     }
 
-    Float3 rayDir = RayEnd - RayStart;
+    Float3 rayDir = rayEnd - rayStart;
     Float3 invRayDir;
 
     float rayLength = rayDir.Length();
@@ -307,13 +307,13 @@ int BvhTree::MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEn
     {
         BvhNode const* node = &m_Nodes[nodeIndex];
 
-        const bool bOverlap = BvRayIntersectBox(RayStart, invRayDir, node->Bounds, hitMin, hitMax) && hitMin <= 1.0f; // rayLength;
+        const bool bOverlap = BvRayIntersectBox(rayStart, invRayDir, node->Bounds, hitMin, hitMax) && hitMin <= 1.0f; // rayLength;
         const bool bLeaf    = node->IsLeaf();
 
         if (bLeaf && bOverlap)
         {
-            MarkLeafs[n++] = nodeIndex;
-            if (n == MaxLeafs)
+            markLeafs[n++] = nodeIndex;
+            if (n == maxLeafs)
             {
                 return n;
             }
@@ -324,53 +324,53 @@ int BvhTree::MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEn
     return n;
 }
 
-void BvhTree::Read(IBinaryStreamReadInterface& Stream)
+void BvhTree::Read(IBinaryStreamReadInterface& stream)
 {
-    Stream.ReadArray(m_Nodes);
-    Stream.ReadArray(m_Indirection);
-    Stream.ReadObject(m_BoundingBox);
+    stream.ReadArray(m_Nodes);
+    stream.ReadArray(m_Indirection);
+    stream.ReadObject(m_BoundingBox);
 }
 
-void BvhTree::Write(IBinaryStreamWriteInterface& Stream) const
+void BvhTree::Write(IBinaryStreamWriteInterface& stream) const
 {
-    Stream.WriteArray(m_Nodes);
-    Stream.WriteArray(m_Indirection);
-    Stream.WriteObject(m_BoundingBox);
+    stream.WriteArray(m_Nodes);
+    stream.WriteArray(m_Indirection);
+    stream.WriteObject(m_BoundingBox);
 }
 
-void BvhTree::Subdivide(BvhBuildContext& Build, int Axis, int FirstPrimitive, int LastPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex)
+void BvhTree::Subdivide(BvhBuildContext& build, int axis, int firstPrimitive, int lastPrimitive, unsigned int primitivesPerLeaf, int& primitiveIndex)
 {
-    BvhPrimitiveBounds* pPrimitives = Build.Primitives[Axis].ToPtr() + FirstPrimitive;
-    int primCount   = LastPrimitive - FirstPrimitive;
+    BvhPrimitiveBounds* pPrimitives = build.Primitives[axis].ToPtr() + firstPrimitive;
+    int primCount   = lastPrimitive - firstPrimitive;
 
     int curNodeInex = m_Nodes.Size();
     m_Nodes.EmplaceBack();
 
     CalcNodeBounds(pPrimitives, primCount, m_Nodes[curNodeInex].Bounds);
 
-    if (primCount <= PrimitivesPerLeaf)
+    if (primCount <= primitivesPerLeaf)
     {
         // Leaf
 
-        m_Nodes[curNodeInex].Index = PrimitiveIndex;
+        m_Nodes[curNodeInex].Index = primitiveIndex;
         m_Nodes[curNodeInex].PrimitiveCount = primCount;
 
         for (int i = 0; i < primCount; ++i)
         {
-            m_Indirection[PrimitiveIndex + i] = pPrimitives[i].PrimitiveIndex;
+            m_Indirection[primitiveIndex + i] = pPrimitives[i].PrimitiveIndex;
         }
 
-        PrimitiveIndex += primCount;
+        primitiveIndex += primCount;
     }
     else
     {
         // Node
-        BvhSplit split = FindBestSplitPrimitive(Build, Axis, FirstPrimitive, primCount);
+        BvhSplit split = FindBestSplitPrimitive(build, axis, firstPrimitive, primCount);
 
-        int mid = FirstPrimitive + split.PrimitiveIndex;
+        int mid = firstPrimitive + split.PrimitiveIndex;
 
-        Subdivide(Build, split.Axis, FirstPrimitive, mid, PrimitivesPerLeaf, PrimitiveIndex);
-        Subdivide(Build, split.Axis, mid, LastPrimitive, PrimitivesPerLeaf, PrimitiveIndex);
+        Subdivide(build, split.Axis, firstPrimitive, mid, primitivesPerLeaf, primitiveIndex);
+        Subdivide(build, split.Axis, mid, lastPrimitive, primitivesPerLeaf, primitiveIndex);
 
         int nextNode = m_Nodes.Size() - curNodeInex;
         m_Nodes[curNodeInex].Index   = -nextNode;

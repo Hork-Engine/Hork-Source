@@ -42,7 +42,7 @@ public:
     static const uint8_t        Type = RESOURCE_MATERIAL;
     static const uint8_t        Version = 2;
 
-    static UniqueRef<MaterialResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<MaterialResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
     void                        Write(IBinaryStreamWriteInterface& stream);

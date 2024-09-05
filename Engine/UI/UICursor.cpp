@@ -34,7 +34,7 @@ HK_NAMESPACE_BEGIN
 
 void UIDefaultCursor::Draw(Canvas& canvas, Float2 const& position)
 {
-    canvas.DrawCursor(DrawCursor, position, FillColor, BorderColor, bDropShadow);
+    canvas.DrawCursor(Cursor, position, FillColor, BorderColor, bDropShadow);
 }
 
 HK_NAMESPACE_END

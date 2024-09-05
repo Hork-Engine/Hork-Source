@@ -98,25 +98,7 @@ public:
     Vector<Char> const&     GetChars() const        { return m_Chars; }
 
 private:
-    struct PlayerGamepadState
-    {
-        struct ButtonState
-        {
-            bool            IsPressed = false;
-            bool            IsBinded = false;
-            VirtualMapping  VirtMapping;        
-        };
-
-        ButtonState         m_ButtonState[GAMEPAD_KEY_COUNT];
-        float               m_AxisState[GAMEPAD_AXIS_COUNT];
-        float               m_PrevAxisState[GAMEPAD_AXIS_COUNT];
-
-        PlayerGamepadState()
-        {
-            Core::ZeroMem(m_AxisState, sizeof(m_AxisState));
-            Core::ZeroMem(m_PrevAxisState, sizeof(m_PrevAxisState));
-        }
-    };
+    struct PlayerGamepadState;
 
     void                    AddAxis(StringID name, PlayerController owner, float value);
 

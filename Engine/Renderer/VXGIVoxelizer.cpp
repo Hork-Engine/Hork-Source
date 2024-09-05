@@ -244,9 +244,9 @@ void VXGIVoxelizer::CreatePipeline()
         }
     };
 
-    ShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    ShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
-    ShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
+    ShaderFactory::sCreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::sCreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
+    ShaderFactory::sCreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;

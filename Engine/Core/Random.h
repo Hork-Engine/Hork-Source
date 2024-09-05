@@ -43,22 +43,22 @@ class Random
 public:
     virtual ~Random() {}
 
-    /** Get a random number on [0, max] interval. */
-    uint32_t Get(uint32_t Max)
+    /// Get a random number on [0, max] interval.
+    uint32_t Get(uint32_t max)
     {
-        if (Max == 0)
+        if (max == 0)
         {
             return 0;
         }
         uint32_t n;
-        uint32_t np2 = Math::ToGreaterPowerOfTwo(Max + 1);
+        uint32_t np2 = Math::ToGreaterPowerOfTwo(max + 1);
         do {
             n = static_cast<Derived*>(this)->Get() & (np2 - 1);
-        } while (n > Max);
+        } while (n > max);
         return n;
     }
 
-    /** Random number on [0.0, 1.0] interval. */
+    /// Random number on [0.0, 1.0] interval.
     float GetFloat()
     {
         union
@@ -71,12 +71,12 @@ public:
         return pun.f - 1.0f;
     }
 
-    float GetFloat(float Min, float Max)
+    float GetFloat(float min, float max)
     {
-        return GetFloat() * (Max - Min) + Min;
+        return GetFloat() * (max - min) + min;
     }
 
-    /** Get the max value of the random number. */
+    /// Get the max value of the random number.
     uint32_t MaxRandomValue() const { return 4294967295U; }
 };
 
@@ -87,18 +87,18 @@ Very simple random number generator with low storage requirements.
 class SimpleRand : public Random<SimpleRand>
 {
 public:
-    /** Constructor that uses the given seed. */
-    SimpleRand(uint32_t InSeed = 0)
+    /// Constructor that uses the given seed.
+    SimpleRand(uint32_t seed = 0)
     {
-        Seed(InSeed);
+        Seed(seed);
     }
 
-    void Seed(uint32_t InSeed)
+    void Seed(uint32_t seed)
     {
-        m_Current = InSeed;
+        m_Current = seed;
     }
 
-    /** Get a random number */
+    /// Get a random number
     uint32_t Get()
     {
         return m_Current = m_Current * 1103515245 + 12345;
@@ -115,19 +115,19 @@ Mersenne twister random number generator.
 class MersenneTwisterRand : public Random<MersenneTwisterRand>
 {
 public:
-    /** Constructor that uses the given seed. */
-    MersenneTwisterRand(uint32_t InSeed = 0)
+    /// Constructor that uses the given seed.
+    MersenneTwisterRand(uint32_t seed = 0)
     {
-        Seed(InSeed);
+        Seed(seed);
     }
 
-    void Seed(uint32_t InSeed)
+    void Seed(uint32_t seed)
     {
-        Initialize(InSeed);
+        Initialize(seed);
         Reload();
     }
 
-    /** Get a random number between 0 - 65536. */
+    /// Get a random number between 0 - 65536.
     uint32_t Get()
     {
         // Pull a 32-bit integer from the generator state
@@ -174,7 +174,7 @@ private:
 namespace Core
 {
 
-/** Get a random seed. */
+/// Get a random seed.
 HK_FORCEINLINE uint32_t RandomSeed()
 {
     return (uint32_t)time(NULL);

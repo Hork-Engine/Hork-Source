@@ -441,7 +441,7 @@ private:
     bool                    m_IsDynamic = true;
     int                     m_MaxLayers = 16;
     NavMeshPartition        m_PartitionMethod = NavMeshPartition::Watershed;
-    BvAxisAlignedBox        m_BoundingBox = BvAxisAlignedBox::Empty();
+    BvAxisAlignedBox        m_BoundingBox = BvAxisAlignedBox::sEmpty();
     mutable NavQueryFilter  m_QueryFilter;
 
     // For tile cache

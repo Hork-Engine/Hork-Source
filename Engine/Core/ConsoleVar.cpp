@@ -37,20 +37,20 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 static ConsoleVar* GlobalVars         = nullptr;
-static bool         GVariableAllocated = false;
+static bool        GVariableAllocated = false;
 
 int ConsoleVar::EnvironmentFlags = CVAR_CHEATS_ALLOWED;
 
-ConsoleVar* ConsoleVar::GlobalVariableList()
+ConsoleVar* ConsoleVar::sGlobalVariableList()
 {
     return GlobalVars;
 }
 
-ConsoleVar* ConsoleVar::FindVariable(StringView _Name)
+ConsoleVar* ConsoleVar::sFindVariable(StringView name)
 {
     for (ConsoleVar* var = GlobalVars; var; var = var->GetNext())
     {
-        if (!_Name.Icmp(var->GetName()))
+        if (!name.Icmp(var->GetName()))
         {
             return var;
         }
@@ -58,7 +58,7 @@ ConsoleVar* ConsoleVar::FindVariable(StringView _Name)
     return nullptr;
 }
 
-void ConsoleVar::AllocateVariables()
+void ConsoleVar::sAllocateVariables()
 {
     for (ConsoleVar* var = GlobalVars; var; var = var->m_Next)
     {
@@ -69,7 +69,7 @@ void ConsoleVar::AllocateVariables()
     GVariableAllocated = true;
 }
 
-void ConsoleVar::FreeVariables()
+void ConsoleVar::sFreeVariables()
 {
     for (ConsoleVar* var = GlobalVars; var; var = var->m_Next)
     {
@@ -79,11 +79,11 @@ void ConsoleVar::FreeVariables()
     GlobalVars = nullptr;
 }
 
-ConsoleVar::ConsoleVar(GlobalStringView _Name, GlobalStringView _Value, uint16_t _Flags, GlobalStringView _Comment) :
-    m_Name(_Name.CStr()), m_DefaultValue(_Value.CStr()), m_Comment(_Comment.CStr()), m_Flags(_Flags)
+ConsoleVar::ConsoleVar(GlobalStringView name, GlobalStringView value, uint16_t flags, GlobalStringView comment) :
+    m_Name(name.CStr()), m_DefaultValue(value.CStr()), m_Comment(comment.CStr()), m_Flags(flags)
 {
     HK_ASSERT(!GVariableAllocated);
-    HK_ASSERT(CommandProcessor::IsValidCommandName(m_Name));
+    HK_ASSERT(CommandProcessor::sIsValidCommandName(m_Name));
 
     ConsoleVar* head = GlobalVars;
     m_Next = head;
@@ -140,14 +140,14 @@ bool ConsoleVar::CanChangeValue() const
     return true;
 }
 
-void ConsoleVar::SetString(StringView _String)
+void ConsoleVar::SetString(StringView string)
 {
     if (!CanChangeValue())
     {
         return;
     }
 
-    bool bApply = m_Value.Cmp(_String) != 0;
+    bool bApply = m_Value.Cmp(string) != 0;
     if (!bApply)
     {
         // Value is not changed
@@ -158,51 +158,51 @@ void ConsoleVar::SetString(StringView _String)
     {
         LOG("{} restart required to change value\n", m_Name);
 
-        m_LatchedValue = _String;
+        m_LatchedValue = string;
     }
     else
     {
-        ForceString(_String);
+        ForceString(string);
     }
 }
 
-void ConsoleVar::SetBool(bool _Bool)
+void ConsoleVar::SetBool(bool b)
 {
-    SetString(_Bool ? "1" : "0");
+    SetString(b ? "1" : "0");
 }
 
-void ConsoleVar::SetInteger(int32_t _Integer)
+void ConsoleVar::SetInteger(int32_t i)
 {
-    SetString(Core::ToString(_Integer));
+    SetString(Core::ToString(i));
 }
 
-void ConsoleVar::SetFloat(float _Float)
+void ConsoleVar::SetFloat(float f)
 {
-    SetString(Core::ToString(_Float));
+    SetString(Core::ToString(f));
 }
 
-void ConsoleVar::ForceString(StringView _String)
+void ConsoleVar::ForceString(StringView string)
 {
-    m_Value = _String;
+    m_Value = string;
     m_F32 = Core::ParseCvar(m_Value);
     m_I32 = static_cast<int32_t>(m_F32);
     m_LatchedValue.Clear();
     MarkModified();
 }
 
-void ConsoleVar::ForceBool(bool _Bool)
+void ConsoleVar::ForceBool(bool b)
 {
-    ForceString(_Bool ? "1" : "0");
+    ForceString(b ? "1" : "0");
 }
 
-void ConsoleVar::ForceInteger(int32_t _Integer)
+void ConsoleVar::ForceInteger(int32_t i)
 {
-    ForceString(Core::ToString(_Integer));
+    ForceString(Core::ToString(i));
 }
 
-void ConsoleVar::ForceFloat(float _Float)
+void ConsoleVar::ForceFloat(float f)
 {
-    ForceString(Core::ToString(_Float));
+    ForceString(Core::ToString(f));
 }
 
 void ConsoleVar::SetLatched()

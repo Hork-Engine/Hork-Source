@@ -179,13 +179,13 @@ public:
         *this         = std::move(temp);
     }
 
-    /** Flip image horizontally. */
+    /// Flip image horizontally.
     void FlipX();
 
-    /** Flip image vertically. */
+    /// Flip image vertically.
     void FlipY();
 
-    /** Swap Red and Green channels. */
+    /// Swap Red and Green channels.
     void SwapRGB();
 
     void InvertChannel(uint32_t ChannelIndex);
@@ -195,12 +195,12 @@ public:
     void InvertBlue() { InvertChannel(2); }
     void InvertAlpha() { InvertChannel(3); }
 
-    /** Premultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
-    Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats. */
+    /// Premultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
+    /// Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats.
     void PremultiplyAlpha();
 
-    /** Unpremultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
-    Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats. */
+    /// Unpremultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
+    /// Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats.
     void UnpremultiplyAlpha();
 
 private:
@@ -210,17 +210,17 @@ private:
     RAW_IMAGE_FORMAT m_Format{RAW_IMAGE_FORMAT_UNDEFINED};
 };
 
-/** Create image from stream. */
+/// Create image from stream.
 RawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 
-/** Create image from file. */
+/// Create image from file.
 RawImage CreateRawImage(StringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 
-/** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
-RawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::Zero());
+/// Create image from SVG. The resulting image is premultiplied with an alpha channel.
+RawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::sZero());
 
-/** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
-RawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::Zero());
+/// Create image from SVG. The resulting image is premultiplied with an alpha channel.
+RawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::sZero());
 
 enum IMAGE_FILE_FORMAT
 {
@@ -237,10 +237,10 @@ enum IMAGE_FILE_FORMAT
     IMAGE_FILE_FORMAT_EXR
 };
 
-/** Reads an image file format from the stream. */
+/// Reads an image file format from the stream.
 IMAGE_FILE_FORMAT GetImageFileFormat(IBinaryStreamReadInterface& Stream);
 
-/** Selects an image file format from the file name. */
+/// Selects an image file format from the file name.
 IMAGE_FILE_FORMAT GetImageFileFormat(StringView FileName);
 
 RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
@@ -248,13 +248,13 @@ RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT F
 RawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream);
 RawImage LoadNormalMapAsRawVectors(StringView FileName);
 
-/** Flip image horizontally */
+/// Flip image horizontally
 void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPixel, size_t RowStride);
 
-/** Flip image vertically */
+/// Flip image vertically
 void FlipImageY(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPixel, size_t RowStride);
 
-/** Convert linear image to premultiplied alpha sRGB */
+/// Convert linear image to premultiplied alpha sRGB
 void LinearToPremultipliedAlphaSRGB(const float* pSrc,
                                     void*        pDest_SRGBA8,
                                     uint32_t     Width,
@@ -297,60 +297,55 @@ void ExtractImageChannel(T const* pSrc, T* pDest, uint32_t Width, uint32_t Heigh
 
 struct ImageWriteConfig
 {
-    /** Image width */
+    /// Image width
     uint32_t    Width{};
 
-    /** Image height */
+    /// Image height
     uint32_t    Height{};
 
-    /** Number of channels (Red, Red_Alpha, RGB, RGBA).
-    NOTE: JPEG does ignore alpha channels in input data.
-    */
+    /// Number of channels (Red, Red_Alpha, RGB, RGBA).
+    /// NOTE: JPEG does ignore alpha channels in input data.
     uint32_t    NumChannels{};
 
-    /** Image data */
+    /// Image data
     const void* pData{};
 
-    /** Quality is between 0 and 1.
-    JPEG higher quality looks better but results in a bigger image.
-    WebP for lossy, 0 gives the smallest size and 1 the largest. For lossless, this parameter is the amount of effort put into the compression:
-    0 is the fastest but gives larger files compared to the slowest, but best, 1.*/
+    /// Quality is between 0 and 1.
+    /// JPEG higher quality looks better but results in a bigger image.
+    /// WebP for lossy, 0 gives the smallest size and 1 the largest. For lossless, this parameter is the amount of effort put into the compression:
+    /// 0 is the fastest but gives larger files compared to the slowest, but best, 1.
     float       Quality{1.0f};
 
-    /** Lossy is only supported for WebP. JPEG is lossy by default, other formats are lossless. */
+    /// Lossy is only supported for WebP. JPEG is lossy by default, other formats are lossless.
     bool        bLossless{true};
 
-    /** This option allows to write the EXR floating point image as float16. For other formats, this option is irrelevant. */
+    /// This option allows to write the EXR floating point image as float16. For other formats, this option is irrelevant.
     bool        bSaveExrAsHalf{false};
 };
 
-/** Write image in PNG format. */
+/// Write image in PNG format.
 bool WritePNG(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
 
-/** Write image in BMP format. */
+/// Write image in BMP format.
 bool WriteBMP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
 
-/** Write image in TGA format. */
+/// Write image in TGA format.
 bool WriteTGA(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
 
-/**
-Write image in JPG format.
-JPEG does ignore alpha channels in input data; quality is between 0 and 1.
-Higher quality looks better but results in a bigger image.
-*/
+/// Write image in JPG format.
+/// JPEG does ignore alpha channels in input data; quality is between 0 and 1.
+/// Higher quality looks better but results in a bigger image.
 bool WriteJPG(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData, float Quality = 1.0f);
 
-/** Write image in HDR format */
+/// Write image in HDR format
 bool WriteHDR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData);
 
-/** Write image in EXR format */
+/// Write image in EXR format
 bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData, bool bSaveAsHalf = false);
 
-/**
-Write image in WEBP format.
-Quality is between 0 and 1. For lossy, 0 gives the smallest size and 1 the largest. For lossless, this
-parameter is the amount of effort put into the compression: 0 is the fastest but gives larger files compared to the slowest, but best, 1.
-*/
+/// Write image in WEBP format.
+/// Quality is between 0 and 1. For lossy, 0 gives the smallest size and 1 the largest. For lossless, this
+/// parameter is the amount of effort put into the compression: 0 is the fastest but gives larger files compared to the slowest, but best, 1.
 bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData, float Quality = 1.0f, bool bLossless = true);
 
 bool WriteImage(StringView FileName, ImageWriteConfig const& Config);

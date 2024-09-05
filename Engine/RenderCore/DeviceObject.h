@@ -129,7 +129,7 @@ private:
     {
         void* Handle;
 
-        /** Use 64-bit integer for bindless handle compatibility */
+        // Use 64-bit integer for bindless handle compatibility
         uint64_t HandleUI64 = 0;
     };
     DEVICE_OBJECT_PROXY_TYPE ProxyType;

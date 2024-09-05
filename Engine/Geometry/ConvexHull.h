@@ -40,88 +40,71 @@ HK_NAMESPACE_BEGIN
 constexpr float CONVEX_HULL_MAX_BOUNDS = 5 * 1024;
 constexpr float CONVEX_HULL_MIN_BOUNDS = -5 * 1024;
 
-enum PLANE_SIDE
+enum class PlaneSide : int8_t
 {
-    PLANE_SIDE_BACK  = -1,
-    PLANE_SIDE_FRONT = 1,
-    PLANE_SIDE_ON    = 0,
-    PLANE_SIDE_CROSS = 2
+    Back  = -1,
+    Front = 1,
+    On    = 0,
+    Cross = 2
 };
 
 class ConvexHull
 {
 public:
-    ConvexHull() = default;
+                                ConvexHull() = default;
 
-    ConvexHull(ConvexHull const&) = default;
-    ConvexHull& operator=(ConvexHull const&) = default;
+                                ConvexHull(ConvexHull const&) = default;
+                                ConvexHull& operator=(ConvexHull const&) = default;
 
-    ConvexHull(ConvexHull&&) = default;
-    ConvexHull& operator=(ConvexHull&&) = default;
+                                ConvexHull(ConvexHull&&) = default;
+                                ConvexHull& operator=(ConvexHull&&) = default;
 
-    ConvexHull(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
+                                ConvexHull(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
 
-    void FromPlane(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
-    void FromPoints(Float3 const* points, size_t numPoints);
+    void                        FromPlane(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
+    void                        FromPoints(Float3 const* points, size_t numPoints);
 
-    Float3& operator[](size_t n)
-    {
-        return m_Points[n];
-    }
+    Float3&                     operator[](size_t n) { return m_Points[n]; }
+    Float3 const&               operator[](size_t n) const { return m_Points[n]; }
 
-    Float3 const& operator[](size_t n) const
-    {
-        return m_Points[n];
-    }
+    size_t                      NumPoints() const { return m_Points.Size(); }
 
-    size_t NumPoints() const { return m_Points.Size(); }
+    bool                        IsEmpty() const { return m_Points.IsEmpty(); }
 
-    bool IsEmpty() const { return m_Points.IsEmpty(); }
+    Vector<Float3>&             GetVector() { return m_Points; }
+    Vector<Float3> const&       GetVector() const { return m_Points; }
 
-    Vector<Float3>&       GetVector() { return m_Points; }
-    Vector<Float3> const& GetVector() const { return m_Points; }
+    Float3*                     GetPoints() { return m_Points.ToPtr(); }
+    Float3 const*               GetPoints() const { return m_Points.ToPtr(); }
 
-    Float3* GetPoints()
-    {
-        return m_Points.ToPtr();
-    }
+    void                        Clear() { m_Points.Clear(); }
 
-    Float3 const* GetPoints() const
-    {
-        return m_Points.ToPtr();
-    }
+    ConvexHull                  Reversed() const;
 
-    void Clear()
-    {
-        m_Points.Clear();
-    }
+    void                        Reverse();
 
-    ConvexHull Reversed() const;
+    PlaneSide                   Classify(PlaneF const& plane, float epsilon) const;
 
-    void Reverse();
+    bool                        IsTiny(float minEdgeLength) const;
 
-    PLANE_SIDE Classify(PlaneF const& plane, float epsilon) const;
+    bool                        IsHuge() const;
 
-    bool IsTiny(float minEdgeLength) const;
+    float                       CalcArea() const;
 
-    bool IsHuge() const;
+    BvAxisAlignedBox            CalcBounds() const;
 
-    float CalcArea() const;
+    Float3                      CalcNormal() const;
 
-    BvAxisAlignedBox CalcBounds() const;
+    PlaneF                      CalcPlane() const;
 
-    Float3 CalcNormal() const;
+    Float3                      CalcCenter() const;
 
-    PlaneF CalcPlane() const;
+    PlaneSide                   Split(PlaneF const& plane, float epsilon, ConvexHull& front, ConvexHull& back) const;
 
-    Float3 CalcCenter() const;
-
-    PLANE_SIDE Split(PlaneF const& plane, float epsilon, ConvexHull& front, ConvexHull& back) const;
-
-    PLANE_SIDE Clip(PlaneF const& plane, float epsilon, ConvexHull& front) const;
+    PlaneSide                   Clip(PlaneF const& plane, float epsilon, ConvexHull& front) const;
 
 private:
-    Vector<Float3> m_Points;
+    Vector<Float3>              m_Points;
 };
 
 HK_NAMESPACE_END

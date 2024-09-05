@@ -49,7 +49,8 @@ public:
     explicit                    TextureResource(ImageStorage image);
                                 ~TextureResource();
 
-    static UniqueRef<TextureResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<TextureResource> sLoad(IBinaryStreamReadInterface& stream);
+    //static bool                 Write(IBinaryStreamWriteInterface& stream, ImageStorage const& storage);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 
@@ -123,5 +124,12 @@ private:
 };
 
 using TextureHandle = ResourceHandle<TextureResource>;
+
+namespace AssetUtils
+{
+
+bool CreateTexture(IBinaryStreamWriteInterface& stream, ImageStorage const& storage);
+
+}
 
 HK_NAMESPACE_END

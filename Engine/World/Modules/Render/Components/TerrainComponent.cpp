@@ -49,7 +49,7 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawTerrainMesh)
     {
-        if (TerrainResource* resource = GameApplication::GetResourceManager().TryGet(m_Resource))
+        if (TerrainResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             auto* renderInterfaceImpl = GetWorld()->GetInterface<RenderInterface>().GetImpl();
 

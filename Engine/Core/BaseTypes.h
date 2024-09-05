@@ -52,7 +52,6 @@ SOFTWARE.
 #ifdef __GNUC__
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wunused-variable"
-#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 #include <EASTL/internal/config.h>
@@ -243,7 +242,7 @@ Misc
 #    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : ::Hk::AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
 
 HK_NAMESPACE_BEGIN
-extern void AssertFunction(const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment);
+extern void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
 HK_NAMESPACE_END
 
 #else
@@ -263,7 +262,7 @@ HK_NAMESPACE_END
     do                                                               \
     {                                                                \
         if (HK_UNLIKELY(!(Expression)))                              \
-            Hk::CoreApplication::TerminateWithError("{} Expected {}\n", Message, #Expression); \
+            Hk::CoreApplication::sTerminateWithError("{} Expected {}\n", Message, #Expression); \
     } while (false)
 
 #define HK_VERIFY_R(Expression, Message)                   \
@@ -397,58 +396,44 @@ HK_NAMESPACE_BEGIN
 template <typename Enum>
 constexpr std::underlying_type_t<Enum> ToUnderlying(Enum in) { return static_cast<std::underlying_type_t<Enum>>(in); }
 
-/** Power of two compile-time check */
+/// Power of two compile-time check
 template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-constexpr bool IsPowerOfTwo(const T _Value)
+constexpr bool IsPowerOfTwo(const T value)
 {
-    return (_Value & (_Value - 1)) == 0 && _Value > 0;
+    return (value & (value - 1)) == 0 && value > 0;
 }
 
 template <size_t Alignment>
-constexpr bool IsAligned(size_t N)
+constexpr bool IsAligned(size_t n)
 {
     static_assert(IsPowerOfTwo(Alignment), "Alignment must be power of two");
-    return (N & (Alignment - 1)) == 0;
+    return (n & (Alignment - 1)) == 0;
 }
 
-constexpr bool IsAligned(size_t N, size_t Alignment)
+constexpr bool IsAligned(size_t n, size_t alignment)
 {
-    return (N & (Alignment - 1)) == 0;
+    return (n & (alignment - 1)) == 0;
 }
 
-constexpr bool IsAlignedPtr(void* Ptr, size_t Alignment)
+HK_FORCEINLINE bool IsAlignedPtr(const void* ptr, size_t alignment)
 {
-    return ((size_t)Ptr & (Alignment - 1)) == 0;
+    return (reinterpret_cast<size_t>(ptr) & (alignment - 1)) == 0;
 }
 
-constexpr size_t IsSSEAligned(size_t N)
+constexpr size_t IsSSEAligned(size_t n)
 {
-    return IsAligned<16>(N);
+    return IsAligned<16>(n);
 }
 
-constexpr size_t Align(size_t N, size_t Alignment)
+constexpr size_t Align(size_t n, size_t alignment)
 {
-    return (N + (Alignment - 1)) & ~(Alignment - 1);
+    return (n + (alignment - 1)) & ~(alignment - 1);
 }
 
-constexpr void* AlignPtr(void* Ptr, size_t Alignment)
+HK_FORCEINLINE void* AlignPtr(void* ptr, size_t alignment)
 {
-#if 0
-    struct Aligner {
-        union {
-            void * p;
-            size_t i;
-        };
-    };
-    Aligner aligner;
-    aligner.p = _UnalignedPtr;
-    aligner.i = Align( aligner.i, _Alignment );
-    return aligner.p;
-#else
-    return (void*)(Align((size_t)Ptr, Alignment));
-#endif
+    return reinterpret_cast<void*>(Align(reinterpret_cast<size_t>(ptr), alignment));
 }
-
 
 namespace Core
 {

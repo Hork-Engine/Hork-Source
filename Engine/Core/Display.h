@@ -36,70 +36,70 @@ HK_NAMESPACE_BEGIN
 
 enum DISPLAY_ORIENTATION
 {
-    /** The display orientation can't be determined */
+    /// The display orientation can't be determined
     DISPLAY_ORIENTATION_UNKNOWN,
-    /** The display is in landscape mode, with the right side up, relative to portrait mode */
+    /// The display is in landscape mode, with the right side up, relative to portrait mode
     DISPLAY_ORIENTATION_LANDSCAPE,
-    /** The display is in landscape mode, with the left side up, relative to portrait mode */
+    /// The display is in landscape mode, with the left side up, relative to portrait mode
     DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED,
-    /** The display is in portrait mode */
+    /// The display is in portrait mode
     DISPLAY_ORIENTATION_PORTRAIT,
-    /** The display is in portrait mode, upside down */
+    /// The display is in portrait mode, upside down
     DISPLAY_ORIENTATION_PORTRAIT_FLIPPED
 };
 
 struct DisplayMode
 {
-    /** Width, in screen coordinates */
+    /// Width, in screen coordinates
     int Width;
-    /** Height, in screen coordinates */
+    /// Height, in screen coordinates
     int Height;
-    /** Refresh rate */
+    /// Refresh rate
     float RefreshRate;
 };
 
 struct DisplayInfo
 {
-    /** Internal identifier */
+    /// Internal identifier
     uint32_t Id;
-    /** Display name */
+    /// Display name
     const char* Name;
-    /** Display bounds */
+    /// Display bounds
     int DisplayX;
-    /** Display bounds */
+    /// Display bounds
     int DisplayY;
-    /** Display bounds */
+    /// Display bounds
     int DisplayW;
-    /** Display bounds */
+    /// Display bounds
     int DisplayH;
-    /** Display usable bounds */
+    /// Display usable bounds
     int DisplayUsableX;
-    /** Display usable bounds */
+    /// Display usable bounds
     int DisplayUsableY;
-    /** Display usable bounds */
+    /// Display usable bounds
     int DisplayUsableW;
-    /** Display usable bounds */
+    /// Display usable bounds
     int DisplayUsableH;
-    /** Display orientation */
+    /// Display orientation
     DISPLAY_ORIENTATION Orientation;
 };
 
 namespace Core
 {
 
-/** Get list of displays */
+/// Get list of displays
 void GetDisplays(Vector<DisplayInfo>& displays);
 
-/** Get list of display modes */
+/// Get list of display modes
 void GetDisplayModes(DisplayInfo const& display, Vector<DisplayMode>& modes);
 
-/** Get information about the desktop display mode */
+/// Get information about the desktop display mode
 void GetDesktopDisplayMode(DisplayInfo const& display, DisplayMode& mode);
 
-/** Get information about the current display mode */
+/// Get information about the current display mode
 void GetCurrentDisplayMode(DisplayInfo const& display, DisplayMode& mode);
 
-/** Get the closest match to the requested display mode */
+/// Get the closest match to the requested display mode
 bool GetClosestDisplayMode(DisplayInfo const& display, int width, int height, float refreshRate, bool includeHightDensityModes, DisplayMode& mode);
 
 } // namespace Core

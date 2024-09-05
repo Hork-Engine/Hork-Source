@@ -47,24 +47,24 @@ HK_NAMESPACE_BEGIN
 template <typename T>
 struct Hasher
 {
-    std::size_t operator()(T const& Key) const
+    std::size_t operator()(T const& key) const
     {
-        return HashTraits::Hash(Key);
+        return HashTraits::Hash(key);
     }
 };
 
 struct NameHasher
 {
-    std::size_t operator()(StringView ResourcePath) const
+    std::size_t operator()(StringView name) const
     {
-        return ResourcePath.HashCaseInsensitive();
+        return name.HashCaseInsensitive();
     }
 
     struct Compare
     {
-        bool operator()(StringView Lhs, StringView Rhs) const
+        bool operator()(StringView lhs, StringView rhs) const
         {
-            return !Lhs.Icmp(Rhs);
+            return !lhs.Icmp(rhs);
         }
     };
 };
@@ -82,16 +82,16 @@ public:
     using AllocatorType    = typename Super::allocator_type;
     using ValueType        = typename Super::value_type;
 
-    /** Default constructor. */
+    /// Default constructor.
     explicit HashMap(AllocatorType const& allocator = AllocatorType("HashMap")) :
         Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
-    /** Constructor which creates an empty container, but start with nBucketCount buckets.
-        We default to a small nBucketCount value, though the user really should manually
-        specify an appropriate value in order to prevent memory from being reallocated. */
-    explicit HashMap(SizeType nBucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
-        Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    /// Constructor which creates an empty container, but start with bucketCount buckets.
+    /// We default to a small bucketCount value, though the user really should manually
+    /// specify an appropriate value in order to prevent memory from being reallocated.
+    explicit HashMap(SizeType bucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
     HashMap(HashMap const& x) :
@@ -106,17 +106,17 @@ public:
         Super(eastl::move(x), allocator)
     {}
 
-    /** initializer_list - based constructor.
-        Allows for initializing with brace values (e.g. HashMap<int, char*> hm = { {3,"c"}, {4,"d"}, {5,"e"} }; ) */
-    HashMap(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
-        Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    /// initializer_list - based constructor.
+    /// Allows for initializing with brace values (e.g. HashMap<int, char*> hm = { {3,"c"}, {4,"d"}, {5,"e"} }; )
+    HashMap(std::initializer_list<ValueType> ilist, SizeType bucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(ilist.begin(), ilist.end(), bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
-    /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
-        elements in the input range. */
+    /// An input bucket count of <= 1 causes the bucket count to be equal to the number o
+    /// elements in the input range.
     template <typename ForwardIterator>
-    HashMap(ForwardIterator first, ForwardIterator last, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
-        Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    HashMap(ForwardIterator first, ForwardIterator last, SizeType bucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(first, last, bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
     {}
 
     HK_FORCEINLINE HashMap& operator=(const HashMap& x)
@@ -134,10 +134,10 @@ public:
         return static_cast<HashMap&>(Super::operator=(eastl::move(x)));
     }
 
-    /** This is an extension to the C++ standard.We insert a default - constructed
-        element with the given key. The reason for this is that we can avoid the
-        potentially expensive operation of creating and/or copying a Val
-        object on the stack. */
+    /// This is an extension to the C++ standard.We insert a default - constructed
+    /// element with the given key. The reason for this is that we can avoid the
+    /// potentially expensive operation of creating and/or copying a Val
+    /// object on the stack.
     HK_FORCEINLINE InsertReturnType Insert(Key const& key)
     {
         return Super::DoInsertKey(eastl::true_type(), key);
@@ -492,7 +492,7 @@ StringView StringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(StringVi
     return StringView(result, len, true);
 }
 
-/** Case insensitive string hash map. */
+/// Case insensitive string hash map.
 template <typename T>
 using NameHash = StringHashMap<T, NameHasher, NameHasher::Compare>;
 
@@ -509,16 +509,16 @@ public:
     using AllocatorType    = typename Super::allocator_type;
     using ValueType        = typename Super::value_type;
 
-    /** Default constructor. */
+    /// Default constructor.
     explicit HashSet(AllocatorType const& allocator = AllocatorType("HashSet")) :
         Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_self<Val>(), allocator)
     {}
 
-    /** Constructor which creates an empty container, but start with nBucketCount buckets.
-        We default to a small nBucketCount value, though the user really should manually
-        specify an appropriate value in order to prevent memory from being reallocated. */
-    explicit HashSet(SizeType nBucketCount, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
-        Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    /// Constructor which creates an empty container, but start with bucketCount buckets.
+    /// We default to a small bucketCount value, though the user really should manually
+    /// specify an appropriate value in order to prevent memory from being reallocated.
+    explicit HashSet(SizeType bucketCount, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
     HashSet(HashSet const& x) :
@@ -533,17 +533,17 @@ public:
         Super(eastl::move(x), allocator)
     {}
 
-    /** initializer_list - based constructor.
-        Allows for initializing with brace values (e.g. HashSet<int> hs = { 3, 4, 5, }; ) */
-    HashSet(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
-        Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    /// initializer_list - based constructor.
+    /// Allows for initializing with brace values (e.g. HashSet<int> hs = { 3, 4, 5, }; )
+    HashSet(std::initializer_list<ValueType> ilist, SizeType bucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(ilist.begin(), ilist.end(), bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
-    /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
-        elements in the input range. */
+    /// An input bucket count of <= 1 causes the bucket count to be equal to the number of
+    /// elements in the input range.
     template <typename FowardIterator>
-    HashSet(FowardIterator first, FowardIterator last, SizeType nBucketCount = 0, const Hash& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
-        Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    HashSet(FowardIterator first, FowardIterator last, SizeType bucketCount = 0, const Hash& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(first, last, bucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
     {}
 
     HashSet& operator=(HashSet const& x)

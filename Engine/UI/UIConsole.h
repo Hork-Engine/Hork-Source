@@ -42,37 +42,37 @@ class UIConsole final : public Noncopyable
 public:
     UIConsole();
 
-    /** Clear console text */
+    /// Clear console text
     void Clear();
 
-    /** Is console active */
+    /// Is console active
     bool IsActive() const;
 
     void Up();
     void Down();
     void Toggle();
 
-    /** Set console to fullscreen mode */
+    /// Set console to fullscreen mode
     void SetFullscreen(bool bFullscreen);
 
     void Update(float timeStep);
 
-    /** Draw console to canvas */
+    /// Draw console to canvas
     void Draw(Canvas& cv, UIBrush* background, float width, float height);
 
-    /** Process key event */
+    /// Process key event
     void OnKeyEvent(struct KeyEvent const& event, CommandContext& commandCtx, CommandProcessor& commandProcessor);
 
-    /** Process char event */
+    /// Process char event
     void OnCharEvent(struct CharEvent const& event);
 
-    /** Process mouse wheel event */
+    /// Process mouse wheel event
     void OnMouseWheelEvent(struct MouseWheelEvent const& event);
 
-    /** Write command line history */
+    /// Write command line history
     void WriteStoryLines();
 
-    /** Read command line history */
+    /// Read command line history
     void ReadStoryLines();
 
 private:

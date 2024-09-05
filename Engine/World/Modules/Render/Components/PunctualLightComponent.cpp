@@ -143,7 +143,7 @@ void PunctualLightComponent::UpdateWorldBoundingBox()
         m_WorldOrientedBoundingBox.Center = m_RenderTransform.Position + spotDir * (m_WorldOrientedBoundingBox.HalfSize.Z);
 
         // TODO: Optimize?
-        Float4x4 OBBTransform = Float4x4::Translation(m_WorldOrientedBoundingBox.Center) * Float4x4(m_WorldOrientedBoundingBox.Orient) * Float4x4::Scale(m_WorldOrientedBoundingBox.HalfSize);
+        Float4x4 OBBTransform = Float4x4::sTranslation(m_WorldOrientedBoundingBox.Center) * Float4x4(m_WorldOrientedBoundingBox.Orient) * Float4x4::sScale(m_WorldOrientedBoundingBox.HalfSize);
         m_OBBTransformInverse = OBBTransform.Inversed();
 
         // Compute cone AABB for culling
@@ -180,7 +180,7 @@ void PunctualLightComponent::UpdateWorldBoundingBox()
         m_WorldOrientedBoundingBox.Orient.SetIdentity();
 
         // TODO: Optimize?
-        Float4x4 OBBTransform = Float4x4::Translation(m_WorldOrientedBoundingBox.Center) * Float4x4::Scale(m_WorldOrientedBoundingBox.HalfSize);
+        Float4x4 OBBTransform = Float4x4::sTranslation(m_WorldOrientedBoundingBox.Center) * Float4x4::sScale(m_WorldOrientedBoundingBox.HalfSize);
         m_OBBTransformInverse = OBBTransform.Inversed();
     }
 }

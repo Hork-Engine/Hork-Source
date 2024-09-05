@@ -102,7 +102,7 @@ void AudioInterface::PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, 
         return;
     }
 
-    auto resource = GameApplication::GetResourceManager().TryGet(inSound);
+    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
     if (!resource)
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
@@ -149,7 +149,7 @@ void AudioInterface::PlaySoundBackground(SoundHandle inSound, SoundGroup* inGrou
         return;
     }
 
-    auto resource = GameApplication::GetResourceManager().TryGet(inSound);
+    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
     if (!resource)
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
@@ -247,7 +247,7 @@ void CalcAttenuation(SoundSourceType SourceType,
 
     CalcAttenuation(IsBackground ? SoundSourceType::Background : SoundSourceType::Point,
                     Position,
-                    Float3::AxisX(),
+                    Float3::sAxisX(),
                     inListener.Position,
                     inListener.RightVec,
                     ReferenceDistance,
@@ -271,7 +271,7 @@ void CalcAttenuation(SoundSourceType SourceType,
     if (outChanVolume[1] > 65535)
         outChanVolume[1] = 65535;
 
-    outSpatializedStereo = !GameApplication::GetAudioDevice()->IsMono();
+    outSpatializedStereo = !GameApplication::sGetAudioDevice()->IsMono();
 
     if (Snd_HRTF)
     {
@@ -378,7 +378,7 @@ void AudioInterface::Update()
 
     UpdateOneShotSound();
 
-    GameApplication::GetAudioMixer()->SubmitTracks(m_SubmitQueue);
+    GameApplication::sGetAudioMixer()->SubmitTracks(m_SubmitQueue);
 }
 
 HK_NAMESPACE_END

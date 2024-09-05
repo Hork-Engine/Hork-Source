@@ -93,13 +93,13 @@ public:
     void                DrawDebug(DebugRenderer& renderer);
 
     template <typename Event>
-    static void         SubscribeEvent(GameObject* eventSender, Component* receiver, typename Event::Holder::DelegateType delegate);
+    static void         sSubscribeEvent(GameObject* eventSender, Component* receiver, typename Event::Holder::DelegateType delegate);
 
     template <typename Event>
-    static void         UnsubscribeEvent(GameObject* eventSender, Component* receiver);
+    static void         sUnsubscribeEvent(GameObject* eventSender, Component* receiver);
 
     template <typename Event, typename... Args>
-    static void         DispatchEvent(GameObject* eventSender, Args... args);
+    static void         sDispatchEvent(GameObject* eventSender, Args... args);
 
 private:
     template <typename Event>

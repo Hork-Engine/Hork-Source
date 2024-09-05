@@ -76,7 +76,7 @@ ShaderModuleGLImpl::ShaderModuleGLImpl(DeviceGLImpl* pDevice, SHADER_TYPE _Shade
     pDevice->TotalShaderModules++;
 #else
 
-    GLuint id = CreateShaderProgram(_ShaderType, _NumSources, _Sources, false);
+    GLuint id = sCreateShaderProgram(_ShaderType, _NumSources, _Sources, false);
     if (!id)
     {
         return;
@@ -236,7 +236,7 @@ unsigned int ShaderModuleGLImpl::CreateShaderProgramBin(ShaderBinaryData const* 
     return program;
 }
 
-unsigned int ShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _ShaderType,
+unsigned int ShaderModuleGLImpl::sCreateShaderProgram(SHADER_TYPE        _ShaderType,
                                                       int                _NumStrings,
                                                       const char* const* _Strings,
                                                       bool               bBinaryRetrievable)
@@ -296,7 +296,7 @@ unsigned int ShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _ShaderT
     return program;
 }
 
-bool ShaderModuleGLImpl::CreateShaderBinaryData(DeviceGLImpl*     _Device,
+bool ShaderModuleGLImpl::sCreateShaderBinaryData(DeviceGLImpl*     _Device,
                                                  SHADER_TYPE        _ShaderType,
                                                  unsigned int       _NumSources,
                                                  const char* const* _Sources,
@@ -310,7 +310,7 @@ bool ShaderModuleGLImpl::CreateShaderBinaryData(DeviceGLImpl*     _Device,
 
     Core::ZeroMem(_BinaryData, sizeof(*_BinaryData));
 
-    id = CreateShaderProgram(_ShaderType, _NumSources, _Sources, true);
+    id = sCreateShaderProgram(_ShaderType, _NumSources, _Sources, true);
     if (!id)
     {
         return false;
@@ -339,7 +339,7 @@ bool ShaderModuleGLImpl::CreateShaderBinaryData(DeviceGLImpl*     _Device,
     return true;
 }
 
-void ShaderModuleGLImpl::DestroyShaderBinaryData(DeviceGLImpl* _Device, ShaderBinaryData* _BinaryData)
+void ShaderModuleGLImpl::sDestroyShaderBinaryData(DeviceGLImpl* _Device, ShaderBinaryData* _BinaryData)
 {
     if (!_BinaryData->BinaryCode)
     {

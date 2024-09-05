@@ -43,42 +43,42 @@ public:
     CommandContext();
     ~CommandContext();
 
-    void AddCommand(GlobalStringView _Name, Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment = ""_s);
+    void AddCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment = ""_s);
 
-    void RemoveCommand(StringView _Name);
+    void RemoveCommand(StringView name);
 
     void RemoveCommands();
 
-    int CompleteString(StringView Str, String& _Result);
+    int CompleteString(StringView str, String& result);
 
-    void Print(StringView Str);
+    void Print(StringView str);
 
 protected:
     //
     // ICommandContext implementation
     //
 
-    void ExecuteCommand(CommandProcessor const& _Proc) override;
+    void ExecuteCommand(CommandProcessor const& proc) override;
 
 private:
     class RuntimeCommand
     {
     public:
-        RuntimeCommand(GlobalStringView _Name, Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment) :
-            Name(_Name.CStr()), Comment(_Comment.CStr()), Callback(_Callback)
+        RuntimeCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment) :
+            Name(name.CStr()), Comment(comment.CStr()), Callback(callback)
         {}
 
-        void Override(Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment)
+        void Override(Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment)
         {
-            Comment  = _Comment.CStr();
-            Callback = _Callback;
+            Comment  = comment.CStr();
+            Callback = callback;
         }
 
         const char* GetName() const { return Name; }
 
         const char* GetComment() const { return Comment; }
 
-        void Execute(CommandProcessor const& _Proc) { Callback.Invoke(_Proc); }
+        void Execute(CommandProcessor const& proc) { Callback.Invoke(proc); }
 
     private:
         const char*                             Name;

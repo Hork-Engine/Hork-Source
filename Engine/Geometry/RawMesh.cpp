@@ -143,14 +143,14 @@ BvAxisAlignedBox RawMesh::CalcBoundingBox() const
 
 bool RawMesh::Load(StringView filename, RawMeshLoadFlags flags)
 {
-    File file = File::OpenRead(filename);
+    File file = File::sOpenRead(filename);
     if (!file)
     {
         LOG("Couldn't open {}\n", filename);
         return false;
     }
 
-    StringView extension = PathUtils::GetExt(filename);
+    StringView extension = PathUtils::sGetExt(filename);
     if (!extension.Icmp(".gltf") || !extension.Icmp(".glb"))
         return LoadGLTF(file, flags);
     if (!extension.Icmp(".fbx"))
@@ -441,7 +441,7 @@ bool RawMesh::LoadGLTF(IBinaryStreamReadInterface& stream, RawMeshLoadFlags flag
 
     options.file.read = [](const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data) -> cgltf_result
     {
-        File file = File::OpenRead(path);
+        File file = File::sOpenRead(path);
         if (!file)
         {
             LOG("Couldn't open {}\n", path);
@@ -490,7 +490,7 @@ bool RawMesh::LoadGLTF(IBinaryStreamReadInterface& stream, RawMeshLoadFlags flag
         return false;
     }
 
-    String path(PathUtils::GetFilePath(stream.GetName()));
+    String path(PathUtils::sGetFilePath(stream.GetName()));
     path += "/";
 
     result = cgltf_load_buffers(&options, data, path.CStr());

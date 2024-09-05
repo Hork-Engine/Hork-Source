@@ -324,7 +324,7 @@ struct TextureOffset
     uint32_t MipLevel{};
 };
 
-/** Resampling edge mode for 2D/Array textures. */
+/// Resampling edge mode for 2D/Array textures.
 enum IMAGE_RESAMPLE_EDGE_MODE
 {
     IMAGE_RESAMPLE_EDGE_CLAMP     = 1,
@@ -333,22 +333,22 @@ enum IMAGE_RESAMPLE_EDGE_MODE
     IMAGE_RESAMPLE_EDGE_ZERO    = 4,
 };
 
-/** Resampling filter for 2D/Array textures. */
+/// Resampling filter for 2D/Array textures.
 enum IMAGE_RESAMPLE_FILTER
 {
-    /** A trapezoid w/1-pixel wide ramps, same result as box for integer scale ratios */
+    /// A trapezoid w/1-pixel wide ramps, same result as box for integer scale ratios
     IMAGE_RESAMPLE_FILTER_BOX = 1,
-    /** On upsampling, produces same results as bilinear texture filtering */
+    /// On upsampling, produces same results as bilinear texture filtering
     IMAGE_RESAMPLE_FILTER_TRIANGLE = 2,
-    /** The cubic b-spline (aka Mitchell-Netrevalli with B=1,C=0), gaussian-esque */
+    /// The cubic b-spline (aka Mitchell-Netrevalli with B=1,C=0), gaussian-esque
     IMAGE_RESAMPLE_FILTER_CUBICBSPLINE = 3,
-    /** An interpolating cubic spline */
+    /// An interpolating cubic spline
     IMAGE_RESAMPLE_FILTER_CATMULLROM = 4,
-    /** Mitchell-Netrevalli filter with B=1/3, C=1/3 */
+    /// Mitchell-Netrevalli filter with B=1/3, C=1/3
     IMAGE_RESAMPLE_FILTER_MITCHELL = 5
 };
 
-/** Resampling filter for 3D textures (Not yet implemented. Reserved for future.) */
+/// Resampling filter for 3D textures (Not yet implemented. Reserved for future.)
 enum IMAGE_RESAMPLE_FILTER_3D
 {
     IMAGE_RESAMPLE_FILTER_3D_AVERAGE = 1,
@@ -358,13 +358,13 @@ enum IMAGE_RESAMPLE_FILTER_3D
 
 struct ImageMipmapConfig
 {
-    /** Resampling edge mode for 2D/Array textures. */
+    /// Resampling edge mode for 2D/Array textures.
     IMAGE_RESAMPLE_EDGE_MODE EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
 
-    /** Resampling filter for 2D/Array textures. */
+    /// Resampling filter for 2D/Array textures.
     IMAGE_RESAMPLE_FILTER    Filter   = IMAGE_RESAMPLE_FILTER_MITCHELL;
 
-    /** Resampling filter for 3D textures (Not yet implemented. Reserved for future.) */
+    /// Resampling filter for 3D textures (Not yet implemented. Reserved for future.)
     IMAGE_RESAMPLE_FILTER_3D Filter3D = IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
 };
 
@@ -478,34 +478,34 @@ Utilites
 
 struct ImageResampleParams
 {
-    /** Source image */
+    /// Source image
     const void* pImage = nullptr;
-    /** Data format */
+    /// Data format
     TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED;
-    /** Source image width */
+    /// Source image width
     uint32_t Width = 0;
-    /** Source image height */
+    /// Source image height
     uint32_t Height = 0;
-    /** Is image has alpha. If enabled, the last texture channel is interpreted as alpha. */
+    /// Is image has alpha. If enabled, the last texture channel is interpreted as alpha.
     bool bHasAlpha = false;
-    /** Set this flag if your image has premultiplied alpha. Otherwise, will be
-    used alpha-weighted resampling (effectively premultiplying, resampling, then unpremultiplying). */
+    /// Set this flag if your image has premultiplied alpha. Otherwise, will be
+    /// used alpha-weighted resampling (effectively premultiplying, resampling, then unpremultiplying).
     bool bPremultipliedAlpha = false;
-    /** Scaling edge mode for horizontal axis */
+    /// Scaling edge mode for horizontal axis
     IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
-    /** Scaling edge mode for vertical axis */
+    /// Scaling edge mode for vertical axis
     IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
-    /** Scaling filter for horizontal axis */
+    /// Scaling filter for horizontal axis
     IMAGE_RESAMPLE_FILTER HorizontalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
-    /** Scaling filter for vertical axis */
+    /// Scaling filter for vertical axis
     IMAGE_RESAMPLE_FILTER VerticalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
-    /** Scaled image width */
+    /// Scaled image width
     uint32_t ScaledWidth = 0;
-    /** Scaled image height */
+    /// Scaled image height
     uint32_t ScaledHeight = 0;
 };
 
-/** Scale image. */
+/// Scale image.
 bool ResampleImage(ImageResampleParams const& Desc, void* pDest);
 
 enum RAW_IMAGE_RESAMPLE_FLAG
@@ -520,21 +520,21 @@ HK_FLAG_ENUM_OPERATORS(RAW_IMAGE_RESAMPLE_FLAG);
 struct RawImageResampleParams
 {
     RAW_IMAGE_RESAMPLE_FLAG Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
-    /** Scaling edge mode for horizontal axis */
+    /// Scaling edge mode for horizontal axis
     IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
-    /** Scaling edge mode for vertical axis */
+    /// Scaling edge mode for vertical axis
     IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
-    /** Scaling filter for horizontal axis */
+    /// Scaling filter for horizontal axis
     IMAGE_RESAMPLE_FILTER HorizontalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
-    /** Scaling filter for vertical axis */
+    /// Scaling filter for vertical axis
     IMAGE_RESAMPLE_FILTER VerticalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
-    /** Scaled image width */
+    /// Scaled image width
     uint32_t ScaledWidth = 0;
-    /** Scaled image height */
+    /// Scaled image height
     uint32_t ScaledHeight = 0;
 };
 
-/** Scale image. */
+/// Scale image.
 RawImage ResampleRawImage(RawImage const& Source, RawImageResampleParams const& Desc);
 
 enum IMAGE_IMPORT_FLAGS
@@ -547,13 +547,13 @@ enum IMAGE_IMPORT_FLAGS
 };
 HK_FLAG_ENUM_OPERATORS(IMAGE_IMPORT_FLAGS)
 
-/** Create image storage from raw image */
+/// Create image storage from raw image
 ImageStorage CreateImage(RawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, IMAGE_IMPORT_FLAGS ImportFlags = IMAGE_IMPORT_FLAGS_DEFAULT);
 
-/** Create image storage from file */
+/// Create image storage from file
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
-/** Create image storage from file */
+/// Create image storage from file
 ImageStorage CreateImage(StringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
 ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
@@ -607,7 +607,7 @@ enum SKYBOX_IMPORT_TEXTURE_FORMAT
 
 struct SkyboxImportSettings
 {
-    /** Source files for skybox */
+    /// Source files for skybox
     Array<String, 6> Faces;
 
     SKYBOX_IMPORT_TEXTURE_FORMAT Format{SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT};

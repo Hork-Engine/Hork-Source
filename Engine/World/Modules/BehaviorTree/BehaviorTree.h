@@ -30,12 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-/*
-
-Небольшой набросок на тему Behavior Tree.
-
-*/
-
 #include <Engine/Core/Ref.h>
 #include <Engine/Core/Random.h>
 #include <Engine/Core/Containers/Vector.h>

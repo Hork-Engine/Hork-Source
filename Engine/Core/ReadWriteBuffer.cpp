@@ -35,14 +35,14 @@ HK_NAMESPACE_BEGIN
 
 namespace
 {
-void* Alloc(size_t SizeInBytes)
+void* Alloc(size_t sizeInBytes)
 {
-    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeInBytes, 16);
 }
 
-void* Realloc(void* pMemory, size_t SizeInBytes)
+void* Realloc(void* pMemory, size_t sizeInBytes)
 {
-    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, sizeInBytes, 16);
 }
 
 void Free(void* pMemory)
@@ -97,9 +97,9 @@ ReadWriteBuffer::~ReadWriteBuffer()
         Free(m_RawPtr);
 }
 
-void ReadWriteBuffer::SetName(StringView Name)
+void ReadWriteBuffer::SetName(StringView name)
 {
-    m_Name = Name;
+    m_Name = name;
 }
 
 StringView ReadWriteBuffer::GetName() const
@@ -107,28 +107,28 @@ StringView ReadWriteBuffer::GetName() const
     return m_Name;
 }
 
-void ReadWriteBuffer::SetExternalBuffer(void* pMemoryBuffer, size_t SizeInBytes)
+void ReadWriteBuffer::SetExternalBuffer(void* memoryBuffer, size_t sizeInBytes)
 {
     if (!m_bExternalBuffer)
         Free(m_RawPtr);
 
-    m_RawPtr = reinterpret_cast<byte*>(pMemoryBuffer);
+    m_RawPtr = reinterpret_cast<byte*>(memoryBuffer);
     m_Size = 0;
-    m_Capacity = SizeInBytes;
+    m_Capacity = sizeInBytes;
     m_bExternalBuffer = true;
 }
 
-void ReadWriteBuffer::SetInternalBuffer(size_t BaseCapacity)
+void ReadWriteBuffer::SetInternalBuffer(size_t baseCapacity)
 {
     if (!m_bExternalBuffer)
         Free(m_RawPtr);
 
-    if (BaseCapacity > 0)
-        m_RawPtr = (byte*)Alloc(BaseCapacity);
+    if (baseCapacity > 0)
+        m_RawPtr = (byte*)Alloc(baseCapacity);
     else
         m_RawPtr = nullptr;
     m_Size = 0;
-    m_Capacity = BaseCapacity;
+    m_Capacity = baseCapacity;
     m_bExternalBuffer = false;
 }
 
@@ -137,16 +137,16 @@ void ReadWriteBuffer::Reset()
     SetInternalBuffer(0);
 }
 
-void ReadWriteBuffer::Reserve(size_t Capacity)
+void ReadWriteBuffer::Reserve(size_t capacity)
 {
     if (m_bExternalBuffer)
     {
         LOG("ReadWriteBuffer::Reserve: Used external buffer, can't reallocate\n");
         return;
     }
-    if (m_Capacity < Capacity)
+    if (m_Capacity < capacity)
     {
-        m_Capacity = Capacity;
+        m_Capacity = capacity;
         m_RawPtr = (byte*)Realloc(m_RawPtr, m_Capacity);
     }
 }
@@ -156,9 +156,9 @@ void ReadWriteBuffer::Clear()
     m_Size = m_RWOffset = 0;
 }
 
-void ReadWriteBuffer::Resize(size_t Size)
+void ReadWriteBuffer::Resize(size_t size)
 {
-    if (m_Capacity < Size)
+    if (m_Capacity < size)
     {
         if (m_bExternalBuffer)
         {
@@ -166,36 +166,36 @@ void ReadWriteBuffer::Resize(size_t Size)
             return;
         }
 
-        m_Capacity = Size;
+        m_Capacity = size;
         m_RawPtr = (byte*)Realloc(m_RawPtr, m_Capacity);
     }
 
-    m_Size = Size;
+    m_Size = size;
 
     if (m_RWOffset > m_Size)
         m_RWOffset = m_Size;
 }
 
-size_t ReadWriteBuffer::Read(void* pBuffer, size_t SizeInBytes)
+size_t ReadWriteBuffer::Read(void* data, size_t sizeInBytes)
 {
     size_t bytesToRead{};
 
-    bytesToRead = std::min(SizeInBytes, m_Size - m_RWOffset);
-    Core::Memcpy(pBuffer, m_RawPtr + m_RWOffset, bytesToRead);
+    bytesToRead = std::min(sizeInBytes, m_Size - m_RWOffset);
+    Core::Memcpy(data, m_RawPtr + m_RWOffset, bytesToRead);
 
-    SizeInBytes -= bytesToRead;
-    if (SizeInBytes)
-        Core::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
+    sizeInBytes -= bytesToRead;
+    if (sizeInBytes)
+        Core::ZeroMem((uint8_t*)data + bytesToRead, sizeInBytes);
 
     m_RWOffset += bytesToRead;
     return bytesToRead;
 }
 
-size_t ReadWriteBuffer::Write(const void* pBuffer, size_t SizeInBytes)
+size_t ReadWriteBuffer::Write(const void* data, size_t sizeInBytes)
 {
     size_t bytesToWrite{};
 
-    size_t requiredSize = m_RWOffset + SizeInBytes;
+    size_t requiredSize = m_RWOffset + sizeInBytes;
     if (requiredSize > m_Capacity)
     {
         if (m_bExternalBuffer)
@@ -207,29 +207,29 @@ size_t ReadWriteBuffer::Write(const void* pBuffer, size_t SizeInBytes)
         m_Capacity = mod ? requiredSize + m_Granularity - mod : requiredSize;
         m_RawPtr = (byte*)Realloc(m_RawPtr, m_Capacity);
     }
-    Core::Memcpy(m_RawPtr + m_RWOffset, pBuffer, SizeInBytes);
-    bytesToWrite = SizeInBytes;
+    Core::Memcpy(m_RawPtr + m_RWOffset, data, sizeInBytes);
+    bytesToWrite = sizeInBytes;
 
     m_RWOffset += bytesToWrite;
     m_Size = std::max(m_Size, m_RWOffset);
     return bytesToWrite;
 }
 
-char* ReadWriteBuffer::Gets(char* pBuffer, size_t SizeInBytes)
+char* ReadWriteBuffer::Gets(char* str, size_t sizeInBytes)
 {
-    if (SizeInBytes == 0 || m_RWOffset >= m_Size)
+    if (sizeInBytes == 0 || m_RWOffset >= m_Size)
     {
         return nullptr;
     }
 
-    size_t maxChars = SizeInBytes - 1;
+    size_t maxChars = sizeInBytes - 1;
     if (m_RWOffset + maxChars > m_Size)
     {
         maxChars = m_Size - m_RWOffset;
     }
 
     char *memoryPointer, *memory = (char*)&m_RawPtr[m_RWOffset];
-    char* stringPointer = pBuffer;
+    char* stringPointer = str;
 
     for (memoryPointer = memory; memoryPointer < &memory[maxChars]; memoryPointer++)
     {
@@ -244,7 +244,7 @@ char* ReadWriteBuffer::Gets(char* pBuffer, size_t SizeInBytes)
     *stringPointer = '\0';
     m_RWOffset += memoryPointer - memory;
 
-    return pBuffer;
+    return str;
 }
 
 void ReadWriteBuffer::Flush()
@@ -255,38 +255,38 @@ size_t ReadWriteBuffer::GetOffset() const
     return m_RWOffset;
 }
 
-bool ReadWriteBuffer::SeekSet(int32_t Offset)
+bool ReadWriteBuffer::SeekSet(int32_t offset)
 {
-    m_RWOffset = std::max(int32_t{0}, Offset);
+    m_RWOffset = std::max(int32_t{0}, offset);
     if (m_RWOffset > m_Size)
         m_RWOffset = m_Size;
     return true;
 }
 
-bool ReadWriteBuffer::SeekCur(int32_t Offset)
+bool ReadWriteBuffer::SeekCur(int32_t offset)
 {
-    if (Offset < 0 && -Offset > m_RWOffset)
+    if (offset < 0 && -offset > m_RWOffset)
     {
         m_RWOffset = 0;
     }
     else
     {
         size_t prevOffset = m_RWOffset;
-        m_RWOffset += Offset;
-        if (m_RWOffset > m_Size || (Offset > 0 && prevOffset > m_RWOffset))
+        m_RWOffset += offset;
+        if (m_RWOffset > m_Size || (offset > 0 && prevOffset > m_RWOffset))
             m_RWOffset = m_Size;
     }
     return true;
 }
 
-bool ReadWriteBuffer::SeekEnd(int32_t Offset)
+bool ReadWriteBuffer::SeekEnd(int32_t offset)
 {
-    if (Offset >= 0)
+    if (offset >= 0)
         m_RWOffset = m_Size;
-    else if (-Offset > m_Size)
+    else if (-offset > m_Size)
         m_RWOffset = 0;
     else
-        m_RWOffset = m_Size + Offset;
+        m_RWOffset = m_Size + offset;
     return true;
 }
 
@@ -305,9 +305,9 @@ size_t ReadWriteBuffer::Capacity() const
     return m_Capacity;
 }
 
-void ReadWriteBuffer::SetGranularity(uint32_t Granularity)
+void ReadWriteBuffer::SetGranularity(uint32_t granularity)
 {
-    m_Granularity = Granularity;
+    m_Granularity = granularity;
 }
 
 void* ReadWriteBuffer::RawPtr()

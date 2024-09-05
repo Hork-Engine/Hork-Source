@@ -41,9 +41,9 @@ class ArgumentsWrapper
     std::tuple<std::decay_t<Types>...> m_Args;
 
 public:
-    ArgumentsWrapper(Callable&& _Callable, Types&&... _Args) :
-        m_Callable(std::forward<Callable>(_Callable)),
-        m_Args(std::forward<Types>(_Args)...)
+    ArgumentsWrapper(Callable&& callable, Types&&... args) :
+        m_Callable(std::forward<Callable>(callable)),
+        m_Args(std::forward<Types>(args)...)
     {}
 
     void operator()()
@@ -74,9 +74,9 @@ public:
     Thread() = default;
 
     template <class Fn, class... Args>
-    Thread(Fn&& _Fn, Args&&... _Args)
+    Thread(Fn&& fn, Args&&... args)
     {
-        Start(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
+        Start(std::forward<Fn>(fn), std::forward<Args>(args)...);
     }
 
     ~Thread()
@@ -84,40 +84,40 @@ public:
         Join();
     }
 
-    Thread(Thread&& Rhs) noexcept :
-        m_Internal(Rhs.m_Internal)
+    Thread(Thread&& rhs) noexcept :
+        m_Internal(rhs.m_Internal)
     {
-        Rhs.m_Internal = 0;
+        rhs.m_Internal = 0;
     }
 
-    Thread& operator=(Thread&& Rhs) noexcept
+    Thread& operator=(Thread&& rhs) noexcept
     {
         Join();
-        Core::Swap(m_Internal, Rhs.m_Internal);
+        Core::Swap(m_Internal, rhs.m_Internal);
         return *this;
     }
 
     template <class Fn, class... Args>
-    void Start(Fn&& _Fn, Args&&... _Args)
+    void Start(Fn&& fn, Args&&... args)
     {
         Join();
 
-        auto* threadProc = new ArgumentsWrapper<Fn, Args...>(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
-        CreateThread(&Invoker<std::remove_reference_t<decltype(*threadProc)>>, threadProc);
+        auto* threadProc = new ArgumentsWrapper<Fn, Args...>(std::forward<Fn>(fn), std::forward<Args>(args)...);
+        CreateThread(&sInvoker<std::remove_reference_t<decltype(*threadProc)>>, threadProc);
     }
 
     void Join();
 
-    static size_t ThisThreadId();
+    static size_t sThisThreadId();
 
-    /** Sleep current thread */
-    static void WaitSeconds(int _Seconds);
+    /// Sleep current thread
+    static void sWaitSeconds(int seconds);
 
-    /** Sleep current thread */
-    static void WaitMilliseconds(int _Milliseconds);
+    /// Sleep current thread
+    static void sWaitMilliseconds(int milliseconds);
 
-    /** Sleep current thread */
-    static void WaitMicroseconds(int _Microseconds);
+    /// Sleep current thread
+    static void sWaitMicroseconds(int microseconds);
 
 private:
     #ifdef HK_OS_WIN32
@@ -127,20 +127,20 @@ private:
     #endif
 
     template <typename ThreadProc>
-    static InvokerReturnType Invoker(void* pData)
+    static InvokerReturnType sInvoker(void* data)
     {
-        ThreadProc* threadProc = reinterpret_cast<ThreadProc*>(pData);
+        ThreadProc* threadProc = reinterpret_cast<ThreadProc*>(data);
         (*threadProc)();
 
-        EndThread();
+        sEndThread();
 
         delete threadProc;
         return {};
     }
 
-    static void EndThread();
+    static void sEndThread();
 
-    void CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData);
+    void CreateThread(InvokerReturnType (*threadProc)(void*), void* threadData);
 
 #ifdef HK_OS_WIN32
     void* m_Internal = nullptr;
@@ -274,19 +274,19 @@ template <typename T>
 class LockGuard final : public Noncopyable
 {
 public:
-    HK_FORCEINLINE explicit LockGuard(T& _Primitive) :
-        m_Primitive(_Primitive)
+    HK_FORCEINLINE explicit LockGuard(T& lockable) :
+        m_Lockable(lockable)
     {
-        m_Primitive.Lock();
+        m_Lockable.Lock();
     }
 
     HK_FORCEINLINE ~LockGuard()
     {
-        m_Primitive.Unlock();
+        m_Lockable.Unlock();
     }
 
 private:
-    T& m_Primitive;
+    T& m_Lockable;
 };
 
 
@@ -302,12 +302,12 @@ template <typename T>
 class LockGuardCond final : public Noncopyable
 {
 public:
-    HK_FORCEINLINE explicit LockGuardCond(T& _Primitive, const bool _Cond = true) :
-        m_Primitive(_Primitive), m_Cond(_Cond)
+    HK_FORCEINLINE explicit LockGuardCond(T& lockable, const bool cond = true) :
+        m_Lockable(lockable), m_Cond(cond)
     {
         if (m_Cond)
         {
-            m_Primitive.Lock();
+            m_Lockable.Lock();
         }
     }
 
@@ -315,12 +315,12 @@ public:
     {
         if (m_Cond)
         {
-            m_Primitive.Unlock();
+            m_Lockable.Unlock();
         }
     }
 
 private:
-    T&         m_Primitive;
+    T&         m_Lockable;
     const bool m_Cond;
 };
 
@@ -342,13 +342,13 @@ public:
     SyncEvent();
     ~SyncEvent();
 
-    /** Waits until the event is in the signaled state. */
+    /// Waits until the event is in the signaled state.
     void Wait();
 
-    /** Waits until the event is in the signaled state or the timeout interval elapses. */
-    void WaitTimeout(int _Milliseconds, bool& _TimedOut);
+    /// Waits until the event is in the signaled state or the timeout interval elapses.
+    void WaitTimeout(int milliseconds, bool& timedOut);
 
-    /** Set event to the signaled state. */
+    /// Set event to the signaled state.
     void Signal();
 
 private:

@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 
 AudioDevice::AudioDevice()
 {
-    ApplicationArguments const& args = CoreApplication::Args();
+    ApplicationArguments const& args = CoreApplication::sArgs();
 
     m_TransferBuffer = nullptr;
 
@@ -52,7 +52,7 @@ AudioDevice::AudioDevice()
     }
 
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
-        CoreApplication::TerminateWithError("Failed to init audio system: {}\n", SDL_GetError());
+        CoreApplication::sTerminateWithError("Failed to init audio system: {}\n", SDL_GetError());
 
     int numdrivers = SDL_GetNumAudioDrivers();
     if (numdrivers > 0)
@@ -99,7 +99,7 @@ AudioDevice::AudioDevice()
     
     m_AudioStream = stream;
     if (!m_AudioStream)
-        CoreApplication::TerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
+        CoreApplication::sTerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
 
     m_DeviceID = SDL_GetAudioStreamDevice(stream);
 
@@ -126,7 +126,7 @@ AudioDevice::AudioDevice()
 
         m_AudioStream = stream;
         if (!m_AudioStream)
-            CoreApplication::TerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
+            CoreApplication::sTerminateWithError("Failed to open audio device: {}\n", SDL_GetError());
 
         m_DeviceID = SDL_GetAudioStreamDevice(stream);
     }
@@ -268,7 +268,7 @@ Ref<AudioStream> AudioDevice::CreateStream(AudioStreamDesc const& desc)
     if (!stream)
         return {};
 
-    Ref<AudioStream> result = Ref<AudioStream>::Create(new AudioStream);
+    Ref<AudioStream> result = Ref<AudioStream>::sCreate(new AudioStream);
     result->m_AudioStream = stream;
     return result;
 }

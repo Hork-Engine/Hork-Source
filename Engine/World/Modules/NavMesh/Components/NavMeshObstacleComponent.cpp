@@ -79,10 +79,10 @@ void NavMeshObstacleComponent::DrawDebug(DebugRenderer& renderer)
             if (m_Angle == 0.0f)
                 renderer.DrawBox(m_Position, m_HalfExtents);
             else
-                renderer.DrawOrientedBox(m_Position, Float3x3::RotationY(Math::Radians(m_Angle)), m_HalfExtents);
+                renderer.DrawOrientedBox(m_Position, Float3x3::sRotationY(Math::Radians(m_Angle)), m_HalfExtents);
         }
         else
-            renderer.DrawCylinder(m_Position, Float3x3::Identity(), GetRadius(), GetHeight());
+            renderer.DrawCylinder(m_Position, Float3x3::sIdentity(), GetRadius(), GetHeight());
     }
 }
 

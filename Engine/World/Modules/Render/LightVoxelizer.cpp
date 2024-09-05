@@ -406,7 +406,7 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData*
 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
     int maxItems                         = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS * 3;
-    int alignment                        = GameApplication::GetRenderBackend().ClusterPackedIndicesAlignment();
+    int alignment                        = GameApplication::sGetRenderBackend().ClusterPackedIndicesAlignment();
     RV->ClusterPackedIndicesStreamHandle = StreamedMemory->AllocateWithCustomAlignment(maxItems * sizeof(ClusterPackedIndex),
                                                                                        alignment,
                                                                                        nullptr);
@@ -431,14 +431,14 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData*
 
     VoxelizerWork works[MAX_FRUSTUM_CLUSTERS_Z];
 
-    auto* jobList = GameApplication::GetRenderFrontendJobList();
+    auto* jobList = GameApplication::sGetRenderFrontendJobList();
 
     for (int i = 0; i < MAX_FRUSTUM_CLUSTERS_Z; i++)
     {
         works[i].SliceIndex = i;
         works[i].Self       = this;
 
-        jobList->AddJob(VoxelizeWork, &works[i]);
+        jobList->AddJob(sVoxelizeWork, &works[i]);
     }
 
     jobList->SubmitAndWait();
@@ -456,7 +456,7 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData*
     StreamedMemory->ShrinkLastAllocatedMemoryBlock(RV->ClusterPackedIndexCount * sizeof(ClusterPackedIndex));
 }
 
-void LightVoxelizer::VoxelizeWork(void* _Data)
+void LightVoxelizer::sVoxelizeWork(void* _Data)
 {
     VoxelizerWork* work = static_cast<VoxelizerWork*>(_Data);
 

@@ -188,7 +188,7 @@ public:
     }
 
     /// This function is called by a mixer at shutdown to cleanup the memory
-    static void FreePool();
+    static void sFreePool();
 
 private:
     static PoolAllocator<AudioTrack> TrackPool;

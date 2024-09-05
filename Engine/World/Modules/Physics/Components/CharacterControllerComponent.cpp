@@ -305,7 +305,7 @@ bool CharacterControllerComponent::UpdateStance(CharacterStance stance, float ma
     CharacterControllerImpl::ShapeFilter shapeFilter;
 
     return m_pImpl->SetShape(stance == CharacterStance::Standing ? m_pImpl->m_StandingShape : m_pImpl->m_CrouchingShape,
-                             maxPenetrationDepth, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::Get().GetTempAllocator());
+                             maxPenetrationDepth, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::sGet().GetTempAllocator());
 }
 
 HK_NAMESPACE_END

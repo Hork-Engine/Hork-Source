@@ -50,9 +50,9 @@ float AnimationResource::GetDuration() const
 AnimationResource::~AnimationResource()
 {}
 
-UniqueRef<AnimationResource> AnimationResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<AnimationResource> AnimationResource::sLoad(IBinaryStreamReadInterface& stream)
 {
-    StringView extension = PathUtils::GetExt(stream.GetName());
+    StringView extension = PathUtils::sGetExt(stream.GetName());
 
     if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx"))
     {

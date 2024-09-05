@@ -170,7 +170,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
 
     for (auto component : settings.Object->GetComponents())
     {
-        if (auto* collider = Component::Upcast<SphereCollider>(component))
+        if (auto* collider = Component::sUpcast<SphereCollider>(component))
         {
             // add sphere
             m_TempShapes.Add(new JPH::SphereShape(collider->Radius));
@@ -179,7 +179,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
             continue;
         }
 
-        if (auto* collider = Component::Upcast<BoxCollider>(component))
+        if (auto* collider = Component::sUpcast<BoxCollider>(component))
         {
             // add box
             m_TempShapes.Add(new JPH::BoxShape(ConvertVector(collider->HalfExtents)));
@@ -187,18 +187,18 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
             continue;
         }
 
-        if (auto* collider = Component::Upcast<CylinderCollider>(component))
+        if (auto* collider = Component::sUpcast<CylinderCollider>(component))
         {
             // add cylinder
             m_TempShapes.Add(new JPH::CylinderShape(collider->Height * 0.5f, collider->Radius));
             m_TempShapeTransform.EmplaceBack(ConvertVector(collider->OffsetPosition), ConvertQuaternion(collider->OffsetRotation));
 
             if (outScalingMode != ScalingMode::Uniform)
-                outScalingMode = collider->OffsetRotation != Quat::Identity() ? ScalingMode::Uniform : ScalingMode::UniformXZ;
+                outScalingMode = collider->OffsetRotation != Quat::sIdentity() ? ScalingMode::Uniform : ScalingMode::UniformXZ;
             continue;
         }
 
-        if (auto* collider = Component::Upcast<CapsuleCollider>(component))
+        if (auto* collider = Component::sUpcast<CapsuleCollider>(component))
         {
             // add capsule
             m_TempShapes.Add(new JPH::CapsuleShape(collider->Height * 0.5f, collider->Radius));
@@ -207,7 +207,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
             continue;
         }
 
-        if (auto* collider = Component::Upcast<MeshCollider>(component))
+        if (auto* collider = Component::sUpcast<MeshCollider>(component))
         {
             // add mesh
             MeshCollisionData* data = collider->Data;
@@ -233,7 +233,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
             m_TempCompoundShapeSettings.AddShape(m_TempShapeTransform[i].Position, m_TempShapeTransform[i].Rotation.Normalized(), m_TempShapes[i]);
 
         JPH::ShapeSettings::ShapeResult result;
-        outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, *PhysicsModule::Get().GetTempAllocator(), result);
+        outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, *PhysicsModule::sGet().GetTempAllocator(), result);
         outShape->AddRef();
 
         m_TempCompoundShapeSettings.mSubShapes.clear();
@@ -701,7 +701,7 @@ namespace
             case JPH::EShapeSubType::HeightField:
             case JPH::EShapeSubType::SoftBody: {
                 auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
-                Float3x4 centerOfMassOffsetMatrix = Float3x4::Translation(centerOfMass);
+                Float3x4 centerOfMassOffsetMatrix = Float3x4::sTranslation(centerOfMass);
 
                 auto firstVert = outVertices.Size();
                 GatherGeometrySimpleShape(shape, outVertices, outIndices);
@@ -713,7 +713,7 @@ namespace
                 JPH::StaticCompoundShape const* compoundShape = static_cast<JPH::StaticCompoundShape const*>(shape);
 
                 auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
-                Float3x4 centerOfMassOffsetMatrix = Float3x4::Translation(centerOfMass);
+                Float3x4 centerOfMassOffsetMatrix = Float3x4::sTranslation(centerOfMass);
 
                 Float3x4 localTransform;
 
@@ -752,7 +752,7 @@ namespace
 
                 auto firstVert = outVertices.Size();
                 GatherShapeGeometry(scaledShape->GetInnerShape(), outVertices, outIndices);
-                TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, Float3x4::Scale(ConvertVector(scaledShape->GetScale())));
+                TransformVertices(outVertices.ToPtr() + firstVert, outVertices.Size() - firstVert, Float3x4::sScale(ConvertVector(scaledShape->GetScale())));
                 break;
             }
             case JPH::EShapeSubType::OffsetCenterOfMass:
@@ -764,7 +764,7 @@ namespace
 
 } // namespace
 
-void PhysicsInterfaceImpl::GatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& outVertices, Vector<uint32_t>& outIndices)
+void PhysicsInterfaceImpl::sGatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& outVertices, Vector<uint32_t>& outIndices)
 {
     Hk::GatherShapeGeometry(shape, outVertices, outIndices);
 }
@@ -784,12 +784,12 @@ namespace
 
     void DrawCylinder(DebugRenderer& renderer, JPH::CylinderShape const* shape)
     {
-        renderer.DrawCylinder(Float3(0), Float3x3::Identity(), shape->GetRadius(), shape->GetHalfHeight() * 2);
+        renderer.DrawCylinder(Float3(0), Float3x3::sIdentity(), shape->GetRadius(), shape->GetHalfHeight() * 2);
     }
 
     void DrawCapsule(DebugRenderer& renderer, JPH::CapsuleShape const* shape)
     {
-        renderer.DrawCapsule(Float3(0), Float3x3::Identity(), shape->GetRadius(), shape->GetHalfHeightOfCylinder() * 2, 1);
+        renderer.DrawCapsule(Float3(0), Float3x3::sIdentity(), shape->GetRadius(), shape->GetHalfHeightOfCylinder() * 2, 1);
     }
 
     void DrawConvexHull(DebugRenderer& renderer, JPH::ConvexHullShape const* shape)
@@ -877,7 +877,7 @@ namespace
             case JPH::EShapeSubType::SoftBody: {
 
                 auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
-                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::Translation(centerOfMass);
+                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::sTranslation(centerOfMass);
 
                 DrawSimpleShape(renderer, shape, centerOfMassOffsetMatrix);
                 break;
@@ -887,7 +887,7 @@ namespace
                 JPH::StaticCompoundShape const* compoundShape = static_cast<JPH::StaticCompoundShape const*>(shape);
 
                 auto centerOfMass = ConvertVector(shape->GetCenterOfMass());
-                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::Translation(centerOfMass);
+                Float3x4 centerOfMassOffsetMatrix = transform * Float3x4::sTranslation(centerOfMass);
 
                 Float3x4 localTransform;
 
@@ -920,7 +920,7 @@ namespace
             case JPH::EShapeSubType::Scaled: {
                 JPH::ScaledShape const* scaledShape = static_cast<JPH::ScaledShape const*>(shape);
 
-                DrawShape(renderer, scaledShape->GetInnerShape(), transform * Float3x4::Scale(ConvertVector(scaledShape->GetScale())));
+                DrawShape(renderer, scaledShape->GetInnerShape(), transform * Float3x4::sScale(ConvertVector(scaledShape->GetScale())));
                 break;
             }
             case JPH::EShapeSubType::OffsetCenterOfMass: {
@@ -1618,7 +1618,7 @@ void PhysicsInterface::UpdateCharacterControllers()
             CharacterControllerImpl::ShapeFilter shapeFilter;
 
             // Update the character position
-            physCharacter->ExtendedUpdate(m_TimeStep, m_Gravity, updateSettings, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::Get().GetTempAllocator());
+            physCharacter->ExtendedUpdate(m_TimeStep, m_Gravity, updateSettings, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::sGet().GetTempAllocator());
 
             owner->SetWorldPositionAndRotation(ConvertVector(physCharacter->GetPosition()), ConvertQuaternion(physCharacter->GetRotation()));
 
@@ -1907,7 +1907,7 @@ void PhysicsInterface::Update()
     // Simulation step
     {
         const int numCollisionSteps = 1;
-        auto& physicsModule = PhysicsModule::Get();
+        auto& physicsModule = PhysicsModule::sGet();
 
         m_pImpl->m_PhysSystem.Update(tick.FixedTimeStep, numCollisionSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
     }
@@ -1964,7 +1964,7 @@ void PhysicsInterface::PostTransform()
                     if (auto component = componentManager->GetComponent(event.Target.Handle))
                     {
                         BodyComponent* body = static_cast<BodyComponent*>(component);
-                        World::DispatchEvent<Event_OnBeginOverlap>(trigger->GetOwner(), body);
+                        World::sDispatchEvent<Event_OnBeginOverlap>(trigger->GetOwner(), body);
                     }
                 }
                 break;
@@ -1976,7 +1976,7 @@ void PhysicsInterface::PostTransform()
                     if (auto component = componentManager->GetComponent(event.Target.Handle))
                     {
                         BodyComponent* body = static_cast<BodyComponent*>(component);
-                        World::DispatchEvent<Event_OnEndOverlap>(trigger->GetOwner(), body);
+                        World::sDispatchEvent<Event_OnEndOverlap>(trigger->GetOwner(), body);
                     }
                 }
                 break;
@@ -2010,7 +2010,7 @@ void PhysicsInterface::PostTransform()
                 collision.Normal = event.Normal;
                 collision.Depth = event.Depth;
                 collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
-                World::DispatchEvent<Event_OnBeginContact>(self->GetOwner(), collision);
+                World::sDispatchEvent<Event_OnBeginContact>(self->GetOwner(), collision);
                 break;
             }
             case ContactEvent::OnUpdateContact:
@@ -2020,12 +2020,12 @@ void PhysicsInterface::PostTransform()
                 collision.Normal = event.Normal;
                 collision.Depth = event.Depth;
                 collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
-                World::DispatchEvent<Event_OnUpdateContact>(self->GetOwner(), collision);
+                World::sDispatchEvent<Event_OnUpdateContact>(self->GetOwner(), collision);
                 break;
             }
             case ContactEvent::OnEndContact:
             {
-                World::DispatchEvent<Event_OnEndContact>(self->GetOwner(), other);
+                World::sDispatchEvent<Event_OnEndContact>(self->GetOwner(), other);
                 break;
             }
         }
@@ -2089,11 +2089,11 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             .AddLayer(BroadphaseLayer::Dynamic)
             .AddLayer(BroadphaseLayer::Trigger);
 
-        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::Identity(), m_BodyQueryResult, filter);
+        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
 
         auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 
-        renderer.SetColor(Color4::White());
+        renderer.SetColor(Color4::sWhite());
         renderer.SetDepthTest(false);
         for (PhysBodyID bodyID : m_BodyQueryResult)
         {
@@ -2121,7 +2121,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             .AddLayer(BroadphaseLayer::Static)
             .AddLayer(BroadphaseLayer::Dynamic);
 
-        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::Identity(), m_BodyQueryResult, filter);
+        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
 
         auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 
@@ -2223,7 +2223,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
                 m_DebugDrawVertices.Clear();
                 m_DebugDrawIndices.Clear();
 
-                PhysicsInterfaceImpl::GatherShapeGeometry(m_BodyInterface.GetShape((JPH::BodyID(body.m_BodyID.ID))), m_DebugDrawVertices, m_DebugDrawIndices);
+                PhysicsInterfaceImpl::sGatherShapeGeometry(m_BodyInterface.GetShape((JPH::BodyID(body.m_BodyID.ID))), m_DebugDrawVertices, m_DebugDrawIndices);
 
                 JPH::Vec3 position;
                 JPH::Quat rotation;
@@ -2543,7 +2543,7 @@ bool PhysicsInterface::CastCylinder(Float3 const& inRayStart, Float3 const& inRa
 void PhysicsInterface::OverlapBox(Float3 const& inPosition, Float3 const& inHalfExtent, Quat const& inRotation, Vector<PhysBodyID>& outResult, ShapeOverlapFilter const& inFilter)
 {
     BroadphaseBodyCollector collector(outResult);
-    if (inRotation == Quat::Identity())
+    if (inRotation == Quat::sIdentity())
     {
         m_pImpl->m_PhysSystem.GetBroadPhaseQuery().CollideAABox(JPH::AABox(ConvertVector(inPosition - inHalfExtent), ConvertVector(inPosition + inHalfExtent)),
             collector,

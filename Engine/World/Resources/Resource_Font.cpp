@@ -45,7 +45,7 @@ FontResource::~FontResource()
         fonsRemoveFont(m_FontStash->GetImpl(), m_FontId);
 }
 
-UniqueRef<FontResource> FontResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<FontResource> FontResource::sLoad(IBinaryStreamReadInterface& stream)
 {
     UniqueRef<FontResource> resource = MakeUnique<FontResource>();
     if (!resource->Read(stream))
@@ -97,7 +97,7 @@ Float2 FontResource::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWi
     FONScontext* fs = m_FontStash->GetImpl();
     FONSfont* font = fs->fonts[m_FontId];
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
     //float invscale = 1.0f / scale;
     float fontSize = fontStyle.FontSize * scale;
     short isize = (short)(fontSize * 10.0f);
@@ -135,7 +135,7 @@ Float2 FontResource::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWi
     FONScontext* fs = m_FontStash->GetImpl();
     FONSfont* font = fs->fonts[m_FontId];
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
     //float invscale = 1.0f / scale;
     float fontSize = fontStyle.FontSize * scale;
     short isize = (short)(fontSize * 10.0f);
@@ -181,7 +181,7 @@ int FontResource::TextBreakLines(FontStyle const& fontStyle, StringView text, fl
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
     float invscale = 1.0f / scale;
 
     //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
@@ -415,7 +415,7 @@ int FontResource::TextLineCount(FontStyle const& fontStyle, StringView text, flo
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
 
     FONStextIter iter, prevIter;
     FONSquad q;
@@ -616,7 +616,7 @@ int FontResource::TextBreakLines(FontStyle const& fontStyle, WideStringView text
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
     float invscale = 1.0f / scale;
 
     //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
@@ -850,7 +850,7 @@ int FontResource::TextLineCount(FontStyle const& fontStyle, WideStringView text,
     FONScontext* fs = m_FontStash->GetImpl();
     FontStash* stash = m_FontStash;
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
 
     FONStextIter iter, prevIter;
     FONSquad q;
@@ -1058,7 +1058,7 @@ void FontResource::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metri
 
     FONScontext* fs = m_FontStash->GetImpl();
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
     float fontSize = fontStyle.FontSize * scale;
 
     FONSfont* font = fs->fonts[m_FontId];
@@ -1078,7 +1078,7 @@ float FontResource::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) cons
 
     FONScontext* fs = m_FontStash->GetImpl();
 
-    float scale = GameApplication::GetRetinaScale().X;
+    float scale = GameApplication::sGetRetinaScale().X;
 
     fonsSetSize(fs, fontStyle.FontSize * scale);
     fonsSetBlur(fs, fontStyle.FontBlur * scale);
@@ -1100,11 +1100,11 @@ FontStash::FontStash()
     m_pImpl = fonsCreateInternal(&fontParams);
     if (!m_pImpl)
     {
-        CoreApplication::TerminateWithError("Failed to create font stash\n");
+        CoreApplication::sTerminateWithError("Failed to create font stash\n");
     }
 
     // Create font texture
-    GameApplication::GetRenderDevice()->CreateTexture(TextureDesc{}
+    GameApplication::sGetRenderDevice()->CreateTexture(TextureDesc{}
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(TextureResolution2D(fontParams.width, fontParams.height))
                                .SetSwizzle(TextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
@@ -1112,7 +1112,7 @@ FontStash::FontStash()
                            &m_FontImages[0]);
     if (!m_FontImages[0])
     {
-        CoreApplication::TerminateWithError("Failed to create font texture\n");
+        CoreApplication::sTerminateWithError("Failed to create font texture\n");
     }
 }
 
@@ -1154,7 +1154,7 @@ bool FontStash::ReallocTexture()
         using namespace RenderCore;
 
         // Create font texture
-        GameApplication::GetRenderDevice()->CreateTexture(TextureDesc{}
+        GameApplication::sGetRenderDevice()->CreateTexture(TextureDesc{}
                                    .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                    .SetResolution(TextureResolution2D(iw, ih))
                                    .SetSwizzle(TextureSwizzle(TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_ONE, TEXTURE_SWIZZLE_R))
@@ -1163,7 +1163,7 @@ bool FontStash::ReallocTexture()
 
         if (!m_FontImages[m_FontImageIdx + 1])
         {
-            CoreApplication::TerminateWithError("Failed to create font texture\n");
+            CoreApplication::sTerminateWithError("Failed to create font texture\n");
         }
     }
     ++m_FontImageIdx;

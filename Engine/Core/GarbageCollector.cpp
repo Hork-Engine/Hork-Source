@@ -40,7 +40,7 @@ Vector<GCObject*> GarbageCollector::m_KeepAlivePtrs;
 
 GCObject::GCObject()
 {
-    GarbageCollector::AddObject(this);
+    GarbageCollector::sAddObject(this);
 }
 
 GCObject::~GCObject()
@@ -57,7 +57,7 @@ void GCObject::AddRef()
     ++m_RefCount;
     if (m_RefCount == 1)
     {
-        GarbageCollector::RemoveObject(this);
+        GarbageCollector::sRemoveObject(this);
     }
 }
 
@@ -66,30 +66,30 @@ void GCObject::RemoveRef()
     HK_ASSERT_(m_RefCount != -666, "Calling RemoveRef() in destructor");
     if (--m_RefCount == 0)
     {
-        GarbageCollector::AddObject(this);
+        GarbageCollector::sAddObject(this);
         return;
     }
     HK_ASSERT(m_RefCount > 0);
 }
 
-void GarbageCollector::AddObject(GCObject* pObject)
+void GarbageCollector::sAddObject(GCObject* object)
 {
-    INTRUSIVE_ADD(pObject, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
+    INTRUSIVE_ADD(object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
 }
 
-void GarbageCollector::RemoveObject(GCObject* pObject)
+void GarbageCollector::sRemoveObject(GCObject* object)
 {
-    INTRUSIVE_REMOVE(pObject, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
+    INTRUSIVE_REMOVE(object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
 }
 
-void GarbageCollector::Shutdown()
+void GarbageCollector::sShutdown()
 {
-    ClearPointers();
-    DeallocateObjects();
+    sClearPointers();
+    sDeallocateObjects();
     m_KeepAlivePtrs.Free();
 }
 
-void GarbageCollector::DeallocateObjects()
+void GarbageCollector::sDeallocateObjects()
 {
     HK_PROFILER_EVENT("Garbage collector");
 
@@ -100,23 +100,23 @@ void GarbageCollector::DeallocateObjects()
         // Mark RefCount to prevent using of AddRef/RemoveRef in the object destructor
         object->m_RefCount = -666;
 
-        RemoveObject(object);
+        sRemoveObject(object);
 
         delete object;
     }
 
     m_GarbageObjectsTail = nullptr;
 
-    ClearPointers();
+    sClearPointers();
 }
 
-void GarbageCollector::KeepPointerAlive(GCObject* pObject)
+void GarbageCollector::sKeepPointerAlive(GCObject* object)
 {
-    m_KeepAlivePtrs.Add(pObject);
-    pObject->AddRef();
+    m_KeepAlivePtrs.Add(object);
+    object->AddRef();
 }
 
-void GarbageCollector::ClearPointers()
+void GarbageCollector::sClearPointers()
 {
     for (GCObject* ptr : m_KeepAlivePtrs)
     {

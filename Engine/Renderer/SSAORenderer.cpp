@@ -78,8 +78,8 @@ SSAORenderer::SSAORenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(pipeSamplers);
     resourceLayout.Samplers    = pipeSamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag", &resourceLayout);
 
     SamplerDesc cacheAwareSamplers[2];
 
@@ -91,8 +91,8 @@ SSAORenderer::SSAORenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(cacheAwareSamplers);
     resourceLayout.Samplers    = cacheAwareSamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipelineGS(&CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipelineGS(&CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipelineGS(&CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipelineGS(&CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout);
 
     SamplerDesc blurSamplers[2];
 
@@ -108,15 +108,15 @@ SSAORenderer::SSAORenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(blurSamplers);
     resourceLayout.Samplers    = blurSamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag", &resourceLayout);
 
     resourceLayout.NumBuffers = 0;
-    ShaderFactory::CreateFullscreenQuadPipeline(&ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag", &resourceLayout);
 
     MersenneTwisterRand rng(0u);
 

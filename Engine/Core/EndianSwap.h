@@ -51,22 +51,22 @@ HK_FORCEINLINE constexpr bool IsBigEndian()
     return !IsLittleEndian();
 }
 
-HK_FORCEINLINE constexpr uint16_t Swap16(uint16_t _Val)
+HK_FORCEINLINE constexpr uint16_t Swap16(uint16_t val)
 {
-    return ((_Val & 0xff) << 8) | ((_Val >> 8) & 0xff);
+    return ((val & 0xff) << 8) | ((val >> 8) & 0xff);
 }
 
-HK_FORCEINLINE constexpr uint32_t Swap32(uint32_t _Val)
+HK_FORCEINLINE constexpr uint32_t Swap32(uint32_t val)
 {
-    return ((_Val & 0xff) << 24) | (((_Val >> 8) & 0xff) << 16) | (((_Val >> 16) & 0xff) << 8) | ((_Val >> 24) & 0xff);
+    return ((val & 0xff) << 24) | (((val >> 8) & 0xff) << 16) | (((val >> 16) & 0xff) << 8) | ((val >> 24) & 0xff);
 }
 
-HK_FORCEINLINE constexpr uint64_t Swap64(uint64_t _Val)
+HK_FORCEINLINE constexpr uint64_t Swap64(uint64_t val)
 {
-    return (((_Val)&0xff) << 56) | (((_Val >> 8) & 0xff) << 48) | (((_Val >> 16) & 0xff) << 40) | (((_Val >> 24) & 0xff) << 32) | (((_Val >> 32) & 0xff) << 24) | (((_Val >> 40) & 0xff) << 16) | (((_Val >> 48) & 0xff) << 8) | (((_Val >> 56) & 0xff));
+    return (((val)&0xff) << 56) | (((val >> 8) & 0xff) << 48) | (((val >> 16) & 0xff) << 40) | (((val >> 24) & 0xff) << 32) | (((val >> 32) & 0xff) << 24) | (((val >> 40) & 0xff) << 16) | (((val >> 48) & 0xff) << 8) | (((val >> 56) & 0xff));
 }
 
-HK_FORCEINLINE float Swap32f(float _Val)
+HK_FORCEINLINE float Swap32f(float val)
 {
     union
     {
@@ -74,7 +74,7 @@ HK_FORCEINLINE float Swap32f(float _Val)
         byte  b[4];
     } dat1, dat2;
 
-    dat1.f    = _Val;
+    dat1.f    = val;
     dat2.b[0] = dat1.b[3];
     dat2.b[1] = dat1.b[2];
     dat2.b[2] = dat1.b[1];
@@ -82,7 +82,7 @@ HK_FORCEINLINE float Swap32f(float _Val)
     return dat2.f;
 }
 
-HK_FORCEINLINE double Swap64f(double _Val)
+HK_FORCEINLINE double Swap64f(double val)
 {
     union
     {
@@ -90,7 +90,7 @@ HK_FORCEINLINE double Swap64f(double _Val)
         byte   b[8];
     } dat1, dat2;
 
-    dat1.f    = _Val;
+    dat1.f    = val;
     dat2.b[0] = dat1.b[7];
     dat2.b[1] = dat1.b[6];
     dat2.b[2] = dat1.b[5];
@@ -102,93 +102,93 @@ HK_FORCEINLINE double Swap64f(double _Val)
     return dat2.f;
 }
 
-HK_FORCEINLINE constexpr uint16_t BigWord(uint16_t _Val)
+HK_FORCEINLINE constexpr uint16_t BigWord(uint16_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return Swap16(_Val);
+    return Swap16(val);
 #else
-    return _Val;
+    return val;
 #endif
 }
 
-HK_FORCEINLINE constexpr uint32_t BigDWord(uint32_t _Val)
+HK_FORCEINLINE constexpr uint32_t BigDWord(uint32_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return Swap32(_Val);
+    return Swap32(val);
 #else
-    return _Val;
+    return val;
 #endif
 }
 
-HK_FORCEINLINE constexpr uint64_t BigDDWord(uint64_t _Val)
+HK_FORCEINLINE constexpr uint64_t BigDDWord(uint64_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return Swap64(_Val);
+    return Swap64(val);
 #else
-    return _Val;
+    return val;
 #endif
 }
 
-HK_FORCEINLINE float BigFloat(float _Val)
+HK_FORCEINLINE float BigFloat(float val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return Swap32f(_Val);
+    return Swap32f(val);
 #else
-    return _Val;
+    return val;
 #endif
 }
 
-HK_FORCEINLINE double BigDouble(double _Val)
+HK_FORCEINLINE double BigDouble(double val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return Swap64f(_Val);
+    return Swap64f(val);
 #else
-    return _Val;
+    return val;
 #endif
 }
 
-HK_FORCEINLINE constexpr uint16_t LittleWord(uint16_t _Val)
+HK_FORCEINLINE constexpr uint16_t LittleWord(uint16_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return _Val;
+    return val;
 #else
-    return Swap16(_Val);
+    return Swap16(val);
 #endif
 }
 
-HK_FORCEINLINE constexpr uint32_t LittleDWord(uint32_t _Val)
+HK_FORCEINLINE constexpr uint32_t LittleDWord(uint32_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return _Val;
+    return val;
 #else
-    return Swap32(_Val);
+    return Swap32(val);
 #endif
 }
 
-HK_FORCEINLINE constexpr uint64_t LittleDDWord(uint64_t _Val)
+HK_FORCEINLINE constexpr uint64_t LittleDDWord(uint64_t val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return _Val;
+    return val;
 #else
-    return Swap64(_Val);
+    return Swap64(val);
 #endif
 }
 
-HK_FORCEINLINE float LittleFloat(float _Val)
+HK_FORCEINLINE float LittleFloat(float val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return _Val;
+    return val;
 #else
-    return Swap32f(_Val);
+    return Swap32f(val);
 #endif
 }
 
-HK_FORCEINLINE double LittleDouble(double _Val)
+HK_FORCEINLINE double LittleDouble(double val)
 {
 #ifdef HK_LITTLE_ENDIAN
-    return _Val;
+    return val;
 #else
-    return Swap64f(_Val);
+    return Swap64f(val);
 #endif
 }
 

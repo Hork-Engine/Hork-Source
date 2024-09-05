@@ -46,7 +46,7 @@ void CreateDefaultResources()
         auto resource = builder.Build(mesh);
         HK_ASSERT(resource);
 
-        auto file = File::OpenWrite("Data/default/box.mesh");
+        auto file = File::sOpenWrite("Data/default/box.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -60,7 +60,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/sphere.mesh");
+        auto file = File::sOpenWrite("Data/default/sphere.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -74,7 +74,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/cylinder.mesh");
+        auto file = File::sOpenWrite("Data/default/cylinder.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -88,7 +88,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/cone.mesh");
+        auto file = File::sOpenWrite("Data/default/cone.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -102,7 +102,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/capsule.mesh");
+        auto file = File::sOpenWrite("Data/default/capsule.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -115,7 +115,7 @@ void CreateDefaultResources()
         auto resource = builder.Build(mesh);
         HK_ASSERT(resource);
 
-        auto file = File::OpenWrite("Data/default/plane_xz.mesh");
+        auto file = File::sOpenWrite("Data/default/plane_xz.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -128,7 +128,7 @@ void CreateDefaultResources()
         auto resource = builder.Build(mesh);
         HK_ASSERT(resource);
 
-        auto file = File::OpenWrite("Data/default/plane_xy.mesh");
+        auto file = File::sOpenWrite("Data/default/plane_xy.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -141,7 +141,7 @@ void CreateDefaultResources()
         auto resource = builder.Build(mesh);
         HK_ASSERT(resource);
 
-        auto file = File::OpenWrite("Data/default/quad_xz.mesh");
+        auto file = File::sOpenWrite("Data/default/quad_xz.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -154,7 +154,7 @@ void CreateDefaultResources()
         auto resource = builder.Build(mesh);
         HK_ASSERT(resource);
 
-        auto file = File::OpenWrite("Data/default/quad_xy.mesh");
+        auto file = File::sOpenWrite("Data/default/quad_xy.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -168,7 +168,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/skybox.mesh");
+        auto file = File::sOpenWrite("Data/default/skybox.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -182,7 +182,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/skydome.mesh");
+        auto file = File::sOpenWrite("Data/default/skydome.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -196,7 +196,7 @@ void CreateDefaultResources()
         HK_ASSERT(resource);
         resource->GenerateBVH();
 
-        auto file = File::OpenWrite("Data/default/skydome_hemisphere.mesh");
+        auto file = File::sOpenWrite("Data/default/skydome_hemisphere.mesh");
         HK_ASSERT(file);
         resource->Write(file);
     }
@@ -228,7 +228,7 @@ void CreateDefaultResources()
         MaterialResourceBuilder builder;
         if (auto material = builder.Build(*graph))
         {
-            if (auto file = File::OpenWrite("Data/default/materials/skybox.mat"))
+            if (auto file = File::sOpenWrite("Data/default/materials/skybox.mat"))
                 material->Write(file);
         }
     }
@@ -236,15 +236,15 @@ void CreateDefaultResources()
 
 bool CompileMaterial(StringView input, StringView output)
 {
-    auto& resourceMngr = GameApplication::GetResourceManager();
+    auto& resourceMngr = GameApplication::sGetResourceManager();
     if (auto file = resourceMngr.OpenFile(input))
     {
-        auto graph = MaterialGraph::Load(file);
+        auto graph = MaterialGraph::sLoad(file);
 
         MaterialResourceBuilder builder;
         if (auto material = builder.Build(*graph))
         {
-            if (auto outfile = File::OpenWrite(output))
+            if (auto outfile = File::sOpenWrite(output))
             {
                 material->Write(outfile);
                 return true;

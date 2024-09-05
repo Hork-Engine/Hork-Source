@@ -42,11 +42,11 @@ class VirtualTexture;
 
 struct VTCacheLayerInfo
 {
-    /** Pixel format on GPU */
+    /// Pixel format on GPU
     TEXTURE_FORMAT TextureFormat;
-    /** Upload pixel format */
+    /// Upload pixel format
     RenderCore::DATA_FORMAT UploadFormat;
-    /** Page size in bytes for this layer */
+    /// Page size in bytes for this layer
     size_t PageSizeInBytes;
 };
 
@@ -72,21 +72,21 @@ public:
     bool CreateTexture(const char* FileName, Ref<VirtualTexture>* ppTexture);
     //void DestroyTexture( Ref< VirtualTexture > * ppTexture );
 
-    /** Cache horizontal capacity */
+    /// Cache horizontal capacity
     uint32_t GetPageCacheCapacityX() const { return m_PageCacheCapacityX; }
 
-    /** Cache vertical capacity */
+    /// Cache vertical capacity
     uint32_t GetPageCacheCapacityY() const { return m_PageCacheCapacityY; }
 
-    /** Cache total capacity */
+    /// Cache total capacity
     uint32_t GetPageCacheCapacity() const { return m_PageCacheCapacity; }
 
     Float4 const& GetPageTranslationOffsetAndScale() const { return m_PageTranslationOffsetAndScale; }
 
-    /** Page layers in texture memory */
+    /// Page layers in texture memory
     Vector<Ref<RenderCore::ITexture>>& GetLayers() { return m_PhysCacheLayers; }
 
-    /** Called on every frame */
+    /// Called on every frame
     void Update();
 
     void ResetCache();
@@ -100,13 +100,13 @@ public:
         byte* Layers[VT_MAX_LAYERS];
     };
 
-    /** Called by async thread to create new page transfer */
+    /// Called by async thread to create new page transfer
     PageTransfer* CreatePageTransfer();
 
-    /** Called by async thread when page was streamed */
+    /// Called by async thread when page was streamed
     void MakePageTransferVisible(PageTransfer* Transfer);
 
-    /** Draw cache for debugging */
+    /// Draw cache for debugging
     void Draw(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, int LayerIndex);
 
 private:
@@ -120,7 +120,7 @@ private:
 
     void WaitForFences();
 
-    /** Physical page cache */
+    /// Physical page cache
     Vector<Ref<RenderCore::ITexture>> m_PhysCacheLayers;
     Vector<VTCacheLayerInfo> m_LayerInfo;
 
@@ -128,29 +128,29 @@ private:
 
     Vector<VirtualTexturePtr> m_VirtualTextures;
 
-    /** Physical page info */
+    /// Physical page info
     struct PhysPageInfo
     {
-        /** Time of last request */
+        /// Time of last request
         int64_t Time;
 
-        /** Absolute page index */
+        /// Absolute page index
         uint32_t PageIndex;
 
-        /** Virtual texture */
+        /// Virtual texture
         VirtualTexture* pTexture;
     };
 
-    /** Physical pages sorted by time */
+    /// Physical pages sorted by time
     struct PhysPageInfoSorted
     {
         PhysPageInfo* pInfo;
     };
 
-    /** Physical page infos */
+    /// Physical page infos
     Vector<PhysPageInfo> m_PhysPageInfo;
 
-    /** Physical page infos sorted by time */
+    /// Physical page infos sorted by time
     Vector<PhysPageInfoSorted> m_PhysPageInfoSorted;
 
     uint32_t m_PageCacheCapacityX;

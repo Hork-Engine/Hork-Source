@@ -39,14 +39,14 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-/** Convert binary file to .c */
-bool BinaryToC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85);
+/// Convert binary file to .c
+bool BinaryToC(StringView sourceFile, StringView destFile, StringView symName, bool encodeBase85);
 
-/** Compress and convert binary file to .c */
-bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85);
+/// Compress and convert binary file to .c
+bool BinaryToCompressedC(StringView sourceFile, StringView destFile, StringView symName, bool encodeBase85);
 
-/** Write binary date to .c */
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, BlobRef Blob, bool bEncodeBase85);
+/// Write binary date to .c
+void WriteBinaryToC(IBinaryStreamWriteInterface& stream, StringView symName, BlobRef Blob, bool encodeBase85);
 
 } // namespace Core
 

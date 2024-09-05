@@ -185,56 +185,56 @@ extern ConsoleVar r_HBAO;
 // Globals
 //
 
-/** Render device */
+/// Render device
 extern RenderCore::IDevice* GDevice;
 
-/** Render context */
+/// Render context
 extern RenderCore::IImmediateContext* rcmd;
 
-/** Render resource table */
+/// Render resource table
 extern RenderCore::IResourceTable* rtbl;
 
-/** Render frame data */
+/// Render frame data
 extern RenderFrameData* GFrameData;
 
-/** Render frame view */
+/// Render frame view
 extern RenderViewData* GRenderView;
 
-/** Render view area */
+/// Render view area
 extern RenderCore::Rect2D GRenderViewArea;
 
-/** Stream buffer */
+/// Stream buffer
 extern RenderCore::IBuffer* GStreamBuffer;
 extern StreamedMemoryGPU*  GStreamedMemory;
 
-/** Circular buffer. Contains constant data for single draw call.
-Don't use to store long-live data. */
+/// Circular buffer. Contains constant data for single draw call.
+/// Don't use to store long-live data.
 extern Ref<CircularBuffer> GCircularBuffer;
 
-/** Sphere mesh */
+/// Sphere mesh
 extern Ref<SphereMesh> GSphereMesh;
 
-/** Screen aligned quad mesh */
+/// Screen aligned quad mesh
 extern Ref<RenderCore::IBuffer> GSaq;
 
-/** Simple white texture */
+/// Simple white texture
 extern Ref<RenderCore::ITexture> GWhiteTexture;
 
-/** BRDF */
+/// BRDF
 extern Ref<RenderCore::ITexture> GLookupBRDF;
 
-/** Cluster lookcup 3D texture */
+/// Cluster lookcup 3D texture
 extern Ref<RenderCore::ITexture> GClusterLookup;
 
-/** Cluster item references */
+/// Cluster item references
 extern Ref<RenderCore::IBuffer> GClusterItemBuffer;
 
-/** Cluster item references view */
+/// Cluster item references view
 extern Ref<RenderCore::IBufferView> GClusterItemTBO;
 
 struct RenderViewContext
 {
-    /** View constant binding */
+    /// View constant binding
     size_t ViewConstantBufferBindingBindingOffset;
     size_t ViewConstantBufferBindingBindingSize;
 };

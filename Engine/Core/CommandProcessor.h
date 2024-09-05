@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 class CommandProcessor;
 
-/** Command execution context */
+/// Command execution context
 class ICommandContext
 {
 public:
@@ -44,7 +44,7 @@ public:
     virtual void ExecuteCommand(CommandProcessor const& proc) = 0;
 };
 
-/** Command buffer parser */
+/// Command buffer parser
 class CommandProcessor final : public Noncopyable
 {
 public:
@@ -53,26 +53,26 @@ public:
 
     CommandProcessor();
 
-    /** Clear command buffer */
+    /// Clear command buffer
     void ClearBuffer();
 
-    /** Add text to the end of command buffer */
+    /// Add text to the end of command buffer
     void Add(StringView text);
 
-    /** Insert text to current command buffer offset */
+    /// Insert text to current command buffer offset
     void Insert(StringView text);
 
-    /** Execute with command context */
+    /// Execute with command context
     void Execute(ICommandContext& ctx);
 
-    /** Get argument by index */
+    /// Get argument by index
     const char* GetArg(int i) const { return m_Args[i]; }
 
-    /** Get arguments count */
+    /// Get arguments count
     int GetArgsCount() const { return m_ArgsCount; }
 
-    /** Helper. Check is command name valid. */
-    static bool IsValidCommandName(const char* name);
+    /// Helper. Check is command name valid.
+    static bool sIsValidCommandName(const char* name);
 
 private:
     String m_Cmdbuf;

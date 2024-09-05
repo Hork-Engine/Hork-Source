@@ -400,10 +400,10 @@ TerrainMesh::TerrainMesh()
     ci.bImmutableStorage = true;
 
     ci.SizeInBytes = m_VertexBuffer.Size() * sizeof(TerrainVertex);
-    GameApplication::GetRenderDevice()->CreateBuffer(ci, m_VertexBuffer.ToPtr(), &m_VertexBufferGPU);
+    GameApplication::sGetRenderDevice()->CreateBuffer(ci, m_VertexBuffer.ToPtr(), &m_VertexBufferGPU);
 
     ci.SizeInBytes = m_IndexBuffer.Size() * sizeof(unsigned short);
-    GameApplication::GetRenderDevice()->CreateBuffer(ci, m_IndexBuffer.ToPtr(), &m_IndexBufferGPU);
+    GameApplication::sGetRenderDevice()->CreateBuffer(ci, m_IndexBuffer.ToPtr(), &m_IndexBufferGPU);
 
     LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", m_VertexBuffer.Size(), m_IndexBuffer.Size());
 }

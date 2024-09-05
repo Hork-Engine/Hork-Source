@@ -113,7 +113,7 @@ public:
 
     void                ParseEvent(SDL_WindowEvent const& event);
 
-    static IGenericWindow* GetWindowFromNativeHandle(SDL_Window* handle);
+    static IGenericWindow* sGetWindowFromNativeHandle(SDL_Window* handle);
 
 protected:
     WeakRef<ISwapChain> m_SwapChain;

@@ -67,11 +67,11 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
 
     SamplerDesc motionBlurSamplers[3];
     motionBlurSamplers[0] = linearSampler;
@@ -81,12 +81,12 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(motionBlurSamplers);
     resourceLayout.Samplers    = motionBlurSamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &linearSampler;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
 
     SamplerDesc outlineApplySamplers[2];
     outlineApplySamplers[0] = linearSampler;
@@ -95,12 +95,12 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(outlineApplySamplers);
     resourceLayout.Samplers    = outlineApplySamplers;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
 
     resourceLayout = PipelineResourceLayout{};
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
-    ShaderFactory::CreateFullscreenQuadPipeline(&m_CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
     
 }
 

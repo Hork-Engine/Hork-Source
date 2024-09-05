@@ -171,13 +171,13 @@ struct ComponentFactory
     static size_t RegistrySize;
 
     template <typename T>
-    static ComponentTypeId GenerateTypeId()
+    static ComponentTypeId sGenerateTypeId()
     {
         using ComponentType = typename std::remove_const_t<T>;
         return _GenerateTypeId<ComponentType>();
     }
 
-    static size_t GetComponentTypesCount()
+    static size_t sGetComponentTypesCount()
     {
         return m_IdGen;
     }
@@ -692,11 +692,11 @@ class QueryTypeInfo
     };
 
 public:
-    static uint32_t RegisterQuery();
+    static uint32_t sRegisterQuery();
 };
 
 template <typename T>
-uint32_t QueryTypeInfo<T>::RegisterQuery()
+uint32_t QueryTypeInfo<T>::sRegisterQuery()
 {
     struct QueryIdGenerator
     {

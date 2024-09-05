@@ -42,21 +42,21 @@ void Transform2D::SetIdentity()
     Col2[1] = 0.0f;
 }
 
-Transform2D Transform2D::Translation(Float2 const& vec)
+Transform2D Transform2D::sTranslation(Float2 const& vec)
 {
     return Transform2D(1, 0,
                        0, 1,
                        vec.X, vec.Y);
 }
 
-Transform2D Transform2D::Scaling(Float2 const& scale)
+Transform2D Transform2D::sScaling(Float2 const& scale)
 {
     return Transform2D(scale.X, 0,
                        0, scale.Y,
                        0, 0);
 }
 
-Transform2D Transform2D::Rotation(float angleInRadians)
+Transform2D Transform2D::sRotation(float angleInRadians)
 {
     float cs = std::cos(angleInRadians), sn = std::sin(angleInRadians);
 
@@ -65,14 +65,14 @@ Transform2D Transform2D::Rotation(float angleInRadians)
                        0, 0);
 }
 
-Transform2D Transform2D::SkewX(float angleInRadians)
+Transform2D Transform2D::sSkewX(float angleInRadians)
 {
     return Transform2D(1, 0,
                        std::tan(angleInRadians), 1,
                        0, 0);
 }
 
-Transform2D Transform2D::SkewY(float angleInRadians)
+Transform2D Transform2D::sSkewY(float angleInRadians)
 {
     return Transform2D(1.0f, std::tan(angleInRadians),
                        0, 1,

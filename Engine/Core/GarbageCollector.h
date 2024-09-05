@@ -55,27 +55,27 @@ public:
     GCObject();
     virtual ~GCObject();
 
-    /** Add reference */
+    /// Add reference
     void AddRef();
 
-    /** Remove reference */
+    /// Remove reference
     void RemoveRef();
 
     int GetRefCount() const { return m_RefCount; }
 
-    /** Set weakref counter. Used by WeakRef */
-    void SetWeakRefCounter(WeakRefCounter* pRefCounter) { m_WeakRefCounter = pRefCounter; }
+    /// Set weakref counter. Used by WeakRef
+    void SetWeakRefCounter(WeakRefCounter* refCounter) { m_WeakRefCounter = refCounter; }
 
-    /** Get weakref counter. Used by WeakRef */
+    /// Get weakref counter. Used by WeakRef
     WeakRefCounter* GetWeakRefCounter() { return m_WeakRefCounter; }
 
 private:
-    /** Current refs count for this object */
+    /// Current refs count for this object
     int m_RefCount{};
 
     WeakRefCounter* m_WeakRefCounter{};
 
-    /** Used by garbage collector to add this object to garbage list */
+    /// Used by garbage collector to add this object to garbage list
     GCObject* m_NextGarbageObject{};
     GCObject* m_PrevGarbageObject{};
 };
@@ -88,28 +88,23 @@ T* NewObj(TArgs&&... Args)
     return static_cast<T*>(gcobj);
 }
 
-/**
-
-Garbage collector
-
-*/
 class GarbageCollector final : public Noncopyable
 {
     friend class GCObject;
 
 public:
-    static void Shutdown();
+    static void sShutdown();
 
-    /** Deallocates all collected objects */
-    static void DeallocateObjects();
+    /// Deallocates all collected objects
+    static void sDeallocateObjects();
 
-    static void KeepPointerAlive(GCObject* pObject);
+    static void sKeepPointerAlive(GCObject* object);
 
 private:
-    static void AddObject(GCObject* pObject);
-    static void RemoveObject(GCObject* pObject);
+    static void sAddObject(GCObject* object);
+    static void sRemoveObject(GCObject* object);
 
-    static void ClearPointers();
+    static void sClearPointers();
 
     static GCObject* m_GarbageObjects;
     static GCObject* m_GarbageObjectsTail;

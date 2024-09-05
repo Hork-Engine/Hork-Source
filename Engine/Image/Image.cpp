@@ -1855,7 +1855,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
 ImageStorage CreateImage(StringView FileName, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
-    return CreateImage(File::OpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
+    return CreateImage(File::sOpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
 }
 
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
@@ -2333,7 +2333,7 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
 
 ImageStorage CreateNormalMap(StringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    return CreateNormalMap(File::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+    return CreateNormalMap(File::sOpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
 }
 
 ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)

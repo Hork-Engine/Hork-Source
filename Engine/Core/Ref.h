@@ -39,9 +39,9 @@ struct WeakRefCounter
     void* RawPtr;
     int   RefCount;
 
-    void* operator new(size_t SizeInBytes)
+    void* operator new(size_t sizeInBytes)
     {
-        return Allocators::HeapMemoryAllocator<HEAP_MISC>().allocate(SizeInBytes);
+        return Allocators::HeapMemoryAllocator<HEAP_MISC>().allocate(sizeInBytes);
     }
     void operator delete(void* Ptr)
     {
@@ -67,19 +67,19 @@ public:
         }
     }
 
-    /** Non-copyable pattern */
+    /// Non-copyable pattern
     RefCounted(RefCounted const&) = delete;
 
-    /** Non-copyable pattern */
+    /// Non-copyable pattern
     RefCounted& operator=(RefCounted const&) = delete;
 
-    /** Add reference */
+    /// Add reference
     inline void AddRef()
     {
         ++m_RefCount;
     }
 
-    /** Remove reference */
+    /// Remove reference
     inline void RemoveRef()
     {
         if (--m_RefCount == 0)
@@ -91,19 +91,19 @@ public:
         HK_ASSERT(m_RefCount > 0);
     }
 
-    /** Reference count */
+    /// Reference count
     int GetRefCount() const
     {
         return m_RefCount;
     }
 
-    /** Set weakref counter. Used by WeakRef */
-    void SetWeakRefCounter(WeakRefCounter* _RefCounter)
+    /// Set weakref counter. Used by WeakRef
+    void SetWeakRefCounter(WeakRefCounter* refCounter)
     {
-        m_WeakRefCounter = _RefCounter;
+        m_WeakRefCounter = refCounter;
     }
 
-    /** Get weakref counter. Used by WeakRef */
+    /// Get weakref counter. Used by WeakRef
     WeakRefCounter* GetWeakRefCounter()
     {
         return m_WeakRefCounter;
@@ -121,7 +121,7 @@ Reference counter is interlocked variable.
 struct InterlockedRef : public Noncopyable
 {
 private:
-    /** Reference counter */
+    /// Reference counter
     AtomicInt m_RefCount{1};
 
 public:
@@ -129,13 +129,13 @@ public:
 
     virtual ~InterlockedRef() = default;
 
-    /** Add reference. */
+    /// Add reference.
     HK_FORCEINLINE void AddRef()
     {
         m_RefCount.Increment();
     }
 
-    /** Remove reference. */
+    /// Remove reference.
     HK_FORCEINLINE void RemoveRef()
     {
         if (m_RefCount.Decrement() == 0)
@@ -144,7 +144,7 @@ public:
         }
     }
 
-    /** Reference count */
+    /// Reference count
     HK_FORCEINLINE int GetRefCount() const
     {
         return m_RefCount.Load();
@@ -295,7 +295,7 @@ public:
         return ptr;
     }
 
-    static Ref<T> Create(T* rhs)
+    static Ref<T> sCreate(T* rhs)
     {
         Ref<T> ptr;
         ptr.Attach(rhs);
@@ -315,25 +315,25 @@ protected:
     WeakReference() = default;
 
     template <typename T>
-    void ResetWeakRef(T* RawPtr)
+    void ResetWeakRef(T* rawPtr)
     {
         T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->RawPtr : nullptr;
 
-        if (Cur == RawPtr)
+        if (Cur == rawPtr)
             return;
 
         RemoveWeakRef<T>();
 
-        if (!RawPtr)
+        if (!rawPtr)
             return;
 
-        m_WeakRefCounter = RawPtr->GetWeakRefCounter();
+        m_WeakRefCounter = rawPtr->GetWeakRefCounter();
         if (!m_WeakRefCounter)
         {
             m_WeakRefCounter = AllocateWeakRefCounter();
-            m_WeakRefCounter->RawPtr = RawPtr;
+            m_WeakRefCounter->RawPtr = rawPtr;
             m_WeakRefCounter->RefCount = 1;
-            RawPtr->SetWeakRefCounter(m_WeakRefCounter);
+            rawPtr->SetWeakRefCounter(m_WeakRefCounter);
         }
         else
         {
@@ -517,7 +517,7 @@ HK_FORCEINLINE bool operator!=(T const* lhs, WeakRef<U> const& rhs) { return lhs
 template <typename T, typename... Args>
 inline Ref<T> MakeRef(Args&&... args)
 {
-    return Ref<T>::Create(new T(std::forward<Args>(args)...));
+    return Ref<T>::sCreate(new T(std::forward<Args>(args)...));
 }
 
 template <typename T>
@@ -534,8 +534,8 @@ class UniqueRef
 public:
     UniqueRef() = default;
 
-    explicit UniqueRef(T* InPtr) :
-        m_RawPtr(InPtr)
+    explicit UniqueRef(T* ptr) :
+        m_RawPtr(ptr)
     {}
 
     UniqueRef(UniqueRef<T> const&) = delete;

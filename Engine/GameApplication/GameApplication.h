@@ -102,104 +102,104 @@ public:
     /// Read main window back buffer pixels.
     void ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, size_t sizeInBytes, void* sysMem);
 
-    static GameApplication* Instance()
+    static GameApplication* sInstance()
     {
-        return static_cast<GameApplication*>(CoreApplication::Instance());
+        return static_cast<GameApplication*>(CoreApplication::sInstance());
     }
 
-    static String const& GetApplicationLocalData()
+    static String const& sGetApplicationLocalData()
     {
-        return static_cast<GameApplication*>(Instance())->m_ApplicationLocalData;
+        return static_cast<GameApplication*>(sInstance())->m_ApplicationLocalData;
     }
 
-    static Archive& GetEmbeddedArchive()
+    static Archive& sGetEmbeddedArchive()
     {
-        return static_cast<GameApplication*>(Instance())->m_EmbeddedArchive;
+        return static_cast<GameApplication*>(sInstance())->m_EmbeddedArchive;
     }
 
-    static RenderCore::IDevice* GetRenderDevice()
+    static RenderCore::IDevice* sGetRenderDevice()
     {
-        return static_cast<GameApplication*>(Instance())->m_RenderDevice;
+        return static_cast<GameApplication*>(sInstance())->m_RenderDevice;
     }
 
-    static ResourceManager& GetResourceManager()
+    static ResourceManager& sGetResourceManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_ResourceManager.RawPtr();
+        return *static_cast<GameApplication*>(sInstance())->m_ResourceManager.RawPtr();
     }
 
-    static MaterialManager& GetMaterialManager()
+    static MaterialManager& sGetMaterialManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_MaterialManager.RawPtr();
+        return *static_cast<GameApplication*>(sInstance())->m_MaterialManager.RawPtr();
     }
 
-    static FrameLoop& GetFrameLoop()
+    static FrameLoop& sGetFrameLoop()
     {
-        return *static_cast<GameApplication*>(Instance())->m_FrameLoop.RawPtr();
+        return *static_cast<GameApplication*>(sInstance())->m_FrameLoop.RawPtr();
     }
 
-    static UIManager& GetUIManager()
+    static UIManager& sGetUIManager()
     {
-        return *static_cast<GameApplication*>(Instance())->m_UIManager.RawPtr();
+        return *static_cast<GameApplication*>(sInstance())->m_UIManager.RawPtr();
     }
 
-    static MersenneTwisterRand& GetRandom()
+    static MersenneTwisterRand& sGetRandom()
     {
-        return static_cast<GameApplication*>(Instance())->m_Random;
+        return static_cast<GameApplication*>(sInstance())->m_Random;
     }
 
-    static StateMachine& GetStateMachine()
+    static StateMachine& sGetStateMachine()
     {
-        return static_cast<GameApplication*>(Instance())->m_StateMachine;
+        return static_cast<GameApplication*>(sInstance())->m_StateMachine;
     }
 
-    static CommandProcessor& GetCommandProcessor()
+    static CommandProcessor& sGetCommandProcessor()
     {
-        return static_cast<GameApplication*>(Instance())->m_CommandProcessor;
+        return static_cast<GameApplication*>(sInstance())->m_CommandProcessor;
     }
 
-    static InputSystem& GetInputSystem()
+    static InputSystem& sGetInputSystem()
     {
-        return static_cast<GameApplication*>(Instance())->m_InputSystem;
+        return static_cast<GameApplication*>(sInstance())->m_InputSystem;
     }
 
-    static VertexMemoryGPU* GetVertexMemoryGPU()
+    static VertexMemoryGPU* sGetVertexMemoryGPU()
     {
-        return static_cast<GameApplication*>(Instance())->m_VertexMemoryGPU.RawPtr();
+        return static_cast<GameApplication*>(sInstance())->m_VertexMemoryGPU.RawPtr();
     }
 
-    static RenderBackend& GetRenderBackend()
+    static RenderBackend& sGetRenderBackend()
     {
-        return *static_cast<GameApplication*>(Instance())->m_RenderBackend.RawPtr();
+        return *static_cast<GameApplication*>(sInstance())->m_RenderBackend.RawPtr();
     }
 
-    static AsyncJobList* GetRenderFrontendJobList()
+    static AsyncJobList* sGetRenderFrontendJobList()
     {
-        return static_cast<GameApplication*>(Instance())->m_RenderFrontendJobList;
+        return static_cast<GameApplication*>(sInstance())->m_RenderFrontendJobList;
     }
 
-    static AudioDevice* GetAudioDevice()
+    static AudioDevice* sGetAudioDevice()
     {
-        return static_cast<GameApplication*>(Instance())->m_AudioDevice;
+        return static_cast<GameApplication*>(sInstance())->m_AudioDevice;
     }
 
-    static AudioMixer* GetAudioMixer()
+    static AudioMixer* sGetAudioMixer()
     {
-        return static_cast<GameApplication*>(Instance())->m_AudioMixer.RawPtr();
+        return static_cast<GameApplication*>(sInstance())->m_AudioMixer.RawPtr();
     }
 
-    static FontHandle GetDefaultFontHandle()
+    static FontHandle sGetDefaultFontHandle()
     {
-        return static_cast<GameApplication*>(Instance())->m_DefaultFontHandle;
+        return static_cast<GameApplication*>(sInstance())->m_DefaultFontHandle;
     }
 
-    static FontResource* GetDefaultFont()
+    static FontResource* sGetDefaultFont()
     {
-        return static_cast<GameApplication*>(Instance())->m_DefaultFont;
+        return static_cast<GameApplication*>(sInstance())->m_DefaultFont;
     }
 
-    static Float2 const& GetRetinaScale()
+    static Float2 const& sGetRetinaScale()
     {
-        return static_cast<GameApplication*>(Instance())->m_RetinaScale;
+        return static_cast<GameApplication*>(sInstance())->m_RetinaScale;
     }
 
 protected:

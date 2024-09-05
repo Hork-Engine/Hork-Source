@@ -502,7 +502,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
     pFramebufferCache = MakeRef<FramebufferCacheGL>();
 }
 
-void ImmediateContextGLImpl::MakeCurrent(ImmediateContextGLImpl* pContext)
+void ImmediateContextGLImpl::sMakeCurrent(ImmediateContextGLImpl* pContext)
 {
     if (pContext)
     {
@@ -541,7 +541,7 @@ ImmediateContextGLImpl::~ImmediateContextGLImpl()
 
     if (Current == this)
     {
-        MakeCurrent(nullptr);
+        sMakeCurrent(nullptr);
     }
 }
 
@@ -5468,11 +5468,11 @@ void ImmediateContextGLImpl::ExecuteRenderPass(RenderPass* pRenderPass)
         ImmediateContextGLImpl* curContext = static_cast<TextureGLImpl*>(const_cast<WeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
         if (curContext != this)
         {
-            MakeCurrent(curContext);
+            sMakeCurrent(curContext);
 
             curContext->ExecuteRenderPass(pRenderPass);
 
-            MakeCurrent(this);
+            sMakeCurrent(this);
             return;
         }
     }

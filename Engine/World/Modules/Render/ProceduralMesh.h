@@ -43,39 +43,39 @@ struct TriangleHitResult;
 class ProceduralMesh : public RefCounted
 {
 public:
-    ProceduralMesh();
-    ~ProceduralMesh();
+                                ProceduralMesh();
+                                ~ProceduralMesh();
 
-    /** Update vertex cache occasionally or every frame */
+    /// Update vertex cache occasionally or every frame
     VertexBufferCPU<MeshVertex> VertexCache;
 
-    /** Update index cache occasionally or every frame */
-    IndexBufferCPU<unsigned int> IndexCache;
+    /// Update index cache occasionally or every frame
+    IndexBufferCPU<unsigned int>IndexCache;
 
-    /** Bounding box is used for raycast early exit and VSD culling */
-    BvAxisAlignedBox BoundingBox;
+    /// Bounding box is used for raycast early exit and VSD culling
+    BvAxisAlignedBox            BoundingBox;
 
-    /** Get mesh GPU buffers */
-    void GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    /// Get mesh GPU buffers
+    void                        GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
-    /** Get mesh GPU buffers */
-    void GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    /// Get mesh GPU buffers
+    void                        GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
-    /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;
+    /// Check ray intersection. Result is unordered by distance to save performance
+    bool                        Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;
 
-    /** Check ray intersection */
-    bool RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
+    /// Check ray intersection
+    bool                        RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
 
-    /** Called before rendering. Don't call directly. */
-    void PrepareStreams(RenderFrontendDef const* pDef);
+    /// Called before rendering. Don't call directly.
+    void                        PrepareStreams(RenderFrontendDef const* pDef);
 
     // TODO: Add methods like AddTriangle, AddQuad, etc.
 private:
-    size_t m_VertexStream = 0;
-    size_t m_IndexSteam   = 0;
+    size_t                      m_VertexStream = 0;
+    size_t                      m_IndexSteam   = 0;
 
-    int m_VisFrame = -1;
+    int                         m_VisFrame = -1;
 };
 
 

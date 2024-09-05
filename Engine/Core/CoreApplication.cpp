@@ -447,7 +447,7 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
         }
         else
         {
-            TerminateWithError("InitializeProcess: Failed on GetModuleFileName\n");
+            sTerminateWithError("InitializeProcess: Failed on GetModuleFileName\n");
             break;
         }
     }
@@ -483,7 +483,7 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
         len = readlink("/proc/self/exe", m_Executable, curLen);
         if (len == -1)
         {
-            TerminateWithError("InitializeProcess: Failed on readlink\n");
+            sTerminateWithError("InitializeProcess: Failed on readlink\n");
             len = 0;
             break;
         }
@@ -531,10 +531,10 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
         switch (m_ProcessAttribute)
         {
             case PROCESS_COULDNT_CHECK_UNIQUE:
-                TerminateWithError("Couldn't check unique instance\n");
+                sTerminateWithError("Couldn't check unique instance\n");
                 break;
             case PROCESS_ALREADY_EXISTS:
-                TerminateWithError("Application already runned\n");
+                sTerminateWithError("Application already runned\n");
                 break;
             case PROCESS_UNIQUE:
                 break;
@@ -632,11 +632,11 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
         },
         NULL);
 
-    ConsoleVar::AllocateVariables();
+    ConsoleVar::sAllocateVariables();
 
     Core::InitializeProfiler();
 
-    m_WorkingDir = PathUtils::GetFilePath(m_Executable);
+    m_WorkingDir = PathUtils::sGetFilePath(m_Executable);
 
 #if defined HK_OS_WIN32
     SetCurrentDirectoryA(m_WorkingDir.CStr());
@@ -684,7 +684,7 @@ void CoreApplication::Cleanup()
 
     m_WorkingDir.Free();
 
-    ConsoleVar::FreeVariables();
+    ConsoleVar::sFreeVariables();
 
     if (m_LogFile)
     {
@@ -740,7 +740,7 @@ void CoreApplication::_WriteMessage(const char* message)
     }
 }
 
-void CoreApplication::SetClipboard(StringView text)
+void CoreApplication::sSetClipboard(StringView text)
 {
     if (text.IsNullTerminated())
     {
@@ -754,12 +754,12 @@ void CoreApplication::SetClipboard(StringView text)
     }
 }
 
-void CoreApplication::SetClipboard(String const& text)
+void CoreApplication::sSetClipboard(String const& text)
 {
     SDL_SetClipboardText(text.CStr());
 }
 
-const char* CoreApplication::GetClipboard()
+const char* CoreApplication::sGetClipboard()
 {
     if (s_Instance->m_Clipboard)
         SDL_free(s_Instance->m_Clipboard);
@@ -809,7 +809,7 @@ void CoreApplication::_TerminateWithError(const char* message)
 {
     DisplayCriticalMessage(message);
 
-    MemoryHeap::MemoryCleanup();
+    MemoryHeap::sMemoryCleanup();
 
     Cleanup();
 
@@ -818,7 +818,7 @@ void CoreApplication::_TerminateWithError(const char* message)
 
 #ifdef HK_ALLOW_ASSERTS
 
-void AssertFunction(const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment)
+void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment)
 {
     static thread_local bool bRecursive = false;
 
@@ -834,7 +834,7 @@ void AssertFunction(const char* _File, int _Line, const char* _Function, const c
         "Assertion: {}\n"
         "{}{}"
         "============================\n",
-        _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "");
+        file, line, function, assertion, comment ? comment : "", comment ? "\n" : "");
 
     // FIXME: I'm not sure. Сan we call this from a random thread?
     //if (SDL_Window* window = SDL_GL_GetCurrentWindow())

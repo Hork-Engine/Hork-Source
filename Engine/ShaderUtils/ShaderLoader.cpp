@@ -204,7 +204,7 @@ String ShaderLoader::LoadShader(StringView fileName, ArrayView<CodeBlock> codeBl
 #endif
 
     if (!LoadShaderWithInclude(fileName, result))
-        CoreApplication::TerminateWithError("LoadShader: failed to open {}\n", fileName);
+        CoreApplication::sTerminateWithError("LoadShader: failed to open {}\n", fileName);
 
     return result;
 }
@@ -224,7 +224,7 @@ String ShaderLoader::LoadShaderFromString(StringView fileName, StringView source
     CleanComments(_source.ToPtr());
 
     if (!LoadShaderFromString(fileName, _source, result))
-        CoreApplication::TerminateWithError("LoadShader: failed to open {}\n", fileName);
+        CoreApplication::sTerminateWithError("LoadShader: failed to open {}\n", fileName);
 
     return result;
 }
@@ -234,17 +234,17 @@ bool ShaderLoader::LoadFile(StringView fileName, String& source)
     File f;
     if (r_EmbeddedShaders)
     {
-        f = File::OpenRead("Shaders/" + fileName, GameApplication::GetEmbeddedArchive());
+        f = File::sOpenRead("Shaders/" + fileName, GameApplication::sGetEmbeddedArchive());
     }
     else
     {
         // Load shaders from sources
-        String fn(PathUtils::GetFilePath(__FILE__));
+        String fn(PathUtils::sGetFilePath(__FILE__));
         fn += "/../Embedded/Shaders/";
         fn += fileName;
-        PathUtils::FixPathInplace(fn);
+        PathUtils::sFixPathInplace(fn);
 
-        f = File::OpenRead(fn);
+        f = File::sOpenRead(fn);
     }
     if (!f)
         return false;

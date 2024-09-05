@@ -164,8 +164,8 @@ public:
     ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPoolGL::WindowGL Window, bool bMainContext);
     ~ImmediateContextGLImpl();
 
-    static void MakeCurrent(ImmediateContextGLImpl* pContext);
-    static ImmediateContextGLImpl* GetCurrent() { return Current; }
+    static void sMakeCurrent(ImmediateContextGLImpl* pContext);
+    static ImmediateContextGLImpl* sGetCurrent() { return Current; }
 
     void ExecuteFrameGraph(FrameGraph* pFrameGraph) override;
 
@@ -724,19 +724,19 @@ struct ScopedContextGL
     ImmediateContextGLImpl* PrevContext;
 
     ScopedContextGL(ImmediateContextGLImpl* NewContext) :
-        PrevContext(ImmediateContextGLImpl::GetCurrent())
+        PrevContext(ImmediateContextGLImpl::sGetCurrent())
     {
         if (PrevContext != NewContext)
         {
-            ImmediateContextGLImpl::MakeCurrent(NewContext);
+            ImmediateContextGLImpl::sMakeCurrent(NewContext);
         }
     }
 
     ~ScopedContextGL()
     {
-        if (PrevContext != ImmediateContextGLImpl::GetCurrent())
+        if (PrevContext != ImmediateContextGLImpl::sGetCurrent())
         {
-            ImmediateContextGLImpl::MakeCurrent(PrevContext);
+            ImmediateContextGLImpl::sMakeCurrent(PrevContext);
         }
     }
 };

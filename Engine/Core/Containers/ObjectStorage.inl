@@ -105,7 +105,7 @@ HK_INLINE Handle32<T> ObjectStorage<T, PageSize, StorageType, Heap>::CreateObjec
 
     uint32_t handleID = m_Size;
     if (handleID >= Handle32<T>::MAX_ID)
-        CoreApplication::TerminateWithError("ObjectStorage::Create: Too many objects allocated\n");
+        CoreApplication::sTerminateWithError("ObjectStorage::Create: Too many objects allocated\n");
 
     m_Data.Grow(m_Size + 1);
     newObject = new (m_Data.GetAddress(m_Size++)) T();

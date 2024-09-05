@@ -150,7 +150,7 @@ public:
     //
 
     /// Compute ortho rect based on aspect ratio and zoom
-    static void             GetOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs);
+    static void             sGetOrthoRect(float aspectRatio, float zoom, Float2& mins, Float2& maxs);
 
 private:
     CameraProjection        m_Projection = CameraProjection::PerspectiveFovYWithAspectRatio;

@@ -42,31 +42,31 @@ CommandContext::~CommandContext()
 {
 }
 
-void CommandContext::ExecuteCommand(CommandProcessor const& _Proc)
+void CommandContext::ExecuteCommand(CommandProcessor const& proc)
 {
-    HK_ASSERT(_Proc.GetArgsCount() > 0);
+    HK_ASSERT(proc.GetArgsCount() > 0);
 
-    const char* name = _Proc.GetArg(0);
+    const char* name = proc.GetArg(0);
 
     for (RuntimeCommand& cmd : Commands)
     {
         if (!Core::Stricmp(cmd.GetName(), name))
         {
-            cmd.Execute(_Proc);
+            cmd.Execute(proc);
             return;
         }
     }
 
     ConsoleVar* var;
-    if (nullptr != (var = ConsoleVar::FindVariable(name)))
+    if (nullptr != (var = ConsoleVar::sFindVariable(name)))
     {
-        if (_Proc.GetArgsCount() < 2)
+        if (proc.GetArgsCount() < 2)
         {
             var->Print();
         }
         else
         {
-            var->SetString(_Proc.GetArg(1));
+            var->SetString(proc.GetArg(1));
         }
         return;
     }
@@ -74,42 +74,42 @@ void CommandContext::ExecuteCommand(CommandProcessor const& _Proc)
     LOG("Unknown command \"{}\"\n", name);
 }
 
-void CommandContext::AddCommand(GlobalStringView _Name, Delegate<void(CommandProcessor const&)> const& _Callback, GlobalStringView _Comment)
+void CommandContext::AddCommand(GlobalStringView name, Delegate<void(CommandProcessor const&)> const& callback, GlobalStringView comment)
 {
-    if (!CommandProcessor::IsValidCommandName(_Name.CStr()))
+    if (!CommandProcessor::sIsValidCommandName(name.CStr()))
     {
         LOG("CommandContext::AddCommand: invalid command name\n");
         return;
     }
 
-    if (ConsoleVar::FindVariable(_Name))
+    if (ConsoleVar::sFindVariable(name))
     {
-        LOG("Name conflict: {} already registered as variable\n", _Name);
+        LOG("Name conflict: {} already registered as variable\n", name);
         return;
     }
 
     for (RuntimeCommand& cmd : Commands)
     {
-        if (!Core::Stricmp(cmd.GetName(), _Name.CStr()))
+        if (!Core::Stricmp(cmd.GetName(), name.CStr()))
         {
-            LOG("Overriding {} command\n", _Name);
+            LOG("Overriding {} command\n", name);
 
-            cmd.Override(_Callback, _Comment);
+            cmd.Override(callback, comment);
             return;
         }
     }
 
     // Register new command
-    Commands.EmplaceBack(_Name, _Callback, _Comment);
+    Commands.EmplaceBack(name, callback, comment);
 }
 
-void CommandContext::RemoveCommand(StringView _Name)
+void CommandContext::RemoveCommand(StringView name)
 {
     for (Vector<RuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
     {
         RuntimeCommand& command = *it;
 
-        if (!_Name.Icmp(command.GetName()))
+        if (!name.Icmp(command.GetName()))
         {
             Commands.Erase(it);
             return;
@@ -132,13 +132,13 @@ HK_FORCEINLINE bool CompareChar(char _Ch1, char _Ch2)
 
 } // namespace
 
-int CommandContext::CompleteString(StringView Str, String& _Result)
+int CommandContext::CompleteString(StringView str, String& result)
 {
     int count = 0;
-    const char* s     = Str.Begin();
-    auto len   = Str.Size();
+    const char* s = str.Begin();
+    auto len = str.Size();
 
-    _Result.Clear();
+    result.Clear();
 
     // skip whitespaces
     while (((*s < 32 && *s > 0) || *s == ' ' || *s == '\t') && len > 0)
@@ -157,34 +157,34 @@ int CommandContext::CompleteString(StringView Str, String& _Result)
         if (!Core::StricmpN(cmd.GetName(), s, len))
         {
             int n;
-            int minLen = Math::Min(StringLength(cmd.GetName()), _Result.Length());
-            for (n = 0; n < minLen && CompareChar(cmd.GetName()[n], _Result[n]); n++) {}
+            int minLen = Math::Min(StringLength(cmd.GetName()), result.Length());
+            for (n = 0; n < minLen && CompareChar(cmd.GetName()[n], result[n]); n++) {}
             if (n == 0)
             {
-                _Result = cmd.GetName();
+                result = cmd.GetName();
             }
             else
             {
-                _Result.Resize(n);
+                result.Resize(n);
             }
             count++;
         }
     }
 
-    for (ConsoleVar* var = ConsoleVar::GlobalVariableList(); var; var = var->GetNext())
+    for (ConsoleVar* var = ConsoleVar::sGlobalVariableList(); var; var = var->GetNext())
     {
         if (!Core::StricmpN(var->GetName(), s, len))
         {
             int n;
-            int minLen = Math::Min(StringLength(var->GetName()), _Result.Length());
-            for (n = 0; n < minLen && CompareChar(var->GetName()[n], _Result[n]); n++) {}
+            int minLen = Math::Min(StringLength(var->GetName()), result.Length());
+            for (n = 0; n < minLen && CompareChar(var->GetName()[n], result[n]); n++) {}
             if (n == 0)
             {
-                _Result = var->GetName();
+                result = var->GetName();
             }
             else
             {
-                _Result.Resize(n);
+                result.Resize(n);
             }
             count++;
         }
@@ -193,16 +193,16 @@ int CommandContext::CompleteString(StringView Str, String& _Result)
     return count;
 }
 
-void CommandContext::Print(StringView Str)
+void CommandContext::Print(StringView str)
 {
     Vector<RuntimeCommand*>  cmds;
     Vector<ConsoleVar*> vars;
 
-    if (!Str.IsEmpty())
+    if (!str.IsEmpty())
     {
         for (RuntimeCommand& cmd : Commands)
         {
-            if (!Str.IcmpN(cmd.GetName(), Str.Size()))
+            if (!str.IcmpN(cmd.GetName(), str.Size()))
             {
                 cmds.Add(&cmd);
             }
@@ -218,9 +218,9 @@ void CommandContext::Print(StringView Str)
 
         std::sort(cmds.Begin(), cmds.End(), CmdSortFunction);
 
-        for (ConsoleVar* var = ConsoleVar::GlobalVariableList(); var; var = var->GetNext())
+        for (ConsoleVar* var = ConsoleVar::sGlobalVariableList(); var; var = var->GetNext())
         {
-            if (!Str.IcmpN(var->GetName(), Str.Size()))
+            if (!str.IcmpN(var->GetName(), str.Size()))
             {
                 vars.Add(var);
             }

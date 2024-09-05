@@ -47,7 +47,7 @@ SOFTWARE.
 
 namespace
 {
-FILE* OpenFile(const char* FileName, const char* Mode)
+FILE* OpenFile(const char* fileName, const char* Mode)
 {
     FILE* f;
 #if defined(_MSC_VER)
@@ -56,7 +56,7 @@ FILE* OpenFile(const char* FileName, const char* Mode)
     if (0 == MultiByteToWideChar(CP_UTF8, 0, Mode, -1, wMode, HK_ARRAY_SIZE(wMode)))
         return NULL;
 
-    int n = MultiByteToWideChar(CP_UTF8, 0, FileName, -1, NULL, 0);
+    int n = MultiByteToWideChar(CP_UTF8, 0, fileName, -1, NULL, 0);
     if (0 == n)
     {
         return NULL;
@@ -64,7 +64,7 @@ FILE* OpenFile(const char* FileName, const char* Mode)
 
     wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
-    MultiByteToWideChar(CP_UTF8, 0, FileName, -1, wFilename, n);
+    MultiByteToWideChar(CP_UTF8, 0, fileName, -1, wFilename, n);
 
 #    if _MSC_VER >= 1400
     if (0 != _wfopen_s(&f, wFilename, wMode))
@@ -73,7 +73,7 @@ FILE* OpenFile(const char* FileName, const char* Mode)
     f = _wfopen(wFilename, wMode);
 #    endif
 #else
-    f = fopen(FileName, Mode);
+    f = fopen(fileName, Mode);
 #endif
     return f;
 }
@@ -81,53 +81,96 @@ FILE* OpenFile(const char* FileName, const char* Mode)
 
 HK_NAMESPACE_BEGIN
 
+File::File(File&& rhs) noexcept :
+    m_Name(std::move(rhs.m_Name)),
+    m_Type(rhs.m_Type),
+    m_Handle(rhs.m_Handle),
+    m_RWOffset(rhs.m_RWOffset),
+    m_FileSize(rhs.m_FileSize),
+    m_ReservedSize(rhs.m_ReservedSize),
+    m_Granularity(rhs.m_Granularity),
+    m_IsMemoryBufferOwner(rhs.m_IsMemoryBufferOwner)
+{
+    rhs.m_Type               = FileType::Undefined;
+    rhs.m_Handle             = nullptr;
+    rhs.m_RWOffset           = 0;
+    rhs.m_FileSize           = 0;
+    rhs.m_ReservedSize       = 0;
+    rhs.m_Granularity        = 0;
+    rhs.m_IsMemoryBufferOwner = true;
+}
+
+File& File::operator=(File&& rhs) noexcept
+{
+    Close();
+
+    m_Name               = std::move(rhs.m_Name);
+    m_Type               = rhs.m_Type;
+    m_Handle             = rhs.m_Handle;
+    m_RWOffset           = rhs.m_RWOffset;
+    m_FileSize           = rhs.m_FileSize;
+    m_ReservedSize       = rhs.m_ReservedSize;
+    m_Granularity        = rhs.m_Granularity;
+    m_IsMemoryBufferOwner = rhs.m_IsMemoryBufferOwner;
+
+    rhs.m_Type               = FileType::Undefined;
+    rhs.m_Handle             = nullptr;
+    rhs.m_RWOffset           = 0;
+    rhs.m_FileSize           = 0;
+    rhs.m_ReservedSize       = 0;
+    rhs.m_Granularity        = 0;
+    rhs.m_IsMemoryBufferOwner = true;
+
+    return *this;
+}
+
 File::~File()
 {
     Close();
 }
 
-File File::OpenRead(StringView FileName)
+File File::sOpenRead(StringView fileName)
 {
-    return OpenFromFileSystem(FileName, FILE_TYPE_READ_FILE_SYSTEM);
+    return sOpenFromFileSystem(fileName, FileType::ReadFS);
 }
 
-File File::OpenWrite(StringView FileName)
+File File::sOpenWrite(StringView fileName)
 {
-    return OpenFromFileSystem(FileName, FILE_TYPE_WRITE_FILE_SYSTEM);
+    return sOpenFromFileSystem(fileName, FileType::WriteFS);
 }
 
-File File::OpenAppend(StringView FileName)
+File File::sOpenAppend(StringView fileName)
 {
-    return OpenFromFileSystem(FileName, FILE_TYPE_APPEND_FILE_SYSTEM);
+    return sOpenFromFileSystem(fileName, FileType::AppendFS);
 }
 
-File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
+File File::sOpenFromFileSystem(StringView fileName, FileType type)
 {
     File f;
 
-    f.m_Name = PathUtils::FixPath(FileName);
+    f.m_Name = PathUtils::sFixPath(fileName);
     if (f.m_Name.Length() && f.m_Name[f.m_Name.Length() - 1] == '/')
     {
-        LOG("Invalid file name {}\n", FileName);
+        LOG("Invalid file name {}\n", fileName);
         return {};
     }
 
-    if (Type == FILE_TYPE_WRITE_FILE_SYSTEM || Type == FILE_TYPE_APPEND_FILE_SYSTEM)
+    if (type == FileType::WriteFS || type == FileType::AppendFS)
     {
         Core::CreateDirectory(f.m_Name, true);
     }
 
     const char* fopen_mode = "";
 
-    switch (Type)
+    switch (type)
     {
-        case FILE_TYPE_READ_FILE_SYSTEM:
+        case FileType::ReadFS:
             fopen_mode = "rb";
             break;
-        case FILE_TYPE_WRITE_FILE_SYSTEM:
+        case FileType::WriteFS:
             fopen_mode = "wb";
             break;
-        case FILE_TYPE_APPEND_FILE_SYSTEM:
+        case FileType::AppendFS:
             fopen_mode = "ab";
             break;
         default:
@@ -142,9 +185,9 @@ File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
         return {};
     }
 
-    f.m_Type = Type;
+    f.m_Type = type;
 
-    if (f.m_Type == FILE_TYPE_READ_FILE_SYSTEM)
+    if (f.m_Type == FileType::ReadFS)
     {
         f.m_FileSize = ~0ull;
     }
@@ -154,7 +197,7 @@ File File::OpenFromFileSystem(StringView FileName, FILE_TYPE Type)
 
 void File::Close()
 {
-    if (m_Type == FILE_TYPE_UNDEFINED)
+    if (m_Type == FileType::Undefined)
     {
         return;
     }
@@ -165,22 +208,22 @@ void File::Close()
     }
     else
     {
-        if (m_bMemoryBufferOwner)
+        if (m_IsMemoryBufferOwner)
         {
-            Free(m_pHeapPtr);
+            sFree(m_pHeapPtr);
         }
     }
 
     m_Name.Clear();
-    m_Type               = FILE_TYPE_UNDEFINED;
+    m_Type               = FileType::Undefined;
     m_RWOffset           = 0;
     m_FileSize           = 0;
     m_Handle             = nullptr;
     m_ReservedSize       = 0;
-    m_bMemoryBufferOwner = true;
+    m_IsMemoryBufferOwner = true;
 }
 
-size_t File::Read(void* pBuffer, size_t SizeInBytes)
+size_t File::Read(void* data, size_t sizeInBytes)
 {
     size_t bytesToRead{};
 
@@ -192,24 +235,24 @@ size_t File::Read(void* pBuffer, size_t SizeInBytes)
     {
         if (IsFileSystem())
         {
-            bytesToRead = fread(pBuffer, 1, SizeInBytes, m_Handle);
+            bytesToRead = fread(data, 1, sizeInBytes, m_Handle);
         }
         else
         {
-            bytesToRead = std::min(SizeInBytes, m_FileSize - m_RWOffset);
-            Core::Memcpy(pBuffer, m_pHeapPtr + m_RWOffset, bytesToRead);
+            bytesToRead = std::min(sizeInBytes, m_FileSize - m_RWOffset);
+            Core::Memcpy(data, m_pHeapPtr + m_RWOffset, bytesToRead);
         }
     }
 
-    SizeInBytes -= bytesToRead;
-    if (SizeInBytes)
-        Core::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
+    sizeInBytes -= bytesToRead;
+    if (sizeInBytes)
+        Core::ZeroMem((uint8_t*)data + bytesToRead, sizeInBytes);
 
     m_RWOffset += bytesToRead;
     return bytesToRead;
 }
 
-size_t File::Write(const void* pBuffer, size_t SizeInBytes)
+size_t File::Write(const void* data, size_t sizeInBytes)
 {
     size_t bytesToWrite{};
 
@@ -221,24 +264,24 @@ size_t File::Write(const void* pBuffer, size_t SizeInBytes)
 
     if (IsFileSystem())
     {
-        bytesToWrite = fwrite(pBuffer, 1, SizeInBytes, m_Handle);
+        bytesToWrite = fwrite(data, 1, sizeInBytes, m_Handle);
     }
     else
     {
-        size_t requiredSize = m_RWOffset + SizeInBytes;
+        size_t requiredSize = m_RWOffset + sizeInBytes;
         if (requiredSize > m_ReservedSize)
         {
-            if (!m_bMemoryBufferOwner)
+            if (!m_IsMemoryBufferOwner)
             {
                 LOG("Failed to write {} (buffer overflowed)\n", m_Name);
                 return 0;
             }
             const int mod  = requiredSize % m_Granularity;
             m_ReservedSize = mod ? requiredSize + m_Granularity - mod : requiredSize;
-            m_pHeapPtr     = (byte*)Realloc(m_pHeapPtr, m_ReservedSize);
+            m_pHeapPtr     = (byte*)sRealloc(m_pHeapPtr, m_ReservedSize);
         }
-        Core::Memcpy(m_pHeapPtr + m_RWOffset, pBuffer, SizeInBytes);
-        bytesToWrite = SizeInBytes;
+        Core::Memcpy(m_pHeapPtr + m_RWOffset, data, sizeInBytes);
+        bytesToWrite = sizeInBytes;
     }
 
     m_RWOffset += bytesToWrite;
@@ -246,7 +289,7 @@ size_t File::Write(const void* pBuffer, size_t SizeInBytes)
     return bytesToWrite;
 }
 
-char* File::Gets(char* pBuffer, size_t SizeInBytes)
+char* File::Gets(char* str, size_t sizeInBytes)
 {
     if (!IsReadable())
     {
@@ -256,25 +299,25 @@ char* File::Gets(char* pBuffer, size_t SizeInBytes)
 
     if (IsFileSystem())
     {
-        pBuffer = fgets(pBuffer, SizeInBytes, m_Handle);
+        str = fgets(str, sizeInBytes, m_Handle);
 
         m_RWOffset = ftell(m_Handle);
     }
     else
     {
-        if (SizeInBytes == 0 || m_RWOffset >= m_FileSize)
+        if (sizeInBytes == 0 || m_RWOffset >= m_FileSize)
         {
             return nullptr;
         }
 
-        size_t maxChars = SizeInBytes - 1;
+        size_t maxChars = sizeInBytes - 1;
         if (m_RWOffset + maxChars > m_FileSize)
         {
             maxChars = m_FileSize - m_RWOffset;
         }
 
         char *memoryPointer, *memory = (char*)&m_pHeapPtr[m_RWOffset];
-        char* stringPointer = pBuffer;
+        char* stringPointer = str;
 
         for (memoryPointer = memory; memoryPointer < &memory[maxChars]; memoryPointer++)
         {
@@ -290,7 +333,7 @@ char* File::Gets(char* pBuffer, size_t SizeInBytes)
         m_RWOffset += memoryPointer - memory;
     }
 
-    return pBuffer;
+    return str;
 }
 
 void File::Flush()
@@ -308,12 +351,12 @@ size_t File::GetOffset() const
 
 #define HasFileSize() (m_FileSize != ~0ull)
 
-bool File::SeekSet(int32_t Offset)
+bool File::SeekSet(int32_t offset)
 {
     if (!IsOpened())
         return false;
 
-    m_RWOffset = std::max(int32_t{0}, Offset);
+    m_RWOffset = std::max(int32_t{0}, offset);
 
     if (IsFileSystem())
     {
@@ -337,7 +380,7 @@ bool File::SeekSet(int32_t Offset)
     }
 }
 
-bool File::SeekCur(int32_t Offset)
+bool File::SeekCur(int32_t offset)
 {
     if (!IsOpened())
         return false;
@@ -346,7 +389,7 @@ bool File::SeekCur(int32_t Offset)
     {
         bool r;
 
-        if (Offset < 0 && -Offset > m_RWOffset)
+        if (offset < 0 && -offset > m_RWOffset)
         {
             // Rewind
             m_RWOffset = 0;
@@ -357,15 +400,15 @@ bool File::SeekCur(int32_t Offset)
         {
             if (HasFileSize())
             {
-                if (m_RWOffset + Offset > m_FileSize)
+                if (m_RWOffset + offset > m_FileSize)
                 {
-                    Offset = m_FileSize - m_RWOffset;
+                    offset = m_FileSize - m_RWOffset;
                 }
             }
 
-            m_RWOffset += Offset;
+            m_RWOffset += offset;
 
-            r = fseek(m_Handle, Offset, SEEK_CUR) == 0;
+            r = fseek(m_Handle, offset, SEEK_CUR) == 0;
         }
 
         if (!r)
@@ -377,22 +420,22 @@ bool File::SeekCur(int32_t Offset)
     }
     else
     {
-        if (Offset < 0 && -Offset > m_RWOffset)
+        if (offset < 0 && -offset > m_RWOffset)
         {
             m_RWOffset = 0;
         }
         else
         {
             size_t prevOffset = m_RWOffset;
-            m_RWOffset += Offset;
-            if (m_RWOffset > m_FileSize || (Offset > 0 && prevOffset > m_RWOffset))
+            m_RWOffset += offset;
+            if (m_RWOffset > m_FileSize || (offset > 0 && prevOffset > m_RWOffset))
                 m_RWOffset = m_FileSize;
         }
         return true;
     }
 }
 
-bool File::SeekEnd(int32_t Offset)
+bool File::SeekEnd(int32_t offset)
 {
     if (!IsOpened())
         return false;
@@ -401,9 +444,9 @@ bool File::SeekEnd(int32_t Offset)
     {
         bool r;
 
-        if (Offset >= 0)
+        if (offset >= 0)
         {
-            Offset = 0;
+            offset = 0;
 
             r = fseek(m_Handle, 0, SEEK_END) == 0;
 
@@ -421,7 +464,7 @@ bool File::SeekEnd(int32_t Offset)
             return r;
         }
 
-        if (HasFileSize() && -Offset >= m_FileSize)
+        if (HasFileSize() && -offset >= m_FileSize)
         {
             // Rewind
             m_RWOffset = 0;
@@ -433,19 +476,19 @@ bool File::SeekEnd(int32_t Offset)
             return r;
         }
 
-        r          = fseek(m_Handle, Offset, SEEK_END) == 0;
+        r          = fseek(m_Handle, offset, SEEK_END) == 0;
         m_RWOffset = ftell(m_Handle);
 
         return r;
     }
     else
     {
-        if (Offset >= 0)
+        if (offset >= 0)
             m_RWOffset = m_FileSize;
-        else if (-Offset > m_FileSize)
+        else if (-offset > m_FileSize)
             m_RWOffset = 0;
         else
-            m_RWOffset = m_FileSize + Offset;
+            m_RWOffset = m_FileSize + offset;
         return true;
     }
 }
@@ -478,112 +521,96 @@ bool File::IsEOF() const
         return m_RWOffset >= m_FileSize;
 }
 
-void* File::Alloc(size_t SizeInBytes)
+void* File::sAlloc(size_t sizeInBytes)
 {
-    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(sizeInBytes, 16);
 }
 
-void* File::Realloc(void* pMemory, size_t SizeInBytes)
+void* File::sRealloc(void* memory, size_t sizeInBytes)
 {
-    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
+    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(memory, sizeInBytes, 16);
 }
 
-void File::Free(void* pMemory)
+void File::sFree(void* memory)
 {
-    Core::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
+    Core::GetHeapAllocator<HEAP_MISC>().Free(memory);
 }
 
-File File::OpenRead(StringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
+File File::sOpenRead(StringView fileName, const void* memory, size_t sizeInBytes)
 {
     File f;
 
-    f.m_Name               = FileName;
-    f.m_Type               = FILE_TYPE_READ_MEMORY;
-    f.m_pHeapPtr           = reinterpret_cast<byte*>(const_cast<void*>(pMemoryBuffer));
-    f.m_FileSize           = SizeInBytes;
-    f.m_ReservedSize       = SizeInBytes;
-    f.m_bMemoryBufferOwner = false;
+    f.m_Name               = fileName;
+    f.m_Type               = FileType::ReadMemory;
+    f.m_pHeapPtr           = reinterpret_cast<byte*>(const_cast<void*>(memory));
+    f.m_FileSize           = sizeInBytes;
+    f.m_ReservedSize       = sizeInBytes;
+    f.m_IsMemoryBufferOwner = false;
 
     return f;
 }
-#if 0
-File File::OpenRead(StringView FileName, BlobRef Blob)
+
+File File::sOpenRead(StringView fileName, Archive const& archive)
 {
     File f;
 
-    f.m_Name = FileName;
-    f.m_Type = FILE_TYPE_READ_MEMORY;
-    f.m_pHeapPtr = (byte*)Alloc(Blob.Size());
-    f.m_FileSize = Blob.Size();
-    f.m_ReservedSize = Blob.Size();
-    f.m_bMemoryBufferOwner = true;
-
-    Core::Memcpy(f.m_pHeapPtr, Blob.GetData(), Blob.Size());
-
-    return f;
-}
-#endif
-File File::OpenRead(StringView FileName, Archive const& Archive)
-{
-    File f;
-
-    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
+    if (!archive.ExtractFileToHeapMemory(fileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
     {
-        LOG("Couldn't open {}\n", FileName);
+        LOG("Couldn't open {}\n", fileName);
         return {};
     }
 
-    f.m_Name               = FileName;
-    f.m_Type               = FILE_TYPE_READ_MEMORY;
+    f.m_Name               = fileName;
+    f.m_Type               = FileType::ReadMemory;
     f.m_ReservedSize       = f.m_FileSize;
-    f.m_bMemoryBufferOwner = true;
+    f.m_IsMemoryBufferOwner = true;
 
     return f;
 }
 
-File File::OpenRead(FileHandle FileHandle, Archive const& Archive)
+File File::sOpenRead(FileHandle fileHandle, Archive const& archive)
 {
     File f;
 
-    Archive.GetFileName(FileHandle, f.m_Name);
+    archive.GetFileName(fileHandle, f.m_Name);
 
-    if (!Archive.ExtractFileToHeapMemory(FileHandle, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
+    if (!archive.ExtractFileToHeapMemory(fileHandle, (void**)&f.m_pHeapPtr, &f.m_FileSize, Core::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", f.m_Name);
         return {};
     }
 
-    f.m_Type               = FILE_TYPE_READ_MEMORY;
+    f.m_Type               = FileType::ReadMemory;
     f.m_ReservedSize       = f.m_FileSize;
-    f.m_bMemoryBufferOwner = true;
+    f.m_IsMemoryBufferOwner = true;
 
     return f;
 }
 
-File File::OpenWrite(StringView StreamName, void* pMemoryBuffer, size_t SizeInBytes)
+File File::sOpenWrite(StringView streamName, void* memory, size_t sizeInBytes)
 {
     File f;
 
-    f.m_Name               = StreamName;
-    f.m_Type               = FILE_TYPE_WRITE_MEMORY;
-    f.m_pHeapPtr           = reinterpret_cast<byte*>(pMemoryBuffer);
+    f.m_Name               = streamName;
+    f.m_Type               = FileType::WriteMemory;
+    f.m_pHeapPtr           = reinterpret_cast<byte*>(memory);
     f.m_FileSize           = 0;
-    f.m_ReservedSize       = SizeInBytes;
-    f.m_bMemoryBufferOwner = false;
+    f.m_ReservedSize       = sizeInBytes;
+    f.m_IsMemoryBufferOwner = false;
 
     return f;
 }
 
-File File::OpenWriteToMemory(StringView StreamName, size_t ReservedSize)
+File File::sOpenWriteToMemory(StringView streamName, size_t reservedSize)
 {
     File f;
 
-    f.m_Name               = StreamName;
-    f.m_Type               = FILE_TYPE_WRITE_MEMORY;
-    f.m_pHeapPtr           = (byte*)Alloc(ReservedSize);
+    f.m_Name               = streamName;
+    f.m_Type               = FileType::WriteMemory;
+    f.m_pHeapPtr           = (byte*)sAlloc(reservedSize);
     f.m_FileSize           = 0;
-    f.m_ReservedSize       = ReservedSize;
-    f.m_bMemoryBufferOwner = true;
+    f.m_ReservedSize       = reservedSize;
+    f.m_IsMemoryBufferOwner = true;
 
     return f;
 }
@@ -600,20 +627,33 @@ void* File::GetHeapPtr()
     return m_pHeapPtr;
 }
 
+Archive::Archive(Archive&& rhs) noexcept :
+    m_Handle(rhs.m_Handle)
+{
+    rhs.m_Handle = nullptr;
+}
+
+Archive& Archive::operator=(Archive&& rhs) noexcept
+{
+    Close();
+    Core::Swap(m_Handle, rhs.m_Handle);
+    return *this;
+}
+
 Archive::~Archive()
 {
     Close();
 }
 
-Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
+Archive Archive::sOpen(StringView archiveName, bool isResourcePack)
 {
     mz_zip_archive arch;
     mz_uint64      fileStartOffset = 0;
     mz_uint64      archiveSize     = 0;
 
-    if (bResourcePack)
+    if (isResourcePack)
     {
-        File f = File::OpenRead(ArchiveName);
+        File f = File::sOpenRead(archiveName);
         if (!f)
         {
             return {};
@@ -623,7 +663,7 @@ Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
         const char* MAGIC = "ARESPACK";
         if (std::memcmp(&magic, MAGIC, sizeof(uint64_t)) != 0)
         {
-            LOG("Invalid file format {}\n", ArchiveName);
+            LOG("Invalid file format {}\n", archiveName);
             return {};
         }
 
@@ -633,10 +673,10 @@ Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
 
     Core::ZeroMem(&arch, sizeof(arch));
 
-    mz_bool status = mz_zip_reader_init_file_v2(&arch, ArchiveName.IsNullTerminated() ? ArchiveName.Begin() : String(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
+    mz_bool status = mz_zip_reader_init_file_v2(&arch, archiveName.IsNullTerminated() ? archiveName.Begin() : String(archiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
     {
-        LOG("Couldn't open archive {}\n", ArchiveName);
+        LOG("Couldn't open archive {}\n", archiveName);
         return {};
     }
 
@@ -650,13 +690,13 @@ Archive Archive::Open(StringView ArchiveName, bool bResourcePack)
     return archive;
 }
 
-Archive Archive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
+Archive Archive::sOpenFromMemory(const void* memory, size_t sizeInBytes)
 {
     mz_zip_archive arch;
 
     Core::ZeroMem(&arch, sizeof(arch));
 
-    mz_bool status = mz_zip_reader_init_mem(&arch, pMemory, SizeInBytes, 0);
+    mz_bool status = mz_zip_reader_init_mem(&arch, memory, sizeInBytes, 0);
     if (!status)
     {
         LOG("Couldn't open archive from memory\n");
@@ -691,9 +731,9 @@ int Archive::GetNumFiles() const
     return mz_zip_reader_get_num_files((mz_zip_archive*)m_Handle);
 }
 
-FileHandle Archive::LocateFile(StringView FileName) const
+FileHandle Archive::LocateFile(StringView fileName) const
 {
-    return FileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), NULL, 0));
+    return FileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, fileName.IsNullTerminated() ? fileName.Begin() : String(fileName).CStr(), NULL, 0));
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS   20
@@ -701,31 +741,31 @@ FileHandle Archive::LocateFile(StringView FileName) const
 #define MZ_ZIP_CDH_FILENAME_LEN_OFS      28
 #define MZ_ZIP_CENTRAL_DIR_HEADER_SIZE   46
 
-bool Archive::GetFileSize(FileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const
+bool Archive::GetFileSize(FileHandle fileHandle, size_t* compressedSize, size_t* decompressedSize) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(fileHandle));
     if (!p)
     {
         return false;
     }
 
-    if (pCompressedSize)
+    if (compressedSize)
     {
-        *pCompressedSize = MZ_READ_LE32(p + MZ_ZIP_CDH_COMPRESSED_SIZE_OFS);
+        *compressedSize = MZ_READ_LE32(p + MZ_ZIP_CDH_COMPRESSED_SIZE_OFS);
     }
 
-    if (pUncompressedSize)
+    if (decompressedSize)
     {
-        *pUncompressedSize = MZ_READ_LE32(p + MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS);
+        *decompressedSize = MZ_READ_LE32(p + MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS);
     }
     return true;
 }
 
-bool Archive::GetFileName(FileHandle FileHandle, String& FileName) const
+bool Archive::GetFileName(FileHandle fileHandle, String& fileName) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(fileHandle));
     if (!p)
     {
         return false;
@@ -739,26 +779,26 @@ bool Archive::GetFileName(FileHandle FileHandle, String& FileName) const
         return false;
     }
 
-    FileName.Resize(filename_len);
-    Core::Memcpy(FileName.ToPtr(), pFilename, filename_len);
+    fileName.Resize(filename_len);
+    Core::Memcpy(fileName.ToPtr(), pFilename, filename_len);
 
     return true;
 }
 
-bool Archive::ExtractFileToMemory(FileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const
+bool Archive::ExtractFileToMemory(FileHandle fileHandle, void* memory, size_t sizeInBytes) const
 {
     // All checks are processd in mz_zip_reader_extract_to_mem
-    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, int(FileHandle), pMemoryBuffer, SizeInBytes, 0);
+    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, int(fileHandle), memory, sizeInBytes, 0);
 }
 
-bool Archive::ExtractFileToHeapMemory(StringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
+bool Archive::ExtractFileToHeapMemory(StringView fileName, void** heapMemory, size_t* sizeInBytes, MemoryHeap& heap) const
 {
     size_t uncompSize;
 
-    *pHeapMemoryPtr = nullptr;
-    *pSizeInBytes   = 0;
+    *heapMemory = nullptr;
+    *sizeInBytes = 0;
 
-    FileHandle fileHandle = LocateFile(FileName);
+    FileHandle fileHandle = LocateFile(fileName);
     if (!fileHandle)
     {
         return false;
@@ -769,47 +809,47 @@ bool Archive::ExtractFileToHeapMemory(StringView FileName, void** pHeapMemoryPtr
         return false;
     }
 
-    void* pBuf = Heap.Alloc(uncompSize);
+    void* buf = heap.Alloc(uncompSize);
 
-    if (!ExtractFileToMemory(fileHandle, pBuf, uncompSize))
+    if (!ExtractFileToMemory(fileHandle, buf, uncompSize))
     {
-        Heap.Free(pBuf);
+        heap.Free(buf);
         return false;
     }
 
-    *pHeapMemoryPtr = pBuf;
-    *pSizeInBytes   = uncompSize;
+    *heapMemory = buf;
+    *sizeInBytes = uncompSize;
 
     return true;
 }
 
-bool Archive::ExtractFileToHeapMemory(FileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
+bool Archive::ExtractFileToHeapMemory(FileHandle fileHandle, void** heapMemory, size_t* sizeInBytes, MemoryHeap& heap) const
 {
     size_t uncompSize;
 
-    *pHeapMemoryPtr = nullptr;
-    *pSizeInBytes   = 0;
+    *heapMemory = nullptr;
+    *sizeInBytes = 0;
 
-    if (!FileHandle)
+    if (!fileHandle)
     {
         return false;
     }
 
-    if (!GetFileSize(FileHandle, NULL, &uncompSize))
+    if (!GetFileSize(fileHandle, NULL, &uncompSize))
     {
         return false;
     }
 
-    void* pBuf = Heap.Alloc(uncompSize);
+    void* buf = heap.Alloc(uncompSize);
 
-    if (!ExtractFileToMemory(FileHandle, pBuf, uncompSize))
+    if (!ExtractFileToMemory(fileHandle, buf, uncompSize))
     {
-        Heap.Free(pBuf);
+        heap.Free(buf);
         return false;
     }
 
-    *pHeapMemoryPtr = pBuf;
-    *pSizeInBytes   = uncompSize;
+    *heapMemory = buf;
+    *sizeInBytes = uncompSize;
 
     return true;
 }
@@ -817,14 +857,14 @@ bool Archive::ExtractFileToHeapMemory(FileHandle FileHandle, void** pHeapMemoryP
 namespace Core
 {
 
-void CreateDirectory(StringView Directory, bool bFileName)
+void CreateDirectory(StringView directory, bool isFileName)
 {
-    size_t len = Directory.Length();
+    size_t len = directory.Length();
     if (!len)
     {
         return;
     }
-    const char* dir    = Directory.ToPtr();
+    const char* dir    = directory.ToPtr();
     char*       tmpStr = (char*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(len + 1);
     Core::Memcpy(tmpStr, dir, len + 1);
     char* p = tmpStr;
@@ -835,7 +875,7 @@ void CreateDirectory(StringView Directory, bool bFileName)
         dir += 3;
     }
 #endif
-    for (; dir < Directory.End(); p++, dir++)
+    for (; dir < directory.End(); p++, dir++)
     {
         if (IsPathSeparator(*p))
         {
@@ -848,7 +888,7 @@ void CreateDirectory(StringView Directory, bool bFileName)
             *p = *dir;
         }
     }
-    if (!bFileName)
+    if (!isFileName)
     {
 #ifdef HK_COMPILER_MSVC
         mkdir(tmpStr);
@@ -859,14 +899,14 @@ void CreateDirectory(StringView Directory, bool bFileName)
     Core::GetHeapAllocator<HEAP_TEMP>().Free(tmpStr);
 }
 
-bool IsFileExists(StringView FileName)
+bool IsFileExists(StringView fileName)
 {
-    return access(PathUtils::FixSeparator(FileName).CStr(), 0) == 0;
+    return access(PathUtils::sFixSeparator(fileName).CStr(), 0) == 0;
 }
 
-void RemoveFile(StringView FileName)
+void RemoveFile(StringView fileName)
 {
-    String s = PathUtils::FixPath(FileName);
+    String s = PathUtils::sFixPath(fileName);
 #if defined HK_OS_LINUX
     ::remove(s.CStr());
 #elif defined HK_OS_WIN32
@@ -885,10 +925,10 @@ void RemoveFile(StringView FileName)
 }
 
 #ifdef HK_OS_LINUX
-void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
+void TraverseDirectory(StringView path, bool recursive, STraverseDirectoryCB callback)
 {
     String fn;
-    DIR*    dir = opendir(Path.IsNullTerminated() ? Path.Begin() : String(Path).CStr());
+    DIR*    dir = opendir(path.IsNullTerminated() ? path.Begin() : String(path).CStr());
     if (dir)
     {
         while (1)
@@ -899,9 +939,9 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
                 break;
             }
 
-            fn      = Path;
-            int len = Path.Length();
-            if (len > 1 && Path[len - 1] != '/')
+            fn      = path;
+            int len = path.Length();
+            if (len > 1 && path[len - 1] != '/')
             {
                 fn += "/";
             }
@@ -912,19 +952,19 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
 
             if (S_ISDIR(statInfo.st_mode))
             {
-                if (bSubDirs)
+                if (recursive)
                 {
                     if (!strcmp(".", entry->d_name) || !strcmp("..", entry->d_name))
                     {
                         continue;
                     }
-                    TraverseDirectory(fn, bSubDirs, Callback);
+                    TraverseDirectory(fn, recursive, callback);
                 }
-                Callback(fn, true);
+                callback(fn, true);
             }
             else
             {
-                Callback(Path / entry->d_name, false);
+                callback(path / entry->d_name, false);
             }
         }
         closedir(dir);
@@ -933,19 +973,19 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
 #endif
 
 #ifdef HK_OS_WIN32
-void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
+void TraverseDirectory(StringView path, bool recursive, STraverseDirectoryCB callback)
 {
     String fn;
 
     HANDLE           fh;
     WIN32_FIND_DATAA fd;
 
-    if ((fh = FindFirstFileA((Path + "/*.*").CStr(), &fd)) != INVALID_HANDLE_VALUE)
+    if ((fh = FindFirstFileA((path + "/*.*").CStr(), &fd)) != INVALID_HANDLE_VALUE)
     {
         do {
-            fn      = Path;
-            int len = (int)Path.Length();
-            if (len > 1 && Path[len - 1] != '/')
+            fn      = path;
+            int len = (int)path.Length();
+            if (len > 1 && path[len - 1] != '/')
             {
                 fn += "/";
             }
@@ -953,19 +993,19 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
 
             if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             {
-                if (bSubDirs)
+                if (recursive)
                 {
                     if (!strcmp(".", fd.cFileName) || !strcmp("..", fd.cFileName))
                     {
                         continue;
                     }
-                    TraverseDirectory(fn, bSubDirs, Callback);
+                    TraverseDirectory(fn, recursive, callback);
                 }
-                Callback(fn, true);
+                callback(fn, true);
             }
             else
             {
-                Callback(Path / fd.cFileName, false);
+                callback(path / fd.cFileName, false);
             }
         } while (FindNextFileA(fh, &fd));
 
@@ -974,10 +1014,10 @@ void TraverseDirectory(StringView Path, bool bSubDirs, STraverseDirectoryCB Call
 }
 #endif
 
-bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
+bool WriteResourcePack(StringView sourcePath, StringView resultFile)
 {
-    String path   = PathUtils::FixSeparator(SourcePath);
-    String result = PathUtils::FixSeparator(ResultFile);
+    String path   = PathUtils::sFixSeparator(sourcePath);
+    String result = PathUtils::sFixSeparator(resultFile);
 
     LOG("==== WriteResourcePack ====\n"
         "Source '{}'\n"
@@ -1001,26 +1041,26 @@ bool WriteResourcePack(StringView SourcePath, StringView ResultFile)
     if (mz_zip_writer_init_cfile(&zip, file, 0))
     {
         TraverseDirectory(path, true,
-                          [&zip, &path](StringView FileName, bool bIsDirectory)
+                          [&zip, &path](StringView fileName, bool bIsDirectory)
                           {
                               if (bIsDirectory)
                               {
                                   return;
                               }
 
-                              if (PathUtils::CompareExt(FileName, ".resources", true))
+                              if (PathUtils::sCompareExt(fileName, ".resources", true))
                               {
                                   return;
                               }
 
-                              String fn(FileName.TruncateHead(path.Length() + 1));
+                              String fn(fileName.TruncateHead(path.Length() + 1));
 
                               LOG("Writing '{}'\n", fn);
 
-                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
+                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), fileName.IsNullTerminated() ? fileName.Begin() : String(fileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
                               if (!status)
                               {
-                                  LOG("Failed to archive {}\n", FileName);
+                                  LOG("Failed to archive {}\n", fileName);
                               }
                           });
 

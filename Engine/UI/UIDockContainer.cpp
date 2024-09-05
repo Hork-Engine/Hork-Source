@@ -385,7 +385,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
             canvas.LineTo(placement.PolygonVerts[1]);
             canvas.LineTo(placement.PolygonVerts[2]);
             canvas.LineTo(placement.PolygonVerts[3]);
-            Color4 fillColor = Color4::Orange();
+            Color4 fillColor = Color4::sOrange();
             fillColor.A      = 0.2f;
             canvas.FillColor(fillColor);
             canvas.Fill();
@@ -397,7 +397,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
             canvas.LineTo(placement.PolygonVerts[3]);
             canvas.LineTo(placement.PolygonVerts[0]);
             canvas.StrokeWidth(2);
-            canvas.StrokeColor(Color4::Orange());
+            canvas.StrokeColor(Color4::sOrange());
             canvas.Stroke();
             #else
 
@@ -496,7 +496,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
             bmins += m_Geometry.PaddedMins;
             bmaxs += m_Geometry.PaddedMins;
 
-            canvas.DrawRectFilled(bmins, bmaxs, Color4::Orange());
+            canvas.DrawRectFilled(bmins, bmaxs, Color4::sOrange());
         }
     }
 }

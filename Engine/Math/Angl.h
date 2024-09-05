@@ -70,13 +70,13 @@ struct Angl
 
     float& operator[](int index)
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Pitch)[index];
     }
 
     float const& operator[](int index) const
     {
-        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < sNumComponents(), "Index out of range");
         return (&Pitch)[index];
     }
 
@@ -185,7 +185,7 @@ struct Angl
                         0.0f, 0.0f, 0.0f, 1.0f);
     }
 
-    static float Normalize360(float angle)
+    static float sNormalize360(float angle)
     {
         //return (360.0f/65536) * (static_cast< int >(angle*(65536/360.0f)) & 65535);
         float norm = Math::FMod(angle, 360.0f);
@@ -196,9 +196,9 @@ struct Angl
         return norm;
     }
 
-    static float Normalize180(float angle)
+    static float sNormalize180(float angle)
     {
-        float norm = Normalize360(angle);
+        float norm = sNormalize360(angle);
         if (norm > 180.0f)
         {
             norm -= 360.0f;
@@ -208,30 +208,30 @@ struct Angl
 
     void Normalize360Self()
     {
-        Pitch = Normalize360(Pitch);
-        Yaw   = Normalize360(Yaw);
-        Roll  = Normalize360(Roll);
+        Pitch = sNormalize360(Pitch);
+        Yaw   = sNormalize360(Yaw);
+        Roll  = sNormalize360(Roll);
     }
 
     Angl Normalized360() const
     {
-        return Angl(Normalize360(Pitch),
-                    Normalize360(Yaw),
-                    Normalize360(Roll));
+        return Angl(sNormalize360(Pitch),
+                    sNormalize360(Yaw),
+                    sNormalize360(Roll));
     }
 
     void Normalize180Self()
     {
-        Pitch = Normalize180(Pitch);
-        Yaw   = Normalize180(Yaw);
-        Roll  = Normalize180(Roll);
+        Pitch = sNormalize180(Pitch);
+        Yaw   = sNormalize180(Yaw);
+        Roll  = sNormalize180(Roll);
     }
 
     Angl Normalized180() const
     {
-        return Angl(Normalize180(Pitch),
-                    Normalize180(Yaw),
-                    Normalize180(Roll));
+        return Angl(sNormalize180(Pitch),
+                    sNormalize180(Yaw),
+                    sNormalize180(Roll));
     }
 
     Angl Delta(Angl const& rhs) const
@@ -239,22 +239,22 @@ struct Angl
         return (*this - rhs).Normalized180();
     }
 
-    static byte PackByte(float angle)
+    static byte sPackByte(float angle)
     {
         return Math::ToIntFast(angle * (256.0f / 360.0f)) & 255;
     }
 
-    static uint16_t PackShort(float angle)
+    static uint16_t sPackShort(float angle)
     {
         return Math::ToIntFast(angle * (65536.0f / 360.0f)) & 65535;
     }
 
-    static float UnpackByte(byte angle)
+    static float sUnpackByte(byte angle)
     {
         return angle * (360.0f / 256.0f);
     }
 
-    static float UnpackShort(uint16_t angle)
+    static float sUnpackShort(uint16_t angle)
     {
         return angle * (360.0f / 65536.0f);
     }
@@ -275,9 +275,9 @@ struct Angl
     }
 
     // Static methods
-    static constexpr int NumComponents() { return 3; }
+    static constexpr int sNumComponents() { return 3; }
 
-    static Angl const& Zero()
+    static Angl const& sZero()
     {
         static constexpr Angl ZeroAngle(0.0f, 0.0f, 0.0f);
         return ZeroAngle;

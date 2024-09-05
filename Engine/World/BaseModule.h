@@ -38,7 +38,7 @@ template <typename T>
 class BaseModule : public Noncopyable
 {
 public:
-    static void Initialize()
+    static void sInitialize()
     {
         HK_ASSERT(!m_pModule);
         if (m_pModule)
@@ -47,14 +47,14 @@ public:
         m_pModule = new T;
     }
 
-    static void Deinitialize()
+    static void sDeinitialize()
     {
         BaseModule* base = m_pModule;
         delete base;
         m_pModule = nullptr;
     }
 
-    static T& Get()
+    static T& sGet()
     {
         return *m_pModule;
     }

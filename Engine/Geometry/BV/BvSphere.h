@@ -215,7 +215,7 @@ struct BvSphere
 
     void AddPoint(Float3 const& point)
     {
-        if (Center == Float3::Zero() && Radius == 0.0f)
+        if (Center == Float3::sZero() && Radius == 0.0f)
         {
             Center = point;
         }

@@ -71,17 +71,17 @@ void UIViewport::OnKeyEvent(KeyEvent const& event)
 {
     VirtualKey virtualKey = VirtualKey(event.Key);
     if (event.Action == InputAction::Pressed)
-        GameApplication::GetInputSystem().SetKeyState(virtualKey, InputEvent::OnPress, event.ModMask);
+        GameApplication::sGetInputSystem().SetKeyState(virtualKey, InputEvent::OnPress, event.ModMask);
     else if (event.Action == InputAction::Released)
-        GameApplication::GetInputSystem().SetKeyState(virtualKey, InputEvent::OnRelease, event.ModMask);
+        GameApplication::sGetInputSystem().SetKeyState(virtualKey, InputEvent::OnRelease, event.ModMask);
 }
 
 void UIViewport::OnMouseButtonEvent(MouseButtonEvent const& event)
 {
     if (event.Action == InputAction::Pressed)
-        GameApplication::GetInputSystem().SetKeyState(event.Button, InputEvent::OnPress, event.ModMask);
+        GameApplication::sGetInputSystem().SetKeyState(event.Button, InputEvent::OnPress, event.ModMask);
     else if (event.Action == InputAction::Released)
-        GameApplication::GetInputSystem().SetKeyState(event.Button, InputEvent::OnRelease, event.ModMask);
+        GameApplication::sGetInputSystem().SetKeyState(event.Button, InputEvent::OnRelease, event.ModMask);
 }
 
 void UIViewport::OnMouseWheelEvent(MouseWheelEvent const& event)
@@ -90,38 +90,38 @@ void UIViewport::OnMouseWheelEvent(MouseWheelEvent const& event)
 
 void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
 {
-    GameApplication::GetInputSystem().SetMouseAxisState(event.X, event.Y);
+    GameApplication::sGetInputSystem().SetMouseAxisState(event.X, event.Y);
 
     UpdateViewSize();
 
     Float2 const& pos  = m_Geometry.Mins;
     Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
 
-    //GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
-    GameApplication::GetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
+    //GameApplication::sGetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
+    GameApplication::sGetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
 }
 
 void UIViewport::OnGamepadButtonEvent(GamepadKeyEvent const& event)
 {
     if (event.Action == InputAction::Pressed)
-        GameApplication::GetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnPress, PlayerController(event.AssignedPlayerIndex));
+        GameApplication::sGetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnPress, PlayerController(event.AssignedPlayerIndex));
     else if (event.Action == InputAction::Released)
-        GameApplication::GetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnRelease, PlayerController(event.AssignedPlayerIndex));
+        GameApplication::sGetInputSystem().SetGamepadButtonState(event.Key, InputEvent::OnRelease, PlayerController(event.AssignedPlayerIndex));
 }
 
 void UIViewport::OnGamepadAxisMotionEvent(GamepadAxisMotionEvent const& event)
 {
-    GameApplication::GetInputSystem().SetGamepadAxis(event.Axis, event.Value, PlayerController(event.AssignedPlayerIndex));
+    GameApplication::sGetInputSystem().SetGamepadAxis(event.Axis, event.Value, PlayerController(event.AssignedPlayerIndex));
 }
 
 void UIViewport::OnCharEvent(CharEvent const& event)
 {
-    GameApplication::GetInputSystem().AddCharacter(event.UnicodeCharacter, event.ModMask);
+    GameApplication::sGetInputSystem().AddCharacter(event.UnicodeCharacter, event.ModMask);
 }
 
 void UIViewport::OnFocusLost()
 {
-    GameApplication::GetInputSystem().ResetKeyState();
+    GameApplication::sGetInputSystem().ResetKeyState();
 }
 
 void UIViewport::OnFocusReceive()
@@ -140,7 +140,7 @@ void UIViewport::UpdateViewSize() // TODO: PostGeometryUpdate?
 void UIViewport::Clear(Canvas& canvas)
 {
     CANVAS_COMPOSITE currentComposite = canvas.CompositeOperation(Composite);
-    canvas.DrawRectFilled(m_Geometry.Mins, m_Geometry.Maxs, Color4::Black());
+    canvas.DrawRectFilled(m_Geometry.Mins, m_Geometry.Maxs, Color4::sBlack());
     canvas.CompositeOperation(currentComposite);
 }
 
@@ -185,7 +185,7 @@ void UIViewport::Draw(Canvas& canvas)
     camera->SetViewportPosition(m_Geometry.Mins);
     camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)}, aspectScale);
 
-    GameApplication::GetFrameLoop().RegisterView(m_WorldRenderView);
+    GameApplication::sGetFrameLoop().RegisterView(m_WorldRenderView);
 
     m_WorldRenderView->AcquireRenderTarget();
 

@@ -55,14 +55,14 @@ struct GUID
 
     void Generate();
 
-    bool operator==(GUID const& Rhs) const
+    bool operator==(GUID const& rhs) const
     {
-        return Hi == Rhs.Hi && Lo == Rhs.Lo;
+        return Hi == rhs.Hi && Lo == rhs.Lo;
     }
 
-    bool operator!=(GUID const& Rhs) const
+    bool operator!=(GUID const& rhs) const
     {
-        return Hi != Rhs.Hi || Lo != Rhs.Lo;
+        return Hi != rhs.Hi || Lo != rhs.Lo;
     }
 
     // String conversions
@@ -77,7 +77,7 @@ struct GUID
                               LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
-    GUID& FromString(StringView String);
+    GUID& FromString(StringView string);
 
     const byte* GetBytes() const { return &HiBytes[0]; }
     byte*       GetBytes() { return &HiBytes[0]; }
@@ -88,16 +88,16 @@ struct GUID
     }
 
     // Byte serialization
-    void Write(IBinaryStreamWriteInterface& Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        Stream.WriteUInt64(Hi);
-        Stream.WriteUInt64(Lo);
+        stream.WriteUInt64(Hi);
+        stream.WriteUInt64(Lo);
     }
 
-    void Read(IBinaryStreamReadInterface& Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        Hi = Stream.ReadUInt64();
-        Lo = Stream.ReadUInt64();
+        Hi = stream.ReadUInt64();
+        Lo = stream.ReadUInt64();
     }
 };
 

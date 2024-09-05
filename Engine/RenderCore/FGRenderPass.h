@@ -50,11 +50,11 @@ struct Rect2D
 
 enum COLOR_CLAMP : uint8_t
 {
-    /** Clamping is always off, no matter what the format​ or type​ parameters of the read pixels call. */
+    /// Clamping is always off, no matter what the format​ or type​ parameters of the read pixels call.
     COLOR_CLAMP_OFF,
-    /** Clamping is always on, no matter what the format​ or type​ parameters of the read pixels call. */
+    /// Clamping is always on, no matter what the format​ or type​ parameters of the read pixels call.
     COLOR_CLAMP_ON,
-    /** Clamping is only on if the type of the image being read is a normalized signed or unsigned value. */
+    /// Clamping is only on if the type of the image being read is a normalized signed or unsigned value.
     COLOR_CLAMP_FIXED_ONLY
 };
 

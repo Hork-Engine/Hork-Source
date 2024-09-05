@@ -138,7 +138,7 @@ public:
                                 FontResource() = default;
                                 ~FontResource();
 
-    static UniqueRef<FontResource> Load(IBinaryStreamReadInterface& stream);
+    static UniqueRef<FontResource> sLoad(IBinaryStreamReadInterface& stream);
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 

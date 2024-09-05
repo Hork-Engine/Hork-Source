@@ -405,7 +405,7 @@ public:
         DoRemoveDuplicates<true, Predicate>(predicate);
     }
 
-    /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
+    /// An optimized removing of array element without memory moves. Just swaps last element with removed element.
     HK_FORCEINLINE void RemoveUnsorted(SizeType index)
     {
         Super::erase_unsorted(begin() + index);
@@ -484,7 +484,7 @@ public:
         return Super::erase(first, last);
     }
 
-    /** Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position. */
+    /// Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
     HK_FORCEINLINE Iterator EraseUnsorted(ConstIterator position)
     {
         return Super::erase_unsorted(position);
@@ -722,25 +722,25 @@ public:
         Super::clear(freeOverflow);
     }
 
-    /** Returns the max fixed size, which is the user - supplied BaseCapacity parameter. */
+    /// Returns the max fixed size, which is the user - supplied BaseCapacity parameter.
     HK_FORCEINLINE SizeType MaxSize() const
     {
         return Super::max_size();
     }
 
-    /** Returns true if the fixed space has been fully allocated.Note that if overflow is enabled, the container size can be greater than BaseCapacity but full() could return true because the fixed space may have a recently freed slot. */
+    /// Returns true if the fixed space has been fully allocated.Note that if overflow is enabled, the container size can be greater than BaseCapacity but full() could return true because the fixed space may have a recently freed slot.
     HK_FORCEINLINE bool IsFull() const
     {
         return Super::full();
     }
 
-    /** Returns true if the allocations spilled over into the overflow allocator.Meaningful only if overflow is enabled. */
+    /// Returns true if the allocations spilled over into the overflow allocator.Meaningful only if overflow is enabled.
     HK_FORCEINLINE bool HasOverflowed() const
     {
         return Super::has_overflowed();
     }
 
-    /** Returns the value of the bEnableOverflow template parameter. */
+    /// Returns the value of the bEnableOverflow template parameter.
     HK_FORCEINLINE bool CanOverflow() const
     {
         return Super::can_overflow();
@@ -820,7 +820,7 @@ public:
         DoRemoveDuplicates<true, Predicate>(predicate);
     }
 
-    /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
+    /// An optimized removing of array element without memory moves. Just swaps last element with removed element.
     HK_FORCEINLINE void RemoveUnsorted(SizeType index)
     {
         Super::erase_unsorted(begin() + index);
@@ -1012,7 +1012,7 @@ public:
         return Super::erase(first, last);
     }
 
-    /** Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position. */
+    /// Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
     HK_FORCEINLINE Iterator EraseUnsorted(ConstIterator position)
     {
         return Super::erase_unsorted(position);

@@ -128,39 +128,39 @@ public:
                     FrameLoop(RenderCore::IDevice* renderDevice);
                     ~FrameLoop();
 
-    /** Allocate frame memory */
+    /// Allocate frame memory
     void*           AllocFrameMem(size_t sizeInBytes);
 
     template <typename T>
     T*              AllocFrameMem() { return m_FrameMemory.Allocate<T>(); }
 
-    /** Return frame memory size in bytes */
+    /// Return frame memory size in bytes
     size_t          GetFrameMemorySize() const;
 
-    /** Return used frame memory in bytes */
+    /// Return used frame memory in bytes
     size_t          GetFrameMemoryUsed() const;
 
-    /** Return used frame memory on previous frame, in bytes */
+    /// Return used frame memory on previous frame, in bytes
     size_t          GetFrameMemoryUsedPrev() const;
 
-    /** Return max frame memory usage since application start */
+    /// Return max frame memory usage since application start
     size_t          GetMaxFrameMemoryUsage() const;
 
-    /** Get time stamp at beggining of the frame */
+    /// Get time stamp at beggining of the frame
     int64_t         SysFrameTimeStamp();
 
-    /** Get frame duration in microseconds */
+    /// Get frame duration in microseconds
     int64_t         SysFrameDuration();
 
-    /** Get current frame number */
+    /// Get current frame number
     int             SysFrameNumber() const;
 
     void            SetGenerateInputEvents(bool shouldGenerateInputEvents);
 
-    /** Begin a new frame */
+    /// Begin a new frame
     void            NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swapInterval, class ResourceManager* resourceManager);
 
-    /** Poll runtime events */
+    /// Poll runtime events
     void            PollEvents(IEventListener* listener);
 
     void            RegisterView(WorldRenderView* view);

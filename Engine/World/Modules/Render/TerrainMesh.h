@@ -46,14 +46,14 @@ class TerrainMesh final : public Noncopyable
 public:
     TerrainMesh();
 
-    /** Get vertex buffer in GPU */
+    /// Get vertex buffer in GPU
     RenderCore::IBuffer* GetVertexBufferGPU() const { return m_VertexBufferGPU; }
-    /** Get index buffer in GPU */
+    /// Get index buffer in GPU
     RenderCore::IBuffer* GetIndexBufferGPU() const { return m_IndexBufferGPU; }
 
-    /** Get vertex buffer in CPU. We keep it only for debug draw */
+    /// Get vertex buffer in CPU. We keep it only for debug draw
     TerrainVertex const* GetVertexBufferCPU() const { return m_VertexBuffer.ToPtr(); }
-    /** Get index buffer in CPU. We keep it only for debug draw */
+    /// Get index buffer in CPU. We keep it only for debug draw
     unsigned short const* GetIndexBufferCPU() const { return m_IndexBuffer.ToPtr(); }
 
     int GetVertexCount() const { return m_VertexBuffer.Size(); }
@@ -80,14 +80,14 @@ private:
     TerrainPatch m_InteriorFinestPatch;
     TerrainPatch m_CrackPatch;
 
-    /** Vertex buffer in GPU */
+    /// Vertex buffer in GPU
     Ref<RenderCore::IBuffer> m_VertexBufferGPU;
-    /** Index buffer in GPU */
+    /// Index buffer in GPU
     Ref<RenderCore::IBuffer> m_IndexBufferGPU;
 
-    /** Vertex buffer in CPU. We keep it only for debug draw */
+    /// Vertex buffer in CPU. We keep it only for debug draw
     Vector<TerrainVertex> m_VertexBuffer;
-    /** Index buffer in CPU. We keep it only for debug draw */
+    /// Index buffer in CPU. We keep it only for debug draw
     Vector<unsigned short> m_IndexBuffer;
 };
 

@@ -49,74 +49,69 @@ public:
 
     void MakePageNonResident(uint32_t AbsIndex);
 
-    /** Update indirection table on GPU */
+    /// Update indirection table on GPU
     void CommitPageResidency();
 
-    /** Update LRU time for cached page. Note, page must be in cache and texture must be registered,
-    and AbsIndex must be valid. If not, behavior is undefined */
+    /// Update LRU time for cached page. Note, page must be in cache and texture must be registered,
+    /// and AbsIndex must be valid. If not, behavior is undefined
     void UpdateLRU(uint32_t AbsIndex);
 
-    /** Get page indirection data in format:
-    [xxxxyyyyyyyyyyyy]
-    xxxx - level of detail
-    yyyyyyyyyyyy - position in physical cache
-    */
+    /// Get page indirection data in format:
+    /// [xxxxyyyyyyyyyyyy]
+    /// xxxx - level of detail
+    /// yyyyyyyyyyyy - position in physical cache
     const uint16_t* GetIndirectionData();
 
-    /** Get page indirection texture */
+    /// Get page indirection texture
     RenderCore::ITexture* GetIndirectionTexture() { return IndirectionTexture; }
 
-    /** Actual number of texture mipmaps */
+    /// Actual number of texture mipmaps
     uint32_t GetStoredLods() const { return NumLods; }
 
-    /** Total number of stored lods */
+    /// Total number of stored lods
     uint32_t GetNumLods() const { return NumLods; }
 
 private:
-    /** Recursively updates quadtree branch */
+    /// Recursively updates quadtree branch
     void UpdateBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
 
-    /** Recursively updates quadtree branch */
+    /// Recursively updates quadtree branch
     void UpdateChildsBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
 
-    /** Update full quad tree */
+    /// Update full quad tree
     void UpdateAllBranches();
 
     void MapIndirectionData();
     void UnmapIndirectionData();
 
-    /** Total number of stored lods */
+    /// Total number of stored lods
     uint32_t NumLods;
 
 #if 0
-    /** TotalLods - StoredLods */
+    /// TotalLods - StoredLods
     uint32_t ReducedLods;
 
-    /** Total number of all texture pages (all lods) */
+    /// Total number of all texture pages (all lods)
     uint32_t NumPages;
 #endif
 
-    /** Table of indirection */
+    /// Table of indirection
     Ref<RenderCore::ITexture> IndirectionTexture;
 
-    /**
-    [xxxxyyyyyyyyyyyy]
-    xxxx - level of detail
-    yyyyyyyyyyyy - position in physical cache
-    Max pages in cache may reach to 4096
-    Duplicates Indirection texture in video memory
-    */
+    /// [xxxxyyyyyyyyyyyy]
+    /// xxxx - level of detail
+    /// yyyyyyyyyyyy - position in physical cache
+    /// Max pages in cache may reach to 4096
+    /// Duplicates Indirection texture in video memory
     Ref<RenderCore::IBuffer> IndirectionData;
     uint16_t* pIndirectionData;
 
     int bDirtyLods[VT_MAX_LODS];
 
-    /**
-    Page info table
-    [xxxxyyyy]
-    xxxx - max LOD
-    yyyy - PageFlags4bit
-    */
+    /// Page info table
+    /// [xxxxyyyy]
+    /// xxxx - max LOD
+    /// yyyy - PageFlags4bit
     byte* PIT;
 
     // Used only by cache to update page LRU

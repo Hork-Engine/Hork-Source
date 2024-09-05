@@ -50,7 +50,7 @@ public:
     Float2 CursorPosition;
     bool   bCursorVisible = true;
 
-    /** Allow to drop down the console */
+    /// Allow to drop down the console
     bool bAllowConsole = true;
 
     Ref<UIBrush> ConsoleBackground;

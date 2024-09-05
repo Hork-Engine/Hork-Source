@@ -122,14 +122,14 @@ CanvasRenderer::CanvasRenderer()
          0, // InstanceDataStepRate
          HK_OFS(CanvasVertex, u)}};
 
-    ShaderFactory::CreateVertexShader("canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
+    ShaderFactory::sCreateVertexShader("canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
     if (m_bEdgeAntialias)
     {
-        ShaderFactory::CreateFragmentShader("canvas/canvas_aa.frag", m_FragmentShader);
+        ShaderFactory::sCreateFragmentShader("canvas/canvas_aa.frag", m_FragmentShader);
     }
     else
     {
-        ShaderFactory::CreateFragmentShader("canvas/canvas.frag", m_FragmentShader);
+        ShaderFactory::sCreateFragmentShader("canvas/canvas.frag", m_FragmentShader);
     }
 
     PRIMITIVE_TOPOLOGY primitiveTopology[TOPOLOGY_MAX] = {PRIMITIVE_TRIANGLES, PRIMITIVE_TRIANGLE_STRIP};
@@ -463,7 +463,7 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
                         Float4x4::OrthoMatrixDesc desc = {};
                         desc.Mins = Float2(0.0f, h);
                         desc.Maxs = Float2(w, 0.0f);
-                        pCanvasCBuf->OrthoProjection = Float4x4::GetOrthoMatrix(desc);
+                        pCanvasCBuf->OrthoProjection = Float4x4::sGetOrthoMatrix(desc);
 
                         pCanvasCBuf->ViewSize.X = w;
                         pCanvasCBuf->ViewSize.Y = h;

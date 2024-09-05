@@ -317,31 +317,28 @@ void WriterCompact::OnVisitString(Object const& dobject, int index)
     Write(HK_FORMAT("\"{}\"", dobject.AsString()));
 }
 
-Object Serialize(TR::TypeRegistry const& inTypeRegistry, void const* inObjectPtr, TR::TypeInfo const* inTypeInfo)
+Object Serialize(TR::TypeRegistry const& typeRegistry, void const* objectPtr, TR::TypeInfo const* typeInfo)
 {
-    if (!inTypeInfo)
-    {
+    if (!typeInfo)
         return {};
-    }
 
-    auto& structure = inTypeInfo->Struct;
+    auto& structure = typeInfo->Struct;
 
     // Array
-    if (inTypeInfo->ArrayElementTypeId)
+    if (typeInfo->ArrayElementTypeId)
     {
-        auto array_size = inTypeInfo->Array.GetArraySize(inObjectPtr);
+        auto arraySize = typeInfo->Array.GetArraySize(objectPtr);
 
-        auto array_element_type = inTypeRegistry.FindType(inTypeInfo->ArrayElementTypeId);
-        if (!array_element_type || array_size == 0)
+        auto arrayElementType = typeRegistry.FindType(typeInfo->ArrayElementTypeId);
+        if (!arrayElementType || arraySize == 0)
             return {};
 
         Object dobject;
-        dobject.PreallocateArray(array_size);
-        for (size_t n = 0; n < array_size; n++)
+        dobject.PreallocateArray(arraySize);
+        for (size_t n = 0; n < arraySize; n++)
         {
-            void const* array_element = inTypeInfo->Array.GetArrayAt(n, const_cast<void*>(inObjectPtr));
-
-            dobject.Add(Serialize(inTypeRegistry, array_element, array_element_type));
+            void const* arrayElement = typeInfo->Array.GetArrayAt(n, const_cast<void*>(objectPtr));
+            dobject.Add(Serialize(typeRegistry, arrayElement, arrayElementType));
         }
         return dobject;
     }
@@ -352,48 +349,47 @@ Object Serialize(TR::TypeRegistry const& inTypeRegistry, void const* inObjectPtr
         Object dobject;
         for (auto& member : structure->GetMembers())
         {
-            auto member_type = inTypeRegistry.FindType(member->GetTypeId());
-            if (!member_type)
+            auto memberType = typeRegistry.FindType(member->GetTypeId());
+            if (!memberType)
                 continue;
 
-            void const* member_ptr = member->DereferencePtr(const_cast<void*>(inObjectPtr));
-
-            dobject.Insert(member->GetName(), Serialize(inTypeRegistry, member_ptr, member_type));
+            void const* memberPtr = member->DereferencePtr(const_cast<void*>(objectPtr));
+            dobject.Insert(member->GetName(), Serialize(typeRegistry, memberPtr, memberType));
         }
 
         return dobject;
     }
 
     // Trivial
-    return Object(inTypeInfo->Value.ToString(inObjectPtr));
+    return Object(typeInfo->Value.ToString(objectPtr));
 }
 
-void Deserialize(Object const& dobject, TR::TypeRegistry const& inTypeRegistry, void* inObjectPtr, TR::TypeInfo const* inTypeInfo)
+void Deserialize(Object const& dobject, TR::TypeRegistry const& typeRegistry, void* objectPtr, TR::TypeInfo const* typeInfo)
 {
-    if (!inTypeInfo)
+    if (!typeInfo)
     {
         return;
     }
 
-    auto& structure = inTypeInfo->Struct;
+    auto& structure = typeInfo->Struct;
 
     // Array
-    if (inTypeInfo->ArrayElementTypeId)
+    if (typeInfo->ArrayElementTypeId)
     {
-        auto array_size = dobject.GetArraySize();
-        bool resizable = inTypeInfo->Array.TryResize(array_size, inObjectPtr);
+        auto arraySize = dobject.GetArraySize();
+        bool resizable = typeInfo->Array.TryResize(arraySize, objectPtr);
         if (!resizable)
-            array_size = inTypeInfo->Array.GetArraySize(inObjectPtr);
+            arraySize = typeInfo->Array.GetArraySize(objectPtr);
 
-        auto array_element_type = inTypeRegistry.FindType(inTypeInfo->ArrayElementTypeId);
-        if (!array_element_type)
+        auto arrayElementType = typeRegistry.FindType(typeInfo->ArrayElementTypeId);
+        if (!arrayElementType)
             return;
 
-        size_t read_array_size = std::min(array_size, dobject.GetArraySize());
-        for (size_t n = 0; n < read_array_size; n++)
+        size_t readArraySize = std::min(arraySize, dobject.GetArraySize());
+        for (size_t n = 0; n < readArraySize; n++)
         {
-            void* array_element = inTypeInfo->Array.GetArrayAt(n, inObjectPtr);
-            Deserialize(dobject.At(n), inTypeRegistry, array_element, array_element_type);
+            void* arrayElement = typeInfo->Array.GetArrayAt(n, objectPtr);
+            Deserialize(dobject.At(n), typeRegistry, arrayElement, arrayElementType);
         }
         return;
     }
@@ -407,20 +403,19 @@ void Deserialize(Object const& dobject, TR::TypeRegistry const& inTypeRegistry, 
             if (!dmember)
                 continue;
 
-            auto member_type = inTypeRegistry.FindType(member->GetTypeId());
-            if (!member_type)
+            auto memberType = typeRegistry.FindType(member->GetTypeId());
+            if (!memberType)
                 continue;
 
-            void* member_ptr = member->DereferencePtr(inObjectPtr);
-
-            Deserialize(dmember->GetObject(), inTypeRegistry, member_ptr, member_type);
+            void* memberPtr = member->DereferencePtr(objectPtr);
+            Deserialize(dmember->GetObject(), typeRegistry, memberPtr, memberType);
         }
         return;
     }
 
     // Trivial
     if (dobject.IsString())
-        inTypeInfo->Value.FromString(inObjectPtr, dobject.AsString());
+        typeInfo->Value.FromString(objectPtr, dobject.AsString());
 }
 
 Parser::Tokenizer::Tokenizer()
@@ -429,9 +424,9 @@ Parser::Tokenizer::Tokenizer()
     //m_LineNumber = 1;
 }
 
-void Parser::Tokenizer::Reset(const char* pDocumentData)
+void Parser::Tokenizer::Reset(const char* text)
 {
-    m_Cur = pDocumentData;
+    m_Cur = text;
     //m_LineNumber = 1;
 
     // Go to first token
@@ -554,9 +549,9 @@ void Parser::Tokenizer::NextToken()
     }
 }
 
-Object Parser::Parse(const char* inStr)
+Object Parser::Parse(const char* str)
 {
-    m_Tokenizer.Reset(inStr);
+    m_Tokenizer.Reset(str);
 
     Token token = m_Tokenizer.GetToken();
 
@@ -589,12 +584,12 @@ Object Parser::Parse(const char* inStr)
     return {};
 }
 
-Object Parser::Parse(String const& inStr)
+Object Parser::Parse(String const& str)
 {
-    return Parse(inStr.CStr());
+    return Parse(str.CStr());
 }
 
-Object Parser::ParseStructure(bool bExpectClosedBracket)
+Object Parser::ParseStructure(bool expectClosedBracket)
 {
     Object dobject;
     while (1)
@@ -603,7 +598,7 @@ Object Parser::ParseStructure(bool bExpectClosedBracket)
 
         if (token.Type == TOKEN_BRACKET)
         {
-            if (bExpectClosedBracket && *token.Begin == '}')
+            if (expectClosedBracket && *token.Begin == '}')
             {
                 m_Tokenizer.NextToken();
                 break;
@@ -615,7 +610,7 @@ Object Parser::ParseStructure(bool bExpectClosedBracket)
 
         if (token.Type == TOKEN_EOF)
         {
-            if (!bExpectClosedBracket)
+            if (!expectClosedBracket)
                 break;
 
             LOG("unexpected EOF\n");

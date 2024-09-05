@@ -35,12 +35,12 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-/** Render device */
+/// Render device
 extern RenderCore::IDevice* GDevice;
 
 using namespace RenderCore;
 
-Ref<IShaderModule> ShaderFactory::CreateShaderSpirV(SHADER_TYPE shaderType, BlobRef blob)
+Ref<IShaderModule> ShaderFactory::sCreateShaderSpirV(SHADER_TYPE shaderType, BlobRef blob)
 {
     ShaderBinaryData binaryData;
     binaryData.ShaderType = shaderType;
@@ -53,24 +53,24 @@ Ref<IShaderModule> ShaderFactory::CreateShaderSpirV(SHADER_TYPE shaderType, Blob
     return module;
 }
 
-void ShaderFactory::CreateShader(SHADER_TYPE shaderType, const char* source, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateShader(SHADER_TYPE shaderType, const char* source, Ref<IShaderModule>& module)
 {
     HeapBlob spirv;
 
     ShaderCompiler::SourceList sources;
     sources.Add(source);
-    if (!ShaderCompiler::CreateSpirV(shaderType, sources, spirv))
+    if (!ShaderCompiler::sCreateSpirV(shaderType, sources, spirv))
         return;
 
-    module = CreateShaderSpirV(shaderType, spirv);
+    module = sCreateShaderSpirV(shaderType, spirv);
 }
 
-void ShaderFactory::CreateShader(SHADER_TYPE shaderType, String const& source, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateShader(SHADER_TYPE shaderType, String const& source, Ref<IShaderModule>& module)
 {
-    CreateShader(shaderType, source.CStr(), module);
+    sCreateShader(shaderType, source.CStr(), module);
 }
 
-void ShaderFactory::CreateVertexShader(StringView fileName, ArrayView<VertexAttribInfo> vertexAttribs, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateVertexShader(StringView fileName, ArrayView<VertexAttribInfo> vertexAttribs, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
 
@@ -78,42 +78,42 @@ void ShaderFactory::CreateVertexShader(StringView fileName, ArrayView<VertexAttr
 
     ShaderCompiler::SourceList sources;
     sources.Add(source.CStr());
-    if (!ShaderCompiler::CreateSpirV_VertexShader(vertexAttribs, sources, spirv))
+    if (!ShaderCompiler::sCreateSpirV_VertexShader(vertexAttribs, sources, spirv))
         return;
 
-    module = CreateShaderSpirV(VERTEX_SHADER, spirv);
+    module = sCreateShaderSpirV(VERTEX_SHADER, spirv);
 }
 
-void ShaderFactory::CreateVertexShader(StringView fileName, VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateVertexShader(StringView fileName, VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<IShaderModule>& module)
 {
-    CreateVertexShader(fileName, {vertexAttribs, numVertexAttribs}, module);
+    sCreateVertexShader(fileName, {vertexAttribs, numVertexAttribs}, module);
 }
 
-void ShaderFactory::CreateTessControlShader(StringView fileName, Ref<IShaderModule>& module)
-{
-    String source = LoadShader(fileName);
-    CreateShader(TESS_CONTROL_SHADER, source, module);
-}
-
-void ShaderFactory::CreateTessEvalShader(StringView fileName, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateTessControlShader(StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    CreateShader(TESS_EVALUATION_SHADER, source, module);
+    sCreateShader(TESS_CONTROL_SHADER, source, module);
 }
 
-void ShaderFactory::CreateGeometryShader(StringView fileName, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateTessEvalShader(StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    CreateShader(GEOMETRY_SHADER, source, module);
+    sCreateShader(TESS_EVALUATION_SHADER, source, module);
 }
 
-void ShaderFactory::CreateFragmentShader(StringView fileName, Ref<IShaderModule>& module)
+void ShaderFactory::sCreateGeometryShader(StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    CreateShader(FRAGMENT_SHADER, source, module);
+    sCreateShader(GEOMETRY_SHADER, source, module);
 }
 
-void ShaderFactory::CreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
+void ShaderFactory::sCreateFragmentShader(StringView fileName, Ref<IShaderModule>& module)
+{
+    String source = LoadShader(fileName);
+    sCreateShader(FRAGMENT_SHADER, source, module);
+}
+
+void ShaderFactory::sCreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
 {
     PipelineDesc pipelineCI;
 
@@ -130,8 +130,8 @@ void ShaderFactory::CreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, Str
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    CreateVertexShader(vertexShader, {}, pipelineCI.pVS);
-    CreateFragmentShader(fragmentShader, pipelineCI.pFS);
+    sCreateVertexShader(vertexShader, {}, pipelineCI.pVS);
+    sCreateFragmentShader(fragmentShader, pipelineCI.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
@@ -142,7 +142,7 @@ void ShaderFactory::CreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, Str
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void ShaderFactory::CreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, StringView geometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
+void ShaderFactory::sCreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, StringView geometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
 {
     PipelineDesc pipelineCI;
 
@@ -159,9 +159,9 @@ void ShaderFactory::CreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, S
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    CreateVertexShader(vertexShader, {}, pipelineCI.pVS);
-    CreateGeometryShader(geometryShader, pipelineCI.pGS);
-    CreateFragmentShader(fragmentShader, pipelineCI.pFS);
+    sCreateVertexShader(vertexShader, {}, pipelineCI.pVS);
+    sCreateGeometryShader(geometryShader, pipelineCI.pGS);
+    sCreateFragmentShader(fragmentShader, pipelineCI.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;

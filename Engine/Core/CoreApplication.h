@@ -55,10 +55,10 @@ public:
     ApplicationArguments(ArgumentPack const& args);
     ~ApplicationArguments();
 
-    /** Application command line args count */
+    /// Application command line args count
     int Count() const { return m_NumArguments; }
 
-    /** Get arg at specified position */
+    /// Get arg at specified position
     const char* At(int index) const
     {
         return m_Arguments[index];
@@ -85,46 +85,46 @@ public:
         return 0;
     }
 
-    static ApplicationArguments const& Args()
+    static ApplicationArguments const& sArgs()
     {
         return s_Instance->m_Arguments;
     }
 
-    static StringView GetExecutable()
+    static StringView sGetExecutable()
     {
         return s_Instance->m_Executable;
     }
 
-    static StringView GetWorkingDir()
+    static StringView sGetWorkingDir()
     {
         return s_Instance->m_WorkingDir;
     }
     
-    static StringView GetRootPath()
+    static StringView sGetRootPath()
     {
         return s_Instance->m_RootPath;
     }
 
-    static ConsoleBuffer& GetConsoleBuffer()
+    static ConsoleBuffer& sGetConsoleBuffer()
     {
         return s_Instance->m_ConsoleBuffer;
     }
 
-    static void WriteMessage(const char* message)
+    static void sWriteMessage(const char* message)
     {
         s_Instance->_WriteMessage(message);
     }
 
-    static void SetClipboard(StringView text);
-    static void SetClipboard(String const& text);
+    static void sSetClipboard(StringView text);
+    static void sSetClipboard(String const& text);
 
-    static const char* GetClipboard();
+    static const char* sGetClipboard();
 
     template <typename... T>
-    static HK_FORCEINLINE void TerminateWithError(fmt::format_string<T...> Format, T&&... args)
+    static HK_FORCEINLINE void sTerminateWithError(fmt::format_string<T...> format, T&&... args)
     {
         fmt::memory_buffer buffer;
-        fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+        fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
         buffer.push_back('\0');
 
         s_Instance->_TerminateWithError(buffer.data());
@@ -137,7 +137,7 @@ private:
     void Cleanup();
 
 protected:
-    static CoreApplication* Instance()
+    static CoreApplication* sInstance()
     {
         return s_Instance;
     }

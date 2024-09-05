@@ -86,7 +86,7 @@ ResourceHandle<T> ResourceManager::CreateResourceFromFile(StringView path)
 {
     if (auto file = OpenFile(path))
     {
-        UniqueRef<T> resource = T::Load(file);
+        UniqueRef<T> resource = T::sLoad(file);
         if (resource)
             return CreateResourceWithData<T>(path, std::move(resource));
     }

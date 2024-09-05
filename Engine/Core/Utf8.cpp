@@ -40,31 +40,31 @@ namespace Core
 #define __utf8_is_3b(s) ((*(s)&0xF0) == 0xE0)
 #define __utf8_is_4b(s) ((*(s)&0xF8) == 0xF0)
 
-int UTF8CharSizeInBytes(const char* _Unicode)
+int UTF8CharSizeInBytes(const char* unicode)
 {
-    if (__utf8_is_1b(_Unicode))
+    if (__utf8_is_1b(unicode))
     {
         return 1;
     }
-    if (__utf8_is_2b(_Unicode))
+    if (__utf8_is_2b(unicode))
     {
-        if (_Unicode[1] == 0)
+        if (unicode[1] == 0)
         {
             return 1;
         }
         return 2;
     }
-    if (__utf8_is_3b(_Unicode))
+    if (__utf8_is_3b(unicode))
     {
-        if (_Unicode[1] == 0 || _Unicode[2] == 0)
+        if (unicode[1] == 0 || unicode[2] == 0)
         {
             return 1;
         }
         return 3;
     }
-    if (__utf8_is_4b(_Unicode))
+    if (__utf8_is_4b(unicode))
     {
-        if (_Unicode[1] == 0 || _Unicode[2] == 0 || _Unicode[3] == 0)
+        if (unicode[1] == 0 || unicode[2] == 0 || unicode[3] == 0)
         {
             return 1;
         }
@@ -73,15 +73,15 @@ int UTF8CharSizeInBytes(const char* _Unicode)
     return 0;
 }
 
-int UTF8StrLength(const char* _Unicode)
+int UTF8StrLength(const char* unicode)
 {
     int strLength = 0;
-    while (*_Unicode)
+    while (*unicode)
     {
-        const int byteLen = UTF8CharSizeInBytes(_Unicode);
+        const int byteLen = UTF8CharSizeInBytes(unicode);
         if (byteLen > 0)
         {
-            _Unicode += byteLen;
+            unicode += byteLen;
             strLength++;
         }
         else
@@ -92,15 +92,15 @@ int UTF8StrLength(const char* _Unicode)
     return strLength;
 }
 
-int UTF8StrLength(const char* _Unicode, const char* _UnicodeEnd)
+int UTF8StrLength(const char* unicode, const char* unicodeEnd)
 {
     int strLength = 0;
-    while (_Unicode < _UnicodeEnd)
+    while (unicode < unicodeEnd)
     {
-        const int byteLen = UTF8CharSizeInBytes(_Unicode);
+        const int byteLen = UTF8CharSizeInBytes(unicode);
         if (byteLen > 0)
         {
-            _Unicode += byteLen;
+            unicode += byteLen;
             strLength++;
         }
         else
@@ -112,46 +112,46 @@ int UTF8StrLength(const char* _Unicode, const char* _UnicodeEnd)
 }
 
 #if 0
-int EncodeUTF8Char( unsigned int _Ch, char _Encoded[4] ) {
-    if ( _Ch <= 0x7f ) {
-        _Encoded[0] = _Ch;
+int EncodeUTF8Char( unsigned int ch, char encoded[4] ) {
+    if ( ch <= 0x7f ) {
+        encoded[0] = ch;
         return 1;
     }
-    if ( _Ch <= 0x7ff ) {
-        _Encoded[0] = ( _Ch >> 6 ) | 0xC0;
-        _Encoded[1] = ( _Ch & 0x3F ) | 0x80;
+    if ( ch <= 0x7ff ) {
+        encoded[0] = ( ch >> 6 ) | 0xC0;
+        encoded[1] = ( ch & 0x3F ) | 0x80;
         return 2;
     }
-    if ( _Ch <= 0xffff ) {
-        _Encoded[0] = ( _Ch >> 12 ) | 0xE0;
-        _Encoded[1] = ( ( _Ch >> 6 ) & 0x3F ) | 0x80;
-        _Encoded[2] = ( _Ch & 0x3F ) | 0x80;
+    if ( ch <= 0xffff ) {
+        encoded[0] = ( ch >> 12 ) | 0xE0;
+        encoded[1] = ( ( ch >> 6 ) & 0x3F ) | 0x80;
+        encoded[2] = ( ch & 0x3F ) | 0x80;
         return 3;
     }
-    if ( _Ch <= 0x10FFFF ) {
-        _Encoded[0] = ( _Ch >> 18 ) | 0xF0;
-        _Encoded[1] = ( ( _Ch >> 12 ) & 0x3F ) | 0x80;
-        _Encoded[2] = ( ( _Ch >> 6 ) & 0x3F ) | 0x80;
-        _Encoded[3] = ( _Ch & 0x3F ) | 0x80;
+    if ( ch <= 0x10FFFF ) {
+        encoded[0] = ( ch >> 18 ) | 0xF0;
+        encoded[1] = ( ( ch >> 12 ) & 0x3F ) | 0x80;
+        encoded[2] = ( ( ch >> 6 ) & 0x3F ) | 0x80;
+        encoded[3] = ( ch & 0x3F ) | 0x80;
         return 4;
     }
-    _Encoded[0] = '?';
+    encoded[0] = '?';
     return 1;
 }
 #endif
 
 #if 0
-int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch)
+int WideCharDecodeUTF8(const char* unicode, WideChar& ch)
 {
-    const unsigned char* s = (const unsigned char*)_Unicode;
+    const unsigned char* s = (const unsigned char*)unicode;
     if (__utf8_is_1b(s))
     {
-        _Ch = *s;
+        ch = *s;
         return 1;
     }
     if (__utf8_is_2b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (s[1] == 0)
         {
             return 1;
@@ -164,13 +164,13 @@ int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch)
         {
             const int b1 = s[0] & 0x1F;
             const int b2 = s[1] & 0x3F;
-            _Ch          = (b1 << 6) | b2;
+            ch          = (b1 << 6) | b2;
         }
         return 2;
     }
     if (__utf8_is_3b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (s[1] == 0 || s[2] == 0)
         {
             return 1;
@@ -189,14 +189,14 @@ int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch)
             const int b1 = s[0] & 0x0F;
             const int b2 = s[1] & 0x3F;
             const int b3 = s[2] & 0x3F;
-            _Ch          = (b1 << 12) | (b2 << 6) | b3;
+            ch          = (b1 << 12) | (b2 << 6) | b3;
         }
 
         return 3;
     }
     if (__utf8_is_4b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (s[1] == 0 || s[2] == 0 || s[3] == 0)
         {
             return 1;
@@ -229,27 +229,27 @@ int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch)
                 return 4;
             }
 
-            _Ch = c;
+            ch = c;
         }
         return 4;
     }
-    _Ch = 0;
+    ch = 0;
     return 0;
 }
 
-int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& _Ch)
+int WideCharDecodeUTF8(const char* unicode, const char* unicodeEnd, WideChar& ch)
 {
-    HK_ASSERT(_UnicodeEnd != nullptr);
-    const unsigned char* s = (const unsigned char*)_Unicode;
-    const unsigned char* e = (const unsigned char*)_UnicodeEnd;
+    HK_ASSERT(unicodeEnd != nullptr);
+    const unsigned char* s = (const unsigned char*)unicode;
+    const unsigned char* e = (const unsigned char*)unicodeEnd;
     if (__utf8_is_1b(s))
     {
-        _Ch = *s;
+        ch = *s;
         return 1;
     }
     if (__utf8_is_2b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (e - s < 2)
         {
             return 1;
@@ -262,13 +262,13 @@ int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& 
         {
             const int b1 = s[0] & 0x1F;
             const int b2 = s[1] & 0x3F;
-            _Ch          = (b1 << 6) | b2;
+            ch          = (b1 << 6) | b2;
         }
         return 2;
     }
     if (__utf8_is_3b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (e - s < 3)
         {
             return 1;
@@ -288,14 +288,14 @@ int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& 
             const int b1 = s[0] & 0x0F;
             const int b2 = s[1] & 0x3F;
             const int b3 = s[2] & 0x3F;
-            _Ch          = (b1 << 12) | (b2 << 6) | b3;
+            ch          = (b1 << 12) | (b2 << 6) | b3;
         }
 
         return 3;
     }
     if (__utf8_is_4b(s))
     {
-        _Ch = 0xFFFD;
+        ch = 0xFFFD;
         if (e - s < 4)
         {
             return 1;
@@ -329,43 +329,43 @@ int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& 
                 return 4;
             }
 
-            _Ch = c;
+            ch = c;
         }
         return 4;
     }
-    _Ch = 0;
+    ch = 0;
     return 0;
 }
 #endif
 
-int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch)
+int WideCharDecodeUTF8(const char* unicode, WideChar& ch)
 {
-    return WideCharDecodeUTF8(_Unicode, nullptr, _Ch);
+    return WideCharDecodeUTF8(unicode, nullptr, ch);
 }
 
 // Convert UTF-8 to 32-bit character, process single character input.
 // A nearly-branchless UTF-8 decoder, based on work of Christopher Wellons (https://github.com/skeeto/branchless-utf8).
 // We handle UTF-8 decoding error by skipping forward.
-int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& _Ch)
+int WideCharDecodeUTF8(const char* unicode, const char* unicodeEnd, WideChar& ch)
 {
     static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
     static const int masks[]  = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
     static const uint32_t mins[] = { 0x400000, 0, 0x80, 0x800, 0x10000 };
     static const int shiftc[] = { 0, 18, 12, 6, 0 };
     static const int shifte[] = { 0, 6, 4, 2, 0 };
-    int len = lengths[*(const unsigned char*)_Unicode >> 3];
+    int len = lengths[*(const unsigned char*)unicode >> 3];
     int wanted = len + !len;
 
-    if (_UnicodeEnd == nullptr)
-        _UnicodeEnd = _Unicode + wanted; // Max length, nulls will be taken into account.
+    if (unicodeEnd == nullptr)
+        unicodeEnd = unicode + wanted; // Max length, nulls will be taken into account.
 
-    // Copy at most 'len' bytes, stop copying at 0 or past _UnicodeEnd. Branch predictor does a good job here,
+    // Copy at most 'len' bytes, stop copying at 0 or past unicodeEnd. Branch predictor does a good job here,
     // so it is fast even with excessive branching.
     unsigned char s[4];
-    s[0] = _Unicode + 0 < _UnicodeEnd ? _Unicode[0] : 0;
-    s[1] = _Unicode + 1 < _UnicodeEnd ? _Unicode[1] : 0;
-    s[2] = _Unicode + 2 < _UnicodeEnd ? _Unicode[2] : 0;
-    s[3] = _Unicode + 3 < _UnicodeEnd ? _Unicode[3] : 0;
+    s[0] = unicode + 0 < unicodeEnd ? unicode[0] : 0;
+    s[1] = unicode + 1 < unicodeEnd ? unicode[1] : 0;
+    s[2] = unicode + 2 < unicodeEnd ? unicode[2] : 0;
+    s[3] = unicode + 3 < unicodeEnd ? unicode[3] : 0;
 
     uint32_t c;
 
@@ -389,126 +389,126 @@ int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& 
 
     if (e)
     {
-        // No bytes are consumed when *_Unicode == 0 || _Unicode == _UnicodeEnd.
-        // One byte is consumed in case of invalid first byte of _Unicode.
+        // No bytes are consumed when *unicode == 0 || unicode == unicodeEnd.
+        // One byte is consumed in case of invalid first byte of unicode.
         // All available bytes (at most `len` bytes) are consumed on incomplete/invalid second to last bytes.
         // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
         wanted = std::min(wanted, !!s[0] + !!s[1] + !!s[2] + !!s[3]);
         c = 0xFFFD;     // Invalid Unicode code point (standard value)
     }
 
-    _Ch = c;
+    ch = c;
 
     return wanted;
 }
 
-int WideStrDecodeUTF8(const char* _Unicode, WideChar* _Str, int _MaxLength)
+int WideStrDecodeUTF8(const char* unicode, WideChar* str, int maxLength)
 {
-    if (_MaxLength <= 0)
+    if (maxLength <= 0)
     {
         return 0;
     }
-    WideChar* pout = _Str;
-    while (*_Unicode && --_MaxLength > 0)
+    WideChar* pout = str;
+    while (*unicode && --maxLength > 0)
     {
-        const int byteLen = WideCharDecodeUTF8(_Unicode, *_Str);
+        const int byteLen = WideCharDecodeUTF8(unicode, *str);
         if (!byteLen)
         {
             break;
         }
-        _Unicode += byteLen;
-        _Str++;
+        unicode += byteLen;
+        str++;
     }
-    *_Str = 0;
-    return _Str - pout;
+    *str = 0;
+    return str - pout;
 }
 
-int WideStrDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar* _Str, int _MaxLength)
+int WideStrDecodeUTF8(const char* unicode, const char* unicodeEnd, WideChar* str, int maxLength)
 {
-    if (_MaxLength <= 0)
+    if (maxLength <= 0)
     {
         return 0;
     }
-    WideChar* pout = _Str;
-    while (*_Unicode && --_MaxLength > 0)
+    WideChar* pout = str;
+    while (*unicode && --maxLength > 0)
     {
-        const int byteLen = WideCharDecodeUTF8(_Unicode, _UnicodeEnd, *_Str);
+        const int byteLen = WideCharDecodeUTF8(unicode, unicodeEnd, *str);
         if (!byteLen)
         {
             break;
         }
-        _Unicode += byteLen;
-        _Str++;
+        unicode += byteLen;
+        str++;
     }
-    *_Str = 0;
-    return _Str - pout;
+    *str = 0;
+    return str - pout;
 }
 
-int WideStrUTF8Bytes(WideChar const* _Str, WideChar const* _StrEnd)
+int WideStrUTF8Bytes(WideChar const* str, WideChar const* strEnd)
 {
     int byteLen = 0;
-    while ((!_StrEnd || _Str < _StrEnd) && *_Str)
+    while ((!strEnd || str < strEnd) && *str)
     {
-        byteLen += WideCharUTF8Bytes(*_Str++);
+        byteLen += WideCharUTF8Bytes(*str++);
     }
     return byteLen;
 }
 
-int WideStrLength(WideChar const* _Str)
+int WideStrLength(WideChar const* str)
 {
-    WideChar const* p = _Str;
+    WideChar const* p = str;
     while (*p) { p++; }
-    return p - _Str;
+    return p - str;
 }
 
-int WideCharEncodeUTF8(char* _Buf, int _BufSize, unsigned int _Ch)
+int WideCharEncodeUTF8(char* buf, int bufSize, unsigned int ch)
 {
-    if (_Ch < 0x80)
+    if (ch < 0x80)
     {
-        _Buf[0] = (char)_Ch;
+        buf[0] = (char)ch;
         return 1;
     }
-    if (_Ch < 0x800)
+    if (ch < 0x800)
     {
-        if (_BufSize < 2) return 0;
-        _Buf[0] = (char)(0xc0 + (_Ch >> 6));
-        _Buf[1] = (char)(0x80 + (_Ch & 0x3f));
+        if (bufSize < 2) return 0;
+        buf[0] = (char)(0xc0 + (ch >> 6));
+        buf[1] = (char)(0x80 + (ch & 0x3f));
         return 2;
     }
-    if (_Ch >= 0xdc00 && _Ch < 0xe000)
+    if (ch >= 0xdc00 && ch < 0xe000)
     {
         return 0;
     }
-    if (_Ch >= 0xd800 && _Ch < 0xdc00)
+    if (ch >= 0xd800 && ch < 0xdc00)
     {
-        if (_BufSize < 4) return 0;
-        _Buf[0] = (char)(0xf0 + (_Ch >> 18));
-        _Buf[1] = (char)(0x80 + ((_Ch >> 12) & 0x3f));
-        _Buf[2] = (char)(0x80 + ((_Ch >> 6) & 0x3f));
-        _Buf[3] = (char)(0x80 + ((_Ch)&0x3f));
+        if (bufSize < 4) return 0;
+        buf[0] = (char)(0xf0 + (ch >> 18));
+        buf[1] = (char)(0x80 + ((ch >> 12) & 0x3f));
+        buf[2] = (char)(0x80 + ((ch >> 6) & 0x3f));
+        buf[3] = (char)(0x80 + ((ch)&0x3f));
         return 4;
     }
     //else if ( c < 0x10000 )
     {
-        if (_BufSize < 3) return 0;
-        _Buf[0] = (char)(0xe0 + (_Ch >> 12));
-        _Buf[1] = (char)(0x80 + ((_Ch >> 6) & 0x3f));
-        _Buf[2] = (char)(0x80 + ((_Ch)&0x3f));
+        if (bufSize < 3) return 0;
+        buf[0] = (char)(0xe0 + (ch >> 12));
+        buf[1] = (char)(0x80 + ((ch >> 6) & 0x3f));
+        buf[2] = (char)(0x80 + ((ch)&0x3f));
         return 3;
     }
 }
 
-int WideStrEncodeUTF8(char* _Buf, int _BufSize, WideChar const* _Str, WideChar const* _StrEnd)
+int WideStrEncodeUTF8(char* buf, int bufSize, WideChar const* str, WideChar const* strEnd)
 {
-    if (_BufSize <= 0)
+    if (bufSize <= 0)
     {
         return 0;
     }
-    char*       pBuf = _Buf;
-    const char* pEnd = _Buf + _BufSize - 1;
-    while (pBuf < pEnd && (!_StrEnd || _Str < _StrEnd) && *_Str)
+    char*       pBuf = buf;
+    const char* pEnd = buf + bufSize - 1;
+    while (pBuf < pEnd && (!strEnd || str < strEnd) && *str)
     {
-        WideChar ch = *_Str++;
+        WideChar ch = *str++;
         if (ch < 0x80)
         {
             *pBuf++ = (char)ch;
@@ -519,7 +519,7 @@ int WideStrEncodeUTF8(char* _Buf, int _BufSize, WideChar const* _Str, WideChar c
         }
     }
     *pBuf = 0;
-    return (int)(pBuf - _Buf);
+    return (int)(pBuf - buf);
 }
 
 } // namespace Core

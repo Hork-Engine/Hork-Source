@@ -114,7 +114,7 @@ TerrainResource::~TerrainResource()
 {
 }
 
-UniqueRef<TerrainResource> TerrainResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<TerrainResource> TerrainResource::sLoad(IBinaryStreamReadInterface& stream)
 {
     UniqueRef<TerrainResource> resource = MakeUnique<TerrainResource>();
     if (!resource->Read(stream))

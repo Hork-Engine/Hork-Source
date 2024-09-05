@@ -67,7 +67,7 @@ private:
     class Pool
     {
     public:
-        static Pool&    Instance();
+        static Pool&    sInstance();
 
                         Pool();
         ID              Insert(StringView str);
@@ -75,8 +75,8 @@ private:
         const char*     GetRawString(ID id);
 
     private:
-        StringHashMap<ID>                  m_Storage;
-        PagedVector<StringView, 1024, 64>  m_Strings;
+        StringHashMap<ID>                   m_Storage;
+        PagedVector<StringView, 1024, 64>   m_Strings;
         Mutex                               m_Mutex;
     };
 
@@ -84,7 +84,7 @@ private:
 };
 
 HK_FORCEINLINE StringID::StringID(StringView str) :
-    m_Id(Pool::Instance().Insert(str))
+    m_Id(Pool::sInstance().Insert(str))
 {}
 
 HK_FORCEINLINE bool StringID::IsEmpty() const
@@ -99,17 +99,17 @@ HK_FORCEINLINE void StringID::Clear()
 
 HK_FORCEINLINE void StringID::FromString(StringView str)
 {
-    m_Id = Pool::Instance().Insert(str);
+    m_Id = Pool::sInstance().Insert(str);
 }
 
 HK_FORCEINLINE StringView StringID::GetStringView() const
 {
-    return Pool::Instance().GetString(m_Id);
+    return Pool::sInstance().GetString(m_Id);
 }
 
 HK_FORCEINLINE const char* StringID::GetRawString() const
 {
-    return Pool::Instance().GetRawString(m_Id);
+    return Pool::sInstance().GetRawString(m_Id);
 }
 
 HK_FORCEINLINE bool StringID::operator==(StringID const& rhs) const

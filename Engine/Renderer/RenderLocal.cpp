@@ -36,51 +36,51 @@ HK_NAMESPACE_BEGIN
 
 using namespace RenderCore;
 
-/** Render device */
+/// Render device
 IDevice* GDevice;
 
-/** Render context */
+/// Render context
 IImmediateContext* rcmd;
 
-/** Render resource table */
+/// Render resource table
 IResourceTable* rtbl;
 
-/** Render frame data */
+/// Render frame data
 RenderFrameData* GFrameData;
 
-/** Render frame view */
+/// Render frame view
 RenderViewData* GRenderView;
 
-/** Render view area */
+/// Render view area
 Rect2D GRenderViewArea;
 
-/** Stream buffer */
+/// Stream buffer
 IBuffer*            GStreamBuffer;
 StreamedMemoryGPU* GStreamedMemory;
 
-/** Circular buffer. Contains constant data for single draw call.
-Don't use to store long-live data. */
+/// Circular buffer. Contains constant data for single draw call.
+/// Don't use to store long-live data.
 Ref<CircularBuffer> GCircularBuffer;
 
-/** Sphere mesh */
+/// Sphere mesh
 Ref<SphereMesh> GSphereMesh;
 
-/** Screen aligned quad mesh */
+/// Screen aligned quad mesh
 Ref<IBuffer> GSaq;
 
-/** Simple white texture */
+/// Simple white texture
 Ref<ITexture> GWhiteTexture;
 
-/** Cluster lookcup 3D texture */
+/// Cluster lookcup 3D texture
 Ref<ITexture> GLookupBRDF;
 
-/** Cluster lookcup 3D texture */
+/// Cluster lookcup 3D texture
 Ref<ITexture> GClusterLookup;
 
-/** Cluster item references */
+/// Cluster item references
 Ref<IBuffer> GClusterItemBuffer;
 
-/** Cluster item references view */
+/// Cluster item references view
 Ref<IBufferView> GClusterItemTBO;
 
 Vector<RenderViewContext> GRenderViewContext;
@@ -234,7 +234,7 @@ void BindShadowInstanceConstants(ShadowRenderInstance const* Instance, int FaceI
     //StoreFloat3x4AsFloat4x4Transposed(Instance->WorldTransformMatrix, pConstantBuf->TransformMatrix);
 
     Float4x4 lightViewMatrix;
-    lightViewMatrix    = Float4x4::GetCubeFaceMatrices()[FaceIndex];
+    lightViewMatrix    = Float4x4::sGetCubeFaceMatrices()[FaceIndex];
     lightViewMatrix[3] = Float4(Float3x3(lightViewMatrix) * -LightPosition, 1.0f);
 
     pConstantBuf->TransformMatrix = (lightViewMatrix * Instance->WorldTransformMatrix);

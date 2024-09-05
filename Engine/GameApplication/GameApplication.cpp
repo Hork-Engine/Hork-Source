@@ -253,7 +253,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
     m_Title(appDesc.Title),
     m_Random(Core::RandomSeed())
 {
-    LoadConfigFile(GetRootPath() / "default.cfg");
+    LoadConfigFile(sGetRootPath() / "default.cfg");
 
     if (com_AppDataPath.GetString().IsEmpty())
         com_AppDataPath = GetApplicationUserPath() / appDesc.Company / m_Title;
@@ -264,7 +264,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     LoadConfigFile(m_ApplicationLocalData / "config.cfg");
 
-    m_EmbeddedArchive = Archive::OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
+    m_EmbeddedArchive = Archive::sOpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
     if (!m_EmbeddedArchive)
         LOG("Failed to open embedded resources\n");
 
@@ -273,7 +273,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
     m_RenderFrontendJobList = m_AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
     //pRenderBackendJobList  = m_AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
-    ShaderCompiler::Initialize();
+    ShaderCompiler::sInitialize();
 
     CreateLogicalDevice("OpenGL 4.5", &m_RenderDevice);
 
@@ -285,7 +285,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     InitializeThirdPartyLibraries();
 
-    PhysicsModule::Initialize();
+    PhysicsModule::sInitialize();
 
     m_AudioDevice = MakeRef<AudioDevice>();
     m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
@@ -324,7 +324,7 @@ GameApplication::~GameApplication()
 {
     m_UIManager.Reset();
 
-    GarbageCollector::DeallocateObjects();
+    GarbageCollector::sDeallocateObjects();
 
     HK_ASSERT(m_Worlds.IsEmpty());
 
@@ -347,13 +347,13 @@ GameApplication::~GameApplication()
     m_AudioMixer.Reset();
     m_AudioDevice.Reset();
     
-    PhysicsModule::Deinitialize();
+    PhysicsModule::sDeinitialize();
 
-    ShaderCompiler::Deinitialize();
+    ShaderCompiler::sDeinitialize();
 
     //Hk::ECS::Shutdown();
 
-    GarbageCollector::Shutdown();
+    GarbageCollector::sShutdown();
 
     Core::ShutdownProfiler();
 
@@ -369,7 +369,7 @@ void GameApplication::RunMainLoop()
         _HK_PROFILER_FRAME("EngineFrame");
 
         // Garbage collect from previuous frames
-        GarbageCollector::DeallocateObjects();
+        GarbageCollector::sDeallocateObjects();
 
         // Set new frame, process game events
         m_FrameLoop->NewFrame(swapChains, rt_SwapInterval.GetInteger(), m_ResourceManager.RawPtr());
@@ -483,7 +483,7 @@ void GameApplication::ShowStats()
         {
             MemoryStat& memstat = MemoryHeapStat[n];
 
-            m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("%s\t\tHeap memory usage: %f KB / peak %f MB Allocs %d", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
+            m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("%s\t\tHeap memory usage: %f KB / peak %f MB Allocs %d", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
         }
 
@@ -491,33 +491,33 @@ void GameApplication::ShowStats()
 
         pos.Y = h - numLines * y_step;
 
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("SDL Allocs (HEAP_MISC) %d", SDL_GetNumAllocations()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("SDL Allocs (HEAP_MISC) %d", SDL_GetNumAllocations()), true);
         pos.Y += y_step;
 
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Heap memory usage: %f KB / peak %f MB Allocs %d", MemoryGlobalStat.MemoryAllocated / 1024.0f, MemoryGlobalStat.MemoryPeakAlloc / 1024.0f / 1024.0f, MemoryGlobalStat.MemoryAllocs), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Heap memory usage: %f KB / peak %f MB Allocs %d", MemoryGlobalStat.MemoryAllocated / 1024.0f, MemoryGlobalStat.MemoryPeakAlloc / 1024.0f / 1024.0f, MemoryGlobalStat.MemoryAllocs), true);
         pos.Y += y_step;
 
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frame allocs %d Frame frees %d", MemoryGlobalStat.FrameAllocs, MemoryGlobalStat.FrameFrees), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Frame allocs %d Frame frees %d", MemoryGlobalStat.FrameAllocs, MemoryGlobalStat.FrameFrees), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frame memory usage: %f KB / %d MB (Peak %f KB)", m_FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, m_FrameLoop->GetFrameMemorySize() >> 20, m_FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Frame memory usage: %f KB / %d MB (Peak %f KB)", m_FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, m_FrameLoop->GetFrameMemorySize() >> 20, m_FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frame memory usage (GPU): %f KB / %d MB (Peak %f KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Frame memory usage (GPU): %f KB / %d MB (Peak %f KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Vertex cache memory usage (GPU): %f KB / %d MB", m_VertexMemoryGPU->GetUsedMemory() / 1024.0f, m_VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Vertex cache memory usage (GPU): %f KB / %d MB", m_VertexMemoryGPU->GetUsedMemory() / 1024.0f, m_VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Visible instances: %d", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Visible instances: %d", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Visible shadow instances: %d", frameData->ShadowInstances.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Visible shadow instances: %d", frameData->ShadowInstances.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Visible dir lights: %d", frameData->DirectionalLights.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Visible dir lights: %d", frameData->DirectionalLights.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Polycount: %d", stat.PolyCount), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Polycount: %d", stat.PolyCount), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Frontend time: %d msec", stat.FrontendTime), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Frontend time: %d msec", stat.FrontendTime), true);
         pos.Y += y_step;
-        m_Canvas->DrawText(fontStyle, pos, Color4::White(), sb.Sprintf("Audio channels: %d active, %d virtual", m_AudioMixer->GetNumActiveTracks(), m_AudioMixer->GetNumVirtualTracks()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::sWhite(), sb.Sprintf("Audio channels: %d active, %d virtual", m_AudioMixer->GetNumActiveTracks(), m_AudioMixer->GetNumVirtualTracks()), true);
     }
 
     if (com_ShowFPS)
@@ -538,13 +538,13 @@ void GameApplication::ShowStats()
         FontStyle fontStyle;
         fontStyle.FontSize = 14;
         m_Canvas->FontFace(FontHandle{});
-        m_Canvas->DrawText(fontStyle, Float2(10, 30), Color4::White(), sb.Sprintf("Frame time %.1f ms (FPS: %d, AVG %d)", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
+        m_Canvas->DrawText(fontStyle, Float2(10, 30), Color4::sWhite(), sb.Sprintf("Frame time %.1f ms (FPS: %d, AVG %d)", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
     }
 }
 
 void GameApplication::LoadConfigFile(StringView configFile)
 {
-    File f = File::OpenRead(configFile);
+    File f = File::sOpenRead(configFile);
     if (f)
     {
         m_CommandProcessor.Add(f.AsString());
@@ -558,7 +558,7 @@ void GameApplication::LoadConfigFile(StringView configFile)
 
                 const char*  name = proc.GetArg(0);
                 ConsoleVar* var;
-                if (nullptr != (var = ConsoleVar::FindVariable(name)))
+                if (nullptr != (var = ConsoleVar::sFindVariable(name)))
                 {
                     if (proc.GetArgsCount() < 2)
                     {

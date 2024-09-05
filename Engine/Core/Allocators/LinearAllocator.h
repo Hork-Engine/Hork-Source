@@ -45,20 +45,20 @@ public:
         Free();
     }
 
-    LinearAllocator(LinearAllocator&& Rhs) noexcept
+    LinearAllocator(LinearAllocator&& rhs) noexcept
     {
-        Core::Swap(m_Blocks, Rhs.m_Blocks);
-        Core::Swap(m_TotalAllocs, Rhs.m_TotalAllocs);
-        Core::Swap(m_TotalMemoryUsage, Rhs.m_TotalMemoryUsage);
+        Core::Swap(m_Blocks, rhs.m_Blocks);
+        Core::Swap(m_TotalAllocs, rhs.m_TotalAllocs);
+        Core::Swap(m_TotalMemoryUsage, rhs.m_TotalMemoryUsage);
     }
 
-    LinearAllocator& operator=(LinearAllocator&& Rhs) noexcept
+    LinearAllocator& operator=(LinearAllocator&& rhs) noexcept
     {
         Free();
 
-        Core::Swap(m_Blocks, Rhs.m_Blocks);
-        Core::Swap(m_TotalAllocs, Rhs.m_TotalAllocs);
-        Core::Swap(m_TotalMemoryUsage, Rhs.m_TotalMemoryUsage);
+        Core::Swap(m_Blocks, rhs.m_Blocks);
+        Core::Swap(m_TotalAllocs, rhs.m_TotalAllocs);
+        Core::Swap(m_TotalMemoryUsage, rhs.m_TotalMemoryUsage);
 
         return *this;
     }
@@ -80,10 +80,10 @@ public:
 
     // Destroys an object and frees memory.
     template <typename T>
-    void Delete(T* Ptr)
+    void Delete(T* ptr)
     {
-        Ptr->~T();
-        TryFree(Ptr);
+        ptr->~T();
+        TryFree(ptr);
     }
 
     // Allocates an object or structure. Doesn't call constructors.
@@ -94,24 +94,24 @@ public:
     }
 
     // Allocates raw memory
-    void* Allocate(size_t SizeInBytes, size_t Alignment = sizeof(size_t))
+    void* Allocate(size_t sizeInBytes, size_t alignment = sizeof(size_t))
     {
         Block* block;
         size_t  address;
 
-        HK_ASSERT(IsPowerOfTwo(Alignment));
+        HK_ASSERT(IsPowerOfTwo(alignment));
 
-        Alignment   = std::max(sizeof(size_t), Alignment);
-        SizeInBytes = Align(SizeInBytes, Alignment);
+        alignment   = std::max(sizeof(size_t), alignment);
+        sizeInBytes = Align(sizeInBytes, alignment);
 
-        if (!FindBlock(SizeInBytes, Alignment, block, address))
+        if (!FindBlock(sizeInBytes, alignment, block, address))
         {
             // Allocate new block
 
-            size_t size = std::max<size_t>(SizeInBytes, BlockSize) + sizeof(Block) + (Alignment - 1);
+            size_t size = std::max<size_t>(sizeInBytes, BlockSize) + sizeof(Block) + (alignment - 1);
 
             block             = (Block*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(size);
-            block->Address    = (size_t)AlignPtr(block + 1, Alignment);
+            block->Address    = (size_t)AlignPtr(block + 1, alignment);
             block->MaxAddress = (size_t)((byte*)block + size);
             block->CurAddress = block->Address;
             block->Next       = m_Blocks;
@@ -125,22 +125,22 @@ public:
         block->LastAllocationAddress2 = block->CurAddress;
 
         void* ptr = reinterpret_cast<byte*>(0) + address;
-        address += SizeInBytes;
+        address += sizeInBytes;
 
         m_TotalMemoryUsage += address - block->CurAddress;
         block->CurAddress = address;
 
-        HK_ASSERT(IsAlignedPtr(ptr, Alignment));
+        HK_ASSERT(IsAlignedPtr(ptr, alignment));
         return ptr;
     }
 
     // Tries to free memory. Returns the size used by the pointer on success, otherwise returns 0.
-    size_t TryFree(void* Ptr)
+    size_t TryFree(void* ptr)
     {
-        if (!Ptr)
+        if (!ptr)
             return 0;
 
-        size_t address = (size_t)Ptr;
+        size_t address = (size_t)ptr;
 
         Block* block = GetBlockByAddress(address);
         if (!block)
@@ -160,12 +160,12 @@ public:
     }
 
     // Tries to get the size used by the given pointer. Returns 0 on failure.
-    size_t TryGetSize(void* Ptr)
+    size_t TryGetSize(void* ptr)
     {
-        if (!Ptr)
+        if (!ptr)
             return 0;
 
-        size_t address = (size_t)Ptr;
+        size_t address = (size_t)ptr;
 
         Block* block = GetBlockByAddress(address);
         if (!block)
@@ -178,17 +178,17 @@ public:
     }
 
     // Checks if memory can be easily reallocated.
-    bool EasyReallocate(void* Ptr, size_t SizeInBytes, size_t Alignment = sizeof(size_t))
+    bool EasyReallocate(void* ptr, size_t sizeInBytes, size_t alignment = sizeof(size_t))
     {
-        if (!Ptr)
+        if (!ptr)
             return true;
 
-        Alignment = std::max(sizeof(size_t), Alignment);
+        alignment = std::max(sizeof(size_t), alignment);
 
-        if (!IsAlignedPtr(Ptr, Alignment))
+        if (!IsAlignedPtr(ptr, alignment))
             return false;
 
-        size_t address = (size_t)Ptr;
+        size_t address = (size_t)ptr;
 
         Block* block = GetBlockByAddress(address);
         if (!block)
@@ -199,89 +199,89 @@ public:
 
         size_t size = block->CurAddress - block->LastAllocationAddress;
 
-        SizeInBytes = Align(SizeInBytes, Alignment);
+        sizeInBytes = Align(sizeInBytes, alignment);
 
-        return SizeInBytes <= size || block->LastAllocationAddress + SizeInBytes <= block->MaxAddress;
+        return sizeInBytes <= size || block->LastAllocationAddress + sizeInBytes <= block->MaxAddress;
     }
 
     // Reallocates raw memory.
-    void* Reallocate(void* Ptr, size_t SizeInBytes, size_t Alignment = sizeof(size_t), bool bDiscard = false)
+    void* Reallocate(void* ptr, size_t sizeInBytes, size_t alignment = sizeof(size_t), bool discard = false)
     {
-        if (!Ptr)
-            return Allocate(SizeInBytes, Alignment);
+        if (!ptr)
+            return Allocate(sizeInBytes, alignment);
 
-        Alignment = std::max(sizeof(size_t), Alignment);
+        alignment = std::max(sizeof(size_t), alignment);
 
-        if (!IsAlignedPtr(Ptr, Alignment))
+        if (!IsAlignedPtr(ptr, alignment))
         {
-            if (bDiscard)
+            if (discard)
             {
-                TryFree(Ptr);
-                return Allocate(SizeInBytes, Alignment);
+                TryFree(ptr);
+                return Allocate(sizeInBytes, alignment);
             }
 
-            void*  newPtr = Allocate(SizeInBytes, Alignment);
-            size_t size   = TryGetSize(Ptr);
-            Core::Memcpy(newPtr, Ptr, size ? size : SizeInBytes);
+            void*  newPtr = Allocate(sizeInBytes, alignment);
+            size_t size   = TryGetSize(ptr);
+            Core::Memcpy(newPtr, ptr, size ? size : sizeInBytes);
             return newPtr;
         }
 
-        size_t address = (size_t)Ptr;
+        size_t address = (size_t)ptr;
 
         Block* block = GetBlockByAddress(address);
         HK_ASSERT(block);
 
         if (block->LastAllocationAddress == address)
         {
-            SizeInBytes = Align(SizeInBytes, Alignment);
+            sizeInBytes = Align(sizeInBytes, alignment);
 
             size_t size = block->CurAddress - block->LastAllocationAddress;
-            if (SizeInBytes <= size || block->LastAllocationAddress + SizeInBytes <= block->MaxAddress)
+            if (sizeInBytes <= size || block->LastAllocationAddress + sizeInBytes <= block->MaxAddress)
             {
-                block->CurAddress = block->LastAllocationAddress + SizeInBytes;
+                block->CurAddress = block->LastAllocationAddress + sizeInBytes;
 
                 m_TotalMemoryUsage -= size;
-                m_TotalMemoryUsage += SizeInBytes;
+                m_TotalMemoryUsage += sizeInBytes;
 
-                return Ptr;
+                return ptr;
             }
         }
 
-        void* newPtr = Allocate(SizeInBytes, Alignment);
-        if (!bDiscard)
-            Core::Memcpy(newPtr, Ptr, SizeInBytes);
+        void* newPtr = Allocate(sizeInBytes, alignment);
+        if (!discard)
+            Core::Memcpy(newPtr, ptr, sizeInBytes);
         return newPtr;
     }
 
     // Tries to enlarge the memory size for the given pointer. Returns nullptr on failure.
-    void* Extend(void* Ptr, size_t SizeInBytes, size_t Alignment = sizeof(size_t))
+    void* Extend(void* ptr, size_t sizeInBytes, size_t alignment = sizeof(size_t))
     {
-        if (!Ptr)
-            return Allocate(SizeInBytes, Alignment);
+        if (!ptr)
+            return Allocate(sizeInBytes, alignment);
 
-        Alignment = std::max(sizeof(size_t), Alignment);
+        alignment = std::max(sizeof(size_t), alignment);
 
-        if (!IsAlignedPtr(Ptr, Alignment))
+        if (!IsAlignedPtr(ptr, alignment))
             return nullptr;
 
-        size_t address = (size_t)Ptr;
+        size_t address = (size_t)ptr;
 
         Block* block = GetBlockByAddress(address);
         HK_ASSERT(block);
 
         if (block->LastAllocationAddress == address)
         {
-            SizeInBytes = Align(SizeInBytes, Alignment);
+            sizeInBytes = Align(sizeInBytes, alignment);
 
             size_t size = block->CurAddress - block->LastAllocationAddress;
-            if (SizeInBytes <= size || block->LastAllocationAddress + SizeInBytes <= block->MaxAddress)
+            if (sizeInBytes <= size || block->LastAllocationAddress + sizeInBytes <= block->MaxAddress)
             {
-                block->CurAddress = block->LastAllocationAddress + SizeInBytes;
+                block->CurAddress = block->LastAllocationAddress + sizeInBytes;
 
                 m_TotalMemoryUsage -= size;
-                m_TotalMemoryUsage += SizeInBytes;
+                m_TotalMemoryUsage += sizeInBytes;
 
-                return Ptr;
+                return ptr;
             }
         }
 
@@ -376,12 +376,12 @@ private:
     size_t m_TotalMemoryUsage = 0;
 
     // Returns true if the block was found, otherwise the block and address are undefined.
-    bool FindBlock(size_t SizeInBytes, size_t Alignment, Block*& Block, size_t& Address) const
+    bool FindBlock(size_t sizeInBytes, size_t alignment, Block*& block, size_t& address) const
     {
-        for (Block = m_Blocks; Block; Block = Block->Next)
+        for (block = m_Blocks; block; block = block->Next)
         {
-            Address = Align(Block->CurAddress, Alignment);
-            if (Address + SizeInBytes <= Block->MaxAddress)
+            address = Align(block->CurAddress, alignment);
+            if (address + sizeInBytes <= block->MaxAddress)
             {
                 return true;
             }
@@ -389,11 +389,11 @@ private:
         return false;
     }
 
-    Block* GetBlockByAddress(size_t Address) const
+    Block* GetBlockByAddress(size_t address) const
     {
         for (Block* block = m_Blocks; block; block = block->Next)
         {
-            if (Address >= block->Address && Address < block->MaxAddress)
+            if (address >= block->Address && address < block->MaxAddress)
                 return block;
         }
         return nullptr;
@@ -406,13 +406,13 @@ namespace Allocators
 class FrameMemoryAllocator : public MemoryAllocatorBase
 {
 public:
-    explicit FrameMemoryAllocator(const char* pName = nullptr)
+    explicit FrameMemoryAllocator(const char* name = nullptr)
     {}
 
     FrameMemoryAllocator(FrameMemoryAllocator const& rhs)
     {}
 
-    FrameMemoryAllocator(FrameMemoryAllocator const& x, const char* pName)
+    FrameMemoryAllocator(FrameMemoryAllocator const& x, const char* name)
     {}
 
     FrameMemoryAllocator& operator=(FrameMemoryAllocator const& rhs)
@@ -422,30 +422,30 @@ public:
 
     void* allocate(size_t n, int flags = 0)
     {
-        return GetAllocator().Allocate(n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT);
+        return sGetAllocator().Allocate(n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT);
     }
 
     void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
     {
-        return GetAllocator().Allocate(n, alignment);
+        return sGetAllocator().Allocate(n, alignment);
     }
 
     void* reallocate(void* p, size_t n, bool copyOld)
     {
-        return GetAllocator().Reallocate(p, n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT, !copyOld);
+        return sGetAllocator().Reallocate(p, n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT, !copyOld);
     }
 
     void deallocate(void* p, size_t n)
     {
-        GetAllocator().TryFree(p);
+        sGetAllocator().TryFree(p);
     }
 
     void deallocate(void* p)
     {
-        GetAllocator().TryFree(p);
+        sGetAllocator().TryFree(p);
     }
 
-    static LinearAllocator<>& GetAllocator()
+    static LinearAllocator<>& sGetAllocator()
     {
         static LinearAllocator<> frameMemory;
         return frameMemory;
@@ -485,14 +485,14 @@ class FrameResource
 public:
     virtual ~FrameResource() {}
 
-    void* operator new(size_t SizeInBytes)
+    void* operator new(size_t sizeInBytes)
     {
-        return Allocators::FrameMemoryAllocator::GetAllocator().Allocate(SizeInBytes);
+        return Allocators::FrameMemoryAllocator::sGetAllocator().Allocate(sizeInBytes);
     }
 
-    void operator delete(void* Ptr)
+    void operator delete(void* ptr)
     {
-        Allocators::FrameMemoryAllocator::GetAllocator().TryFree(Ptr);
+        Allocators::FrameMemoryAllocator::sGetAllocator().TryFree(ptr);
     }
 };
 

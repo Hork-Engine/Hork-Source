@@ -75,7 +75,7 @@ public:
 
     void AddFeedbackData(int FeedbackSize, const void* FeedbackData);
 
-    /** Bind texture once per frame between Begin() and End() */
+    /// Bind texture once per frame between Begin() and End()
     void BindTexture(int Unit, VirtualTexture* Texture);
 
     VirtualTexture* GetTexture(int Unit);

@@ -44,58 +44,58 @@ struct MemoryInfo
 namespace Core
 {
 
-/** Get total/available memory status */
+/// Get total/available memory status
 MemoryInfo GetPhysMemoryInfo();
 
-/** Application start timestamp */
+/// Application start timestamp
 int64_t SysStartSeconds();
 
-/** Application start timestamp */
+/// Application start timestamp
 int64_t SysStartMilliseconds();
 
-/** Application start timestamp */
+/// Application start timestamp
 int64_t SysStartMicroseconds();
 
-/** Get current time in seconds since application start */
+/// Get current time in seconds since application start
 int64_t SysSeconds();
 
-/** Get current time in seconds since application start */
+/// Get current time in seconds since application start
 double SysSeconds_d();
 
-/** Get current time in milliseconds since application start */
+/// Get current time in milliseconds since application start
 int64_t SysMilliseconds();
 
-/** Get current time in milliseconds since application start */
+/// Get current time in milliseconds since application start
 double SysMilliseconds_d();
 
-/** Get current time in microseconds since application start */
+/// Get current time in microseconds since application start
 int64_t SysMicroseconds();
 
-/** Get current time in microseconds since application start */
+/// Get current time in microseconds since application start
 double SysMicroseconds_d();
 
 void WriteDebugString(const char* message);
 
-/** Load dynamic library (.dll or .so) */
+/// Load dynamic library (.dll or .so)
 void* LoadDynamicLib(const char* libraryName);
 
-/** Unload dynamic library (.dll or .so) */
+/// Unload dynamic library (.dll or .so)
 void UnloadDynamicLib(void* handle);
 
-/** Get address of procedure in dynamic library */
+/// Get address of procedure in dynamic library
 void* GetProcAddress(void* handle, const char* procName);
 
-/** Helper. Get address of procedure in dynamic library */
+/// Helper. Get address of procedure in dynamic library
 template <typename T>
 bool GetProcAddress(void* handle, T** procPtr, const char* procName)
 {
     return nullptr != ((*procPtr) = (T*)GetProcAddress(handle, procName));
 }
 
-/** Returns x and y coordinate of the mouse cursor position relative to the focus window. */
+/// Returns x and y coordinate of the mouse cursor position relative to the focus window.
 void GetCursorPosition(float& x, float& y);
 
-/** Returns x and y coordinate of the mouse cursor position relative to the desktop. */
+/// Returns x and y coordinate of the mouse cursor position relative to the desktop.
 void GetGlobalCursorPosition(float& x, float& y);
 
 } // namespace Core

@@ -57,7 +57,7 @@ TextureResource::TextureResource(ImageStorage image) :
 {
 }
 
-UniqueRef<TextureResource> TextureResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<TextureResource> TextureResource::sLoad(IBinaryStreamReadInterface& stream)
 {
     UniqueRef<TextureResource> resource = MakeUnique<TextureResource>();
     if (!resource->Read(stream))
@@ -91,6 +91,25 @@ bool TextureResource::Read(IBinaryStreamReadInterface& stream)
     stream.ReadObject(m_Image);
 
     return true;
+}
+
+//bool TextureResource::Write(IBinaryStreamWriteInterface& stream, ImageStorage const& storage)
+//{
+//    stream.WriteUInt32(MakeResourceMagic(Type, Version));
+//    stream.WriteObject(storage);
+//    return true;
+//}
+
+namespace AssetUtils
+{
+
+bool CreateTexture(IBinaryStreamWriteInterface& stream, ImageStorage const& storage)
+{
+    stream.WriteUInt32(MakeResourceMagic(TextureResource::Type, TextureResource::Version));
+    stream.WriteObject(storage);
+    return true;    
+}
+
 }
 
 void TextureResource::Upload()
@@ -194,7 +213,7 @@ void TextureResource::Allocate1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -217,7 +236,7 @@ void TextureResource::Allocate1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -240,7 +259,7 @@ void TextureResource::Allocate2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -263,7 +282,7 @@ void TextureResource::Allocate2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -286,7 +305,7 @@ void TextureResource::Allocate3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -309,7 +328,7 @@ void TextureResource::AllocateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLeve
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
@@ -332,7 +351,7 @@ void TextureResource::AllocateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMi
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GameApplication::GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);

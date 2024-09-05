@@ -37,11 +37,11 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-/** Decode Base85 string to dest buffer. _Dst is optional parameter. Returns size of destination buffer in bytes. */
-size_t DecodeBase85(byte const* _Base85, byte* _Dst);
+/// Decode Base85 string to dest buffer. dst is optional parameter. Returns size of destination buffer in bytes.
+size_t DecodeBase85(byte const* base85, byte* dst);
 
-/** Encode source data. _Base85 is optional parameter. Returns size of encoded buffer in bytes. */
-size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85);
+/// Encode source data. base85 is optional parameter. Returns size of encoded buffer in bytes.
+size_t EncodeBase85(byte const* src, size_t size, byte* base85);
 
 } // namespace Core
 

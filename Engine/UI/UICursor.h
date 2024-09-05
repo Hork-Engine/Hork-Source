@@ -49,14 +49,14 @@ class UIDefaultCursor : public UICursor
     UI_CLASS(UICursor, UICursor)
 
 public:
-    DRAW_CURSOR DrawCursor = DRAW_CURSOR_ARROW;
-    Color4      FillColor  = Color4::White();
-    Color4      BorderColor = Color4::Black();
+    CanvasCursor Cursor = CanvasCursor::Arrow;
+    Color4      FillColor  = Color4::sWhite();
+    Color4      BorderColor = Color4::sBlack();
     bool        bDropShadow = true;
 
-    UIDefaultCursor& WithDrawCursor(DRAW_CURSOR drawCursor)
+    UIDefaultCursor& WithDrawCursor(CanvasCursor drawCursor)
     {
-        DrawCursor = drawCursor;
+        Cursor = drawCursor;
         return *this;
     }
 

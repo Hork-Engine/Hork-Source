@@ -430,7 +430,7 @@ public:
     bool                                CreateCollision(CreateCollisionSettings const& settings, JPH::Shape*& outShape, ScalingMode& outScalingMode);
     HK_NODISCARD JPH::Shape*            CreateScaledShape(ScalingMode scalingMode, JPH::Shape* sourceShape, Float3 const& scale);
 
-    static void                         GatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& vertices, Vector<uint32_t>& indices);
+    static void                         sGatherShapeGeometry(JPH::Shape const* shape, Vector<Float3>& vertices, Vector<uint32_t>& indices);
 
     bool                                CastShapeClosest(JPH::RShapeCast const& inShapeCast, ShapeCastResult& outResult, ShapeCastFilter const& inFilter);
     bool                                CastShape(JPH::RShapeCast const& inShapeCast, Vector<ShapeCastResult>& outResult, ShapeCastFilter const& inFilter);

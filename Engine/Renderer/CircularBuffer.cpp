@@ -57,7 +57,7 @@ CircularBuffer::CircularBuffer(size_t InBufferSize) :
 
     if (!m_pMappedMemory)
     {
-        CoreApplication::TerminateWithError("CircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
+        CoreApplication::sTerminateWithError("CircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
     for (int i = 0; i < SWAP_CHAIN_SIZE; i++)

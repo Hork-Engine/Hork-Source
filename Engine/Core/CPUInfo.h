@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-/** CPU features */
+/// CPU features
 struct CPUInfo
 {
     bool OS_AVX : 1;
@@ -85,9 +85,9 @@ struct CPUInfo
     bool PREFETCHWT1 : 1;
 };
 
-namespace Core {
+namespace Core
+{
 
-/** Get CPU info */
 CPUInfo const* GetCPUInfo();
 
 }

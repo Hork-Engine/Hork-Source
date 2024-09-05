@@ -49,11 +49,11 @@ ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"_s, "1"_s);
 
 AudioHRTF::AudioHRTF(int SampleRate)
 {
-    File f = File::OpenRead("HRTF/IRC_1002_C.bin", GameApplication::GetEmbeddedArchive());
+    File f = File::sOpenRead("HRTF/IRC_1002_C.bin", GameApplication::sGetEmbeddedArchive());
     if (!f)
     {
         // An error occurred...
-        CoreApplication::TerminateWithError("Failed to open HRTF data\n");
+        CoreApplication::sTerminateWithError("Failed to open HRTF data\n");
     }
 
     /*
@@ -70,7 +70,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
     const char* MAGIC = "HRIR";
     if (std::memcmp(&magic, MAGIC, sizeof(uint32_t)) != 0)
     {
-        CoreApplication::TerminateWithError("Invalid HRTF data\n");
+        CoreApplication::sTerminateWithError("Invalid HRTF data\n");
     }
 
     int sampleRateHRIR = (int)f.ReadUInt32();
@@ -81,7 +81,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
 
     if (indexCount % 3)
     {
-        CoreApplication::TerminateWithError("Invalid index count for HRTF geometry\n");
+        CoreApplication::sTerminateWithError("Invalid index count for HRTF geometry\n");
     }
 
     /*
@@ -143,7 +143,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
         ma_result result = ma_resampler_init(&config, &resampler);
         if (result != MA_SUCCESS)
         {
-            CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
+            CoreApplication::sTerminateWithError("Failed to resample HRTF data\n");
         }
 
         ma_uint64 frameCountIn = m_FrameCount;
@@ -179,7 +179,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
             result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
-                CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
+                CoreApplication::sTerminateWithError("Failed to resample HRTF data\n");
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 
@@ -193,7 +193,7 @@ AudioHRTF::AudioHRTF(int SampleRate)
             result = ma_resampler_process_pcm_frames(&resampler, framesIn.ToPtr(), &frameCountIn, framesOut.ToPtr(), &frameCountOut);
             if (result != MA_SUCCESS)
             {
-                CoreApplication::TerminateWithError("Failed to resample HRTF data\n");
+                CoreApplication::sTerminateWithError("Failed to resample HRTF data\n");
             }
             HK_ASSERT(frameCountOut <= framesOut.Size());
 

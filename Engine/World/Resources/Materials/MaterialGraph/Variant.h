@@ -260,7 +260,7 @@ EnumDef const* GetVariantEnum(typename std::enable_if<std::is_enum<T>::value>::t
 }
 
 
-/** Variant is used to store property value */
+/// Variant is used to store property value
 class Variant final
 {
     static constexpr size_t SizeOf =

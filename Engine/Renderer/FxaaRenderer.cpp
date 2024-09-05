@@ -53,7 +53,7 @@ FxaaRenderer::FxaaRenderer()
     resourceLayout.NumBuffers  = 1;
     resourceLayout.Buffers     = &bufferInfo;
 
-    ShaderFactory::CreateFullscreenQuadPipeline(&FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout);
 }
 
 void FxaaRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppFxaaTexture)

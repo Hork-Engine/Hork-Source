@@ -48,32 +48,32 @@ struct MeshVertex
     int8_t  Handedness;  // 4 * 1 = 4 bytes      byte: 1 bytes
     uint8_t Pad[3];
 
-    void Write(IBinaryStreamWriteInterface& Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        Stream.WriteObject(Position);
-        Stream.WriteHalf(TexCoord[0]);
-        Stream.WriteHalf(TexCoord[1]);
-        Stream.WriteHalf(Normal[0]);
-        Stream.WriteHalf(Normal[1]);
-        Stream.WriteHalf(Normal[2]);
-        Stream.WriteHalf(Tangent[0]);
-        Stream.WriteHalf(Tangent[1]);
-        Stream.WriteHalf(Tangent[2]);
-        Stream.WriteInt8(Handedness);
+        stream.WriteObject(Position);
+        stream.WriteHalf(TexCoord[0]);
+        stream.WriteHalf(TexCoord[1]);
+        stream.WriteHalf(Normal[0]);
+        stream.WriteHalf(Normal[1]);
+        stream.WriteHalf(Normal[2]);
+        stream.WriteHalf(Tangent[0]);
+        stream.WriteHalf(Tangent[1]);
+        stream.WriteHalf(Tangent[2]);
+        stream.WriteInt8(Handedness);
     }
 
-    void Read(IBinaryStreamReadInterface& Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        Stream.ReadObject(Position);
-        TexCoord[0] = Stream.ReadHalf();
-        TexCoord[1] = Stream.ReadHalf();
-        Normal[0] = Stream.ReadHalf();
-        Normal[1] = Stream.ReadHalf();
-        Normal[2] = Stream.ReadHalf();
-        Tangent[0] = Stream.ReadHalf();
-        Tangent[1] = Stream.ReadHalf();
-        Tangent[2] = Stream.ReadHalf();
-        Handedness = Stream.ReadInt8();
+        stream.ReadObject(Position);
+        TexCoord[0] = stream.ReadHalf();
+        TexCoord[1] = stream.ReadHalf();
+        Normal[0] = stream.ReadHalf();
+        Normal[1] = stream.ReadHalf();
+        Normal[2] = stream.ReadHalf();
+        Tangent[0] = stream.ReadHalf();
+        Tangent[1] = stream.ReadHalf();
+        Tangent[2] = stream.ReadHalf();
+        Handedness = stream.ReadInt8();
     }
 
     void SetTexCoord(Half S, Half T)
@@ -82,10 +82,10 @@ struct MeshVertex
         TexCoord[1] = T;
     }
 
-    void SetTexCoord(Float2 const& _TexCoord)
+    void SetTexCoord(Float2 const& texCoord)
     {
-        TexCoord[0] = _TexCoord.X;
-        TexCoord[1] = _TexCoord.Y;
+        TexCoord[0] = texCoord.X;
+        TexCoord[1] = texCoord.Y;
     }
 
     const Float2 GetTexCoord() const
@@ -93,69 +93,69 @@ struct MeshVertex
         return Float2(TexCoord[0], TexCoord[1]);
     }
 
-    void SetNormal(Half X, Half Y, Half Z)
+    void SetNormal(Half x, Half y, Half z)
     {
-        Normal[0] = X;
-        Normal[1] = Y;
-        Normal[2] = Z;
+        Normal[0] = x;
+        Normal[1] = y;
+        Normal[2] = z;
     }
 
-    void SetNormal(Float3 const& _Normal)
+    void SetNormal(Float3 const& normal)
     {
-        Normal[0] = _Normal.X;
-        Normal[1] = _Normal.Y;
-        Normal[2] = _Normal.Z;
+        Normal[0] = normal.X;
+        Normal[1] = normal.Y;
+        Normal[2] = normal.Z;
     }
 
-    const Float3 GetNormal() const
+    Float3 GetNormal() const
     {
         return Float3(Normal[0], Normal[1], Normal[2]);
     }
 
-    void SetTangent(Half X, Half Y, Half Z)
+    void SetTangent(Half x, Half y, Half z)
     {
-        Tangent[0] = X;
-        Tangent[1] = Y;
-        Tangent[2] = Z;
+        Tangent[0] = x;
+        Tangent[1] = y;
+        Tangent[2] = z;
     }
 
-    void SetTangent(Float3 const& _Tangent)
+    void SetTangent(Float3 const& tangent)
     {
-        Tangent[0] = _Tangent.X;
-        Tangent[1] = _Tangent.Y;
-        Tangent[2] = _Tangent.Z;
+        Tangent[0] = tangent.X;
+        Tangent[1] = tangent.Y;
+        Tangent[2] = tangent.Z;
     }
 
-    const Float3 GetTangent() const
+    Float3 GetTangent() const
     {
         return Float3(Tangent[0], Tangent[1], Tangent[2]);
     }
 
-    static MeshVertex Lerp(MeshVertex const& Vertex1, MeshVertex const& Vertex2, float Value = 0.5f);
+    static MeshVertex sLerp(MeshVertex const& vertex1, MeshVertex const& vertex2, float frac = 0.5f);
 };
 
 static_assert(sizeof(MeshVertex) == 32, "Keep 32b vertex size");
 
-HK_FORCEINLINE const MeshVertex MakeMeshVertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Tangent, float Handedness, Float3 const& Normal)
+HK_FORCEINLINE const MeshVertex MakeMeshVertex(Float3 const& position, Float2 const& texCoord, Float3 const& tangent, float handedness, Float3 const& normal)
 {
     MeshVertex v;
-    v.Position = Position;
-    v.SetTexCoord(TexCoord);
-    v.SetNormal(Normal);
-    v.SetTangent(Tangent);
-    v.Handedness = Handedness > 0.0f ? 1 : -1;
+    v.Position = position;
+    v.SetTexCoord(texCoord);
+    v.SetNormal(normal);
+    v.SetTangent(tangent);
+    v.Handedness = handedness > 0.0f ? 1 : -1;
     return v;
 }
 
-HK_FORCEINLINE MeshVertex MeshVertex::Lerp(MeshVertex const& Vertex1, MeshVertex const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertex MeshVertex::sLerp(MeshVertex const& vertex1, MeshVertex const& vertex2, float frac)
 {
     MeshVertex Result;
 
-    Result.Position = Math::Lerp(Vertex1.Position, Vertex2.Position, Value);
-    Result.SetTexCoord(Math::Lerp(Vertex1.GetTexCoord(), Vertex2.GetTexCoord(), Value));
-    Result.SetNormal(Math::Lerp(Vertex1.GetNormal(), Vertex2.GetNormal(), Value).Normalized());
-    Result.SetTangent(Math::Lerp(Vertex1.GetTangent(), Vertex2.GetTangent(), Value).Normalized());
-    Result.Handedness = Value >= 0.5f ? Vertex2.Handedness : Vertex1.Handedness;
+    Result.Position = Math::Lerp(vertex1.Position, vertex2.Position, frac);
+    Result.SetTexCoord(Math::Lerp(vertex1.GetTexCoord(), vertex2.GetTexCoord(), frac));
+    Result.SetNormal(Math::Lerp(vertex1.GetNormal(), vertex2.GetNormal(), frac).Normalized());
+    Result.SetTangent(Math::Lerp(vertex1.GetTangent(), vertex2.GetTangent(), frac).Normalized());
+    Result.Handedness = frac >= 0.5f ? vertex2.Handedness : vertex1.Handedness;
 
     return Result;
 }
@@ -164,24 +164,24 @@ struct MeshVertexUV
 {
     Float2 TexCoord;
 
-    void Write(IBinaryStreamWriteInterface& Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        Stream.WriteObject(TexCoord);
+        stream.WriteObject(TexCoord);
     }
 
-    void Read(IBinaryStreamReadInterface& Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        Stream.ReadObject(TexCoord);
+        stream.ReadObject(TexCoord);
     }
 
-    static MeshVertexUV Lerp(MeshVertexUV const& Vertex1, MeshVertexUV const& Vertex2, float Value = 0.5f);
+    static MeshVertexUV sLerp(MeshVertexUV const& vertex1, MeshVertexUV const& vertex2, float frac = 0.5f);
 };
 
-HK_FORCEINLINE MeshVertexUV MeshVertexUV::Lerp(MeshVertexUV const& Vertex1, MeshVertexUV const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertexUV MeshVertexUV::sLerp(MeshVertexUV const& vertex1, MeshVertexUV const& vertex2, float frac)
 {
     MeshVertexUV Result;
 
-    Result.TexCoord = Math::Lerp(Vertex1.TexCoord, Vertex2.TexCoord, Value);
+    Result.TexCoord = Math::Lerp(vertex1.TexCoord, vertex2.TexCoord, frac);
 
     return Result;
 }
@@ -190,25 +190,25 @@ struct MeshVertexLight
 {
     uint32_t VertexLight;
 
-    void Write(IBinaryStreamWriteInterface& Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        Stream.WriteUInt32(VertexLight);
+        stream.WriteUInt32(VertexLight);
     }
 
-    void Read(IBinaryStreamReadInterface& Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        VertexLight = Stream.ReadUInt32();
+        VertexLight = stream.ReadUInt32();
     }
 
-    static MeshVertexLight Lerp(MeshVertexLight const& Vertex1, MeshVertexLight const& Vertex2, float Value = 0.5f);
+    static MeshVertexLight sLerp(MeshVertexLight const& vertex1, MeshVertexLight const& vertex2, float frac = 0.5f);
 };
 
-HK_FORCEINLINE MeshVertexLight MeshVertexLight::Lerp(MeshVertexLight const& Vertex1, MeshVertexLight const& Vertex2, float Value)
+HK_FORCEINLINE MeshVertexLight MeshVertexLight::sLerp(MeshVertexLight const& vertex1, MeshVertexLight const& vertex2, float frac)
 {
     MeshVertexLight Result;
 
-    const byte* c0 = reinterpret_cast<const byte*>(&Vertex1.VertexLight);
-    const byte* c1 = reinterpret_cast<const byte*>(&Vertex2.VertexLight);
+    const byte* c0 = reinterpret_cast<const byte*>(&vertex1.VertexLight);
+    const byte* c1 = reinterpret_cast<const byte*>(&vertex2.VertexLight);
     byte*       r  = reinterpret_cast<byte*>(&Result.VertexLight);
 
 #if 0
@@ -224,9 +224,9 @@ HK_FORCEINLINE MeshVertexLight MeshVertexLight::Lerp(MeshVertexLight const& Vert
     DecodeRGBE(linearColor1, c0);
     DecodeRGBE(linearColor2, c1);
 
-    resultColor[0] = Math::Lerp(linearColor1[0], linearColor2[0], Value);
-    resultColor[1] = Math::Lerp(linearColor1[1], linearColor2[1], Value);
-    resultColor[2] = Math::Lerp(linearColor1[2], linearColor2[2], Value);
+    resultColor[0] = Math::Lerp(linearColor1[0], linearColor2[0], frac);
+    resultColor[1] = Math::Lerp(linearColor1[1], linearColor2[1], frac);
+    resultColor[2] = Math::Lerp(linearColor1[2], linearColor2[2], frac);
 
     EncodeRGBE(r, resultColor);
 #endif
@@ -239,22 +239,22 @@ struct SkinVertex
     uint16_t    JointIndices[4];
     uint8_t     JointWeights[4];
 
-    void Write(IBinaryStreamWriteInterface& Stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-        Stream.WriteUInt16(JointIndices[0]);
-        Stream.WriteUInt16(JointIndices[1]);
-        Stream.WriteUInt16(JointIndices[2]);
-        Stream.WriteUInt16(JointIndices[3]);
-        Stream.Write(JointWeights, 4);
+        stream.WriteUInt16(JointIndices[0]);
+        stream.WriteUInt16(JointIndices[1]);
+        stream.WriteUInt16(JointIndices[2]);
+        stream.WriteUInt16(JointIndices[3]);
+        stream.Write(JointWeights, 4);
     }
 
-    void Read(IBinaryStreamReadInterface& Stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-        JointIndices[0] = Stream.ReadUInt16();
-        JointIndices[1] = Stream.ReadUInt16();
-        JointIndices[2] = Stream.ReadUInt16();
-        JointIndices[3] = Stream.ReadUInt16();
-        Stream.Read(JointWeights, 4);
+        JointIndices[0] = stream.ReadUInt16();
+        JointIndices[1] = stream.ReadUInt16();
+        JointIndices[2] = stream.ReadUInt16();
+        JointIndices[3] = stream.ReadUInt16();
+        stream.Read(JointWeights, 4);
     }
 };
 

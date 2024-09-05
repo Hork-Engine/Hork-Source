@@ -41,27 +41,27 @@ public:
     VirtualTextureFile(const char* FileName);
     ~VirtualTextureFile();
 
-    /** Resolution of virtual texture in pixels */
+    /// Resolution of virtual texture in pixels
     uint32_t GetTextureResolution() const { return TextureResolution; }
 
-    /** log2( TextureResolution ) */
+    /// log2( TextureResolution )
     uint32_t GetTextureResolutionLog2() const { return TextureResolutionLog2; }
 
-    /** Get page resolution width borders */
+    /// Get page resolution width borders
     int GetPageResolutionB() const { return PageResolutionB; }
 
-    /** Get single page size in bytes */
+    /// Get single page size in bytes
     size_t GetPageSizeInBytes() const { return PageSizeInBytes; }
 
     int GetNumLayers() const { return Layers.Size(); }
 
-    /** Read page from file. Can be used from stream thread */
+    /// Read page from file. Can be used from stream thread
     SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData, int LayerIndex) const;
 
-    /** Read page from file. Can be used from stream thread */
+    /// Read page from file. Can be used from stream thread
     SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData[]) const;
 
-    /** Read page physical address. Can be used from stream thread */
+    /// Read page physical address. Can be used from stream thread
     SFileOffset GetPhysAddress(uint32_t PageIndex) const;
 
 protected:
@@ -82,10 +82,10 @@ protected:
     Vector<Layer> Layers;
     size_t PageSizeInBytes; // PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[Layers.size()-1].SizeInBytes
 
-    /** Resolution of virtual texture in pixels */
+    /// Resolution of virtual texture in pixels
     uint32_t TextureResolution;
 
-    /** log2( TextureResolution ) */
+    /// log2( TextureResolution )
     uint32_t TextureResolutionLog2;
 };
 

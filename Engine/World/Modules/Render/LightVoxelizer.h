@@ -119,7 +119,7 @@ public:
     void DrawVoxels(DebugRenderer* InRenderer);
 
 private:
-    static void VoxelizeWork(void* _Data);
+    static void sVoxelizeWork(void* _Data);
 
     void VoxelizeWork(int SliceIndex);
 

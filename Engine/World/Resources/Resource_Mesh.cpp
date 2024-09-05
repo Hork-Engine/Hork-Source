@@ -46,7 +46,7 @@ HK_NAMESPACE_BEGIN
 
 MeshResource::~MeshResource()
 {
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
     vertexMemory->Deallocate(m_SkinBufferHandle);
@@ -98,9 +98,9 @@ void MeshResource::Clear()
     m_BoundingBox.Clear();
 }
 
-UniqueRef<MeshResource> MeshResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<MeshResource> MeshResource::sLoad(IBinaryStreamReadInterface& stream)
 {
-    StringView extension = PathUtils::GetExt(stream.GetName());
+    StringView extension = PathUtils::sGetExt(stream.GetName());
 
     if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx") || !extension.Icmp(".obj"))
     {
@@ -264,22 +264,22 @@ void MeshResource::Write(IBinaryStreamWriteInterface& stream) const
     stream.WriteArray(m_Surfaces);
 }
 
-void* MeshResource::GetVertexMemory(void* _This)
+void* MeshResource::sGetVertexMemory(void* _This)
 {
     return static_cast<MeshResource*>(_This)->m_Vertices.ToPtr();
 }
 
-void* MeshResource::GetSkinMemory(void* _This)
+void* MeshResource::sGetSkinMemory(void* _This)
 {
     return static_cast<MeshResource*>(_This)->m_SkinBuffer.ToPtr();
 }
 
-void* MeshResource::GetLightmapUVMemory(void* _This)
+void* MeshResource::sGetLightmapUVMemory(void* _This)
 {
     return static_cast<MeshResource*>(_This)->m_LightmapUVs.ToPtr();
 }
 
-void* MeshResource::GetIndexMemory(void* _This)
+void* MeshResource::sGetIndexMemory(void* _This)
 {
     return static_cast<MeshResource*>(_This)->m_Indices.ToPtr();
 }
@@ -288,7 +288,7 @@ void MeshResource::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pO
 {
     if (m_VertexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_VertexHandle, ppBuffer, pOffset);
     }
     else
@@ -302,7 +302,7 @@ void MeshResource::GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t
 {
     if (m_SkinBufferHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_SkinBufferHandle, ppBuffer, pOffset);
     }
     else
@@ -316,7 +316,7 @@ void MeshResource::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOf
 {
     if (m_LightmapUVsGPU)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
     }
     else
@@ -330,7 +330,7 @@ void MeshResource::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOf
 {
     if (m_IndexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->GetPhysicalBufferAndOffset(m_IndexHandle, ppBuffer, pOffset);
     }
     else
@@ -381,21 +381,21 @@ void MeshResource::Allocate(MeshAllocateDesc const& desc)
     m_SkinBuffer.ShrinkToFit();
     m_LightmapUVs.ShrinkToFit();
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
     vertexMemory->Deallocate(m_SkinBufferHandle);
     vertexMemory->Deallocate(m_LightmapUVsGPU);
     vertexMemory->Deallocate(m_IndexHandle);
 
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, GetVertexMemory, this);
-    m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, GetIndexMemory, this);
+    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, sGetVertexMemory, this);
+    m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, sGetIndexMemory, this);
     if (desc.SkinsCount)
-        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), nullptr, GetSkinMemory, this);
+        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), nullptr, sGetSkinMemory, this);
     else
         m_SkinBufferHandle = nullptr;
     if (desc.HasLightmapChannel)
-        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, GetLightmapUVMemory, this);
+        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
 }
@@ -417,7 +417,7 @@ bool MeshResource::WriteVertexData(MeshVertex const* vertices, int vertexCount, 
 
     if (m_VertexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
     }
 
@@ -447,7 +447,7 @@ bool MeshResource::WriteSkinningData(SkinVertex const* vertices, int vertexCount
 
     if (m_SkinBufferHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->Update(m_SkinBufferHandle, startVertexLocation * sizeof(SkinVertex), vertexCount * sizeof(SkinVertex), m_SkinBuffer.ToPtr() + startVertexLocation);
     }
 
@@ -473,7 +473,7 @@ bool MeshResource::WriteLightmapUVsData(MeshVertexUV const* UVs, int vertexCount
 
     if (m_LightmapUVsGPU)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->Update(m_LightmapUVsGPU, startVertexLocation * sizeof(MeshVertexUV), vertexCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + startVertexLocation);
     }
 
@@ -497,7 +497,7 @@ bool MeshResource::WriteIndexData(unsigned int const* indices, int indexCount, i
 
     if (m_IndexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
         vertexMemory->Update(m_IndexHandle, startIndexLocation * sizeof(unsigned int), indexCount * sizeof(unsigned int), m_Indices.ToPtr() + startIndexLocation);
     }
 
@@ -506,23 +506,23 @@ bool MeshResource::WriteIndexData(unsigned int const* indices, int indexCount, i
 
 void MeshResource::Upload()
 {
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
 
     vertexMemory->Deallocate(m_VertexHandle);
     vertexMemory->Deallocate(m_SkinBufferHandle);
     vertexMemory->Deallocate(m_LightmapUVsGPU);
     vertexMemory->Deallocate(m_IndexHandle);
 
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr(), GetVertexMemory, this);
-    m_IndexHandle = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr(), GetIndexMemory, this);
+    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr(), sGetVertexMemory, this);
+    m_IndexHandle = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr(), sGetIndexMemory, this);
 
     if (!m_SkinBuffer.IsEmpty())
-        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), m_SkinBuffer.ToPtr(), GetSkinMemory, this);
+        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), m_SkinBuffer.ToPtr(), sGetSkinMemory, this);
     else
         m_SkinBufferHandle = nullptr;
 
     if (!m_LightmapUVs.IsEmpty())
-        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr(), GetLightmapUVMemory, this);
+        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr(), sGetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
 }
@@ -532,12 +532,12 @@ void MeshResource::AddLightmapUVs()
     if (m_LightmapUVsGPU && m_LightmapUVs.Size() == m_Vertices.Size())
         return;
 
-    VertexMemoryGPU* vertexMemory = GameApplication::GetVertexMemoryGPU();
+    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
 
     if (m_LightmapUVsGPU)
         vertexMemory->Deallocate(m_LightmapUVsGPU);
 
-    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexUV), nullptr, GetLightmapUVMemory, this);
+    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
     m_LightmapUVs.Resize(m_Vertices.Size());
 }
 
@@ -819,7 +819,7 @@ bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, 
 void MeshResource::DrawDebug(DebugRenderer& renderer) const
 {
     renderer.SetDepthTest(false);
-    renderer.SetColor(Color4::White());
+    renderer.SetColor(Color4::sWhite());
 
     renderer.DrawAABB(m_BoundingBox);
 }
@@ -832,7 +832,7 @@ void MeshResource::DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) c
     MeshSurface const& surface = m_Surfaces[surfaceIndex];
 
     renderer.SetDepthTest(false);
-    renderer.SetColor(Color4::White());
+    renderer.SetColor(Color4::sWhite());
     renderer.DrawAABB(surface.BoundingBox);
 
     if (!surface.Bvh.GetNodes().IsEmpty())

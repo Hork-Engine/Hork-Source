@@ -46,14 +46,14 @@ AtmosphereRenderer::AtmosphereRenderer()
     bufferCI.SizeInBytes = sizeof( ConstantData );
     GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
-    Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+    Float4x4 const * cubeFaceMatrices = Float4x4::sGetCubeFaceMatrices();
 
     Float4x4::PerspectiveMatrixDesc desc = {};
     desc.AspectRatio = 1;
     desc.FieldOfView = 90;
     desc.ZNear = 0.1f;
     desc.ZFar = 100.0f;
-    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
+    Float4x4 projMat = Float4x4::sGetPerspectiveMatrix(desc);
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
@@ -90,9 +90,9 @@ AtmosphereRenderer::AtmosphereRenderer()
         }
     };
 
-    ShaderFactory::CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    ShaderFactory::CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
-    ShaderFactory::CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
+    ShaderFactory::sCreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderFactory::sCreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
+    ShaderFactory::sCreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;

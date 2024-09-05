@@ -225,7 +225,7 @@ void FrameGraph::Debug()
 
 void FrameGraph::ExportGraphviz(StringView FileName)
 {
-    File f = File::OpenWrite(FileName);
+    File f = File::sOpenWrite(FileName);
     if (!f)
     {
         return;

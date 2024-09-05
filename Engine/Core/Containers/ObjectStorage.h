@@ -75,7 +75,7 @@ public:
 
     uint32_t        GetPageCount() const;
 
-    static constexpr size_t GetPageSize() { return PageSize; }
+    static constexpr size_t sGetPageSize() { return PageSize; }
 
     template <typename Visitor>
     void            Iterate(Visitor& visitor);

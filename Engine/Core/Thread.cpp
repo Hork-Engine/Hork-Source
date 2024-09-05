@@ -42,23 +42,23 @@ HK_NAMESPACE_BEGIN
 
 const int Thread::NumHardwareThreads = std::thread::hardware_concurrency();
 
-void Thread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData)
+void Thread::CreateThread(InvokerReturnType (*threadProc)(void*), void* threadData)
 {
 #ifdef HK_OS_WIN32
     unsigned threadId;
     m_Internal = (HANDLE)_beginthreadex(
         NULL,        // security
         0,           // stack size
-        ThreadProc,  // proc
-        pThreadData, // arg
+        threadProc,  // proc
+        threadData, // arg
         0,           // init flag
         &threadId);  // thread address
 #else
-    pthread_create(&m_Internal, nullptr, ThreadProc, pThreadData);
+    pthread_create(&m_Internal, nullptr, threadProc, threadData);
 #endif
 }
 
-void Thread::EndThread()
+void Thread::sEndThread()
 {
 #ifdef HK_OS_WIN32
     _endthreadex(0);
@@ -82,7 +82,7 @@ void Thread::Join()
 #endif
 }
 
-size_t Thread::ThisThreadId()
+size_t Thread::sThisThreadId()
 {
 #ifdef HK_OS_WIN32
     return GetCurrentThreadId();
@@ -107,14 +107,14 @@ struct WaitableTimer
 
 static thread_local WaitableTimer WaitableTimer;
 
-static void WaitMicrosecondsWIN32(int _Microseconds)
+static void WaitMicrosecondsWIN32(int microseconds)
 {
 #    if 0
-    std::this_thread::sleep_for( std::chrono::microseconds( _Microseconds ) );
+    std::this_thread::sleep_for( std::chrono::microseconds( microseconds ) );
 #    else
     LARGE_INTEGER WaitTime;
 
-    WaitTime.QuadPart = -10 * _Microseconds;
+    WaitTime.QuadPart = -10 * microseconds;
 
     if (!WaitableTimer.Handle)
     {
@@ -128,25 +128,25 @@ static void WaitMicrosecondsWIN32(int _Microseconds)
 
 #endif
 
-void Thread::WaitSeconds(int _Seconds)
+void Thread::sWaitSeconds(int seconds)
 {
 #ifdef HK_OS_WIN32
-    //std::this_thread::sleep_for( std::chrono::seconds( _Seconds ) );
-    WaitMicrosecondsWIN32(_Seconds * 1000000);
+    //std::this_thread::sleep_for( std::chrono::seconds( seconds ) );
+    WaitMicrosecondsWIN32(seconds * 1000000);
 #else
-    struct timespec ts = {_Seconds, 0};
+    struct timespec ts = {seconds, 0};
     while (::nanosleep(&ts, &ts) == -1 && errno == EINTR) {}
 #endif
 }
 
-void Thread::WaitMilliseconds(int _Milliseconds)
+void Thread::sWaitMilliseconds(int milliseconds)
 {
 #ifdef HK_OS_WIN32
-    //std::this_thread::sleep_for( std::chrono::milliseconds( _Milliseconds ) );
-    WaitMicrosecondsWIN32(_Milliseconds * 1000);
+    //std::this_thread::sleep_for( std::chrono::milliseconds( milliseconds ) );
+    WaitMicrosecondsWIN32(milliseconds * 1000);
 #else
-    int64_t         seconds     = _Milliseconds / 1000;
-    int64_t         nanoseconds = (_Milliseconds - seconds * 1000) * 1000000;
+    int64_t         seconds     = milliseconds / 1000;
+    int64_t         nanoseconds = (milliseconds - seconds * 1000) * 1000000;
     struct timespec ts          = {
         seconds,
         nanoseconds};
@@ -154,14 +154,14 @@ void Thread::WaitMilliseconds(int _Milliseconds)
 #endif
 }
 
-void Thread::WaitMicroseconds(int _Microseconds)
+void Thread::sWaitMicroseconds(int microseconds)
 {
 #ifdef HK_OS_WIN32
-    //std::this_thread::sleep_for( std::chrono::microseconds( _Microseconds ) );
-    WaitMicrosecondsWIN32(_Microseconds);
+    //std::this_thread::sleep_for( std::chrono::microseconds( microseconds ) );
+    WaitMicrosecondsWIN32(microseconds);
 #else
-    int64_t         seconds     = _Microseconds / 1000000;
-    int64_t         nanoseconds = (_Microseconds - seconds * 1000000) * 1000;
+    int64_t         seconds     = microseconds / 1000000;
+    int64_t         nanoseconds = (microseconds - seconds * 1000000) * 1000;
     struct timespec ts          = {
         seconds,
         nanoseconds};
@@ -237,17 +237,17 @@ void SyncEvent::SingalWIN32()
 }
 #endif
 
-void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
+void SyncEvent::WaitTimeout(int milliseconds, bool& timedOut)
 {
-    _TimedOut = false;
+    timedOut = false;
 
 #ifdef HK_OS_WIN32
-    if (WaitForSingleObject(m_Internal, _Milliseconds) == WAIT_TIMEOUT)
+    if (WaitForSingleObject(m_Internal, milliseconds) == WAIT_TIMEOUT)
     {
-        _TimedOut = true;
+        timedOut = true;
     }
 #else
-    int64_t timeStamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() + _Milliseconds;
+    int64_t timeStamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() + milliseconds;
 
     int64_t seconds     = timeStamp / 1000;
     int64_t nanoseconds = (timeStamp - seconds * 1000) * 1000000;
@@ -261,7 +261,7 @@ void SyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
     {
         if (pthread_cond_timedwait(&m_Internal, &m_Sync.m_Internal, &ts) == ETIMEDOUT)
         {
-            _TimedOut = true;
+            timedOut = true;
             return;
         }
     }

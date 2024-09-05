@@ -119,11 +119,11 @@ void ClassMeta::GetProperties(PropertyList& Properties, bool bRecursive) const
     }
 }
 
-void ClassMeta::CloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination)
+void ClassMeta::sCloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination)
 {
     if (Meta)
     {
-        CloneProperties_r(Meta->SuperClass(), Template, Destination);
+        sCloneProperties_r(Meta->SuperClass(), Template, Destination);
 
         for (Property const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
@@ -132,7 +132,7 @@ void ClassMeta::CloneProperties_r(ClassMeta const* Meta, BaseObject const* Templ
     }
 }
 
-void ClassMeta::CloneProperties(BaseObject const* Template, BaseObject* Destination)
+void ClassMeta::sCloneProperties(BaseObject const* Template, BaseObject* Destination)
 {
     if (&Template->FinalClassMeta() != &Destination->FinalClassMeta())
     {
@@ -140,7 +140,7 @@ void ClassMeta::CloneProperties(BaseObject const* Template, BaseObject* Destinat
         return;
     }
 
-    CloneProperties_r(&Template->FinalClassMeta(), Template, Destination);
+    sCloneProperties_r(&Template->FinalClassMeta(), Template, Destination);
 }
 
 HK_NAMESPACE_END

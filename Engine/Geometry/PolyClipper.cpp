@@ -127,7 +127,7 @@ void ComputeContours(ClipperLib::PolyTree const& polygonTree, Hk::Vector<Hk::Cli
 HK_NAMESPACE_BEGIN
 
 PolyClipper::PolyClipper() :
-    m_pImpl(MakeUnique<ClipperLib::Clipper>()), m_Transform3D(Float3x3::Identity()), m_InvTransform3D(Float3x3::Identity())
+    m_pImpl(MakeUnique<ClipperLib::Clipper>()), m_Transform3D(Float3x3::sIdentity()), m_InvTransform3D(Float3x3::sIdentity())
 {
 }
 

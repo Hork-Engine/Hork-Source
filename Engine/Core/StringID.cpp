@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-StringID::Pool& StringID::Pool::Instance()
+StringID::Pool& StringID::Pool::sInstance()
 {
     static Pool instance;
     return instance;
@@ -54,7 +54,7 @@ StringID::ID StringID::Pool::Insert(StringView str)
     
     size_t numStrings = m_Strings.Size();
     if (numStrings > Math::MaxValue<ID>())
-        CoreApplication::TerminateWithError("StringID::Pool::Insert: Pool overflow - too many strings\n");
+        CoreApplication::sTerminateWithError("StringID::Pool::Insert: Pool overflow - too many strings\n");
 
     ID id = ID(numStrings);
 

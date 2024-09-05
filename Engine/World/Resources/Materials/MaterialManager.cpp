@@ -70,7 +70,7 @@ void MaterialLibrary::DestroyMaterial(Material* material)
 
 void MaterialLibrary::Read(IBinaryStreamReadInterface& stream)
 {
-    ResourceManager& resourceMngr = GameApplication::GetResourceManager();
+    ResourceManager& resourceMngr = GameApplication::sGetResourceManager();
 
     DOM::Object document = DOM::Parser().Parse(stream.AsString());
     DOM::ObjectView documentView = document;
@@ -125,7 +125,7 @@ Ref<MaterialLibrary> MaterialManager::CreateLibrary()
 
 Ref<MaterialLibrary> MaterialManager::LoadLibrary(StringView fileName)
 {
-    auto& resourceMngr = GameApplication::GetResourceManager();
+    auto& resourceMngr = GameApplication::sGetResourceManager();
     if (auto file = resourceMngr.OpenFile(fileName))
     {
         auto library = CreateLibrary();

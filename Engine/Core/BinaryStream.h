@@ -50,11 +50,11 @@ public:
 
     virtual size_t GetOffset() const = 0;
 
-    virtual bool SeekSet(int32_t Offset) = 0;
+    virtual bool SeekSet(int32_t offset) = 0;
 
-    virtual bool SeekCur(int32_t Offset) = 0;
+    virtual bool SeekCur(int32_t offset) = 0;
 
-    virtual bool SeekEnd(int32_t Offset) = 0;
+    virtual bool SeekEnd(int32_t offset) = 0;
 
     void Rewind()
     {
@@ -72,23 +72,23 @@ class IBinaryStreamReadInterface : public virtual IBinaryStreamBaseInterface
 public:
     virtual ~IBinaryStreamReadInterface() = default;
 
-    virtual size_t Read(void* pBuffer, size_t SizeInBytes) = 0;
+    virtual size_t Read(void* data, size_t sizeInBytes) = 0;
 
-    virtual char* Gets(char* pBuffer, size_t SizeInBytes) = 0;
+    virtual char* Gets(char* str, size_t sizeInBytes) = 0;
 
-    void ReadStringToBuffer(char* pBuffer, size_t SizeInBytes)
+    void ReadStringToBuffer(char* str, size_t sizeInBytes)
     {
-        if (!SizeInBytes)
+        if (!sizeInBytes)
             return;
 
         size_t size     = ReadUInt32();
-        size_t capacity = std::min(size + 1, SizeInBytes);
-        Read(pBuffer, capacity - 1);
-        pBuffer[capacity - 1] = 0;
+        size_t capacity = std::min(size + 1, sizeInBytes);
+        Read(str, capacity - 1);
+        str[capacity - 1] = 0;
 
-        if (size > SizeInBytes - 1)
+        if (size > sizeInBytes - 1)
         {
-            SeekCur(size - (SizeInBytes - 1));
+            SeekCur(size - (sizeInBytes - 1));
         }
     }
 
@@ -130,7 +130,7 @@ public:
         return str;
     }
 
-    /** Reads the file as a null-terminated string. */
+    /// Reads the file as a null-terminated string.
     template <typename CharT = char, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
     TString<CharT, Allocator> AsString()
     {
@@ -165,9 +165,9 @@ public:
         return str;
     }
 
-    HeapBlob ReadBlob(size_t SizeInBytes)
+    HeapBlob ReadBlob(size_t sizeInBytes)
     {
-        HeapBlob blob(SizeInBytes);
+        HeapBlob blob(sizeInBytes);
 
         Read(blob.GetData(), blob.Size());
         return blob;
@@ -262,11 +262,11 @@ public:
     }
 
     template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
-    void ReadWords(T* pBuffer, const size_t Count = 1)
+    void ReadWords(T* data, const size_t count = 1)
     {
         static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8, "Unsupported integer");
 
-        Read(pBuffer, Count * sizeof(T));
+        Read(data, count * sizeof(T));
 
         #ifdef HK_BIG_ENDIAN
         switch (sizeof(T))
@@ -274,73 +274,73 @@ public:
             case 1:
                 break;
             case 2:
-                for (size_t i = 0; i < Count; i++)
-                    pBuffer[i] = Core::LittleWord(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    data[i] = Core::LittleWord(data[i]);
                 break;
             case 4:
-                for (size_t i = 0; i < Count; i++)
-                    pBuffer[i] = Core::LittleDWord(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    data[i] = Core::LittleDWord(data[i]);
                 break;
             case 8:
-                for (size_t i = 0; i < Count; i++)
-                    pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    data[i] = Core::LittleDDWord(data[i]);
                 break;
         }
         #endif
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-    void ReadFloats(T* pBuffer, const size_t Count = 1)
+    void ReadFloats(T* data, const size_t count = 1)
     {
         static_assert(sizeof(T) == 4 || sizeof(T) == 8, "Unsupported floating point");
 
-        Read(pBuffer, Count * sizeof(T));
+        Read(data, count * sizeof(T));
 
         #ifdef HK_BIG_ENDIAN
         switch (sizeof(T))
         {
             case 4:
-                for (size_t i = 0; i < Count; i++)
-                    pBuffer[i] = Core::LittleFloat(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    data[i] = Core::LittleFloat(data[i]);
                 break;
             case 8:
-                for (size_t i = 0; i < Count; i++)
-                    pBuffer[i] = Core::LittleDouble(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    data[i] = Core::LittleDouble(data[i]);
                 break;
         }
         #endif
     }  
 
     template <typename T>
-    void ReadObject(T& Object)
+    void ReadObject(T& object)
     {
-        Object.Read(*this);
+        object.Read(*this);
     }
 
     template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
-    void ReadArray(T& Array)
+    void ReadArray(T& array)
     {
         uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadWords(Array.ToPtr(), Array.Size());
+        array.ResizeInvalidate(size);
+        ReadWords(array.ToPtr(), array.Size());
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
-    void ReadArray(T& Array)
+    void ReadArray(T& array)
     {
         uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadFloats(Array.ToPtr(), Array.Size());
+        array.ResizeInvalidate(size);
+        ReadFloats(array.ToPtr(), array.Size());
     }
 
     template <typename T, std::enable_if_t<!std::is_integral<typename T::ValueType>::value && !std::is_floating_point<typename T::ValueType>::value, bool> = true>
-    void ReadArray(T& Array)
+    void ReadArray(T& array)
     {
         uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        for (typename T::SizeType i = 0; i < Array.Size(); i++)
+        array.ResizeInvalidate(size);
+        for (typename T::SizeType i = 0; i < array.Size(); i++)
         {
-            ReadObject(Array[i]);
+            ReadObject(array[i]);
         }
     }
 };
@@ -348,7 +348,7 @@ public:
 class IBinaryStreamWriteInterface : public virtual IBinaryStreamBaseInterface
 {
 public:
-    virtual size_t Write(const void* pBuffer, size_t SizeInBytes) = 0;
+    virtual size_t Write(const void* data, size_t sizeInBytes) = 0;
 
     virtual void Flush() = 0;
 
@@ -446,91 +446,91 @@ public:
     }
 
     template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
-    void WriteWords(T* pBuffer, const size_t Count = 1)
+    void WriteWords(T* data, const size_t count = 1)
     {
         static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8, "Unsupported integer");
 
 #ifdef HK_LITTLE_ENDIAN
-        Write(pBuffer, Count * sizeof(T));
+        Write(data, count * sizeof(T));
 #else
         switch (sizeof(T))
         {
             case 1:
-                Write(Buffer, Count);
+                Write(Buffer, count);
                 break;
             case 2:
-                for (size_t i = 0; i < Count; i++)
-                    WriteUInt16(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    WriteUInt16(data[i]);
                 break;
             case 4:
-                for (size_t i = 0; i < Count; i++)
-                    WriteUInt32(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    WriteUInt32(data[i]);
                 break;
             case 8:
-                for (size_t i = 0; i < Count; i++)
-                    WriteUInt64(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    WriteUInt64(data[i]);
                 break;
         }
 #endif
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-    void WriteFloats(T* pBuffer, const size_t Count = 1)
+    void WriteFloats(T* data, const size_t count = 1)
     {
         static_assert(sizeof(T) == 4 || sizeof(T) == 8, "Unsupported floating point");
 
 #ifdef HK_LITTLE_ENDIAN
-        Write(pBuffer, Count * sizeof(T));
+        Write(data, count * sizeof(T));
 #else
         switch (sizeof(T))
         {
             case 4:
-                for (size_t i = 0; i < Count; i++)
-                    WriteFloat(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    WriteFloat(data[i]);
                 break;
             case 8:
-                for (size_t i = 0; i < Count; i++)
-                    WriteDouble(pBuffer[i]);
+                for (size_t i = 0; i < count; i++)
+                    WriteDouble(data[i]);
                 break;
         }
 #endif
     }  
 
     template <typename T>
-    void WriteObject(T const& Object)
+    void WriteObject(T const& object)
     {
-        Object.Write(*this);
+        object.Write(*this);
     }
 
     template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
-    void WriteArray(T& Array)
+    void WriteArray(T& array)
     {
-        WriteUInt32(Array.Size());
-        WriteWords(Array.ToPtr(), Array.Size());
+        WriteUInt32(array.Size());
+        WriteWords(array.ToPtr(), array.Size());
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
-    void WriteArray(T& Array)
+    void WriteArray(T& array)
     {
-        WriteUInt32(Array.Size());
-        WriteFloats(Array.ToPtr(), Array.Size());
+        WriteUInt32(array.Size());
+        WriteFloats(array.ToPtr(), array.Size());
     }
 
     template<typename T, std::enable_if_t<!std::is_integral<typename T::ValueType>::value && !std::is_floating_point<typename T::ValueType>::value, bool> = true>
-    void WriteArray(T const& Array)
+    void WriteArray(T const& array)
     {
-        WriteUInt32(Array.Size());
-        for (typename T::SizeType i = 0; i < Array.Size(); i++)
+        WriteUInt32(array.Size());
+        for (typename T::SizeType i = 0; i < array.Size(); i++)
         {
-            WriteObject(Array[i]);
+            WriteObject(array[i]);
         }
     }
 
     template <typename... T>
-    HK_FORCEINLINE void FormattedPrint(fmt::format_string<T...> Format, T&&... args)
+    HK_FORCEINLINE void FormattedPrint(fmt::format_string<T...> format, T&&... args)
     {
         fmt::memory_buffer buffer;
-        fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+        fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
         Write(buffer.data(), buffer.size());
     }
 };

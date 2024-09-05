@@ -109,11 +109,11 @@ public:
     void Triangulate(Polygon const* polygon);
 
 private:
-    static void OnBeginData(uint32_t topology, void* polygonData);
-    static void OnEndData(void* polygonData);
-    static void OnVertexData(void* data, void* polygonData);
-    static void OnCombineData(double position[3], void* data[4], float weight[4], void** outData, void* polygonData);
-    static bool IsTriangleValid(Double3 const& a, Double3 const& b, Double3 const& c);
+    static void sOnBeginData(uint32_t topology, void* polygonData);
+    static void sOnEndData(void* polygonData);
+    static void sOnVertexData(void* data, void* polygonData);
+    static void sOnCombineData(double position[3], void* data[4], float weight[4], void** outData, void* polygonData);
+    static bool sIsTriangleValid(Double3 const& a, Double3 const& b, Double3 const& c);
 
     unsigned int FindOrCreateVertex(TriangleVertex* vertex);
 
@@ -142,14 +142,14 @@ template <typename ContourVertex, typename TriangleVertex>
 Triangulator<ContourVertex, TriangleVertex>::Triangulator(Vector<TriangleVertex>* pOutputStreamVertices, Vector<unsigned int>* pOutputStreamIndices) :
     m_pIndexStream(pOutputStreamIndices), m_pVertexStream(pOutputStreamVertices)
 {
-    SetCallback(CB_BEGIN_DATA, (SCallback)OnBeginData);
-    SetCallback(CB_END_DATA, (SCallback)OnEndData);
-    SetCallback(CB_VERTEX_DATA, (SCallback)OnVertexData);
-    SetCallback(CB_COMBINE_DATA, (SCallback)OnCombineData);
+    SetCallback(CB_BEGIN_DATA, (SCallback)sOnBeginData);
+    SetCallback(CB_END_DATA, (SCallback)sOnEndData);
+    SetCallback(CB_VERTEX_DATA, (SCallback)sOnVertexData);
+    SetCallback(CB_COMBINE_DATA, (SCallback)sOnCombineData);
 }
 
 template <typename ContourVertex, typename TriangleVertex>
-void Triangulator<ContourVertex, TriangleVertex>::OnBeginData(uint32_t topology, void* polygonData)
+void Triangulator<ContourVertex, TriangleVertex>::sOnBeginData(uint32_t topology, void* polygonData)
 {
     Triangulator<ContourVertex, TriangleVertex>* tr = static_cast<Triangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
@@ -158,7 +158,7 @@ void Triangulator<ContourVertex, TriangleVertex>::OnBeginData(uint32_t topology,
 }
 
 template <typename ContourVertex, typename TriangleVertex>
-bool Triangulator<ContourVertex, TriangleVertex>::IsTriangleValid(Double3 const& a, Double3 const& b, Double3 const& c)
+bool Triangulator<ContourVertex, TriangleVertex>::sIsTriangleValid(Double3 const& a, Double3 const& b, Double3 const& c)
 {
     double tmp1 = c.X - a.X;
     double tmp2 = b.X - a.X;
@@ -166,7 +166,7 @@ bool Triangulator<ContourVertex, TriangleVertex>::IsTriangleValid(Double3 const&
 }
 
 template <typename ContourVertex, typename TriangleVertex>
-void Triangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
+void Triangulator<ContourVertex, TriangleVertex>::sOnEndData(void* polygonData)
 {
     Triangulator<ContourVertex, TriangleVertex>* tr = static_cast<Triangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
@@ -187,7 +187,7 @@ void Triangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
                 TriangulatorTraits::TriangleVertexPosition(v[1], *tr->m_PrimitiveIndices[j + 1]);
                 TriangulatorTraits::TriangleVertexPosition(v[2], *tr->m_PrimitiveIndices[j + 2]);
 
-                if (IsTriangleValid(v[0], v[1], v[2]))
+                if (sIsTriangleValid(v[0], v[1], v[2]))
                 {
                     tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 0]));
                     tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 1]));
@@ -206,7 +206,7 @@ void Triangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
             {
                 TriangulatorTraits::TriangleVertexPosition(v[2], *tr->m_PrimitiveIndices[j + 2]);
 
-                if (IsTriangleValid(v[0], v[1], v[2]))
+                if (sIsTriangleValid(v[0], v[1], v[2]))
                 {
                     if (ind[0] == std::numeric_limits<unsigned int>::max())
                     {
@@ -237,7 +237,7 @@ void Triangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
                 TriangulatorTraits::TriangleVertexPosition(v[1], *vertex[1]);
                 TriangulatorTraits::TriangleVertexPosition(v[2], *vertex[2]);
 
-                if (IsTriangleValid(v[0], v[1], v[2]))
+                if (sIsTriangleValid(v[0], v[1], v[2]))
                 {
                     tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(vertex[0]));
                     tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(vertex[1]));
@@ -267,7 +267,7 @@ unsigned int Triangulator<ContourVertex, TriangleVertex>::FindOrCreateVertex(Tri
 }
 
 template <typename ContourVertex, typename TriangleVertex>
-void Triangulator<ContourVertex, TriangleVertex>::OnVertexData(void* data, void* polygonData)
+void Triangulator<ContourVertex, TriangleVertex>::sOnVertexData(void* data, void* polygonData)
 {
     Triangulator<ContourVertex, TriangleVertex>* tr = static_cast<Triangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
@@ -275,7 +275,7 @@ void Triangulator<ContourVertex, TriangleVertex>::OnVertexData(void* data, void*
 }
 
 template <typename ContourVertex, typename TriangleVertex>
-void Triangulator<ContourVertex, TriangleVertex>::OnCombineData(double position[3], void* data[4], float weight[4], void** outData, void* polygonData)
+void Triangulator<ContourVertex, TriangleVertex>::sOnCombineData(double position[3], void* data[4], float weight[4], void** outData, void* polygonData)
 {
     Triangulator<ContourVertex, TriangleVertex>* tr = static_cast<Triangulator<ContourVertex, TriangleVertex>*>(polygonData);
 

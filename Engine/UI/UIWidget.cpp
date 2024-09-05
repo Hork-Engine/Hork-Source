@@ -239,7 +239,7 @@ void UIWidget::Draw(Canvas& canvas, Float2 const& clipMins, Float2 const& clipMa
 
     if (ui_showLayout)
     {
-        canvas.DrawRect(m_Geometry.PaddedMins - 0.5f, m_Geometry.PaddedMaxs + 0.5f, Color4::Green(), 0.5f);
+        canvas.DrawRect(m_Geometry.PaddedMins - 0.5f, m_Geometry.PaddedMaxs + 0.5f, Color4::sGreen(), 0.5f);
     }
 
     Float2 paddedMins, paddedMaxs;

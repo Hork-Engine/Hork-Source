@@ -371,7 +371,7 @@ class MGBoolean2 : public MGNode
 public:
     Bool2                       bValue;
 
-                                MGBoolean2(Bool2 const& v = Bool2::Zero());
+                                MGBoolean2(Bool2 const& v = Bool2::sZero());
 protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
@@ -384,7 +384,7 @@ class MGBoolean3 : public MGNode
 public:
     Bool3                       bValue;
 
-                                MGBoolean3(Bool3 const& v = Bool3::Zero());
+                                MGBoolean3(Bool3 const& v = Bool3::sZero());
 protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
@@ -397,7 +397,7 @@ class MGBoolean4 : public MGNode
 public:
     Bool4                       bValue;
 
-                                MGBoolean4(Bool4 const& v = Bool4::Zero());
+                                MGBoolean4(Bool4 const& v = Bool4::sZero());
 protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
@@ -772,7 +772,7 @@ public:
 
                                 MaterialGraph();
 
-    static Ref<MaterialGraph>   Load(IBinaryStreamReadInterface& Stream);
+    static Ref<MaterialGraph>   sLoad(IBinaryStreamReadInterface& Stream);
 
     template <typename T, typename... TArgs>
     T&                          Add2(TArgs&&... Args);
@@ -823,13 +823,13 @@ HK_INLINE T& MaterialGraph::Add2(TArgs&&... Args)
 template <typename T, typename... TArgs>
 HK_INLINE T* MaterialGraph::Add(TArgs&&... Args)
 {
-    auto& classMeta = T::GetClassMeta();
+    auto& classMeta = T::sGetClassMeta();
 
-    if (classMeta.IsSubclassOf(MGSingleton::GetClassMeta()))
+    if (classMeta.IsSubclassOf(MGSingleton::sGetClassMeta()))
     {
         for (auto& node : m_Nodes)
         {
-            if (node->FinalClassId() == T::ClassId())
+            if (node->FinalClassId() == T::sClassId())
                 return static_cast<T*>(node.RawPtr());
         }
     }

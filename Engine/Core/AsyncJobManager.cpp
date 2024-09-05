@@ -37,36 +37,36 @@ HK_NAMESPACE_BEGIN
 constexpr int AsyncJobManager::MAX_WORKER_THREADS;
 constexpr int AsyncJobManager::MAX_JOB_LISTS;
 
-AsyncJobManager::AsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
+AsyncJobManager::AsyncJobManager(int numWorkerThreads, int numJobLists)
 {
-    if (_NumWorkerThreads > MAX_WORKER_THREADS)
+    if (numWorkerThreads > MAX_WORKER_THREADS)
     {
         LOG("AsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n");
-        _NumWorkerThreads = MAX_WORKER_THREADS;
+        numWorkerThreads = MAX_WORKER_THREADS;
     }
-    else if (_NumWorkerThreads <= 0)
+    else if (numWorkerThreads <= 0)
     {
-        _NumWorkerThreads = MAX_WORKER_THREADS;
-    }
-
-    HK_ASSERT(_NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS);
-
-    LOG("Initializing async job manager ( {} worker threads, {} job lists )\n", _NumWorkerThreads, _NumJobLists);
-
-    bTerminated = false;
-
-    NumJobLists = _NumJobLists;
-    for (int i = 0; i < NumJobLists; i++)
-    {
-        JobList[i].JobManager = this;
+        numWorkerThreads = MAX_WORKER_THREADS;
     }
 
-    TotalJobs.Store(0);
+    HK_ASSERT(numJobLists >= 1 && numJobLists <= MAX_JOB_LISTS);
 
-    NumWorkerThreads = _NumWorkerThreads;
-    for (int i = 0; i < NumWorkerThreads; i++)
+    LOG("Initializing async job manager ( {} worker threads, {} job lists )\n", numWorkerThreads, numJobLists);
+
+    m_IsTerminated = false;
+
+    m_NumJobLists = numJobLists;
+    for (int i = 0; i < m_NumJobLists; i++)
     {
-        WorkerThread[i] = Thread(
+        m_JobList[i].m_JobManager = this;
+    }
+
+    m_TotalJobs.Store(0);
+
+    m_NumWorkerThreads = numWorkerThreads;
+    for (int i = 0; i < m_NumWorkerThreads; i++)
+    {
+        m_WorkerThread[i] = Thread(
             [this](int ThreadId)
             {
                 _HK_PROFILER_THREAD("Worker");
@@ -82,83 +82,83 @@ AsyncJobManager::~AsyncJobManager()
 
     NotifyThreads();
 
-    for (int i = 0; i < NumJobLists; i++)
+    for (int i = 0; i < m_NumJobLists; i++)
     {
-        JobList[i].Wait();
-        JobList[i].JobPool.Free();
+        m_JobList[i].Wait();
+        m_JobList[i].m_JobPool.Free();
     }
 
-    bTerminated = true;
+    m_IsTerminated = true;
     NotifyThreads();
 
-    for (int i = 0; i < NumWorkerThreads; i++)
+    for (int i = 0; i < m_NumWorkerThreads; i++)
     {
-        WorkerThread[i].Join();
+        m_WorkerThread[i].Join();
     }
 }
 
 void AsyncJobManager::NotifyThreads()
 {
-    for (int i = 0; i < NumWorkerThreads; i++)
+    for (int i = 0; i < m_NumWorkerThreads; i++)
     {
-        EventNotify[i].Signal();
+        m_EventNotify[i].Signal();
     }
 }
 
-void AsyncJobManager::WorkerThreadRoutine(int _ThreadId)
+void AsyncJobManager::WorkerThreadRoutine(int threadId)
 {
     AsyncJob job = {};
-    bool      haveJob;
+    bool haveJob;
 
 #ifdef HK_ACTIVE_THREADS_COUNTERS
     NumActiveThreads.Increment();
 #endif
 
-    while (!bTerminated)
+    while (!m_IsTerminated)
     {
         HK_PROFILER_EVENT("Worker loop");
 
 #ifdef HK_ACTIVE_THREADS_COUNTERS
-        NumActiveThreads.Decrement();
+        m_NumActiveThreads.Decrement();
 #endif
 
-        //LOG( "Thread waiting {}\n", _ThreadId );
+        //LOG( "Thread waiting {}\n", threadId );
 
-        EventNotify[_ThreadId].Wait();
+        m_EventNotify[threadId].Wait();
 
 #ifdef HK_ACTIVE_THREADS_COUNTERS
-        NumActiveThreads.Increment();
+        m_NumActiveThreads.Increment();
 #endif
 
-        for (int currentList = 0; TotalJobs.Load() > 0; currentList++)
+        for (int currentList = 0; m_TotalJobs.Load() > 0; currentList++)
         {
-            int fetchIndex = (_ThreadId + currentList) % NumJobLists;
+            int fetchIndex = (threadId + currentList) % m_NumJobLists;
 
-            AsyncJobList* jobList = &JobList[fetchIndex];
+            AsyncJobList* jobList = &m_JobList[fetchIndex];
 
             // Check if list have a jobs
-            if (jobList->FetchCount.Load() > 0)
+            if (jobList->m_FetchCount.Load() > 0)
             {
                 haveJob = false;
 
                 // fetch job
                 {
-                    MutexGuard syncGuard(jobList->SubmitSync);
+                    MutexGuard syncGuard(jobList->m_SubmitSync);
 
-                    //if ( jobList->FetchLock.Increment() == 1 )
+                    //if ( jobList->m_FetchLock.Increment() == 1 )
                     //{
-                    if (jobList->SubmittedJobs)
+                    if (jobList->m_SubmittedJobs)
                     {
-                        job                    = *jobList->SubmittedJobs;
-                        jobList->SubmittedJobs = job.Next;
-                        haveJob                = true;
+                        job = *jobList->m_SubmittedJobs;
+                        jobList->m_SubmittedJobs = job.Next;
+                        haveJob = true;
 
-                        jobList->FetchCount.Decrement();
-                        TotalJobs.Decrement();
+                        jobList->m_FetchCount.Decrement();
+                        m_TotalJobs.Decrement();
                     }
-                    //    jobList->FetchLock.Decrement();
+                    //    jobList->m_FetchLock.Decrement();
                     //} else {
-                    //    jobList->FetchLock.Decrement();
+                    //    jobList->m_FetchLock.Decrement();
                     //}
                 }
 
@@ -167,19 +167,19 @@ void AsyncJobManager::WorkerThreadRoutine(int _ThreadId)
                     job.Callback(job.Data);
 
                     // Check if this was last processed job in the list
-                    if (jobList->SubmittedJobsCount.Decrement() == 0)
+                    if (jobList->m_SubmittedJobsCount.Decrement() == 0)
                     {
-                        MutexGuard syncGuard(jobList->SubmitSync);
+                        MutexGuard syncGuard(jobList->m_SubmitSync);
 
                         // Check for new submits
-                        if (!jobList->SubmittedJobs && jobList->SubmittedJobsCount.Load() == 0)
+                        if (!jobList->m_SubmittedJobs && jobList->m_SubmittedJobsCount.Load() == 0)
                         {
 
                             // Check if already signalled from other thread
-                            if (!jobList->bSignalled)
+                            if (!jobList->m_IsSignalled)
                             {
-                                jobList->bSignalled = true;
-                                jobList->EventDone.Signal();
+                                jobList->m_IsSignalled = true;
+                                jobList->m_EventDone.Signal();
                             }
                         }
                     }
@@ -192,7 +192,7 @@ void AsyncJobManager::WorkerThreadRoutine(int _ThreadId)
     NumActiveThreads.Decrement();
 #endif
 
-    LOG("Terminating worker thread ({})\n", _ThreadId);
+    LOG("Terminating worker thread ({})\n", threadId);
 }
 
 AsyncJobList::AsyncJobList()
@@ -204,97 +204,97 @@ AsyncJobList::~AsyncJobList()
     Wait();
 }
 
-void AsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
+void AsyncJobList::SetMaxParallelJobs(int maxParallelJobs)
 {
-    HK_ASSERT(JobPool.IsEmpty());
+    HK_ASSERT(m_JobPool.IsEmpty());
 
-    JobPool.Clear();
-    JobPool.Reserve(_MaxParallelJobs);    
+    m_JobPool.Clear();
+    m_JobPool.Reserve(maxParallelJobs);
 }
 
-void AsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
+void AsyncJobList::AddJob(void (*callback)(void*), void* data)
 {
-    if (JobPool.Size() == JobPool.Capacity())
+    if (m_JobPool.Size() == m_JobPool.Capacity())
     {
-        LOG("Warning: AsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size {})\n", JobPool.Capacity());
+        LOG("Warning: AsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size {})\n", m_JobPool.Capacity());
 
         SubmitAndWait();
-        SetMaxParallelJobs(JobPool.Capacity() * 2);
+        SetMaxParallelJobs(m_JobPool.Capacity() * 2);
     }
 
-    AsyncJob& job = JobPool.Add();
-    job.Callback   = _Callback;
-    job.Data       = _Data;
-    job.Next       = JobList;
-    JobList        = &job;
-    NumPendingJobs++;
+    AsyncJob& job = m_JobPool.Add();
+    job.Callback = callback;
+    job.Data = data;
+    job.Next = m_JobList;
+    m_JobList = &job;
+    m_NumPendingJobs++;
 }
 
 void AsyncJobList::Submit()
 {
-    JobManager->SubmitJobList(this);
+    m_JobManager->SubmitJobList(this);
 }
 
-void AsyncJobManager::SubmitJobList(AsyncJobList* InJobList)
+void AsyncJobManager::SubmitJobList(AsyncJobList* jobList)
 {
-    if (!InJobList->NumPendingJobs)
+    if (!jobList->m_NumPendingJobs)
     {
         return;
     }
 
-    AsyncJob* headJob = &InJobList->JobPool[InJobList->JobPool.Size() - InJobList->NumPendingJobs];
+    AsyncJob* headJob = &jobList->m_JobPool[jobList->m_JobPool.Size() - jobList->m_NumPendingJobs];
     HK_ASSERT(headJob->Next == nullptr);
 
     // lock section
     {
-        MutexGuard syncGuard(InJobList->SubmitSync);
+        MutexGuard syncGuard(jobList->m_SubmitSync);
 
-        headJob->Next            = InJobList->SubmittedJobs;
-        InJobList->SubmittedJobs = InJobList->JobList;
+        headJob->Next = jobList->m_SubmittedJobs;
+        jobList->m_SubmittedJobs = jobList->m_JobList;
 
-        InJobList->SubmittedJobsCount.Add(InJobList->NumPendingJobs);
-        InJobList->FetchCount.Add(InJobList->NumPendingJobs);
+        jobList->m_SubmittedJobsCount.Add(jobList->m_NumPendingJobs);
+        jobList->m_FetchCount.Add(jobList->m_NumPendingJobs);
 
-        TotalJobs.Add(InJobList->NumPendingJobs);
+        m_TotalJobs.Add(jobList->m_NumPendingJobs);
 
-        InJobList->bSignalled = false;
+        jobList->m_IsSignalled = false;
     }
 
     NotifyThreads();
-    InJobList->JobList        = nullptr;
-    InJobList->NumPendingJobs = 0;
+    jobList->m_JobList = nullptr;
+    jobList->m_NumPendingJobs = 0;
 }
 
 void AsyncJobList::Wait()
 {
-    int jobsCount = JobPool.Size() - NumPendingJobs;
+    int jobsCount = m_JobPool.Size() - m_NumPendingJobs;
 
     if (jobsCount > 0)
     {
-        while (!bSignalled)
+        while (!m_IsSignalled)
         {
-            EventDone.Wait();
+            m_EventDone.Wait();
         }
 
-        HK_ASSERT(SubmittedJobsCount.Load() == 0);
-        HK_ASSERT(FetchCount.Load() == 0);
-        HK_ASSERT(SubmittedJobs == nullptr);
+        HK_ASSERT(m_SubmittedJobsCount.Load() == 0);
+        HK_ASSERT(m_FetchCount.Load() == 0);
+        HK_ASSERT(m_SubmittedJobs == nullptr);
 
-        if (NumPendingJobs > 0)
+        if (m_NumPendingJobs > 0)
         {
             LOG("Warning: AsyncJobList::Wait: NumPendingJobs > 0\n");
 
-            JobPool.RemoveRange(0, jobsCount);
+            m_JobPool.RemoveRange(0, jobsCount);
 
-            JobList = JobPool.ToPtr() + size_t(NumPendingJobs - 1);
-            for (int i = 1; i < NumPendingJobs; i++)
+            m_JobList = m_JobPool.ToPtr() + size_t(m_NumPendingJobs - 1);
+            for (int i = 1; i < m_NumPendingJobs; i++)
             {
-                JobPool[i].Next = &JobPool[i - 1];
+                m_JobPool[i].Next = &m_JobPool[i - 1];
             }
         }
         else
         {
-            JobPool.Clear();
+            m_JobPool.Clear();
         }
     }
 }
@@ -305,16 +305,16 @@ void AsyncJobList::SubmitAndWait()
     Wait();
 }
 
-//void FirstJob( void * _Data ) {
+//void FirstJob( void * data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
-//        GLogger.Printf( "FirstJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
+//        GLogger.Printf( "FirstJob: Processing %d (%d) th %d\n", (size_t)data&0xf, i, (size_t)data>>16 );
 //        Thread::WaitMilliseconds(1);
 //    }
 //}
 
-//void SecondJob( void * _Data ) {
+//void SecondJob( void * data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
-//        GLogger.Printf( "SecondJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
+//        GLogger.Printf( "SecondJob: Processing %d (%d) th %d\n", (size_t)data&0xf, i, (size_t)data>>16 );
 //        Thread::WaitMilliseconds(1);
 //    }
 //}

@@ -43,6 +43,26 @@ ConsoleVar in_MouseInvertY("in_MouseInvertY"_s, "0"_s);
 ConsoleVar in_MouseAccel("in_MouseAccel"_s, "0"_s);
 ConsoleVar in_GamepadAxisPressThreshold("in_GamepadAxisPressThreshold"_s, "0.5"_s);
 
+struct InputSystem::PlayerGamepadState
+{
+    struct ButtonState
+    {
+        bool            IsPressed = false;
+        bool            IsBinded = false;
+        VirtualMapping  VirtMapping;        
+    };
+
+    ButtonState         m_ButtonState[GAMEPAD_KEY_COUNT];
+    float               m_AxisState[GAMEPAD_AXIS_COUNT];
+    float               m_PrevAxisState[GAMEPAD_AXIS_COUNT];
+
+    PlayerGamepadState()
+    {
+        Core::ZeroMem(m_AxisState, sizeof(m_AxisState));
+        Core::ZeroMem(m_PrevAxisState, sizeof(m_PrevAxisState));
+    }
+};
+
 InputSystem::InputSystem()
 {
     for (int i = 0; i < m_KeyStateMap.Size(); ++i)

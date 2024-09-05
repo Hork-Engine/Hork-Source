@@ -83,7 +83,7 @@ Float4 const& Material::GetVector(uint32_t index) const
     if (index < MAX_MATERIAL_UNIFORM_VECTORS)
         return *(Float4*)&m_Constants[index * 4];
     LOG("Material::GetVector: Invalid index {}\n", index);
-    return Float4::Zero();
+    return Float4::sZero();
 }
 
 MaterialFrameData* Material::PreRender(int frameNumber)
@@ -91,11 +91,11 @@ MaterialFrameData* Material::PreRender(int frameNumber)
     if (m_VisFrame == frameNumber)
         return m_FrameData;
 
-    MaterialResource* resource = GameApplication::GetResourceManager().TryGet(m_Resource);
+    MaterialResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource);
     if (!resource)
         return nullptr;
 
-    m_FrameData = (MaterialFrameData*)GameApplication::GetFrameLoop().AllocFrameMem(sizeof(MaterialFrameData));
+    m_FrameData = (MaterialFrameData*)GameApplication::sGetFrameLoop().AllocFrameMem(sizeof(MaterialFrameData));
     m_VisFrame = frameNumber;
 
     m_FrameData->Material    = resource->GetGpuMaterial();
@@ -107,7 +107,7 @@ MaterialFrameData* Material::PreRender(int frameNumber)
     {
         TextureHandle texHandle = m_Textures[i];
 
-        TextureResource* texture = GameApplication::GetResourceManager().TryGet(texHandle);
+        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(texHandle);
         if (!texture)
         {
             m_FrameData = nullptr;

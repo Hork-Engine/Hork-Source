@@ -80,15 +80,15 @@ struct Transform2D
 
     void SetIdentity();
 
-    static Transform2D Translation(Float2 const& vec);
+    static Transform2D sTranslation(Float2 const& vec);
 
-    static Transform2D Scaling(Float2 const& scale);
+    static Transform2D sScaling(Float2 const& scale);
 
-    static Transform2D Rotation(float angleInRadians);
+    static Transform2D sRotation(float angleInRadians);
 
-    static Transform2D SkewX(float angleInRadians);
+    static Transform2D sSkewX(float angleInRadians);
 
-    static Transform2D SkewY(float angleInRadians);
+    static Transform2D sSkewY(float angleInRadians);
 
     Transform2D operator*(Transform2D const& rhs) const
     {

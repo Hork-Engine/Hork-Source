@@ -38,14 +38,14 @@ using namespace RenderCore;
 ColorGradingRenderer::ColorGradingRenderer()
 {
     SamplerDesc samplerCI;
-    samplerCI.Filter   = FILTER_NEAREST; // FILTER_LINEAR;
+    samplerCI.Filter = FILTER_NEAREST; // FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     PipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;
-    resourceLayout.Samplers    = &samplerCI;
+    resourceLayout.Samplers = &samplerCI;
 
     BufferInfo bufferInfo[2];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
@@ -54,7 +54,7 @@ ColorGradingRenderer::ColorGradingRenderer()
     resourceLayout.Buffers = bufferInfo;
 
     resourceLayout.NumBuffers = 1;
-    ShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineLUT,
+    ShaderFactory::sCreateFullscreenQuadPipelineGS(&PipelineLUT,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading.frag",
                                                    "postprocess/colorgrading.geom",
@@ -62,7 +62,7 @@ ColorGradingRenderer::ColorGradingRenderer()
                                                    RenderCore::BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 2;
-    ShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineProcedural,
+    ShaderFactory::sCreateFullscreenQuadPipelineGS(&PipelineProcedural,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading_procedural.frag",
                                                    "postprocess/colorgrading.geom",

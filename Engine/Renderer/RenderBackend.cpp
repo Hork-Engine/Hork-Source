@@ -779,7 +779,7 @@ bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, St
     HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
     HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
 
-    File f = File::OpenWrite(EnvmapFile);
+    File f = File::sOpenWrite(EnvmapFile);
     if (!f)
     {
         LOG("Failed to write {}\n", EnvmapFile);

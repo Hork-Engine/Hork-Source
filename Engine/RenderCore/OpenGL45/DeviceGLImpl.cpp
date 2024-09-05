@@ -392,7 +392,7 @@ DeviceGLImpl::DeviceGLImpl()
 
     // Now device is initialized so we can initialize main window context here
     MainWindowHandle.ImmediateCtx = new ImmediateContextGLImpl(this, MainWindowHandle, true);
-    ImmediateContextGLImpl::MakeCurrent(MainWindowHandle.ImmediateCtx);
+    ImmediateContextGLImpl::sMakeCurrent(MainWindowHandle.ImmediateCtx);
 
     #if 0
     // Clear garbage on screen
@@ -523,12 +523,12 @@ bool DeviceGLImpl::CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
                                            const char* const* _Sources,
                                            ShaderBinaryData* _BinaryData)
 {
-    return ShaderModuleGLImpl::CreateShaderBinaryData(this, _ShaderType, _NumSources, _Sources, _BinaryData);
+    return ShaderModuleGLImpl::sCreateShaderBinaryData(this, _ShaderType, _NumSources, _Sources, _BinaryData);
 }
 
 void DeviceGLImpl::DestroyShaderBinaryData(ShaderBinaryData* _BinaryData)
 {
-    ShaderModuleGLImpl::DestroyShaderBinaryData(this, _BinaryData);
+    ShaderModuleGLImpl::sDestroyShaderBinaryData(this, _BinaryData);
 }
 
 AllocatorCallback const& DeviceGLImpl::GetAllocator() const
@@ -1044,7 +1044,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     SDL_DestroyProperties(props);
     if (!window.Handle)
     {
-        CoreApplication::TerminateWithError("Failed to create window\n");
+        CoreApplication::sTerminateWithError("Failed to create window\n");
     }
 
     SDL_StartTextInput(window.Handle);
@@ -1052,7 +1052,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     window.GLContext = SDL_GL_CreateContext(window.Handle);
     if (!window.GLContext)
     {
-        CoreApplication::TerminateWithError("Failed to initialize OpenGL context\n");
+        CoreApplication::sTerminateWithError("Failed to initialize OpenGL context\n");
     }
 
     SDL_GL_MakeCurrent(window.Handle, (SDL_GLContext)window.GLContext);
@@ -1064,7 +1064,7 @@ WindowPoolGL::WindowGL WindowPoolGL::NewWindow()
     GLenum result = glewInit();
     if (result != GLEW_OK)
     {
-        CoreApplication::TerminateWithError("Failed to load OpenGL functions\n");
+        CoreApplication::sTerminateWithError("Failed to load OpenGL functions\n");
     }
 
     // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and

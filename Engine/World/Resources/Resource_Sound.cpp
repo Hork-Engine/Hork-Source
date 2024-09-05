@@ -40,7 +40,7 @@ HK_NAMESPACE_BEGIN
 SoundResource::~SoundResource()
 {}
 
-UniqueRef<SoundResource> SoundResource::Load(IBinaryStreamReadInterface& stream)
+UniqueRef<SoundResource> SoundResource::sLoad(IBinaryStreamReadInterface& stream)
 {
     UniqueRef<SoundResource> resource = MakeUnique<SoundResource>();
     if (!resource->Read(stream))
@@ -50,7 +50,7 @@ UniqueRef<SoundResource> SoundResource::Load(IBinaryStreamReadInterface& stream)
 
 bool SoundResource::Read(IBinaryStreamReadInterface& stream)
 {
-    AudioDevice* device = GameApplication::GetAudioDevice();
+    AudioDevice* device = GameApplication::sGetAudioDevice();
 
     auto sampleRate = device->GetSampleRate();
 

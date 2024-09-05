@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace lunasvg
 {
-class LayoutSymbol;
+    class LayoutSymbol;
 }
 
 HK_NAMESPACE_BEGIN
@@ -42,41 +42,28 @@ HK_NAMESPACE_BEGIN
 class SvgDocument final
 {
 public:
-    SvgDocument() = default;
-    ~SvgDocument();
+                            SvgDocument() = default;
+                            ~SvgDocument();
 
-    SvgDocument(SvgDocument const& Rhs) = delete;
-    SvgDocument& operator=(SvgDocument const& Rhs) = delete;
+                            SvgDocument(SvgDocument const& Rhs) = delete;
+                            SvgDocument(SvgDocument&& Rhs) noexcept;
 
-    SvgDocument(SvgDocument&& Rhs) noexcept :
-        m_Root(Rhs.m_Root)
-    {
-        Rhs.m_Root = nullptr;
-    }
+                            SvgDocument& operator=(SvgDocument const& Rhs) = delete;
+                            SvgDocument& operator=(SvgDocument&& Rhs) noexcept;
 
-    SvgDocument& operator=(SvgDocument&& Rhs) noexcept
-    {
-        Reset();
-        Core::Swap(m_Root, Rhs.m_Root);
-        return *this;
-    }
+    void                    Reset();
 
-    void Reset();
+    uint32_t                GetWidth() const;
+    uint32_t                GetHeight() const;
 
-    uint32_t GetWidth() const;
-    uint32_t GetHeight() const;
+    void                    RenderToImage(void* pData, uint32_t Width, uint32_t Height, size_t SizeInBytes) const;
 
-    void RenderToImage(void* pData, uint32_t Width, uint32_t Height, size_t SizeInBytes) const;
-
-    operator bool() const
-    {
-        return m_Root != nullptr;
-    }
+                            operator bool() const { return m_Root != nullptr; }
 
 private:
-    lunasvg::LayoutSymbol* m_Root{};
+    lunasvg::LayoutSymbol*  m_Root{};
 
-    friend SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream);
+    friend SvgDocument      CreateSVG(IBinaryStreamReadInterface& Stream);
 };
 
 SvgDocument CreateSVG(IBinaryStreamReadInterface& Stream);

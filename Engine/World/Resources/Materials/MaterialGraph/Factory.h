@@ -61,7 +61,7 @@ public:
 
     uint64_t FactoryClassCount() const { return m_NumClasses; }
 
-    static ObjectFactory const* Factories() { return m_FactoryList; }
+    static ObjectFactory const* sFactories() { return m_FactoryList; }
     ObjectFactory const* Next() const { return m_NextFactory; }
 
 private:
@@ -107,14 +107,14 @@ public:
     template <typename Superclass>
     bool IsSubclassOf() const
     {
-        return IsSubclassOf(Superclass::GetClassMeta());
+        return IsSubclassOf(Superclass::sGetClassMeta());
     }
 
     virtual Ref<BaseObject> CreateInstance() const = 0;
 
-    static void CloneProperties(BaseObject const* Template, BaseObject* Destination);
+    static void sCloneProperties(BaseObject const* Template, BaseObject* Destination);
 
-    static ObjectFactory& DummyFactory()
+    static ObjectFactory& sDummyFactory()
     {
         static ObjectFactory ObjectFactory("Dummy factory");
         return ObjectFactory;
@@ -139,7 +139,7 @@ protected:
     }
 
 private:
-    static void CloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination);
+    static void sCloneProperties_r(ClassMeta const* Meta, BaseObject const* Template, BaseObject* Destination);
 
     GlobalStringView     m_ClassName;
     ClassMeta*           m_pNext;
@@ -320,34 +320,34 @@ struct TReturnType<R (Class::*)(As...)>
 
 #define _HK_GENERATED_CLASS_BODY()                      \
 public:                                                 \
-    static ThisClassMeta const& GetClassMeta()          \
+    static ThisClassMeta const& sGetClassMeta()         \
     {                                                   \
         static const ThisClassMeta __Meta;              \
         return __Meta;                                  \
     }                                                   \
-    static Hk::ClassMeta const* SuperClass()            \
+    static Hk::ClassMeta const* sSuperClass()           \
     {                                                   \
-        return GetClassMeta().SuperClass();             \
+        return sGetClassMeta().SuperClass();            \
     }                                                   \
-    static const char* ClassName()                      \
+    static const char* sClassName()                     \
     {                                                   \
-        return GetClassMeta().GetName();                \
+        return sGetClassMeta().GetName();               \
     }                                                   \
-    static uint64_t ClassId()                           \
+    static uint64_t sClassId()                          \
     {                                                   \
-        return GetClassMeta().GetId();                  \
+        return sGetClassMeta().GetId();                 \
     }                                                   \
     virtual Hk::ClassMeta const& FinalClassMeta() const \
     {                                                   \
-        return GetClassMeta();                          \
+        return sGetClassMeta();                         \
     }                                                   \
     virtual const char* FinalClassName() const          \
     {                                                   \
-        return ClassName();                             \
+        return sClassName();                            \
     }                                                   \
     virtual uint64_t FinalClassId() const               \
     {                                                   \
-        return ClassId();                               \
+        return sClassId();                              \
     }                                                   \
     void* operator new(size_t SizeInBytes)              \
     {                                                   \
@@ -359,7 +359,7 @@ public:                                                 \
     }
 
 #define HK_CLASS(Class, SuperClass) \
-    HK_FACTORY_CLASS(Hk::ClassMeta::DummyFactory(), Class, SuperClass)
+    HK_FACTORY_CLASS(Hk::ClassMeta::sDummyFactory(), Class, SuperClass)
 
 #define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
     HK_FACTORY_CLASS_A(Factory, Class, SuperClass, BaseObject::Allocator)
@@ -376,7 +376,7 @@ public:                                                                         
     class ThisClassMeta : public Hk::ClassMeta                                                              \
     {                                                                                                       \
     public:                                                                                                 \
-        ThisClassMeta() : Hk::ClassMeta(Factory, HK_CONCAT(HK_STRINGIFY(Class),_s), &Super::GetClassMeta()) \
+        ThisClassMeta() : Hk::ClassMeta(Factory, HK_CONCAT(HK_STRINGIFY(Class),_s), &Super::sGetClassMeta())\
         {                                                                                                   \
             RegisterProperties();                                                                           \
         }                                                                                                   \
@@ -393,9 +393,9 @@ private:
 
 
 
-#define HK_BEGIN_CLASS_META(Class)                              \
-    Hk::ClassMeta const& Class##__Meta = Class::GetClassMeta(); \
-    void Class::ThisClassMeta::RegisterProperties()             \
+#define HK_BEGIN_CLASS_META(Class)                               \
+    Hk::ClassMeta const& Class##__Meta = Class::sGetClassMeta(); \
+    void Class::ThisClassMeta::RegisterProperties()              \
     {
 
 #define HK_END_CLASS_META() \
@@ -405,7 +405,7 @@ private:
     HK_BEGIN_CLASS_META(Class) \
     HK_END_CLASS_META()
 
-/** Provides direct access to a class member. */
+/// Provides direct access to a class member.
 #define HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, Range)                                                  \
     {                                                                                                        \
         using PropertyType = decltype(ThisClass::TheProperty);                                               \
@@ -431,7 +431,7 @@ private:
             Flags);                                                                                          \
     }
 
-/** Provides direct access to a class member. */
+/// Provides direct access to a class member.
 #define HK_PROPERTY_DIRECT(TheProperty, Flags) HK_PROPERTY_DIRECT_RANGE(TheProperty, Flags, RangeUnbound())
 
 template <class T>
@@ -440,7 +440,7 @@ struct RemoveCVRef
     typedef std::remove_cv_t<std::remove_reference_t<T>> type;
 };
 
-/** Provides access to a property via a setter/getter. */
+/// Provides access to a property via a setter/getter.
 #define HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, Range)                                            \
     {                                                                                                           \
         using PropertyType = RemoveCVRef<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type>::type; \
@@ -468,7 +468,7 @@ struct RemoveCVRef
             Flags);                                                                                             \
     }
 
-/** Provides access to a property via a setter/getter. */
+/// Provides access to a property via a setter/getter.
 #define HK_PROPERTY(TheProperty, Setter, Getter, Flags) HK_PROPERTY_RANGE(TheProperty, Setter, Getter, Flags, RangeUnbound())
 
 HK_NAMESPACE_END

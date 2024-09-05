@@ -40,14 +40,14 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-uint32_t Crc32(uint32_t _Crc, byte const* _Data, size_t _SizeInBytes)
+uint32_t Crc32(uint32_t Crc, byte const* Data, size_t SizeInBytes)
 {
-    return (uint32_t)mz_crc32(_Crc, _Data, _SizeInBytes);
+    return (uint32_t)mz_crc32(Crc, Data, SizeInBytes);
 }
 
-uint32_t Adler32(uint32_t _Adler, byte const* _Data, size_t _SizeInBytes)
+uint32_t Adler32(uint32_t Adler, byte const* Data, size_t SizeInBytes)
 {
-    return (uint32_t)mz_adler32(_Adler, _Data, _SizeInBytes);
+    return (uint32_t)mz_adler32(Adler, Data, SizeInBytes);
 }
 
 size_t FastLZMaxCompressedSize(size_t SourceSize)

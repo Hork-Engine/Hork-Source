@@ -54,11 +54,11 @@ public:
         static_assert(IsPowerOfTwo(BaseCapacity), "Queue length must be power of two");
     }
 
-    PodQueue(PodQueue const& _Queue)
+    PodQueue(PodQueue const& rhs)
     {
-        if (_Queue.m_MaxQueueLength > BaseCapacity)
+        if (rhs.m_MaxQueueLength > BaseCapacity)
         {
-            m_MaxQueueLength = _Queue.m_MaxQueueLength;
+            m_MaxQueueLength = rhs.m_MaxQueueLength;
             m_pQueue         = (T*)Allocator().allocate(TYPE_SIZE * m_MaxQueueLength);
         }
         else
@@ -67,19 +67,19 @@ public:
             m_pQueue       = StaticData;
         }
 
-        const int queueLength = _Queue.Size();
-        if (queueLength == _Queue.m_MaxQueueLength || _Queue.m_QueueTail == 0)
+        const int queueLength = rhs.Size();
+        if (queueLength == rhs.m_MaxQueueLength || rhs.m_QueueTail == 0)
         {
-            Core::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
-            m_QueueHead = _Queue.m_QueueHead;
-            m_QueueTail = _Queue.m_QueueTail;
+            Core::Memcpy(m_pQueue, rhs.m_pQueue, TYPE_SIZE * queueLength);
+            m_QueueHead = rhs.m_QueueHead;
+            m_QueueTail = rhs.m_QueueTail;
         }
         else
         {
-            const int WrapMask = _Queue.m_MaxQueueLength - 1;
+            const int WrapMask = rhs.m_MaxQueueLength - 1;
             for (int i = 0; i < queueLength; i++)
             {
-                m_pQueue[i] = _Queue.m_pQueue[(i + _Queue.m_QueueTail) & WrapMask];
+                m_pQueue[i] = rhs.m_pQueue[(i + rhs.m_QueueTail) & WrapMask];
             }
             m_QueueHead = queueLength;
             m_QueueTail = 0;
@@ -216,18 +216,18 @@ public:
         return m_MaxQueueLength;
     }
 
-    PodQueue& operator=(PodQueue const& _Queue)
+    PodQueue& operator=(PodQueue const& rhs)
     {
         // Resize queue
-        if (_Queue.Size() > m_MaxQueueLength)
+        if (rhs.Size() > m_MaxQueueLength)
         {
             if (m_pQueue != StaticData)
             {
                 Allocator::Inst().Free(m_pQueue);
             }
-            if (_Queue.m_MaxQueueLength > BaseCapacity)
+            if (rhs.m_MaxQueueLength > BaseCapacity)
             {
-                m_MaxQueueLength = _Queue.m_MaxQueueLength;
+                m_MaxQueueLength = rhs.m_MaxQueueLength;
                 m_pQueue         = (T*)Allocator().allocate(TYPE_SIZE * m_MaxQueueLength);
             }
             else
@@ -238,19 +238,19 @@ public:
         }
 
         // Copy
-        const int queueLength = _Queue.Size();
-        if (queueLength == _Queue.m_MaxQueueLength || _Queue.m_QueueTail == 0)
+        const int queueLength = rhs.Size();
+        if (queueLength == rhs.m_MaxQueueLength || rhs.m_QueueTail == 0)
         {
-            Core::Memcpy(m_pQueue, _Queue.m_pQueue, TYPE_SIZE * queueLength);
-            m_QueueHead = _Queue.m_QueueHead;
-            m_QueueTail = _Queue.m_QueueTail;
+            Core::Memcpy(m_pQueue, rhs.m_pQueue, TYPE_SIZE * queueLength);
+            m_QueueHead = rhs.m_QueueHead;
+            m_QueueTail = rhs.m_QueueTail;
         }
         else
         {
-            const int WrapMask = _Queue.m_MaxQueueLength - 1;
+            const int WrapMask = rhs.m_MaxQueueLength - 1;
             for (int i = 0; i < queueLength; i++)
             {
-                m_pQueue[i] = _Queue.m_pQueue[(i + _Queue.m_QueueTail) & WrapMask];
+                m_pQueue[i] = rhs.m_pQueue[(i + rhs.m_QueueTail) & WrapMask];
             }
             m_QueueHead = queueLength;
             m_QueueTail = 0;

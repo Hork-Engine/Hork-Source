@@ -419,7 +419,7 @@ void TextureGLImpl::ReadRect(TextureRect const& Rectangle,
     }
     else
     {
-        ImmediateContextGLImpl* current = ImmediateContextGLImpl::GetCurrent();
+        ImmediateContextGLImpl* current = ImmediateContextGLImpl::sGetCurrent();
         current->ReadTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
     }
 }
@@ -450,7 +450,7 @@ bool TextureGLImpl::WriteRect(TextureRect const& Rectangle,
                                size_t              RowPitch,
                                size_t              DepthPitch)
 {
-    ImmediateContextGLImpl* current = ImmediateContextGLImpl::GetCurrent();
+    ImmediateContextGLImpl* current = ImmediateContextGLImpl::sGetCurrent();
     return current->WriteTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem, RowPitch, DepthPitch);
 }
 

@@ -41,27 +41,27 @@ class DebugRenderer;
 
 struct TerrainLodInfo
 {
-    /** Grid offset in global grid space */
+    /// Grid offset in global grid space
     Int2 Offset;
-    /** Texture offset in global grid space */
+    /// Texture offset in global grid space
     Int2 TextureOffset;
-    /** Previous texture offset in global grid space */
+    /// Previous texture offset in global grid space
     Int2 PrevTextureOffset;
-    /** Grid step */
+    /// Grid step
     int GridScale;
-    /** Interior trim type */
+    /// Interior trim type
     int InteriorTrim;
-    /** Current lod index */
+    /// Current lod index
     int LodIndex;
-    /** Fource update flag */
+    /// Fource update flag
     bool bForceUpdateTexture : 1;
-    /** Elevation minimum height */
+    /// Elevation minimum height
     float MinH;
-    /** Elevation maximum height */
+    /// Elevation maximum height
     float MaxH;
-    /** Lod elevation data */
+    /// Lod elevation data
     Float2* HeightMap;
-    /** Lod normal map data */
+    /// Lod normal map data
     byte* NormalMap;
 };
 
@@ -103,9 +103,9 @@ public:
         return m_NormalMapArray;
     }
 
-    /** Get vertex buffer in GPU */
+    /// Get vertex buffer in GPU
     RenderCore::IBuffer* GetVertexBufferGPU() const { return s_TerrainMesh->GetVertexBufferGPU(); }
-    /** Get index buffer in GPU */
+    /// Get index buffer in GPU
     RenderCore::IBuffer* GetIndexBufferGPU() const { return s_TerrainMesh->GetIndexBufferGPU(); }
 
     float GetViewHeight() const
@@ -164,14 +164,14 @@ private:
 
     TerrainHandle m_Terrain;
 
-    /** Current lod state */
+    /// Current lod state
     TerrainLodInfo m_LodInfo[MAX_TERRAIN_LODS];
 
-    /** Min viewable lod */
+    /// Min viewable lod
     int m_MinViewLod{};
-    /** Max viewable lod */
+    /// Max viewable lod
     int m_MaxViewLod{};
-    /** Height above the terrain */
+    /// Height above the terrain
     float m_ViewHeight{};
 
     static UniqueRef<TerrainMesh> s_TerrainMesh;

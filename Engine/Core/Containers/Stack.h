@@ -52,7 +52,7 @@ public:
 
     Container m_Array;
 
-    Stack()              = default;
+    Stack()             = default;
     Stack(Stack const&) = default;
     Stack(Stack&&)      = default;
 
@@ -86,14 +86,14 @@ public:
         return m_Array.IsEmpty();
     }
 
-    HK_FORCEINLINE void Push(T const& _Val)
+    HK_FORCEINLINE void Push(T const& val)
     {
-        m_Array.Add(_Val);
+        m_Array.Add(val);
     }
 
-    HK_FORCEINLINE void Push(T&& _Val)
+    HK_FORCEINLINE void Push(T&& val)
     {
-        m_Array.Add(std::move(_Val));
+        m_Array.Add(std::move(val));
     }
 
     template <class... Args>
@@ -107,11 +107,11 @@ public:
         return m_Array.Add();
     }
 
-    HK_FORCEINLINE bool Pop(Reference _Val)
+    HK_FORCEINLINE bool Pop(Reference val)
     {
         if (IsEmpty())
             return false;
-        _Val = std::move(m_Array.Last());
+        val = std::move(m_Array.Last());
         m_Array.RemoveLast();
         return true;
     }

@@ -63,7 +63,7 @@ public:
     BvFrustum();
     ~BvFrustum();
 
-    void FromMatrix(Float4x4 const& matrix, bool bReversedDepth = false);
+    void FromMatrix(Float4x4 const& matrix, bool reversedDepth = false);
 
     PlaneF const& operator[](const int index) const;
 

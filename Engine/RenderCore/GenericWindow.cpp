@@ -44,7 +44,7 @@ IGenericWindow::IGenericWindow(IDevice* pDevice) :
     IDeviceObject(pDevice, PROXY_TYPE)
 {}
 
-IGenericWindow* IGenericWindow::GetWindowFromNativeHandle(SDL_Window* handle)
+IGenericWindow* IGenericWindow::sGetWindowFromNativeHandle(SDL_Window* handle)
 {
     SDL_PropertiesID props = SDL_GetWindowProperties(handle);
     return (IGenericWindow*)SDL_GetPointerProperty(props, "p", nullptr);

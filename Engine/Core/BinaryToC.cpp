@@ -41,40 +41,40 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-bool BinaryToC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85)
+bool BinaryToC(StringView sourceFile, StringView destFile, StringView symName, bool encodeBase85)
 {
-    File source = File::OpenRead(SourceFile);
+    File source = File::sOpenRead(sourceFile);
     if (!source)
     {
-        LOG("Failed to open {}\n", SourceFile);
+        LOG("Failed to open {}\n", sourceFile);
         return false;
     }
 
-    File dest = File::OpenWrite(DestFile);
+    File dest = File::sOpenWrite(destFile);
     if (!dest)
     {
-        LOG("Failed to open {}\n", DestFile);
+        LOG("Failed to open {}\n", destFile);
         return false;
     }
 
-    WriteBinaryToC(dest, SymName, source.AsBlob(), bEncodeBase85);
+    WriteBinaryToC(dest, symName, source.AsBlob(), encodeBase85);
 
     return true;
 }
 
-bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView SymName, bool bEncodeBase85)
+bool BinaryToCompressedC(StringView sourceFile, StringView destFile, StringView symName, bool encodeBase85)
 {
-    File source = File::OpenRead(SourceFile);
+    File source = File::sOpenRead(sourceFile);
     if (!source)
     {
-        LOG("Failed to open {}\n", SourceFile);
+        LOG("Failed to open {}\n", sourceFile);
         return false;
     }
 
-    File dest = File::OpenWrite(DestFile);
+    File dest = File::sOpenWrite(destFile);
     if (!dest)
     {
-        LOG("Failed to open {}\n", DestFile);
+        LOG("Failed to open {}\n", destFile);
         return false;
     }
 
@@ -84,19 +84,19 @@ bool BinaryToCompressedC(StringView SourceFile, StringView DestFile, StringView 
     HeapBlob compressedData(compressedSize);
     Core::ZCompress((byte*)compressedData.GetData(), &compressedSize, (const byte*)decompressedData.GetData(), decompressedData.Size(), ZLIB_COMPRESS_UBER_COMPRESSION);
 
-    WriteBinaryToC(dest, SymName, BlobRef(compressedData.GetData(), compressedSize), bEncodeBase85);
+    WriteBinaryToC(dest, symName, BlobRef(compressedData.GetData(), compressedSize), encodeBase85);
 
     return true;
 }
 
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, BlobRef Blob, bool bEncodeBase85)
+void WriteBinaryToC(IBinaryStreamWriteInterface& stream, StringView symName, BlobRef Blob, bool encodeBase85)
 {
     const byte* bytes = (const byte*)Blob.GetData();
     size_t      size  = Blob.Size();
 
-    if (bEncodeBase85)
+    if (encodeBase85)
     {
-        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), SymName, (int)((size + 3) / 4) * 5);
+        stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), symName, (int)((size + 3) / 4) * 5);
         char prev_c = 0;
         for (size_t i = 0; i < size; i += 4)
         {
@@ -106,38 +106,38 @@ void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, StringView SymName, Blo
                 unsigned int x = (d % 85) + 35;
                 char         c = (x >= '\\') ? x + 1 : x;
                 if (c == '?' && prev_c == '?')
-                    Stream.FormattedPrint(HK_FMT("\\{}"), c);
+                    stream.FormattedPrint(HK_FMT("\\{}"), c);
                 else
-                    Stream.FormattedPrint(HK_FMT("{}"), c);
+                    stream.FormattedPrint(HK_FMT("{}"), c);
                 prev_c = c;
             }
             if ((i % 112) == 112 - 4)
-                Stream.FormattedPrint(HK_FMT("\"\n    \""));
+                stream.FormattedPrint(HK_FMT("\"\n    \""));
         }
-        Stream.FormattedPrint(HK_FMT("\";\n\n"));
+        stream.FormattedPrint(HK_FMT("\";\n\n"));
     }
     else
     {
-        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), SymName, (int)size);
-        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), SymName, Align(size, 8));
+        stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), symName, (int)size);
+        stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), symName, Align(size, 8));
         int column = 0;
         for (size_t i = 0; i < size; i += 8)
         {
             uint64_t d = *(uint64_t*)(bytes + i);
             if ((column++ % 6) == 0)
             {
-                Stream.FormattedPrint(HK_FMT("\n    0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
+                stream.FormattedPrint(HK_FMT("\n    0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
             else
             {
-                Stream.FormattedPrint(HK_FMT("0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
+                stream.FormattedPrint(HK_FMT("0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
             if (i + 8 < size)
             {
-                Stream.FormattedPrint(HK_FMT(", "));
+                stream.FormattedPrint(HK_FMT(", "));
             }
         }
-        Stream.FormattedPrint(HK_FMT("\n}};\n\n"));
+        stream.FormattedPrint(HK_FMT("\n}};\n\n"));
     }
 }
 

@@ -45,14 +45,14 @@ EnvProbeGenerator::EnvProbeGenerator()
     bufferCI.SizeInBytes = sizeof(ConstantData);
     GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
 
-    Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+    Float4x4 const* cubeFaceMatrices = Float4x4::sGetCubeFaceMatrices();
 
     Float4x4::PerspectiveMatrixDesc desc = {};
     desc.AspectRatio = 1;
     desc.FieldOfView = 90;
     desc.ZNear = 0.1f;
     desc.ZFar = 100.0f;
-    Float4x4 projMat = Float4x4::GetPerspectiveMatrix(desc);
+    Float4x4 projMat = Float4x4::sGetPerspectiveMatrix(desc);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
@@ -86,9 +86,9 @@ EnvProbeGenerator::EnvProbeGenerator()
              0,
              0}};
 
-    ShaderFactory::CreateVertexShader("gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderFactory::CreateGeometryShader("gen/envprobegen.geom", pipelineCI.pGS);
-    ShaderFactory::CreateFragmentShader("gen/envprobegen.frag", pipelineCI.pFS);
+    ShaderFactory::sCreateVertexShader("gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderFactory::sCreateGeometryShader("gen/envprobegen.geom", pipelineCI.pGS);
+    ShaderFactory::sCreateFragmentShader("gen/envprobegen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;

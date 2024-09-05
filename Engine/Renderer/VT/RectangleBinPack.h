@@ -54,7 +54,7 @@ public:
 
         for (int i = 0; i < static_cast<int>(rects.size()); ++i)
         {
-            if (!Disjoint(rects[i], r))
+            if (!sDisjoint(rects[i], r))
             {
                 return false;
             }
@@ -62,7 +62,7 @@ public:
         return true;
     }
 
-    static bool Disjoint(const RectangleBinBack_RectNode& a, const RectangleBinBack_RectNode& b)
+    static bool sDisjoint(const RectangleBinBack_RectNode& a, const RectangleBinBack_RectNode& b)
     {
         if (a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y)
         {

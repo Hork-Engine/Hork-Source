@@ -38,165 +38,165 @@ HK_NAMESPACE_BEGIN
 namespace Core
 {
 
-uint64_t ParseHex(StringView Str, const size_t SizeOf);
+uint64_t ParseHex(StringView str, const size_t sizeOf);
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
-T ParseHex(StringView Str)
+T ParseHex(StringView str)
 {
-    return static_cast<T>(ParseHex(Str, sizeof(T)));
+    return static_cast<T>(ParseHex(str, sizeof(T)));
 }
 
-HK_FORCEINLINE uint8_t ParseHex8(StringView Str)
+HK_FORCEINLINE uint8_t ParseHex8(StringView str)
 {
-    return ParseHex<uint8_t>(Str);
+    return ParseHex<uint8_t>(str);
 }
 
-HK_FORCEINLINE uint16_t ParseHex16(StringView Str)
+HK_FORCEINLINE uint16_t ParseHex16(StringView str)
 {
-    return ParseHex<uint16_t>(Str);
+    return ParseHex<uint16_t>(str);
 }
 
-HK_FORCEINLINE uint32_t ParseHex32(StringView Str)
+HK_FORCEINLINE uint32_t ParseHex32(StringView str)
 {
-    return ParseHex<uint32_t>(Str);
+    return ParseHex<uint32_t>(str);
 }
 
-HK_FORCEINLINE uint64_t ParseHex64(StringView Str)
+HK_FORCEINLINE uint64_t ParseHex64(StringView str)
 {
-    return ParseHex<uint64_t>(Str);
+    return ParseHex<uint64_t>(str);
 }
 
-float ParseFloat(StringView Str);
-double ParseDouble(StringView Str);
-int64_t ParseSigned(StringView Str);
-uint64_t ParseUnsigned(StringView Str);
-bool ParseBool(StringView Str);
-float ParseCvar(StringView Str);
+float ParseFloat(StringView str);
+double ParseDouble(StringView str);
+int64_t ParseSigned(StringView str);
+uint64_t ParseUnsigned(StringView str);
+bool ParseBool(StringView str);
+float ParseCvar(StringView str);
 
-HK_FORCEINLINE uint64_t UnsignedBoundsCheck(uint64_t Value, uint64_t MaxValue)
+HK_FORCEINLINE uint64_t UnsignedBoundsCheck(uint64_t val, uint64_t maxValue)
 {
-    if (Value > MaxValue)
-        LOG("The value of {} must be less than {}.\n", Value, MaxValue);
-    return Value;
+    if (val > maxValue)
+        LOG("The value of {} must be less than {}.\n", val, maxValue);
+    return val;
 }
 
-HK_FORCEINLINE int64_t SignedBoundsCheck(int64_t Value, int64_t MinValue, int64_t MaxValue)
+HK_FORCEINLINE int64_t SignedBoundsCheck(int64_t val, int64_t MinValue, int64_t maxValue)
 {
-    if (Value < MinValue || Value > MaxValue)
-        LOG("The value of {} must be greater then {} and less than {}.\n", Value, MinValue, MaxValue);
-    return Value;
+    if (val < MinValue || val > maxValue)
+        LOG("The value of {} must be greater then {} and less than {}.\n", val, MinValue, maxValue);
+    return val;
 }
 
-HK_FORCEINLINE uint8_t ParseUInt8(StringView Str)
+HK_FORCEINLINE uint8_t ParseUInt8(StringView str)
 {
-    return static_cast<uint8_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint8_t>()));
+    return static_cast<uint8_t>(UnsignedBoundsCheck(ParseUnsigned(str), Math::MaxValue<uint8_t>()));
 }
 
-HK_FORCEINLINE uint16_t ParseUInt16(StringView Str)
+HK_FORCEINLINE uint16_t ParseUInt16(StringView str)
 {
-    return static_cast<uint16_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint16_t>()));
+    return static_cast<uint16_t>(UnsignedBoundsCheck(ParseUnsigned(str), Math::MaxValue<uint16_t>()));
 }
 
-HK_FORCEINLINE uint32_t ParseUInt32(StringView Str)
+HK_FORCEINLINE uint32_t ParseUInt32(StringView str)
 {
-    return static_cast<uint32_t>(UnsignedBoundsCheck(ParseUnsigned(Str), Math::MaxValue<uint32_t>()));
+    return static_cast<uint32_t>(UnsignedBoundsCheck(ParseUnsigned(str), Math::MaxValue<uint32_t>()));
 }
 
-HK_FORCEINLINE uint64_t ParseUInt64(StringView Str)
+HK_FORCEINLINE uint64_t ParseUInt64(StringView str)
 {
-    return ParseUnsigned(Str);
+    return ParseUnsigned(str);
 }
 
-HK_FORCEINLINE int8_t ParseInt8(StringView Str)
+HK_FORCEINLINE int8_t ParseInt8(StringView str)
 {
-    return static_cast<int8_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int8_t>(), Math::MaxValue<int8_t>()));
+    return static_cast<int8_t>(SignedBoundsCheck(ParseSigned(str), Math::MinValue<int8_t>(), Math::MaxValue<int8_t>()));
 }
 
-HK_FORCEINLINE int16_t ParseInt16(StringView Str)
+HK_FORCEINLINE int16_t ParseInt16(StringView str)
 {
-    return static_cast<int16_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int16_t>(), Math::MaxValue<int16_t>()));
+    return static_cast<int16_t>(SignedBoundsCheck(ParseSigned(str), Math::MinValue<int16_t>(), Math::MaxValue<int16_t>()));
 }
 
-HK_FORCEINLINE int32_t ParseInt32(StringView Str)
+HK_FORCEINLINE int32_t ParseInt32(StringView str)
 {
-    return static_cast<int32_t>(SignedBoundsCheck(ParseSigned(Str), Math::MinValue<int32_t>(), Math::MaxValue<int32_t>()));
+    return static_cast<int32_t>(SignedBoundsCheck(ParseSigned(str), Math::MinValue<int32_t>(), Math::MaxValue<int32_t>()));
 }
 
-HK_FORCEINLINE int64_t ParseInt64(StringView Str)
+HK_FORCEINLINE int64_t ParseInt64(StringView str)
 {
-    return ParseSigned(Str);
+    return ParseSigned(str);
 }
 
 template <typename T>
 T Parse(StringView);
 
 template <>
-HK_FORCEINLINE float Parse<float>(StringView Str)
+HK_FORCEINLINE float Parse<float>(StringView str)
 {
-    return ParseFloat(Str);
+    return ParseFloat(str);
 }
 
 template <>
-HK_FORCEINLINE double Parse<double>(StringView Str)
+HK_FORCEINLINE double Parse<double>(StringView str)
 {
-    return ParseDouble(Str);
+    return ParseDouble(str);
 }
 
 template <>
-HK_FORCEINLINE uint8_t Parse<uint8_t>(StringView Str)
+HK_FORCEINLINE uint8_t Parse<uint8_t>(StringView str)
 {
-    return ParseUInt8(Str);
+    return ParseUInt8(str);
 }
 
 template <>
-HK_FORCEINLINE uint16_t Parse<uint16_t>(StringView Str)
+HK_FORCEINLINE uint16_t Parse<uint16_t>(StringView str)
 {
-    return ParseUInt16(Str);
+    return ParseUInt16(str);
 }
 
 template <>
-HK_FORCEINLINE uint32_t Parse<uint32_t>(StringView Str)
+HK_FORCEINLINE uint32_t Parse<uint32_t>(StringView str)
 {
-    return ParseUInt32(Str);
+    return ParseUInt32(str);
 }
 
 template <>
-HK_FORCEINLINE uint64_t Parse<uint64_t>(StringView Str)
+HK_FORCEINLINE uint64_t Parse<uint64_t>(StringView str)
 {
-    return ParseUInt64(Str);
+    return ParseUInt64(str);
 }
 
 template <>
-HK_FORCEINLINE int8_t Parse<int8_t>(StringView Str)
+HK_FORCEINLINE int8_t Parse<int8_t>(StringView str)
 {
-    return ParseInt8(Str);
+    return ParseInt8(str);
 }
 
 template <>
-HK_FORCEINLINE int16_t Parse<int16_t>(StringView Str)
+HK_FORCEINLINE int16_t Parse<int16_t>(StringView str)
 {
-    return ParseInt16(Str);
+    return ParseInt16(str);
 }
 
 template <>
-HK_FORCEINLINE int32_t Parse<int32_t>(StringView Str)
+HK_FORCEINLINE int32_t Parse<int32_t>(StringView str)
 {
-    return ParseInt32(Str);
+    return ParseInt32(str);
 }
 
 template <>
-HK_FORCEINLINE int64_t Parse<int64_t>(StringView Str)
+HK_FORCEINLINE int64_t Parse<int64_t>(StringView str)
 {
-    return ParseInt64(Str);
+    return ParseInt64(str);
 }
 
 template <>
-HK_FORCEINLINE bool Parse<bool>(StringView Str)
+HK_FORCEINLINE bool Parse<bool>(StringView str)
 {
-    return ParseBool(Str);
+    return ParseBool(str);
 }
 
-HK_INLINE StringView GetToken(StringView& token, StringView string, bool bCrossLine = true)
+HK_INLINE StringView GetToken(StringView& token, StringView string, bool crossLine = true)
 {
     const char* p = string.Begin();
     const char* end = string.End();
@@ -211,7 +211,7 @@ HK_INLINE StringView GetToken(StringView& token, StringView string, bool bCrossL
             return StringView(p, (StringSizeType)(end - p));
         }
 
-        if (*p == '\n' && !bCrossLine)
+        if (*p == '\n' && !crossLine)
         {
             LOG("Unexpected new line\n");
             return StringView(p, (StringSizeType)(end - p));
@@ -228,7 +228,7 @@ HK_INLINE StringView GetToken(StringView& token, StringView string, bool bCrossL
     {
         if (*p == '\n')
         {
-            if (!bCrossLine)
+            if (!crossLine)
                 LOG("Unexpected new line\n");
             break;
         }
@@ -272,7 +272,7 @@ HK_INLINE VectorType ParseVector(StringView string, StringView* newString = null
         return v;
     }
 
-    for (int i = 0; i < v.NumComponents(); i++)
+    for (int i = 0; i < v.sNumComponents(); i++)
     {
         s = GetToken(token, s);
         if (token.IsEmpty())
@@ -351,7 +351,7 @@ HK_INLINE MatrixType ParseMatrix(StringView string)
         return matrix;
     }
 
-    for (int i = 0; i < matrix.NumComponents(); i++)
+    for (int i = 0; i < matrix.sNumComponents(); i++)
     {
         using ElementType = std::remove_reference_t<decltype(matrix[i])>;
 
