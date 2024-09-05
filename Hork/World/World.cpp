@@ -546,43 +546,6 @@ void World::FreeTransformData(HierarchyType hierarchyType, uint32_t hierarchyLev
     storage.ShrinkToFit();
 }
 
-template <typename Visitor>
-HK_FORCEINLINE void World::UpdateTransformLevel(PageStorage<GameObject::TransformData>& transforms)
-{
-#if 0
-    for (uint32_t i = 0; i < transforms.Size(); ++i)
-    {
-        Visitor::Visit(transforms[i]);
-    }
-#else
-    uint32_t processed = 0;
-    for (uint32_t pageIndex = 0; pageIndex < transforms.GetPageCount(); ++pageIndex)
-    {
-        GameObject::TransformData* pageData = transforms.GetPageData(pageIndex);
-
-        uint32_t remaining = transforms.Size() - processed;
-        if (remaining < transforms.GetPageSize())
-        {
-            for (uint32_t i = 0; i < remaining; ++i)
-            {
-                Visitor::Visit(pageData[i]);
-            }
-
-            processed += remaining;
-        }
-        else
-        {
-            for (size_t i = 0; i < transforms.GetPageSize(); ++i)
-            {
-                Visitor::Visit(pageData[i]);
-            }
-
-            processed += transforms.GetPageSize();
-        }
-    }
-#endif
-}
-
 void World::UpdateWorldTransforms()
 {
     DestroyObjectsAndComponents();

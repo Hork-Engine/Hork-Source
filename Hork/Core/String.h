@@ -138,21 +138,12 @@ using GlobalStringViewW = TGlobalStringView<WideChar>;
 
 HK_NAMESPACE_END
 
-#ifdef __GNUC__
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wliteral-suffix"
-#endif
-
 HK_FORCEINLINE Hk::GlobalStringView operator"" _s(const char* s, size_t sz)
 {
     Hk::GlobalStringView v;
     v.pRawString = s;
     return v;
 }
-
-#ifdef __GNUC__
-#    pragma GCC diagnostic pop
-#endif
 
 HK_NAMESPACE_BEGIN
 

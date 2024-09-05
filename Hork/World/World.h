@@ -130,8 +130,6 @@ private:
     void                        FreeTransformData(HierarchyType hierarchyType, uint32_t hierarchyLevel, GameObject::TransformData* transformData);
 
 
-    template <typename Visitor>
-    void                UpdateTransformLevel(PageStorage<GameObject::TransformData>& transforms);
     void                UpdateWorldTransforms();
 
     void                UpdateHierarchy(GameObject* object, GameObject::TransformRule transformRule);

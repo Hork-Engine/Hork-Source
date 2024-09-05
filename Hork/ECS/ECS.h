@@ -210,12 +210,12 @@ HK_INLINE ArrayView<ComponentTypeInfo> ComponentRegistry()
 template <typename T>
 struct Component {
 public:
-    // NOTE: Id is used for runtime. For static time use Internal::ComponentFactory::GenerateTypeId<T>
+    // NOTE: Id is used for runtime. For static time use Internal::sComponentFactory::GenerateTypeId<T>
     static const ComponentTypeId Id;
 };
 
 template<typename T>
-const ComponentTypeId Component<T>::Id = Internal::ComponentFactory::GenerateTypeId<T>();
+const ComponentTypeId Component<T>::Id = Internal::ComponentFactory::sGenerateTypeId<T>();
 
 //#define HK_ECS_ARCHETYPE_LOOKUP_INDEX
 
@@ -687,7 +687,7 @@ class QueryTypeInfo
     {
         void operator()(QueryId& id) const
         {
-            id.Add(Internal::ComponentFactory::GenerateTypeId<U>());
+            id.Add(Internal::ComponentFactory::sGenerateTypeId<U>());
         }
     };
 
@@ -800,7 +800,7 @@ struct Query {
 };
 
 template <typename TL_READ, typename TL_WRITE>
-uint32_t Query<TL_READ, TL_WRITE>::Id = QueryTypeInfo<Query<TL_READ, TL_WRITE>>::RegisterQuery();
+uint32_t Query<TL_READ, TL_WRITE>::Id = QueryTypeInfo<Query<TL_READ, TL_WRITE>>::sRegisterQuery();
 
 
 template <typename TL_READ, typename TL_WRITE>

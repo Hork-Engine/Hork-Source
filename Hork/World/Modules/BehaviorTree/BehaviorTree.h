@@ -86,14 +86,14 @@ public:
 
     CompositeNodeBuilder& AddChildren(BehaviorTreeNode* node)
     {
-        m_Children.push_back(node);
+        m_Children.Add(node);
         return *this;
     }
 
     template <typename T, typename... Args>
     CompositeNodeBuilder& AddChildren(Args&&... args)
     {
-        m_Children.push_back(new T(std::forward<Args>(args)...));
+        m_Children.Add(new T(std::forward<Args>(args)...));
         return *this;
     }
 

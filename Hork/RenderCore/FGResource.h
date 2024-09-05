@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    const std::size_t                   Id;
+    std::size_t                         Id;
     const char*                         Name;
     FGRenderTaskBase const*             Creator;
     SmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Readers;

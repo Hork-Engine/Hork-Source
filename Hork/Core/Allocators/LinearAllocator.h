@@ -467,12 +467,12 @@ struct TStdFrameAllocator
     {
         HK_ASSERT(n <= std::numeric_limits<std::size_t>::max() / sizeof(T));
 
-        return static_cast<T*>(FrameMemoryAllocator::GetAllocator().Allocate(n * sizeof(T), alignof(T)));
+        return static_cast<T*>(FrameMemoryAllocator::sGetAllocator().Allocate(n * sizeof(T), alignof(T)));
     }
 
     void deallocate(T* p, std::size_t n) noexcept
     {
-        FrameMemoryAllocator::GetAllocator().TryFree(p);
+        FrameMemoryAllocator::sGetAllocator().TryFree(p);
     }
 };
 template <typename T, typename U> bool operator==(TStdFrameAllocator<T> const&, TStdFrameAllocator<U> const&) { return true; }
