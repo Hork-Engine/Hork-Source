@@ -2315,6 +2315,27 @@ void MGInFragmentCoord::Compute(MaterialBuildContext& Context)
     // TODO: Case for vertex stage
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+HK_CLASS_META(MGInScreenUV)
+
+MGInScreenUV::MGInScreenUV() :
+    Super("InScreenUV")
+{
+    SetSlots({}, {&Value, &X, &Y});
+
+    Value.Expression = "InScreenUV";
+    X.Expression     = "InScreenUV.x";
+    Y.Expression     = "InScreenUV.y";
+}
+
+void MGInScreenUV::Compute(MaterialBuildContext& Context)
+{
+    // TODO: Case for vertex stage
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_CLASS_META(MGInPosition)
@@ -2465,6 +2486,25 @@ MGInViewPosition::MGInViewPosition() :
 
 void MGInViewPosition::Compute(MaterialBuildContext& Context)
 {
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+HK_CLASS_META(MGInScreenSize)
+
+MGInScreenSize::MGInScreenSize() :
+    Super("InScreenSize")
+{
+    SetSlots({}, {&Value, &Width, &Height, &Inversed});
+
+    Inversed.Expression = "InvViewportSize";
+}
+
+void MGInScreenSize::Compute(MaterialBuildContext& Context)
+{
+    Context.GenerateSourceCode(Value, "vec2(1.0) / InvViewportSize", true);
+    Context.GenerateSourceCode(Width, "1.0 / InvViewportSize.x", true);
+    Context.GenerateSourceCode(Height, "1.0 / InvViewportSize.y", true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3839,12 +3879,14 @@ public:
         Register(MGVirtualTextureLoad::sGetClassMeta(), "VirtualTextureLoad");
         Register(MGVirtualTextureNormalLoad::sGetClassMeta(), "VirtualTextureNormalLoad");
         Register(MGInFragmentCoord::sGetClassMeta(), "InFragmentCoord", MG_NODE_SINGLETON);
+        Register(MGInScreenUV::sGetClassMeta(), "InScreenUV", MG_NODE_SINGLETON);
         Register(MGInPosition::sGetClassMeta(), "InPosition", MG_NODE_SINGLETON);
         Register(MGInNormal::sGetClassMeta(), "InNormal", MG_NODE_SINGLETON);
         Register(MGInColor::sGetClassMeta(), "InColor", MG_NODE_SINGLETON);
         Register(MGInTexCoord::sGetClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
         Register(MGInTimer::sGetClassMeta(), "InTimer", MG_NODE_SINGLETON);
         Register(MGInViewPosition::sGetClassMeta(), "InViewPosition", MG_NODE_SINGLETON);
+        Register(MGInScreenSize::sGetClassMeta(), "InScreenSize", MG_NODE_SINGLETON);
         Register(MGCondLess::sGetClassMeta(), "CondLess");
         Register(MGAtmosphere::sGetClassMeta(), "Atmosphere");
     }

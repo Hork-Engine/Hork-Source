@@ -605,6 +605,20 @@ protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
 
+class MGInScreenUV : public MGSingleton
+{
+    HK_CLASS(MGInScreenUV, MGSingleton)
+
+    MGOutput                    Value{"Value", MG_VALUE_TYPE_FLOAT2};
+    MGOutput                    X{"X", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Y{"Y", MG_VALUE_TYPE_FLOAT1};
+
+public:
+                                MGInScreenUV();
+protected:
+    void                        Compute(MaterialBuildContext& Context) override;
+};
+
 // Vertex position in model space
 class MGInPosition : public MGSingleton
 {
@@ -669,6 +683,21 @@ class MGInViewPosition : public MGSingleton
     MGOutput                    Value{"Value", MG_VALUE_TYPE_FLOAT3};
 public:
                                 MGInViewPosition();
+protected:
+    void                        Compute(MaterialBuildContext& Context) override;
+};
+
+class MGInScreenSize : public MGSingleton
+{
+    HK_CLASS(MGInScreenSize, MGSingleton)
+
+    MGOutput                    Value{"Value", MG_VALUE_TYPE_FLOAT2};
+    MGOutput                    Width{"Width", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Height{"Height", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Inversed{"Inversed", MG_VALUE_TYPE_FLOAT2};
+public:
+                                MGInScreenSize();
+
 protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
