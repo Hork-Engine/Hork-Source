@@ -48,8 +48,8 @@ public:
                             SvgDocument(SvgDocument const& Rhs) = delete;
                             SvgDocument(SvgDocument&& Rhs) noexcept;
 
-                            SvgDocument& operator=(SvgDocument const& Rhs) = delete;
-                            SvgDocument& operator=(SvgDocument&& Rhs) noexcept;
+    SvgDocument&            operator=(SvgDocument const& Rhs) = delete;
+    SvgDocument&            operator=(SvgDocument&& Rhs) noexcept;
 
     void                    Reset();
 
