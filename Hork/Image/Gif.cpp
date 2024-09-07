@@ -223,16 +223,21 @@ GifImage CreateGif(IBinaryStreamReadInterface& stream)
             return ((IBinaryStreamReadInterface*)file->UserData)->Read(data, size);
         };
 
+    struct Deleter
+    {
+        void operator()(GifFileType* gif) const
+        {
+            DGifCloseFile(gif, nullptr);
+        };
+    };
+
     int error = 0;
-    GifFileType *gif = DGifOpen(&stream, read, &error);
+    std::unique_ptr<GifFileType, Deleter> gif(DGifOpen(&stream, read, &error));
     if (!gif)
         return {};
 
-    if (DGifSlurp(gif) != GIF_OK)
-    {
-        DGifCloseFile(gif, nullptr);
+    if (DGifSlurp(gif.get()) != GIF_OK)
         return {};
-    }
 
     GifImage image;
 
@@ -266,7 +271,7 @@ GifImage CreateGif(IBinaryStreamReadInterface& stream)
         frame.TimeStamp = timeStamp;
 
         GraphicsControlBlock gcb;
-        if (DGifSavedExtensionToGCB(gif, i, &gcb) == GIF_OK)
+        if (DGifSavedExtensionToGCB(gif.get(), i, &gcb) == GIF_OK)
         {
             frame.TransparentColor = gcb.TransparentColor;
             timeStamp += static_cast<float>(gcb.DelayTime) * 0.01f;
@@ -308,10 +313,7 @@ GifImage CreateGif(IBinaryStreamReadInterface& stream)
     }
 
     if (!totalColorsCount)
-    {
-        DGifCloseFile(gif, nullptr);
         return {};
-    }
 
     image.m_Duration = timeStamp;
 
@@ -364,8 +366,6 @@ GifImage CreateGif(IBinaryStreamReadInterface& stream)
             destColorMap += colormap->ColorCount;
         }
     }
-
-    DGifCloseFile(gif, nullptr);
 
     return image;
 }
