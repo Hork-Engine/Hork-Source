@@ -494,11 +494,6 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
         AddCopyPass(FrameGraph, FxaaTexture, FinalTexture);
     }
 
-    if (FinalTexture->GetResourceDesc().Format != TEXTURE_FORMAT_SRGBA8_UNORM)
-    {
-        LOG("Warning: The final texture format should be TEXTURE_FORMAT_SRGBA8_UNORM\n");
-    }
-
     if (GRenderView->bWireframe)
     {
         AddWireframePass(FrameGraph, FinalTexture);

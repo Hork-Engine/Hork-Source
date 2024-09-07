@@ -230,13 +230,13 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
 
     auto* texture = renderTarget->GetTextureGPU();
 
-    if (!texture || (texture->GetWidth() != m_Width || texture->GetHeight() != m_Height))
+    if (!texture || (texture->GetWidth() != m_Width || texture->GetHeight() != m_Height || texture->GetDesc().Format != TextureFormat))
     {
         renderTarget->SetTextureGPU(nullptr);
 
         RenderCore::TextureDesc textureDesc;
         textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
-        textureDesc.SetFormat(TEXTURE_FORMAT_SRGBA8_UNORM);
+        textureDesc.SetFormat(TextureFormat);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
 
