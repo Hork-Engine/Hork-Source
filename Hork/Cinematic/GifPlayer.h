@@ -32,12 +32,15 @@ SOFTWARE.
 
 #include <Hork/Image/Gif.h>
 #include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Core/Delegate.h>
 
 HK_NAMESPACE_BEGIN
 
 class GifPlayer final : public Noncopyable
 {
 public:
+    Delegate<void(uint8_t const*, uint32_t, uint32_t)> E_OnImageUpdate;
+
     explicit        GifPlayer(StringView resourceName);
                     ~GifPlayer();
 

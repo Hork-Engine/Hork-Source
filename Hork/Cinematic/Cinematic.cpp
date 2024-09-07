@@ -351,6 +351,8 @@ void Cinematic::OnVideoDecode(Frame& frame)
 
     TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
     texture->WriteData2D(0, 0, width, height, 0, m_Blob.GetData());
+
+    E_OnImageUpdate.Invoke((uint8_t*)m_Blob.GetData(), width, height);
 }
 
 void Cinematic::OnAudioDecode(uint32_t count, float const* interleaved)

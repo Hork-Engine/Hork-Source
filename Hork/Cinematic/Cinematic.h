@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Audio/AudioStream.h>
 #include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Core/Delegate.h>
 
 struct plm_t;
 
@@ -48,6 +49,8 @@ HK_FLAG_ENUM_OPERATORS(CinematicFlags)
 class Cinematic final : public Noncopyable
 {
 public:
+    Delegate<void(uint8_t const*, uint32_t, uint32_t)> E_OnImageUpdate;
+
     explicit        Cinematic(StringView resourceName);
                     ~Cinematic();
 

@@ -176,6 +176,8 @@ void GifPlayer::Tick(float timeStep)
     {
         TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
         texture->WriteData2D(0, 0, GetWidth(), GetHeight(), 0, m_DecContext.Data.GetData());
+
+        E_OnImageUpdate.Invoke((uint8_t*)m_DecContext.Data.GetData(), GetWidth(), GetHeight());
     }
 }
 
