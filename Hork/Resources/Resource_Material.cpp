@@ -78,7 +78,8 @@ void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
 
 void MaterialResource::Upload()
 {
-    m_GpuMaterial = m_Binary->Compile();
+    if (m_Binary)
+        m_GpuMaterial = m_Binary->Compile();
 }
 
 bool MaterialResource::IsCastShadow() const
