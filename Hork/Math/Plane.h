@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "VectorMath.h"
+#include "Quat.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -113,6 +114,16 @@ struct TPlane
     constexpr T GetDist() const
     {
         return -D;
+    }
+
+    TVector3<T> GetOrigin() const
+    {
+        return Normal * (-D);
+    }
+
+    Quat GetRotation() const
+    {
+        return (Normal.Z == T(-1)) ? Quat(0, 1, 0, 0) : Quat(Normal.Z + T(1), -Normal.Y, Normal.X, T(0)).Normalized();
     }
 
     int AxialType() const
