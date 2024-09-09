@@ -195,12 +195,12 @@ private:
     using Queue = eastl::queue<SoundHandle, eastl::deque<SoundHandle, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundHandle)>>;//PodQueue<SoundHandle, 1, true>;
 
     Queue                   m_AudioQueue;
-    Ref<SoundGroup>        m_Group;
+    Ref<SoundGroup>         m_Group;
     GameObjectHandle        m_TargetListener;
     uint32_t                m_ListenerMask = ~0u;
     SoundSourceType         m_SourceType = SoundSourceType::Point;
     SoundHandle             m_SoundHandle;
-    Ref<AudioTrack>        m_Track;
+    Ref<AudioTrack>         m_Track;
     float                   m_Volume = 1.0f;
     float                   m_ReferenceDistance = 1;
     float                   m_MaxDistance = 100.0f;
@@ -217,7 +217,7 @@ private:
 
     struct PlayOneShotData
     {
-        Ref<AudioTrack>    Track;
+        Ref<AudioTrack>     Track;
         float               VolumeScale;
         bool                NeedToSubmit;
     };
