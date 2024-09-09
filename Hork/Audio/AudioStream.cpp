@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "AudioStream.h"
 
+#include <Hork/Core/BaseMath.h>
+
 #include <SDL3/SDL.h>
 
 HK_NAMESPACE_BEGIN
@@ -47,6 +49,16 @@ void AudioStream::Clear()
 void AudioStream::QueueAudio(void const* data, size_t size)
 {
     SDL_PutAudioStreamData((SDL_AudioStream*)m_AudioStream, data, size);
+}
+
+void AudioStream::SetVolume(float volume)
+{
+    SDL_SetAudioStreamGain((SDL_AudioStream*)m_AudioStream, Math::Saturate(volume));
+}
+
+float AudioStream::GetVolume() const
+{
+    return SDL_GetAudioStreamGain((SDL_AudioStream*)m_AudioStream);
 }
 
 void AudioStream::BlockSound()

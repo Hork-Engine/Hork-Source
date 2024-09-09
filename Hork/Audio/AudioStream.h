@@ -42,6 +42,9 @@ public:
     void                Clear();
     void                QueueAudio(void const* data, size_t size);
 
+    void                SetVolume(float volume);
+    float               GetVolume() const;
+
     void                BlockSound();
     void                UnblockSound();
 
