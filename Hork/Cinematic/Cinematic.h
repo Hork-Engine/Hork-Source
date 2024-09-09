@@ -62,6 +62,9 @@ public:
     uint32_t        GetWidth() const;
     uint32_t        GetHeight() const;
 
+    void            SetVolume(float volume);
+    float           GetVolume() const;
+
     /// Set looping.
     void            SetLoop(bool loop);
 
@@ -106,6 +109,7 @@ private:
     double          m_FrameRate = 0;
     int             m_SampleRate = 0;
     double          m_Duration = 0;
+    float           m_Volume = 1.0f;
     uint32_t        m_Width = 0;
     uint32_t        m_Height = 0;
     double          m_SeekTo = -1;

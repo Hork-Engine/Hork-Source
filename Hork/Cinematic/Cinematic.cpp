@@ -186,7 +186,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
         int audioSamples = 4096;
 
         // Adjust the audio lead time according to the audio_spec buffer size
-        plm_set_audio_lead_time(m_pImpl, (double)audioSamples / (double)m_SampleRate);
+        plm_set_audio_lead_time(m_pImpl, (double)audioSamples / m_SampleRate);
     }
 
     TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
@@ -205,6 +205,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
         streamDesc.SampleRate = m_SampleRate;
 
         m_AudioStream = audio->CreateStream(streamDesc);
+        m_AudioStream->SetVolume(m_Volume);
         m_AudioStream->UnblockSound();
     }
 
@@ -253,6 +254,19 @@ uint32_t Cinematic::GetHeight() const
     return m_Height;
 }
 
+void Cinematic::SetVolume(float volume)
+{
+    volume = Math::Saturate(volume);
+
+    if (m_AudioStream)
+        m_AudioStream->SetVolume(volume);
+}
+
+float Cinematic::GetVolume() const
+{
+    return m_Volume;
+}
+
 void Cinematic::SetLoop(bool loop)
 {
     if (m_pImpl)
@@ -292,7 +306,8 @@ void Cinematic::Tick(float timeStep)
         else
             plm_seek(m_pImpl, m_SeekTo, false);
 
-        m_AudioStream->Clear();
+        if (m_AudioStream)
+            m_AudioStream->Clear();
 
         m_SeekTo = -1;
     }
@@ -357,6 +372,8 @@ void Cinematic::OnVideoDecode(Frame& frame)
 
 void Cinematic::OnAudioDecode(uint32_t count, float const* interleaved)
 {
+    HK_ASSERT(m_AudioStream);
+
     int size = sizeof(float) * count * 2;
     m_AudioStream->QueueAudio(interleaved, size);
 }
