@@ -94,14 +94,14 @@ public:
     }
 
     // Allocates raw memory
-    void* Allocate(size_t sizeInBytes, size_t alignment = sizeof(size_t))
+    void* Allocate(size_t sizeInBytes, size_t alignment = 0)
     {
         Block* block;
         size_t  address;
 
+        alignment = std::max(sizeof(size_t), alignment);
         HK_ASSERT(IsPowerOfTwo(alignment));
 
-        alignment   = std::max(sizeof(size_t), alignment);
         sizeInBytes = Align(sizeInBytes, alignment);
 
         if (!FindBlock(sizeInBytes, alignment, block, address))
