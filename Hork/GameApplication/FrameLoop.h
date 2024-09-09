@@ -129,7 +129,7 @@ public:
                     ~FrameLoop();
 
     /// Allocate frame memory
-    void*           AllocFrameMem(size_t sizeInBytes);
+    void*           AllocFrameMem(size_t sizeInBytes, size_t alignment = 0);
 
     template <typename T>
     T*              AllocFrameMem() { return m_FrameMemory.Allocate<T>(); }

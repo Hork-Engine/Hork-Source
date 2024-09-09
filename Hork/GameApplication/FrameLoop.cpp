@@ -66,9 +66,9 @@ FrameLoop::~FrameLoop()
     ClearViews();
 }
 
-void* FrameLoop::AllocFrameMem(size_t sizeInBytes)
+void* FrameLoop::AllocFrameMem(size_t sizeInBytes, size_t alignment)
 {
-    return m_FrameMemory.Allocate(sizeInBytes);
+    return m_FrameMemory.Allocate(sizeInBytes, alignment);
 }
 
 size_t FrameLoop::GetFrameMemorySize() const
