@@ -256,10 +256,10 @@ uint32_t Cinematic::GetHeight() const
 
 void Cinematic::SetVolume(float volume)
 {
-    volume = Math::Saturate(volume);
+    m_Volume = Math::Saturate(volume);
 
     if (m_AudioStream)
-        m_AudioStream->SetVolume(volume);
+        m_AudioStream->SetVolume(m_Volume);
 }
 
 float Cinematic::GetVolume() const
