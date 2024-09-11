@@ -36,7 +36,8 @@ SOFTWARE.
 #include "Logger.h"
 #include "ConsoleVar.h"
 #include "HashFunc.h"
-#include <Hork/Core/Containers/Hash.h>
+#include "Containers/Hash.h"
+
 #include <malloc.h>
 #include <SDL3/SDL.h>
 
@@ -50,6 +51,9 @@ SOFTWARE.
 #endif
 
 HK_NAMESPACE_BEGIN
+
+extern "C" const size_t   EmbeddedResources_Size;
+extern "C" const uint64_t EmbeddedResources_Data[];
 
 namespace
 {
@@ -671,6 +675,10 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
     LOG("Working directory: {}\n", m_WorkingDir);
     LOG("Root path: {}\n", m_RootPath);
     LOG("Executable: {}\n", m_Executable);
+
+    m_EmbeddedArchive = Archive::sOpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
+    if (!m_EmbeddedArchive)
+        LOG("Failed to open embedded resources\n");
 }
 
 CoreApplication::~CoreApplication()
@@ -680,6 +688,8 @@ CoreApplication::~CoreApplication()
 
 void CoreApplication::Cleanup()
 {
+    m_EmbeddedArchive.Close();
+
     Core::ShutdownProfiler();
 
     m_WorkingDir.Free();
@@ -809,9 +819,9 @@ void CoreApplication::_TerminateWithError(const char* message)
 {
     DisplayCriticalMessage(message);
 
-    MemoryHeap::sMemoryCleanup();
-
     Cleanup();
+
+    MemoryHeap::sMemoryCleanup();
 
     std::quick_exit(0);
 }
@@ -851,5 +861,10 @@ void AssertFunction(const char* file, int line, const char* function, const char
 }
 
 #endif
+
+void TerminateWithError(const char* message)
+{
+    CoreApplication::sInstance()->_TerminateWithError(message);
+}
 
 HK_NAMESPACE_END

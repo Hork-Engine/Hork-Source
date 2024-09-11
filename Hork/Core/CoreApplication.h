@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/String.h>
-
+#include "String.h"
+#include "IO.h"
 #include "ConsoleBuffer.h"
 
 HK_NAMESPACE_BEGIN
@@ -105,6 +105,11 @@ public:
         return s_Instance->m_RootPath;
     }
 
+    static Archive& sGetEmbeddedArchive()
+    {
+        return s_Instance->m_EmbeddedArchive;
+    }
+
     static ConsoleBuffer& sGetConsoleBuffer()
     {
         return s_Instance->m_ConsoleBuffer;
@@ -156,6 +161,9 @@ private:
     Mutex                m_LogWriterSync;
     char*                m_Clipboard{};
     ConsoleBuffer        m_ConsoleBuffer;
+    Archive              m_EmbeddedArchive;
+
+    friend void         TerminateWithError(const char* text);
 };
 
 HK_NAMESPACE_END

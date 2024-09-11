@@ -243,6 +243,7 @@ Misc
 
 HK_NAMESPACE_BEGIN
 extern void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
+extern void TerminateWithError(const char* message);
 HK_NAMESPACE_END
 
 #else
@@ -262,7 +263,7 @@ HK_NAMESPACE_END
     do                                                               \
     {                                                                \
         if (HK_UNLIKELY(!(Expression)))                              \
-            Hk::CoreApplication::sTerminateWithError("{} Expected {}\n", Message, #Expression); \
+            Hk::TerminateWithError(HK_FORMAT("{} Expected {}\n", Message, #Expression).ToPtr()); \
     } while (false)
 
 #define HK_VERIFY_R(Expression, Message)                   \

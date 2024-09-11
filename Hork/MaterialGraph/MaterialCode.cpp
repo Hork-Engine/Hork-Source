@@ -32,7 +32,7 @@ SOFTWARE.
 #include "MaterialBinary.h"
 #include "MaterialSamplers.h"
 #include <Hork/ShaderUtils/ShaderCompiler.h>
-#include <Hork/Renderer/VertexAttribs.h>
+#include <Hork/RenderDefs/VertexAttribs.h>
 #include <Hork/Core/ConsoleVar.h>
 
 HK_NAMESPACE_BEGIN

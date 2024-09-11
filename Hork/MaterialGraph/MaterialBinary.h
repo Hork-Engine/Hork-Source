@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Renderer/RenderDefs.h>
+#include <Hork/RenderDefs/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -99,8 +99,6 @@ public:
     Vector<MaterialPassData>Passes;
 
     uint32_t                AddShader(RenderCore::SHADER_TYPE shaderType, HeapBlob blob);
-
-    Ref<MaterialGPU>        Compile();
 
     void                    Read(IBinaryStreamReadInterface& stream);
     void                    Write(IBinaryStreamWriteInterface& stream) const;

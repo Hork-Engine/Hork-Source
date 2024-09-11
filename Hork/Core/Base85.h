@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/BaseTypes.h>
+#include "BaseTypes.h"
 
 HK_NAMESPACE_BEGIN
 

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/BaseTypes.h>
+#include "BaseTypes.h"
 
 #include <emmintrin.h>
 

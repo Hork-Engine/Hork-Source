@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/WindowsDefs.h>
-#include <Hork/Core/Logger.h>
+#include <Hork/Core/CoreApplication.h>
 #include <Hork/RenderCore/GenericWindow.h>
 
 #include "DeviceGLImpl.h"

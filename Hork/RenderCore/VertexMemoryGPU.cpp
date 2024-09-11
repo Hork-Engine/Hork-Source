@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "VertexMemoryGPU.h"
 #include <Hork/Core/Platform.h>
+#include <Hork/Core/CoreApplication.h>
 
 HK_NAMESPACE_BEGIN
 

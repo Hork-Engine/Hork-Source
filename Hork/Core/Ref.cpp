@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Hork/Core/Ref.h>
+#include "Ref.h"
 
 HK_NAMESPACE_BEGIN
 

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Containers/Vector.h>
+#include "Containers/Vector.h"
 
 HK_NAMESPACE_BEGIN
 

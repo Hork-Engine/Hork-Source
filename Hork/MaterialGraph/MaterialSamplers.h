@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Renderer/RenderDefs.h>
+#include <Hork/RenderDefs/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 
