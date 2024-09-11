@@ -241,10 +241,10 @@ Misc
 #ifdef HK_ALLOW_ASSERTS
 #    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : ::Hk::AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
 
-HK_NAMESPACE_BEGIN
-extern void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
-extern void TerminateWithError(const char* message);
-HK_NAMESPACE_END
+namespace Hk {
+void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
+void TerminateWithError(const char* message);
+}
 
 #else
 #    define HK_ASSERT_(assertion, comment)
