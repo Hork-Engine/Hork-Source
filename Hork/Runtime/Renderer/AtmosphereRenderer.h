@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 #include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
@@ -40,7 +40,7 @@ class AtmosphereRenderer
 public:
     AtmosphereRenderer();
 
-    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
+    void Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -48,9 +48,9 @@ private:
         Float4x4 Transform[6];
         Float4   LightDir;
     };
-    Ref<RenderCore::IBuffer>   ConstantBuffer;
+    Ref<RHI::IBuffer>   ConstantBuffer;
     ConstantData                ConstantBufferData;
-    Ref<RenderCore::IPipeline> Pipeline;
+    Ref<RHI::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

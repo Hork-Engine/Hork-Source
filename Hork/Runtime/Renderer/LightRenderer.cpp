@@ -38,7 +38,7 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar r_LightTextureFormat("r_LightTextureFormat"_s, "0"_s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"_s);
 
-using namespace RenderCore;
+using namespace RHI;
 
 LightRenderer::LightRenderer()
 {
@@ -180,12 +180,12 @@ void LightRenderer::CreateLookupBRDF()
         f.ReadBuffer( data, sizeInBytes );
     }
 
-    GDevice->CreateTexture(RenderCore::TextureDesc{}
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RG16_FLOAT)
+    GDevice->CreateTexture(RHI::TextureDesc{}
+                               .SetFormat(RHI::TEXTURE_FORMAT_RG16_FLOAT)
                                .SetResolution(TextureResolution2D(sizeX, sizeY))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &LookupBRDF);
-    LookupBRDF->Write(0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data);
+    LookupBRDF->Write(0, RHI::FORMAT_FLOAT2, sizeInBytes, 1, data);
 
     GHunkMemory.ClearLastHunk();
 }
@@ -546,23 +546,23 @@ void LightRenderer::AddPass(FrameGraph&     FrameGraph,
                          {
                              IImmediateContext* immediateCtx = Task.pImmediateContext;
 
-                             RenderCore::TextureCopy Copy = {};
+                             RHI::TextureCopy Copy = {};
                              Copy.SrcRect.Dimension.X     = GRenderView->Width;
                              Copy.SrcRect.Dimension.Y     = GRenderView->Height;
                              Copy.SrcRect.Dimension.Z     = 1;
                              Copy.SrcRect.Offset.Y = Copy.DstOffset.Y = GetFrameResoultion().Height - GRenderView->Height;
 
                              {
-                                 RenderCore::ITexture* pSource = LightTexture->Actual();
-                                 RenderCore::ITexture* pDest   = ReflectionColor_R->Actual();
+                                 RHI::ITexture* pSource = LightTexture->Actual();
+                                 RHI::ITexture* pDest   = ReflectionColor_R->Actual();
                                  immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
 
                                  immediateCtx->GenerateTextureMipLevels(pDest);
                              }
 
                              {
-                                 RenderCore::ITexture* pSource = LinearDepth->Actual();
-                                 RenderCore::ITexture* pDest   = ReflectionDepth_R->Actual();
+                                 RHI::ITexture* pSource = LinearDepth->Actual();
+                                 RHI::ITexture* pDest   = ReflectionDepth_R->Actual();
                                  immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
                              }
                          });

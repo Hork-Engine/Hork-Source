@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -41,18 +41,18 @@ public:
 
     struct Textures
     {
-        RenderCore::FGTextureProxy* BloomTexture0;
-        RenderCore::FGTextureProxy* BloomTexture1;
-        RenderCore::FGTextureProxy* BloomTexture2;
-        RenderCore::FGTextureProxy* BloomTexture3;
+        RHI::FGTextureProxy* BloomTexture0;
+        RHI::FGTextureProxy* BloomTexture1;
+        RHI::FGTextureProxy* BloomTexture2;
+        RHI::FGTextureProxy* BloomTexture3;
     };
 
-    void AddPasses(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult);
+    void AddPasses(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult);
 
 private:
-    Ref<RenderCore::IPipeline> BrightPipeline;
-    Ref<RenderCore::IPipeline> BlurPipeline;
-    Ref<RenderCore::IPipeline> CopyPipeline;
+    Ref<RHI::IPipeline> BrightPipeline;
+    Ref<RHI::IPipeline> BlurPipeline;
+    Ref<RHI::IPipeline> CopyPipeline;
 };
 
 HK_NAMESPACE_END

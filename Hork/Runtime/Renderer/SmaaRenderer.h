@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,20 +39,20 @@ class SmaaRenderer
 public:
     SmaaRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture);
+    void AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy** ppResultTexture);
 
 private:
-    void EdgeDetectionPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppEdgeTexture);
-    void BlendingWeightCalculationPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* EdgeTexture, RenderCore::FGTextureProxy** ppBlendTexture);
-    void NeighborhoodBlendingPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy* BlendTexture, RenderCore::FGTextureProxy** ppResultTexture);
+    void EdgeDetectionPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy** ppEdgeTexture);
+    void BlendingWeightCalculationPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* EdgeTexture, RHI::FGTextureProxy** ppBlendTexture);
+    void NeighborhoodBlendingPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy* BlendTexture, RHI::FGTextureProxy** ppResultTexture);
 
     void CreateTextures();
 
-    Ref<RenderCore::IPipeline> EdgeDetectionPipeline;
-    Ref<RenderCore::IPipeline> BlendingWeightCalculationPipeline;
-    Ref<RenderCore::IPipeline> NeighborhoodBlendingPipeline;
-    Ref<RenderCore::ITexture> AreaTex;
-    Ref<RenderCore::ITexture> SearchTex;
+    Ref<RHI::IPipeline> EdgeDetectionPipeline;
+    Ref<RHI::IPipeline> BlendingWeightCalculationPipeline;
+    Ref<RHI::IPipeline> NeighborhoodBlendingPipeline;
+    Ref<RHI::ITexture> AreaTex;
+    Ref<RHI::ITexture> SearchTex;
 };
 
 HK_NAMESPACE_END

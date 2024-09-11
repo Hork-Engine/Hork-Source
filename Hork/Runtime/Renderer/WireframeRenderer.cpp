@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, RenderInstance const* instance)
 {

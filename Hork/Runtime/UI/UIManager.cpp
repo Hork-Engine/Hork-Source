@@ -39,7 +39,7 @@ static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"_s, "
 
 UIManager* GUIManager = nullptr;
 
-UIManager::UIManager(RenderCore::IGenericWindow* mainWindow) :
+UIManager::UIManager(RHI::IGenericWindow* mainWindow) :
     m_MainWindow(mainWindow)
 {
     GUIManager = this;

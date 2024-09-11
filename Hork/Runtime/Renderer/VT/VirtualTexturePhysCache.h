@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Math/VectorMath.h>
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 #include "VT.h"
 
@@ -45,7 +45,7 @@ struct VTCacheLayerInfo
     /// Pixel format on GPU
     TEXTURE_FORMAT TextureFormat;
     /// Upload pixel format
-    RenderCore::DATA_FORMAT UploadFormat;
+    RHI::DATA_FORMAT UploadFormat;
     /// Page size in bytes for this layer
     size_t PageSizeInBytes;
 };
@@ -84,7 +84,7 @@ public:
     Float4 const& GetPageTranslationOffsetAndScale() const { return m_PageTranslationOffsetAndScale; }
 
     /// Page layers in texture memory
-    Vector<Ref<RenderCore::ITexture>>& GetLayers() { return m_PhysCacheLayers; }
+    Vector<Ref<RHI::ITexture>>& GetLayers() { return m_PhysCacheLayers; }
 
     /// Called on every frame
     void Update();
@@ -94,7 +94,7 @@ public:
     struct PageTransfer
     {
         size_t Offset;
-        RenderCore::SyncObject Fence;
+        RHI::SyncObject Fence;
         VirtualTexture* pTexture;
         uint32_t PageIndex;
         byte* Layers[VT_MAX_LAYERS];
@@ -107,7 +107,7 @@ public:
     void MakePageTransferVisible(PageTransfer* Transfer);
 
     /// Draw cache for debugging
-    void Draw(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, int LayerIndex);
+    void Draw(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* RenderTarget, int LayerIndex);
 
 private:
     bool LockTransfers();
@@ -121,7 +121,7 @@ private:
     void WaitForFences();
 
     /// Physical page cache
-    Vector<Ref<RenderCore::ITexture>> m_PhysCacheLayers;
+    Vector<Ref<RHI::ITexture>> m_PhysCacheLayers;
     Vector<VTCacheLayerInfo> m_LayerInfo;
 
     using VirtualTexturePtr = VirtualTexture*;
@@ -172,7 +172,7 @@ private:
     {
         MAX_UPLOADS_PER_FRAME = 64
     };
-    Ref<RenderCore::IBuffer> m_TransferBuffer;
+    Ref<RHI::IBuffer> m_TransferBuffer;
     byte* m_pTransferData;
     size_t m_TransferDataOffset;
     int m_TransferAllocPoint;
@@ -181,7 +181,7 @@ private:
     SyncEvent m_PageTransferEvent;
 
     // For debugging
-    Ref<RenderCore::IPipeline> m_DrawCachePipeline;
+    Ref<RHI::IPipeline> m_DrawCachePipeline;
 };
 
 HK_NAMESPACE_END

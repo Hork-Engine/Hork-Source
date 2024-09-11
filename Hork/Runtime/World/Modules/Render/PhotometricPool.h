@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/ArrayView.h>
-#include <Hork/RenderCore/Texture.h>
+#include <Hork/RHI/Common/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -52,12 +52,12 @@ public:
     uint32_t            Size() const { return m_PoolSize - m_FreeList.Size(); }
     uint32_t            Capacity() const { return m_MaxCapacity; }
 
-    Ref<RenderCore::ITexture> GetTexture() { return m_Texture; }
+    Ref<RHI::ITexture> GetTexture() { return m_Texture; }
 
 private:
     void                GrowCapacity();
 
-    Ref<RenderCore::ITexture>   m_Texture;
+    Ref<RHI::ITexture>   m_Texture;
     Vector<uint8_t>             m_Memory;
     Vector<uint16_t>            m_FreeList;
     uint32_t                    m_PoolSize{};

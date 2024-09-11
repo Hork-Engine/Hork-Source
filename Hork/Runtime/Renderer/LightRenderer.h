@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -41,21 +41,21 @@ class LightRenderer
 public:
     LightRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph,
-                 RenderCore::FGTextureProxy* DepthTarget,
-                 RenderCore::FGTextureProxy* SSAOTexture,
-                 RenderCore::FGTextureProxy* ShadowMapDepth0,
-                 RenderCore::FGTextureProxy* ShadowMapDepth1,
-                 RenderCore::FGTextureProxy* ShadowMapDepth2,
-                 RenderCore::FGTextureProxy* ShadowMapDepth3,
-                 RenderCore::FGTextureProxy* OmnidirectionalShadowMapArray,
-                 RenderCore::FGTextureProxy* LinearDepth,
-                 RenderCore::FGTextureProxy** ppLight /*,
-                 RenderCore::FGTextureProxy ** ppVelocity*/
+    void AddPass(RHI::FrameGraph& FrameGraph,
+                 RHI::FGTextureProxy* DepthTarget,
+                 RHI::FGTextureProxy* SSAOTexture,
+                 RHI::FGTextureProxy* ShadowMapDepth0,
+                 RHI::FGTextureProxy* ShadowMapDepth1,
+                 RHI::FGTextureProxy* ShadowMapDepth2,
+                 RHI::FGTextureProxy* ShadowMapDepth3,
+                 RHI::FGTextureProxy* OmnidirectionalShadowMapArray,
+                 RHI::FGTextureProxy* LinearDepth,
+                 RHI::FGTextureProxy** ppLight /*,
+                 RHI::FGTextureProxy ** ppVelocity*/
     );
 
 private:
-    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, RenderInstance const* Instance);
+    bool BindMaterialLightPass(RHI::IImmediateContext* immediateContext, RenderInstance const* Instance);
 };
 
 HK_NAMESPACE_END

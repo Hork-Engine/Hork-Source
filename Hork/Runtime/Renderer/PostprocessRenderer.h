@@ -39,23 +39,23 @@ class PostprocessRenderer
 public:
     PostprocessRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph,
-                 RenderCore::FGTextureProxy* ColorTexture,
-                 RenderCore::FGTextureProxy* Exposure,
-                 RenderCore::FGTextureProxy* ColorGrading,
+    void AddPass(RHI::FrameGraph& FrameGraph,
+                 RHI::FGTextureProxy* ColorTexture,
+                 RHI::FGTextureProxy* Exposure,
+                 RHI::FGTextureProxy* ColorGrading,
                  BloomRenderer::Textures& BloomTex,
                  TEXTURE_FORMAT OutputFormat,
-                 RenderCore::FGTextureProxy** ppPostprocessTexture);
+                 RHI::FGTextureProxy** ppPostprocessTexture);
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph,
-                 RenderCore::FGTextureProxy* ColorTexture,
-                 RenderCore::FGTextureProxy* Exposure,
-                 RenderCore::FGTextureProxy* ColorGrading,
+    void AddPass(RHI::FrameGraph& FrameGraph,
+                 RHI::FGTextureProxy* ColorTexture,
+                 RHI::FGTextureProxy* Exposure,
+                 RHI::FGTextureProxy* ColorGrading,
                  BloomRenderer::Textures& BloomTex,
-                 RenderCore::FGTextureProxy* Dest);
+                 RHI::FGTextureProxy* Dest);
 
 private:
-    Ref<RenderCore::IPipeline> PostprocessPipeline;
+    Ref<RHI::IPipeline> PostprocessPipeline;
 };
 
 HK_NAMESPACE_END

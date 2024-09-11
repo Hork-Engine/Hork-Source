@@ -37,7 +37,7 @@ ConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"_s, "0"_s, 0, "0 - R11F_G1
 ConsoleVar r_BloomStart("r_BloomStart"_s, "1"_s);
 ConsoleVar r_BloomThreshold("r_BloomThreshold"_s, "1"_s);
 
-using namespace RenderCore;
+using namespace RHI;
 
 BloomRenderer::BloomRenderer()
 {
@@ -104,7 +104,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -141,7 +141,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -172,7 +172,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -206,7 +206,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -228,7 +228,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -259,7 +259,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -293,7 +293,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -315,7 +315,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -346,7 +346,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -380,7 +380,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -402,7 +402,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
@@ -433,7 +433,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                                TextureDesc()
                                    .SetFormat(pf)
                                    .SetResolution(bloomResolution))
-                .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+                .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
         pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {

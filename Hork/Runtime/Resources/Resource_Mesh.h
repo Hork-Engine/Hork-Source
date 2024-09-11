@@ -33,7 +33,7 @@ SOFTWARE.
 #include "ResourceHandle.h"
 #include "ResourceBase.h"
 
-#include <Hork/RenderCore/VertexMemoryGPU.h>
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 #include <Hork/Geometry/BV/BvhTree.h>
 #include <Hork/Geometry/Utilites.h>
@@ -159,10 +159,10 @@ public:
     void                        GenerateBVH(uint16_t trianglesPerLeaf = 16);
 
     /// Get mesh GPU buffers
-    void                        GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void                        GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void                        GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-    void                        GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetVertexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetSkinBufferBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetLightmapUVsGPU(RHI::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetIndexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Check ray intersection. Result is unordered by distance to save performance
     bool                        Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;

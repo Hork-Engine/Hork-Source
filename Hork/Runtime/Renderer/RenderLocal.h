@@ -186,13 +186,13 @@ extern ConsoleVar r_HBAO;
 //
 
 /// Render device
-extern RenderCore::IDevice* GDevice;
+extern RHI::IDevice* GDevice;
 
 /// Render context
-extern RenderCore::IImmediateContext* rcmd;
+extern RHI::IImmediateContext* rcmd;
 
 /// Render resource table
-extern RenderCore::IResourceTable* rtbl;
+extern RHI::IResourceTable* rtbl;
 
 /// Render frame data
 extern RenderFrameData* GFrameData;
@@ -201,10 +201,10 @@ extern RenderFrameData* GFrameData;
 extern RenderViewData* GRenderView;
 
 /// Render view area
-extern RenderCore::Rect2D GRenderViewArea;
+extern RHI::Rect2D GRenderViewArea;
 
 /// Stream buffer
-extern RenderCore::IBuffer* GStreamBuffer;
+extern RHI::IBuffer* GStreamBuffer;
 extern StreamedMemoryGPU*  GStreamedMemory;
 
 /// Circular buffer. Contains constant data for single draw call.
@@ -215,22 +215,22 @@ extern Ref<CircularBuffer> GCircularBuffer;
 extern Ref<SphereMesh> GSphereMesh;
 
 /// Screen aligned quad mesh
-extern Ref<RenderCore::IBuffer> GSaq;
+extern Ref<RHI::IBuffer> GSaq;
 
 /// Simple white texture
-extern Ref<RenderCore::ITexture> GWhiteTexture;
+extern Ref<RHI::ITexture> GWhiteTexture;
 
 /// BRDF
-extern Ref<RenderCore::ITexture> GLookupBRDF;
+extern Ref<RHI::ITexture> GLookupBRDF;
 
 /// Cluster lookcup 3D texture
-extern Ref<RenderCore::ITexture> GClusterLookup;
+extern Ref<RHI::ITexture> GClusterLookup;
 
 /// Cluster item references
-extern Ref<RenderCore::IBuffer> GClusterItemBuffer;
+extern Ref<RHI::IBuffer> GClusterItemBuffer;
 
 /// Cluster item references view
-extern Ref<RenderCore::IBufferView> GClusterItemTBO;
+extern Ref<RHI::IBufferView> GClusterItemTBO;
 
 struct RenderViewContext
 {
@@ -244,30 +244,30 @@ extern Vector<RenderViewContext> GRenderViewContext;
 extern VirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
 extern VirtualTextureCache*            GPhysCacheVT;
 
-extern RenderCore::IPipeline* GTerrainDepthPipeline;
-extern RenderCore::IPipeline* GTerrainLightPipeline;
-extern RenderCore::IPipeline* GTerrainWireframePipeline;
+extern RHI::IPipeline* GTerrainDepthPipeline;
+extern RHI::IPipeline* GTerrainLightPipeline;
+extern RHI::IPipeline* GTerrainWireframePipeline;
 
 //
 // Common functions
 //
 
-RenderCore::TextureResolution2D GetFrameResoultion();
+RHI::TextureResolution2D GetFrameResoultion();
 
-void DrawSAQ(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
+void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void DrawSphere(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
+void DrawSphere(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, RenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RHI::IImmediateContext* immediateCtx, RenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RHI::IImmediateContext* immediateCtx, ShadowRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, LightPortalRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RHI::IImmediateContext* immediateCtx, LightPortalRenderInstance const* Instance);
 
 void BindSkeleton(size_t _Offset, size_t _Size);
 void BindSkeletonMotionBlur(size_t _Offset, size_t _Size);
 
-void BindTextures(RenderCore::IResourceTable* Rtbl, MaterialFrameData* Instance, int MaxTextures);
+void BindTextures(RHI::IResourceTable* Rtbl, MaterialFrameData* Instance, int MaxTextures);
 void BindTextures(MaterialFrameData* Instance, int MaxTextures);
 
 void BindInstanceConstants(RenderInstance const* Instance);
@@ -289,7 +289,7 @@ void BindShadowMatrix();
 void BindShadowCascades(size_t StreamHandle);
 void BindOmniShadowProjection(int FaceIndex);
 
-void SaveSnapshot(RenderCore::ITexture& _Texture);
+void SaveSnapshot(RHI::ITexture& _Texture);
 
 HK_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
 {

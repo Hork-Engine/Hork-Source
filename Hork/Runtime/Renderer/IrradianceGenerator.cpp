@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
@@ -110,7 +110,7 @@ IrradianceGenerator::IrradianceGenerator()
     GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray)
+void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray)
 {
     int size = 32;
 
@@ -160,7 +160,7 @@ void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void IrradianceGenerator::Generate(ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture)
+void IrradianceGenerator::Generate(ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture)
 {
     int size = 32;
 

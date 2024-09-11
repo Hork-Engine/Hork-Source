@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
-void AddWireframePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+void AddWireframePass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* RenderTarget);
 
 HK_NAMESPACE_END

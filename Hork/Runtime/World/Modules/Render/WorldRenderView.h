@@ -153,8 +153,8 @@ public:
     void                        SetCullingCamera(Handle32<CameraComponent> camera);
     Handle32<CameraComponent>   GetCullingCamera() const { return m_CullingCamera; }
 
-    RenderCore::ITexture*       GetCurrentExposure() { return m_CurrentExposure; }
-    RenderCore::ITexture*       GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
+    RHI::ITexture*       GetCurrentExposure() { return m_CurrentExposure; }
+    RHI::ITexture*       GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
 
     TextureHandle               GetTextureHandle();
 
@@ -198,12 +198,12 @@ public:
     // TODO: bBloomEnabled, BloomParams[4]
     // TODO: Render mode: Polygons,Triangles,Solid,Solid+Triangles,Solid+Polygons,etc (for editor)
 
-    RenderCore::ITexture*       AcquireRenderTarget();
+    RHI::ITexture*       AcquireRenderTarget();
 
 private:
-    RenderCore::ITexture*       AcquireLightTexture();
-    RenderCore::ITexture*       AcquireDepthTexture();
-    RenderCore::ITexture*       AcquireHBAOMaps();
+    RHI::ITexture*       AcquireLightTexture();
+    RHI::ITexture*       AcquireDepthTexture();
+    RHI::ITexture*       AcquireHBAOMaps();
     void                        ReleaseHBAOMaps();
 
     Handle32<CameraComponent>   m_Camera;
@@ -212,9 +212,9 @@ private:
 
     uint32_t                    m_Width{};
     uint32_t                    m_Height{};
-    Ref<RenderCore::ITexture>   m_LightTexture;
-    Ref<RenderCore::ITexture>   m_DepthTexture;
-    Ref<RenderCore::ITexture>   m_HBAOMaps;
+    Ref<RHI::ITexture>   m_LightTexture;
+    Ref<RHI::ITexture>   m_DepthTexture;
+    Ref<RHI::ITexture>   m_HBAOMaps;
 
     using TerrainViewHash =     HashMap<ResourceID, TerrainView*>;
 
@@ -224,8 +224,8 @@ private:
     float                       m_ScaledWidth{};
     float                       m_ScaledHeight{};
     VirtualTextureFeedback      m_VTFeedback;
-    Ref<RenderCore::ITexture>   m_CurrentColorGradingLUT;
-    Ref<RenderCore::ITexture>   m_CurrentExposure;
+    Ref<RHI::ITexture>   m_CurrentColorGradingLUT;
+    Ref<RHI::ITexture>   m_CurrentExposure;
     int                         m_FrameNum{};
     TextureHandle               m_HandleRT;
 

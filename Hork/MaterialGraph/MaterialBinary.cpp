@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-uint32_t MaterialBinary::AddShader(RenderCore::SHADER_TYPE shaderType, HeapBlob blob)
+uint32_t MaterialBinary::AddShader(RHI::SHADER_TYPE shaderType, HeapBlob blob)
 {
     if (blob.IsEmpty())
         return ~0u;
@@ -81,7 +81,7 @@ void MaterialBinary::Write(IBinaryStreamWriteInterface& stream) const
 
 void MaterialBinary::Shader::Read(IBinaryStreamReadInterface& stream)
 {
-    m_Type = RenderCore::SHADER_TYPE(stream.ReadUInt8());
+    m_Type = RHI::SHADER_TYPE(stream.ReadUInt8());
     uint32_t blobSize = stream.ReadUInt32();
     m_Blob = stream.ReadBlob(blobSize);
 }
@@ -96,11 +96,11 @@ void MaterialBinary::Shader::Write(IBinaryStreamWriteInterface& stream) const
 void MaterialBinary::MaterialPassData::Read(IBinaryStreamReadInterface& stream)
 {
     Type = MaterialPass::Type(stream.ReadUInt8());
-    CullMode = RenderCore::POLYGON_CULL(stream.ReadUInt8());
-    DepthFunc = RenderCore::COMPARISON_FUNCTION(stream.ReadUInt8());
+    CullMode = RHI::POLYGON_CULL(stream.ReadUInt8());
+    DepthFunc = RHI::COMPARISON_FUNCTION(stream.ReadUInt8());
     DepthWrite = stream.ReadBool();
     DepthTest = stream.ReadBool();
-    Topology = RenderCore::PRIMITIVE_TOPOLOGY(stream.ReadUInt8());
+    Topology = RHI::PRIMITIVE_TOPOLOGY(stream.ReadUInt8());
     VertFormat = VertexFormat(stream.ReadUInt8());
     VertexShader = stream.ReadUInt32();
     FragmentShader = stream.ReadUInt32();
@@ -110,30 +110,30 @@ void MaterialBinary::MaterialPassData::Read(IBinaryStreamReadInterface& stream)
     uint32_t numBufferBindings = stream.ReadUInt32();
     BufferBindings.Resize(numBufferBindings);
     for (uint32_t n = 0; n < numBufferBindings; ++n)
-        BufferBindings[n].BufferBinding = RenderCore::BUFFER_BINDING(stream.ReadUInt8());
+        BufferBindings[n].BufferBinding = RHI::BUFFER_BINDING(stream.ReadUInt8());
     uint32_t numRenderTargets = stream.ReadUInt32();
     RenderTargets.Resize(numRenderTargets);
     for (uint32_t n = 0; n < numRenderTargets; ++n)
     {
-        RenderTargets[n].Op.ColorRGB = RenderCore::BLEND_OP(stream.ReadUInt8());
-        RenderTargets[n].Op.Alpha = RenderCore::BLEND_OP(stream.ReadUInt8());
-        RenderTargets[n].Func.SrcFactorRGB = RenderCore::BLEND_FUNC(stream.ReadUInt8());
-        RenderTargets[n].Func.DstFactorRGB = RenderCore::BLEND_FUNC(stream.ReadUInt8());
-        RenderTargets[n].Func.SrcFactorAlpha = RenderCore::BLEND_FUNC(stream.ReadUInt8());
-        RenderTargets[n].Func.DstFactorAlpha = RenderCore::BLEND_FUNC(stream.ReadUInt8());
+        RenderTargets[n].Op.ColorRGB = RHI::BLEND_OP(stream.ReadUInt8());
+        RenderTargets[n].Op.Alpha = RHI::BLEND_OP(stream.ReadUInt8());
+        RenderTargets[n].Func.SrcFactorRGB = RHI::BLEND_FUNC(stream.ReadUInt8());
+        RenderTargets[n].Func.DstFactorRGB = RHI::BLEND_FUNC(stream.ReadUInt8());
+        RenderTargets[n].Func.SrcFactorAlpha = RHI::BLEND_FUNC(stream.ReadUInt8());
+        RenderTargets[n].Func.DstFactorAlpha = RHI::BLEND_FUNC(stream.ReadUInt8());
         RenderTargets[n].bBlendEnable = stream.ReadBool();
-        RenderTargets[n].ColorWriteMask = RenderCore::COLOR_WRITE_MASK(stream.ReadUInt8());
+        RenderTargets[n].ColorWriteMask = RHI::COLOR_WRITE_MASK(stream.ReadUInt8());
     }
     uint32_t numSamplers = stream.ReadUInt32();
     Samplers.Resize(numSamplers);
     for (uint32_t n = 0; n < numSamplers; ++n)
     {
-        Samplers[n].Filter = RenderCore::SAMPLER_FILTER(stream.ReadUInt8());
-        Samplers[n].AddressU = RenderCore::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
-        Samplers[n].AddressV = RenderCore::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
-        Samplers[n].AddressW = RenderCore::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
+        Samplers[n].Filter = RHI::SAMPLER_FILTER(stream.ReadUInt8());
+        Samplers[n].AddressU = RHI::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
+        Samplers[n].AddressV = RHI::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
+        Samplers[n].AddressW = RHI::SAMPLER_ADDRESS_MODE(stream.ReadUInt8());
         Samplers[n].MaxAnisotropy = stream.ReadUInt8();
-        Samplers[n].ComparisonFunc = RenderCore::COMPARISON_FUNCTION(stream.ReadUInt8());
+        Samplers[n].ComparisonFunc = RHI::COMPARISON_FUNCTION(stream.ReadUInt8());
         Samplers[n].bCompareRefToTexture = stream.ReadBool();
         Samplers[n].bCubemapSeamless     = stream.ReadBool();
         Samplers[n].MipLODBias = stream.ReadFloat();

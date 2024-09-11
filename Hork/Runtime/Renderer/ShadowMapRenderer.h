@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 #include <Hork/Math/VectorMath.h>
 #include <Hork/RenderDefs/RenderDefs.h>
 #include "OmnidirectionalShadowMapPool.h"
@@ -16,20 +16,20 @@ class ShadowMapRenderer
 public:
     ShadowMapRenderer();
 
-    void AddDummyShadowMap(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppShadowMapDepth);
-    void AddPass(RenderCore::FrameGraph& FrameGraph, DirectionalLightInstance const* Light, RenderCore::FGTextureProxy** ppShadowMapDepth);
-    void AddPass(RenderCore::FrameGraph& FrameGraph, LightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, OmnidirectionalShadowMapPool& Pool, RenderCore::FGTextureProxy** ppOmnidirectionalShadowMapArray);
+    void AddDummyShadowMap(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RHI::FrameGraph& FrameGraph, DirectionalLightInstance const* Light, RHI::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RHI::FrameGraph& FrameGraph, LightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, OmnidirectionalShadowMapPool& Pool, RHI::FGTextureProxy** ppOmnidirectionalShadowMapArray);
 
 private:
     void CreatePipeline();
     void CreateLightPortalPipeline();
 
-    bool BindMaterialShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
-    bool BindMaterialOmniShadowMap(RenderCore::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
+    bool BindMaterialShadowMap(RHI::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
+    bool BindMaterialOmniShadowMap(RHI::IImmediateContext* immediateCtx, ShadowRenderInstance const* instance);
 
-    Ref<RenderCore::IPipeline> StaticShadowCasterPipeline;
-    Ref<RenderCore::IPipeline> LightPortalPipeline;
-    Ref<RenderCore::ITexture>  DummyShadowMap;
+    Ref<RHI::IPipeline> StaticShadowCasterPipeline;
+    Ref<RHI::IPipeline> LightPortalPipeline;
+    Ref<RHI::ITexture>  DummyShadowMap;
 };
 
 extern const Float4 EVSM_ClearValue;

@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, RenderInstance const* instance)
 {
@@ -100,7 +100,7 @@ void AddDepthPass( FrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, FG
                                    .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                                    .SetResolution(GetFrameResoultion()))
                 .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
-                .SetClearValue(RenderCore::MakeClearColorValue(velocity.X, velocity.Y, 0.0f, 0.0f)));
+                .SetClearValue(RHI::MakeClearColorValue(velocity.X, velocity.Y, 0.0f, 0.0f)));
 
         *ppVelocity = depthPass.GetColorAttachments()[0].pResource;
 

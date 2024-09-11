@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Color.h>
 #include <Hork/Math/Quat.h>
-#include <Hork/RenderCore/Device.h>
+#include <Hork/RHI/Common/Device.h>
 
 #include <Hork/Embedded/Shaders/Common.h>
 
@@ -298,13 +298,13 @@ public:
     int                         WireframePassTextureCount{};
     int                         NormalsPassTextureCount{};
     int                         ShadowMapPassTextureCount{};
-    Ref<RenderCore::IPipeline>  Passes[MaterialPass::MAX];
+    Ref<RHI::IPipeline>  Passes[MaterialPass::MAX];
 };
 
 struct MaterialFrameData
 {
     MaterialGPU*                Material;
-    RenderCore::ITexture*       Textures[MAX_MATERIAL_TEXTURES];
+    RHI::ITexture*       Textures[MAX_MATERIAL_TEXTURES];
     int                         NumTextures;
     Float4                      UniformVectors[4];
     int                         NumUniformVectors;
@@ -458,7 +458,7 @@ class TextureView;
 
 struct CanvasDrawCmd
 {
-    RenderCore::ITexture* Texture;
+    RHI::ITexture* Texture;
     CANVAS_DRAW_COMMAND   Type;
     CANVAS_COMPOSITE      Composite;
     CANVAS_IMAGE_FLAGS    TextureFlags;
@@ -529,22 +529,22 @@ struct RenderInstance
     MaterialGPU*       Material;
     MaterialFrameData* MaterialInstance;
 
-    RenderCore::IBuffer* VertexBuffer;
+    RHI::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
 
-    RenderCore::IBuffer* IndexBuffer;
+    RHI::IBuffer* IndexBuffer;
     size_t               IndexBufferOffset;
 
-    RenderCore::IBuffer* WeightsBuffer;
+    RHI::IBuffer* WeightsBuffer;
     size_t               WeightsBufferOffset;
 
-    RenderCore::IBuffer* VertexLightChannel;
+    RHI::IBuffer* VertexLightChannel;
     size_t               VertexLightOffset;
 
-    RenderCore::IBuffer* LightmapUVChannel;
+    RHI::IBuffer* LightmapUVChannel;
     size_t               LightmapUVOffset;
 
-    RenderCore::ITexture* Lightmap;
+    RHI::ITexture* Lightmap;
     Float4                LightmapOffset;
 
     Float4x4 Matrix;
@@ -591,11 +591,11 @@ struct ShadowRenderInstance
 {
     MaterialGPU*         Material;
     MaterialFrameData*   MaterialInstance;
-    RenderCore::IBuffer* VertexBuffer;
+    RHI::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
-    RenderCore::IBuffer* IndexBuffer;
+    RHI::IBuffer* IndexBuffer;
     size_t               IndexBufferOffset;
-    RenderCore::IBuffer* WeightsBuffer;
+    RHI::IBuffer* WeightsBuffer;
     size_t               WeightsBufferOffset;
     Float3x4             WorldTransformMatrix;
     size_t               SkeletonOffset;
@@ -621,9 +621,9 @@ Light portal render instance
 */
 struct LightPortalRenderInstance
 {
-    RenderCore::IBuffer* VertexBuffer;
+    RHI::IBuffer* VertexBuffer;
     size_t               VertexBufferOffset;
-    RenderCore::IBuffer* IndexBuffer;
+    RHI::IBuffer* IndexBuffer;
     size_t               IndexBufferOffset;
     unsigned int         IndexCount;
     unsigned int         StartIndexLocation;
@@ -769,13 +769,13 @@ Terrain render instance
 */
 struct TerrainRenderInstance
 {
-    RenderCore::IBuffer*  VertexBuffer;
-    RenderCore::IBuffer*  IndexBuffer;
+    RHI::IBuffer*  VertexBuffer;
+    RHI::IBuffer*  IndexBuffer;
     size_t                InstanceBufferStreamHandle;
     size_t                IndirectBufferStreamHandle;
     int                   IndirectBufferDrawCount;
-    RenderCore::ITexture* Clipmaps;
-    RenderCore::ITexture* Normals;
+    RHI::ITexture* Clipmaps;
+    RHI::ITexture* Normals;
     Float4                ViewPositionAndHeight;
     Float4x4              LocalViewProjection;
     Float3x3              ModelNormalToViewSpace;
@@ -867,9 +867,9 @@ struct RenderViewData
     float Exposure;
 
     /// Source color grading texture
-    RenderCore::ITexture* ColorGradingLUT;
+    RHI::ITexture* ColorGradingLUT;
     /// Current color grading texture
-    RenderCore::ITexture* CurrentColorGradingLUT;
+    RHI::ITexture* CurrentColorGradingLUT;
 
     /// Blending speed between current and source color grading textures
     float ColorGradingAdaptationSpeed;
@@ -884,22 +884,22 @@ struct RenderViewData
     float  ColorGradingBrightnessNormalization;
 
     /// Current exposure texture
-    RenderCore::ITexture* CurrentExposure;
+    RHI::ITexture* CurrentExposure;
 
     /// Light photometric lookup map (IES)
-    RenderCore::ITexture* PhotometricProfiles;
+    RHI::ITexture* PhotometricProfiles;
 
     /// Texture with light data
-    RenderCore::ITexture* LightTexture;
+    RHI::ITexture* LightTexture;
 
     /// Texture with depth data
-    RenderCore::ITexture* DepthTexture;
+    RHI::ITexture* DepthTexture;
 
     /// Final texture data
-    RenderCore::ITexture* RenderTarget;
+    RHI::ITexture* RenderTarget;
 
     /// Deinterleaved depth buffers for HBAO rendering
-    RenderCore::ITexture* HBAOMaps;
+    RHI::ITexture* HBAOMaps;
 
     /// Virtual texture feedback data (experimental)
     class VirtualTextureFeedback* VTFeedback;

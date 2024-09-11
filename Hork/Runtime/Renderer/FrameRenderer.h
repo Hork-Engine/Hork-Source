@@ -51,24 +51,24 @@ class FrameRenderer : public RefCounted
 public:
     FrameRenderer();
 
-    void Render(RenderCore::FrameGraph& FrameGraph, bool bVirtualTexturing, class VirtualTextureCache* PhysCacheVT);
+    void Render(RHI::FrameGraph& FrameGraph, bool bVirtualTexturing, class VirtualTextureCache* PhysCacheVT);
 
     OmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return m_OmniShadowMapPool; }
 
 private:
-    void AddLinearizeDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
+    void AddLinearizeDepthPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* DepthTexture, RHI::FGTextureProxy** ppLinearDepth);
 
-    void AddReconstrutNormalsPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppNormalTexture);
+    void AddReconstrutNormalsPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* LinearDepth, RHI::FGTextureProxy** ppNormalTexture);
 
-    void AddMotionBlurPass(RenderCore::FrameGraph&    FrameGraph,
-                           RenderCore::FGTextureProxy*  LightTexture,
-                           RenderCore::FGTextureProxy*  VelocityTexture,
-                           RenderCore::FGTextureProxy*  LinearDepth,
-                           RenderCore::FGTextureProxy** ppResultTexture);
+    void AddMotionBlurPass(RHI::FrameGraph&    FrameGraph,
+                           RHI::FGTextureProxy*  LightTexture,
+                           RHI::FGTextureProxy*  VelocityTexture,
+                           RHI::FGTextureProxy*  LinearDepth,
+                           RHI::FGTextureProxy** ppResultTexture);
 
-    void AddOutlinePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppOutlineTexture);
-    void AddOutlineOverlayPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
-    void AddCopyPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* Source, RenderCore::FGTextureProxy* Dest);
+    void AddOutlinePass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy** ppOutlineTexture);
+    void AddOutlineOverlayPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* RenderTarget, RHI::FGTextureProxy* OutlineMaskTexture);
+    void AddCopyPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* Source, RHI::FGTextureProxy* Dest);
 
     ShadowMapRenderer    m_ShadowMapRenderer;
     LightRenderer        m_LightRenderer;
@@ -83,14 +83,14 @@ private:
 
     OmnidirectionalShadowMapPool m_OmniShadowMapPool;
 
-    Ref<RenderCore::IPipeline> m_LinearDepthPipe;
-    Ref<RenderCore::IPipeline> m_LinearDepthPipe_ORTHO;
-    Ref<RenderCore::IPipeline> m_ReconstructNormalPipe;
-    Ref<RenderCore::IPipeline> m_ReconstructNormalPipe_ORTHO;
-    Ref<RenderCore::IPipeline> m_MotionBlurPipeline;
-    Ref<RenderCore::IPipeline> m_OutlineBlurPipe;
-    Ref<RenderCore::IPipeline> m_OutlineApplyPipe;
-    Ref<RenderCore::IPipeline> m_CopyPipeline;
+    Ref<RHI::IPipeline> m_LinearDepthPipe;
+    Ref<RHI::IPipeline> m_LinearDepthPipe_ORTHO;
+    Ref<RHI::IPipeline> m_ReconstructNormalPipe;
+    Ref<RHI::IPipeline> m_ReconstructNormalPipe_ORTHO;
+    Ref<RHI::IPipeline> m_MotionBlurPipeline;
+    Ref<RHI::IPipeline> m_OutlineBlurPipe;
+    Ref<RHI::IPipeline> m_OutlineApplyPipe;
+    Ref<RHI::IPipeline> m_CopyPipeline;
 };
 
 HK_NAMESPACE_END

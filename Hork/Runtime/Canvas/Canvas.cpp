@@ -922,7 +922,7 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
     frag->PaintMat = invxform.ToMatrix3x4();
 }
 
-RenderCore::ITexture* Canvas::GetTexture(CanvasPaint const* paint)
+RHI::ITexture* Canvas::GetTexture(CanvasPaint const* paint)
 {
     auto* textureResource = GameApplication::sGetResourceManager().TryGet(paint->TexHandle);
     if (!textureResource)

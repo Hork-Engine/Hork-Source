@@ -43,10 +43,10 @@ PhotometricPool::PhotometricPool(PhotometricPoolDesc const& desc)
 
     m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
-                                                  .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
+    GameApplication::sGetRenderDevice()->CreateTexture(RHI::TextureDesc{}
+                                                  .SetResolution(RHI::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                                                  .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
+                                                  .SetBindFlags(RHI::BIND_SHADER_RESOURCE),
                                               &m_Texture);
 
     m_Texture->SetDebugName("PhotometricPool");
@@ -68,14 +68,14 @@ void PhotometricPool::GrowCapacity()
     m_Memory.Resize(capacity * PHOTOMETRIC_DATA_SIZE);
 
     m_Texture.Reset();
-    GameApplication::sGetRenderDevice()->CreateTexture(RenderCore::TextureDesc{}
-                                                  .SetResolution(RenderCore::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
+    GameApplication::sGetRenderDevice()->CreateTexture(RHI::TextureDesc{}
+                                                  .SetResolution(RHI::TextureResolution1DArray(PHOTOMETRIC_DATA_SIZE, capacity))
                                                   .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                                                  .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
+                                                  .SetBindFlags(RHI::BIND_SHADER_RESOURCE),
                                               &m_Texture);
     m_Texture->SetDebugName("PhotometricPool");
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
     rect.Dimension.Y = 1;
     rect.Dimension.Z = m_PoolSize;
@@ -112,7 +112,7 @@ uint16_t PhotometricPool::Add(ArrayView<uint8_t> samples)
         m_FreeList.RemoveLast();
     }
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Offset.Z = id;
     rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
     rect.Dimension.Y = 1;

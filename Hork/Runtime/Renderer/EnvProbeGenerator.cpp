@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
@@ -110,7 +110,7 @@ EnvProbeGenerator::EnvProbeGenerator()
     GDevice->CreatePipeline(pipelineCI, &Pipeline);
 }
 
-void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray)
+void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray)
 {
     int size = 1 << _MaxLod;
 
@@ -174,7 +174,7 @@ void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture*
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture)
+void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture)
 {
     int size = 1 << _MaxLod;
 

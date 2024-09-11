@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static const VertexAttribInfo VertexAttribsSkinned[] = {
     {"InPosition",

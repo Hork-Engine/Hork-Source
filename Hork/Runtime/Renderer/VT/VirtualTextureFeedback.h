@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Allocators/LinearAllocator.h>
 #include <Hork/Math/VectorMath.h>
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -45,23 +45,23 @@ public:
     void Begin(int Width, int Height);
     void End(int* pFeedbackSize, const void** ppData);
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph);
-    void DrawFeedback(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
+    void AddPass(RHI::FrameGraph& FrameGraph);
+    void DrawFeedback(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* RenderTarget);
 
-    RenderCore::ITexture* GetFeedbackTexture() { return FeedbackTexture; }
-    RenderCore::ITexture* GetFeedbackDepth() { return FeedbackDepth; }
-    RenderCore::IBuffer* GetPixelBuffer() { return PixelBufferObject[SwapIndex]; }
+    RHI::ITexture* GetFeedbackTexture() { return FeedbackTexture; }
+    RHI::ITexture* GetFeedbackDepth() { return FeedbackDepth; }
+    RHI::IBuffer* GetPixelBuffer() { return PixelBufferObject[SwapIndex]; }
     Float2 const& GetResolutionRatio() const { return ResolutionRatio; }
 
 private:
-    Ref<RenderCore::ITexture> FeedbackTexture;
-    Ref<RenderCore::ITexture> FeedbackDepth;
-    Ref<RenderCore::IBuffer> PixelBufferObject[2];
+    Ref<RHI::ITexture> FeedbackTexture;
+    Ref<RHI::ITexture> FeedbackDepth;
+    Ref<RHI::IBuffer> PixelBufferObject[2];
     const void* MappedData[2];
     int SwapIndex;
     Float2 ResolutionRatio;
     int FeedbackSize[2];
-    Ref<RenderCore::IPipeline> DrawFeedbackPipeline;
+    Ref<RHI::IPipeline> DrawFeedbackPipeline;
 };
 
 HK_NAMESPACE_END

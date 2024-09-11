@@ -57,10 +57,10 @@ public:
 
     WeakRef<UIWidget> HoveredWidget;
 
-    UIManager(RenderCore::IGenericWindow* mainWindow);
+    UIManager(RHI::IGenericWindow* mainWindow);
     ~UIManager();
 
-    RenderCore::IGenericWindow* GetGenericWindow()
+    RHI::IGenericWindow* GetGenericWindow()
     {
         return m_MainWindow;
     }
@@ -107,7 +107,7 @@ public:
 private:
     void DrawCursor(Canvas& cv);
 
-    Ref<RenderCore::IGenericWindow> m_MainWindow;
+    Ref<RHI::IGenericWindow> m_MainWindow;
     UIConsole                        m_Console;
     Vector<Ref<UIDesktop>>         m_Desktops;
     Ref<UIDesktop>                  m_ActiveDesktop;

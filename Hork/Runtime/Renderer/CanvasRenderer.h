@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/RenderDefs/RenderDefs.h>
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -42,15 +42,15 @@ public:
     CanvasRenderer();
     ~CanvasRenderer();
 
-    void Render(RenderCore::FrameGraph& FrameGraph, RenderCore::ITexture* pBackBuffer);
+    void Render(RHI::FrameGraph& FrameGraph, RHI::ITexture* pBackBuffer);
 
 private:
-    void RenderVG(RenderCore::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData);
-    void DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
-    void DrawConvexFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
-    void DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke = false);
-    void DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
-    void SetUniforms(int uniformOffset, RenderCore::ITexture* pTexture);
+    void RenderVG(RHI::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData);
+    void DrawFill(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture);
+    void DrawConvexFill(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture);
+    void DrawStroke(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture, bool bStencilStroke = false);
+    void DrawTriangles(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture);
+    void SetUniforms(int uniformOffset, RHI::ITexture* pTexture);
     void SetBuffers();
     void BuildFanIndices(int numIndices, bool bRebind = true);
     void BindPipeline(int Topology);
@@ -84,16 +84,16 @@ private:
         SAMPLER_STATE_MAX
     };
 
-    RenderCore::IImmediateContext*  m_ImmediateCtx;
+    RHI::IImmediateContext*  m_ImmediateCtx;
     CanvasDrawData const*           m_pDrawData;
     bool                            m_bEdgeAntialias;
-    Ref<RenderCore::IShaderModule> m_VertexShader;
-    Ref<RenderCore::IShaderModule> m_FragmentShader;
-    Ref<RenderCore::IBuffer>       m_pFanIndexBuffer;
+    Ref<RHI::IShaderModule> m_VertexShader;
+    Ref<RHI::IShaderModule> m_FragmentShader;
+    Ref<RHI::IBuffer>       m_pFanIndexBuffer;
     Vector<uint32_t>               m_FanIndices;
-    Ref<RenderCore::IPipeline>     m_PipelinePermut[TOPOLOGY_MAX][RASTER_STATE_MAX][BLEND_STATE_MAX][DEPTH_STENCIL_MAX][SAMPLER_STATE_MAX];
-    Ref<RenderCore::IPipeline>     m_PipelineShapes;
-    Ref<RenderCore::IPipeline>     m_PipelineClearStencil;
+    Ref<RHI::IPipeline>     m_PipelinePermut[TOPOLOGY_MAX][RASTER_STATE_MAX][BLEND_STATE_MAX][DEPTH_STENCIL_MAX][SAMPLER_STATE_MAX];
+    Ref<RHI::IPipeline>     m_PipelineShapes;
+    Ref<RHI::IPipeline>     m_PipelineClearStencil;
 
     int m_RasterState  = RASTER_STATE_CULL;
     int m_BlendState   = CANVAS_COMPOSITE_SOURCE_OVER;

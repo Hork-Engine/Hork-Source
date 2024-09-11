@@ -284,7 +284,7 @@ void* MeshResource::sGetIndexMemory(void* _This)
     return static_cast<MeshResource*>(_This)->m_Indices.ToPtr();
 }
 
-void MeshResource::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void MeshResource::GetVertexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_VertexHandle)
     {
@@ -298,7 +298,7 @@ void MeshResource::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pO
     }
 }
 
-void MeshResource::GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void MeshResource::GetSkinBufferBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_SkinBufferHandle)
     {
@@ -312,7 +312,7 @@ void MeshResource::GetSkinBufferBufferGPU(RenderCore::IBuffer** ppBuffer, size_t
     }
 }
 
-void MeshResource::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void MeshResource::GetLightmapUVsGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_LightmapUVsGPU)
     {
@@ -326,7 +326,7 @@ void MeshResource::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOf
     }
 }
 
-void MeshResource::GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void MeshResource::GetIndexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_IndexHandle)
     {

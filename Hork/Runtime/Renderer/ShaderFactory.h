@@ -37,29 +37,29 @@ HK_NAMESPACE_BEGIN
 class ShaderFactory
 {
 public:
-    static void sCreateShader(RenderCore::SHADER_TYPE shaderType, const char* source, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateShader(RenderCore::SHADER_TYPE shaderType, String const& source, Ref<RenderCore::IShaderModule>& module);
-    static Ref<RenderCore::IShaderModule> sCreateShaderSpirV(RenderCore::SHADER_TYPE shaderType, BlobRef blob);
+    static void sCreateShader(RHI::SHADER_TYPE shaderType, const char* source, Ref<RHI::IShaderModule>& module);
+    static void sCreateShader(RHI::SHADER_TYPE shaderType, String const& source, Ref<RHI::IShaderModule>& module);
+    static Ref<RHI::IShaderModule> sCreateShaderSpirV(RHI::SHADER_TYPE shaderType, BlobRef blob);
 
-    static void sCreateVertexShader(StringView fileName, ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateVertexShader(StringView fileName, RenderCore::VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateTessControlShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateTessEvalShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateGeometryShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
-    static void sCreateFragmentShader(StringView fileName, Ref<RenderCore::IShaderModule>& module);
+    static void sCreateVertexShader(StringView fileName, ArrayView<RHI::VertexAttribInfo> vertexAttribs, Ref<RHI::IShaderModule>& module);
+    static void sCreateVertexShader(StringView fileName, RHI::VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<RHI::IShaderModule>& module);
+    static void sCreateTessControlShader(StringView fileName, Ref<RHI::IShaderModule>& module);
+    static void sCreateTessEvalShader(StringView fileName, Ref<RHI::IShaderModule>& module);
+    static void sCreateGeometryShader(StringView fileName, Ref<RHI::IShaderModule>& module);
+    static void sCreateFragmentShader(StringView fileName, Ref<RHI::IShaderModule>& module);
 
-    static void sCreateFullscreenQuadPipeline(Ref<RenderCore::IPipeline>* ppPipeline,
+    static void sCreateFullscreenQuadPipeline(Ref<RHI::IPipeline>* ppPipeline,
                                               StringView vertexShader,
                                               StringView fragmentShader,
-                                              RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
-                                              RenderCore::BLENDING_PRESET blendingPreset = RenderCore::BLENDING_NO_BLEND);
+                                              RHI::PipelineResourceLayout const* pResourceLayout = nullptr,
+                                              RHI::BLENDING_PRESET blendingPreset = RHI::BLENDING_NO_BLEND);
 
-    static void sCreateFullscreenQuadPipelineGS(Ref<RenderCore::IPipeline>* ppPipeline,
+    static void sCreateFullscreenQuadPipelineGS(Ref<RHI::IPipeline>* ppPipeline,
                                                 StringView vertexShader,
                                                 StringView fragmentShader,
                                                 StringView geometryShader,
-                                                RenderCore::PipelineResourceLayout const* pResourceLayout = nullptr,
-                                                RenderCore::BLENDING_PRESET blendingPreset = RenderCore::BLENDING_NO_BLEND);
+                                                RHI::PipelineResourceLayout const* pResourceLayout = nullptr,
+                                                RHI::BLENDING_PRESET blendingPreset = RHI::BLENDING_NO_BLEND);
 };
 
 HK_NAMESPACE_END

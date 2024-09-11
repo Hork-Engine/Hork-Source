@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Hork/Core/Profiler.h>
 #include <Hork/Core/ConsoleVar.h>
 
-#include <Hork/RenderCore/GPUSync.h>
+#include <Hork/RHI/Common/GPUSync.h>
 
 #include <SDL3/SDL.h>
 
@@ -47,7 +47,7 @@ ConsoleVar com_MaxFPS("com_MaxFPS"_s, "120"_s);
 ConsoleVar com_FrameSleep("com_FrameSleep"_s, "0"_s);
 ConsoleVar in_StickDeadZone("in_StickDeadZone"_s, "0.23"_s);
 
-FrameLoop::FrameLoop(RenderCore::IDevice* renderDevice) :
+FrameLoop::FrameLoop(RHI::IDevice* renderDevice) :
     m_FrameMemory(Allocators::FrameMemoryAllocator::sGetAllocator()),
     m_RenderDevice(renderDevice)
 {
@@ -111,7 +111,7 @@ void FrameLoop::SetGenerateInputEvents(bool shouldGenerateInputEvents)
     m_ShouldGenerateInputEvents = shouldGenerateInputEvents;
 }
 
-void FrameLoop::NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceManager)
+void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceManager)
 {
     HK_PROFILER_EVENT("Setup new frame");
 
@@ -416,7 +416,7 @@ void FrameLoop::PollEvents(IEventListener* listener)
         // Handle window events
         if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST)
         {
-            RenderCore::IGenericWindow* window = RenderCore::IGenericWindow::sGetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
+            RHI::IGenericWindow* window = RHI::IGenericWindow::sGetWindowFromNativeHandle(SDL_GetWindowFromID(event.window.windowID));
             if (window)
             {
                 window->ParseEvent(event.window);

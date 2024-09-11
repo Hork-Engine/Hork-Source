@@ -39,6 +39,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
 #include <Hork/ShaderUtils/ShaderCompiler.h>
+#include <Hork/RHI/CreateDevice.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -353,7 +354,7 @@ GameApplication::~GameApplication()
 
 void GameApplication::RunMainLoop()
 {
-    RenderCore::ISwapChain* swapChains[1] = {m_SwapChain};
+    RHI::ISwapChain* swapChains[1] = {m_SwapChain};
 
     do
     {
@@ -706,9 +707,9 @@ void GameApplication::TakeScreenshot(StringView filename)
 
 void GameApplication::ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t width, uint16_t height, size_t sizeInBytes, void* sysMem)
 {
-    RenderCore::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
+    RHI::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Offset.X    = x;
     rect.Offset.Y    = y;
     rect.Dimension.X = width;
@@ -720,12 +721,12 @@ void GameApplication::ReadBackbufferPixels(uint16_t x, uint16_t y, uint16_t widt
 
 void GameApplication::TakeScreenshot()
 {
-    RenderCore::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
+    RHI::ITexture* pBackBuffer = m_SwapChain->GetBackBuffer();
 
     uint32_t w = pBackBuffer->GetWidth();
     uint32_t h = pBackBuffer->GetHeight();
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Dimension.X = w;
     rect.Dimension.Y = h;
     rect.Dimension.Z = 1;

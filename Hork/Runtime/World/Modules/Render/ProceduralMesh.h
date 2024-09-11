@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Geometry/Utilites.h>
-#include <Hork/RenderCore/Buffer.h>
+#include <Hork/RHI/Common/Buffer.h>
 #include <Hork/Runtime/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
@@ -56,10 +56,10 @@ public:
     BvAxisAlignedBox            BoundingBox;
 
     /// Get mesh GPU buffers
-    void                        GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Get mesh GPU buffers
-    void                        GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Check ray intersection. Result is unordered by distance to save performance
     bool                        Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;

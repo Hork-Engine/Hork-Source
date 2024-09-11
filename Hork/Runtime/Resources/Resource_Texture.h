@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Hork/Core/BinaryStream.h>
 #include <Hork/Image/Image.h>
-#include <Hork/RenderCore/Texture.h>
+#include <Hork/RHI/Common/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -101,8 +101,8 @@ public:
     /// Helper. Fill texture data.
     bool                        WriteDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData);
 
-    void                        SetTextureGPU(RenderCore::ITexture* texture);
-    RenderCore::ITexture*       GetTextureGPU() { return m_TextureGPU; }
+    void                        SetTextureGPU(RHI::ITexture* texture);
+    RHI::ITexture*       GetTextureGPU() { return m_TextureGPU; }
 
     TEXTURE_TYPE                GetType() const { return m_Type; }
     TEXTURE_FORMAT              GetFormat() const { return m_Format; }
@@ -114,7 +114,7 @@ public:
 private:
     ImageStorage                m_Image;
 
-    Ref<RenderCore::ITexture>   m_TextureGPU;
+    Ref<RHI::ITexture>   m_TextureGPU;
     TEXTURE_TYPE                m_Type = TEXTURE_2D;
     TEXTURE_FORMAT              m_Format = TEXTURE_FORMAT_BGRA8_UNORM;
     uint32_t                    m_Width = 0;

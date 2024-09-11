@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,21 +39,21 @@ class ExposureRenderer
 public:
     ExposureRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppExposure);
+    void AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy** ppExposure);
 
-    RenderCore::ITexture* GetDefaultLuminance() { return DefaultLuminance; }
+    RHI::ITexture* GetDefaultLuminance() { return DefaultLuminance; }
 
 private:
-    Ref<RenderCore::IPipeline> MakeLuminanceMapPipe;
-    Ref<RenderCore::IPipeline> SumLuminanceMapPipe;
-    Ref<RenderCore::IPipeline> DynamicExposurePipe;
-    Ref<RenderCore::ITexture> Luminance64;
-    Ref<RenderCore::ITexture> Luminance32;
-    Ref<RenderCore::ITexture> Luminance16;
-    Ref<RenderCore::ITexture> Luminance8;
-    Ref<RenderCore::ITexture> Luminance4;
-    Ref<RenderCore::ITexture> Luminance2;
-    Ref<RenderCore::ITexture> DefaultLuminance;
+    Ref<RHI::IPipeline> MakeLuminanceMapPipe;
+    Ref<RHI::IPipeline> SumLuminanceMapPipe;
+    Ref<RHI::IPipeline> DynamicExposurePipe;
+    Ref<RHI::ITexture> Luminance64;
+    Ref<RHI::ITexture> Luminance32;
+    Ref<RHI::ITexture> Luminance16;
+    Ref<RHI::ITexture> Luminance8;
+    Ref<RHI::ITexture> Luminance4;
+    Ref<RHI::ITexture> Luminance2;
+    Ref<RHI::ITexture> DefaultLuminance;
 };
 
 HK_NAMESPACE_END

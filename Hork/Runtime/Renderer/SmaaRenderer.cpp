@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 SmaaRenderer::SmaaRenderer()
 {
@@ -94,7 +94,7 @@ void SmaaRenderer::CreateTextures()
     SearchTex->Write(0, sizeof(searchTexBytes), 1, searchTexBytes);
 }
 
-void SmaaRenderer::AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture)
+void SmaaRenderer::AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy** ppResultTexture)
 {
     FGTextureProxy* EdgeTexture;
     FGTextureProxy* BlendTexture;

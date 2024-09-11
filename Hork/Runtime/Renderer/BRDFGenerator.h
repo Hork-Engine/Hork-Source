@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,10 +39,10 @@ class BRDFGenerator
 public:
     BRDFGenerator();
 
-    void Render(Ref<RenderCore::ITexture>* ppTexture);
+    void Render(Ref<RHI::ITexture>* ppTexture);
 
 private:
-    Ref<RenderCore::IPipeline> Pipeline;
+    Ref<RHI::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

@@ -135,8 +135,8 @@ public:
     static constexpr uint32_t MAX_GPU_RESIDENT = 256;
 
     // GPU cache
-    Ref<RenderCore::ITexture> m_IrradianceMapArray;
-    Ref<RenderCore::ITexture> m_ReflectionMapArray;
+    Ref<RHI::ITexture> m_IrradianceMapArray;
+    Ref<RHI::ITexture> m_ReflectionMapArray;
 
     struct Resident
     {

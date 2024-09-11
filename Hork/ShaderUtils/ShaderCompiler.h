@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/Pipeline.h>
+#include <Hork/RHI/Common/Pipeline.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -42,8 +42,8 @@ public:
     static void sInitialize();
     static void sDeinitialize();
 
-    static bool sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv);
-    static bool sCreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv);
+    static bool sCreateSpirV(RHI::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv);
+    static bool sCreateSpirV_VertexShader(ArrayView<RHI::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv);
 };
 
 HK_NAMESPACE_END

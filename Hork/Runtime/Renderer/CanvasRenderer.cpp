@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static void SetBlendingFromCompositeState(BlendingStateInfo& blend, CANVAS_COMPOSITE composite)
 {
@@ -529,7 +529,7 @@ void CanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData co
     }
 }
 
-void CanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
+void CanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture)
 {
     CanvasPath const* paths = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               i, npaths = drawCommand->PathCount;
@@ -642,7 +642,7 @@ void CanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture* 
     }
 }
 
-void CanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke)
+void CanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture, bool bStencilStroke)
 {
     CanvasPath const* paths  = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               npaths = drawCommand->PathCount, i;
@@ -720,7 +720,7 @@ void CanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::IT
     }
 }
 
-void CanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
+void CanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RHI::ITexture* pTexture)
 {
     SetUniforms(drawCommand->UniformOffset, pTexture);
     BindPipeline(TOPOLOGY_TRIANGLE_LIST);
@@ -733,7 +733,7 @@ void CanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore:
     m_ImmediateCtx->Draw(&cmd);
 }
 
-void CanvasRenderer::SetUniforms(int uniformOffset, RenderCore::ITexture* pTexture)
+void CanvasRenderer::SetUniforms(int uniformOffset, RHI::ITexture* pTexture)
 {
     CanvasUniforms* frag = (CanvasUniforms*)&m_pDrawData->Uniforms[uniformOffset];
 
@@ -783,7 +783,7 @@ void CanvasRenderer::BuildFanIndices(int numIndices, bool bRebind)
         pData[current++] = index;
     }
 
-    RenderCore::BufferDesc bufferDesc;
+    RHI::BufferDesc bufferDesc;
     bufferDesc.bImmutableStorage = true;
     bufferDesc.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferDesc.SizeInBytes = sizeof(uint32_t) * m_FanIndices.Size();

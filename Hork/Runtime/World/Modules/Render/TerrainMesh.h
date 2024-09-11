@@ -47,9 +47,9 @@ public:
     TerrainMesh();
 
     /// Get vertex buffer in GPU
-    RenderCore::IBuffer* GetVertexBufferGPU() const { return m_VertexBufferGPU; }
+    RHI::IBuffer* GetVertexBufferGPU() const { return m_VertexBufferGPU; }
     /// Get index buffer in GPU
-    RenderCore::IBuffer* GetIndexBufferGPU() const { return m_IndexBufferGPU; }
+    RHI::IBuffer* GetIndexBufferGPU() const { return m_IndexBufferGPU; }
 
     /// Get vertex buffer in CPU. We keep it only for debug draw
     TerrainVertex const* GetVertexBufferCPU() const { return m_VertexBuffer.ToPtr(); }
@@ -81,9 +81,9 @@ private:
     TerrainPatch m_CrackPatch;
 
     /// Vertex buffer in GPU
-    Ref<RenderCore::IBuffer> m_VertexBufferGPU;
+    Ref<RHI::IBuffer> m_VertexBufferGPU;
     /// Index buffer in GPU
-    Ref<RenderCore::IBuffer> m_IndexBufferGPU;
+    Ref<RHI::IBuffer> m_IndexBufferGPU;
 
     /// Vertex buffer in CPU. We keep it only for debug draw
     Vector<TerrainVertex> m_VertexBuffer;

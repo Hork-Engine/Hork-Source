@@ -47,7 +47,7 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 ConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"_s, "16"_s);
 ConsoleVar r_RenderFeedback("r_RenderFeedback"_s, "1"_s);

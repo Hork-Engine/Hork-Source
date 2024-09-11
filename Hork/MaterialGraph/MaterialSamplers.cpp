@@ -37,7 +37,7 @@ extern const Float4 VSM_ClearValue;
 
 MaterialSamplers::MaterialSamplers()
 {
-    using namespace RenderCore;
+    using namespace RHI;
     LightmapSampler.Filter = FILTER_LINEAR;
     LightmapSampler.AddressU = SAMPLER_ADDRESS_WRAP;
     LightmapSampler.AddressV = SAMPLER_ADDRESS_WRAP;

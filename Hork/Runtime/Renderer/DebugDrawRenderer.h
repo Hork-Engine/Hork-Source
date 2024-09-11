@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -38,10 +38,10 @@ class DebugDrawRenderer {
 public:
     DebugDrawRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* DepthTexture);
+    void AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* RenderTarget, RHI::FGTextureProxy* DepthTexture);
 
 private:
-    Ref< RenderCore::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];
+    Ref< RHI::IPipeline > Pipelines[DBG_DRAW_CMD_MAX];
 };
 
 HK_NAMESPACE_END

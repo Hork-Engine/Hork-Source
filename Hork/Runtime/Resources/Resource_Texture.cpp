@@ -170,7 +170,7 @@ void TextureResource::Upload()
 namespace
 {
 
-void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::TextureSwizzle& _Swizzle)
+void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RHI::TextureSwizzle& _Swizzle)
 {
     TextureFormatInfo const& info = GetTextureFormatInfo(Format);
 
@@ -187,10 +187,10 @@ void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::TextureSwizzle&
     if (numChannels == 1)
     {
         // Apply texture swizzle for single channel textures
-        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.R = RHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = RHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.B = RHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.A = RHI::TEXTURE_SWIZZLE_R;
     }
 }
 
@@ -205,11 +205,11 @@ void TextureResource::Allocate1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolution1D(Width));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolution1D(Width));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -228,11 +228,11 @@ void TextureResource::Allocate1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
     m_Depth = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolution1DArray(Width, ArraySize));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolution1DArray(Width, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -251,11 +251,11 @@ void TextureResource::Allocate2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolution2D(Width, Height));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolution2D(Width, Height));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -274,11 +274,11 @@ void TextureResource::Allocate2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
     m_Depth = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolution2DArray(Width, Height, ArraySize));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolution2DArray(Width, Height, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -297,11 +297,11 @@ void TextureResource::Allocate3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     m_Depth = Depth;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolution3D(Width, Height, Depth));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolution3D(Width, Height, Depth));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -320,11 +320,11 @@ void TextureResource::AllocateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLeve
     m_Depth = 1;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolutionCubemap(Width));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolutionCubemap(Width));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -343,11 +343,11 @@ void TextureResource::AllocateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMi
     m_Depth = ArraySize;
     m_NumMipmaps = NumMipLevels;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolutionCubemapArray(Width, ArraySize));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolutionCubemapArray(Width, ArraySize));
     textureDesc.SetFormat(Format);
     textureDesc.SetMipLevels(NumMipLevels);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
@@ -380,7 +380,7 @@ bool TextureResource::WriteData(uint32_t LocationX, uint32_t LocationY, uint32_t
 
     // TODO: bounds check?
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Offset.X = LocationX;
     rect.Offset.Y = LocationY;
     rect.Offset.Z = LocationZ;
@@ -477,7 +477,7 @@ bool TextureResource::WriteDataCubemapArray(uint32_t LocationX, uint32_t Locatio
     return WriteData(LocationX, LocationY, ArrayLayer * 6 + FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
-void TextureResource::SetTextureGPU(RenderCore::ITexture* texture)
+void TextureResource::SetTextureGPU(RHI::ITexture* texture)
 {
     m_TextureGPU = texture;
 

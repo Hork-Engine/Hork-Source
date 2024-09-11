@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,18 +39,18 @@ class SSAORenderer
 public:
     SSAORenderer();
 
-    void AddPasses(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddPasses(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* LinearDepth, RHI::FGTextureProxy* NormalTexture, RHI::FGTextureProxy** ppSSAOTexture);
 
 private:
-    void AddDeinterleaveDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddDeinterleaveDepthPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* LinearDepth, RHI::FGTextureProxy** ppSSAOTexture);
 
-    void AddCacheAwareAOPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* DeinterleaveDepthArray, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppDeinterleaveDepthArray);
+    void AddCacheAwareAOPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* DeinterleaveDepthArray, RHI::FGTextureProxy* NormalTexture, RHI::FGTextureProxy** ppDeinterleaveDepthArray);
 
-    void AddReinterleavePass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTextureArray, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddReinterleavePass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SSAOTextureArray, RHI::FGTextureProxy** ppSSAOTexture);
 
-    void AddSimpleAOPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
+    void AddSimpleAOPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* LinearDepth, RHI::FGTextureProxy* NormalTexture, RHI::FGTextureProxy** ppSSAOTexture);
 
-    void AddAOBlurPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTexture, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppBluredSSAO);
+    void AddAOBlurPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SSAOTexture, RHI::FGTextureProxy* LinearDepth, RHI::FGTextureProxy** ppBluredSSAO);
 
     enum
     {
@@ -61,14 +61,14 @@ private:
         HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE
     };
 
-    Ref<RenderCore::IPipeline> Pipe;
-    Ref<RenderCore::IPipeline> Pipe_ORTHO;
-    Ref<RenderCore::IPipeline> CacheAwarePipe;
-    Ref<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
-    Ref<RenderCore::IPipeline> BlurPipe;
-    Ref<RenderCore::ITexture>  RandomMap;
-    Ref<RenderCore::IPipeline> DeinterleavePipe;
-    Ref<RenderCore::IPipeline> ReinterleavePipe;
+    Ref<RHI::IPipeline> Pipe;
+    Ref<RHI::IPipeline> Pipe_ORTHO;
+    Ref<RHI::IPipeline> CacheAwarePipe;
+    Ref<RHI::IPipeline> CacheAwarePipe_ORTHO;
+    Ref<RHI::IPipeline> BlurPipe;
+    Ref<RHI::ITexture>  RandomMap;
+    Ref<RHI::IPipeline> DeinterleavePipe;
+    Ref<RHI::IPipeline> ReinterleavePipe;
 };
 
 HK_NAMESPACE_END

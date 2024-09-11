@@ -209,7 +209,7 @@ void VirtualTextureFeedbackAnalyzer::SubmitPages(Vector<VTPageDesc> const& Pages
 
 void VirtualTextureFeedbackAnalyzer::Begin(StreamedMemoryGPU* StreamedMemory)
 {
-    unsigned int maxBlockSize = GDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE);
+    unsigned int maxBlockSize = GDevice->GetDeviceCaps(RHI::DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE);
     ;
 
     size_t size = VT_MAX_TEXTURE_UNITS * sizeof(VTUnit);

@@ -111,7 +111,7 @@ public:
         return static_cast<GameApplication*>(sInstance())->m_ApplicationLocalData;
     }
 
-    static RenderCore::IDevice* sGetRenderDevice()
+    static RHI::IDevice* sGetRenderDevice()
     {
         return static_cast<GameApplication*>(sInstance())->m_RenderDevice;
     }
@@ -248,9 +248,9 @@ private:
     String                          m_Title;
     String                          m_ApplicationLocalData;
     UniqueRef<FrameLoop>            m_FrameLoop;
-    Ref<RenderCore::IDevice>        m_RenderDevice;
-    Ref<RenderCore::IGenericWindow> m_Window;
-    Ref<RenderCore::ISwapChain>     m_SwapChain;
+    Ref<RHI::IDevice>        m_RenderDevice;
+    Ref<RHI::IGenericWindow> m_Window;
+    Ref<RHI::ISwapChain>     m_SwapChain;
     UniqueRef<VertexMemoryGPU>      m_VertexMemoryGPU;
     UniqueRef<Canvas>               m_Canvas;
     UniqueRef<UIManager>            m_UIManager;

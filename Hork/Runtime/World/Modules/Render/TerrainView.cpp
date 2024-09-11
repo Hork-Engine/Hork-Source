@@ -77,21 +77,21 @@ TerrainView::TerrainView(TerrainHandle resource)
         m_LodInfo[i].bForceUpdateTexture = true;
     }
 
-    auto textureFormat = RenderCore::TextureDesc()
+    auto textureFormat = RHI::TextureDesc()
                              .SetFormat(TEXTURE_FORMAT_RG32_FLOAT)
-                             .SetResolution(RenderCore::TextureResolution2DArray(TERRAIN_CLIPMAP_SIZE,
+                             .SetResolution(RHI::TextureResolution2DArray(TERRAIN_CLIPMAP_SIZE,
                                                                                  TERRAIN_CLIPMAP_SIZE,
                                                                                  MAX_TERRAIN_LODS))
-                             .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+                             .SetBindFlags(RHI::BIND_SHADER_RESOURCE);
     GameApplication::sGetRenderDevice()->CreateTexture(textureFormat, &m_ClipmapArray);
     m_ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
-    auto normalMapFormat = RenderCore::TextureDesc()
+    auto normalMapFormat = RHI::TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_BGRA8_UNORM)
-                               .SetResolution(RenderCore::TextureResolution2DArray(TERRAIN_CLIPMAP_SIZE,
+                               .SetResolution(RHI::TextureResolution2DArray(TERRAIN_CLIPMAP_SIZE,
                                                                                    TERRAIN_CLIPMAP_SIZE,
                                                                                    MAX_TERRAIN_LODS))
-                               .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+                               .SetBindFlags(RHI::BIND_SHADER_RESOURCE);
     GameApplication::sGetRenderDevice()->CreateTexture(normalMapFormat, &m_NormalMapArray);
     m_NormalMapArray->SetDebugName("Terrain Normal Map Array");
 }
@@ -134,14 +134,14 @@ void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustu
     m_InstanceBufferStreamHandle = streamedMemory->AllocateVertex(m_InstanceBuffer.Size() * sizeof(TerrainPatchInstance),
                                                                   m_InstanceBuffer.ToPtr());
 
-    m_IndirectBufferStreamHandle = streamedMemory->AllocateWithCustomAlignment(m_IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd),
+    m_IndirectBufferStreamHandle = streamedMemory->AllocateWithCustomAlignment(m_IndirectBuffer.Size() * sizeof(RHI::DrawIndexedIndirectCmd),
                                                                                16, // FIXME: is this alignment correct for DrawIndirect commands?
                                                                                m_IndirectBuffer.ToPtr());
 
     if (com_ShowTerrainMemoryUsage)
     {
         LOG("Instance buffer size in bytes {}\n", m_InstanceBuffer.Size() * sizeof(TerrainPatchInstance));
-        LOG("Indirect buffer size in bytes {}\n", m_IndirectBuffer.Size() * sizeof(RenderCore::DrawIndexedIndirectCmd));
+        LOG("Indirect buffer size in bytes {}\n", m_IndirectBuffer.Size() * sizeof(RHI::DrawIndexedIndirectCmd));
     }
 }
 
@@ -1015,7 +1015,7 @@ void TerrainView::UpdateTextures()
 
         if (bUpdateToGPU)
         {
-            RenderCore::TextureRect rect;
+            RHI::TextureRect rect;
 
             rect.Offset.MipLevel = 0;
             rect.Offset.X = 0;
@@ -1071,7 +1071,7 @@ void TerrainView::DrawDebug(DebugRenderer* InRenderer)
     prev = cur;
 
     int totalDrawcalls = 0;
-    for ( RenderCore::DrawIndexedIndirectCmd const & cmd : IndirectBuffer ) {
+    for ( RHI::DrawIndexedIndirectCmd const & cmd : IndirectBuffer ) {
         totalDrawcalls += cmd.InstanceCount;
     }
 
@@ -1079,7 +1079,7 @@ void TerrainView::DrawDebug(DebugRenderer* InRenderer)
 #    endif
 
     int drawCall = 0;
-    for ( RenderCore::DrawIndexedIndirectCmd const & cmd : IndirectBuffer ) {
+    for ( RHI::DrawIndexedIndirectCmd const & cmd : IndirectBuffer ) {
 
         //if ( cmdIndex < ( int(currentDrawCall / 10000.0) % IndirectBuffer.Size()) ) {
 

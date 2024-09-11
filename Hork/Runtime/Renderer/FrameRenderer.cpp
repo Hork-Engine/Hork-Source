@@ -40,7 +40,7 @@ ConsoleVar r_ShowNormals("r_ShowNormals"_s, "0"_s, CVAR_CHEAT);
 ConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"_s, "0"_s);
 ConsoleVar r_ShowCacheVT("r_ShowCacheVT"_s, "-1"_s);
 
-using namespace RenderCore;
+using namespace RHI;
 
 FrameRenderer::FrameRenderer()
 {
@@ -95,7 +95,7 @@ FrameRenderer::FrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(outlineApplySamplers);
     resourceLayout.Samplers    = outlineApplySamplers;
 
-    ShaderFactory::sCreateFullscreenQuadPipeline(&m_OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
+    ShaderFactory::sCreateFullscreenQuadPipeline(&m_OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RHI::BLENDING_ALPHA);
 
     resourceLayout = PipelineResourceLayout{};
     resourceLayout.NumSamplers = 1;
@@ -114,11 +114,11 @@ void FrameRenderer::AddLinearizeDepthPass(FrameGraph& FrameGraph, FGTextureProxy
                            TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
                                .SetResolution(GetFrameResoultion()))
-            .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+            .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
     linearizeDepthPass.AddSubpass({0}, // color attachment refs
                                   [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                                   {
-                                      using namespace RenderCore;
+                                      using namespace RHI;
 
                                       rtbl->BindTexture(0, DepthTexture->Actual());
 
@@ -144,11 +144,11 @@ void FrameRenderer::AddReconstrutNormalsPass(FrameGraph& FrameGraph, FGTexturePr
                            TextureDesc()
                                .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
-            .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
+            .SetLoadOp(RHI::ATTACHMENT_LOAD_OP_DONT_CARE));
     reconstructNormalPass.AddSubpass({0}, // color attachment refs
                                      [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                                      {
-                                         using namespace RenderCore;
+                                         using namespace RHI;
 
                                          rtbl->BindTexture(0, LinearDepth->Actual());
 
@@ -247,7 +247,7 @@ void FrameRenderer::AddOutlinePass(FrameGraph& FrameGraph, FGTextureProxy** ppOu
                                .SetFormat(pf)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
-            .SetClearValue(RenderCore::MakeClearColorValue(0.0f, 1.0f, 0.0f, 0.0f)));
+            .SetClearValue(RHI::MakeClearColorValue(0.0f, 1.0f, 0.0f, 0.0f)));
 
     maskPass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
@@ -323,7 +323,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
     blurPass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            using namespace RenderCore;
+                            using namespace RHI;
 
                             rtbl->BindTexture(0, OutlineMaskTexture->Actual());
 
@@ -346,7 +346,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
     applyPass.AddSubpass({0}, // color attachment refs
                          [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                          {
-                             using namespace RenderCore;
+                             using namespace RHI;
 
                              rtbl->BindTexture(0, OutlineMaskTexture->Actual());
                              rtbl->BindTexture(1, OutlineBlurTexture->Actual());
@@ -370,7 +370,7 @@ void FrameRenderer::AddCopyPass(FrameGraph& FrameGraph, FGTextureProxy* Source, 
     pass.AddSubpass({0}, // color attachment refs
                         [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer)
                         {
-                            using namespace RenderCore;
+                            using namespace RHI;
 
                             rtbl->BindTexture(0, Source->Actual());
 

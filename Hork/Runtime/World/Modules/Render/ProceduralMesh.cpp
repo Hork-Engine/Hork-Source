@@ -31,7 +31,7 @@ SOFTWARE.
 #include "ProceduralMesh.h"
 #include "RenderFrontend.h"
 
-#include <Hork/RenderCore/VertexMemoryGPU.h>
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 
 HK_NAMESPACE_BEGIN
@@ -45,12 +45,12 @@ ProceduralMesh::~ProceduralMesh()
 {
 }
 
-void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_VertexStream, ppBuffer, pOffset);
 }
 
-void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     StreamedMemory->GetPhysicalBufferAndOffset(m_IndexSteam, ppBuffer, pOffset);
 }

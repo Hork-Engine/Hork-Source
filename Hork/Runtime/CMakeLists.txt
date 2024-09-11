@@ -13,7 +13,7 @@ target_link_libraries(${PROJECT_NAME}
 	Math
 	Geometry
 	Image
-	RenderCore
+	RHI
 	RenderDefs
 	ShaderUtils
 	MaterialGraph

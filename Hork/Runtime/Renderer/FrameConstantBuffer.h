@@ -33,7 +33,7 @@ SOFTWARE.
 #if 0
 #include <RenderCore/ImmediateContext.h>
 
-class FrameConstantBuffer : public RenderCore::IObjectInterface {
+class FrameConstantBuffer : public RHI::IObjectInterface {
 public:
     FrameConstantBuffer( size_t InBufferSize );
     virtual ~FrameConstantBuffer();
@@ -42,7 +42,7 @@ public:
 
     byte * GetMappedMemory() { return (byte *)pMappedMemory; }
 
-    RenderCore::IBuffer * GetBuffer() { return Buffer; }
+    RHI::IBuffer * GetBuffer() { return Buffer; }
 
     void Begin();
     void End();
@@ -50,12 +50,12 @@ public:
 private:
     struct ChainBuffer {
         size_t UsedMemory;
-        RenderCore::SyncObject Sync;
+        RHI::SyncObject Sync;
     };
 
-    void Wait( RenderCore::SyncObject Sync );
+    void Wait( RHI::SyncObject Sync );
 
-    Ref< RenderCore::IBuffer > Buffer;
+    Ref< RHI::IBuffer > Buffer;
     void * pMappedMemory;
     int BufferIndex;
 

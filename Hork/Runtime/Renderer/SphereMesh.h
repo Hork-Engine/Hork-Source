@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/Buffer.h>
+#include <Hork/RHI/Common/Buffer.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,10 +39,10 @@ class SphereMesh : public RefCounted
 public:
     SphereMesh(int _HDiv = 128, int _VDiv = 128);
 
-    Ref<RenderCore::IBuffer> VertexBuffer;
+    Ref<RHI::IBuffer> VertexBuffer;
 
     // Indices format unsigned short
-    Ref<RenderCore::IBuffer> IndexBuffer;
+    Ref<RHI::IBuffer> IndexBuffer;
 
     unsigned int IndexCount;
 };

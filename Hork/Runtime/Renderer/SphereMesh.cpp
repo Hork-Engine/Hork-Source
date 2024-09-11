@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 SphereMesh::SphereMesh(int _HDiv, int _VDiv)
 {

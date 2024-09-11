@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 #include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
@@ -40,8 +40,8 @@ class CubemapGenerator
 public:
     CubemapGenerator();
 
-    void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture** _Sources, Ref<RenderCore::ITexture>* ppTextureArray);
-    void Generate(TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture* _Source, Ref<RenderCore::ITexture>* ppTexture);
+    void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RHI::ITexture** _Sources, Ref<RHI::ITexture>* ppTextureArray);
+    void Generate(TEXTURE_FORMAT _Format, int _Resolution, RHI::ITexture* _Source, Ref<RHI::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -49,9 +49,9 @@ private:
         Float4x4 Transform[6];
         Float4   Index;
     };
-    Ref<RenderCore::IBuffer>   ConstantBuffer;
+    Ref<RHI::IBuffer>   ConstantBuffer;
     ConstantData               ConstantBufferData;
-    Ref<RenderCore::IPipeline> Pipeline;
+    Ref<RHI::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

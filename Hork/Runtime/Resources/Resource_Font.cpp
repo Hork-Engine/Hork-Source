@@ -1089,7 +1089,7 @@ float FontResource::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) cons
 
 FontStash::FontStash()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     FONSparams fontParams = {};
 
@@ -1151,7 +1151,7 @@ bool FontStash::ReallocTexture()
         if (iw > MAX_FONTIMAGE_SIZE || ih > MAX_FONTIMAGE_SIZE)
             iw = ih = MAX_FONTIMAGE_SIZE;
 
-        using namespace RenderCore;
+        using namespace RHI;
 
         // Create font texture
         GameApplication::sGetRenderDevice()->CreateTexture(TextureDesc{}
@@ -1173,7 +1173,7 @@ bool FontStash::ReallocTexture()
 
 void FontStash::UpdateTexture()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     int dirty[4];
 
@@ -1196,7 +1196,7 @@ void FontStash::UpdateTexture()
 
             const uint8_t* pData = data + (y * (desc.Resolution.Width * pixelWidthBytes)) + (x * pixelWidthBytes);
 
-            RenderCore::TextureRect rect;
+            RHI::TextureRect rect;
             rect.Offset.X = x;
             rect.Offset.Y = y;
             rect.Dimension.X = w;
@@ -1210,7 +1210,7 @@ void FontStash::UpdateTexture()
 
 void FontStash::Cleanup()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     if (m_FontImageIdx != 0)
     {
@@ -1243,7 +1243,7 @@ void FontStash::Cleanup()
     }
 }
 
-RenderCore::ITexture* FontStash::GetTexture()
+RHI::ITexture* FontStash::GetTexture()
 {
     return m_FontImages[m_FontImageIdx];
 }

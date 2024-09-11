@@ -40,7 +40,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 ConsoleVar r_ResetCacheVT("r_ResetCacheVT"_s, "0"_s);
 

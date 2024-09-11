@@ -37,9 +37,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData const& pass, Vector<Ref<RenderCore::IShaderModule>> const& shaders)
+Ref<RHI::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData const& pass, Vector<Ref<RHI::IShaderModule>> const& shaders)
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     PipelineDesc desc;
 
@@ -153,9 +153,9 @@ Ref<RenderCore::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData c
     return pipeline;
 }
 
-Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth()
+Ref<RHI::IPipeline> CreateTerrainMaterialDepth()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     PipelineDesc desc;
 
@@ -208,9 +208,9 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth()
     return pipeline;
 }
 
-Ref<RenderCore::IPipeline> CreateTerrainMaterialLight()
+Ref<RHI::IPipeline> CreateTerrainMaterialLight()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     PipelineDesc desc;
 
@@ -295,9 +295,9 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialLight()
     return pipeline;
 }
 
-Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
+Ref<RHI::IPipeline> CreateTerrainMaterialWireframe()
 {
-    using namespace RenderCore;
+    using namespace RHI;
 
     PipelineDesc desc;
 
@@ -354,7 +354,7 @@ Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe()
 
 Ref<MaterialGPU> CompileMaterial(MaterialBinary const& binary)
 {
-    Vector<Ref<RenderCore::IShaderModule>> compiledShaders;
+    Vector<Ref<RHI::IShaderModule>> compiledShaders;
 
     compiledShaders.Reserve(binary.Shaders.Size());
     for (MaterialBinary::Shader const& shader : binary.Shaders)

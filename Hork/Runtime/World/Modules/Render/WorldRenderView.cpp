@@ -136,14 +136,14 @@ WorldRenderView::WorldRenderView()
     }
 
     {
-        RenderCore::TextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::TextureResolution3D(16, 16, 16));
+        RHI::TextureDesc textureDesc;
+        textureDesc.SetResolution(RHI::TextureResolution3D(16, 16, 16));
         textureDesc.SetFormat(TEXTURE_FORMAT_RGBA16_FLOAT);
         textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
         GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_CurrentColorGradingLUT);
 
-        RenderCore::TextureRect rect;
+        RHI::TextureRect rect;
         rect.Offset.X = 0;
         rect.Offset.Y = 0;
         rect.Offset.Z = 0;
@@ -156,14 +156,14 @@ WorldRenderView::WorldRenderView()
 
     const float initialExposure[2] = {30.0f / 255.0f, 30.0f / 255.0f};
     {
-        RenderCore::TextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::TextureResolution2D(1, 1));
+        RHI::TextureDesc textureDesc;
+        textureDesc.SetResolution(RHI::TextureResolution2D(1, 1));
         textureDesc.SetFormat(TEXTURE_FORMAT_RG32_FLOAT);
         textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
         GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_CurrentExposure);
 
-        RenderCore::TextureRect rect;
+        RHI::TextureRect rect;
         rect.Offset.X = 0;
         rect.Offset.Y = 0;
         rect.Offset.Z = 0;
@@ -217,7 +217,7 @@ TextureHandle WorldRenderView::GetTextureHandle()
     return m_HandleRT;
 }
 
-RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
+RHI::ITexture* WorldRenderView::AcquireRenderTarget()
 {
     if (m_Width == 0 || m_Height == 0)
     {
@@ -234,13 +234,13 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
     {
         renderTarget->SetTextureGPU(nullptr);
 
-        RenderCore::TextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
+        RHI::TextureDesc textureDesc;
+        textureDesc.SetResolution(RHI::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TextureFormat);
         textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
+        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE | RHI::BIND_RENDER_TARGET);
 
-        Ref<RenderCore::ITexture> newTex;
+        Ref<RHI::ITexture> newTex;
         GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &newTex);
 
         renderTarget->SetTextureGPU(newTex);
@@ -251,7 +251,7 @@ RenderCore::ITexture* WorldRenderView::AcquireRenderTarget()
     return texture;
 }
 
-RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
+RHI::ITexture* WorldRenderView::AcquireLightTexture()
 {
     if (!m_LightTexture || (m_LightTexture->GetWidth() != m_Width || m_LightTexture->GetHeight() != m_Height))
     {
@@ -260,32 +260,32 @@ RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
         while ((size >>= 1) > 0)
             numMips++;
 
-        RenderCore::TextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
+        RHI::TextureDesc textureDesc;
+        textureDesc.SetResolution(RHI::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
         textureDesc.SetMipLevels(numMips);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
+        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE | RHI::BIND_RENDER_TARGET);
 
         m_LightTexture.Reset();
         GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_LightTexture);
 
-        RenderCore::ClearValue clearVal;
+        RHI::ClearValue clearVal;
         memset(&clearVal.Float4, 0, sizeof(clearVal.Float4));
-        GameApplication::sGetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RenderCore::FORMAT_FLOAT4, &clearVal);
+        GameApplication::sGetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RHI::FORMAT_FLOAT4, &clearVal);
     }
 
     return m_LightTexture;
 }
 
-RenderCore::ITexture* WorldRenderView::AcquireDepthTexture()
+RHI::ITexture* WorldRenderView::AcquireDepthTexture()
 {
     if (!m_DepthTexture || (m_DepthTexture->GetWidth() != m_Width || m_DepthTexture->GetHeight() != m_Height))
     {
-        RenderCore::TextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::TextureResolution2D(m_Width, m_Height));
+        RHI::TextureDesc textureDesc;
+        textureDesc.SetResolution(RHI::TextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R32_FLOAT);
         textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
+        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE /* | RHI::BIND_RENDER_TARGET*/);
 
         m_DepthTexture.Reset();
         GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_DepthTexture);
@@ -294,7 +294,7 @@ RenderCore::ITexture* WorldRenderView::AcquireDepthTexture()
     return m_DepthTexture;
 }
 
-RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
+RHI::ITexture* WorldRenderView::AcquireHBAOMaps()
 {
     if (bAllowHBAO)
     {
@@ -306,10 +306,10 @@ RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
         {
             m_HBAOMaps.Reset();
             GameApplication::sGetRenderDevice()->CreateTexture(
-                RenderCore::TextureDesc()
+                RHI::TextureDesc()
                     .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
-                    .SetResolution(RenderCore::TextureResolution2DArray(width, height, hbaoMapsCount))
-                    .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET),
+                    .SetResolution(RHI::TextureResolution2DArray(width, height, hbaoMapsCount))
+                    .SetBindFlags(RHI::BIND_SHADER_RESOURCE | RHI::BIND_RENDER_TARGET),
                 &m_HBAOMaps);
         }
     }

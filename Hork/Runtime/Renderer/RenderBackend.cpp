@@ -49,7 +49,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"_s, "0"_s);
 ConsoleVar r_RenderSnapshot("r_RenderSnapshot"_s, "0"_s, CVAR_CHEAT);
@@ -71,11 +71,11 @@ ConsoleVar r_ShowGPUTime("r_ShowGPUTime"_s, "0"_s);
 
 void TestVT();
 
-Ref<RenderCore::IPipeline> CreateTerrainMaterialDepth();
-Ref<RenderCore::IPipeline> CreateTerrainMaterialLight();
-Ref<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
+Ref<RHI::IPipeline> CreateTerrainMaterialDepth();
+Ref<RHI::IPipeline> CreateTerrainMaterialLight();
+Ref<RHI::IPipeline> CreateTerrainMaterialWireframe();
 
-RenderBackend::RenderBackend(RenderCore::IDevice* pDevice)
+RenderBackend::RenderBackend(RHI::IDevice* pDevice)
 {
     LOG("Initializing render backend...\n");
 
@@ -299,19 +299,19 @@ RenderBackend::~RenderBackend()
     GClusterItemBuffer.Reset();
 }
 
-void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture)
 {
     IrradianceGenerator irradianceGenerator;
     irradianceGenerator.Generate(pCubemap, ppTexture);
 }
 
-void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture)
 {
     EnvProbeGenerator envProbeGenerator;
     envProbeGenerator.Generate(7, pCubemap, ppTexture);
 }
 
-void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture)
+void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture)
 {
     AtmosphereRenderer atmosphereRenderer;
     atmosphereRenderer.Render(Format, Resolution, LightDir, ppTexture);
@@ -721,7 +721,7 @@ void RenderBackend::RenderView(int ViewportIndex, RenderViewData* pRenderView)
 
 bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile)
 {
-    Ref<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
+    Ref<RHI::ITexture> SourceMap, IrradianceMap, ReflectionMap;
 
     if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
     {
@@ -731,24 +731,24 @@ bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, St
 
     int width = Skybox.GetDesc().Width;
 
-    RenderCore::TextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::TextureResolutionCubemap(width));
+    RHI::TextureDesc textureDesc;
+    textureDesc.SetResolution(RHI::TextureResolutionCubemap(width));
     textureDesc.SetFormat(Skybox.GetDesc().Format);
     textureDesc.SetMipLevels(1);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
     if (Skybox.NumChannels() == 1)
     {
         // Apply texture swizzle for single channel textures
-        textureDesc.Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.R = RHI::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.G = RHI::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.B = RHI::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.A = RHI::TEXTURE_SWIZZLE_R;
     }
 
     GDevice->CreateTexture(textureDesc, &SourceMap);
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;
@@ -864,10 +864,10 @@ ImageStorage RenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMA
         return {};
     }
 
-    Ref<RenderCore::ITexture> skybox;
+    Ref<RHI::ITexture> skybox;
     GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
 
-    RenderCore::TextureRect rect;
+    RHI::TextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;

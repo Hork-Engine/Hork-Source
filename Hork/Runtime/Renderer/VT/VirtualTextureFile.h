@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "VT.h"
-#include <Hork/RenderCore/DeviceObject.h>
+#include <Hork/RHI/Common/DeviceObject.h>
 
 HK_NAMESPACE_BEGIN
 

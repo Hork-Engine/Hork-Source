@@ -35,7 +35,7 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar r_ShowDefaultExposure("r_ShowDefaultExposure"_s, "0"_s);
 
-using namespace RenderCore;
+using namespace RHI;
 
 ExposureRenderer::ExposureRenderer()
 {

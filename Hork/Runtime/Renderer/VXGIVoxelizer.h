@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 #include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
@@ -61,15 +61,15 @@ private:
     //    Float4x4 Transform[6];
     //    Float4 LightDir;
     //};
-    //Ref< RenderCore::IBuffer > ConstantBuffer;
+    //Ref< RHI::IBuffer > ConstantBuffer;
     //ConstantData ConstantBufferData;
-    Ref< RenderCore::IPipeline > Pipeline;
+    Ref< RHI::IPipeline > Pipeline;
 
-//    Ref< RenderCore::IFramebuffer > voxelFBO;
-    Ref< RenderCore::ITexture > voxel2DTex;
-    Ref< RenderCore::ITexture > voxelTex;
-    Ref< RenderCore::IBuffer > drawIndBuffer;
-    Ref< RenderCore::IBuffer > compIndBuffer;
+//    Ref< RHI::IFramebuffer > voxelFBO;
+    Ref< RHI::ITexture > voxel2DTex;
+    Ref< RHI::ITexture > voxelTex;
+    Ref< RHI::IBuffer > drawIndBuffer;
+    Ref< RHI::IBuffer > compIndBuffer;
 };
 
 HK_NAMESPACE_END

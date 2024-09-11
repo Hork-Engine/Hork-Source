@@ -63,7 +63,7 @@ public:
     const uint16_t* GetIndirectionData();
 
     /// Get page indirection texture
-    RenderCore::ITexture* GetIndirectionTexture() { return IndirectionTexture; }
+    RHI::ITexture* GetIndirectionTexture() { return IndirectionTexture; }
 
     /// Actual number of texture mipmaps
     uint32_t GetStoredLods() const { return NumLods; }
@@ -96,14 +96,14 @@ private:
 #endif
 
     /// Table of indirection
-    Ref<RenderCore::ITexture> IndirectionTexture;
+    Ref<RHI::ITexture> IndirectionTexture;
 
     /// [xxxxyyyyyyyyyyyy]
     /// xxxx - level of detail
     /// yyyyyyyyyyyy - position in physical cache
     /// Max pages in cache may reach to 4096
     /// Duplicates Indirection texture in video memory
-    Ref<RenderCore::IBuffer> IndirectionData;
+    Ref<RHI::IBuffer> IndirectionData;
     uint16_t* pIndirectionData;
 
     int bDirtyLods[VT_MAX_LODS];

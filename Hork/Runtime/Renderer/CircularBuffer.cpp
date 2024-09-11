@@ -38,11 +38,11 @@ HK_NAMESPACE_BEGIN
 CircularBuffer::CircularBuffer(size_t InBufferSize) :
     m_BufferSize(InBufferSize)
 {
-    RenderCore::BufferDesc bufferCI = {};
+    RHI::BufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = m_BufferSize * SWAP_CHAIN_SIZE;
 
-    bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT);
+    bufferCI.ImmutableStorageFlags = (RHI::IMMUTABLE_STORAGE_FLAGS)(RHI::IMMUTABLE_MAP_WRITE | RHI::IMMUTABLE_MAP_PERSISTENT | RHI::IMMUTABLE_MAP_COHERENT);
     bufferCI.bImmutableStorage = true;
 
     GDevice->CreateBuffer(bufferCI, nullptr, &m_Buffer);
@@ -50,9 +50,9 @@ CircularBuffer::CircularBuffer(size_t InBufferSize) :
     m_Buffer->SetDebugName("Circular buffer");
 
     m_pMappedMemory = rcmd->MapBuffer(m_Buffer,
-                                    RenderCore::MAP_TRANSFER_WRITE,
-                                    RenderCore::MAP_NO_INVALIDATE, //RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                    RenderCore::MAP_PERSISTENT_COHERENT,
+                                    RHI::MAP_TRANSFER_WRITE,
+                                    RHI::MAP_NO_INVALIDATE, //RHI::MAP_INVALIDATE_ENTIRE_BUFFER,
+                                    RHI::MAP_PERSISTENT_COHERENT,
                                     false,  // flush explicit
                                     false); // unsynchronized
 
@@ -69,7 +69,7 @@ CircularBuffer::CircularBuffer(size_t InBufferSize) :
 
     m_BufferIndex = 0;
 
-    m_ConstantBufferAlignment = GDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
+    m_ConstantBufferAlignment = GDevice->GetDeviceCaps(RHI::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
 }
 
 CircularBuffer::~CircularBuffer()
@@ -123,15 +123,15 @@ CircularBuffer::ChainBuffer* CircularBuffer::Swap()
     return pCurrent;
 }
 
-void CircularBuffer::Wait(RenderCore::SyncObject Sync)
+void CircularBuffer::Wait(RHI::SyncObject Sync)
 {
     const uint64_t timeOutNanoseconds = 1;
     if (Sync)
     {
-        RenderCore::CLIENT_WAIT_STATUS status;
+        RHI::CLIENT_WAIT_STATUS status;
         do {
             status = rcmd->ClientWait(Sync, timeOutNanoseconds);
-        } while (status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED);
+        } while (status != RHI::CLIENT_WAIT_ALREADY_SIGNALED && status != RHI::CLIENT_WAIT_CONDITION_SATISFIED);
     }
 }
 

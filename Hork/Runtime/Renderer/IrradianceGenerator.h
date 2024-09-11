@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 #include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
@@ -40,8 +40,8 @@ class IrradianceGenerator
 public:
     IrradianceGenerator();
 
-    void GenerateArray(int _CubemapsCount, RenderCore::ITexture** _Cubemaps, Ref<RenderCore::ITexture>* ppTextureArray);
-    void Generate(RenderCore::ITexture* _SourceCubemap, Ref<RenderCore::ITexture>* ppTexture);
+    void GenerateArray(int _CubemapsCount, RHI::ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray);
+    void Generate(RHI::ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture);
 
 private:
     struct ConstantData
@@ -49,9 +49,9 @@ private:
         Float4x4 Transform[6];
         Float4 Index;
     };
-    Ref<RenderCore::IBuffer> ConstantBuffer;
+    Ref<RHI::IBuffer> ConstantBuffer;
     ConstantData ConstantBufferData;
-    Ref<RenderCore::IPipeline> Pipeline;
+    Ref<RHI::IPipeline> Pipeline;
 };
 
 HK_NAMESPACE_END

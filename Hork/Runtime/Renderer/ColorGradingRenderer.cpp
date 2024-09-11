@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 ColorGradingRenderer::ColorGradingRenderer()
 {
@@ -59,7 +59,7 @@ ColorGradingRenderer::ColorGradingRenderer()
                                                    "postprocess/colorgrading.frag",
                                                    "postprocess/colorgrading.geom",
                                                    &resourceLayout,
-                                                   RenderCore::BLENDING_ALPHA);
+                                                   RHI::BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 2;
     ShaderFactory::sCreateFullscreenQuadPipelineGS(&PipelineProcedural,
@@ -67,7 +67,7 @@ ColorGradingRenderer::ColorGradingRenderer()
                                                    "postprocess/colorgrading_procedural.frag",
                                                    "postprocess/colorgrading.geom",
                                                    &resourceLayout,
-                                                   RenderCore::BLENDING_ALPHA);
+                                                   RHI::BLENDING_ALPHA);
 }
 
 void ColorGradingRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy** ppColorGrading)

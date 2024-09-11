@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA16_FLOAT; // TODO: try compression
 
@@ -265,7 +265,7 @@ void VXGIVoxelizer::CreatePipeline()
 void VXGIVoxelizer::Render()
 {
     #if 0
-    RenderCore::IResourceTable * resourceTable = rtbl; // FIXME: create separate resource table?
+    RHI::IResourceTable * resourceTable = rtbl; // FIXME: create separate resource table?
 
     // Clear the last voxelization data
     rcmd->ClearTexture( voxel2DTex, 0, FORMAT_UINT1, nullptr ); // FIXME: format must be GL_RED_INTEGER, GL_UNSIGNED_INT
@@ -361,7 +361,7 @@ void VXGIVoxelizer::Render()
     framebufferCI.NumColorAttachments = 1;
     framebufferCI.pColorAttachments = &attachment;
 
-    Ref< RenderCore::IFramebuffer > framebuffer;
+    Ref< RHI::IFramebuffer > framebuffer;
     GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
 
     SRenderPassBegin renderPassBegin = {};

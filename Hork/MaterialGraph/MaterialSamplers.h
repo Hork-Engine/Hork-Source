@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 struct MaterialSamplers
 {
-    using SamplerDesc = RenderCore::SamplerDesc;
+    using SamplerDesc = RHI::SamplerDesc;
 
     SamplerDesc         LightmapSampler;
     SamplerDesc         ReflectSampler;

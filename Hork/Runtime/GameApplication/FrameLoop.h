@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Allocators/LinearAllocator.h>
 #include <Hork/Core/Containers/ArrayView.h>
-#include <Hork/RenderCore/VertexMemoryGPU.h>
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 #include "VirtualKey.h"
 
@@ -125,7 +125,7 @@ class WorldRenderView;
 class FrameLoop final : public Noncopyable
 {
 public:
-                    FrameLoop(RenderCore::IDevice* renderDevice);
+                    FrameLoop(RHI::IDevice* renderDevice);
                     ~FrameLoop();
 
     /// Allocate frame memory
@@ -158,7 +158,7 @@ public:
     void            SetGenerateInputEvents(bool shouldGenerateInputEvents);
 
     /// Begin a new frame
-    void            NewFrame(ArrayView<RenderCore::ISwapChain*> swapChains, int swapInterval, class ResourceManager* resourceManager);
+    void            NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, class ResourceManager* resourceManager);
 
     /// Poll runtime events
     void            PollEvents(IEventListener* listener);
@@ -180,7 +180,7 @@ private:
     size_t              m_FrameMemoryUsedPrev = 0;
     size_t              m_MaxFrameMemoryUsage = 0;
 
-    Ref<RenderCore::IDevice>        m_RenderDevice;
+    Ref<RHI::IDevice>        m_RenderDevice;
     UniqueRef<class GPUSync>        m_GPUSync;
     UniqueRef<StreamedMemoryGPU>    m_StreamedMemoryGPU;
 

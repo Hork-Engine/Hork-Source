@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 const int BRDF_TEXTURE_WIDTH  = 512;
 const int BRDF_TEXTURE_HEIGHT = 256;
@@ -43,7 +43,7 @@ BRDFGenerator::BRDFGenerator()
     ShaderFactory::sCreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
-void BRDFGenerator::Render(Ref<RenderCore::ITexture>* ppTexture)
+void BRDFGenerator::Render(Ref<RHI::ITexture>* ppTexture)
 {
     FrameGraph  frameGraph(GDevice);
     RenderPass& pass = frameGraph.AddTask<RenderPass>("BRDF generation pass");

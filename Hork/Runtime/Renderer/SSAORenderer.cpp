@@ -41,7 +41,7 @@ ConsoleVar r_HBAORadius("r_HBAORadius"_s, "2"_s);
 ConsoleVar r_HBAOBias("r_HBAOBias"_s, "0.1"_s);
 ConsoleVar r_HBAOPowExponent("r_HBAOPowExponent"_s, "1.5"_s);
 
-using namespace RenderCore;
+using namespace RHI;
 
 SSAORenderer::SSAORenderer()
 {

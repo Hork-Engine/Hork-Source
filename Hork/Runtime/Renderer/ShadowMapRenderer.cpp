@@ -3,7 +3,7 @@
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 ConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"_s, "32"_s); // Allowed 16, 32 bits
 
@@ -340,10 +340,10 @@ void ShadowMapRenderer::AddPass(FrameGraph& FrameGraph, DirectionalLightInstance
         {
             {"Shadow Cascade Color texture",
              MakeTextureStorage(TexFormat, TextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades)),
-             RenderCore::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)},
+             RHI::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)},
             {"Shadow Cascade Color texture 2",
              MakeTextureStorage(TexFormat, TextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades)),
-             RenderCore::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)},
+             RHI::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)},
         });
 
     // TODO: очищать только нужные слои!

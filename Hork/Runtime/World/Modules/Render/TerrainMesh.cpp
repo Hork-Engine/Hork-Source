@@ -396,7 +396,7 @@ TerrainMesh::TerrainMesh()
     HK_ASSERT(firstVert == m_VertexBuffer.Size());
     HK_ASSERT(firstIndex == m_IndexBuffer.Size());
 
-    RenderCore::BufferDesc ci = {};
+    RHI::BufferDesc ci = {};
     ci.bImmutableStorage = true;
 
     ci.SizeInBytes = m_VertexBuffer.Size() * sizeof(TerrainVertex);

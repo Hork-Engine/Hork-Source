@@ -36,9 +36,9 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 /// Render device
-extern RenderCore::IDevice* GDevice;
+extern RHI::IDevice* GDevice;
 
-using namespace RenderCore;
+using namespace RHI;
 
 Ref<IShaderModule> ShaderFactory::sCreateShaderSpirV(SHADER_TYPE shaderType, BlobRef blob)
 {

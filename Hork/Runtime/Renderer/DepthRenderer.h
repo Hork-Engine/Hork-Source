@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
-void AddDepthPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppDepthTexture, RenderCore::FGTextureProxy** ppVelocity);
+void AddDepthPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy** ppDepthTexture, RHI::FGTextureProxy** ppVelocity);
 
 HK_NAMESPACE_END

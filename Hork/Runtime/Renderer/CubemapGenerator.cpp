@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 CubemapGenerator::CubemapGenerator()
 {
@@ -111,9 +111,9 @@ CubemapGenerator::CubemapGenerator()
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void CubemapGenerator::GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture** _Sources, Ref<RenderCore::ITexture>* ppTextureArray)
+void CubemapGenerator::GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture** _Sources, Ref<RHI::ITexture>* ppTextureArray)
 {
-    GDevice->CreateTexture(RenderCore::TextureDesc()
+    GDevice->CreateTexture(RHI::TextureDesc()
                                .SetFormat(_Format)
                                .SetResolution(TextureResolutionCubemapArray(_Resolution, _SourcesCount)),
                            ppTextureArray);
@@ -160,7 +160,7 @@ void CubemapGenerator::GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, in
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, Ref<RenderCore::ITexture>* ppTexture)
+void CubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, Ref<RHI::ITexture>* ppTexture)
 {
     GDevice->CreateTexture(TextureDesc()
                                .SetFormat(_Format)

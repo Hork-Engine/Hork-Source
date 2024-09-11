@@ -94,20 +94,20 @@ public:
         return m_IndirectBuffer.Size();
     }
 
-    RenderCore::ITexture* GetClipmapArray() const
+    RHI::ITexture* GetClipmapArray() const
     {
         return m_ClipmapArray;
     }
 
-    RenderCore::ITexture* GetNormalMapArray() const
+    RHI::ITexture* GetNormalMapArray() const
     {
         return m_NormalMapArray;
     }
 
     /// Get vertex buffer in GPU
-    RenderCore::IBuffer* GetVertexBufferGPU() const { return s_TerrainMesh->GetVertexBufferGPU(); }
+    RHI::IBuffer* GetVertexBufferGPU() const { return s_TerrainMesh->GetVertexBufferGPU(); }
     /// Get index buffer in GPU
-    RenderCore::IBuffer* GetIndexBufferGPU() const { return s_TerrainMesh->GetIndexBufferGPU(); }
+    RHI::IBuffer* GetIndexBufferGPU() const { return s_TerrainMesh->GetIndexBufferGPU(); }
 
     float GetViewHeight() const
     {
@@ -144,7 +144,7 @@ private:
     {
         if (InstanceCount > 0)
         {
-            RenderCore::DrawIndexedIndirectCmd& blocks = m_IndirectBuffer.Add();
+            RHI::DrawIndexedIndirectCmd& blocks = m_IndirectBuffer.Add();
             blocks.IndexCountPerInstance = Patch.IndexCount;
             blocks.InstanceCount = InstanceCount;
             blocks.StartIndexLocation = Patch.StartIndex;
@@ -179,10 +179,10 @@ private:
     static uint32_t s_InstanceCount;
 
     Vector<TerrainPatchInstance> m_InstanceBuffer;
-    Vector<RenderCore::DrawIndexedIndirectCmd> m_IndirectBuffer;
+    Vector<RHI::DrawIndexedIndirectCmd> m_IndirectBuffer;
 
-    Ref<RenderCore::ITexture> m_ClipmapArray;
-    Ref<RenderCore::ITexture> m_NormalMapArray;
+    Ref<RHI::ITexture> m_ClipmapArray;
+    Ref<RHI::ITexture> m_NormalMapArray;
 
     size_t m_InstanceBufferStreamHandle;
     size_t m_IndirectBufferStreamHandle;

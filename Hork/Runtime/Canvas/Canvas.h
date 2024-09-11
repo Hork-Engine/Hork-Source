@@ -510,7 +510,7 @@ private:
 
     void                    CreateCursorMap();
 
-    RenderCore::ITexture*   GetTexture(CanvasPaint const* paint);
+    RHI::ITexture*   GetTexture(CanvasPaint const* paint);
 
     FontResource*           CurrentFont();
 

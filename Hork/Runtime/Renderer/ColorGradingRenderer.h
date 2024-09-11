@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,11 +39,11 @@ class ColorGradingRenderer
 public:
     ColorGradingRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppColorGrading);
+    void AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy** ppColorGrading);
 
 private:
-    Ref<RenderCore::IPipeline> PipelineLUT;
-    Ref<RenderCore::IPipeline> PipelineProcedural;
+    Ref<RHI::IPipeline> PipelineLUT;
+    Ref<RHI::IPipeline> PipelineProcedural;
 };
 
 HK_NAMESPACE_END

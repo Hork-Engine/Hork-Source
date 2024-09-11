@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Hork/Core/BinaryStream.h>
 #include <Hork/Image/Image.h>
-#include <Hork/RenderCore/Texture.h>
+#include <Hork/RHI/Common/Texture.h>
 
 struct FONScontext;
 
@@ -52,7 +52,7 @@ public:
     bool                        ReallocTexture();
     void                        UpdateTexture();
 
-    RenderCore::ITexture*       GetTexture();
+    RHI::ITexture*       GetTexture();
 
     void                        Cleanup();
 
@@ -64,7 +64,7 @@ private:
         INITIAL_FONTIMAGE_SIZE = 512
     };
     FONScontext*                m_pImpl{};
-    Ref<RenderCore::ITexture>   m_FontImages[MAX_FONT_IMAGES];
+    Ref<RHI::ITexture>   m_FontImages[MAX_FONT_IMAGES];
     int                         m_FontImageIdx{};
 };
 

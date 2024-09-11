@@ -39,25 +39,25 @@ SOFTWARE.
 #include "CanvasRenderer.h"
 #include "FrameRenderer.h"
 
-#include <Hork/RenderCore/VertexMemoryGPU.h>
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 HK_NAMESPACE_BEGIN
 
 class RenderBackend final : public Noncopyable
 {
 public:
-    RenderBackend(RenderCore::IDevice* pDevice);
+    RenderBackend(RHI::IDevice* pDevice);
     ~RenderBackend();
 
-    void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
-    void GenerateReflectionMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
-    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
+    void GenerateIrradianceMap(RHI::ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture);
+    void GenerateReflectionMap(RHI::ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture);
+    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture);
 
     bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile);
     bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile);
     ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
 
-    void RenderFrame(StreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, RenderFrameData* pFrameData);
+    void RenderFrame(StreamedMemoryGPU* StreamedMemory, RHI::ITexture* pBackBuffer, RenderFrameData* pFrameData);
 
     int ClusterPackedIndicesAlignment() const;
 
@@ -68,22 +68,22 @@ private:
     void SetViewConstants(int ViewportIndex);
     void UploadShaderResources(int ViewportIndex);
 
-    Ref<RenderCore::FrameGraph>       m_FrameGraph;
+    Ref<RHI::FrameGraph>       m_FrameGraph;
 
     Ref<CanvasRenderer> m_CanvasRenderer;
     Ref<FrameRenderer> m_FrameRenderer;
 
-    Ref<RenderCore::IQueryPool> m_TimeQuery;
+    Ref<RHI::IQueryPool> m_TimeQuery;
 
-    Ref<RenderCore::IQueryPool> m_TimeStamp1;
-    Ref<RenderCore::IQueryPool> m_TimeStamp2;
+    Ref<RHI::IQueryPool> m_TimeStamp1;
+    Ref<RHI::IQueryPool> m_TimeStamp2;
 
     Ref<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
     Ref<VirtualTextureCache> m_PhysCacheVT;
 
-    Ref<RenderCore::IPipeline> m_TerrainDepthPipeline;
-    Ref<RenderCore::IPipeline> m_TerrainLightPipeline;
-    Ref<RenderCore::IPipeline> m_TerrainWireframePipeline;
+    Ref<RHI::IPipeline> m_TerrainDepthPipeline;
+    Ref<RHI::IPipeline> m_TerrainLightPipeline;
+    Ref<RHI::IPipeline> m_TerrainWireframePipeline;
 
     // Just for test
     Ref<VirtualTexture> m_TestVT;

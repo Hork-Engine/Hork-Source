@@ -35,18 +35,18 @@ SOFTWARE.
 FrameConstantBuffer::FrameConstantBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )
 {
-    RenderCore::BufferDesc bufferCI = {};
+    RHI::BufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = BufferSize * SWAP_CHAIN_SIZE;
 
-    bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT);
+    bufferCI.ImmutableStorageFlags = (RHI::IMMUTABLE_STORAGE_FLAGS)(RHI::IMMUTABLE_MAP_WRITE | RHI::IMMUTABLE_MAP_PERSISTENT | RHI::IMMUTABLE_MAP_COHERENT);
     bufferCI.bImmutableStorage = true;
 
     GDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
 
-    pMappedMemory = Buffer->Map( RenderCore::MAP_TRANSFER_WRITE,
-                                 RenderCore::MAP_NO_INVALIDATE,//RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                 RenderCore::MAP_PERSISTENT_COHERENT,
+    pMappedMemory = Buffer->Map( RHI::MAP_TRANSFER_WRITE,
+                                 RHI::MAP_NO_INVALIDATE,//RHI::MAP_INVALIDATE_ENTIRE_BUFFER,
+                                 RHI::MAP_PERSISTENT_COHERENT,
                                  false, // flush explicit
                                  false ); // unsynchronized
 
@@ -61,7 +61,7 @@ FrameConstantBuffer::FrameConstantBuffer( size_t InBufferSize )
 
     BufferIndex = 0;
 
-    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RHI::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
 }
 
 FrameConstantBuffer::~FrameConstantBuffer()
@@ -116,14 +116,14 @@ void FrameConstantBuffer::End()
     pCurrent->UsedMemory = 0;
 }
 
-void FrameConstantBuffer::Wait( RenderCore::SyncObject Sync )
+void FrameConstantBuffer::Wait( RHI::SyncObject Sync )
 {
     const uint64_t timeOutNanoseconds = 1;
     if ( Sync ) {
-        RenderCore::CLIENT_WAIT_STATUS status;
+        RHI::CLIENT_WAIT_STATUS status;
         do {
             status = rcmd->ClientWait( Sync, timeOutNanoseconds );
-        } while ( status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED );
+        } while ( status != RHI::CLIENT_WAIT_ALREADY_SIGNALED && status != RHI::CLIENT_WAIT_CONDITION_SATISFIED );
     }
 }
 #endif

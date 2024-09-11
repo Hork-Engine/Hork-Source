@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/ImmediateContext.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -44,20 +44,20 @@ public:
 
     byte* GetMappedMemory() { return (byte*)m_pMappedMemory; }
 
-    RenderCore::IBuffer* GetBuffer() { return m_Buffer; }
+    RHI::IBuffer* GetBuffer() { return m_Buffer; }
 
 private:
     struct ChainBuffer
     {
         size_t UsedMemory;
-        RenderCore::SyncObject Sync;
+        RHI::SyncObject Sync;
     };
 
     ChainBuffer* Swap();
 
-    void Wait(RenderCore::SyncObject Sync);
+    void Wait(RHI::SyncObject Sync);
 
-    Ref<RenderCore::IBuffer> m_Buffer;
+    Ref<RHI::IBuffer> m_Buffer;
     void* m_pMappedMemory;
     int m_BufferIndex;
 

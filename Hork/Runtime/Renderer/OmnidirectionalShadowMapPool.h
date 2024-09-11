@@ -13,10 +13,10 @@ public:
 
     int GetSize() const;
 
-    Ref<RenderCore::ITexture> const& GetDepthTexture() const { return DepthTexture; }
+    Ref<RHI::ITexture> const& GetDepthTexture() const { return DepthTexture; }
 
 private:
-    Ref<RenderCore::ITexture>   DepthTexture;
+    Ref<RHI::ITexture>   DepthTexture;
     int                         PoolSize;
 };
 

@@ -33,7 +33,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 //static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA32_FLOAT;
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_R11G11B10_FLOAT;
@@ -108,7 +108,7 @@ AtmosphereRenderer::AtmosphereRenderer()
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture)
+void AtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture)
 {
     FrameGraph frameGraph( GDevice );
     RenderPass & pass = frameGraph.AddTask< RenderPass >( "Atmosphere pass" );

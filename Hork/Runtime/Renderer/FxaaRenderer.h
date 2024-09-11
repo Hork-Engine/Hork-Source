@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/FrameGraph.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -39,12 +39,12 @@ class FxaaRenderer
 public:
     FxaaRenderer();
 
-    void AddPass(RenderCore::FrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppFxaaTexture);
+    void AddPass(RHI::FrameGraph& FrameGraph, RHI::FGTextureProxy* SourceTexture, RHI::FGTextureProxy** ppFxaaTexture);
 
 private:
     void CreateSampler();
 
-    Ref<RenderCore::IPipeline> FxaaPipeline;
+    Ref<RHI::IPipeline> FxaaPipeline;
 };
 
 HK_NAMESPACE_END

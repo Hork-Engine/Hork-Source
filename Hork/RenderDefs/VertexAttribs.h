@@ -30,15 +30,15 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderCore/Pipeline.h>
+#include <Hork/RHI/Common/Pipeline.h>
 
 HK_NAMESPACE_BEGIN
 
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsSkinned;
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsStatic;
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsStaticLightmap;
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsStaticVertexLight;
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsTerrain;
-extern ArrayView<RenderCore::VertexAttribInfo> g_VertexAttribsTerrainInstanced;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsSkinned;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsStatic;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsStaticLightmap;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsStaticVertexLight;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsTerrain;
+extern ArrayView<RHI::VertexAttribInfo> g_VertexAttribsTerrainInstanced;
 
 HK_NAMESPACE_END
