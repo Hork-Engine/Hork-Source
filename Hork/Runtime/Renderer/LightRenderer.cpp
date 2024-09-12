@@ -430,10 +430,6 @@ void LightRenderer::AddPass(FrameGraph&     FrameGraph,
                                   drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
                                   immediateCtx->Draw(&drawCmd);
-
-                                  //if ( r_RenderSnapshot ) {
-                                  //    SaveSnapshot();
-                                  //}
                               }
                           });
 
@@ -524,10 +520,6 @@ void LightRenderer::AddPass(FrameGraph&     FrameGraph,
                                            drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
                                            immediateCtx->Draw(&drawCmd);
-
-                                           //if ( r_RenderSnapshot ) {
-                                           //    SaveSnapshot();
-                                           //}
                                        }
                                    });
 

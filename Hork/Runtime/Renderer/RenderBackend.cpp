@@ -52,7 +52,6 @@ HK_NAMESPACE_BEGIN
 using namespace RHI;
 
 ConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"_s, "0"_s);
-ConsoleVar r_RenderSnapshot("r_RenderSnapshot"_s, "0"_s, CVAR_CHEAT);
 ConsoleVar r_DebugRenderMode("r_DebugRenderMode"_s, "0"_s, CVAR_CHEAT);
 ConsoleVar r_BloomScale("r_BloomScale"_s, "1"_s);
 ConsoleVar r_Bloom("r_Bloom"_s, "1"_s);
@@ -480,8 +479,6 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
         LOG("GPU time {} ms\n", (double)timeQueryResult / 1000000.0);
 #endif
     }
-
-    r_RenderSnapshot = false;
 
     GStreamedMemory = nullptr;
     GStreamBuffer = nullptr;

@@ -273,40 +273,4 @@ void BindOmniShadowProjection(int FaceIndex)
     //rtbl->BindBuffer(3, GOmniProjectionMatrixBuffer, FaceIndex * sizeof(Float4x4), sizeof(Float4x4));
 }
 
-void SaveSnapshot(ITexture& _Texture)
-{
-    #if 0
-    const int w           = _Texture.GetWidth();
-    const int h           = _Texture.GetHeight();
-    const int numchannels = 3;
-    const int size        = w * h * numchannels;
-
-    byte* data = (byte*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
-
-#if 0
-    _Texture.Read( 0, PIXEL_FORMAT_BYTE_RGB, size, 1, data );
-#else
-    float* fdata = (float*)Core::GetHeapAllocator<HEAP_TEMP>().Alloc(size * sizeof(float));
-    _Texture.Read(0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
-    // to sRGB
-    for (int i = 0; i < size; i++)
-    {
-        data[i] = LinearToSRGB_UChar(fdata[i]);
-    }
-#endif
-
-    FlipImageY(data, w, h, numchannels, w * numchannels);
-
-    static int  n = 0;
-    File f = File::OpenWrite(HK_FORMAT("snapshots/{}.png", n++);
-    if (f)
-    {
-        WritePNG(f, w, h, numchannels, data, w * numchannels);
-    }
-
-    Core::GetHeapAllocator<HEAP_TEMP>().Free(fdata);
-    Core::GetHeapAllocator<HEAP_TEMP>().Free(data);
-    #endif
-}
-
 HK_NAMESPACE_END

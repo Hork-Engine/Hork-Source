@@ -176,7 +176,6 @@ struct TerrainInstanceConstantBuffer
 // Common variables
 //
 
-extern ConsoleVar r_RenderSnapshot;
 extern ConsoleVar r_SSLR;
 extern ConsoleVar r_HBAO;
 
@@ -288,8 +287,6 @@ T* MapDrawCallConstants()
 void BindShadowMatrix();
 void BindShadowCascades(size_t StreamHandle);
 void BindOmniShadowProjection(int FaceIndex);
-
-void SaveSnapshot(RHI::ITexture& _Texture);
 
 HK_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
 {
