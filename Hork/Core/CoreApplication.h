@@ -162,8 +162,6 @@ private:
     char*                m_Clipboard{};
     ConsoleBuffer        m_ConsoleBuffer;
     Archive              m_EmbeddedArchive;
-
-    friend void         TerminateWithError(const char* text);
 };
 
 HK_NAMESPACE_END

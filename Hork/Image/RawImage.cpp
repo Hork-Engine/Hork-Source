@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Hork/Core/Compress.h>
 #include <Hork/Core/HeapBlob.h>
 #include <Hork/Core/Logger.h>
+#include <Hork/Core/CoreApplication.h>
 
 #define STBI_MALLOC(sz)                     Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 16)
 #define STBI_FREE(p)                        Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)

@@ -862,9 +862,4 @@ void AssertFunction(const char* file, int line, const char* function, const char
 
 #endif
 
-void TerminateWithError(const char* message)
-{
-    CoreApplication::sInstance()->_TerminateWithError(message);
-}
-
 HK_NAMESPACE_END
