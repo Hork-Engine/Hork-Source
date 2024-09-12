@@ -38,7 +38,7 @@ SOFTWARE.
 #include "Resource_Terrain.h"
 #include "Resource_Sound.h"
 
-#include <Hork/Runtime/GameApplication/GameApplication.h>
+#include <Hork/Core/CoreApplication.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/Profiler.h>
 
