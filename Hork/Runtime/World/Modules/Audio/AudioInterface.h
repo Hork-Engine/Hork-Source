@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Hork/Runtime/Resources/Resource_Sound.h>
 #include <Hork/Runtime/World/GameObject.h>
 
-#include <Hork/Runtime/Audio/AudioMixer.h>
+#include <Hork/Audio/AudioMixer.h>
 
 #include "Components/AudioListenerComponent.h"
 

@@ -33,8 +33,8 @@ SOFTWARE.
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/CoreApplication.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 // Use miniaudio for resampling
 #include <miniaudio/miniaudio.h>

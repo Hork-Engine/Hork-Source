@@ -31,8 +31,8 @@ SOFTWARE.
 #include "Resource_Sound.h"
 
 #include <Hork/Core/Logger.h>
-#include <Hork/Runtime/Audio/AudioDecoder.h>
-#include <Hork/Runtime/Audio/AudioDevice.h>
+#include <Hork/Audio/AudioDecoder.h>
+#include <Hork/Audio/AudioDevice.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN

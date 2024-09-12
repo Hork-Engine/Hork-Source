@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/Audio/AudioStream.h>
-#include <Hork/Runtime/Resources/Resource_Texture.h>
 #include <Hork/Core/Delegate.h>
+#include <Hork/Audio/AudioStream.h>
+#include <Hork/Runtime/Resources/Resource_Texture.h>
 
 struct plm_t;
 

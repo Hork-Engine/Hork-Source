@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Logger.h>
 
-#include <Hork/Runtime/Audio/AudioDevice.h>
+#include <Hork/Audio/AudioDevice.h>
 
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 

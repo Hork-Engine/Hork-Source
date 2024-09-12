@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "SoundSource.h"
 
-#include <Hork/Runtime/Audio/AudioMixer.h>
+#include <Hork/Audio/AudioMixer.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN

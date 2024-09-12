@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Logger.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
-#include <Hork/Runtime/Audio/AudioDevice.h>
+#include <Hork/Audio/AudioDevice.h>
 
 #define PLM_MALLOC(sz) Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Alloc(sz, 0)
 #define PLM_FREE(p) Hk::Core::GetHeapAllocator<Hk::HEAP_IMAGE>().Free(p)

@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Audio/AudioInterface.h>
 
 #include <Hork/Math/Quat.h>
-#include <Hork/Runtime/Audio/AudioTrack.h>
+#include <Hork/Audio/AudioTrack.h>
 #include <Hork/Runtime/Resources/Resource_Sound.h>
 
 #include <EASTL/queue.h>

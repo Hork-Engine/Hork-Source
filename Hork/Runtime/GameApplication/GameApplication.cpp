@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Hork/Core/Display.h>
 #include <Hork/Core/AsyncJobManager.h>
 #include <Hork/Core/Platform.h>
-#include <Hork/Runtime/Audio/AudioMixer.h>
+#include <Hork/Audio/AudioMixer.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
 #include <Hork/ShaderUtils/ShaderCompiler.h>
