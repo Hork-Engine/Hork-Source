@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/RenderDefs/VertexAttribs.h>
 #include <Hork/MaterialGraph/MaterialSamplers.h>
-#include <Hork/Runtime/Renderer/ShaderFactory.h>
+#include <Hork/ShaderUtils/ShaderUtils.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
@@ -153,7 +153,7 @@ Ref<RHI::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData const& p
     return pipeline;
 }
 
-Ref<RHI::IPipeline> CreateTerrainMaterialDepth()
+Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device)
 {
     using namespace RHI;
 
@@ -184,8 +184,8 @@ Ref<RHI::IPipeline> CreateTerrainMaterialDepth()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::sCreateVertexShader("terrain_depth.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::sCreateFragmentShader("terrain_depth.frag", desc.pFS);
+    ShaderUtils::CreateVertexShader(device, "terrain_depth.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderUtils::CreateFragmentShader(device, "terrain_depth.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -208,7 +208,7 @@ Ref<RHI::IPipeline> CreateTerrainMaterialDepth()
     return pipeline;
 }
 
-Ref<RHI::IPipeline> CreateTerrainMaterialLight()
+Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device)
 {
     using namespace RHI;
 
@@ -238,8 +238,8 @@ Ref<RHI::IPipeline> CreateTerrainMaterialLight()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::sCreateVertexShader("terrain_color.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::sCreateFragmentShader("terrain_color.frag", desc.pFS);
+    ShaderUtils::CreateVertexShader(device, "terrain_color.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderUtils::CreateFragmentShader(device, "terrain_color.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -295,7 +295,7 @@ Ref<RHI::IPipeline> CreateTerrainMaterialLight()
     return pipeline;
 }
 
-Ref<RHI::IPipeline> CreateTerrainMaterialWireframe()
+Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device)
 {
     using namespace RHI;
 
@@ -327,9 +327,9 @@ Ref<RHI::IPipeline> CreateTerrainMaterialWireframe()
     desc.NumVertexAttribs = g_VertexAttribsTerrainInstanced.Size();
     desc.pVertexAttribs = g_VertexAttribsTerrainInstanced.ToPtr();
 
-    ShaderFactory::sCreateVertexShader("terrain_wireframe.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
-    ShaderFactory::sCreateGeometryShader("terrain_wireframe.geom", desc.pGS);
-    ShaderFactory::sCreateFragmentShader("terrain_wireframe.frag", desc.pFS);
+    ShaderUtils::CreateVertexShader(device, "terrain_wireframe.vert", desc.pVertexAttribs, desc.NumVertexAttribs, desc.pVS);
+    ShaderUtils::CreateGeometryShader(device, "terrain_wireframe.geom", desc.pGS);
+    ShaderUtils::CreateFragmentShader(device, "terrain_wireframe.frag", desc.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = desc.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -355,11 +355,12 @@ Ref<RHI::IPipeline> CreateTerrainMaterialWireframe()
 Ref<MaterialGPU> CompileMaterial(MaterialBinary const& binary)
 {
     Vector<Ref<RHI::IShaderModule>> compiledShaders;
+    RHI::IDevice* device = GameApplication::sGetRenderDevice();
 
     compiledShaders.Reserve(binary.Shaders.Size());
     for (MaterialBinary::Shader const& shader : binary.Shaders)
     {
-        compiledShaders.Add(ShaderFactory::sCreateShaderSpirV(shader.m_Type, shader.m_Blob));
+        compiledShaders.Add(ShaderUtils::CreateShaderSpirV(device, shader.m_Type, shader.m_Blob));
         if (!compiledShaders.Last())
             return {};
     }

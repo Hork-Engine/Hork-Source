@@ -87,9 +87,9 @@ CubemapGenerator::CubemapGenerator()
         }
     };
 
-    ShaderFactory::sCreateVertexShader("gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderFactory::sCreateGeometryShader("gen/cubemapgen.geom", pipelineCI.pGS);
-    ShaderFactory::sCreateFragmentShader("gen/cubemapgen.frag", pipelineCI.pFS);
+    ShaderUtils::CreateVertexShader(GDevice, "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(GDevice, "gen/cubemapgen.geom", pipelineCI.pGS);
+    ShaderUtils::CreateFragmentShader(GDevice, "gen/cubemapgen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;

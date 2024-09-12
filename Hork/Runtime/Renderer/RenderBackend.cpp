@@ -70,9 +70,9 @@ ConsoleVar r_ShowGPUTime("r_ShowGPUTime"_s, "0"_s);
 
 void TestVT();
 
-Ref<RHI::IPipeline> CreateTerrainMaterialDepth();
-Ref<RHI::IPipeline> CreateTerrainMaterialLight();
-Ref<RHI::IPipeline> CreateTerrainMaterialWireframe();
+Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device);
+Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device);
+Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device);
 
 RenderBackend::RenderBackend(RHI::IDevice* pDevice)
 {
@@ -268,13 +268,13 @@ RenderBackend::RenderBackend(RHI::IDevice* pDevice)
 #    endif
 #endif
 
-    m_TerrainDepthPipeline = CreateTerrainMaterialDepth();
+    m_TerrainDepthPipeline = CreateTerrainMaterialDepth(GDevice);
     GTerrainDepthPipeline = m_TerrainDepthPipeline;
 
-    m_TerrainLightPipeline = CreateTerrainMaterialLight();
+    m_TerrainLightPipeline = CreateTerrainMaterialLight(GDevice);
     GTerrainLightPipeline = m_TerrainLightPipeline;
 
-    m_TerrainWireframePipeline = CreateTerrainMaterialWireframe();
+    m_TerrainWireframePipeline = CreateTerrainMaterialWireframe(GDevice);
     GTerrainWireframePipeline = m_TerrainWireframePipeline;
 }
 

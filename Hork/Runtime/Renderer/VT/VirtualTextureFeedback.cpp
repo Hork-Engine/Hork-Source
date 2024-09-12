@@ -73,7 +73,7 @@ VirtualTextureFeedback::VirtualTextureFeedback() :
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &nearestSampler;
 
-    ShaderFactory::sCreateFullscreenQuadPipeline(&DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout);
 }
 
 VirtualTextureFeedback::~VirtualTextureFeedback()

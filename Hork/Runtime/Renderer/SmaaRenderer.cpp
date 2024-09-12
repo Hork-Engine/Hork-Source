@@ -58,13 +58,13 @@ SmaaRenderer::SmaaRenderer()
     resourceLayout.Samplers = samplerCI;
 
     resourceLayout.NumSamplers = 1;
-    ShaderFactory::sCreateFullscreenQuadPipeline(&EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 3;
-    ShaderFactory::sCreateFullscreenQuadPipeline(&BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 2;
-    ShaderFactory::sCreateFullscreenQuadPipeline(&NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
 
     CreateTextures();
 }

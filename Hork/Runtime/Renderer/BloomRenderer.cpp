@@ -58,11 +58,11 @@ BloomRenderer::BloomRenderer()
     resourceLayout.NumBuffers  = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers     = bufferInfo;
 
-    ShaderFactory::sCreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
-    ShaderFactory::sCreateFullscreenQuadPipeline(&BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
 
     resourceLayout.NumBuffers = 0;
-    ShaderFactory::sCreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
 }
 
 void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture, BloomRenderer::Textures* pResult)

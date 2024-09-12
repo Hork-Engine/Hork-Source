@@ -90,9 +90,9 @@ AtmosphereRenderer::AtmosphereRenderer()
         }
     };
 
-    ShaderFactory::sCreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    ShaderFactory::sCreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
-    ShaderFactory::sCreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
+    ShaderUtils::CreateVertexShader( GDevice, "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    ShaderUtils::CreateGeometryShader( GDevice, "gen/atmosphere.geom", pipelineCI.pGS );
+    ShaderUtils::CreateFragmentShader( GDevice, "gen/atmosphere.frag", pipelineCI.pFS );
 
     BufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;

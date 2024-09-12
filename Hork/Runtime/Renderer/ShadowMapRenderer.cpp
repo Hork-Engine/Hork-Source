@@ -78,8 +78,8 @@ void ShadowMapRenderer::CreatePipeline()
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    ShaderFactory::sCreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    ShaderFactory::sCreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
+    ShaderUtils::CreateVertexShader(GDevice, "instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(GDevice, "instance_shadowmap_default.geom", pipelineCI.pGS);
 
     bool bVSM = false;
 
@@ -89,7 +89,7 @@ void ShadowMapRenderer::CreatePipeline()
 
     if (/*_ShadowMasking || */ bVSM)
     {
-        ShaderFactory::sCreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
+        ShaderUtils::CreateFragmentShader(GDevice, "instance_shadowmap_default.frag", pipelineCI.pFS);
     }
 
     BufferInfo bufferInfo[4];
@@ -140,8 +140,8 @@ void ShadowMapRenderer::CreateLightPortalPipeline()
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    ShaderFactory::sCreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    ShaderFactory::sCreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
+    ShaderUtils::CreateVertexShader(GDevice, "instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(GDevice, "instance_lightportal.geom", pipelineCI.pGS);
 
 #if 0
     CreateFragmentShader( "instance_lightportal.frag", pipelineCI.pFS );

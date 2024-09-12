@@ -86,9 +86,9 @@ IrradianceGenerator::IrradianceGenerator()
              0,
              0}};
 
-    ShaderFactory::sCreateVertexShader("gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderFactory::sCreateGeometryShader("gen/irradiancegen.geom", pipelineCI.pGS);
-    ShaderFactory::sCreateFragmentShader("gen/irradiancegen.frag", pipelineCI.pFS);
+    ShaderUtils::CreateVertexShader(GDevice, "gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(GDevice, "gen/irradiancegen.geom", pipelineCI.pGS);
+    ShaderUtils::CreateFragmentShader(GDevice, "gen/irradiancegen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;

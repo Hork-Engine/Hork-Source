@@ -54,7 +54,7 @@ ColorGradingRenderer::ColorGradingRenderer()
     resourceLayout.Buffers = bufferInfo;
 
     resourceLayout.NumBuffers = 1;
-    ShaderFactory::sCreateFullscreenQuadPipelineGS(&PipelineLUT,
+    ShaderUtils::CreateFullscreenQuadPipelineGS(GDevice, &PipelineLUT,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading.frag",
                                                    "postprocess/colorgrading.geom",
@@ -62,7 +62,7 @@ ColorGradingRenderer::ColorGradingRenderer()
                                                    RHI::BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 2;
-    ShaderFactory::sCreateFullscreenQuadPipelineGS(&PipelineProcedural,
+    ShaderUtils::CreateFullscreenQuadPipelineGS(GDevice, &PipelineProcedural,
                                                    "postprocess/colorgrading.vert",
                                                    "postprocess/colorgrading_procedural.frag",
                                                    "postprocess/colorgrading.geom",

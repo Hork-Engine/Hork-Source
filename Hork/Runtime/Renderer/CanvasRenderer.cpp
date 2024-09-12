@@ -122,14 +122,14 @@ CanvasRenderer::CanvasRenderer()
          0, // InstanceDataStepRate
          HK_OFS(CanvasVertex, u)}};
 
-    ShaderFactory::sCreateVertexShader("canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
+    ShaderUtils::CreateVertexShader(GDevice, "canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), m_VertexShader);
     if (m_bEdgeAntialias)
     {
-        ShaderFactory::sCreateFragmentShader("canvas/canvas_aa.frag", m_FragmentShader);
+        ShaderUtils::CreateFragmentShader(GDevice, "canvas/canvas_aa.frag", m_FragmentShader);
     }
     else
     {
-        ShaderFactory::sCreateFragmentShader("canvas/canvas.frag", m_FragmentShader);
+        ShaderUtils::CreateFragmentShader(GDevice, "canvas/canvas.frag", m_FragmentShader);
     }
 
     PRIMITIVE_TOPOLOGY primitiveTopology[TOPOLOGY_MAX] = {PRIMITIVE_TRIANGLES, PRIMITIVE_TRIANGLE_STRIP};

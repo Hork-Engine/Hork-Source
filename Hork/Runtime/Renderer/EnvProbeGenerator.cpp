@@ -86,9 +86,9 @@ EnvProbeGenerator::EnvProbeGenerator()
              0,
              0}};
 
-    ShaderFactory::sCreateVertexShader("gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderFactory::sCreateGeometryShader("gen/envprobegen.geom", pipelineCI.pGS);
-    ShaderFactory::sCreateFragmentShader("gen/envprobegen.frag", pipelineCI.pFS);
+    ShaderUtils::CreateVertexShader(GDevice, "gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(GDevice, "gen/envprobegen.geom", pipelineCI.pGS);
+    ShaderUtils::CreateFragmentShader(GDevice, "gen/envprobegen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;

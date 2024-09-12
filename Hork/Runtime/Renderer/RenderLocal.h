@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/ShaderUtils/ShaderLoader.h>
+#include <Hork/ShaderUtils/ShaderUtils.h>
 
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
 #include "SphereMesh.h"
-#include "ShaderFactory.h"
 
 HK_NAMESPACE_BEGIN
 

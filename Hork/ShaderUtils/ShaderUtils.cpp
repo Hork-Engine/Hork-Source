@@ -28,19 +28,18 @@ SOFTWARE.
 
 */
 
-#include "ShaderFactory.h"
-
-#include <Hork/ShaderUtils/ShaderCompiler.h>
-#include <Hork/ShaderUtils/ShaderLoader.h>
+#include "ShaderUtils.h"
+#include "ShaderCompiler.h"
+#include "ShaderLoader.h"
 
 HK_NAMESPACE_BEGIN
 
-/// Render device
-extern RHI::IDevice* GDevice;
+namespace ShaderUtils
+{
 
 using namespace RHI;
 
-Ref<IShaderModule> ShaderFactory::sCreateShaderSpirV(SHADER_TYPE shaderType, BlobRef blob)
+Ref<IShaderModule> CreateShaderSpirV(IDevice* device, SHADER_TYPE shaderType, BlobRef blob)
 {
     ShaderBinaryData binaryData;
     binaryData.ShaderType = shaderType;
@@ -49,11 +48,11 @@ Ref<IShaderModule> ShaderFactory::sCreateShaderSpirV(SHADER_TYPE shaderType, Blo
     binaryData.BinarySize = blob.Size();
 
     Ref<IShaderModule> module;
-    GDevice->CreateShaderFromBinary(&binaryData, &module);
+    device->CreateShaderFromBinary(&binaryData, &module);
     return module;
 }
 
-void ShaderFactory::sCreateShader(SHADER_TYPE shaderType, const char* source, Ref<IShaderModule>& module)
+void CreateShader(IDevice* device, SHADER_TYPE shaderType, const char* source, Ref<IShaderModule>& module)
 {
     HeapBlob spirv;
 
@@ -62,15 +61,15 @@ void ShaderFactory::sCreateShader(SHADER_TYPE shaderType, const char* source, Re
     if (!ShaderCompiler::sCreateSpirV(shaderType, sources, spirv))
         return;
 
-    module = sCreateShaderSpirV(shaderType, spirv);
+    module = CreateShaderSpirV(device, shaderType, spirv);
 }
 
-void ShaderFactory::sCreateShader(SHADER_TYPE shaderType, String const& source, Ref<IShaderModule>& module)
+void CreateShader(IDevice* device, SHADER_TYPE shaderType, String const& source, Ref<IShaderModule>& module)
 {
-    sCreateShader(shaderType, source.CStr(), module);
+    CreateShader(device, shaderType, source.CStr(), module);
 }
 
-void ShaderFactory::sCreateVertexShader(StringView fileName, ArrayView<VertexAttribInfo> vertexAttribs, Ref<IShaderModule>& module)
+void CreateVertexShader(IDevice* device, StringView fileName, ArrayView<VertexAttribInfo> vertexAttribs, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
 
@@ -81,45 +80,45 @@ void ShaderFactory::sCreateVertexShader(StringView fileName, ArrayView<VertexAtt
     if (!ShaderCompiler::sCreateSpirV_VertexShader(vertexAttribs, sources, spirv))
         return;
 
-    module = sCreateShaderSpirV(VERTEX_SHADER, spirv);
+    module = CreateShaderSpirV(device, VERTEX_SHADER, spirv);
 }
 
-void ShaderFactory::sCreateVertexShader(StringView fileName, VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<IShaderModule>& module)
+void CreateVertexShader(IDevice* device, StringView fileName, VertexAttribInfo const* vertexAttribs, size_t numVertexAttribs, Ref<IShaderModule>& module)
 {
-    sCreateVertexShader(fileName, {vertexAttribs, numVertexAttribs}, module);
+    CreateVertexShader(device, fileName, {vertexAttribs, numVertexAttribs}, module);
 }
 
-void ShaderFactory::sCreateTessControlShader(StringView fileName, Ref<IShaderModule>& module)
-{
-    String source = LoadShader(fileName);
-    sCreateShader(TESS_CONTROL_SHADER, source, module);
-}
-
-void ShaderFactory::sCreateTessEvalShader(StringView fileName, Ref<IShaderModule>& module)
+void CreateTessControlShader(IDevice* device, StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    sCreateShader(TESS_EVALUATION_SHADER, source, module);
+    CreateShader(device, TESS_CONTROL_SHADER, source, module);
 }
 
-void ShaderFactory::sCreateGeometryShader(StringView fileName, Ref<IShaderModule>& module)
+void CreateTessEvalShader(IDevice* device, StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    sCreateShader(GEOMETRY_SHADER, source, module);
+    CreateShader(device, TESS_EVALUATION_SHADER, source, module);
 }
 
-void ShaderFactory::sCreateFragmentShader(StringView fileName, Ref<IShaderModule>& module)
+void CreateGeometryShader(IDevice* device, StringView fileName, Ref<IShaderModule>& module)
 {
     String source = LoadShader(fileName);
-    sCreateShader(FRAGMENT_SHADER, source, module);
+    CreateShader(device, GEOMETRY_SHADER, source, module);
 }
 
-void ShaderFactory::sCreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
+void CreateFragmentShader(IDevice* device, StringView fileName, Ref<IShaderModule>& module)
+{
+    String source = LoadShader(fileName);
+    CreateShader(device, FRAGMENT_SHADER, source, module);
+}
+
+void CreateFullscreenQuadPipeline(IDevice* device, Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
 {
     PipelineDesc pipelineCI;
 
     RasterizerStateInfo& rsd = pipelineCI.RS;
-    rsd.CullMode              = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable        = false;
+    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.bScissorEnable = false;
 
     BlendingStateInfo& bsd = pipelineCI.BS;
 
@@ -127,28 +126,28 @@ void ShaderFactory::sCreateFullscreenQuadPipeline(Ref<IPipeline>* ppPipeline, St
         bsd.RenderTargetSlots[0].SetBlendingPreset(blendingPreset);
 
     DepthStencilStateInfo& dssd = pipelineCI.DSS;
-    dssd.bDepthEnable            = false;
-    dssd.bDepthWrite             = false;
+    dssd.bDepthEnable = false;
+    dssd.bDepthWrite = false;
 
-    sCreateVertexShader(vertexShader, {}, pipelineCI.pVS);
-    sCreateFragmentShader(fragmentShader, pipelineCI.pFS);
+    CreateVertexShader(device, vertexShader, {}, pipelineCI.pVS);
+    CreateFragmentShader(device, fragmentShader, pipelineCI.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
 
     if (pResourceLayout)
         pipelineCI.ResourceLayout = *pResourceLayout;
 
-    GDevice->CreatePipeline(pipelineCI, ppPipeline);
+    device->CreatePipeline(pipelineCI, ppPipeline);
 }
 
-void ShaderFactory::sCreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, StringView geometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
+void CreateFullscreenQuadPipelineGS(IDevice* device, Ref<IPipeline>* ppPipeline, StringView vertexShader, StringView fragmentShader, StringView geometryShader, PipelineResourceLayout const* pResourceLayout, BLENDING_PRESET blendingPreset)
 {
     PipelineDesc pipelineCI;
 
     RasterizerStateInfo& rsd = pipelineCI.RS;
-    rsd.CullMode              = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable        = false;
+    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.bScissorEnable = false;
 
     BlendingStateInfo& bsd = pipelineCI.BS;
 
@@ -156,20 +155,22 @@ void ShaderFactory::sCreateFullscreenQuadPipelineGS(Ref<IPipeline>* ppPipeline, 
         bsd.RenderTargetSlots[0].SetBlendingPreset(blendingPreset);
 
     DepthStencilStateInfo& dssd = pipelineCI.DSS;
-    dssd.bDepthEnable            = false;
-    dssd.bDepthWrite             = false;
+    dssd.bDepthEnable = false;
+    dssd.bDepthWrite = false;
 
-    sCreateVertexShader(vertexShader, {}, pipelineCI.pVS);
-    sCreateGeometryShader(geometryShader, pipelineCI.pGS);
-    sCreateFragmentShader(fragmentShader, pipelineCI.pFS);
+    CreateVertexShader(device, vertexShader, {}, pipelineCI.pVS);
+    CreateGeometryShader(device, geometryShader, pipelineCI.pGS);
+    CreateFragmentShader(device, fragmentShader, pipelineCI.pFS);
 
     PipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
 
     if (pResourceLayout)
         pipelineCI.ResourceLayout = *pResourceLayout;
 
-    GDevice->CreatePipeline(pipelineCI, ppPipeline);
+    device->CreatePipeline(pipelineCI, ppPipeline);
 }
+
+} // namespace ShaderUtils
 
 HK_NAMESPACE_END
