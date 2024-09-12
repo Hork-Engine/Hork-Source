@@ -52,7 +52,7 @@ AnimationPlayerSimple::AnimationPlayerSimple()
     m_Pose = MakeRef<SkeletonPose>();
 }
 
-AnimationPlayerSimple::AnimationPlayerSimple(AnimationPlayerSimple&& rhs) noexcept = default;
+AnimationPlayerSimple::AnimationPlayerSimple(AnimationPlayerSimple&& rhs) = default;
 
 AnimationPlayerSimple::~AnimationPlayerSimple()
 {}

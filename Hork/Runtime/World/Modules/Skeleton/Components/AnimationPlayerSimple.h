@@ -43,7 +43,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
                             AnimationPlayerSimple();
-                            AnimationPlayerSimple(AnimationPlayerSimple&& rhs) noexcept;
+                            AnimationPlayerSimple(AnimationPlayerSimple&& rhs);
                             ~AnimationPlayerSimple();
 
     /// Play the specified animation. The animation should already be loaded.
