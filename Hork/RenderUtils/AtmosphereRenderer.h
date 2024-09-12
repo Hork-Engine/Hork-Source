@@ -30,28 +30,30 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RHI/Common/ImmediateContext.h>
+#include <Hork/RHI/Common/Device.h>
 #include <Hork/Math/VectorMath.h>
+#include "SphereMesh.h"
 
 HK_NAMESPACE_BEGIN
 
-class EnvProbeGenerator
+class AtmosphereRenderer
 {
 public:
-    EnvProbeGenerator();
+                            AtmosphereRenderer(RHI::IDevice* device, RenderUtils::SphereMesh* sphereMesh);
 
-    void GenerateArray(int _MaxLod, int _CubemapsCount, RHI::ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray);
-    void Generate(int _MaxLod, RHI::ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture);
+    void                    Render(TEXTURE_FORMAT format, int cubemapWidth, Float3 const& lightDir, Ref<RHI::ITexture>* ppTexture);
 
 private:
     struct ConstantData
     {
-        Float4x4 Transform[6];
-        Float4 Roughness;
+        Float4x4    Transform[6];
+        Float4      LightDir;
     };
-    Ref<RHI::IBuffer> ConstantBuffer;
-    ConstantData ConstantBufferData;
-    Ref<RHI::IPipeline> Pipeline;
+    Ref<RHI::IDevice>       m_Device;
+    Ref<RenderUtils::SphereMesh> m_SphereMesh;
+    Ref<RHI::IBuffer>       m_ConstantBuffer;
+    ConstantData            m_ConstantBufferData;
+    Ref<RHI::IPipeline>     m_Pipeline;
 };
 
 HK_NAMESPACE_END

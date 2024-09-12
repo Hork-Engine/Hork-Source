@@ -29,18 +29,19 @@ SOFTWARE.
 */
 
 #include "SphereMesh.h"
-#include "RenderLocal.h"
 
 #include <Hork/Core/Containers/Vector.h>
+#include <Hork/RHI/Common/Device.h>
 
 HK_NAMESPACE_BEGIN
 
-using namespace RHI;
-
-SphereMesh::SphereMesh(int _HDiv, int _VDiv)
+namespace RenderUtils
 {
-    const int numVerts = _VDiv * (_HDiv - 1) + 2;
-    const int numIndices = (_HDiv - 1) * (_VDiv - 1) * 6;
+
+SphereMesh::SphereMesh(RHI::IDevice* device, int HDiv, int VDiv)
+{
+    const int numVerts = VDiv * (HDiv - 1) + 2;
+    const int numIndices = (HDiv - 1) * (VDiv - 1) * 6;
     int i, j;
     float a1, a2;
 
@@ -52,45 +53,45 @@ SphereMesh::SphereMesh(int _HDiv, int _VDiv)
     vertices.Resize(numVerts);
     indices.Resize(numIndices);
 
-    for (i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++)
+    for (i = 0, a1 = Math::_PI / HDiv; i < (HDiv - 1); i++)
     {
         float y, r;
         Math::SinCos(a1, r, y);
-        for (j = 0, a2 = 0; j < _VDiv; j++)
+        for (j = 0, a2 = 0; j < VDiv; j++)
         {
             float s, c;
             Math::SinCos(a2, s, c);
-            vertices[i * _VDiv + j] = Float3(r * c, -y, r * s);
-            a2 += Math::_2PI / (_VDiv - 1);
+            vertices[i * VDiv + j] = Float3(r * c, -y, r * s);
+            a2 += Math::_2PI / (VDiv - 1);
         }
-        a1 += Math::_PI / _HDiv;
+        a1 += Math::_PI / HDiv;
     }
-    vertices[(_HDiv - 1) * _VDiv + 0] = Float3(0, -1, 0);
-    vertices[(_HDiv - 1) * _VDiv + 1] = Float3(0, 1, 0);
+    vertices[(HDiv - 1) * VDiv + 0] = Float3(0, -1, 0);
+    vertices[(HDiv - 1) * VDiv + 1] = Float3(0, 1, 0);
 
     // generate indices
     unsigned short* pIndices = indices.ToPtr();
-    for (i = 0; i < _HDiv; i++)
+    for (i = 0; i < HDiv; i++)
     {
-        for (j = 0; j < _VDiv - 1; j++)
+        for (j = 0; j < VDiv - 1; j++)
         {
             unsigned short i2 = i + 1;
-            unsigned short j2 = (j == _VDiv - 1) ? 0 : j + 1;
-            if (i == (_HDiv - 2))
+            unsigned short j2 = (j == VDiv - 1) ? 0 : j + 1;
+            if (i == (HDiv - 2))
             {
-                *pIndices++ = (i * _VDiv + j2);
-                *pIndices++ = (i * _VDiv + j);
-                *pIndices++ = ((_HDiv - 1) * _VDiv + 1);
+                *pIndices++ = (i * VDiv + j2);
+                *pIndices++ = (i * VDiv + j);
+                *pIndices++ = ((HDiv - 1) * VDiv + 1);
             }
-            else if (i == (_HDiv - 1))
+            else if (i == (HDiv - 1))
             {
-                *pIndices++ = (0 * _VDiv + j);
-                *pIndices++ = (0 * _VDiv + j2);
-                *pIndices++ = ((_HDiv - 1) * _VDiv + 0);
+                *pIndices++ = (0 * VDiv + j);
+                *pIndices++ = (0 * VDiv + j2);
+                *pIndices++ = ((HDiv - 1) * VDiv + 0);
             }
             else
             {
-                int quad[4] = {i * _VDiv + j, i * _VDiv + j2, i2 * _VDiv + j2, i2 * _VDiv + j};
+                int quad[4] = {i * VDiv + j, i * VDiv + j2, i2 * VDiv + j2, i2 * VDiv + j};
                 *pIndices++ = quad[3];
                 *pIndices++ = quad[2];
                 *pIndices++ = quad[1];
@@ -101,20 +102,34 @@ SphereMesh::SphereMesh(int _HDiv, int _VDiv)
         }
     }
 
-    BufferDesc bufferCI = {};
+    RHI::BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
 
     bufferCI.SizeInBytes = sizeof(Float3) * vertices.Size();
-    GDevice->CreateBuffer(bufferCI, vertices.ToPtr(), &VertexBuffer);
+    device->CreateBuffer(bufferCI, vertices.ToPtr(), &m_VertexBuffer);
 
-    VertexBuffer->SetDebugName("Sphere mesh vertex buffer");
+    m_VertexBuffer->SetDebugName("Sphere mesh vertex buffer");
 
     bufferCI.SizeInBytes = sizeof(unsigned short) * indices.Size();
-    GDevice->CreateBuffer(bufferCI, indices.ToPtr(), &IndexBuffer);
+    device->CreateBuffer(bufferCI, indices.ToPtr(), &m_IndexBuffer);
 
-    VertexBuffer->SetDebugName("Sphere mesh index buffer");
+    m_VertexBuffer->SetDebugName("Sphere mesh index buffer");
 
-    IndexCount = indices.Size();
+    m_IndexCount = indices.Size();
+}
+
+void SphereMesh::Draw(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, unsigned int instanceCount)
+{
+    RHI::DrawIndexedCmd drawCmd = {};
+    drawCmd.IndexCountPerInstance = m_IndexCount;
+    drawCmd.InstanceCount = instanceCount;
+
+    immediateCtx->BindPipeline(pipeline);
+    immediateCtx->BindVertexBuffer(0, m_VertexBuffer);
+    immediateCtx->BindIndexBuffer(m_IndexBuffer, RHI::INDEX_TYPE_UINT16);
+    immediateCtx->Draw(&drawCmd);
+}
+
 }
 
 HK_NAMESPACE_END

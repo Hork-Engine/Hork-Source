@@ -31,27 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/RHI/Common/ImmediateContext.h>
-#include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
-class CubemapGenerator
-{
-public:
-    CubemapGenerator();
-
-    void GenerateArray(TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RHI::ITexture** _Sources, Ref<RHI::ITexture>* ppTextureArray);
-    void Generate(TEXTURE_FORMAT _Format, int _Resolution, RHI::ITexture* _Source, Ref<RHI::ITexture>* ppTexture);
-
-private:
-    struct ConstantData
-    {
-        Float4x4 Transform[6];
-        Float4   Index;
-    };
-    Ref<RHI::IBuffer>   ConstantBuffer;
-    ConstantData               ConstantBufferData;
-    Ref<RHI::IPipeline> Pipeline;
-};
+void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, unsigned int instanceCount = 1);
 
 HK_NAMESPACE_END

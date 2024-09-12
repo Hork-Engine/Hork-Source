@@ -29,7 +29,10 @@ SOFTWARE.
 */
 
 #include "IrradianceGenerator.h"
-#include "RenderLocal.h"
+#include "DrawUtils.h"
+
+#include <Hork/ShaderUtils/ShaderUtils.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -37,13 +40,15 @@ using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
-IrradianceGenerator::IrradianceGenerator()
+IrradianceGenerator::IrradianceGenerator(IDevice* device, RenderUtils::SphereMesh* sphereMesh) :
+    m_Device(device),
+    m_SphereMesh(sphereMesh)
 {
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof(ConstantData);
-    GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
+    m_Device->CreateBuffer(bufferCI, nullptr, &m_ConstantBuffer);
 
     Float4x4 const* cubeFaceMatrices = Float4x4::sGetCubeFaceMatrices();
 
@@ -56,7 +61,7 @@ IrradianceGenerator::IrradianceGenerator()
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
+        m_ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
     PipelineDesc pipelineCI;
@@ -86,9 +91,9 @@ IrradianceGenerator::IrradianceGenerator()
              0,
              0}};
 
-    ShaderUtils::CreateVertexShader(GDevice, "gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderUtils::CreateGeometryShader(GDevice, "gen/irradiancegen.geom", pipelineCI.pGS);
-    ShaderUtils::CreateFragmentShader(GDevice, "gen/irradiancegen.frag", pipelineCI.pFS);
+    ShaderUtils::CreateVertexShader(m_Device, "gen/irradiancegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(m_Device, "gen/irradiancegen.geom", pipelineCI.pGS);
+    ShaderUtils::CreateFragmentShader(m_Device, "gen/irradiancegen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;
@@ -107,26 +112,26 @@ IrradianceGenerator::IrradianceGenerator()
     pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(buffers);
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline(pipelineCI, &Pipeline);
+    m_Device->CreatePipeline(pipelineCI, &m_Pipeline);
 }
 
-void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray)
+void IrradianceGenerator::GenerateArray(int cubemapsCount, ITexture** cubemaps, Ref<RHI::ITexture>* ppTextureArray)
 {
     int size = 32;
 
-    GDevice->CreateTexture(TextureDesc()
+    m_Device->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_IRRADIANCE)
-                               .SetResolution(TextureResolutionCubemapArray(size, _CubemapsCount)),
+                               .SetResolution(TextureResolutionCubemapArray(size, cubemapsCount)),
                            ppTextureArray);
 
-    FrameGraph frameGraph(GDevice);
+    FrameGraph frameGraph(m_Device);
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
 
     Ref<IResourceTable> resourceTbl;
-    GDevice->CreateResourceTable(&resourceTbl);
+    m_Device->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer(0, ConstantBuffer);
+    resourceTbl->BindBuffer(0, m_ConstantBuffer);
 
     RenderPass& pass = frameGraph.AddTask<RenderPass>("Irradiance gen pass");
 
@@ -143,40 +148,40 @@ void IrradianceGenerator::GenerateArray(int _CubemapsCount, ITexture** _Cubemaps
 
                         immediateCtx->BindResourceTable(resourceTbl);
 
-                        for (int cubemapIndex = 0; cubemapIndex < _CubemapsCount; cubemapIndex++)
+                        for (int cubemapIndex = 0; cubemapIndex < cubemapsCount; cubemapIndex++)
                         {
-                            ConstantBufferData.Index.X = cubemapIndex * 6; // Offset for cubemap array layer
+                            m_ConstantBufferData.Index.X = cubemapIndex * 6; // Offset for cubemap array layer
 
-                            immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
+                            immediateCtx->WriteBufferRange(m_ConstantBuffer, 0, sizeof(m_ConstantBufferData), &m_ConstantBufferData);
 
-                            resourceTbl->BindTexture(0, _Cubemaps[cubemapIndex]);
+                            resourceTbl->BindTexture(0, cubemaps[cubemapIndex]);
 
                             // Draw six faces in one draw call
-                            DrawSphere(immediateCtx, Pipeline, 6);
+                            m_SphereMesh->Draw(immediateCtx, m_Pipeline, 6);
                         }
                     });
 
     frameGraph.Build();
-    rcmd->ExecuteFrameGraph(&frameGraph);
+    m_Device->GetImmediateContext()->ExecuteFrameGraph(&frameGraph);
 }
 
-void IrradianceGenerator::Generate(ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture)
+void IrradianceGenerator::Generate(ITexture* sourceCubemap, Ref<RHI::ITexture>* ppTexture)
 {
     int size = 32;
 
-    GDevice->CreateTexture(TextureDesc()
+    m_Device->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_IRRADIANCE)
                                .SetResolution(TextureResolutionCubemap(size)),
                            ppTexture);
 
-    FrameGraph frameGraph(GDevice);
+    FrameGraph frameGraph(m_Device);
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
 
     Ref<IResourceTable> resourceTbl;
-    GDevice->CreateResourceTable(&resourceTbl);
+    m_Device->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer(0, ConstantBuffer);
+    resourceTbl->BindBuffer(0, m_ConstantBuffer);
 
     RenderPass& pass = frameGraph.AddTask<RenderPass>("Irradiance gen pass");
 
@@ -191,20 +196,20 @@ void IrradianceGenerator::Generate(ITexture* _SourceCubemap, Ref<RHI::ITexture>*
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                        ConstantBufferData.Index.X = 0;
+                        m_ConstantBufferData.Index.X = 0;
 
-                        immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
+                        immediateCtx->WriteBufferRange(m_ConstantBuffer, 0, sizeof(m_ConstantBufferData), &m_ConstantBufferData);
 
-                        resourceTbl->BindTexture(0, _SourceCubemap);
+                        resourceTbl->BindTexture(0, sourceCubemap);
 
                         immediateCtx->BindResourceTable(resourceTbl);
 
                         // Draw six faces in one draw call
-                        DrawSphere(immediateCtx, Pipeline, 6);
+                        m_SphereMesh->Draw(immediateCtx, m_Pipeline, 6);
                     });
 
     frameGraph.Build();
-    rcmd->ExecuteFrameGraph(&frameGraph);
+    m_Device->GetImmediateContext()->ExecuteFrameGraph(&frameGraph);
 }
 
 HK_NAMESPACE_END

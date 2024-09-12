@@ -30,21 +30,21 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RHI/Common/Buffer.h>
+#include <Hork/RHI/Common/ImmediateContext.h>
 
 HK_NAMESPACE_BEGIN
 
-class SphereMesh : public RefCounted
+namespace RenderUtils
 {
-public:
-    SphereMesh(int _HDiv = 128, int _VDiv = 128);
 
-    Ref<RHI::IBuffer> VertexBuffer;
+void GenerateIrradianceMap(RHI::IDevice* device, RHI::ITexture* cubemap, Ref<RHI::ITexture>* ppTexture);
+void GenerateReflectionMap(RHI::IDevice* device, RHI::ITexture* cubemap, Ref<RHI::ITexture>* ppTexture);
+void GenerateSkybox(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t resolution, Float3 const& lightDir, Ref<RHI::ITexture>* ppTexture);
 
-    // Indices format unsigned short
-    Ref<RHI::IBuffer> IndexBuffer;
+bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, ImageStorage const& skyboxImage, StringView envmapFile);
+bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, SkyboxImportSettings const& importSettings, StringView envmapFile);
+ImageStorage GenerateAtmosphereSkybox(RHI::IDevice* device, SKYBOX_IMPORT_TEXTURE_FORMAT format, uint32_t resolution, Float3 const& lightDir);
 
-    unsigned int IndexCount;
-};
+}
 
 HK_NAMESPACE_END

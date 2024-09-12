@@ -31,11 +31,7 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include "CanvasRenderer.h"
 #include "VT/VirtualTextureFeedback.h"
-#include "IrradianceGenerator.h"
-#include "EnvProbeGenerator.h"
-#include "CubemapGenerator.h"
-#include "AtmosphereRenderer.h"
-#include "BRDFGenerator.h"
+#include <Hork/RenderUtils/BRDFGenerator.h>
 #include "VXGIVoxelizer.h"
 
 #include <Hork/Core/ConsoleVar.h>
@@ -104,25 +100,6 @@ RenderBackend::RenderBackend(RHI::IDevice* pDevice)
     GDevice->CreateQueryPool(timeQueryCI, &m_TimeQuery);
 #endif
 
-    // Create sphere mesh for cubemap rendering
-    GSphereMesh = MakeRef<SphereMesh>();
-
-    // Create screen aligned quad
-    {
-        constexpr Float2 saqVertices[4] = {
-            {Float2(-1.0f, 1.0f)},
-            {Float2(1.0f, 1.0f)},
-            {Float2(-1.0f, -1.0f)},
-            {Float2(1.0f, -1.0f)}};
-
-        BufferDesc bufferCI = {};
-        bufferCI.bImmutableStorage = true;
-        bufferCI.SizeInBytes       = sizeof(saqVertices);
-        GDevice->CreateBuffer(bufferCI, saqVertices, &GSaq);
-
-        GSaq->SetDebugName("Screen aligned quad");
-    }
-
     // Create white texture
     {
         GDevice->CreateTexture(TextureDesc()
@@ -154,7 +131,7 @@ RenderBackend::RenderBackend(RHI::IDevice* pDevice)
     GFeedbackAnalyzerVT = m_FeedbackAnalyzerVT;
 
     {
-        BRDFGenerator generator;
+        BRDFGenerator generator(GDevice);
         generator.Render(&GLookupBRDF);
     }
 
@@ -291,29 +268,9 @@ RenderBackend::~RenderBackend()
     GCircularBuffer.Reset();
     GWhiteTexture.Reset();
     GLookupBRDF.Reset();
-    GSphereMesh.Reset();
-    GSaq.Reset();
     GClusterLookup.Reset();
     GClusterItemTBO.Reset();
     GClusterItemBuffer.Reset();
-}
-
-void RenderBackend::GenerateIrradianceMap(ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture)
-{
-    IrradianceGenerator irradianceGenerator;
-    irradianceGenerator.Generate(pCubemap, ppTexture);
-}
-
-void RenderBackend::GenerateReflectionMap(ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture)
-{
-    EnvProbeGenerator envProbeGenerator;
-    envProbeGenerator.Generate(7, pCubemap, ppTexture);
-}
-
-void RenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture)
-{
-    AtmosphereRenderer atmosphereRenderer;
-    atmosphereRenderer.Render(Format, Resolution, LightDir, ppTexture);
 }
 
 #if 0
@@ -711,216 +668,6 @@ void RenderBackend::RenderView(int ViewportIndex, RenderViewData* pRenderView)
 
         m_FeedbackAnalyzerVT->AddFeedbackData(FeedbackSize, FeedbackData);
     }
-}
-
-
-
-
-bool RenderBackend::GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile)
-{
-    Ref<RHI::ITexture> SourceMap, IrradianceMap, ReflectionMap;
-
-    if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
-    {
-        LOG("GenerateAndSaveEnvironmentMap: invalid skybox\n");
-        return false;
-    }
-
-    int width = Skybox.GetDesc().Width;
-
-    RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolutionCubemap(width));
-    textureDesc.SetFormat(Skybox.GetDesc().Format);
-    textureDesc.SetMipLevels(1);
-    textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
-
-    if (Skybox.NumChannels() == 1)
-    {
-        // Apply texture swizzle for single channel textures
-        textureDesc.Swizzle.R = RHI::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.G = RHI::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.B = RHI::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.A = RHI::TEXTURE_SWIZZLE_R;
-    }
-
-    GDevice->CreateTexture(textureDesc, &SourceMap);
-
-    RHI::TextureRect rect;
-    rect.Offset.X        = 0;
-    rect.Offset.Y        = 0;
-    rect.Offset.MipLevel = 0;
-    rect.Dimension.X     = width;
-    rect.Dimension.Y     = width;
-    rect.Dimension.Z     = 1;
-
-    ImageSubresourceDesc subresDesc;
-    subresDesc.MipmapIndex = 0;
-
-    for (int faceNum = 0; faceNum < 6; faceNum++)
-    {
-        rect.Offset.Z = faceNum;
-
-        subresDesc.SliceIndex = faceNum;
-
-        ImageSubresource subresouce = Skybox.GetSubresource(subresDesc);
-
-        SourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
-    }
-
-    GenerateIrradianceMap(SourceMap, &IrradianceMap);
-    GenerateReflectionMap(SourceMap, &ReflectionMap);
-
-    // Preform some validation
-    HK_ASSERT(IrradianceMap->GetDesc().Resolution.Width == IrradianceMap->GetDesc().Resolution.Height);
-    HK_ASSERT(ReflectionMap->GetDesc().Resolution.Width == ReflectionMap->GetDesc().Resolution.Height);
-    HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
-    HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
-
-    File f = File::sOpenWrite(EnvmapFile);
-    if (!f)
-    {
-        LOG("Failed to write {}\n", EnvmapFile);
-        return false;
-    }
-
-    constexpr uint32_t ASSET_ENVMAP = 8;
-    constexpr uint32_t ASSET_VERSION_ENVMAP = 2;
-
-    f.WriteUInt32(ASSET_ENVMAP);
-    f.WriteUInt32(ASSET_VERSION_ENVMAP);
-    f.WriteUInt32(IrradianceMap->GetWidth());
-    f.WriteUInt32(ReflectionMap->GetWidth());
-
-    // Choose max width for memory allocation
-    int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
-
-    Vector<uint32_t> buffer(maxSize * maxSize * 6);
-
-    uint32_t* data = buffer.ToPtr();
-
-    int numPixels = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 6;
-    IrradianceMap->Read(0, numPixels * sizeof(uint32_t), 4, data);
-
-    f.WriteWords<uint32_t>(data, numPixels);
-
-    for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
-    {
-        int mipWidth = ReflectionMap->GetWidth() >> mipLevel;
-        HK_ASSERT(mipWidth > 0);
-
-        numPixels = mipWidth * mipWidth * 6;
-
-        ReflectionMap->Read(mipLevel, numPixels * sizeof(uint32_t), 4, data);
-
-        f.WriteWords<uint32_t>(data, numPixels);
-    }
-    return true;
-}
-
-bool RenderBackend::GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile)
-{
-    ImageStorage image = LoadSkyboxImages(ImportSettings);
-
-    if (!image)
-    {
-        return false;
-    }
-
-    return GenerateAndSaveEnvironmentMap(image, EnvmapFile);
-}
-
-ImageStorage RenderBackend::GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir)
-{
-    TEXTURE_FORMAT renderFormat;
-
-    switch (Format)
-    {
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
-            renderFormat = TEXTURE_FORMAT_SRGBA8_UNORM;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
-            renderFormat = TEXTURE_FORMAT_SBGRA8_UNORM;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
-            renderFormat = TEXTURE_FORMAT_R11G11B10_FLOAT;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
-            renderFormat = TEXTURE_FORMAT_RGBA32_FLOAT;
-            break;
-        default:
-            LOG("GenerateAtmosphereSkybox: unexpected texture format\n");
-            return {};
-    }
-
-    TextureFormatInfo const& info = GetTextureFormatInfo((TEXTURE_FORMAT)Format);
-
-    if (Resolution % info.BlockSize)
-    {
-        LOG("GenerateAtmosphereSkybox: skybox resolution must be block aligned\n");
-        return {};
-    }
-
-    Ref<RHI::ITexture> skybox;
-    GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
-
-    RHI::TextureRect rect;
-    rect.Offset.X        = 0;
-    rect.Offset.Y        = 0;
-    rect.Offset.MipLevel = 0;
-    rect.Dimension.X     = Resolution;
-    rect.Dimension.Y     = Resolution;
-    rect.Dimension.Z     = 1;
-
-    ImageStorageDesc desc;
-    desc.Type       = TEXTURE_CUBE;
-    desc.Width      = Resolution;
-    desc.Height     = Resolution;
-    desc.SliceCount = 6;
-    desc.NumMipmaps = 1;
-    desc.Format     = (TEXTURE_FORMAT)Format;
-    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
-
-    ImageStorage storage(desc);
-
-    HeapBlob temp;
-
-    for (uint32_t faceNum = 0; faceNum < 6; faceNum++)
-    {
-        ImageSubresourceDesc subresDesc;
-        subresDesc.SliceIndex  = faceNum;
-        subresDesc.MipmapIndex = 0;
-
-        ImageSubresource subresource = storage.GetSubresource(subresDesc);
-
-        rect.Offset.Z = faceNum;
-
-        switch (Format)
-        {
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
-                skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
-                break;
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
-                if (!temp)
-                    temp.Reset(Resolution * Resolution * 4);
-
-                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
-                TextureBlockCompression::CompressBC1(temp.GetData(), subresource.GetData(), Resolution, Resolution);
-                break;
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
-                if (!temp)
-                    temp.Reset(Resolution * Resolution * 4 * sizeof(float));
-
-                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
-                TextureBlockCompression::CompressBC6h(temp.GetData(), subresource.GetData(), Resolution, Resolution, false);
-                break;
-            default:
-                HK_ASSERT(0);
-        }
-    }
-    return storage;
 }
 
 HK_NAMESPACE_END

@@ -62,12 +62,6 @@ StreamedMemoryGPU* GStreamedMemory;
 /// Don't use to store long-live data.
 Ref<CircularBuffer> GCircularBuffer;
 
-/// Sphere mesh
-Ref<SphereMesh> GSphereMesh;
-
-/// Screen aligned quad mesh
-Ref<IBuffer> GSaq;
-
 /// Simple white texture
 Ref<ITexture> GWhiteTexture;
 
@@ -104,18 +98,6 @@ void DrawSAQ(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int 
     immediateCtx->BindPipeline(Pipeline);
     immediateCtx->BindVertexBuffer(0, nullptr, 0);
     immediateCtx->BindIndexBuffer(nullptr, INDEX_TYPE_UINT16, 0);
-    immediateCtx->Draw(&drawCmd);
-}
-
-void DrawSphere(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
-{
-    DrawIndexedCmd drawCmd       = {};
-    drawCmd.IndexCountPerInstance = GSphereMesh->IndexCount;
-    drawCmd.InstanceCount         = InstanceCount;
-
-    immediateCtx->BindPipeline(Pipeline);
-    immediateCtx->BindVertexBuffer(0, GSphereMesh->VertexBuffer);
-    immediateCtx->BindIndexBuffer(GSphereMesh->IndexBuffer, INDEX_TYPE_UINT16);
     immediateCtx->Draw(&drawCmd);
 }
 

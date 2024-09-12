@@ -49,14 +49,6 @@ public:
     RenderBackend(RHI::IDevice* pDevice);
     ~RenderBackend();
 
-    void GenerateIrradianceMap(RHI::ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture);
-    void GenerateReflectionMap(RHI::ITexture* pCubemap, Ref<RHI::ITexture>* ppTexture);
-    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RHI::ITexture>* ppTexture);
-
-    bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile);
-    bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile);
-    ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
-
     void RenderFrame(StreamedMemoryGPU* StreamedMemory, RHI::ITexture* pBackBuffer, RenderFrameData* pFrameData);
 
     int ClusterPackedIndicesAlignment() const;

@@ -36,7 +36,6 @@ SOFTWARE.
 
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
-#include "SphereMesh.h"
 
 HK_NAMESPACE_BEGIN
 
@@ -210,12 +209,6 @@ extern StreamedMemoryGPU*  GStreamedMemory;
 /// Don't use to store long-live data.
 extern Ref<CircularBuffer> GCircularBuffer;
 
-/// Sphere mesh
-extern Ref<SphereMesh> GSphereMesh;
-
-/// Screen aligned quad mesh
-extern Ref<RHI::IBuffer> GSaq;
-
 /// Simple white texture
 extern Ref<RHI::ITexture> GWhiteTexture;
 
@@ -254,8 +247,6 @@ extern RHI::IPipeline* GTerrainWireframePipeline;
 RHI::TextureResolution2D GetFrameResoultion();
 
 void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* Pipeline, unsigned int InstanceCount = 1);
-
-void DrawSphere(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
 void BindVertexAndIndexBuffers(RHI::IImmediateContext* immediateCtx, RenderInstance const* Instance);
 

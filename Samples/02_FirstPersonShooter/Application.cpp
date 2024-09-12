@@ -40,6 +40,8 @@ SOFTWARE.
 #include "Common/Components/ElevatorComponent.h"
 #include "Common/CollisionLayer.h"
 
+#include <Hork/RenderUtils/Utilites.h>
+
 #include <Hork/Runtime/UI/UIViewport.h>
 #include <Hork/Runtime/UI/UIGrid.h>
 #include <Hork/Runtime/UI/UILabel.h>
@@ -357,7 +359,7 @@ void SampleApplication::CreateResources()
     materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
 
     // Procedurally generate a skybox image
-    ImageStorage skyboxImage = sGetRenderBackend().GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT, 512, Float3(1, -1, -1).Normalized());
+    ImageStorage skyboxImage = RenderUtils::GenerateAtmosphereSkybox(sGetRenderDevice(), SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT, 512, Float3(1, -1, -1).Normalized());
     // Convert image to resource
     UniqueRef<TextureResource> skybox = MakeUnique<TextureResource>(std::move(skyboxImage));
     skybox->Upload();

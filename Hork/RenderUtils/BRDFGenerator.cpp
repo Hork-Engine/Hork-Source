@@ -29,7 +29,10 @@ SOFTWARE.
 */
 
 #include "BRDFGenerator.h"
-#include "RenderLocal.h"
+#include "DrawUtils.h"
+
+#include <Hork/ShaderUtils/ShaderUtils.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -38,14 +41,15 @@ using namespace RHI;
 const int BRDF_TEXTURE_WIDTH  = 512;
 const int BRDF_TEXTURE_HEIGHT = 256;
 
-BRDFGenerator::BRDFGenerator()
+BRDFGenerator::BRDFGenerator(IDevice* device) :
+    m_Device(device)
 {
-    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
+    ShaderUtils::CreateFullscreenQuadPipeline(m_Device, &m_Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
 void BRDFGenerator::Render(Ref<RHI::ITexture>* ppTexture)
 {
-    FrameGraph  frameGraph(GDevice);
+    FrameGraph  frameGraph(m_Device);
     RenderPass& pass = frameGraph.AddTask<RenderPass>("BRDF generation pass");
 
     pass.SetRenderArea(BRDF_TEXTURE_WIDTH, BRDF_TEXTURE_HEIGHT);
@@ -63,14 +67,14 @@ void BRDFGenerator::Render(Ref<RHI::ITexture>* ppTexture)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                        DrawSAQ(immediateCtx, Pipeline);
+                        DrawSAQ(immediateCtx, m_Pipeline);
                     });
 
     FGTextureProxy* pTexture = pass.GetColorAttachments()[0].pResource;
     pTexture->SetResourceCapture(true);
 
     frameGraph.Build();
-    rcmd->ExecuteFrameGraph(&frameGraph);
+    m_Device->GetImmediateContext()->ExecuteFrameGraph(&frameGraph);
 
     *ppTexture = pTexture->Actual();
 }

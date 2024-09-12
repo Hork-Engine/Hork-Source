@@ -18,7 +18,7 @@ target_link_libraries(${PROJECT_NAME}
 	RenderDefs
 	ShaderUtils
 	MaterialGraph
-#	Renderer
+	RenderUtils
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${HK_COMPILER_DEFINES})

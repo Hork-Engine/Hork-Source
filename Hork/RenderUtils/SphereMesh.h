@@ -31,27 +31,25 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/RHI/Common/ImmediateContext.h>
-#include <Hork/Math/VectorMath.h>
 
 HK_NAMESPACE_BEGIN
 
-class IrradianceGenerator
+namespace RenderUtils
+{
+
+class SphereMesh : public RefCounted
 {
 public:
-    IrradianceGenerator();
+                        SphereMesh(RHI::IDevice* device, int HDiv = 128, int VDiv = 128);
 
-    void GenerateArray(int _CubemapsCount, RHI::ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray);
-    void Generate(RHI::ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture);
+    void                Draw(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, unsigned int instanceCount = 1);
 
 private:
-    struct ConstantData
-    {
-        Float4x4 Transform[6];
-        Float4 Index;
-    };
-    Ref<RHI::IBuffer> ConstantBuffer;
-    ConstantData ConstantBufferData;
-    Ref<RHI::IPipeline> Pipeline;
+    Ref<RHI::IBuffer>   m_VertexBuffer;
+    Ref<RHI::IBuffer>   m_IndexBuffer;
+    unsigned int        m_IndexCount;
 };
+
+}
 
 HK_NAMESPACE_END

@@ -29,7 +29,10 @@ SOFTWARE.
 */
 
 #include "EnvProbeGenerator.h"
-#include "RenderLocal.h"
+#include "DrawUtils.h"
+
+#include <Hork/ShaderUtils/ShaderUtils.h>
+#include <Hork/RHI/Common/FrameGraph.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -37,13 +40,15 @@ using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
-EnvProbeGenerator::EnvProbeGenerator()
+EnvProbeGenerator::EnvProbeGenerator(IDevice* device, RenderUtils::SphereMesh* sphereMesh) :
+    m_Device(device),
+    m_SphereMesh(sphereMesh)
 {
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof(ConstantData);
-    GDevice->CreateBuffer(bufferCI, nullptr, &ConstantBuffer);
+    m_Device->CreateBuffer(bufferCI, nullptr, &m_ConstantBuffer);
 
     Float4x4 const* cubeFaceMatrices = Float4x4::sGetCubeFaceMatrices();
 
@@ -56,7 +61,7 @@ EnvProbeGenerator::EnvProbeGenerator()
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
+        m_ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
     PipelineDesc pipelineCI;
@@ -86,9 +91,9 @@ EnvProbeGenerator::EnvProbeGenerator()
              0,
              0}};
 
-    ShaderUtils::CreateVertexShader(GDevice, "gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    ShaderUtils::CreateGeometryShader(GDevice, "gen/envprobegen.geom", pipelineCI.pGS);
-    ShaderUtils::CreateFragmentShader(GDevice, "gen/envprobegen.frag", pipelineCI.pFS);
+    ShaderUtils::CreateVertexShader(m_Device, "gen/envprobegen.vert", vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    ShaderUtils::CreateGeometryShader(m_Device, "gen/envprobegen.geom", pipelineCI.pGS);
+    ShaderUtils::CreateFragmentShader(m_Device, "gen/envprobegen.frag", pipelineCI.pFS);
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBindings);
     pipelineCI.pVertexBindings = vertexBindings;
@@ -107,30 +112,30 @@ EnvProbeGenerator::EnvProbeGenerator()
     pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(buffers);
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline(pipelineCI, &Pipeline);
+    m_Device->CreatePipeline(pipelineCI, &m_Pipeline);
 }
 
-void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture** _Cubemaps, Ref<RHI::ITexture>* ppTextureArray)
+void EnvProbeGenerator::GenerateArray(int maxLod, int cubemapsCount, ITexture** cubemaps, Ref<RHI::ITexture>* ppTextureArray)
 {
-    int size = 1 << _MaxLod;
+    int size = 1 << maxLod;
 
-    GDevice->CreateTexture(TextureDesc()
+    m_Device->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_ENVPROBE)
-                               .SetResolution(TextureResolutionCubemapArray(size, _CubemapsCount))
-                               .SetMipLevels(_MaxLod + 1),
+                               .SetResolution(TextureResolutionCubemapArray(size, cubemapsCount))
+                               .SetMipLevels(maxLod + 1),
                            ppTextureArray);
 
-    FrameGraph frameGraph(GDevice);
+    FrameGraph frameGraph(m_Device);
 
     FGTextureProxy* pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
     Ref<IResourceTable> resourceTbl;
-    GDevice->CreateResourceTable(&resourceTbl);
+    m_Device->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer(0, ConstantBuffer);
+    resourceTbl->BindBuffer(0, m_ConstantBuffer);
 
     int lodWidth = size;
 
-    Vector<String> strs(_MaxLod + 1);
+    Vector<String> strs(maxLod + 1);
 
     for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
     {
@@ -153,54 +158,53 @@ void EnvProbeGenerator::GenerateArray(int _MaxLod, int _CubemapsCount, ITexture*
 
                             immediateCtx->BindResourceTable(resourceTbl);
 
-                            ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
+                            m_ConstantBufferData.Roughness.X = static_cast<float>(Lod) / maxLod;
 
-                            for (int cubemapIndex = 0; cubemapIndex < _CubemapsCount; cubemapIndex++)
+                            for (int cubemapIndex = 0; cubemapIndex < cubemapsCount; cubemapIndex++)
                             {
-                                ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
+                                m_ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
 
-                                immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
+                                immediateCtx->WriteBufferRange(m_ConstantBuffer, 0, sizeof(m_ConstantBufferData), &m_ConstantBufferData);
 
-                                resourceTbl->BindTexture(0, _Cubemaps[cubemapIndex]);
+                                resourceTbl->BindTexture(0, cubemaps[cubemapIndex]);
 
                                 // Draw six faces in one draw call
-                                DrawSphere(immediateCtx, Pipeline, 6);
+                                m_SphereMesh->Draw(immediateCtx, m_Pipeline, 6);
                             }
                         });
     }
 
     frameGraph.Build();
     //frameGraph.ExportGraphviz( "framegraph.graphviz" );
-    rcmd->ExecuteFrameGraph(&frameGraph);
+    m_Device->GetImmediateContext()->ExecuteFrameGraph(&frameGraph);
 }
 
-void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, Ref<RHI::ITexture>* ppTexture)
+void EnvProbeGenerator::Generate(int maxLod, ITexture* sourceCubemap, Ref<RHI::ITexture>* ppTexture)
 {
-    int size = 1 << _MaxLod;
+    int size = 1 << maxLod;
 
-    GDevice->CreateTexture(TextureDesc()
+    m_Device->CreateTexture(TextureDesc()
                                .SetFormat(TEX_FORMAT_ENVPROBE)
                                .SetResolution(TextureResolutionCubemap(size))
-                               .SetMipLevels(_MaxLod + 1),
+                               .SetMipLevels(maxLod + 1),
                            ppTexture);
 
-    FrameGraph frameGraph(GDevice);
+    FrameGraph frameGraph(m_Device);
 
     FGTextureProxy* pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
     Ref<IResourceTable> resourceTbl;
-    GDevice->CreateResourceTable(&resourceTbl);
+    m_Device->CreateResourceTable(&resourceTbl);
 
-    resourceTbl->BindBuffer(0, ConstantBuffer);
+    resourceTbl->BindBuffer(0, m_ConstantBuffer);
 
-    ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
+    m_ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
 
     int lodWidth = size;
 
-    Vector<String> strs(_MaxLod + 1);
+    Vector<String> strs(maxLod + 1);
 
     for (int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1)
     {
-
         strs[Lod] = HK_FORMAT("Envprobe LOD {} pass", Lod);
 
         RenderPass& pass = frameGraph.AddTask<RenderPass>(strs[Lod].CStr());
@@ -219,20 +223,20 @@ void EnvProbeGenerator::Generate(int _MaxLod, ITexture* _SourceCubemap, Ref<RHI:
 
                             immediateCtx->BindResourceTable(resourceTbl);
 
-                            ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
+                            m_ConstantBufferData.Roughness.X = static_cast<float>(Lod) / maxLod;
 
-                            immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
+                            immediateCtx->WriteBufferRange(m_ConstantBuffer, 0, sizeof(m_ConstantBufferData), &m_ConstantBufferData);
 
-                            resourceTbl->BindTexture(0, _SourceCubemap);
+                            resourceTbl->BindTexture(0, sourceCubemap);
 
                             // Draw six faces in one draw call
-                            DrawSphere(immediateCtx, Pipeline, 6);
+                            m_SphereMesh->Draw(immediateCtx, m_Pipeline, 6);
                         });
     }
 
     frameGraph.Build();
     //frameGraph.ExportGraphviz( "framegraph.graphviz" );
-    rcmd->ExecuteFrameGraph(&frameGraph);
+    m_Device->GetImmediateContext()->ExecuteFrameGraph(&frameGraph);
 }
 
 HK_NAMESPACE_END
