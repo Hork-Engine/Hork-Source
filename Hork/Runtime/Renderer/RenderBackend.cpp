@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 #include "CanvasRenderer.h"
-#include "VXGIVoxelizer.h"
 
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/Core/ScopedTimer.h>
