@@ -128,7 +128,7 @@ void SmaaRenderer::EdgeDetectionPass(FrameGraph& FrameGraph, FGTextureProxy* Sou
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, EdgeDetectionPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, EdgeDetectionPipeline);
                           });
 
     *ppEdgeTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -155,7 +155,7 @@ void SmaaRenderer::BlendingWeightCalculationPass(FrameGraph& FrameGraph, FGTextu
                               rtbl->BindTexture(1, AreaTex);
                               rtbl->BindTexture(2, SearchTex);
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, BlendingWeightCalculationPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlendingWeightCalculationPipeline);
                           });
 
     *ppBlendTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -182,7 +182,7 @@ void SmaaRenderer::NeighborhoodBlendingPass(FrameGraph& FrameGraph, FGTexturePro
                               rtbl->BindTexture(0, SourceTexture->Actual());
                               rtbl->BindTexture(1, BlendTexture->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, NeighborhoodBlendingPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, NeighborhoodBlendingPipeline);
                           });
 
     *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;

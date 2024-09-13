@@ -77,7 +77,7 @@ void FxaaRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy* SourceTexture
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, FxaaPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, FxaaPipeline);
                           });
 
     *ppFxaaTexture = renderPass.GetColorAttachments()[0].pResource;

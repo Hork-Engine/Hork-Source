@@ -95,7 +95,7 @@ void ColorGradingRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy** ppCo
                               [=](FGRenderPassContext& RenderPassContext, FGCommandBuffer& CommandBuffer) {
                                   rtbl->BindTexture(0, source->Actual());
 
-                                  DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
+                                  RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
                               });
     }
     else
@@ -156,7 +156,7 @@ void ColorGradingRenderer::AddPass(FrameGraph& FrameGraph, FGTextureProxy** ppCo
                                   drawCall->LuminanceNormalization.Z = 0.0f;
                                   drawCall->LuminanceNormalization.W = 0.0f;
 
-                                  DrawSAQ(RenderPassContext.pImmediateContext, PipelineProcedural);
+                                  RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, PipelineProcedural);
                               });
     }
 

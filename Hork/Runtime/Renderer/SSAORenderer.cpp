@@ -204,7 +204,7 @@ void SSAORenderer::AddDeinterleaveDepthPass(FrameGraph& FrameGraph, FGTexturePro
 
                                     rtbl->BindTexture(0, LinearDepth->Actual());
 
-                                    DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
+                                    RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
                                 });
 
     RenderPass& deinterleavePass2 = FrameGraph.AddTask<RenderPass>("Deinterleave Depth Pass 2");
@@ -237,7 +237,7 @@ void SSAORenderer::AddDeinterleaveDepthPass(FrameGraph& FrameGraph, FGTexturePro
 
                                      rtbl->BindTexture(0, LinearDepth->Actual());
 
-                                     DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
+                                     RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
                                  });
 
     FGTextureProxy* DeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("Deinterleave Depth Array", deinterleavedDepthMaps);
@@ -308,11 +308,11 @@ void SSAORenderer::AddCacheAwareAOPass(FrameGraph& FrameGraph, FGTextureProxy* D
 
                                 if (GRenderView->bPerspective)
                                 {
-                                    DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe);
+                                    RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe);
                                 }
                                 else
                                 {
-                                    DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe_ORTHO);
+                                    RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe_ORTHO);
                                 }
                             });
 
@@ -336,7 +336,7 @@ void SSAORenderer::AddReinterleavePass(FrameGraph& FrameGraph, FGTextureProxy* S
                                 {
                                     rtbl->BindTexture(0, SSAOTextureArray->Actual());
 
-                                    DrawSAQ(RenderPassContext.pImmediateContext, ReinterleavePipe);
+                                    RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, ReinterleavePipe);
                                 });
 
     *ppSSAOTexture = reinterleavePass.GetColorAttachments()[0].pResource;
@@ -401,11 +401,11 @@ void SSAORenderer::AddSimpleAOPass(FrameGraph& FrameGraph, FGTextureProxy* Linea
 
                         if (GRenderView->bPerspective)
                         {
-                            DrawSAQ(RenderPassContext.pImmediateContext, Pipe);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, Pipe);
                         }
                         else
                         {
-                            DrawSAQ(RenderPassContext.pImmediateContext, Pipe_ORTHO);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, Pipe_ORTHO);
                         }
                     });
 
@@ -440,7 +440,7 @@ void SSAORenderer::AddAOBlurPass(FrameGraph& FrameGraph, FGTextureProxy* SSAOTex
                                rtbl->BindTexture(0, SSAOTexture->Actual());
                                rtbl->BindTexture(1, LinearDepth->Actual());
 
-                               DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
+                               RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
                            });
 
     FGTextureProxy* TempSSAOTextureBlurX = aoBlurXPass.GetColorAttachments()[0].pResource;
@@ -471,7 +471,7 @@ void SSAORenderer::AddAOBlurPass(FrameGraph& FrameGraph, FGTextureProxy* SSAOTex
                                rtbl->BindTexture(0, TempSSAOTextureBlurX->Actual());
                                rtbl->BindTexture(1, LinearDepth->Actual());
 
-                               DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
+                               RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
                            });
 
     *ppBluredSSAO = aoBlurYPass.GetColorAttachments()[0].pResource;

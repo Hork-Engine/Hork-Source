@@ -120,7 +120,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, SourceTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BrightPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BrightPipeline);
                         });
 
         BrightTexture = pass.GetColorAttachments()[0].pResource;
@@ -156,7 +156,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurXTexture = pass.GetColorAttachments()[0].pResource;
@@ -187,7 +187,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightBlurXTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurTexture = pass.GetColorAttachments()[0].pResource;
@@ -212,7 +212,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                         {
                             rtbl->BindTexture(0, BrightBlurTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
                         });
 
         BrightTexture2 = pass.GetColorAttachments()[0].pResource;
@@ -243,7 +243,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightTexture2->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurXTexture2 = pass.GetColorAttachments()[0].pResource;
@@ -274,7 +274,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightBlurXTexture2->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurTexture2 = pass.GetColorAttachments()[0].pResource;
@@ -299,7 +299,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                         {
                             rtbl->BindTexture(0, BrightBlurTexture2->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
                         });
 
         BrightTexture4 = pass.GetColorAttachments()[0].pResource;
@@ -330,7 +330,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightTexture4->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurXTexture4 = pass.GetColorAttachments()[0].pResource;
@@ -361,7 +361,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightBlurXTexture4->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurTexture4 = pass.GetColorAttachments()[0].pResource;
@@ -386,7 +386,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
                         {
                             rtbl->BindTexture(0, BrightBlurTexture4->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
                         });
 
         BrightTexture6 = pass.GetColorAttachments()[0].pResource;
@@ -417,7 +417,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightTexture6->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurXTexture6 = pass.GetColorAttachments()[0].pResource;
@@ -448,7 +448,7 @@ void BloomRenderer::AddPasses(FrameGraph& FrameGraph, FGTextureProxy* SourceText
 
                             rtbl->BindTexture(0, BrightBlurXTexture6->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, BlurPipeline);
                         });
 
         BrightBlurTexture6 = pass.GetColorAttachments()[0].pResource;

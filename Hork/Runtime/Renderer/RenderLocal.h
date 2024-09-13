@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/ShaderUtils/ShaderLoader.h>
 #include <Hork/ShaderUtils/ShaderUtils.h>
+#include <Hork/RenderUtils/DrawUtils.h>
 
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
@@ -245,8 +246,6 @@ extern RHI::IPipeline* GTerrainWireframePipeline;
 //
 
 RHI::TextureResolution2D GetFrameResoultion();
-
-void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
 void BindVertexAndIndexBuffers(RHI::IImmediateContext* immediateCtx, RenderInstance const* Instance);
 

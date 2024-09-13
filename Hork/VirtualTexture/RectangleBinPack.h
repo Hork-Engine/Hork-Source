@@ -1,3 +1,5 @@
+// Modified GuillotineBinPack originally written by Jukka Jylanki
+
 #pragma once
 
 #include <Hork/Core/BaseTypes.h>

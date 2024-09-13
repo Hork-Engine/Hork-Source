@@ -67,7 +67,7 @@ void BRDFGenerator::Render(Ref<RHI::ITexture>* ppTexture)
                     {
                         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                        DrawSAQ(immediateCtx, m_Pipeline);
+                        RenderUtils::DrawSAQ(immediateCtx, m_Pipeline);
                     });
 
     FGTextureProxy* pTexture = pass.GetColorAttachments()[0].pResource;

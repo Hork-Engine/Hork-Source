@@ -29,7 +29,11 @@ SOFTWARE.
 */
 
 #include "VirtualTextureFeedback.h"
-#include "../RenderLocal.h"
+
+#include <Hork/Core/ConsoleVar.h>
+#include <Hork/ShaderUtils/ShaderUtils.h>
+#include <Hork/RenderUtils/DrawUtils.h>
+#include "RenderLocal.h"
 
 /*
 
@@ -56,8 +60,8 @@ ConsoleVar r_RenderFeedback("r_RenderFeedback"_s, "1"_s);
 //static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D16;
 static const TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D32;
 
-VirtualTextureFeedback::VirtualTextureFeedback() :
-    SwapIndex(0), ResolutionRatio(0.0f)
+VirtualTextureFeedback::VirtualTextureFeedback(RHI::IDevice* device) :
+    Device(device), SwapIndex(0), ResolutionRatio(0.0f)
 {
     FeedbackSize[0] = FeedbackSize[1] = 0;
     MappedData[0] = MappedData[1] = 0;
@@ -73,7 +77,7 @@ VirtualTextureFeedback::VirtualTextureFeedback() :
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &nearestSampler;
 
-    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(Device, &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout);
 }
 
 VirtualTextureFeedback::~VirtualTextureFeedback()
@@ -116,12 +120,12 @@ void VirtualTextureFeedback::Begin(int Width, int Height)
 
     if (!FeedbackTexture || FeedbackTexture->GetWidth() != feedbackWidth || FeedbackTexture->GetHeight() != feedbackHeight)
     {
-        GDevice->CreateTexture(TextureDesc()
+        Device->CreateTexture(TextureDesc()
                                    .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                    .SetResolution(TextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackTexture);
         FeedbackTexture->SetDebugName("VT Feedback Texture");
-        GDevice->CreateTexture(TextureDesc()
+        Device->CreateTexture(TextureDesc()
                                    .SetFormat(FEEDBACK_DEPTH_FORMAT)
                                    .SetResolution(TextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackDepth);
@@ -139,7 +143,7 @@ void VirtualTextureFeedback::Begin(int Width, int Height)
                                                                    | IMMUTABLE_MAP_PERSISTENT | IMMUTABLE_MAP_COHERENT);
         bufferCI.SizeInBytes = feedbackSizeInBytes;
 
-        GDevice->CreateBuffer(bufferCI, nullptr, &PixelBufferObject[SwapIndex]);
+        Device->CreateBuffer(bufferCI, nullptr, &PixelBufferObject[SwapIndex]);
         PixelBufferObject[SwapIndex]->SetDebugName("Virtual texture feedback PBO");
     }
 }
@@ -309,7 +313,7 @@ void VirtualTextureFeedback::DrawFeedback(FrameGraph& FrameGraph, FGTextureProxy
 
                         rtbl->BindTexture(0, FeedbackTexture_R->Actual());
 
-                        DrawSAQ(immediateCtx, DrawFeedbackPipeline);
+                        RenderUtils::DrawSAQ(immediateCtx, DrawFeedbackPipeline);
                     });
 }
 

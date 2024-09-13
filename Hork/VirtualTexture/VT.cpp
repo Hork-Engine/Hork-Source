@@ -43,9 +43,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-bool VTFileHandle::OpenRead(StringView FileName)
+bool VTFileHandle::OpenRead(StringView fileName)
 {
-    int n = MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), NULL, 0);
+    int n = MultiByteToWideChar(CP_UTF8, 0, fileName.ToPtr(), fileName.Size(), NULL, 0);
     if (0 == n)
     {
         return false;
@@ -53,7 +53,7 @@ bool VTFileHandle::OpenRead(StringView FileName)
 
     wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
-    MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
+    MultiByteToWideChar(CP_UTF8, 0, fileName.ToPtr(), fileName.Size(), wFilename, n);
 
     Handle = CreateFileW(wFilename,
                          GENERIC_READ,
@@ -66,9 +66,9 @@ bool VTFileHandle::OpenRead(StringView FileName)
     return Handle != INVALID_HANDLE_VALUE;
 }
 
-bool VTFileHandle::OpenWrite(StringView FileName)
+bool VTFileHandle::OpenWrite(StringView fileName)
 {
-    int n = MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), NULL, 0);
+    int n = MultiByteToWideChar(CP_UTF8, 0, fileName.ToPtr(), fileName.Size(), NULL, 0);
     if (0 == n)
     {
         return false;
@@ -76,7 +76,7 @@ bool VTFileHandle::OpenWrite(StringView FileName)
 
     wchar_t* wFilename = (wchar_t*)HkStackAlloc(n * sizeof(wchar_t));
 
-    MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
+    MultiByteToWideChar(CP_UTF8, 0, fileName.ToPtr(), fileName.Size(), wFilename, n);
 
     Handle = CreateFileW(wFilename,
                          GENERIC_WRITE,
@@ -89,16 +89,15 @@ bool VTFileHandle::OpenWrite(StringView FileName)
     return Handle != INVALID_HANDLE_VALUE;
 }
 
-void VTFileHandle::Seek(uint64_t Offset)
+void VTFileHandle::Seek(uint64_t _offset)
 {
-
     // FILE_BEGIN - seek set
     // FILE_CURRENT - seek cur
     // FILE_END - seek end
     DWORD whence = FILE_BEGIN;
 
     LARGE_INTEGER offset;
-    offset.QuadPart = Offset;
+    offset.QuadPart = _offset;
 
     if (!SetFilePointerEx(Handle, offset, &offset, whence))
     {
@@ -116,39 +115,39 @@ void VTFileHandle::Close()
     }
 }
 
-void VTFileHandle::Read(void* Data, unsigned int Size, uint64_t Offset)
+void VTFileHandle::Read(void* data, unsigned int size, uint64_t offset)
 {
     DWORD numberOfBytesRead;
 
-    Seek(Offset);
+    Seek(offset);
 
     BOOL r = ReadFile(
         Handle,
-        Data,
-        Size,
+        data,
+        size,
         &numberOfBytesRead,
         NULL);
 
     HK_ASSERT(r != FALSE);
-    HK_ASSERT(numberOfBytesRead == Size);
+    HK_ASSERT(numberOfBytesRead == size);
     HK_UNUSED(r);
 }
 
-void VTFileHandle::Write(const void* Data, unsigned int Size, uint64_t Offset)
+void VTFileHandle::Write(const void* data, unsigned int size, uint64_t offset)
 {
     DWORD numberOfBytesWritten;
 
-    Seek(Offset);
+    Seek(offset);
 
     BOOL r = WriteFile(
         Handle,
-        Data,
-        Size,
+        data,
+        size,
         &numberOfBytesWritten,
         NULL);
 
     HK_ASSERT(r != FALSE);
-    HK_ASSERT(numberOfBytesWritten == Size);
+    HK_ASSERT(numberOfBytesWritten == size);
     HK_UNUSED(r);
 }
 
@@ -160,15 +159,15 @@ HK_NAMESPACE_END
 
 HK_NAMESPACE_BEGIN
 
-bool VTFileHandle::OpenRead(StringView FileName)
+bool VTFileHandle::OpenRead(StringView fileName)
 {
-    iHandle = open(FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), O_LARGEFILE | /*O_BINARY |*/ O_RDONLY);
+    iHandle = open(fileName.IsNullTerminated() ? fileName.Begin() : String(fileName).CStr(), O_LARGEFILE | /*O_BINARY |*/ O_RDONLY);
     return iHandle >= 0;
 }
 
-bool VTFileHandle::OpenWrite(StringView FileName)
+bool VTFileHandle::OpenWrite(StringView fileName)
 {
-    iHandle = open(FileName.IsNullTerminated() ? FileName.Begin() : String(FileName).CStr(), O_LARGEFILE | O_WRONLY | O_CREAT | O_TRUNC, 0664);
+    iHandle = open(fileName.IsNullTerminated() ? fileName.Begin() : String(fileName).CStr(), O_LARGEFILE | O_WRONLY | O_CREAT | O_TRUNC, 0664);
     return iHandle >= 0;
 }
 
@@ -181,15 +180,15 @@ void VTFileHandle::Close()
     }
 }
 
-void VTFileHandle::Read(void* Data, unsigned int Size, uint64_t Offset)
+void VTFileHandle::Read(void* data, unsigned int size, uint64_t offset)
 {
-    auto r = pread64(iHandle, Data, Size, Offset);
+    auto r = pread64(iHandle, data, size, offset);
     HK_UNUSED(r);
 }
 
-void VTFileHandle::Write(const void* Data, unsigned int Size, uint64_t Offset)
+void VTFileHandle::Write(const void* data, unsigned int size, uint64_t offset)
 {
-    auto r = pwrite64(iHandle, Data, Size, Offset);
+    auto r = pwrite64(iHandle, data, size, offset);
     HK_UNUSED(r);
 }
 
@@ -211,10 +210,10 @@ VirtualTexturePIT::~VirtualTexturePIT()
     Core::GetHeapAllocator<HEAP_MISC>().Free(Data);
 }
 
-void VirtualTexturePIT::Create(unsigned int InNumPages)
+void VirtualTexturePIT::Create(unsigned int numPages)
 {
-    HK_ASSERT_(InNumPages > 0, "VirtualTexturePIT::create");
-    NumPages = InNumPages;
+    HK_ASSERT_(numPages > 0, "VirtualTexturePIT::create");
+    NumPages = numPages;
     Core::GetHeapAllocator<HEAP_MISC>().Free(Data);
     Data = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(NumPages);
     WritePages = NumPages;
@@ -226,10 +225,10 @@ void VirtualTexturePIT::Clear()
     Core::ZeroMem(Data, sizeof(Data[0]) * NumPages);
 }
 
-void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods)
+void VirtualTexturePIT::Generate(VTPageBitfield const& bitfield, int& outStoredLods)
 {
     HK_ASSERT_(Data != NULL, "VirtualTexturePIT::generate");
-    HK_ASSERT_(BitField.Size() >= NumPages, "VirtualTexturePIT::Generate");
+    HK_ASSERT_(bitfield.Size() >= NumPages, "VirtualTexturePIT::Generate");
 
     unsigned int lodPagesCount[QUADTREE_MAX_LODS_32];
 
@@ -240,7 +239,7 @@ void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods
     // Parse bits
     for (unsigned int i = 0; i < NumPages; i++)
     {
-        if (BitField.IsMarked(i))
+        if (bitfield.IsMarked(i))
         {
             Data[i] = PF_STORED;
             lodPagesCount[QuadTreeCalcLod64(i)]++;
@@ -260,14 +259,14 @@ void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods
             break;
         }
     }
-    StoredLods = storedLods + 1;
+    outStoredLods = storedLods + 1;
 
-    WritePages = QuadTreeCalcQuadTreeNodes(StoredLods);
+    WritePages = QuadTreeCalcQuadTreeNodes(outStoredLods);
 
     // Generate PIT
     unsigned int absoluteIndex = 0;
     int maxLod;
-    for (int lod = 0; lod < StoredLods; lod++)
+    for (int lod = 0; lod < outStoredLods; lod++)
     {
         unsigned int numPages = QuadTreeCalcLodNodes(lod);
         for (unsigned int page = 0; page < numPages; page++)
@@ -290,27 +289,27 @@ void VirtualTexturePIT::Generate(VTPageBitfield const& BitField, int& StoredLods
     }
 }
 
-SFileOffset VirtualTexturePIT::Write(VTFileHandle* File, SFileOffset Offset) const
+VTFileOffset VirtualTexturePIT::Write(VTFileHandle* file, VTFileOffset offset) const
 {
     HK_ASSERT_(Data != NULL, "VirtualTexturePIT::write");
-    File->Write(&WritePages, sizeof(WritePages), Offset);
-    Offset += sizeof(WritePages);
-    File->Write(Data, sizeof(Data[0]) * WritePages, Offset);
-    Offset += sizeof(Data[0]) * WritePages;
-    return Offset;
+    file->Write(&WritePages, sizeof(WritePages), offset);
+    offset += sizeof(WritePages);
+    file->Write(Data, sizeof(Data[0]) * WritePages, offset);
+    offset += sizeof(Data[0]) * WritePages;
+    return offset;
 }
 
-SFileOffset VirtualTexturePIT::Read(VTFileHandle* File, SFileOffset Offset)
+VTFileOffset VirtualTexturePIT::Read(VTFileHandle* file, VTFileOffset offset)
 {
     unsigned int tmp;
-    File->Read(&tmp, sizeof(tmp), Offset);
-    Offset += sizeof(tmp);
+    file->Read(&tmp, sizeof(tmp), offset);
+    offset += sizeof(tmp);
 
     Create(tmp);
 
-    File->Read(Data, sizeof(Data[0]) * tmp, Offset);
-    Offset += sizeof(Data[0]) * tmp;
-    return Offset;
+    file->Read(Data, sizeof(Data[0]) * tmp, offset);
+    offset += sizeof(Data[0]) * tmp;
+    return offset;
 }
 
 
@@ -329,14 +328,14 @@ VirtualTextureAddressTable::~VirtualTextureAddressTable()
     Core::GetHeapAllocator<HEAP_MISC>().Free(Table);
 }
 
-void VirtualTextureAddressTable::Create(int _NumLods)
+void VirtualTextureAddressTable::Create(int numLods)
 {
     Core::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
     Core::GetHeapAllocator<HEAP_MISC>().Free(Table);
 
-    NumLods = _NumLods;
-    TotalPages = QuadTreeCalcQuadTreeNodes(_NumLods);
-    TableSize = _NumLods > 4 ? QuadTreeCalcQuadTreeNodes(_NumLods - 4) : 0;
+    NumLods = numLods;
+    TotalPages = QuadTreeCalcQuadTreeNodes(numLods);
+    TableSize = numLods > 4 ? QuadTreeCalcQuadTreeNodes(numLods - 4) : 0;
     ByteOffsets = (byte*)Core::GetHeapAllocator<HEAP_MISC>().Alloc(TotalPages);
     if (TableSize > 0)
     {
@@ -359,10 +358,10 @@ void VirtualTextureAddressTable::Clear()
     }
 }
 
-void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
+void VirtualTextureAddressTable::Generate(VTPageBitfield const& bitfield)
 {
     HK_ASSERT_(ByteOffsets != NULL, "VirtualTextureAddressTable::generate");
-    HK_ASSERT_(BitField.Size() >= TotalPages, "VirtualTexturePIT::Generate");
+    HK_ASSERT_(bitfield.Size() >= TotalPages, "VirtualTexturePIT::Generate");
 
     // Кол-во страниц в LOD'ах от 0 до 4
     unsigned int numFirstPages = Math::Min<unsigned int>(85, TotalPages);
@@ -373,7 +372,7 @@ void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
     // Заполняем byte offsets для первых четырех LOD'ов
     for (unsigned int i = 0; i < numFirstPages; i++)
     {
-        if (BitField.IsMarked(i))
+        if (bitfield.IsMarked(i))
         {
             ByteOffsets[i] = numWrittenPages;
             numWrittenPages++;
@@ -382,7 +381,6 @@ void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
 
     if (TableSize)
     {
-
         // Заполняем byte offsets для LOD'ов > 4
 
         for (int lodNum = 4; lodNum < NumLods; lodNum++)
@@ -410,7 +408,7 @@ void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
 
                     ByteOffsets[absoluteIndex] = byteOfs;
 
-                    if (BitField.IsMarked(absoluteIndex))
+                    if (bitfield.IsMarked(absoluteIndex))
                     {
                         byteOfs++;
                     }
@@ -420,83 +418,86 @@ void VirtualTextureAddressTable::Generate(VTPageBitfield const& BitField)
         }
 
 #if 0
-        int * addrTableByteOffsets = new int[ AddrTableSize ];
+        int* addrTableByteOffsets = new int[AddrTableSize];
 
-        Core::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
+        Core::ZeroMem(addrTableByteOffsets, sizeof(int) * AddrTableSize);
 
-        for ( unsigned int i = 85 ; i < TotalPages ; i++) {
+        for (unsigned int i = 85; i < TotalPages; i++)
+        {
             //Заполняем byte offsets для LOD'ов > 4
-            if ( BitField.IsMarked( i ) ) {
+            if (bitfield.IsMarked(i))
+            {
                 unsigned int absoluteIndex;
                 unsigned int relativeIndex;
 
-                int pageLod = QuadTreeCalcLod64( i );
+                int pageLod = QuadTreeCalcLod64(i);
 
-                relativeIndex = QuadTreeAbsoluteToRelativeIndex( i, pageLod );
+                relativeIndex = QuadTreeAbsoluteToRelativeIndex(i, pageLod);
 
-                int pageX = QuadTreeGetXFromRelative( relativeIndex, pageLod );
-                int pageY = QuadTreeGetYFromRelative( relativeIndex, pageLod );
+                int pageX = QuadTreeGetXFromRelative(relativeIndex, pageLod);
+                int pageY = QuadTreeGetYFromRelative(relativeIndex, pageLod);
 
                 pageX >>= 4;
                 pageY >>= 4;
 
                 int lod = pageLod - 4;
 
-                relativeIndex = QuadTreeGetRelativeFromXY( pageX, pageY, lod );
-                absoluteIndex = QuadTreeRelativeToAbsoluteIndex( relativeIndex, lod );
+                relativeIndex = QuadTreeGetRelativeFromXY(pageX, pageY, lod);
+                absoluteIndex = QuadTreeRelativeToAbsoluteIndex(relativeIndex, lod);
 
-                ByteOffsets[ i ] = addrTableByteOffsets[ absoluteIndex ];
-                addrTableByteOffsets[ absoluteIndex ]++;
+                ByteOffsets[i] = addrTableByteOffsets[absoluteIndex];
+                addrTableByteOffsets[absoluteIndex]++;
             }
         }
 
-        AddrTable[ 0 ] = numWrittenPages;
-        for ( unsigned int i = 1; i < AddrTableSize; i++ ) {
-            AddrTable[ i ] = AddrTable[ i - 1 ] + addrTableByteOffsets[ i - 1 ];
+        AddrTable[0] = numWrittenPages;
+        for (unsigned int i = 1; i < AddrTableSize; i++)
+        {
+            AddrTable[i] = AddrTable[i - 1] + addrTableByteOffsets[i - 1];
         }
 
-        delete [] addrTableByteOffsets;
+        delete[] addrTableByteOffsets;
 
 #endif
     }
 }
 
-SFileOffset VirtualTextureAddressTable::Write(VTFileHandle* File, SFileOffset Offset) const
+VTFileOffset VirtualTextureAddressTable::Write(VTFileHandle* file, VTFileOffset offset) const
 {
     HK_ASSERT_(ByteOffsets != NULL, "VirtualTextureAddressTable::write");
 
     byte tmp = NumLods;
-    File->Write(&tmp, sizeof(tmp), Offset);
-    Offset += sizeof(tmp);
+    file->Write(&tmp, sizeof(tmp), offset);
+    offset += sizeof(tmp);
 
-    File->Write(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages, Offset);
-    Offset += sizeof(ByteOffsets[0]) * TotalPages;
+    file->Write(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages, offset);
+    offset += sizeof(ByteOffsets[0]) * TotalPages;
 
     if (Table)
     {
-        File->Write(Table, sizeof(Table[0]) * TableSize, Offset);
-        Offset += sizeof(Table[0]) * TableSize;
+        file->Write(Table, sizeof(Table[0]) * TableSize, offset);
+        offset += sizeof(Table[0]) * TableSize;
     }
-    return Offset;
+    return offset;
 }
 
-SFileOffset VirtualTextureAddressTable::Read(VTFileHandle* File, SFileOffset Offset)
+VTFileOffset VirtualTextureAddressTable::Read(VTFileHandle* file, VTFileOffset offset)
 {
     byte tmp;
-    File->Read(&tmp, sizeof(tmp), Offset);
-    Offset += sizeof(tmp);
+    file->Read(&tmp, sizeof(tmp), offset);
+    offset += sizeof(tmp);
 
     Create(tmp);
 
-    File->Read(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages, Offset);
-    Offset += sizeof(ByteOffsets[0]) * TotalPages;
+    file->Read(ByteOffsets, sizeof(ByteOffsets[0]) * TotalPages, offset);
+    offset += sizeof(ByteOffsets[0]) * TotalPages;
 
     if (Table)
     {
-        File->Read(Table, sizeof(Table[0]) * TableSize, Offset);
-        Offset += sizeof(Table[0]) * TableSize;
+        file->Read(Table, sizeof(Table[0]) * TableSize, offset);
+        offset += sizeof(Table[0]) * TableSize;
     }
-    return Offset;
+    return offset;
 }
 
 HK_NAMESPACE_END

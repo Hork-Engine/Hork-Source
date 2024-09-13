@@ -143,7 +143,7 @@ void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,
                               rtbl->BindTexture(5, BloomTex.BloomTexture3->Actual());
                               rtbl->BindTexture(6, Exposure->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
                           });
 
     *ppPostprocessTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -193,7 +193,7 @@ void PostprocessRenderer::AddPass(FrameGraph& FrameGraph,
                               rtbl->BindTexture(5, BloomTex.BloomTexture3->Actual());
                               rtbl->BindTexture(6, Exposure->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
                           });
 }
 

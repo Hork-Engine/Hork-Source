@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 #include "FrameRenderer.h"
-#include "VT/VirtualTextureFeedback.h"
+#include "VirtualTextureFeedback.h"
 
 #include <Hork/Core/Profiler.h>
 
@@ -124,11 +124,11 @@ void FrameRenderer::AddLinearizeDepthPass(FrameGraph& FrameGraph, FGTextureProxy
 
                                       if (GRenderView->bPerspective)
                                       {
-                                          DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe);
+                                          RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe);
                                       }
                                       else
                                       {
-                                          DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe_ORTHO);
+                                          RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_LinearDepthPipe_ORTHO);
                                       }
                                   });
     *ppLinearDepth = linearizeDepthPass.GetColorAttachments()[0].pResource;
@@ -154,11 +154,11 @@ void FrameRenderer::AddReconstrutNormalsPass(FrameGraph& FrameGraph, FGTexturePr
 
                                          if (GRenderView->bPerspective)
                                          {
-                                             DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe);
+                                             RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe);
                                          }
                                          else
                                          {
-                                             DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe_ORTHO);
+                                             RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_ReconstructNormalPipe_ORTHO);
                                          }
                                      });
     *ppNormalTexture = reconstructNormalPass.GetColorAttachments()[0].pResource;
@@ -191,7 +191,7 @@ void FrameRenderer::AddMotionBlurPass(FrameGraph&     FrameGraph,
                               rtbl->BindTexture(1, VelocityTexture->Actual());
                               rtbl->BindTexture(2, LinearDepth->Actual());
 
-                              DrawSAQ(RenderPassContext.pImmediateContext, m_MotionBlurPipeline);
+                              RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_MotionBlurPipeline);
                           });
 
     *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -327,7 +327,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
 
                             rtbl->BindTexture(0, OutlineMaskTexture->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineBlurPipe);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineBlurPipe);
                         });
 
     FGTextureProxy* OutlineBlurTexture = blurPass.GetColorAttachments()[0].pResource;
@@ -351,7 +351,7 @@ void FrameRenderer::AddOutlineOverlayPass(FrameGraph& FrameGraph, FGTextureProxy
                              rtbl->BindTexture(0, OutlineMaskTexture->Actual());
                              rtbl->BindTexture(1, OutlineBlurTexture->Actual());
 
-                             DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineApplyPipe);
+                             RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_OutlineApplyPipe);
                          });
 }
 
@@ -374,7 +374,7 @@ void FrameRenderer::AddCopyPass(FrameGraph& FrameGraph, FGTextureProxy* Source, 
 
                             rtbl->BindTexture(0, Source->Actual());
 
-                            DrawSAQ(RenderPassContext.pImmediateContext, m_CopyPipeline);
+                            RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_CopyPipeline);
                         });
 }
 
@@ -518,7 +518,7 @@ void FrameRenderer::Render(FrameGraph& FrameGraph, bool bVirtualTexturing, Virtu
 
         if (r_ShowCacheVT.GetInteger() >= 0)
         {
-            PhysCacheVT->Draw(FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger());
+            PhysCacheVT->Draw(FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger(), GRenderView->Width, rtbl);
         }
     }
 }

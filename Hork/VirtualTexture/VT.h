@@ -35,13 +35,13 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-constexpr short VT_FILE_VERSION = 5;
-constexpr uint32_t VT_FILE_ID = 'V' | ('T' << 8) | (VT_FILE_VERSION << 16);
-constexpr int VT_PAGE_BORDER_WIDTH = 4;
-constexpr int VT_MAX_LODS = 13;
-constexpr int VT_MAX_LAYERS = 8;
+inline constexpr short VT_FILE_VERSION = 5;
+inline constexpr uint32_t VT_FILE_ID = 'V' | ('T' << 8) | (VT_FILE_VERSION << 16);
+inline constexpr int VT_PAGE_BORDER_WIDTH = 4;
+inline constexpr int VT_MAX_LODS = 13;
+inline constexpr int VT_MAX_LAYERS = 8;
 
-typedef size_t SFileOffset;
+typedef size_t VTFileOffset;
 
 using VTPageBitfield = BitMask<>;
 
@@ -60,7 +60,7 @@ enum VT_PAGE_FLAGS_4BIT
     PF_STORED = 8 // FIXME: PF_STORED is used only in constructor, therefore we can remove it and free one bit for other needs
 };
 
-struct VTFileHandle
+struct VTFileHandle final
 {
     union
     {
@@ -80,24 +80,24 @@ struct VTFileHandle
 
     bool IsInvalid() const { return Handle == (void*)(size_t)-1; }
 
-    bool OpenRead(StringView FileName);
-    bool OpenWrite(StringView FileName);
+    bool OpenRead(StringView fileName);
+    bool OpenWrite(StringView fileName);
     void Close();
-    void Seek(uint64_t Offset);
-    void Read(void* Data, unsigned int Size, uint64_t Offset);
-    void Write(const void* Data, unsigned int Size, uint64_t Offset);
+    void Seek(uint64_t offset);
+    void Read(void* data, unsigned int size, uint64_t offset);
+    void Write(const void* data, unsigned int size, uint64_t offset);
 };
 
-struct VirtualTexturePIT
+struct VirtualTexturePIT final
 {
     VirtualTexturePIT();
     ~VirtualTexturePIT();
 
-    void Create(unsigned int _NumPages);
+    void Create(unsigned int numPages);
     void Clear();
-    void Generate(VTPageBitfield const& PageBitfield, int& _storedLods);
-    SFileOffset Write(VTFileHandle* File, SFileOffset Offset) const;
-    SFileOffset Read(VTFileHandle* File, SFileOffset Offset);
+    void Generate(VTPageBitfield const& pageBitfield, int& storedLods);
+    VTFileOffset Write(VTFileHandle* file, VTFileOffset offset) const;
+    VTFileOffset Read(VTFileHandle* file, VTFileOffset offset);
 
     /// Page info table
     /// [xxxxyyyy]
@@ -109,17 +109,17 @@ struct VirtualTexturePIT
     unsigned int WritePages; // actual size of data[]
 };
 
-struct VirtualTextureAddressTable
+struct VirtualTextureAddressTable final
 {
     VirtualTextureAddressTable();
     ~VirtualTextureAddressTable();
 
-    void Create(int _numLods);
+    void Create(int numLods);
     void Clear();
-    void Generate(VTPageBitfield const& PageBitfield);
+    void Generate(VTPageBitfield const& pageBitfield);
 
-    SFileOffset Write(VTFileHandle* File, SFileOffset Offset) const;
-    SFileOffset Read(VTFileHandle* File, SFileOffset Offset);
+    VTFileOffset Write(VTFileHandle* file, VTFileOffset offset) const;
+    VTFileOffset Read(VTFileHandle* file, VTFileOffset offset);
 
     // Offsets relative to value form AddrTable (in pages)
     byte* ByteOffsets;

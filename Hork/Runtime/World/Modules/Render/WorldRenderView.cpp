@@ -113,7 +113,8 @@ void ColorGradingParameters::SetDefaults()
     m_TemperatureScale.Z = color.B;
 }
 
-WorldRenderView::WorldRenderView()
+WorldRenderView::WorldRenderView() :
+    m_VTFeedback(GameApplication::sGetRenderDevice())
 {
     static Half data[16][16][16][4];
     static bool dataInit = false;

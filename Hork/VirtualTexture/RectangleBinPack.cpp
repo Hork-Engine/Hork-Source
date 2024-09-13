@@ -1,3 +1,5 @@
+// Modified GuillotineBinPack originally written by Jukka Jylanki
+
 #include "RectangleBinPack.h"
 #include <Hork/Core/BaseMath.h>
 #include <Hork/Core/Memory.h>

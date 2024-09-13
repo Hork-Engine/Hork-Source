@@ -39,91 +39,85 @@ HK_NAMESPACE_BEGIN
 
 class VirtualTexture : public VirtualTextureFile
 {
+    friend class                VirtualTextureCache;
+    friend class                VirtualTextureFeedbackAnalyzer;
+
 public:
-    VirtualTexture(const char* FileName, VirtualTextureCache* Cache);
-    ~VirtualTexture();
+                                VirtualTexture(const char* fileName, VirtualTextureCache* cache);
+                                ~VirtualTexture();
 
-    bool IsLoaded() const;
+    bool                        IsLoaded() const;
 
-    void MakePageResident(uint32_t AbsIndex, int PhysPageIndex);
+    void                        MakePageResident(uint32_t absIndex, int physPageIndex);
 
-    void MakePageNonResident(uint32_t AbsIndex);
+    void                        MakePageNonResident(uint32_t absIndex);
 
     /// Update indirection table on GPU
-    void CommitPageResidency();
+    void                        CommitPageResidency();
 
     /// Update LRU time for cached page. Note, page must be in cache and texture must be registered,
-    /// and AbsIndex must be valid. If not, behavior is undefined
-    void UpdateLRU(uint32_t AbsIndex);
+    /// and absIndex must be valid. If not, behavior is undefined
+    void                        UpdateLRU(uint32_t absIndex);
 
     /// Get page indirection data in format:
     /// [xxxxyyyyyyyyyyyy]
     /// xxxx - level of detail
     /// yyyyyyyyyyyy - position in physical cache
-    const uint16_t* GetIndirectionData();
+    const uint16_t*             GetIndirectionData();
 
     /// Get page indirection texture
-    RHI::ITexture* GetIndirectionTexture() { return IndirectionTexture; }
+    RHI::ITexture*              GetIndirectionTexture() { return m_IndirectionTexture; }
 
     /// Actual number of texture mipmaps
-    uint32_t GetStoredLods() const { return NumLods; }
+    uint32_t                    GetStoredLods() const { return m_NumLods; }
 
     /// Total number of stored lods
-    uint32_t GetNumLods() const { return NumLods; }
+    uint32_t                    GetNumLods() const { return m_NumLods; }
 
 private:
     /// Recursively updates quadtree branch
-    void UpdateBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
+    void                        UpdateBranch_r(int lod, uint32_t pageIndex, uint16_t bits16, int maxDeep);
 
     /// Recursively updates quadtree branch
-    void UpdateChildsBranch_r(int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep);
+    void                        UpdateChildsBranch_r(int lod, uint32_t pageIndex, uint16_t bits16, int maxDeep);
 
     /// Update full quad tree
-    void UpdateAllBranches();
+    void                        UpdateAllBranches();
 
-    void MapIndirectionData();
-    void UnmapIndirectionData();
+    void                        MapIndirectionData();
+    void                        UnmapIndirectionData();
+
+    RHI::IImmediateContext*     m_Context;
 
     /// Total number of stored lods
-    uint32_t NumLods;
-
-#if 0
-    /// TotalLods - StoredLods
-    uint32_t ReducedLods;
-
-    /// Total number of all texture pages (all lods)
-    uint32_t NumPages;
-#endif
+    uint32_t                    m_NumLods;
 
     /// Table of indirection
-    Ref<RHI::ITexture> IndirectionTexture;
+    Ref<RHI::ITexture>          m_IndirectionTexture;
 
     /// [xxxxyyyyyyyyyyyy]
     /// xxxx - level of detail
     /// yyyyyyyyyyyy - position in physical cache
     /// Max pages in cache may reach to 4096
     /// Duplicates Indirection texture in video memory
-    Ref<RHI::IBuffer> IndirectionData;
-    uint16_t* pIndirectionData;
+    Ref<RHI::IBuffer>           m_IndirectionData;
+    uint16_t*                   m_IndirectionDataRAM;
 
-    int bDirtyLods[VT_MAX_LODS];
+    int                         m_DirtyLods[VT_MAX_LODS];
 
     /// Page info table
     /// [xxxxyyyy]
     /// xxxx - max LOD
     /// yyyy - PageFlags4bit
-    byte* PIT;
+    byte*                       m_PIT;
 
     // Used only by cache to update page LRU
-    Vector<uint32_t> PendingUpdateLRU;
+    Vector<uint32_t>            m_PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
-    HashMap<uint32_t, int64_t> StreamedPages;
+    HashMap<uint32_t, int64_t>  m_StreamedPages;
 
-    VirtualTextureCache* pCache;
-
-    friend class VirtualTextureCache;
-    friend class VirtualTextureFeedbackAnalyzer;
+    VirtualTextureCache*        m_Cache;
 };
 
 HK_NAMESPACE_END

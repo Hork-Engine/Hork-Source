@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 class VirtualTextureFeedback
 {
 public:
-    VirtualTextureFeedback();
+    VirtualTextureFeedback(RHI::IDevice* device);
     virtual ~VirtualTextureFeedback();
 
     void Begin(int Width, int Height);
@@ -54,6 +54,7 @@ public:
     Float2 const& GetResolutionRatio() const { return ResolutionRatio; }
 
 private:
+    Ref<RHI::IDevice> Device;
     Ref<RHI::ITexture> FeedbackTexture;
     Ref<RHI::ITexture> FeedbackDepth;
     Ref<RHI::IBuffer> PixelBufferObject[2];

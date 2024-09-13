@@ -38,55 +38,55 @@ HK_NAMESPACE_BEGIN
 class VirtualTextureFile : public RefCounted
 {
 public:
-    VirtualTextureFile(const char* FileName);
-    ~VirtualTextureFile();
+                                VirtualTextureFile(const char* fileName);
+                                ~VirtualTextureFile();
 
     /// Resolution of virtual texture in pixels
-    uint32_t GetTextureResolution() const { return TextureResolution; }
+    uint32_t                    GetTextureResolution() const { return m_TextureResolution; }
 
     /// log2( TextureResolution )
-    uint32_t GetTextureResolutionLog2() const { return TextureResolutionLog2; }
+    uint32_t                    GetTextureResolutionLog2() const { return m_TextureResolutionLog2; }
 
     /// Get page resolution width borders
-    int GetPageResolutionB() const { return PageResolutionB; }
+    int                         GetPageResolutionB() const { return m_PageResolutionB; }
 
     /// Get single page size in bytes
-    size_t GetPageSizeInBytes() const { return PageSizeInBytes; }
+    size_t                      GetPageSizeInBytes() const { return m_PageSizeInBytes; }
 
-    int GetNumLayers() const { return Layers.Size(); }
-
-    /// Read page from file. Can be used from stream thread
-    SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData, int LayerIndex) const;
+    int                         GetNumLayers() const { return m_Layers.Size(); }
 
     /// Read page from file. Can be used from stream thread
-    SFileOffset ReadPage(uint64_t PhysAddress, byte* PageData[]) const;
+    VTFileOffset                ReadPage(uint64_t physAddress, byte* pageData, int LayerIndex) const;
+
+    /// Read page from file. Can be used from stream thread
+    VTFileOffset                ReadPage(uint64_t physAddress, byte* pageData[]) const;
 
     /// Read page physical address. Can be used from stream thread
-    SFileOffset GetPhysAddress(uint32_t PageIndex) const;
+    VTFileOffset                GetPhysAddress(uint32_t pageIndex) const;
 
 protected:
-    mutable VTFileHandle FileHandle;
-    SFileOffset FileHeaderSize;
-    int PageResolutionB;
-    VirtualTexturePIT PageInfoTable;
-    VirtualTextureAddressTable AddressTable;
+    mutable VTFileHandle        m_FileHandle;
+    VTFileOffset                m_FileHeaderSize;
+    int                         m_PageResolutionB;
+    VirtualTexturePIT           m_PageInfoTable;
+    VirtualTextureAddressTable  m_AddressTable;
 
     struct Layer
     {
-        int SizeInBytes;
-        int PageDataFormat;
-        //int     NumChannels;
-        int Offset; // Layers[i].Offset = Layers[ i - 1 ].Offset + Layers[ i - 1 ].SizeInBytes
+        int                     SizeInBytes;
+        int                     PageDataFormat;
+        //int                   NumChannels;
+        int                     Offset; // m_Layers[i].Offset = m_Layers[ i - 1 ].Offset + m_Layers[ i - 1 ].SizeInBytes
     };
 
-    Vector<Layer> Layers;
-    size_t PageSizeInBytes; // PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[Layers.size()-1].SizeInBytes
+    Vector<Layer>               m_Layers;
+    size_t                      m_PageSizeInBytes; // m_PageSizeInBytes = Layer[0].SizeInBytes + Layer[1].SizeInBytes + ... + Layer[m_Layers.size()-1].SizeInBytes
 
     /// Resolution of virtual texture in pixels
-    uint32_t TextureResolution;
+    uint32_t                    m_TextureResolution;
 
     /// log2( TextureResolution )
-    uint32_t TextureResolutionLog2;
+    uint32_t                    m_TextureResolutionLog2;
 };
 
 HK_NAMESPACE_END

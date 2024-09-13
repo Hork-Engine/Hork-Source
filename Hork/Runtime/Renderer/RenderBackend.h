@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include <Hork/RenderDefs/RenderDefs.h>
 
-#include "VT/VirtualTextureAnalyzer.h"
-#include "VT/VirtualTextureFeedback.h"
-#include "VT/VirtualTexturePhysCache.h"
+#include <Hork/VirtualTexture/VirtualTextureAnalyzer.h>
+#include <Hork/VirtualTexture/VirtualTexturePhysCache.h>
+#include "VirtualTextureFeedback.h"
 
 #include "CanvasRenderer.h"
 #include "FrameRenderer.h"

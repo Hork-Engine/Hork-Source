@@ -30,8 +30,6 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 #include "CanvasRenderer.h"
-#include "VT/VirtualTextureFeedback.h"
-#include <Hork/RenderUtils/BRDFGenerator.h>
 #include "VXGIVoxelizer.h"
 
 #include <Hork/Core/ConsoleVar.h>
@@ -42,6 +40,8 @@ SOFTWARE.
 #include <Hork/Core/Profiler.h>
 
 #include <Hork/Image/ImageEncoders.h>
+
+#include <Hork/RenderUtils/BRDFGenerator.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -127,7 +127,7 @@ RenderBackend::RenderBackend(RHI::IDevice* pDevice)
     GClusterLookup->SetDebugName("Cluster Lookup");
 
 
-    m_FeedbackAnalyzerVT = MakeRef<VirtualTextureFeedbackAnalyzer>();
+    m_FeedbackAnalyzerVT = MakeRef<VirtualTextureFeedbackAnalyzer>(GDevice);
     GFeedbackAnalyzerVT = m_FeedbackAnalyzerVT;
 
     {
@@ -376,7 +376,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
     if (m_PhysCacheVT)
         m_PhysCacheVT->Update();
 
-    m_FeedbackAnalyzerVT->Begin(StreamedMemory);
+    m_FeedbackAnalyzerVT->Begin(StreamedMemory, GStreamBuffer, rtbl);
 
     // TODO: Bind virtual textures in one place
     m_FeedbackAnalyzerVT->BindTexture(0, m_TestVT);

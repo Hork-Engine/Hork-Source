@@ -32,6 +32,9 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+namespace RenderUtils
+{
+
 void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, unsigned int instanceCount)
 {
     const RHI::DrawCmd drawCmd = {3, instanceCount, 0, 0};
@@ -39,6 +42,8 @@ void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, uns
     immediateCtx->BindVertexBuffer(0, nullptr, 0);
     immediateCtx->BindIndexBuffer(nullptr, RHI::INDEX_TYPE_UINT16, 0);
     immediateCtx->Draw(&drawCmd);
+}
+
 }
 
 HK_NAMESPACE_END

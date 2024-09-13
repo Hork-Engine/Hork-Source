@@ -34,6 +34,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+namespace RenderUtils
+{
+
 void DrawSAQ(RHI::IImmediateContext* immediateCtx, RHI::IPipeline* pipeline, unsigned int instanceCount = 1);
+
+}
 
 HK_NAMESPACE_END

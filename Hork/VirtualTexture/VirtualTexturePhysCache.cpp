@@ -32,9 +32,10 @@ SOFTWARE.
 #include "VirtualTexture.h"
 #include "QuadTree.h"
 
-#include "../RenderLocal.h"
-
 #include <Hork/Core/Platform.h>
+#include <Hork/Core/ConsoleVar.h>
+#include <Hork/RenderUtils/DrawUtils.h>
+#include <Hork/ShaderUtils/ShaderUtils.h>
 
 #define PAGE_STREAM_PBO
 
@@ -44,16 +45,17 @@ using namespace RHI;
 
 ConsoleVar r_ResetCacheVT("r_ResetCacheVT"_s, "0"_s);
 
-VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
+VirtualTextureCache::VirtualTextureCache(RHI::IDevice* device, VTCacheCreateInfo const& createInfo) :
+    m_Device(device)
 {
-    HK_ASSERT(CreateInfo.PageResolutionB > VT_PAGE_BORDER_WIDTH * 2 && CreateInfo.PageResolutionB <= 512);
+    HK_ASSERT(createInfo.PageResolutionB > VT_PAGE_BORDER_WIDTH * 2 && createInfo.PageResolutionB <= 512);
 
-    m_PageResolutionB = CreateInfo.PageResolutionB;
+    m_PageResolutionB = createInfo.PageResolutionB;
 
-    uint32_t maxPageCacheCapacity = GDevice->GetDeviceCaps(DEVICE_CAPS_MAX_TEXTURE_SIZE) / m_PageResolutionB;
+    uint32_t maxPageCacheCapacity = m_Device->GetDeviceCaps(DEVICE_CAPS_MAX_TEXTURE_SIZE) / m_PageResolutionB;
 
-    m_PageCacheCapacityX = Math::Clamp(CreateInfo.PageCacheCapacityX, MIN_PAGE_CACHE_CAPACITY, maxPageCacheCapacity);
-    m_PageCacheCapacityY = Math::Clamp(CreateInfo.PageCacheCapacityY, MIN_PAGE_CACHE_CAPACITY, maxPageCacheCapacity);
+    m_PageCacheCapacityX = Math::Clamp(createInfo.PageCacheCapacityX, MIN_PAGE_CACHE_CAPACITY, maxPageCacheCapacity);
+    m_PageCacheCapacityY = Math::Clamp(createInfo.PageCacheCapacityY, MIN_PAGE_CACHE_CAPACITY, maxPageCacheCapacity);
 
     m_PageCacheCapacity = m_PageCacheCapacityX * m_PageCacheCapacityY;
     if (m_PageCacheCapacity > 4096)
@@ -79,17 +81,17 @@ VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
     m_PageSizeInBytes = 0;
     m_AlignedSize = 0;
 
-    m_PhysCacheLayers.Resize(CreateInfo.NumLayers);
-    m_LayerInfo.Resize(CreateInfo.NumLayers);
-    for (int i = 0; i < CreateInfo.NumLayers; i++)
+    m_PhysCacheLayers.Resize(createInfo.NumLayers);
+    m_LayerInfo.Resize(createInfo.NumLayers);
+    for (int i = 0; i < createInfo.NumLayers; i++)
     {
-        GDevice->CreateTexture(TextureDesc()
-                                   .SetFormat(CreateInfo.pLayers[i].TextureFormat)
+        m_Device->CreateTexture(TextureDesc()
+                                   .SetFormat(createInfo.pLayers[i].TextureFormat)
                                    .SetResolution(TextureResolution2D(physCacheWidth, physCacheHeight))
                                    .SetBindFlags(BIND_SHADER_RESOURCE),
                                &m_PhysCacheLayers[i]);
         m_PhysCacheLayers[i]->SetDebugName("Virtual texture phys cache layer");
-        m_LayerInfo[i] = CreateInfo.pLayers[i];
+        m_LayerInfo[i] = createInfo.pLayers[i];
 
         size_t size = m_LayerInfo[i].PageSizeInBytes; //ITexture::GetPixelFormatSize( PageResolutionB, PageResolutionB, LayerInfo[i].UploadFormat );
         m_PageSizeInBytes += size;
@@ -117,7 +119,7 @@ VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &nearestSampler;
 
-    ShaderUtils::CreateFullscreenQuadPipeline(GDevice, &m_DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout);
+    ShaderUtils::CreateFullscreenQuadPipeline(m_Device, &m_DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout);
 
 #ifdef PAGE_STREAM_PBO
     BufferDesc bufferCI = {};
@@ -128,10 +130,12 @@ VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
 
     LOG("Virtual texture cache transfer buffer size: {} kb\n", bufferCI.SizeInBytes >> 10);
 
-    GDevice->CreateBuffer(bufferCI, nullptr, &m_TransferBuffer);
+    m_Device->CreateBuffer(bufferCI, nullptr, &m_TransferBuffer);
     m_TransferBuffer->SetDebugName("Virtual texture page transfer buffer");
 
-    m_pTransferData = (byte*)rcmd->MapBuffer(m_TransferBuffer,
+    auto* context = m_Device->GetImmediateContext();
+
+    m_pTransferData = (byte*)context->MapBuffer(m_TransferBuffer,
                                            MAP_TRANSFER_WRITE,
                                            MAP_INVALIDATE_ENTIRE_BUFFER,
                                            MAP_PERSISTENT_COHERENT,
@@ -153,8 +157,10 @@ VirtualTextureCache::VirtualTextureCache(VTCacheCreateInfo const& CreateInfo)
 
 VirtualTextureCache::~VirtualTextureCache()
 {
+    auto* context = m_Device->GetImmediateContext();
+
 #ifdef PAGE_STREAM_PBO
-    rcmd->UnmapBuffer(m_TransferBuffer);
+    context->UnmapBuffer(m_TransferBuffer);
 #endif
 
     if (LockTransfers())
@@ -168,7 +174,7 @@ VirtualTextureCache::~VirtualTextureCache()
 
     for (PageTransfer* transfer = m_PageTransfer; transfer < &m_PageTransfer[MAX_UPLOADS_PER_FRAME]; transfer++)
     {
-        rcmd->RemoveSync(transfer->Fence);
+        context->RemoveSync(transfer->Fence);
     }
 
     for (VirtualTexture* texture : m_VirtualTextures)
@@ -238,10 +244,10 @@ VirtualTextureCache::PageTransfer* VirtualTextureCache::CreatePageTransfer()
     } while (1);
 }
 
-void VirtualTextureCache::MakePageTransferVisible(PageTransfer* Transfer)
+void VirtualTextureCache::MakePageTransferVisible(PageTransfer* transfer)
 {
     MutexGuard criticalSection(m_TransfersMutex);
-    m_Transfers.Add(Transfer);
+    m_Transfers.Add(transfer);
 }
 
 bool VirtualTextureCache::LockTransfers()
@@ -280,7 +286,7 @@ void VirtualTextureCache::ResetCache()
 
     for (VirtualTexturePtr texture : m_VirtualTextures)
     {
-        texture->PendingUpdateLRU.Clear();
+        texture->m_PendingUpdateLRU.Clear();
         texture->CommitPageResidency();
     }
 }
@@ -302,8 +308,8 @@ void VirtualTextureCache::Update()
         // no pages to upload
         for (VirtualTexturePtr texture : m_VirtualTextures)
         {
-            maxPendingLRUs = Math::Max(maxPendingLRUs, texture->PendingUpdateLRU.Size());
-            texture->PendingUpdateLRU.Clear(); // No need to update LRU
+            maxPendingLRUs = Math::Max(maxPendingLRUs, texture->m_PendingUpdateLRU.Size());
+            texture->m_PendingUpdateLRU.Clear(); // No need to update LRU
         }
         //LOG( "maxPendingLRUs {}\n", maxPendingLRUs );
         return;
@@ -315,19 +321,19 @@ void VirtualTextureCache::Update()
 
     for (VirtualTexturePtr texture : m_VirtualTextures)
     {
-        maxPendingLRUs = Math::Max(maxPendingLRUs, texture->PendingUpdateLRU.Size());
-        for (int i = 0; i < texture->PendingUpdateLRU.Size(); i++)
+        maxPendingLRUs = Math::Max(maxPendingLRUs, texture->m_PendingUpdateLRU.Size());
+        for (int i = 0; i < texture->m_PendingUpdateLRU.Size(); i++)
         {
-            uint32_t absIndex = texture->PendingUpdateLRU[i];
+            uint32_t absIndex = texture->m_PendingUpdateLRU[i];
 
-            HK_ASSERT(texture->PIT[absIndex] & PF_CACHED);
+            HK_ASSERT(texture->m_PIT[absIndex] & PF_CACHED);
 
             const uint16_t* pageIndirection = texture->GetIndirectionData();
 
             int offset = pageIndirection[absIndex] & 0x0fff;
             m_PhysPageInfo[offset].Time = time;
         }
-        texture->PendingUpdateLRU.Clear();
+        texture->m_PendingUpdateLRU.Clear();
     }
 
     //LOG( "maxPendingLRUs {}\n", maxPendingLRUs );
@@ -370,7 +376,7 @@ void VirtualTextureCache::Update()
 
         VirtualTexture* pTexture = transfer->pTexture;
 
-        if (pTexture->PIT[transfer->PageIndex] & PF_CACHED)
+        if (pTexture->m_PIT[transfer->PageIndex] & PF_CACHED)
         {
             // Page is loaded twice.
             d_duplicates++;
@@ -453,10 +459,12 @@ void VirtualTextureCache::Update()
     }
 }
 
-void VirtualTextureCache::TransferPageData(PageTransfer* Transfer, int PhysPageIndex)
+void VirtualTextureCache::TransferPageData(PageTransfer* transfer, int physPageIndex)
 {
-    int offsetX = PhysPageIndex & (m_PageCacheCapacityX - 1);
-    int offsetY = PhysPageIndex / m_PageCacheCapacityX;
+    auto* context = m_Device->GetImmediateContext();
+
+    int offsetX = physPageIndex & (m_PageCacheCapacityX - 1);
+    int offsetY = physPageIndex / m_PageCacheCapacityX;
 
     TextureRect rect;
 
@@ -469,12 +477,12 @@ void VirtualTextureCache::TransferPageData(PageTransfer* Transfer, int PhysPageI
     rect.Dimension.Y = m_PageResolutionB;
     rect.Dimension.Z = 1;
 
-    size_t offset = Transfer->Offset;
+    size_t offset = transfer->Offset;
 
     for (int layerIndex = 0; layerIndex < m_PhysCacheLayers.Size(); layerIndex++)
     {
 #ifdef PAGE_STREAM_PBO
-        rcmd->CopyBufferToTexture(m_TransferBuffer, m_PhysCacheLayers[layerIndex], rect, m_LayerInfo[layerIndex].UploadFormat, 0, offset, 1);
+        context->CopyBufferToTexture(m_TransferBuffer, m_PhysCacheLayers[layerIndex], rect, m_LayerInfo[layerIndex].UploadFormat, 0, offset, 1);
 
         offset += Align(m_LayerInfo[layerIndex].PageSizeInBytes, 16);
 #else
@@ -488,25 +496,28 @@ void VirtualTextureCache::TransferPageData(PageTransfer* Transfer, int PhysPageI
 
     WaitForFences();
 
-    Transfer->Fence = rcmd->FenceSync();
+    transfer->Fence = context->FenceSync();
 }
 
-void VirtualTextureCache::DiscardTransfers(PageTransfer** InTransfers, int Count)
+void VirtualTextureCache::DiscardTransfers(PageTransfer** transfers, int count)
 {
-    if (Count > 0)
+    if (count > 0)
     {
-        SyncObject Fence = rcmd->FenceSync();
+        auto* context = m_Device->GetImmediateContext();
+        SyncObject Fence = context->FenceSync();
 
-        for (int i = 0; i < Count; i++)
+        for (int i = 0; i < count; i++)
         {
-            InTransfers[i]->Fence = Fence;
-            InTransfers[i]->pTexture->RemoveRef();
+            transfers[i]->Fence = Fence;
+            transfers[i]->pTexture->RemoveRef();
         }
     }
 }
 
 void VirtualTextureCache::WaitForFences()
 {
+    auto* context = m_Device->GetImmediateContext();
+
     const uint64_t timeOutNanoseconds = 1;
 
     int freePoint = m_TransferFreePoint.Load();
@@ -518,11 +529,11 @@ void VirtualTextureCache::WaitForFences()
             break;
         }
 
-        CLIENT_WAIT_STATUS status = rcmd->ClientWait(m_PageTransfer[freePoint].Fence, timeOutNanoseconds);
+        CLIENT_WAIT_STATUS status = context->ClientWait(m_PageTransfer[freePoint].Fence, timeOutNanoseconds);
 
         if (status == CLIENT_WAIT_ALREADY_SIGNALED || status == CLIENT_WAIT_CONDITION_SATISFIED)
         {
-            rcmd->RemoveSync(m_PageTransfer[freePoint].Fence);
+            context->RemoveSync(m_PageTransfer[freePoint].Fence);
             m_PageTransfer[freePoint].Fence = nullptr;
             freePoint = m_TransferFreePoint.Increment();
             m_PageTransferEvent.Signal();
@@ -534,20 +545,20 @@ void VirtualTextureCache::WaitForFences()
     }
 }
 
-void VirtualTextureCache::Draw(FrameGraph& FrameGraph, FGTextureProxy* RenderTarget, int LayerIndex)
+void VirtualTextureCache::Draw(FrameGraph& frameGraph, FGTextureProxy* renderTarget, int layerIndex, uint32_t renderViewWidth, IResourceTable* rtbl)
 {
-    if (LayerIndex < 0 || LayerIndex >= m_PhysCacheLayers.Size())
+    if (layerIndex < 0 || layerIndex >= m_PhysCacheLayers.Size())
     {
         return;
     }
 
-    ITexture* texture = m_PhysCacheLayers[LayerIndex];
+    ITexture* texture = m_PhysCacheLayers[layerIndex];
 
-    FGTextureProxy* CacheTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Cache", texture);
+    FGTextureProxy* CacheTexture_R = frameGraph.AddExternalResource<FGTextureProxy>("VT Cache", texture);
 
-    RenderPass& pass = FrameGraph.AddTask<RenderPass>("VT Draw Cache");
+    RenderPass& pass = frameGraph.AddTask<RenderPass>("VT Draw Cache");
 
-    float scale = texture->GetWidth() != 0 ? (float)GRenderView->Width / texture->GetWidth() : 0.0f;
+    float scale = texture->GetWidth() != 0 ? (float)renderViewWidth / texture->GetWidth() : 0.0f;
 
     pass.SetRenderArea((float)texture->GetWidth() * scale * 0.5f,
                        (float)texture->GetHeight() * scale * 0.5f);
@@ -555,7 +566,7 @@ void VirtualTextureCache::Draw(FrameGraph& FrameGraph, FGTextureProxy* RenderTar
     pass.AddResource(CacheTexture_R, FG_RESOURCE_ACCESS_READ);
 
     pass.SetColorAttachment(
-        TextureAttachment(RenderTarget)
+        TextureAttachment(renderTarget)
             .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
     pass.AddSubpass({0}, // color attachment refs
@@ -563,7 +574,7 @@ void VirtualTextureCache::Draw(FrameGraph& FrameGraph, FGTextureProxy* RenderTar
                     {
                         rtbl->BindTexture(0, CacheTexture_R->Actual());
 
-                        DrawSAQ(RenderPassContext.pImmediateContext, m_DrawCachePipeline);
+                        RenderUtils::DrawSAQ(RenderPassContext.pImmediateContext, m_DrawCachePipeline);
                     });
 }
 
