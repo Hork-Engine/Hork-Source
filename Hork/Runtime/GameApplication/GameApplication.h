@@ -34,11 +34,10 @@ SOFTWARE.
 #include <Hork/Core/CommandProcessor.h>
 #include <Hork/Core/Random.h>
 
+#include <Hork/Renderer/RenderBackend.h>
 #include <Hork/Runtime/World/Modules/Render/RenderFrontend.h>
-
 #include <Hork/Runtime/Materials/MaterialManager.h>
 #include <Hork/Runtime/UI/UIManager.h>
-#include <Hork/Runtime/Renderer/RenderBackend.h>
 
 #include "FrameLoop.h"
 #include "InputSystem.h"

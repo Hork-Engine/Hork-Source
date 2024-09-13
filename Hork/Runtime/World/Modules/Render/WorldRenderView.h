@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/Renderer/VirtualTextureFeedback.h>
+#include <Hork/Renderer/VirtualTextureFeedback.h>
 #include <Hork/Runtime/Resources/ResourceManager.h>
 #include <Hork/Runtime/Resources/Resource_Texture.h>
 #include <Hork/Runtime/Resources/Resource_Terrain.h>

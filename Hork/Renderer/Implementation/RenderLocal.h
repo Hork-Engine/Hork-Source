@@ -34,8 +34,8 @@ SOFTWARE.
 #include <Hork/ShaderUtils/ShaderLoader.h>
 #include <Hork/ShaderUtils/ShaderUtils.h>
 #include <Hork/RenderUtils/DrawUtils.h>
+#include <Hork/Renderer/RenderBackend.h>
 
-#include "RenderBackend.h"
 #include "CircularBuffer.h"
 
 HK_NAMESPACE_BEGIN

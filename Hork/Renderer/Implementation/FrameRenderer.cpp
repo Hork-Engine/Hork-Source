@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 #include "FrameRenderer.h"
-#include "VirtualTextureFeedback.h"
+#include <Hork/Renderer/VirtualTextureFeedback.h>
 
 #include <Hork/Core/Profiler.h>
 

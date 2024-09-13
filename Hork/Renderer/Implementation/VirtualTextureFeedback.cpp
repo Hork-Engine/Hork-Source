@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "VirtualTextureFeedback.h"
+#include <Hork/Renderer/VirtualTextureFeedback.h>
 
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/ShaderUtils/ShaderUtils.h>

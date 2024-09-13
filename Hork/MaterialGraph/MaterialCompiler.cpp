@@ -29,15 +29,15 @@ SOFTWARE.
 */
 
 #include "MaterialCompiler.h"
+#include "MaterialSamplers.h"
 
+#include <Hork/Geometry/VertexFormat.h>
 #include <Hork/RenderDefs/VertexAttribs.h>
-#include <Hork/MaterialGraph/MaterialSamplers.h>
 #include <Hork/ShaderUtils/ShaderUtils.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
-Ref<RHI::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData const& pass, Vector<Ref<RHI::IShaderModule>> const& shaders)
+Ref<RHI::IPipeline> CreateMaterialPass(RHI::IDevice* device, MaterialBinary::MaterialPassData const& pass, Vector<Ref<RHI::IShaderModule>> const& shaders)
 {
     using namespace RHI;
 
@@ -149,7 +149,7 @@ Ref<RHI::IPipeline> CreateMaterialPass(MaterialBinary::MaterialPassData const& p
     desc.ResourceLayout.Samplers = pass.Samplers.ToPtr();
 
     Ref<IPipeline> pipeline;
-    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
+    device->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -204,7 +204,7 @@ Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device)
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
+    device->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -291,7 +291,7 @@ Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device)
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
+    device->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
@@ -348,14 +348,13 @@ Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device)
     desc.ResourceLayout.Buffers = buffers;
 
     Ref<IPipeline> pipeline;
-    GameApplication::sGetRenderDevice()->CreatePipeline(desc, &pipeline);
+    device->CreatePipeline(desc, &pipeline);
     return pipeline;
 }
 
-Ref<MaterialGPU> CompileMaterial(MaterialBinary const& binary)
+Ref<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary)
 {
     Vector<Ref<RHI::IShaderModule>> compiledShaders;
-    RHI::IDevice* device = GameApplication::sGetRenderDevice();
 
     compiledShaders.Reserve(binary.Shaders.Size());
     for (MaterialBinary::Shader const& shader : binary.Shaders)
@@ -376,7 +375,7 @@ Ref<MaterialGPU> CompileMaterial(MaterialBinary const& binary)
 
     for (MaterialBinary::MaterialPassData const& pass : binary.Passes)
     {
-        if (!(materialGPU->Passes[pass.Type] = CreateMaterialPass(pass, compiledShaders)))
+        if (!(materialGPU->Passes[pass.Type] = CreateMaterialPass(device, pass, compiledShaders)))
             return {};
     }
     return materialGPU;

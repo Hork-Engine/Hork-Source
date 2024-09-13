@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 #include "CanvasRenderer.h"
+#include "FrameRenderer.h"
 
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/Core/ScopedTimer.h>
@@ -41,6 +42,7 @@ SOFTWARE.
 #include <Hork/Image/ImageEncoders.h>
 
 #include <Hork/RenderUtils/BRDFGenerator.h>
+#include <Hork/MaterialGraph/MaterialCompiler.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -65,15 +67,11 @@ ConsoleVar r_ShowGPUTime("r_ShowGPUTime"_s, "0"_s);
 
 void TestVT();
 
-Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device);
-Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device);
-Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device);
-
-RenderBackend::RenderBackend(RHI::IDevice* pDevice)
+RenderBackend::RenderBackend(RHI::IDevice* device)
 {
     LOG("Initializing render backend...\n");
 
-    GDevice = pDevice;
+    GDevice = device;
     rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
 
@@ -137,12 +135,6 @@ RenderBackend::RenderBackend(RHI::IDevice* pDevice)
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
-    #if 0
-    {
-        VXGIVoxelizer vox;
-        vox.Render();
-    }
-    #endif
 
     #if 0
     VTCacheLayerInfo layer;
@@ -321,14 +313,14 @@ int RenderBackend::MaxOmnidirectionalShadowMapsPerView() const
     return m_FrameRenderer->GetOmniShadowMapPool().GetSize();
 }
 
-void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, RenderFrameData* pFrameData)
+void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* backBuffer, RenderFrameData* frameData)
 {
     HK_PROFILER_EVENT("Render Backend");
 
     static int timeQueryFrame = 0;
 
-    GStreamedMemory = StreamedMemory;
-    GStreamBuffer = StreamedMemory->GetBufferGPU();
+    GStreamedMemory = streamedMemory;
+    GStreamBuffer = streamedMemory->GetBufferGPU();
 
     // Create item buffer
     if (!GClusterItemTBO)
@@ -365,7 +357,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
 #endif
     }
 
-    GFrameData = pFrameData;
+    GFrameData = frameData;
 
     //FrameGraph->Clear();
 
@@ -375,7 +367,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
     if (m_PhysCacheVT)
         m_PhysCacheVT->Update();
 
-    m_FeedbackAnalyzerVT->Begin(StreamedMemory, GStreamBuffer, rtbl);
+    m_FeedbackAnalyzerVT->Begin(streamedMemory, GStreamBuffer, rtbl);
 
     // TODO: Bind virtual textures in one place
     m_FeedbackAnalyzerVT->BindTexture(0, m_TestVT);
@@ -398,7 +390,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* StreamedMemory, ITexture* pBa
         m_FrameGraph->Clear();
     }
 
-    m_CanvasRenderer->Render(*m_FrameGraph, pBackBuffer);
+    m_CanvasRenderer->Render(*m_FrameGraph, backBuffer);
 
     m_FrameGraph->Build();
     //m_FrameGraph->ExportGraphviz("frame.graphviz");
@@ -529,8 +521,7 @@ void RenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->PostprocessBloomMix = Float4(r_BloomParam0.GetFloat(),
                                             r_BloomParam1.GetFloat(),
                                             r_BloomParam2.GetFloat(),
-                                            r_BloomParam3.GetFloat()) *
-        r_BloomScale.GetFloat();
+                                            r_BloomParam3.GetFloat()) * r_BloomScale.GetFloat();
 
     pViewCBuf->BloomEnabled                = r_Bloom;                   // TODO: Get from GRenderView
     pViewCBuf->ToneMappingExposure         = GRenderView->Exposure * r_ExposureScale.GetFloat();

@@ -30,10 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/MaterialGraph/MaterialBinary.h>
+#include "MaterialBinary.h"
 
 HK_NAMESPACE_BEGIN
 
-Ref<MaterialGPU> CompileMaterial(MaterialBinary const& binary);
+Ref<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary);
+
+Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device);
+Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device);
+Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device);
 
 HK_NAMESPACE_END

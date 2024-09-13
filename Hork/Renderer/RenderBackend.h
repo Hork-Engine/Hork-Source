@@ -32,53 +32,51 @@ SOFTWARE.
 
 #include <Hork/RenderDefs/RenderDefs.h>
 
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
+
 #include <Hork/VirtualTexture/VirtualTextureAnalyzer.h>
 #include <Hork/VirtualTexture/VirtualTexturePhysCache.h>
+
 #include "VirtualTextureFeedback.h"
-
-#include "CanvasRenderer.h"
-#include "FrameRenderer.h"
-
-#include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 HK_NAMESPACE_BEGIN
 
+// NOTE: The rendering backend should be used as a singleton object. (This should be fixed later)
 class RenderBackend final : public Noncopyable
 {
 public:
-    RenderBackend(RHI::IDevice* pDevice);
-    ~RenderBackend();
+                                RenderBackend(RHI::IDevice* device);
+                                ~RenderBackend();
 
-    void RenderFrame(StreamedMemoryGPU* StreamedMemory, RHI::ITexture* pBackBuffer, RenderFrameData* pFrameData);
+    void                        RenderFrame(StreamedMemoryGPU* streamedMemory, RHI::ITexture* backBuffer, RenderFrameData* frameData);
 
-    int ClusterPackedIndicesAlignment() const;
-
-    int MaxOmnidirectionalShadowMapsPerView() const;
+    int                         ClusterPackedIndicesAlignment() const;
+    int                         MaxOmnidirectionalShadowMapsPerView() const;
 
 private:
-    void RenderView(int ViewportIndex, RenderViewData* pRenderView);
-    void SetViewConstants(int ViewportIndex);
-    void UploadShaderResources(int ViewportIndex);
+    void                        RenderView(int viewportIndex, RenderViewData* renderView);
+    void                        SetViewConstants(int viewportIndex);
+    void                        UploadShaderResources(int viewportIndex);
 
-    Ref<RHI::FrameGraph>       m_FrameGraph;
+    Ref<RHI::FrameGraph>        m_FrameGraph;
 
-    Ref<CanvasRenderer> m_CanvasRenderer;
-    Ref<FrameRenderer> m_FrameRenderer;
+    Ref<class CanvasRenderer>   m_CanvasRenderer;
+    Ref<class FrameRenderer>    m_FrameRenderer;
 
-    Ref<RHI::IQueryPool> m_TimeQuery;
+    Ref<RHI::IQueryPool>        m_TimeQuery;
 
-    Ref<RHI::IQueryPool> m_TimeStamp1;
-    Ref<RHI::IQueryPool> m_TimeStamp2;
+    Ref<RHI::IQueryPool>        m_TimeStamp1;
+    Ref<RHI::IQueryPool>        m_TimeStamp2;
 
     Ref<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
-    Ref<VirtualTextureCache> m_PhysCacheVT;
+    Ref<VirtualTextureCache>    m_PhysCacheVT;
 
-    Ref<RHI::IPipeline> m_TerrainDepthPipeline;
-    Ref<RHI::IPipeline> m_TerrainLightPipeline;
-    Ref<RHI::IPipeline> m_TerrainWireframePipeline;
+    Ref<RHI::IPipeline>         m_TerrainDepthPipeline;
+    Ref<RHI::IPipeline>         m_TerrainLightPipeline;
+    Ref<RHI::IPipeline>         m_TerrainWireframePipeline;
 
     // Just for test
-    Ref<VirtualTexture> m_TestVT;
+    Ref<VirtualTexture>         m_TestVT;
 };
 
 HK_NAMESPACE_END

@@ -1,4 +1,4 @@
-project(Runtime)
+project(Renderer)
 
 setup_msvc_runtime_library()
 
@@ -8,26 +8,13 @@ make_source_list(SOURCE_FILES)
 
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME}
-	Core
-	Math
-	Geometry
-	Image
-	Audio
-	RHI
-	RenderDefs
-	ShaderUtils
-	MaterialGraph
-	RenderUtils
-	VirtualTexture
-	Renderer
-)
+target_link_libraries(${PROJECT_NAME} ShaderUtils RenderUtils VirtualTexture)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${HK_COMPILER_DEFINES})
 target_compile_options(${PROJECT_NAME} PUBLIC ${HK_COMPILER_FLAGS})
 
 set_target_properties(${PROJECT_NAME}
 	PROPERTIES
-		OUTPUT_NAME 						"Hork-Runtime"
+		OUTPUT_NAME 						"Hork-Renderer"
 		RUNTIME_OUTPUT_DIRECTORY 			"${CMAKE_BINARY_DIR}/../Binary/Win64"
 )
