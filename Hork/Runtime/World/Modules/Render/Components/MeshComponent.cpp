@@ -31,10 +31,11 @@ SOFTWARE.
 #include "MeshComponent.h"
 
 #include <Hork/Core/ConsoleVar.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
-#include <Hork/Runtime/World/WorldInterface.h>
+
 #include <Hork/Runtime/World/World.h>
+#include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Runtime/World/Modules/Render/RenderInterface.h>
+#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 

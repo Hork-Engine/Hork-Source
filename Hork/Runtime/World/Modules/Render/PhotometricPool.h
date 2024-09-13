@@ -44,24 +44,24 @@ struct PhotometricPoolDesc
 class PhotometricPool final : public Noncopyable
 {
 public:
-    explicit            PhotometricPool(PhotometricPoolDesc const& desc={});
+    explicit                PhotometricPool(PhotometricPoolDesc const& desc={});
 
-    uint16_t            Add(ArrayView<uint8_t> samples);
-    void                Remove(uint16_t id);
+    uint16_t                Add(ArrayView<uint8_t> samples);
+    void                    Remove(uint16_t id);
 
-    uint32_t            Size() const { return m_PoolSize - m_FreeList.Size(); }
-    uint32_t            Capacity() const { return m_MaxCapacity; }
+    uint32_t                Size() const { return m_PoolSize - m_FreeList.Size(); }
+    uint32_t                Capacity() const { return m_MaxCapacity; }
 
-    Ref<RHI::ITexture> GetTexture() { return m_Texture; }
+    Ref<RHI::ITexture>      GetTexture() { return m_Texture; }
 
 private:
-    void                GrowCapacity();
+    void                    GrowCapacity();
 
-    Ref<RHI::ITexture>   m_Texture;
-    Vector<uint8_t>             m_Memory;
-    Vector<uint16_t>            m_FreeList;
-    uint32_t                    m_PoolSize{};
-    uint32_t                    m_MaxCapacity{};
+    Ref<RHI::ITexture>      m_Texture;
+    Vector<uint8_t>         m_Memory;
+    Vector<uint16_t>        m_FreeList;
+    uint32_t                m_PoolSize{};
+    uint32_t                m_MaxCapacity{};
 };
 
 HK_NAMESPACE_END

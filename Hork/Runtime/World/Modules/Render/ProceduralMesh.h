@@ -37,15 +37,12 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class StreamedMemoryGPU;
-struct RenderFrontendDef;
+struct RenderContext;
 struct TriangleHitResult;
 
 class ProceduralMesh : public RefCounted
 {
 public:
-                                ProceduralMesh();
-                                ~ProceduralMesh();
-
     /// Update vertex cache occasionally or every frame
     VertexBufferCPU<MeshVertex> VertexCache;
 
@@ -53,22 +50,22 @@ public:
     IndexBufferCPU<unsigned int>IndexCache;
 
     /// Bounding box is used for raycast early exit and VSD culling
-    BvAxisAlignedBox            BoundingBox;
+    BvAxisAlignedBox            BoundingBox = BvAxisAlignedBox::sEmpty();
 
     /// Get mesh GPU buffers
-    void                        GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetVertexBufferGPU(StreamedMemoryGPU* streamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Get mesh GPU buffers
-    void                        GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
+    void                        GetIndexBufferGPU(StreamedMemoryGPU* streamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Check ray intersection. Result is unordered by distance to save performance
-    bool                        Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const;
+    bool                        Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Vector<TriangleHitResult>& hitResult) const;
 
     /// Check ray intersection
-    bool                        RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const;
+    bool                        RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangleIndices[3]) const;
 
     /// Called before rendering. Don't call directly.
-    void                        PrepareStreams(RenderFrontendDef const* pDef);
+    void                        PrepareStreams(RenderContext const& context);
 
     // TODO: Add methods like AddTriangle, AddQuad, etc.
 private:
@@ -77,6 +74,5 @@ private:
 
     int                         m_VisFrame = -1;
 };
-
 
 HK_NAMESPACE_END

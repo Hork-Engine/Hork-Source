@@ -59,6 +59,8 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Modules/Audio/AudioInterface.h>
 
+#include <Hork/Runtime/World/DebugRenderer.h>
+
 using namespace Hk;
 
 class ThirdPersonInputComponent : public Component

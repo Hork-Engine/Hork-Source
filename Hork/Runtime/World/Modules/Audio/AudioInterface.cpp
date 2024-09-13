@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <Hork/Audio/AudioDevice.h>
 
+#include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include "Components/SoundSource.h"

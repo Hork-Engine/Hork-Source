@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/DirectionalLightComponent.h>
 #include <Hork/Runtime/World/Modules/Render/RenderInterface.h>
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
+#include <Hork/Runtime/World/DebugRenderer.h>
 
 using namespace Hk;
 

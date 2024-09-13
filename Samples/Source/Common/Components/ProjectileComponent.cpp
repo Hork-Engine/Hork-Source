@@ -35,6 +35,7 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Modules/Physics/Components/DynamicBodyComponent.h>
 #include <Hork/Runtime/World/Modules/Render/Components/MeshComponent.h>
+#include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN

@@ -29,53 +29,44 @@ SOFTWARE.
 */
 
 #include "ProceduralMesh.h"
-#include "RenderFrontend.h"
+#include "RenderContext.h"
 
 #include <Hork/RHI/Common/VertexMemoryGPU.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 
 HK_NAMESPACE_BEGIN
 
-ProceduralMesh::ProceduralMesh()
+void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* streamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
-    BoundingBox.Clear();
+    streamedMemory->GetPhysicalBufferAndOffset(m_VertexStream, ppBuffer, pOffset);
 }
 
-ProceduralMesh::~ProceduralMesh()
+void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* streamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
+    streamedMemory->GetPhysicalBufferAndOffset(m_IndexSteam, ppBuffer, pOffset);
 }
 
-void ProceduralMesh::GetVertexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
+void ProceduralMesh::PrepareStreams(RenderContext const& context)
 {
-    StreamedMemory->GetPhysicalBufferAndOffset(m_VertexStream, ppBuffer, pOffset);
-}
-
-void ProceduralMesh::GetIndexBufferGPU(StreamedMemoryGPU* StreamedMemory, RHI::IBuffer** ppBuffer, size_t* pOffset)
-{
-    StreamedMemory->GetPhysicalBufferAndOffset(m_IndexSteam, ppBuffer, pOffset);
-}
-
-void ProceduralMesh::PrepareStreams(RenderFrontendDef const* pDef)
-{
-    if (m_VisFrame == pDef->FrameNumber)
+    if (m_VisFrame == context.FrameNumber)
     {
         return;
     }
 
-    m_VisFrame = pDef->FrameNumber;
+    m_VisFrame = context.FrameNumber;
 
     if (!VertexCache.IsEmpty() && !IndexCache.IsEmpty())
     {
-        StreamedMemoryGPU* streamedMemory = pDef->StreamedMemory;
+        StreamedMemoryGPU* streamedMemory = context.StreamedMemory;
 
         m_VertexStream = streamedMemory->AllocateVertex(sizeof(MeshVertex) * VertexCache.Size(), VertexCache.ToPtr());
-        m_IndexSteam   = streamedMemory->AllocateIndex(sizeof(unsigned int) * IndexCache.Size(), IndexCache.ToPtr());
+        m_IndexSteam = streamedMemory->AllocateIndex(sizeof(unsigned int) * IndexCache.Size(), IndexCache.ToPtr());
     }
 }
 
-bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Vector<TriangleHitResult>& HitResult) const
+bool ProceduralMesh::Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Vector<TriangleHitResult>& hitResult) const
 {
-    if (Distance < 0.0001f)
+    if (distance < 0.0001f)
     {
         return false;
     }
@@ -84,11 +75,11 @@ bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float
 
     Float3 invRayDir;
 
-    invRayDir.X = 1.0f / RayDir.X;
-    invRayDir.Y = 1.0f / RayDir.Y;
-    invRayDir.Z = 1.0f / RayDir.Z;
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
 
-    if (!BvRayIntersectBox(RayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= Distance)
+    if (!BvRayIntersectBox(rayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= distance)
     {
         return false;
     }
@@ -96,10 +87,10 @@ bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float
     const int FirstIndex = 0;
     const int BaseVertex = 0;
 
-    bool                ret = false;
-    float               d, u, v;
-    unsigned int const* indices  = IndexCache.ToPtr() + FirstIndex;
-    MeshVertex const*  vertices = VertexCache.ToPtr();
+    bool ret = false;
+    float d, u, v;
+    unsigned int const* indices = IndexCache.ToPtr() + FirstIndex;
+    MeshVertex const* vertices = VertexCache.ToPtr();
 
     const int primCount = IndexCache.Size() / 3;
 
@@ -113,21 +104,21 @@ bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float
         Float3 const& v1 = vertices[i1].Position;
         Float3 const& v2 = vertices[i2].Position;
 
-        if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
+        if (BvRayIntersectTriangle(rayStart, rayDir, v0, v1, v2, d, u, v, cullBackFace))
         {
-            if (Distance > d)
+            if (distance > d)
             {
-                TriangleHitResult& hitResult = HitResult.Add();
-                hitResult.Location            = RayStart + RayDir * d;
-                hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
-                hitResult.Distance            = d;
-                hitResult.UV.X                = u;
-                hitResult.UV.Y                = v;
-                hitResult.Indices[0]          = i0;
-                hitResult.Indices[1]          = i1;
-                hitResult.Indices[2]          = i2;
-                //hitResult.Material            = nullptr;
-                ret                           = true;
+                TriangleHitResult& hit = hitResult.Add();
+                hit.Location = rayStart + rayDir * d;
+                hit.Normal = Math::Cross(v1 - v0, v2 - v0).Normalized();
+                hit.Distance = d;
+                hit.UV.X = u;
+                hit.UV.Y = v;
+                hit.Indices[0] = i0;
+                hit.Indices[1] = i1;
+                hit.Indices[2] = i2;
+                //hit.Material = nullptr;
+                ret = true;
             }
         }
     }
@@ -135,9 +126,9 @@ bool ProceduralMesh::Raycast(Float3 const& RayStart, Float3 const& RayDir, float
     return ret;
 }
 
-bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, Float3& HitLocation, Float2& HitUV, float& HitDistance, unsigned int Indices[3]) const
+bool ProceduralMesh::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangleIndices[3]) const
 {
-    if (Distance < 0.0001f)
+    if (distance < 0.0001f)
     {
         return false;
     }
@@ -146,11 +137,11 @@ bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir
 
     Float3 invRayDir;
 
-    invRayDir.X = 1.0f / RayDir.X;
-    invRayDir.Y = 1.0f / RayDir.Y;
-    invRayDir.Z = 1.0f / RayDir.Z;
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
 
-    if (!BvRayIntersectBox(RayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= Distance)
+    if (!BvRayIntersectBox(rayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= distance)
     {
         return false;
     }
@@ -158,10 +149,10 @@ bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir
     const int FirstIndex = 0;
     const int BaseVertex = 0;
 
-    bool                ret = false;
-    float               d, u, v;
-    unsigned int const* indices  = IndexCache.ToPtr() + FirstIndex;
-    MeshVertex const*  vertices = VertexCache.ToPtr();
+    bool ret = false;
+    float d, u, v;
+    unsigned int const* indices = IndexCache.ToPtr() + FirstIndex;
+    MeshVertex const* vertices = VertexCache.ToPtr();
 
     const int primCount = IndexCache.Size() / 3;
 
@@ -175,19 +166,19 @@ bool ProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir
         Float3 const& v1 = vertices[i1].Position;
         Float3 const& v2 = vertices[i2].Position;
 
-        if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
+        if (BvRayIntersectTriangle(rayStart, rayDir, v0, v1, v2, d, u, v, cullBackFace))
         {
-            if (Distance > d)
+            if (distance > d)
             {
-                Distance     = d;
-                HitLocation  = RayStart + RayDir * d;
-                HitDistance  = d;
-                HitUV.X      = u;
-                HitUV.Y      = v;
-                Indices[0]   = i0;
-                Indices[1]   = i1;
-                Indices[2]   = i2;
-                ret          = true;
+                distance = d;
+                hitLocation = rayStart + rayDir * d;
+                hitDistance = d;
+                hitUV.X = u;
+                hitUV.Y = v;
+                triangleIndices[0] = i0;
+                triangleIndices[1] = i1;
+                triangleIndices[2] = i2;
+                ret = true;
             }
         }
     }

@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/ConsoleVar.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
+#include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 
 #include <Hork/Runtime/World/Modules/Render/RenderInterfaceImpl.h>

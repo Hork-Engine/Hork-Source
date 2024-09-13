@@ -36,10 +36,9 @@ HK_NAMESPACE_BEGIN
 namespace RHI
 {
 
-void CreateLogicalDevice(const char*              Backend,
-                         Ref<IDevice>*           ppDevice)
+void CreateLogicalDevice(const char* Api, Ref<IDevice>* ppDevice)
 {
-    if (!Core::Stricmp(Backend, "OpenGL 4.5"))
+    if (!Core::Stricmp(Api, "OpenGL 4.5"))
     {
         *ppDevice = MakeRef<DeviceGLImpl>();
     }

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "AnimationPlayerSimple.h"
 
+#include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <ozz/animation/runtime/sampling_job.h>

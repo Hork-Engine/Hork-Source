@@ -43,7 +43,8 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/NavMesh/Components/OffMeshLinkComponent.h>
 #include <Hork/Runtime/World/Modules/Physics/Components/StaticBodyComponent.h>
 #include <Hork/Runtime/World/Modules/Physics/Components/HeightFieldComponent.h>
-
+#include <Hork/Runtime/World/World.h>
+#include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Recast/Recast.h>

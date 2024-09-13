@@ -31,11 +31,12 @@ SOFTWARE.
 #include "Resource_Mesh.h"
 #include "ResourceManager.h"
 
+#include <Hork/Core/ReadWriteBuffer.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 #include <Hork/Geometry/TangentSpace.h>
+#include <Hork/Runtime/World/DebugRenderer.h>
+#include <Hork/Runtime/World/Modules/Render/VisibilitySystem.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
-
-#include <Hork/Core/ReadWriteBuffer.h>
 
 #include "Implementation/OzzIO.h"
 

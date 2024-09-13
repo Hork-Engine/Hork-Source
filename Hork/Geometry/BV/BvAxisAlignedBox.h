@@ -332,7 +332,7 @@ struct BvAxisAlignedBox
 
     static HK_FORCEINLINE BvAxisAlignedBox sBiggest()
     {
-        return BvAxisAlignedBox(Float3(-FLT_MAX), Float3(-FLT_MAX));
+        return BvAxisAlignedBox(Float3(-FLT_MAX), Float3(FLT_MAX));
     }
 
     // Byte serialization

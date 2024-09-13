@@ -64,7 +64,7 @@ void GenerateSkybox(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t resolu
 
 bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, ImageStorage const& skyboxImage, StringView envmapFile)
 {
-    Ref<RHI::ITexture> SourceMap, IrradianceMap, ReflectionMap;
+    Ref<RHI::ITexture> sourceMap, irradianceMap, reflectionMap;
 
     if (!skyboxImage || skyboxImage.GetDesc().Type != TEXTURE_CUBE)
     {
@@ -89,7 +89,7 @@ bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, ImageStorage const& sky
         textureDesc.Swizzle.A = RHI::TEXTURE_SWIZZLE_R;
     }
 
-    device->CreateTexture(textureDesc, &SourceMap);
+    device->CreateTexture(textureDesc, &sourceMap);
 
     RHI::TextureRect rect;
     rect.Offset.X        = 0;
@@ -110,17 +110,17 @@ bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, ImageStorage const& sky
 
         ImageSubresource subresouce = skyboxImage.GetSubresource(subresDesc);
 
-        SourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
+        sourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
     }
 
-    GenerateIrradianceMap(device, SourceMap, &IrradianceMap);
-    GenerateReflectionMap(device, SourceMap, &ReflectionMap);
+    GenerateIrradianceMap(device, sourceMap, &irradianceMap);
+    GenerateReflectionMap(device, sourceMap, &reflectionMap);
 
     // Preform some validation
-    HK_ASSERT(IrradianceMap->GetDesc().Resolution.Width == IrradianceMap->GetDesc().Resolution.Height);
-    HK_ASSERT(ReflectionMap->GetDesc().Resolution.Width == ReflectionMap->GetDesc().Resolution.Height);
-    HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
-    HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
+    HK_ASSERT(irradianceMap->GetDesc().Resolution.Width == irradianceMap->GetDesc().Resolution.Height);
+    HK_ASSERT(reflectionMap->GetDesc().Resolution.Width == reflectionMap->GetDesc().Resolution.Height);
+    HK_ASSERT(irradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
+    HK_ASSERT(reflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
 
     File f = File::sOpenWrite(envmapFile);
     if (!f)
@@ -134,29 +134,29 @@ bool GenerateAndSaveEnvironmentMap(RHI::IDevice* device, ImageStorage const& sky
 
     f.WriteUInt32(ASSET_ENVMAP);
     f.WriteUInt32(ASSET_VERSION_ENVMAP);
-    f.WriteUInt32(IrradianceMap->GetWidth());
-    f.WriteUInt32(ReflectionMap->GetWidth());
+    f.WriteUInt32(irradianceMap->GetWidth());
+    f.WriteUInt32(reflectionMap->GetWidth());
 
     // Choose max width for memory allocation
-    int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
+    int maxSize = Math::Max(irradianceMap->GetWidth(), reflectionMap->GetWidth());
 
     Vector<uint32_t> buffer(maxSize * maxSize * 6);
 
     uint32_t* data = buffer.ToPtr();
 
-    int numPixels = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 6;
-    IrradianceMap->Read(0, numPixels * sizeof(uint32_t), 4, data);
+    int numPixels = irradianceMap->GetWidth() * irradianceMap->GetWidth() * 6;
+    irradianceMap->Read(0, numPixels * sizeof(uint32_t), 4, data);
 
     f.WriteWords<uint32_t>(data, numPixels);
 
-    for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
+    for (int mipLevel = 0; mipLevel < reflectionMap->GetDesc().NumMipLevels; mipLevel++)
     {
-        int mipWidth = ReflectionMap->GetWidth() >> mipLevel;
+        int mipWidth = reflectionMap->GetWidth() >> mipLevel;
         HK_ASSERT(mipWidth > 0);
 
         numPixels = mipWidth * mipWidth * 6;
 
-        ReflectionMap->Read(mipLevel, numPixels * sizeof(uint32_t), 4, data);
+        reflectionMap->Read(mipLevel, numPixels * sizeof(uint32_t), 4, data);
 
         f.WriteWords<uint32_t>(data, numPixels);
     }

@@ -39,6 +39,7 @@ HK_NAMESPACE_BEGIN
 class UIGrid;
 class UIViewport;
 class UIImage;
+class PunctualLightComponent;
 
 class SampleApplication final : public GameApplication
 {

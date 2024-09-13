@@ -35,7 +35,6 @@ SOFTWARE.
 #include <Hork/Core/Random.h>
 
 #include <Hork/Renderer/RenderBackend.h>
-#include <Hork/Runtime/World/Modules/Render/RenderFrontend.h>
 #include <Hork/Runtime/Materials/MaterialManager.h>
 #include <Hork/Runtime/UI/UIManager.h>
 
@@ -50,6 +49,7 @@ class AsyncJobManager;
 class AsyncJobList;
 class AudioDevice;
 class AudioMixer;
+class RenderFrontend;
 
 class ApplicationDesc
 {
@@ -247,9 +247,9 @@ private:
     String                          m_Title;
     String                          m_ApplicationLocalData;
     UniqueRef<FrameLoop>            m_FrameLoop;
-    Ref<RHI::IDevice>        m_RenderDevice;
-    Ref<RHI::IGenericWindow> m_Window;
-    Ref<RHI::ISwapChain>     m_SwapChain;
+    Ref<RHI::IDevice>               m_RenderDevice;
+    Ref<RHI::IGenericWindow>        m_Window;
+    Ref<RHI::ISwapChain>            m_SwapChain;
     UniqueRef<VertexMemoryGPU>      m_VertexMemoryGPU;
     UniqueRef<Canvas>               m_Canvas;
     UniqueRef<UIManager>            m_UIManager;

@@ -63,7 +63,7 @@ protected:
 private:
     void                    DrawDebug(DebugRenderer& renderer);
 
-    UniqueRef<class RenderInterfaceImpl> m_pImpl;
+    UniqueRef<RenderInterfaceImpl> m_pImpl;
     float                   m_Ambient = 0.00025f;
 
     UniqueRef<PhotometricPool> m_PhotometricPool;

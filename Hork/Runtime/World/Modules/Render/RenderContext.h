@@ -28,14 +28,24 @@ SOFTWARE.
 
 */
 
-#include "Common/Device.h"
+#pragma once
+
+#include "WorldRenderView.h"
 
 HK_NAMESPACE_BEGIN
 
-namespace RHI {
-
-void CreateLogicalDevice(const char* Api, Ref<IDevice>* ppDevice);
-
-} // namespace RHI
+struct RenderContext
+{
+    WorldRenderView*            WorldRV;
+    RenderViewData*             View;
+    BvFrustum const*            Frustum;
+    VISIBILITY_GROUP            VisibilityMask;
+    int                         FrameNumber;
+    int                         PolyCount;
+    int                         ShadowMapPolyCount;
+    //int                       LightPortalPolyCount;
+    //int                       TerrainPolyCount;
+    class StreamedMemoryGPU*    StreamedMemory;
+};
 
 HK_NAMESPACE_END
