@@ -40,7 +40,7 @@ SOFTWARE.
 #include <Hork/Audio/AudioMixer.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
-#include <Hork/Runtime/Renderer/RenderFrontend.h>
+#include <Hork/Runtime/Renderer/WorldRenderer.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -288,7 +288,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     m_RenderBackend = MakeUnique<RenderBackend>(m_RenderDevice);
 
-    m_Renderer = MakeUnique<RenderFrontend>();
+    m_Renderer = MakeUnique<WorldRenderer>();
 
     m_ResourceManager = MakeUnique<ResourceManager>();
     m_MaterialManager = MakeUnique<MaterialManager>();
@@ -459,7 +459,7 @@ void GameApplication::ShowStats()
     {
         RenderFrameData* frameData = m_Renderer->GetFrameData();
 
-        RenderFrontendStat const& stat = m_Renderer->GetStat();
+        auto& stat = m_Renderer->GetStat();
 
         StreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 

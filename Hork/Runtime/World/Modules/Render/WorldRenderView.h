@@ -118,6 +118,8 @@ public:
 
 class WorldRenderView final : public RefCounted
 {
+    friend class                WorldRenderer;
+
 public:
 
     //
@@ -228,8 +230,6 @@ private:
     Ref<RHI::ITexture>          m_CurrentExposure;
     int                         m_FrameNum{};
     TextureHandle               m_HandleRT;
-
-    friend class                RenderFrontend;
 };
 
 HK_NAMESPACE_END

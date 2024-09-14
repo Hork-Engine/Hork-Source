@@ -49,7 +49,7 @@ class AsyncJobManager;
 class AsyncJobList;
 class AudioDevice;
 class AudioMixer;
-class RenderFrontend;
+class WorldRenderer;
 
 class ApplicationDesc
 {
@@ -195,7 +195,7 @@ public:
         return static_cast<GameApplication*>(sInstance())->m_RetinaScale;
     }
 
-    static RenderFrontend& sGetRenderer()
+    static WorldRenderer& sGetRenderer()
     {
         return *static_cast<GameApplication*>(sInstance())->m_Renderer.RawPtr();
     }
@@ -258,7 +258,7 @@ private:
     UniqueRef<VertexMemoryGPU>      m_VertexMemoryGPU;
     UniqueRef<Canvas>               m_Canvas;
     UniqueRef<UIManager>            m_UIManager;
-    UniqueRef<RenderFrontend>       m_Renderer;
+    UniqueRef<WorldRenderer>        m_Renderer;
     UniqueRef<RenderBackend>        m_RenderBackend;
     Ref<AudioDevice>                m_AudioDevice;
     UniqueRef<AudioMixer>           m_AudioMixer;

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "RenderFrontend.h"
+#include "WorldRenderer.h"
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Hork/Core/Profiler.h>
@@ -59,13 +59,13 @@ extern ConsoleVar r_HBAODeinterleaved;
 
 ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"_s, "0"_s, CVAR_CHEAT);
 
-void RenderFrontend::AddRenderView(WorldRenderView* renderView)
+void WorldRenderer::AddRenderView(WorldRenderView* renderView)
 {
     // TODO: Sort by render order. Render order get from renderView
     m_RenderViews.EmplaceBack(renderView);
 }
 
-void RenderFrontend::Render(FrameLoop* frameLoop)
+void WorldRenderer::Render(FrameLoop* frameLoop)
 {
     HK_PROFILER_EVENT("Render frontend");
 
@@ -122,7 +122,7 @@ void RenderFrontend::Render(FrameLoop* frameLoop)
     m_RenderViews.Clear();
 }
 
-void RenderFrontend::ClearRenderView(RenderViewData* view)
+void WorldRenderer::ClearRenderView(RenderViewData* view)
 {
     Core::ZeroMem(view, sizeof(*view));
 }
@@ -135,7 +135,7 @@ static constexpr Float4x4 ShadowMapBias = Float4x4(
     {0.0f, 0.0f, 1.0f, 0.0f},
     {0.5f, 0.5f, 0.0f, 1.0f});
 
-void RenderFrontend::AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* streamedMemory, RenderViewData* view, size_t* viewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
+void WorldRenderer::AddShadowmapCascades(DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* streamedMemory, RenderViewData* view, size_t* viewProjStreamHandle, int* pFirstCascade, int* pNumCascades)
 {
     float cascadeSplits[MAX_CASCADE_SPLITS];
     int numSplits = light.GetMaxShadowCascades() + 1;
@@ -315,7 +315,7 @@ HK_FORCEINLINE Float3x3 FixupLightRotation(Quat const& rotation)
     return DirectionToMatrix(-rotation.ZAxis());
 }
 
-void RenderFrontend::AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef)
+void WorldRenderer::AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef)
 {
     if (!m_Context.View->NumShadowMapCascades)
         return;
@@ -452,7 +452,7 @@ constexpr bool IsPunctualLight<PunctualLightComponent>()
 }
 
 template <typename MeshComponentType>
-void RenderFrontend::AddMeshes()
+void WorldRenderer::AddMeshes()
 {
     PreRenderContext context;
     context.FrameNum = m_Context.FrameNumber;
@@ -681,7 +681,7 @@ void RenderFrontend::AddMeshes()
 }
 
 template <typename MeshComponentType, typename LightComponentType>
-void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds)
+void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds)
 {
     PreRenderContext context;
     context.FrameNum = m_Context.FrameNumber;
@@ -837,7 +837,7 @@ void RenderFrontend::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox
     }
 }
 
-bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radius)
+bool WorldRenderer::AddLightShadowmap(PunctualLightComponent* light, float radius)
 {
     if (!light->IsCastShadow())
         return false;
@@ -874,7 +874,7 @@ bool RenderFrontend::AddLightShadowmap(PunctualLightComponent* light, float radi
     return true;
 }
 
-void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
+void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
     auto* world = worldRenderView->GetWorld();
     if (!world)
@@ -1422,7 +1422,7 @@ void RenderFrontend::RenderView(WorldRenderView* worldRenderView, RenderViewData
     }
 }
 
-void RenderFrontend::SortRenderInstances()
+void WorldRenderer::SortRenderInstances()
 {
     struct InstanceSortFunction
     {
@@ -1444,7 +1444,7 @@ void RenderFrontend::SortRenderInstances()
     }
 }
 
-void RenderFrontend::SortShadowInstances(LightShadowmap const* shadowMap)
+void WorldRenderer::SortShadowInstances(LightShadowmap const* shadowMap)
 {
     struct ShadowInstanceSortFunction
     {
@@ -1459,7 +1459,7 @@ void RenderFrontend::SortShadowInstances(LightShadowmap const* shadowMap)
               shadowInstanceSortFunction);
 }
 
-void RenderFrontend::QueryVisiblePrimitives(World* world)
+void WorldRenderer::QueryVisiblePrimitives(World* world)
 {
     VisibilityQuery query;
 
@@ -1476,7 +1476,7 @@ void RenderFrontend::QueryVisiblePrimitives(World* world)
     //world->QueryVisiblePrimitives(m_VisPrimitives, &m_VisPass, query);
 }
 
-void RenderFrontend::QueryShadowCasters(World* world, Float4x4 const& lightViewProjection, Float3 const& lightPosition, Float3x3 const& lightBasis, Vector<PrimitiveDef*>& primitives)
+void WorldRenderer::QueryShadowCasters(World* world, Float4x4 const& lightViewProjection, Float3 const& lightPosition, Float3x3 const& lightBasis, Vector<PrimitiveDef*>& primitives)
 {
     VisibilityQuery query;
     BvFrustum frustum;

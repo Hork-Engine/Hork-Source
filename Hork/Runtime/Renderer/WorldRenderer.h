@@ -39,14 +39,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-struct RenderFrontendStat
-{
-    int PolyCount;
-    int ShadowMapPolyCount;
-    int FrontendTime;
-};
-
-class RenderFrontend final : public Noncopyable
+class WorldRenderer final : public Noncopyable
 {
 public:
     /// Add render view to render
@@ -58,8 +51,15 @@ public:
     /// Get render frame data
     RenderFrameData*            GetFrameData() { return &m_FrameData; }
 
+    struct Statistics
+    {
+        int PolyCount;
+        int ShadowMapPolyCount;
+        int FrontendTime;
+    };
+
     /// Get frame statistic
-    RenderFrontendStat const&   GetStat() const { return m_Stat; }
+    Statistics const&           GetStat() const { return m_Stat; }
 
 private:
     void                        ClearRenderView(RenderViewData* view);
@@ -77,11 +77,11 @@ private:
     void                        AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds={});
     bool                        AddLightShadowmap(class PunctualLightComponent* light, float radius);
 
-    Vector<Ref<WorldRenderView>> m_RenderViews;
+    Vector<Ref<WorldRenderView>>m_RenderViews;
     FrameLoop*                  m_FrameLoop;
     RenderFrameData             m_FrameData;
     RenderContext               m_Context;
-    RenderFrontendStat          m_Stat;
+    Statistics                  m_Stat;
     DebugRenderer               m_DebugDraw;
     int                         m_FrameNumber = 0;
     // World for current render view

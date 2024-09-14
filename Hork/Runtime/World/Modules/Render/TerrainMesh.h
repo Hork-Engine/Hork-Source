@@ -44,7 +44,7 @@ struct TerrainPatch
 class TerrainMesh final : public Noncopyable
 {
 public:
-    TerrainMesh();
+    TerrainMesh(RHI::IDevice* device);
 
     /// Get vertex buffer in GPU
     RHI::IBuffer* GetVertexBufferGPU() const { return m_VertexBufferGPU; }

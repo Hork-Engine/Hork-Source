@@ -54,7 +54,6 @@ Modify NavMesh
 */
 
 #include "TerrainMesh.h"
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -97,7 +96,7 @@ HK_FORCEINLINE TerrainVertex MakeVertex(short X, short Y)
     return v;
 }
 
-TerrainMesh::TerrainMesh()
+TerrainMesh::TerrainMesh(RHI::IDevice* device)
 {
     Vector<TerrainVertex> blockVerts;
     Vector<unsigned short> blockIndices;
@@ -400,10 +399,10 @@ TerrainMesh::TerrainMesh()
     ci.bImmutableStorage = true;
 
     ci.SizeInBytes = m_VertexBuffer.Size() * sizeof(TerrainVertex);
-    GameApplication::sGetRenderDevice()->CreateBuffer(ci, m_VertexBuffer.ToPtr(), &m_VertexBufferGPU);
+    device->CreateBuffer(ci, m_VertexBuffer.ToPtr(), &m_VertexBufferGPU);
 
     ci.SizeInBytes = m_IndexBuffer.Size() * sizeof(unsigned short);
-    GameApplication::sGetRenderDevice()->CreateBuffer(ci, m_IndexBuffer.ToPtr(), &m_IndexBufferGPU);
+    device->CreateBuffer(ci, m_IndexBuffer.ToPtr(), &m_IndexBufferGPU);
 
     LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", m_VertexBuffer.Size(), m_IndexBuffer.Size());
 }

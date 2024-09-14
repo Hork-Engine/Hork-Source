@@ -40,7 +40,7 @@ SOFTWARE.
 #include <Hork/Runtime/UI/UIViewport.h>
 #include <Hork/Runtime/UI/UIImage.h>
 
-#include <Hork/Runtime/Renderer/RenderFrontend.h>
+#include <Hork/Runtime/Renderer/WorldRenderer.h>
 
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
 

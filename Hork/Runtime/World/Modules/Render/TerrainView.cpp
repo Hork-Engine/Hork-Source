@@ -55,8 +55,10 @@ uint32_t TerrainView::s_InstanceCount{};
 
 TerrainView::TerrainView(TerrainHandle resource)
 {
+    RHI::IDevice* device = GameApplication::sGetRenderDevice();
+
     if (!s_TerrainMesh)
-        s_TerrainMesh = MakeUnique<TerrainMesh>();
+        s_TerrainMesh = MakeUnique<TerrainMesh>(device);
 
     s_InstanceCount++;
 
@@ -83,7 +85,7 @@ TerrainView::TerrainView(TerrainHandle resource)
                                                                                  TERRAIN_CLIPMAP_SIZE,
                                                                                  MAX_TERRAIN_LODS))
                              .SetBindFlags(RHI::BIND_SHADER_RESOURCE);
-    GameApplication::sGetRenderDevice()->CreateTexture(textureFormat, &m_ClipmapArray);
+    device->CreateTexture(textureFormat, &m_ClipmapArray);
     m_ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
     auto normalMapFormat = RHI::TextureDesc()
@@ -92,7 +94,7 @@ TerrainView::TerrainView(TerrainHandle resource)
                                                                                    TERRAIN_CLIPMAP_SIZE,
                                                                                    MAX_TERRAIN_LODS))
                                .SetBindFlags(RHI::BIND_SHADER_RESOURCE);
-    GameApplication::sGetRenderDevice()->CreateTexture(normalMapFormat, &m_NormalMapArray);
+    device->CreateTexture(normalMapFormat, &m_NormalMapArray);
     m_NormalMapArray->SetDebugName("Terrain Normal Map Array");
 }
 
@@ -110,6 +112,8 @@ TerrainView::~TerrainView()
 
 void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
+    auto& resourceMngr = GameApplication::sGetResourceManager();
+
     m_BoundingBoxes.Clear();
 
     m_IndirectBuffer.Clear();
@@ -117,9 +121,7 @@ void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustu
 
     m_StartInstanceLocation = 0;
 
-    auto& rm = GameApplication::sGetResourceManager();
-
-    auto* resource = rm.TryGet(m_Terrain);
+    auto resource = resourceMngr.TryGet(m_Terrain);
     if (!resource)
         return;
 
@@ -348,12 +350,12 @@ void TerrainView::AddCrackLines(TerrainLodInfo const& Lod)
 
 void TerrainView::MakeView(Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
+    auto& resourceMngr = GameApplication::sGetResourceManager();
+
     int minLod = Math::Max(com_TerrainMinLod.GetInteger(), 0);
     int maxLod = Math::Min(com_TerrainMaxLod.GetInteger(), MAX_TERRAIN_LODS - 1);
 
-    auto& rm = GameApplication::sGetResourceManager();
-
-    auto* resource = rm.TryGet(m_Terrain);
+    auto resource = resourceMngr.TryGet(m_Terrain);
 
     float terrainH;
     if (resource)
@@ -847,15 +849,15 @@ void TerrainView::AddPatches(BvFrustum const& ViewFrustum)
 
 void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& CoarserLod, int MinX, int MaxX, int MinY, int MaxY)
 {
+    auto& resourceMngr = GameApplication::sGetResourceManager();
+
     Int2 texelWorldPos;
     float h[4];
     Float3 n;
 
     const float InvGridSizeCoarse = 1.0f / CoarserLod.GridScale;
 
-    auto& rm = GameApplication::sGetResourceManager();
-
-    auto* resource = rm.TryGet(m_Terrain); // TODO: ѕереместить куда-нибудь выше
+    auto resource = resourceMngr.TryGet(m_Terrain); // TODO: ѕереместить куда-нибудь выше
     if (!resource)
         return;
 

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "UIViewport.h"
 #include "UIManager.h"
 #include <Hork/Runtime/GameApplication/GameApplication.h>
-#include <Hork/Runtime/Renderer/RenderFrontend.h>
+#include <Hork/Runtime/Renderer/WorldRenderer.h>
 #include <Hork/Runtime/World/World.h>
 
 HK_NAMESPACE_BEGIN
