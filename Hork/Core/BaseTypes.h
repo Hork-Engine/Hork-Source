@@ -242,7 +242,7 @@ Misc
 #    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : ::Hk::AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
 
 HK_NAMESPACE_BEGIN
-extern void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
+void AssertFunction(const char* file, int line, const char* function, const char* assertion, const char* comment);
 HK_NAMESPACE_END
 
 #else
@@ -262,7 +262,7 @@ HK_NAMESPACE_END
     do                                                               \
     {                                                                \
         if (HK_UNLIKELY(!(Expression)))                              \
-            Hk::CoreApplication::sTerminateWithError("{} Expected {}\n", Message, #Expression); \
+            CoreApplication::sTerminateWithError("{} Expected {}\n", Message, #Expression); \
     } while (false)
 
 #define HK_VERIFY_R(Expression, Message)                   \

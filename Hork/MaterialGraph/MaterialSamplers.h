@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 struct MaterialSamplers
 {
-    using SamplerDesc = RenderCore::SamplerDesc;
+    using SamplerDesc = RHI::SamplerDesc;
 
     SamplerDesc         LightmapSampler;
     SamplerDesc         ReflectSampler;
@@ -57,6 +57,6 @@ struct MaterialSamplers
                         MaterialSamplers();
 };
 
-extern MaterialSamplers g_MaterialSamplers;
+extern const MaterialSamplers g_MaterialSamplers;
 
 HK_NAMESPACE_END

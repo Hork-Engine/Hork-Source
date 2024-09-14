@@ -47,7 +47,7 @@ void ShaderCompiler::sDeinitialize()
     glslang::FinalizeProcess();
 }
 
-bool ShaderCompiler::sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv)
+bool ShaderCompiler::sCreateSpirV(RHI::SHADER_TYPE shaderType, SourceList const& sources, HeapBlob& spirv)
 {
     const char* shaderTypeMacro[] =
     {
@@ -74,22 +74,22 @@ bool ShaderCompiler::sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList
     EShLanguage stage;
     switch (shaderType)
     {
-    case RenderCore::VERTEX_SHADER:
+    case RHI::VERTEX_SHADER:
         stage = EShLangVertex;
         break;
-    case RenderCore::FRAGMENT_SHADER:
+    case RHI::FRAGMENT_SHADER:
         stage = EShLangFragment;
         break;
-    case RenderCore::TESS_CONTROL_SHADER:
+    case RHI::TESS_CONTROL_SHADER:
         stage = EShLangTessControl;
         break;
-    case RenderCore::TESS_EVALUATION_SHADER:
+    case RHI::TESS_EVALUATION_SHADER:
         stage = EShLangTessEvaluation;
         break;
-    case RenderCore::GEOMETRY_SHADER:
+    case RHI::GEOMETRY_SHADER:
         stage = EShLangGeometry;
         break;
-    case RenderCore::COMPUTE_SHADER:
+    case RHI::COMPUTE_SHADER:
         stage = EShLangCompute;
         break;
     default:
@@ -150,9 +150,9 @@ bool ShaderCompiler::sCreateSpirV(RenderCore::SHADER_TYPE shaderType, SourceList
 namespace
 {
     /// Vertex attrubte to shader string helper
-    String ShaderStringForVertexAttribs(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs)
+    String ShaderStringForVertexAttribs(ArrayView<RHI::VertexAttribInfo> vertexAttribs)
     {
-        using namespace RenderCore;
+        using namespace RHI;
 
         String      s;
         const char* attribType;
@@ -164,7 +164,7 @@ namespace
             {"uint", "uvec2", "uvec3", "uvec4"}    // Unsigned types
         };
 
-        for (RenderCore::VertexAttribInfo const& attrib : vertexAttribs)
+        for (RHI::VertexAttribInfo const& attrib : vertexAttribs)
         {
             VERTEX_ATTRIB_COMPONENT typeOfComponent = attrib.TypeOfComponent();
 
@@ -180,7 +180,7 @@ namespace
     }
 }
 
-bool ShaderCompiler::sCreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv)
+bool ShaderCompiler::sCreateSpirV_VertexShader(ArrayView<RHI::VertexAttribInfo> vertexAttribs, SourceList const& sources, HeapBlob& spirv)
 {
     SourceList _sources;
     String attribs = ShaderStringForVertexAttribs(vertexAttribs);
@@ -189,7 +189,7 @@ bool ShaderCompiler::sCreateSpirV_VertexShader(ArrayView<RenderCore::VertexAttri
         _sources.Add(attribs.CStr());
     _sources.Add(sources);
 
-    return sCreateSpirV(RenderCore::VERTEX_SHADER, _sources, spirv);
+    return sCreateSpirV(RHI::VERTEX_SHADER, _sources, spirv);
 }
 
 HK_NAMESPACE_END

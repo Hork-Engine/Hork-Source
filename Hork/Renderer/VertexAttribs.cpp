@@ -31,9 +31,11 @@ SOFTWARE.
 #include "VertexAttribs.h"
 #include "RenderDefs.h"
 
+#include <Hork/Geometry/VertexFormat.h>
+
 HK_NAMESPACE_BEGIN
 
-using namespace RenderCore;
+using namespace RHI;
 
 static const VertexAttribInfo VertexAttribsSkinned[] = {
     {"InPosition",

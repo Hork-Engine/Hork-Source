@@ -32,61 +32,51 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
-#include "VT/VirtualTextureAnalyzer.h"
-#include "VT/VirtualTextureFeedback.h"
-#include "VT/VirtualTexturePhysCache.h"
+#include <Hork/RHI/Common/VertexMemoryGPU.h>
 
-#include "CanvasRenderer.h"
-#include "FrameRenderer.h"
+#include <Hork/VirtualTexture/VirtualTextureAnalyzer.h>
+#include <Hork/VirtualTexture/VirtualTexturePhysCache.h>
 
-#include <Hork/RenderCore/VertexMemoryGPU.h>
+#include "VirtualTextureFeedback.h"
 
 HK_NAMESPACE_BEGIN
 
+// NOTE: The rendering backend should be used as a singleton object. (This should be fixed later)
 class RenderBackend final : public Noncopyable
 {
 public:
-    RenderBackend(RenderCore::IDevice* pDevice);
-    ~RenderBackend();
+                                RenderBackend(RHI::IDevice* device);
+                                ~RenderBackend();
 
-    void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
-    void GenerateReflectionMap(RenderCore::ITexture* pCubemap, Ref<RenderCore::ITexture>* ppTexture);
-    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, Ref<RenderCore::ITexture>* ppTexture);
+    void                        RenderFrame(StreamedMemoryGPU* streamedMemory, RHI::ITexture* backBuffer, RenderFrameData const* frameData, CanvasDrawData const* canvasData);
 
-    bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, StringView EnvmapFile);
-    bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, StringView EnvmapFile);
-    ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
-
-    void RenderFrame(StreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, RenderFrameData* pFrameData);
-
-    int ClusterPackedIndicesAlignment() const;
-
-    int MaxOmnidirectionalShadowMapsPerView() const;
+    int                         ClusterPackedIndicesAlignment() const;
+    int                         MaxOmnidirectionalShadowMapsPerView() const;
 
 private:
-    void RenderView(int ViewportIndex, RenderViewData* pRenderView);
-    void SetViewConstants(int ViewportIndex);
-    void UploadShaderResources(int ViewportIndex);
+    void                        RenderView(int viewportIndex, RenderViewData* renderView);
+    void                        SetViewConstants(int viewportIndex);
+    void                        UploadShaderResources(int viewportIndex);
 
-    Ref<RenderCore::FrameGraph>       m_FrameGraph;
+    Ref<RHI::FrameGraph>        m_FrameGraph;
 
-    Ref<CanvasRenderer> m_CanvasRenderer;
-    Ref<FrameRenderer> m_FrameRenderer;
+    Ref<class CanvasRenderer>   m_CanvasRenderer;
+    Ref<class FrameRenderer>    m_FrameRenderer;
 
-    Ref<RenderCore::IQueryPool> m_TimeQuery;
+    Ref<RHI::IQueryPool>        m_TimeQuery;
 
-    Ref<RenderCore::IQueryPool> m_TimeStamp1;
-    Ref<RenderCore::IQueryPool> m_TimeStamp2;
+    Ref<RHI::IQueryPool>        m_TimeStamp1;
+    Ref<RHI::IQueryPool>        m_TimeStamp2;
 
     Ref<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
-    Ref<VirtualTextureCache> m_PhysCacheVT;
+    Ref<VirtualTextureCache>    m_PhysCacheVT;
 
-    Ref<RenderCore::IPipeline> m_TerrainDepthPipeline;
-    Ref<RenderCore::IPipeline> m_TerrainLightPipeline;
-    Ref<RenderCore::IPipeline> m_TerrainWireframePipeline;
+    Ref<RHI::IPipeline>         m_TerrainDepthPipeline;
+    Ref<RHI::IPipeline>         m_TerrainLightPipeline;
+    Ref<RHI::IPipeline>         m_TerrainWireframePipeline;
 
     // Just for test
-    Ref<VirtualTexture> m_TestVT;
+    Ref<VirtualTexture>         m_TestVT;
 };
 
 HK_NAMESPACE_END

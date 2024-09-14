@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "AudioDecoder.h"
 
+#include <Hork/Core/CoreApplication.h>
+
 #include <miniaudio/miniaudio.h>
 
 HK_NAMESPACE_BEGIN

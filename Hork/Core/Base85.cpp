@@ -28,7 +28,6 @@ SOFTWARE.
 
 */
 
-#include "Memory.h"
 #include "String.h"
 
 HK_NAMESPACE_BEGIN

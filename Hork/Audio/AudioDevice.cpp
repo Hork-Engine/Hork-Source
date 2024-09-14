@@ -31,7 +31,7 @@ SOFTWARE.
 #include "AudioDevice.h"
 #include "AudioStream.h"
 
-#include <Hork/Core/Logger.h>
+#include <Hork/Core/CoreApplication.h>
 
 #include <SDL3/SDL.h>
 

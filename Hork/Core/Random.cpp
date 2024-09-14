@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Hork/Core/Random.h>
+#include "Random.h"
 
 HK_NAMESPACE_BEGIN
 

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "Image.h"
 #include "ImageEncoders.h"
+#include <Hork/Core/CoreApplication.h>
 
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Color.h>

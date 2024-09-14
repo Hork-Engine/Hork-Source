@@ -40,11 +40,11 @@ public:
     struct Shader
     {
         Shader() = default;
-        Shader(RenderCore::SHADER_TYPE type, HeapBlob blob) :
+        Shader(RHI::SHADER_TYPE type, HeapBlob blob) :
             m_Type(type), m_Blob(std::move(blob))
         {}
 
-        RenderCore::SHADER_TYPE m_Type;
+        RHI::SHADER_TYPE m_Type;
         HeapBlob m_Blob;
 
         void Read(IBinaryStreamReadInterface& stream);
@@ -62,14 +62,14 @@ public:
     struct MaterialPassData
     {
         MaterialPass::Type              Type;
-        RenderCore::POLYGON_CULL        CullMode = RenderCore::POLYGON_CULL_BACK;
-        RenderCore::COMPARISON_FUNCTION DepthFunc = RenderCore::CMPFUNC_LESS;
+        RHI::POLYGON_CULL               CullMode = RHI::POLYGON_CULL_BACK;
+        RHI::COMPARISON_FUNCTION        DepthFunc = RHI::CMPFUNC_LESS;
         bool                            DepthWrite = true;
         bool                            DepthTest = true;
-        RenderCore::PRIMITIVE_TOPOLOGY  Topology = RenderCore::PRIMITIVE_TRIANGLES;
-        Vector<RenderCore::BufferInfo>  BufferBindings;
-        Vector<RenderCore::RenderTargetBlendingInfo>    RenderTargets;
-        Vector<RenderCore::SamplerDesc> Samplers;
+        RHI::PRIMITIVE_TOPOLOGY         Topology = RHI::PRIMITIVE_TRIANGLES;
+        Vector<RHI::BufferInfo>         BufferBindings;
+        Vector<RHI::RenderTargetBlendingInfo>    RenderTargets;
+        Vector<RHI::SamplerDesc>        Samplers;
 
         VertexFormat                    VertFormat = VertexFormat::StaticMesh;
 
@@ -98,9 +98,7 @@ public:
     Vector<Shader>          Shaders; // SpirV or Raw sources
     Vector<MaterialPassData>Passes;
 
-    uint32_t                AddShader(RenderCore::SHADER_TYPE shaderType, HeapBlob blob);
-
-    Ref<MaterialGPU>        Compile();
+    uint32_t                AddShader(RHI::SHADER_TYPE shaderType, HeapBlob blob);
 
     void                    Read(IBinaryStreamReadInterface& stream);
     void                    Write(IBinaryStreamWriteInterface& stream) const;

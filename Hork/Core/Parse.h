@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Containers/Vector.h"
+#include "String.h"
 #include "Logger.h"
 
 HK_NAMESPACE_BEGIN

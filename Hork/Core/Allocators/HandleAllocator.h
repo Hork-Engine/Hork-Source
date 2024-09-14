@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Core/Handle.h>
+#include <Hork/Core/BaseMath.h>
 
 HK_NAMESPACE_BEGIN
 

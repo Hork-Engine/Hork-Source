@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Hork/Core/Color.h>
+#include "Color.h"
 
 HK_NAMESPACE_BEGIN
 

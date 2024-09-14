@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "StringID.h"
-#include "Logger.h"
+#include "CoreApplication.h"
 
 HK_NAMESPACE_BEGIN
 

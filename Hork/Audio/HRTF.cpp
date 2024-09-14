@@ -33,8 +33,8 @@ SOFTWARE.
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/CoreApplication.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
-#include <Hork/GameApplication/GameApplication.h>
 
 // Use miniaudio for resampling
 #include <miniaudio/miniaudio.h>
@@ -49,7 +49,7 @@ ConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"_s, "1"_s);
 
 AudioHRTF::AudioHRTF(int SampleRate)
 {
-    File f = File::sOpenRead("HRTF/IRC_1002_C.bin", GameApplication::sGetEmbeddedArchive());
+    File f = File::sOpenRead("HRTF/IRC_1002_C.bin", CoreApplication::sGetEmbeddedArchive());
     if (!f)
     {
         // An error occurred...

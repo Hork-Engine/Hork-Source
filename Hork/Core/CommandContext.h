@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/CommandProcessor.h>
-#include <Hork/Core/ConsoleVar.h>
-#include <Hork/Core/Delegate.h>
-#include <Hork/Core/Containers/Vector.h>
+#include "CommandProcessor.h"
+#include "ConsoleVar.h"
+#include "Delegate.h"
+#include "Containers/Vector.h"
 
 HK_NAMESPACE_BEGIN
 

@@ -28,13 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Hork/Core/Memory.h>
-#include <Hork/Core/Logger.h>
-
-#include <Hork/Core/BinaryToC.h>
-#include <Hork/Core/Compress.h>
-#include <Hork/Core/IO.h>
-#include <Hork/Core/HeapBlob.h>
+#include "BinaryToC.h"
+#include "Memory.h"
+#include "Logger.h"
+#include "Compress.h"
+#include "IO.h"
 
 HK_NAMESPACE_BEGIN
 

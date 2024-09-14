@@ -31,7 +31,8 @@ SOFTWARE.
 #include "ShaderLoader.h"
 
 #include <Hork/Core/ConsoleVar.h>
-#include <Hork/GameApplication/GameApplication.h>
+#include <Hork/Core/CoreApplication.h>
+#include <Hork/Core/IO.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -234,7 +235,7 @@ bool ShaderLoader::LoadFile(StringView fileName, String& source)
     File f;
     if (r_EmbeddedShaders)
     {
-        f = File::sOpenRead("Shaders/" + fileName, GameApplication::sGetEmbeddedArchive());
+        f = File::sOpenRead("Shaders/" + fileName, CoreApplication::sGetEmbeddedArchive());
     }
     else
     {

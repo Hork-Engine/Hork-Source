@@ -31,14 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include "Format.h"
-#include "CoreApplication.h"
 
 HK_NAMESPACE_BEGIN
 
-HK_FORCEINLINE void LOG(const char* message)
-{
-    CoreApplication::sWriteMessage(message);
-}
+void LOG(const char* message);
 
 template <typename... T>
 HK_FORCEINLINE void LOG(fmt::format_string<T...> format, T&&... args)
@@ -47,7 +43,7 @@ HK_FORCEINLINE void LOG(fmt::format_string<T...> format, T&&... args)
     fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
     buffer.push_back('\0');
 
-    CoreApplication::sWriteMessage(buffer.data());
+    LOG(buffer.data());
 }
 
 template <typename... T>
@@ -57,7 +53,7 @@ HK_FORCEINLINE void CRITICAL(fmt::format_string<T...> format, T&&... args)
     fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
     buffer.push_back('\0');
 
-    CoreApplication::sWriteMessage(buffer.data());
+    LOG(buffer.data());
 }
 
 template <typename... T>
@@ -67,7 +63,7 @@ HK_FORCEINLINE void ERROR(fmt::format_string<T...> format, T&&... args)
     fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
     buffer.push_back('\0');
 
-    CoreApplication::sWriteMessage(buffer.data());
+    LOG(buffer.data());
 }
 
 template <typename... T>
@@ -77,7 +73,7 @@ HK_FORCEINLINE void WARNING(fmt::format_string<T...> format, T&&... args)
     fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
     buffer.push_back('\0');
 
-    CoreApplication::sWriteMessage(buffer.data());
+    LOG(buffer.data());
 }
 
 template <typename... T>
@@ -88,7 +84,7 @@ HK_FORCEINLINE void DEBUG(fmt::format_string<T...> format, T&&... args)
     fmt::detail::vformat_to(buffer, fmt::string_view(format), fmt::make_format_args(args...));
     buffer.push_back('\0');
 
-    CoreApplication::sWriteMessage(buffer.data());
+    LOG(buffer.data());
 #endif
 }
 

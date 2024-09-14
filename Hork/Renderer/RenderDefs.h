@@ -30,13 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Image/Image.h>
 #include <Hork/Core/Color.h>
 #include <Hork/Math/Quat.h>
-#include <Hork/Geometry/VertexFormat.h>
-#include <Hork/Geometry/BV/BvFrustum.h>
+#include <Hork/RHI/Common/Device.h>
 
-#include <Hork/RenderCore/Device.h>
 #include <Hork/Embedded/Shaders/Common.h>
 
 HK_NAMESPACE_BEGIN
@@ -301,13 +298,13 @@ public:
     int                         WireframePassTextureCount{};
     int                         NormalsPassTextureCount{};
     int                         ShadowMapPassTextureCount{};
-    Ref<RenderCore::IPipeline>  Passes[MaterialPass::MAX];
+    Ref<RHI::IPipeline>         Passes[MaterialPass::MAX];
 };
 
 struct MaterialFrameData
 {
     MaterialGPU*                Material;
-    RenderCore::ITexture*       Textures[MAX_MATERIAL_TEXTURES];
+    RHI::ITexture*              Textures[MAX_MATERIAL_TEXTURES];
     int                         NumTextures;
     Float4                      UniformVectors[4];
     int                         NumUniformVectors;
@@ -461,15 +458,15 @@ class TextureView;
 
 struct CanvasDrawCmd
 {
-    RenderCore::ITexture* Texture;
-    CANVAS_DRAW_COMMAND   Type;
-    CANVAS_COMPOSITE      Composite;
-    CANVAS_IMAGE_FLAGS    TextureFlags;
-    int                   FirstPath;
-    int                   PathCount;
-    int                   FirstVertex;
-    int                   VertexCount;
-    int                   UniformOffset;
+    RHI::ITexture*      Texture;
+    CANVAS_DRAW_COMMAND Type;
+    CANVAS_COMPOSITE    Composite;
+    CANVAS_IMAGE_FLAGS  TextureFlags;
+    int                 FirstPath;
+    int                 PathCount;
+    int                 FirstVertex;
+    int                 VertexCount;
+    int                 UniformOffset;
 };
 
 struct CanvasPath
@@ -500,6 +497,7 @@ public:
     uint8_t*       Uniforms{};
     int            MaxUniforms{};
     int            UniformCount{};
+    size_t         CanvasVertexStream{};
 };
 
 
@@ -529,55 +527,49 @@ Render instance (opaque & translucent meshes)
 */
 struct RenderInstance
 {
-    MaterialGPU*       Material;
-    MaterialFrameData* MaterialInstance;
+    MaterialGPU*        Material;
+    MaterialFrameData*  MaterialInstance;
 
-    RenderCore::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
 
-    RenderCore::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
 
-    RenderCore::IBuffer* WeightsBuffer;
-    size_t               WeightsBufferOffset;
+    RHI::IBuffer*       WeightsBuffer;
+    size_t              WeightsBufferOffset;
 
-    RenderCore::IBuffer* VertexLightChannel;
-    size_t               VertexLightOffset;
+    RHI::IBuffer*       VertexLightChannel;
+    size_t              VertexLightOffset;
 
-    RenderCore::IBuffer* LightmapUVChannel;
-    size_t               LightmapUVOffset;
+    RHI::IBuffer*       LightmapUVChannel;
+    size_t              LightmapUVOffset;
 
-    RenderCore::ITexture* Lightmap;
-    Float4                LightmapOffset;
+    RHI::ITexture*      Lightmap;
+    Float4              LightmapOffset;
 
-    Float4x4 Matrix;
-    Float4x4 MatrixP;
+    Float4x4            Matrix;
+    Float4x4            MatrixP;
 
-    Float3x3 ModelNormalToViewSpace;
+    Float3x3            ModelNormalToViewSpace;
 
-    size_t SkeletonOffset;
-    size_t SkeletonOffsetMB;
-    size_t SkeletonSize;
+    size_t              SkeletonOffset;
+    size_t              SkeletonOffsetMB;
+    size_t              SkeletonSize;
 
-    unsigned int IndexCount;
-    unsigned int StartIndexLocation;
-    int          BaseVertexLocation;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
 
-    bool bPerObjectMotionBlur;
+    bool                bPerObjectMotionBlur;
 
-    uint64_t SortKey;
+    uint64_t            SortKey;
 
-    uint8_t GetRenderingPriority() const
-    {
-        return (SortKey >> 56) & 0xf0;
-    }
+    uint8_t             GetRenderingPriority() const { return (SortKey >> 56) & 0xf0; }
 
-    uint8_t GetGeometryPriority() const
-    {
-        return (SortKey >> 56) & 0x0f;
-    }
+    uint8_t             GetGeometryPriority() const { return (SortKey >> 56) & 0x0f; }
 
-    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    void                GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(HashTraits::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
@@ -592,24 +584,24 @@ Shadowmap render instance
 */
 struct ShadowRenderInstance
 {
-    MaterialGPU*         Material;
-    MaterialFrameData*   MaterialInstance;
-    RenderCore::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
-    RenderCore::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
-    RenderCore::IBuffer* WeightsBuffer;
-    size_t               WeightsBufferOffset;
-    Float3x4             WorldTransformMatrix;
-    size_t               SkeletonOffset;
-    size_t               SkeletonSize;
-    unsigned int         IndexCount;
-    unsigned int         StartIndexLocation;
-    int                  BaseVertexLocation;
-    uint16_t             CascadeMask; // Cascade mask for directional lights or face index for point/spot lights
-    uint64_t             SortKey;
+    MaterialGPU*        Material;
+    MaterialFrameData*  MaterialInstance;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
+    RHI::IBuffer*       WeightsBuffer;
+    size_t              WeightsBufferOffset;
+    Float3x4            WorldTransformMatrix;
+    size_t              SkeletonOffset;
+    size_t              SkeletonSize;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
+    uint16_t            CascadeMask; // Cascade mask for directional lights or face index for point/spot lights
+    uint64_t            SortKey;
 
-    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    void                GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(HashTraits::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
@@ -624,13 +616,13 @@ Light portal render instance
 */
 struct LightPortalRenderInstance
 {
-    RenderCore::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
-    RenderCore::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
-    unsigned int         IndexCount;
-    unsigned int         StartIndexLocation;
-    int                  BaseVertexLocation;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
 };
 
 
@@ -772,18 +764,18 @@ Terrain render instance
 */
 struct TerrainRenderInstance
 {
-    RenderCore::IBuffer*  VertexBuffer;
-    RenderCore::IBuffer*  IndexBuffer;
-    size_t                InstanceBufferStreamHandle;
-    size_t                IndirectBufferStreamHandle;
-    int                   IndirectBufferDrawCount;
-    RenderCore::ITexture* Clipmaps;
-    RenderCore::ITexture* Normals;
-    Float4                ViewPositionAndHeight;
-    Float4x4              LocalViewProjection;
-    Float3x3              ModelNormalToViewSpace;
-    Int2                  ClipMin;
-    Int2                  ClipMax;
+    RHI::IBuffer*       VertexBuffer;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              InstanceBufferStreamHandle;
+    size_t              IndirectBufferStreamHandle;
+    int                 IndirectBufferDrawCount;
+    RHI::ITexture*      Clipmaps;
+    RHI::ITexture*      Normals;
+    Float4              ViewPositionAndHeight;
+    Float4x4            LocalViewProjection;
+    Float3x3            ModelNormalToViewSpace;
+    Int2                ClipMin;
+    Int2                ClipMax;
 };
 
 
@@ -870,9 +862,9 @@ struct RenderViewData
     float Exposure;
 
     /// Source color grading texture
-    RenderCore::ITexture* ColorGradingLUT;
+    RHI::ITexture* ColorGradingLUT;
     /// Current color grading texture
-    RenderCore::ITexture* CurrentColorGradingLUT;
+    RHI::ITexture* CurrentColorGradingLUT;
 
     /// Blending speed between current and source color grading textures
     float ColorGradingAdaptationSpeed;
@@ -887,22 +879,22 @@ struct RenderViewData
     float  ColorGradingBrightnessNormalization;
 
     /// Current exposure texture
-    RenderCore::ITexture* CurrentExposure;
+    RHI::ITexture* CurrentExposure;
 
     /// Light photometric lookup map (IES)
-    RenderCore::ITexture* PhotometricProfiles;
+    RHI::ITexture* PhotometricProfiles;
 
     /// Texture with light data
-    RenderCore::ITexture* LightTexture;
+    RHI::ITexture* LightTexture;
 
     /// Texture with depth data
-    RenderCore::ITexture* DepthTexture;
+    RHI::ITexture* DepthTexture;
 
     /// Final texture data
-    RenderCore::ITexture* RenderTarget;
+    RHI::ITexture* RenderTarget;
 
     /// Deinterleaved depth buffers for HBAO rendering
-    RenderCore::ITexture* HBAOMaps;
+    RHI::ITexture* HBAOMaps;
 
     /// Virtual texture feedback data (experimental)
     class VirtualTextureFeedback* VTFeedback;
@@ -1003,10 +995,6 @@ struct RenderFrameData
     Vector<LightShadowmap> LightShadowmaps;
     /// Terrain instances
     Vector<TerrainRenderInstance*> TerrainInstances;
-
-    /// Canvas draw commands
-    CanvasDrawData const* pCanvasDrawData;
-    size_t CanvasVertexData;
 
     /// Debug draw commands
     DebugDrawCmd const* DbgCmds;
