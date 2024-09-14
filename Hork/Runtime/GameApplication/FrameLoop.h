@@ -163,15 +163,9 @@ public:
     /// Poll runtime events
     void            PollEvents(IEventListener* listener);
 
-    void            RegisterView(WorldRenderView* view);
-
-    Vector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
-
     StreamedMemoryGPU* GetStreamedMemoryGPU() { return m_StreamedMemoryGPU.RawPtr(); }
 
 private:
-    void            ClearViews();
-        
     int64_t             m_FrameTimeStamp;
     int64_t             m_FrameDuration;
     int                 m_FrameNumber;
@@ -180,7 +174,7 @@ private:
     size_t              m_FrameMemoryUsedPrev = 0;
     size_t              m_MaxFrameMemoryUsage = 0;
 
-    Ref<RHI::IDevice>        m_RenderDevice;
+    Ref<RHI::IDevice>   m_RenderDevice;
     UniqueRef<class GPUSync>        m_GPUSync;
     UniqueRef<StreamedMemoryGPU>    m_StreamedMemoryGPU;
 
@@ -188,7 +182,6 @@ private:
 
     bool                m_ShouldGenerateInputEvents{true};
 
-    Vector<WorldRenderView*>   m_Views;
     Ref<class FontStash>       m_FontStash;
 };
 

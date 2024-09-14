@@ -49,8 +49,11 @@ struct RenderFrontendStat
 class RenderFrontend final : public Noncopyable
 {
 public:
+    /// Add render view to render
+    void                        AddRenderView(WorldRenderView* renderView);
+
     /// Build frame data
-    void                        Render(class FrameLoop* frameLoop, Canvas* canvas);
+    void                        Render(class FrameLoop* frameLoop, Canvas const* canvas);
 
     /// Get render frame data
     RenderFrameData*            GetFrameData() { return &m_FrameData; }
@@ -74,6 +77,7 @@ private:
     void                        AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds={});
     bool                        AddLightShadowmap(class PunctualLightComponent* light, float radius);
 
+    Vector<Ref<WorldRenderView>> m_RenderViews;
     FrameLoop*                  m_FrameLoop;
     RenderFrameData             m_FrameData;
     RenderContext               m_Context;

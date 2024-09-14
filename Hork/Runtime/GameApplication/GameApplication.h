@@ -195,6 +195,11 @@ public:
         return static_cast<GameApplication*>(sInstance())->m_RetinaScale;
     }
 
+    static RenderFrontend& sGetRenderer()
+    {
+        return *static_cast<GameApplication*>(sInstance())->m_Renderer.RawPtr();
+    }
+
 protected:
     bool bToggleFullscreenAltEnter{true};
 

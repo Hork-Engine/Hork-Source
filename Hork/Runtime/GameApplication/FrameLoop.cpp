@@ -29,12 +29,13 @@ SOFTWARE.
 */
 
 #include "FrameLoop.h"
-#include <Hork/Runtime/World/Modules/Render/WorldRenderView.h>
 #include <Hork/Runtime/Resources/Resource_Font.h>
+#include <Hork/Runtime/Resources/ResourceManager.h>
 
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/Profiler.h>
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/CoreApplication.h>
 
 #include <Hork/RHI/Common/GPUSync.h>
 
@@ -63,7 +64,6 @@ FrameLoop::FrameLoop(RHI::IDevice* renderDevice) :
 
 FrameLoop::~FrameLoop()
 {
-    ClearViews();
 }
 
 void* FrameLoop::AllocFrameMem(size_t sizeInBytes, size_t alignment)
@@ -182,22 +182,7 @@ void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterva
     // Free frame memory for new frame
     m_FrameMemory.ResetAndMerge();
 
-    ClearViews();
-
     m_FontStash->Cleanup();
-}
-
-void FrameLoop::ClearViews()
-{
-    for (auto* view : m_Views)
-        view->RemoveRef();
-    m_Views.Clear();
-}
-
-void FrameLoop::RegisterView(WorldRenderView* view)
-{
-    m_Views.Add(view);
-    view->AddRef();
 }
 
 static const VirtualKey InvalidKey = VirtualKey(0xffff);

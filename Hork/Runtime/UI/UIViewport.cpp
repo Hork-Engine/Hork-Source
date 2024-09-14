@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "UIViewport.h"
 #include "UIManager.h"
-#include <Hork/Runtime/GameApplication/FrameLoop.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
+#include <Hork/Runtime/Renderer/RenderFrontend.h>
 #include <Hork/Runtime/World/World.h>
 
 HK_NAMESPACE_BEGIN
@@ -185,7 +185,7 @@ void UIViewport::Draw(Canvas& canvas)
     camera->SetViewportPosition(m_Geometry.Mins);
     camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)}, aspectScale);
 
-    GameApplication::sGetFrameLoop().RegisterView(m_WorldRenderView);
+    GameApplication::sGetRenderer().AddRenderView(m_WorldRenderView);
 
     m_WorldRenderView->AcquireRenderTarget();
 

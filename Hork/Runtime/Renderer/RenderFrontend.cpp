@@ -59,11 +59,16 @@ extern ConsoleVar r_HBAODeinterleaved;
 
 ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"_s, "0"_s, CVAR_CHEAT);
 
-void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
+void RenderFrontend::AddRenderView(WorldRenderView* renderView)
+{
+    // TODO: Sort by render order. Render order get from renderView
+    m_RenderViews.EmplaceBack(renderView);
+}
+
+void RenderFrontend::Render(FrameLoop* frameLoop, Canvas const* canvas)
 {
     HK_PROFILER_EVENT("Render frontend");
 
-    Vector<WorldRenderView*> const& renderViews = frameLoop->GetRenderViews();
     StreamedMemoryGPU* streamedMemory = frameLoop->GetStreamedMemoryGPU();
 
     m_FrameLoop = frameLoop;
@@ -92,13 +97,13 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
     m_FrameData.LightShadowmaps.Clear();
     m_FrameData.TerrainInstances.Clear();
 
-    m_FrameData.NumViews = renderViews.Size();
+    m_FrameData.NumViews = m_RenderViews.Size();
     m_FrameData.RenderViews = (RenderViewData*)frameLoop->AllocFrameMem(sizeof(RenderViewData) * m_FrameData.NumViews);
     Core::ZeroMem(m_FrameData.RenderViews, sizeof(RenderViewData) * m_FrameData.NumViews);
 
     for (int i = 0; i < m_FrameData.NumViews; i++)
     {
-        WorldRenderView* worldRenderView = renderViews[i];
+        WorldRenderView* worldRenderView = m_RenderViews[i];
         RenderViewData* view = &m_FrameData.RenderViews[i];
 
         RenderView(worldRenderView, view);
@@ -120,6 +125,8 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas* canvas)
     }
 
     m_Stat.FrontendTime = Core::SysMilliseconds() - m_Stat.FrontendTime;
+
+    m_RenderViews.Clear();
 }
 
 void RenderFrontend::ClearRenderView(RenderViewData* view)

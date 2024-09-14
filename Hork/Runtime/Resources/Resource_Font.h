@@ -52,7 +52,7 @@ public:
     bool                        ReallocTexture();
     void                        UpdateTexture();
 
-    RHI::ITexture*       GetTexture();
+    RHI::ITexture*              GetTexture();
 
     void                        Cleanup();
 
@@ -64,7 +64,7 @@ private:
         INITIAL_FONTIMAGE_SIZE = 512
     };
     FONScontext*                m_pImpl{};
-    Ref<RHI::ITexture>   m_FontImages[MAX_FONT_IMAGES];
+    Ref<RHI::ITexture>          m_FontImages[MAX_FONT_IMAGES];
     int                         m_FontImageIdx{};
 };
 

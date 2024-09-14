@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "InputSystem.h"
-#include "GameApplication.h"
 
 #include <Hork/Core/Logger.h>
 

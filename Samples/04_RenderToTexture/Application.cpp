@@ -40,6 +40,8 @@ SOFTWARE.
 #include <Hork/Runtime/UI/UIViewport.h>
 #include <Hork/Runtime/UI/UIImage.h>
 
+#include <Hork/Runtime/Renderer/RenderFrontend.h>
+
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
 
 #include <Hork/Runtime/World/Modules/Physics/CollisionFilter.h>
@@ -245,8 +247,8 @@ void SampleApplication::OnStartPlay()
 
 void SampleApplication::OnUpdate(float timeStep)
 {
-    // We must register the render view in a loop for offscreen rendering
-    sGetFrameLoop().RegisterView(m_OffscreenRenderView);
+    // We must add the render view to renderer for offscreen rendering
+    GameApplication::sGetRenderer().AddRenderView(m_OffscreenRenderView);
 }
 
 void SampleApplication::Pause()
