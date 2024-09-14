@@ -46,10 +46,13 @@ IImmediateContext* rcmd;
 IResourceTable* rtbl;
 
 /// Render frame data
-RenderFrameData* GFrameData;
+RenderFrameData const* GFrameData;
+
+/// Canvas draw data
+CanvasDrawData const* GCanvasData;
 
 /// Render frame view
-RenderViewData* GRenderView;
+RenderViewData const* GRenderView;
 
 /// Render view area
 Rect2D GRenderViewArea;

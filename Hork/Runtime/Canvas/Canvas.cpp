@@ -607,6 +607,15 @@ void Canvas::NewFrame()
     FontFace(FontHandle{});
 }
 
+void Canvas::Finish(StreamedMemoryGPU* streamMemory)
+{
+    // Copy vertex data to GPU
+    if (m_DrawData.VertexCount > 0)
+        m_DrawData.CanvasVertexStream = streamMemory->AllocateVertex(m_DrawData.VertexCount * sizeof(CanvasVertex), m_DrawData.Vertices);
+    else
+        m_DrawData.CanvasVertexStream = 0;
+}
+
 void Canvas::Push(CanvasPushFlag resetFlag)
 {
     bool bNeedReset = false;

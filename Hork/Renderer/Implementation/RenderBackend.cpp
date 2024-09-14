@@ -313,7 +313,7 @@ int RenderBackend::MaxOmnidirectionalShadowMapsPerView() const
     return m_FrameRenderer->GetOmniShadowMapPool().GetSize();
 }
 
-void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* backBuffer, RenderFrameData* frameData)
+void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* backBuffer, RenderFrameData const* frameData, CanvasDrawData const* canvasData)
 {
     HK_PROFILER_EVENT("Render Backend");
 
@@ -358,6 +358,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* bac
     }
 
     GFrameData = frameData;
+    GCanvasData = canvasData;
 
     //FrameGraph->Clear();
 

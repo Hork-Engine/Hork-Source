@@ -53,7 +53,7 @@ public:
     void                        AddRenderView(WorldRenderView* renderView);
 
     /// Build frame data
-    void                        Render(class FrameLoop* frameLoop, Canvas const* canvas);
+    void                        Render(class FrameLoop* frameLoop);
 
     /// Get render frame data
     RenderFrameData*            GetFrameData() { return &m_FrameData; }
@@ -88,11 +88,11 @@ private:
     World*                      m_World;
     // Current render view data
     RenderViewData*             m_View;
-    Vector<PrimitiveDef*>       m_VisPrimitives;
+    //Vector<PrimitiveDef*>       m_VisPrimitives;
     int                         m_VisPass = 0;
-    Vector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
-    struct alignas(16) CullResult { int32_t Result[4]; };
-    Vector<CullResult>          m_ShadowCasterCullResult;
+    //Vector<BvAxisAlignedBoxSSE> m_ShadowBoxes;
+    //struct alignas(16) CullResult { int32_t Result[4]; };
+    //Vector<CullResult>          m_ShadowCasterCullResult;
     LightVoxelizer              m_LightVoxelizer;
 };
 

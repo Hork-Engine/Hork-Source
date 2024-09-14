@@ -48,7 +48,7 @@ public:
                                 RenderBackend(RHI::IDevice* device);
                                 ~RenderBackend();
 
-    void                        RenderFrame(StreamedMemoryGPU* streamedMemory, RHI::ITexture* backBuffer, RenderFrameData* frameData);
+    void                        RenderFrame(StreamedMemoryGPU* streamedMemory, RHI::ITexture* backBuffer, RenderFrameData const* frameData, CanvasDrawData const* canvasData);
 
     int                         ClusterPackedIndicesAlignment() const;
     int                         MaxOmnidirectionalShadowMapsPerView() const;

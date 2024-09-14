@@ -497,6 +497,7 @@ public:
     uint8_t*       Uniforms{};
     int            MaxUniforms{};
     int            UniformCount{};
+    size_t         CanvasVertexStream{};
 };
 
 
@@ -1000,10 +1001,6 @@ struct RenderFrameData
     Vector<LightShadowmap> LightShadowmaps;
     /// Terrain instances
     Vector<TerrainRenderInstance*> TerrainInstances;
-
-    /// Canvas draw commands
-    CanvasDrawData const* pCanvasDrawData;
-    size_t CanvasVertexData;
 
     /// Debug draw commands
     DebugDrawCmd const* DbgCmds;

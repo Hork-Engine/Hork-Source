@@ -419,7 +419,7 @@ CanvasRenderer::~CanvasRenderer()
 
 void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 {
-    if (GFrameData->pCanvasDrawData->NumDrawCommands == 0)
+    if (GCanvasData->NumDrawCommands == 0)
     {
         return;
     }
@@ -470,7 +470,7 @@ void CanvasRenderer::Render(FrameGraph& FrameGraph, ITexture* pBackBuffer)
 
                         immediateCtx->BindResourceTable(rtbl);
                         rtbl->BindBuffer(0, GStreamBuffer, canvasBinding.Offset, canvasBinding.Size);
-                        RenderVG(immediateCtx, GFrameData->pCanvasDrawData);
+                        RenderVG(immediateCtx, GCanvasData);
                     });
 }
 
@@ -748,7 +748,7 @@ void CanvasRenderer::SetUniforms(int uniformOffset, RHI::ITexture* pTexture)
 
 void CanvasRenderer::SetBuffers()
 {
-    m_ImmediateCtx->BindVertexBuffer(0, GStreamBuffer, GFrameData->CanvasVertexData);
+    m_ImmediateCtx->BindVertexBuffer(0, GStreamBuffer, GCanvasData->CanvasVertexStream);
     m_ImmediateCtx->BindIndexBuffer(m_pFanIndexBuffer, INDEX_TYPE_UINT32, 0);
 }
 

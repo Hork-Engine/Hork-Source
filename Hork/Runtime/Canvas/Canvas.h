@@ -198,6 +198,8 @@ public:
     /// Begin drawing a new frame
     void                    NewFrame();
 
+    void                    Finish(class StreamedMemoryGPU* streamMemory);
+
     /// Clears drawing data.
     void                    ClearDrawData();
 

@@ -423,10 +423,10 @@ void GameApplication::RunMainLoop()
         DrawCanvas();
 
         // Build frame data for rendering
-        m_Renderer->Render(m_FrameLoop.RawPtr(), m_Canvas.RawPtr());
+        m_Renderer->Render(m_FrameLoop.RawPtr());
 
         // Generate GPU commands
-        m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_SwapChain->GetBackBuffer(), m_Renderer->GetFrameData());
+        m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_SwapChain->GetBackBuffer(), m_Renderer->GetFrameData(), m_Canvas->GetDrawData());
 
         SaveMemoryStats();
 
@@ -445,6 +445,8 @@ void GameApplication::DrawCanvas()
 
         ShowStats();
     }
+
+    m_Canvas->Finish(m_FrameLoop->GetStreamedMemoryGPU());
 }
 
 void GameApplication::ShowStats()

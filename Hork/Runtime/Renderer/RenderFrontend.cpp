@@ -65,7 +65,7 @@ void RenderFrontend::AddRenderView(WorldRenderView* renderView)
     m_RenderViews.EmplaceBack(renderView);
 }
 
-void RenderFrontend::Render(FrameLoop* frameLoop, Canvas const* canvas)
+void RenderFrontend::Render(FrameLoop* frameLoop)
 {
     HK_PROFILER_EVENT("Render frontend");
 
@@ -80,13 +80,6 @@ void RenderFrontend::Render(FrameLoop* frameLoop, Canvas const* canvas)
     m_Stat.ShadowMapPolyCount = 0;
 
     m_FrameData.FrameNumber = m_FrameNumber;
-
-    m_FrameData.pCanvasDrawData = canvas->GetDrawData();
-
-    if (m_FrameData.pCanvasDrawData->VertexCount > 0)
-        m_FrameData.CanvasVertexData = streamedMemory->AllocateVertex(m_FrameData.pCanvasDrawData->VertexCount * sizeof(CanvasVertex), m_FrameData.pCanvasDrawData->Vertices);
-    else
-        m_FrameData.CanvasVertexData = 0;
 
     m_FrameData.Instances.Clear();
     m_FrameData.TranslucentInstances.Clear();

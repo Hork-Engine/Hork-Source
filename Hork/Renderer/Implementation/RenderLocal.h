@@ -194,10 +194,13 @@ extern RHI::IImmediateContext* rcmd;
 extern RHI::IResourceTable* rtbl;
 
 /// Render frame data
-extern RenderFrameData* GFrameData;
+extern RenderFrameData const* GFrameData;
+
+/// Canvas draw data
+extern CanvasDrawData const* GCanvasData;
 
 /// Render frame view
-extern RenderViewData* GRenderView;
+extern RenderViewData const* GRenderView;
 
 /// Render view area
 extern RHI::Rect2D GRenderViewArea;
