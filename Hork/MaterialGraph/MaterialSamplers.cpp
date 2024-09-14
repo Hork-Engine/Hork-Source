@@ -139,6 +139,6 @@ MaterialSamplers::MaterialSamplers()
     LookupBRDFSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 }
 
-MaterialSamplers g_MaterialSamplers;
+const MaterialSamplers g_MaterialSamplers;
 
 HK_NAMESPACE_END

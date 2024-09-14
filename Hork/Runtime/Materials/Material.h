@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Hork/Runtime/Resources/Resource_Material.h>
 #include <Hork/Runtime/Resources/Resource_Texture.h>
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 

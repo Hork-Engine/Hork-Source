@@ -15,7 +15,6 @@ target_link_libraries(${PROJECT_NAME}
 	Image
 	Audio
 	RHI
-	RenderDefs
 	ShaderUtils
 	MaterialGraph
 	RenderUtils

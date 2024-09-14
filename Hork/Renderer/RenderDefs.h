@@ -298,13 +298,13 @@ public:
     int                         WireframePassTextureCount{};
     int                         NormalsPassTextureCount{};
     int                         ShadowMapPassTextureCount{};
-    Ref<RHI::IPipeline>  Passes[MaterialPass::MAX];
+    Ref<RHI::IPipeline>         Passes[MaterialPass::MAX];
 };
 
 struct MaterialFrameData
 {
     MaterialGPU*                Material;
-    RHI::ITexture*       Textures[MAX_MATERIAL_TEXTURES];
+    RHI::ITexture*              Textures[MAX_MATERIAL_TEXTURES];
     int                         NumTextures;
     Float4                      UniformVectors[4];
     int                         NumUniformVectors;
@@ -458,15 +458,15 @@ class TextureView;
 
 struct CanvasDrawCmd
 {
-    RHI::ITexture* Texture;
-    CANVAS_DRAW_COMMAND   Type;
-    CANVAS_COMPOSITE      Composite;
-    CANVAS_IMAGE_FLAGS    TextureFlags;
-    int                   FirstPath;
-    int                   PathCount;
-    int                   FirstVertex;
-    int                   VertexCount;
-    int                   UniformOffset;
+    RHI::ITexture*      Texture;
+    CANVAS_DRAW_COMMAND Type;
+    CANVAS_COMPOSITE    Composite;
+    CANVAS_IMAGE_FLAGS  TextureFlags;
+    int                 FirstPath;
+    int                 PathCount;
+    int                 FirstVertex;
+    int                 VertexCount;
+    int                 UniformOffset;
 };
 
 struct CanvasPath
@@ -527,55 +527,49 @@ Render instance (opaque & translucent meshes)
 */
 struct RenderInstance
 {
-    MaterialGPU*       Material;
-    MaterialFrameData* MaterialInstance;
+    MaterialGPU*        Material;
+    MaterialFrameData*  MaterialInstance;
 
-    RHI::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
 
-    RHI::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
 
-    RHI::IBuffer* WeightsBuffer;
-    size_t               WeightsBufferOffset;
+    RHI::IBuffer*       WeightsBuffer;
+    size_t              WeightsBufferOffset;
 
-    RHI::IBuffer* VertexLightChannel;
-    size_t               VertexLightOffset;
+    RHI::IBuffer*       VertexLightChannel;
+    size_t              VertexLightOffset;
 
-    RHI::IBuffer* LightmapUVChannel;
-    size_t               LightmapUVOffset;
+    RHI::IBuffer*       LightmapUVChannel;
+    size_t              LightmapUVOffset;
 
-    RHI::ITexture* Lightmap;
-    Float4                LightmapOffset;
+    RHI::ITexture*      Lightmap;
+    Float4              LightmapOffset;
 
-    Float4x4 Matrix;
-    Float4x4 MatrixP;
+    Float4x4            Matrix;
+    Float4x4            MatrixP;
 
-    Float3x3 ModelNormalToViewSpace;
+    Float3x3            ModelNormalToViewSpace;
 
-    size_t SkeletonOffset;
-    size_t SkeletonOffsetMB;
-    size_t SkeletonSize;
+    size_t              SkeletonOffset;
+    size_t              SkeletonOffsetMB;
+    size_t              SkeletonSize;
 
-    unsigned int IndexCount;
-    unsigned int StartIndexLocation;
-    int          BaseVertexLocation;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
 
-    bool bPerObjectMotionBlur;
+    bool                bPerObjectMotionBlur;
 
-    uint64_t SortKey;
+    uint64_t            SortKey;
 
-    uint8_t GetRenderingPriority() const
-    {
-        return (SortKey >> 56) & 0xf0;
-    }
+    uint8_t             GetRenderingPriority() const { return (SortKey >> 56) & 0xf0; }
 
-    uint8_t GetGeometryPriority() const
-    {
-        return (SortKey >> 56) & 0x0f;
-    }
+    uint8_t             GetGeometryPriority() const { return (SortKey >> 56) & 0x0f; }
 
-    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    void                GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(HashTraits::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
@@ -590,24 +584,24 @@ Shadowmap render instance
 */
 struct ShadowRenderInstance
 {
-    MaterialGPU*         Material;
-    MaterialFrameData*   MaterialInstance;
-    RHI::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
-    RHI::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
-    RHI::IBuffer* WeightsBuffer;
-    size_t               WeightsBufferOffset;
-    Float3x4             WorldTransformMatrix;
-    size_t               SkeletonOffset;
-    size_t               SkeletonSize;
-    unsigned int         IndexCount;
-    unsigned int         StartIndexLocation;
-    int                  BaseVertexLocation;
-    uint16_t             CascadeMask; // Cascade mask for directional lights or face index for point/spot lights
-    uint64_t             SortKey;
+    MaterialGPU*        Material;
+    MaterialFrameData*  MaterialInstance;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
+    RHI::IBuffer*       WeightsBuffer;
+    size_t              WeightsBufferOffset;
+    Float3x4            WorldTransformMatrix;
+    size_t              SkeletonOffset;
+    size_t              SkeletonSize;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
+    uint16_t            CascadeMask; // Cascade mask for directional lights or face index for point/spot lights
+    uint64_t            SortKey;
 
-    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    void                GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(HashTraits::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(HashTraits::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
@@ -622,13 +616,13 @@ Light portal render instance
 */
 struct LightPortalRenderInstance
 {
-    RHI::IBuffer* VertexBuffer;
-    size_t               VertexBufferOffset;
-    RHI::IBuffer* IndexBuffer;
-    size_t               IndexBufferOffset;
-    unsigned int         IndexCount;
-    unsigned int         StartIndexLocation;
-    int                  BaseVertexLocation;
+    RHI::IBuffer*       VertexBuffer;
+    size_t              VertexBufferOffset;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              IndexBufferOffset;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
 };
 
 
@@ -770,18 +764,18 @@ Terrain render instance
 */
 struct TerrainRenderInstance
 {
-    RHI::IBuffer*  VertexBuffer;
-    RHI::IBuffer*  IndexBuffer;
-    size_t                InstanceBufferStreamHandle;
-    size_t                IndirectBufferStreamHandle;
-    int                   IndirectBufferDrawCount;
-    RHI::ITexture* Clipmaps;
-    RHI::ITexture* Normals;
-    Float4                ViewPositionAndHeight;
-    Float4x4              LocalViewProjection;
-    Float3x3              ModelNormalToViewSpace;
-    Int2                  ClipMin;
-    Int2                  ClipMax;
+    RHI::IBuffer*       VertexBuffer;
+    RHI::IBuffer*       IndexBuffer;
+    size_t              InstanceBufferStreamHandle;
+    size_t              IndirectBufferStreamHandle;
+    int                 IndirectBufferDrawCount;
+    RHI::ITexture*      Clipmaps;
+    RHI::ITexture*      Normals;
+    Float4              ViewPositionAndHeight;
+    Float4x4            LocalViewProjection;
+    Float3x3            ModelNormalToViewSpace;
+    Int2                ClipMin;
+    Int2                ClipMax;
 };
 
 

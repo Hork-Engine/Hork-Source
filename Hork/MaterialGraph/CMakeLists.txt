@@ -8,7 +8,7 @@ make_source_list(SOURCE_FILES)
 
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} RenderDefs)
+target_link_libraries(${PROJECT_NAME} Renderer)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${HK_COMPILER_DEFINES})
 target_compile_options(${PROJECT_NAME} PUBLIC ${HK_COMPILER_FLAGS})

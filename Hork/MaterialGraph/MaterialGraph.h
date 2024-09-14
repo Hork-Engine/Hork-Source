@@ -34,7 +34,7 @@ SOFTWARE.
 #include "MaterialCode.h"
 #include <Hork/Core/DOM.h>
 #include <Hork/Image/Image.h>
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 

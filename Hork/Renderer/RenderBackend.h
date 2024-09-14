@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include "RenderDefs.h"
 
 #include <Hork/RHI/Common/VertexMemoryGPU.h>
 

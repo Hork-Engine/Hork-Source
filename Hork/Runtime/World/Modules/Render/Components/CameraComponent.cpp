@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "CameraComponent.h"
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Core/ConsoleVar.h>

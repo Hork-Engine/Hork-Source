@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/Vector.h>
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 #include <Hork/Runtime/Resources/ResourceManager.h>
 #include <Hork/Runtime/Resources/Resource_Font.h>

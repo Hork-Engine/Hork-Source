@@ -2,7 +2,7 @@
 
 #include <Hork/RHI/Common/FrameGraph.h>
 #include <Hork/Math/VectorMath.h>
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 #include "OmnidirectionalShadowMapPool.h"
 
 HK_NAMESPACE_BEGIN

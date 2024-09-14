@@ -30,8 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
-
+#include <Hork/Renderer/RenderDefs.h>
 #include <Hork/Geometry/BV/BvAxisAlignedBox.h>
 #include <Hork/Geometry/BV/BvOrientedBox.h>
 #include <Hork/Math/Plane.h>

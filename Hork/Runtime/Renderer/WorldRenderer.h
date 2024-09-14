@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 #include <Hork/Runtime/Canvas/Canvas.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Runtime/World/Modules/Render/TerrainMesh.h>

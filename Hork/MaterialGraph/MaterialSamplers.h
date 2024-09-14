@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -57,6 +57,6 @@ struct MaterialSamplers
                         MaterialSamplers();
 };
 
-extern MaterialSamplers g_MaterialSamplers;
+extern const MaterialSamplers g_MaterialSamplers;
 
 HK_NAMESPACE_END

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 #include <Hork/RHI/Common/FrameGraph.h>
 
@@ -84,13 +84,13 @@ private:
         SAMPLER_STATE_MAX
     };
 
-    RHI::IImmediateContext*  m_ImmediateCtx;
-    CanvasDrawData const*           m_pDrawData;
-    bool                            m_bEdgeAntialias;
+    RHI::IImmediateContext* m_ImmediateCtx;
+    CanvasDrawData const*   m_pDrawData;
+    bool                    m_bEdgeAntialias;
     Ref<RHI::IShaderModule> m_VertexShader;
     Ref<RHI::IShaderModule> m_FragmentShader;
     Ref<RHI::IBuffer>       m_pFanIndexBuffer;
-    Vector<uint32_t>               m_FanIndices;
+    Vector<uint32_t>        m_FanIndices;
     Ref<RHI::IPipeline>     m_PipelinePermut[TOPOLOGY_MAX][RASTER_STATE_MAX][BLEND_STATE_MAX][DEPTH_STENCIL_MAX][SAMPLER_STATE_MAX];
     Ref<RHI::IPipeline>     m_PipelineShapes;
     Ref<RHI::IPipeline>     m_PipelineClearStencil;

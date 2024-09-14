@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 #include <Hork/Runtime/Resources/Resource_Texture.h>
 #include "Transform2D.h"
 

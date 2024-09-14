@@ -34,7 +34,7 @@ SOFTWARE.
 #include "TerrainMesh.h"
 
 #include <Hork/Geometry/BV/BvFrustum.h>
-#include <Hork/RenderDefs/RenderDefs.h>
+#include <Hork/Renderer/RenderDefs.h>
 
 HK_NAMESPACE_BEGIN
 
