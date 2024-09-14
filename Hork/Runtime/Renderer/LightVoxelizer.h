@@ -104,37 +104,33 @@ class StreamedMemoryGPU;
 class LightVoxelizer
 {
 public:
-    void Reset();
+    void                        Reset();
 
-    bool IsSSE() const { return bUseSSE; };
+    bool                        IsSSE() const { return m_UseSSE; };
 
-    ItemInfo* AllocItem()
-    {
-        HK_ASSERT(ItemsCount < MAX_ITEMS);
-        return &ItemInfos[ItemsCount++];
-    }
+    ItemInfo*                   AllocItem() { HK_ASSERT(m_ItemsCount < MAX_ITEMS); return &m_ItemInfos[m_ItemsCount++]; }
 
-    void Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData* RV);
+    void                        Voxelize(StreamedMemoryGPU* streamMemory, RenderViewData* view);
 
-    void DrawVoxels(DebugRenderer* InRenderer);
+    void                        DrawVoxels(DebugRenderer& renderer, Float4x4 const& cameraViewMatrix, Float4x4 const& clusterProjectionMatrix);
 
 private:
-    static void sVoxelizeWork(void* _Data);
+    static void                 sVoxelizeWork(void* data);
 
-    void VoxelizeWork(int SliceIndex);
+    void                        VoxelizeWork(int sliceIndex);
 
-    void TransformItemsSSE();
-    void TransformItemsGeneric();
+    void                        TransformItemsSSE();
+    void                        TransformItemsGeneric();
 
-    void GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed);
+    void                        GatherVoxelGeometry(Vector<Float3>& lineVertices, Float4x4 const& viewProjectionInversed);
 
-    ItemInfo ItemInfos[MAX_ITEMS];
-    int       ItemsCount;
+    ItemInfo                    m_ItemInfos[MAX_ITEMS];
+    int                         m_ItemsCount;
 
-    unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
-    AtomicInt     ItemCounter;
-    Float4x4       ViewProj;
-    Float4x4       ViewProjInv;
+    unsigned short              m_Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
+    AtomicInt                   m_ItemCounter;
+    Float4x4                    m_ViewProj;
+    Float4x4                    m_ViewProjInv;
 
     struct FrustumCluster
     {
@@ -143,14 +139,14 @@ private:
         unsigned short ProbesCount;
     };
 
-    alignas(16) FrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+    alignas(16) FrustumCluster  m_ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
-    ClusterHeader*      pClusterHeaderData;
-    ClusterPackedIndex* pClusterPackedIndices;
+    ClusterHeader*              m_pClusterHeaderData;
+    ClusterPackedIndex*         m_pClusterPackedIndices;
 
-    Vector<Float3> DebugLinePoints;
+    Vector<Float3>              m_DebugDrawVertices;
 
-    bool bUseSSE;
+    bool                        m_UseSSE;
 };
 
 HK_NAMESPACE_END

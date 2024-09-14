@@ -61,7 +61,7 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
             transform_matrix.Compose(GetOwner()->GetWorldPosition(), GetOwner()->GetWorldRotation().ToMatrix3x3());
 
             Float3x4 transform_matrix_inv = transform_matrix.Inversed();
-            Float3 local_view_position = transform_matrix_inv * renderer.GetRenderView()->ViewPosition;
+            Float3 local_view_position = transform_matrix_inv * renderer.GetViewPosition();
 
             BvAxisAlignedBox local_bounds(local_view_position - 4, local_view_position + 4);
 

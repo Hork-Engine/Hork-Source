@@ -52,10 +52,10 @@ public:
     void                    Reset();
     void                    Purge();
 
-    void                    BeginRenderView(RenderViewData* view, int visPass);
-    void                    EndRenderView();
+    void                    BeginRenderView(Float3 const& viewPosition, int visPass);
+    void                    EndRenderView(int& firstCommand, int& commandCount);
 
-    RenderViewData const*   GetRenderView() const { return m_pView; }
+    Float3 const&           GetViewPosition() const;
 
     void                    PushTransform(Float3x4 const& transform);
     void                    PopTransform();
@@ -132,13 +132,14 @@ public:
 private:
     bool                    PrimitiveReserve(DBG_DRAW_CMD name, int numVertices, int numIndices, DebugDrawCmd** cmd, DebugVertex** verts, uint16_t** indices);
 
-    RenderViewData*         m_pView{};
+    Float3                  m_ViewPosition;
     DebugVertices           m_Vertices;
     DebugIndices            m_Indices;
     DebugDrawCmds           m_Cmds;
     uint32_t                m_CurrentColor{0xffffffff};
     int                     m_FirstVertex{};
     int                     m_FirstIndex{};
+    int                     m_FirstDrawCommand;
     int                     m_VisPass{};
     bool                    m_DepthTest{};
     bool                    m_Split{};

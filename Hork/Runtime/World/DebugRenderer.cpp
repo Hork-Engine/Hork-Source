@@ -64,8 +64,6 @@ void DebugRenderer::Reset()
     m_FirstIndex = 0;
     m_Split = false;
 
-    m_pView = nullptr;
-
     m_TransformStack.Clear();
     m_TransformStack.Push(Float3x4::sIdentity());
 
@@ -73,23 +71,23 @@ void DebugRenderer::Reset()
     m_ColorMask = 0;
 }
 
-void DebugRenderer::BeginRenderView(RenderViewData* view, int visPass)
+void DebugRenderer::BeginRenderView(Float3 const& viewPosition, int visPass)
 {
-    HK_ASSERT(!m_pView);
-
-    m_pView = view;
-    m_pView->FirstDebugDrawCommand = CommandsCount();
-    m_pView->DebugDrawCommandCount = 0;
+    m_FirstDrawCommand = CommandsCount();
+    m_ViewPosition = viewPosition;
     m_VisPass = visPass;
     SplitCommands();
 }
 
-void DebugRenderer::EndRenderView()
+void DebugRenderer::EndRenderView(int& firstCommand, int& commandCount)
 {
-    HK_ASSERT(m_pView);
+    firstCommand = m_FirstDrawCommand;
+    commandCount = CommandsCount() - m_FirstDrawCommand;
+}
 
-    m_pView->DebugDrawCommandCount = CommandsCount() - m_pView->FirstDebugDrawCommand;
-    m_pView = nullptr;
+Float3 const& DebugRenderer::GetViewPosition() const
+{
+    return m_ViewPosition;
 }
 
 void DebugRenderer::PushTransform(Float3x4 const& transform)

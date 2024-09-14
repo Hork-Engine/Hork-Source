@@ -2063,7 +2063,7 @@ void PhysicsInterface::DrawHeightField(DebugRenderer& renderer, PhysBodyID bodyI
     transformMatrix.Compose(ConvertVector(position), ConvertQuaternion(rotation).ToMatrix3x3());
 
     Float3x4 transformMatrixInv = transformMatrix.Inversed();
-    Float3 localViewPosition = transformMatrixInv * renderer.GetRenderView()->ViewPosition;
+    Float3 localViewPosition = transformMatrixInv * renderer.GetViewPosition();
 
     BvAxisAlignedBox localBounds(localViewPosition - 5, localViewPosition + 5);
 
@@ -2089,7 +2089,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             .AddLayer(BroadphaseLayer::Dynamic)
             .AddLayer(BroadphaseLayer::Trigger);
 
-        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
+        OverlapBox(renderer.GetViewPosition(), Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
 
         auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 
@@ -2121,7 +2121,7 @@ void PhysicsInterface::DrawDebug(DebugRenderer& renderer)
             .AddLayer(BroadphaseLayer::Static)
             .AddLayer(BroadphaseLayer::Dynamic);
 
-        OverlapBox(renderer.GetRenderView()->ViewPosition, Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
+        OverlapBox(renderer.GetViewPosition(), Float3(visibilityHalfSize), Quat::sIdentity(), m_BodyQueryResult, filter);
 
         auto& bodyInterface = m_pImpl->m_PhysSystem.GetBodyInterface();
 

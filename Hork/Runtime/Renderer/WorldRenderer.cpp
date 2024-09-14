@@ -29,12 +29,12 @@ SOFTWARE.
 */
 
 #include "WorldRenderer.h"
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Hork/Core/Profiler.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 
+#include <Hork/Runtime/GameApplication/GameApplication.h>
 #include <Hork/Runtime/World/Modules/Render/Components/CameraComponent.h>
 #include <Hork/Runtime/World/Modules/Render/Components/MeshComponent.h>
 #include <Hork/Runtime/World/Modules/Render/Components/TerrainComponent.h>
@@ -1126,13 +1126,13 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     // Generate debug draw commands
     if (worldRenderView->bDrawDebug)
     {
-        m_DebugDraw.BeginRenderView(view, m_VisPass);
+        m_DebugDraw.BeginRenderView(view->ViewPosition, m_VisPass);
 
         world->DrawDebug(m_DebugDraw);
 
         if (com_DrawFrustumClusters)
         {
-            m_LightVoxelizer.DrawVoxels(&m_DebugDraw);
+            m_LightVoxelizer.DrawVoxels(m_DebugDraw, view->ViewMatrix, view->ClusterProjectionMatrix);
         }
     }
 
@@ -1418,7 +1418,7 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
         //    it.second->DrawDebug(&m_DebugDraw);
         //}
 
-        m_DebugDraw.EndRenderView();
+        m_DebugDraw.EndRenderView(view->FirstDebugDrawCommand, view->DebugDrawCommandCount);
     }
 }
 

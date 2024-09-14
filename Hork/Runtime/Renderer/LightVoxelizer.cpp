@@ -108,28 +108,28 @@ void LightVoxelizer::TransformItemsSSE()
 
     __m128 BoxPointsSSE[8];
     //__m128 Zero = _mm_setzero_ps();
-    __m128             NDCMinsSSE = _mm_set_ps(0.0f, -1.0f, -1.0f, -1.0f);
-    __m128             NDCMaxsSSE = _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f);
-    __m128             ExtendNeg  = _mm_set_ps(0.0f, 0.0f, -2.0f, -2.0f);
-    __m128             ExtendPos  = _mm_set_ps(0.0f, 0.0f, 4.0f, 4.0f);
-    __m128             bbMins, bbMaxs;
-    __m128             PointSSE;
-    __m128             v_xxxx_min_mul_col0;
-    __m128             v_xxxx_max_mul_col0;
-    __m128             v_yyyy_min_mul_col1;
-    __m128             v_yyyy_max_mul_col1;
-    __m128             v_zzzz_min_mul_col2_add_col3;
-    __m128             v_zzzz_max_mul_col2_add_col3;
+    __m128 NDCMinsSSE = _mm_set_ps(0.0f, -1.0f, -1.0f, -1.0f);
+    __m128 NDCMaxsSSE = _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f);
+    __m128 ExtendNeg = _mm_set_ps(0.0f, 0.0f, -2.0f, -2.0f);
+    __m128 ExtendPos = _mm_set_ps(0.0f, 0.0f, 4.0f, 4.0f);
+    __m128 bbMins, bbMaxs;
+    __m128 PointSSE;
+    __m128 v_xxxx_min_mul_col0;
+    __m128 v_xxxx_max_mul_col0;
+    __m128 v_yyyy_min_mul_col1;
+    __m128 v_yyyy_max_mul_col1;
+    __m128 v_zzzz_min_mul_col2_add_col3;
+    __m128 v_zzzz_max_mul_col2_add_col3;
     alignas(16) Float4 bb_mins;
     alignas(16) Float4 bb_maxs;
     alignas(16) Float4 Point;
 
-    ViewProjSSE    = ViewProj;
-    ViewProjInvSSE = ViewProjInv;
+    ViewProjSSE = m_ViewProj;
+    ViewProjInvSSE = m_ViewProjInv;
 
-    for (int itemNum = 0; itemNum < ItemsCount; itemNum++)
+    for (int itemNum = 0; itemNum < m_ItemsCount; itemNum++)
     {
-        ItemInfo& info = ItemInfos[itemNum];
+        ItemInfo& info = m_ItemInfos[itemNum];
 
         // OBB to clipspace
 
@@ -145,34 +145,34 @@ void LightVoxelizer::TransformItemsSSE()
         //__m128 MinVec = _mm_set_ps( 0.0000001f, 0.0000001f, 0.0000001f, 0.0000001f );
         //BoxPointsSSE[ i ] = _mm_div_ps( PointSSE, _mm_max_ps( _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ), MinVec ) );  // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
         BoxPointsSSE[0] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
         BoxPointsSSE[1] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
         BoxPointsSSE[2] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
         BoxPointsSSE[3] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
         BoxPointsSSE[4] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
         BoxPointsSSE[5] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
         BoxPointsSSE[6] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
-        PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
+        PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
         BoxPointsSSE[7] = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
 
 #if 0
         // Alternative way to multiple matrix by vector
         Float4x4SSE Test;
-        Test.set( Math::Transpose( ViewProj ) );
+        Test.set( Math::Transpose( m_ViewProj ) );
         for ( int c = 0 ; c < 8 ; c++ ) {
             __m128 Vec = _mm_loadu_ps( (const float*)&BoxPoints[c] );
             __m128 x = _mm_dp_ps( Test.col0, Vec, 0b11110001 );
@@ -237,8 +237,8 @@ void LightVoxelizer::TransformItemsSSE()
             else
             {
                 PointSSE = _mm_loadu_ps(&Point.X);
-                bbMaxs   = _mm_max_ps(bbMaxs, PointSSE);
-                bbMins   = _mm_min_ps(bbMins, PointSSE);
+                bbMaxs = _mm_max_ps(bbMaxs, PointSSE);
+                bbMins = _mm_min_ps(bbMins, PointSSE);
             }
         }
 
@@ -276,11 +276,11 @@ void LightVoxelizer::TransformItemsSSE()
 void LightVoxelizer::TransformItemsGeneric()
 {
     BvAxisAlignedBox bb;
-    Float4           BoxPoints[8];
+    Float4 BoxPoints[8];
 
-    for (int itemNum = 0; itemNum < ItemsCount; itemNum++)
+    for (int itemNum = 0; itemNum < m_ItemsCount; itemNum++)
     {
-        ItemInfo& info = ItemInfos[itemNum];
+        ItemInfo& info = m_ItemInfos[itemNum];
 
 #if 0
         constexpr Float3 Mins( -1.0f );
@@ -288,28 +288,28 @@ void LightVoxelizer::TransformItemsGeneric()
 
         Float4x4 OBBTransform = Math::Inverse( Light->GetOBBTransformInverse() );
 
-        BoxPoints[0] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
-        BoxPoints[1] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
-        BoxPoints[2] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
-        BoxPoints[3] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
-        BoxPoints[4] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
-        BoxPoints[5] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
-        BoxPoints[6] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
-        BoxPoints[7] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
+        BoxPoints[0] = m_ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[1] = m_ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[2] = m_ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[3] = m_ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[4] = m_ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[5] = m_ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[6] = m_ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
+        BoxPoints[7] = m_ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
 #else
         // This produces a better culling results than code above for spot lights
 
         Float3 const& Mins = info.Mins;
         Float3 const& Maxs = info.Maxs;
 
-        BoxPoints[0] = ViewProj * Float4(Mins.X, Mins.Y, Maxs.Z, 1.0f);
-        BoxPoints[1] = ViewProj * Float4(Maxs.X, Mins.Y, Maxs.Z, 1.0f);
-        BoxPoints[2] = ViewProj * Float4(Maxs.X, Maxs.Y, Maxs.Z, 1.0f);
-        BoxPoints[3] = ViewProj * Float4(Mins.X, Maxs.Y, Maxs.Z, 1.0f);
-        BoxPoints[4] = ViewProj * Float4(Maxs.X, Mins.Y, Mins.Z, 1.0f);
-        BoxPoints[5] = ViewProj * Float4(Mins.X, Mins.Y, Mins.Z, 1.0f);
-        BoxPoints[6] = ViewProj * Float4(Mins.X, Maxs.Y, Mins.Z, 1.0f);
-        BoxPoints[7] = ViewProj * Float4(Maxs.X, Maxs.Y, Mins.Z, 1.0f);
+        BoxPoints[0] = m_ViewProj * Float4(Mins.X, Mins.Y, Maxs.Z, 1.0f);
+        BoxPoints[1] = m_ViewProj * Float4(Maxs.X, Mins.Y, Maxs.Z, 1.0f);
+        BoxPoints[2] = m_ViewProj * Float4(Maxs.X, Maxs.Y, Maxs.Z, 1.0f);
+        BoxPoints[3] = m_ViewProj * Float4(Mins.X, Maxs.Y, Maxs.Z, 1.0f);
+        BoxPoints[4] = m_ViewProj * Float4(Maxs.X, Mins.Y, Mins.Z, 1.0f);
+        BoxPoints[5] = m_ViewProj * Float4(Mins.X, Mins.Y, Mins.Z, 1.0f);
+        BoxPoints[6] = m_ViewProj * Float4(Mins.X, Maxs.Y, Mins.Z, 1.0f);
+        BoxPoints[7] = m_ViewProj * Float4(Maxs.X, Maxs.Y, Mins.Z, 1.0f);
 #endif
 
         bb.Clear();
@@ -319,7 +319,7 @@ void LightVoxelizer::TransformItemsGeneric()
         {
 
             const float Denom = 1.0f / BoxPoints[i].W;
-            Float3&     Point = *reinterpret_cast<Float3*>(&BoxPoints[i]);
+            Float3& Point = *reinterpret_cast<Float3*>(&BoxPoints[i]);
             Point.X *= Denom;
             Point.Y *= Denom;
             Point.Z *= Denom;
@@ -389,8 +389,8 @@ void LightVoxelizer::TransformItemsGeneric()
 
 void LightVoxelizer::Reset()
 {
-    ItemsCount = 0;
-    bUseSSE    = com_ClusterSSE;
+    m_ItemsCount = 0;
+    m_UseSSE = com_ClusterSSE;
 }
 
 struct VoxelizerWork
@@ -399,26 +399,26 @@ struct VoxelizerWork
     LightVoxelizer* Self;
 };
 
-void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData* RV)
+void LightVoxelizer::Voxelize(StreamedMemoryGPU* streamMemory, RenderViewData* view)
 {
-    ViewProj    = RV->ClusterViewProjection;
-    ViewProjInv = RV->ClusterViewProjectionInversed;
+    m_ViewProj = view->ClusterViewProjection;
+    m_ViewProjInv = view->ClusterViewProjectionInversed;
 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
-    int maxItems                         = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS * 3;
-    int alignment                        = GameApplication::sGetRenderBackend().ClusterPackedIndicesAlignment();
-    RV->ClusterPackedIndicesStreamHandle = StreamedMemory->AllocateWithCustomAlignment(maxItems * sizeof(ClusterPackedIndex),
+    int maxItems = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS * 3;
+    int alignment = GameApplication::sGetRenderBackend().ClusterPackedIndicesAlignment();
+    view->ClusterPackedIndicesStreamHandle = streamMemory->AllocateWithCustomAlignment(maxItems * sizeof(ClusterPackedIndex),
                                                                                        alignment,
                                                                                        nullptr);
-    RV->ClusterPackedIndices             = (ClusterPackedIndex*)StreamedMemory->Map(RV->ClusterPackedIndicesStreamHandle);
+    view->ClusterPackedIndices = (ClusterPackedIndex*)streamMemory->Map(view->ClusterPackedIndicesStreamHandle);
 
-    pClusterHeaderData    = RV->ClusterLookup;
-    pClusterPackedIndices = RV->ClusterPackedIndices;
+    m_pClusterHeaderData = view->ClusterLookup;
+    m_pClusterPackedIndices = view->ClusterPackedIndices;
 
-    Core::ZeroMem(ClusterData, sizeof(ClusterData));
+    Core::ZeroMem(m_ClusterData, sizeof(m_ClusterData));
 
     // Calc min/max slices
-    if (bUseSSE)
+    if (m_UseSSE)
     {
         TransformItemsSSE();
     }
@@ -427,7 +427,7 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData*
         TransformItemsGeneric();
     }
 
-    ItemCounter.StoreRelaxed(0);
+    m_ItemCounter.StoreRelaxed(0);
 
     VoxelizerWork works[MAX_FRUSTUM_CLUSTERS_Z];
 
@@ -436,45 +436,45 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* StreamedMemory, RenderViewData*
     for (int i = 0; i < MAX_FRUSTUM_CLUSTERS_Z; i++)
     {
         works[i].SliceIndex = i;
-        works[i].Self       = this;
+        works[i].Self = this;
 
         jobList->AddJob(sVoxelizeWork, &works[i]);
     }
 
     jobList->SubmitAndWait();
 
-    RV->ClusterPackedIndexCount = ItemCounter.Load();
+    view->ClusterPackedIndexCount = m_ItemCounter.Load();
 
-    if (RV->ClusterPackedIndexCount > MAX_TOTAL_CLUSTER_ITEMS)
+    if (view->ClusterPackedIndexCount > MAX_TOTAL_CLUSTER_ITEMS)
     {
-        RV->ClusterPackedIndexCount = MAX_TOTAL_CLUSTER_ITEMS;
+        view->ClusterPackedIndexCount = MAX_TOTAL_CLUSTER_ITEMS;
 
         LOG("MAX_TOTAL_CLUSTER_ITEMS hit\n");
     }
 
     // Shrink ClusterItems
-    StreamedMemory->ShrinkLastAllocatedMemoryBlock(RV->ClusterPackedIndexCount * sizeof(ClusterPackedIndex));
+    streamMemory->ShrinkLastAllocatedMemoryBlock(view->ClusterPackedIndexCount * sizeof(ClusterPackedIndex));
 }
 
-void LightVoxelizer::sVoxelizeWork(void* _Data)
+void LightVoxelizer::sVoxelizeWork(void* data)
 {
-    VoxelizerWork* work = static_cast<VoxelizerWork*>(_Data);
+    VoxelizerWork* work = reinterpret_cast<VoxelizerWork*>(data);
 
     work->Self->VoxelizeWork(work->SliceIndex);
 }
 
-void LightVoxelizer::VoxelizeWork(int SliceIndex)
+void LightVoxelizer::VoxelizeWork(int sliceIndex)
 {
     alignas(16) Float3 ClusterMins;
     alignas(16) Float3 ClusterMaxs;
 
-    ClusterMins.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex + 1];
-    ClusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex];
+    ClusterMins.Z = FRUSTUM_SLICE_ZCLIP[sliceIndex + 1];
+    ClusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[sliceIndex];
 
     FrustumCluster* pCluster;
-    unsigned short*  pClusterItem;
+    unsigned short* pClusterItem;
 
-    if (bUseSSE)
+    if (m_UseSSE)
     {
         //__m128 Zero = _mm_setzero_ps();
         __m128 OutsidePosPlane;
@@ -493,11 +493,11 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
         __m128 UniformBoxMinsSSE = _mm_set_ps(0.0f, -1.0f, -1.0f, -1.0f);
         __m128 UniformBoxMaxsSSE = _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f);
 
-        for (int ItemIndex = 0; ItemIndex < ItemsCount; ItemIndex++)
+        for (int ItemIndex = 0; ItemIndex < m_ItemsCount; ItemIndex++)
         {
-            ItemInfo& Info = ItemInfos[ItemIndex];
+            ItemInfo& Info = m_ItemInfos[ItemIndex];
 
-            if (SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice)
+            if (sliceIndex < Info.MinSlice || sliceIndex >= Info.MaxSlice)
             {
                 continue;
             }
@@ -505,12 +505,11 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
             v_zzzz_min_mul_col2_add_col3 = _mm_add_ps(_mm_mul_ps(_mm_set_ps1(ClusterMins.Z), Info.ClipToBoxMatSSE.col2), Info.ClipToBoxMatSSE.col3);
             v_zzzz_max_mul_col2_add_col3 = _mm_add_ps(_mm_mul_ps(_mm_set_ps1(ClusterMaxs.Z), Info.ClipToBoxMatSSE.col2), Info.ClipToBoxMatSSE.col3);
 
-            pCluster     = &ClusterData[SliceIndex][Info.MinClusterY][0];
-            pClusterItem = &Items[SliceIndex][Info.MinClusterY][0][0];
+            pCluster = &m_ClusterData[sliceIndex][Info.MinClusterY][0];
+            pClusterItem = &m_Items[sliceIndex][Info.MinClusterY][0][0];
 
             for (int ClusterY = Info.MinClusterY; ClusterY < Info.MaxClusterY; ClusterY++)
             {
-
                 ClusterMins.Y = ClusterY * FRUSTUM_CLUSTER_HEIGHT - 1.0f;
                 ClusterMaxs.Y = ClusterMins.Y + FRUSTUM_CLUSTER_HEIGHT;
 
@@ -529,43 +528,43 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
                     OutsidePosPlane = _mm_set1_ps(static_cast<float>(0xffffffff));
                     OutsideNegPlane = _mm_set1_ps(static_cast<float>(0xffffffff));
 
-                    PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
-                    PointSSE        = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
-                    PointSSE        = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
+                    PointSSE = sum_ps_3(v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3);
+                    PointSSE = _mm_div_ps(PointSSE, _mm_shuffle_ps(PointSSE, PointSSE, _MM_SHUFFLE(3, 3, 3, 3))); // Point /= Point.W
                     OutsidePosPlane = _mm_and_ps(OutsidePosPlane, _mm_cmpgt_ps(PointSSE, UniformBoxMaxsSSE));
                     OutsideNegPlane = _mm_and_ps(OutsideNegPlane, _mm_cmplt_ps(PointSSE, UniformBoxMinsSSE));
 
@@ -612,27 +611,25 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
 
         Float4 BoxPoints[8];
 
-        for (int ItemIndex = 0; ItemIndex < ItemsCount; ItemIndex++)
+        for (int ItemIndex = 0; ItemIndex < m_ItemsCount; ItemIndex++)
         {
-            ItemInfo& Info = ItemInfos[ItemIndex];
+            ItemInfo& Info = m_ItemInfos[ItemIndex];
 
-            if (SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice)
+            if (sliceIndex < Info.MinSlice || sliceIndex >= Info.MaxSlice)
             {
                 continue;
             }
 
-            pCluster     = &ClusterData[SliceIndex][Info.MinClusterY][0];
-            pClusterItem = &Items[SliceIndex][Info.MinClusterY][0][0];
+            pCluster = &m_ClusterData[sliceIndex][Info.MinClusterY][0];
+            pClusterItem = &m_Items[sliceIndex][Info.MinClusterY][0][0];
 
             for (int ClusterY = Info.MinClusterY; ClusterY < Info.MaxClusterY; ClusterY++)
             {
-
                 ClusterMins.Y = ClusterY * FRUSTUM_CLUSTER_HEIGHT - 1.0f;
                 ClusterMaxs.Y = ClusterMins.Y + FRUSTUM_CLUSTER_HEIGHT;
 
                 for (int ClusterX = Info.MinClusterX; ClusterX < Info.MaxClusterX; ClusterX++)
                 {
-
                     ClusterMins.X = ClusterX * FRUSTUM_CLUSTER_WIDTH - 1.0f;
                     ClusterMaxs.X = ClusterMins.X + FRUSTUM_CLUSTER_WIDTH;
 
@@ -648,7 +645,7 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
                     // переводим вершины в спейс бокса
                     for (int i = 0; i < 8; i++)
                     {
-                        BoxPoints[i]      = Info.ClipToBoxMat * BoxPoints[i];
+                        BoxPoints[i] = Info.ClipToBoxMat * BoxPoints[i];
                         const float Denom = 1.0f / BoxPoints[i].W;
                         BoxPoints[i].X *= Denom;
                         BoxPoints[i].Y *= Denom;
@@ -717,42 +714,41 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
     //    int i = 0;
     int NumClusterItems;
 
-    ClusterHeader*      pClusterHeader = pClusterHeaderData + SliceIndex * (MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y);
+    ClusterHeader* pClusterHeader = m_pClusterHeaderData + sliceIndex * (MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y);
     ClusterPackedIndex* pItem;
-    ItemInfo*           pItemInfo;
+    ItemInfo* pItemInfo;
 
-    pCluster     = &ClusterData[SliceIndex][0][0];
-    pClusterItem = &Items[SliceIndex][0][0][0];
+    pCluster = &m_ClusterData[sliceIndex][0][0];
+    pClusterItem = &m_Items[sliceIndex][0][0][0];
 
     for (int ClusterY = 0; ClusterY < MAX_FRUSTUM_CLUSTERS_Y; ClusterY++)
     {
         for (int ClusterX = 0; ClusterX < MAX_FRUSTUM_CLUSTERS_X; ClusterX++)
         {
-
             pClusterHeader->NumLights = Math::Min<unsigned short>(pCluster->LightsCount, MAX_CLUSTER_ITEMS);
             pClusterHeader->NumDecals = Math::Min<unsigned short>(pCluster->DecalsCount, MAX_CLUSTER_ITEMS);
             pClusterHeader->NumProbes = Math::Min<unsigned short>(pCluster->ProbesCount, MAX_CLUSTER_ITEMS);
 
             NumClusterItems = Math::Max3(pClusterHeader->NumLights, pClusterHeader->NumDecals, pClusterHeader->NumProbes);
 
-            int firstPackedIndex = ItemCounter.FetchAdd(NumClusterItems);
+            int firstPackedIndex = m_ItemCounter.FetchAdd(NumClusterItems);
 
             pClusterHeader->FirstPackedIndex = firstPackedIndex & (MAX_TOTAL_CLUSTER_ITEMS - 1);
 
-            pItem = &pClusterPackedIndices[pClusterHeader->FirstPackedIndex];
+            pItem = &m_pClusterPackedIndices[pClusterHeader->FirstPackedIndex];
 
             Core::ZeroMem(pItem, NumClusterItems * sizeof(ClusterPackedIndex));
 
             for (int t = 0; t < pClusterHeader->NumLights; t++)
             {
-                pItemInfo = ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];
+                pItemInfo = m_ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];
 
                 (pItem + t)->Indices |= pItemInfo->ListIndex;
             }
 
             for (int t = 0; t < pClusterHeader->NumProbes; t++)
             {
-                pItemInfo = ItemInfos + pClusterItem[PROBE_ITEMS_OFFSET + t];
+                pItemInfo = m_ItemInfos + pClusterItem[PROBE_ITEMS_OFFSET + t];
 
                 (pItem + t)->Indices |= pItemInfo->ListIndex << 24;
             }
@@ -780,34 +776,31 @@ void LightVoxelizer::VoxelizeWork(int SliceIndex)
     }
 }
 
-void LightVoxelizer::GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
+void LightVoxelizer::GatherVoxelGeometry(Vector<Float3>& lineVertices, Float4x4 const& viewProjectionInversed)
 {
-    Float3  clusterMins;
-    Float3  clusterMaxs;
-    Float4  p[8];
+    Float3 clusterMins;
+    Float3 clusterMaxs;
+    Float4 p[8];
     Float3* lineP;
 
-    LinePoints.Clear();
+    lineVertices.Clear();
 
     for (int sliceIndex = 0; sliceIndex < MAX_FRUSTUM_CLUSTERS_Z; sliceIndex++)
     {
-
         clusterMins.Z = FRUSTUM_SLICE_ZCLIP[sliceIndex + 1];
         clusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[sliceIndex];
 
         for (int clusterY = 0; clusterY < MAX_FRUSTUM_CLUSTERS_Y; clusterY++)
         {
-
             clusterMins.Y = clusterY * FRUSTUM_CLUSTER_HEIGHT - 1.0f;
             clusterMaxs.Y = clusterMins.Y + FRUSTUM_CLUSTER_HEIGHT;
 
             for (int clusterX = 0; clusterX < MAX_FRUSTUM_CLUSTERS_X; clusterX++)
             {
-
                 clusterMins.X = clusterX * FRUSTUM_CLUSTER_WIDTH - 1.0f;
                 clusterMaxs.X = clusterMins.X + FRUSTUM_CLUSTER_WIDTH;
 
-                if (ClusterData[sliceIndex][clusterY][clusterX].LightsCount > 0 || ClusterData[sliceIndex][clusterY][clusterX].DecalsCount > 0 || ClusterData[sliceIndex][clusterY][clusterX].ProbesCount > 0)
+                if (m_ClusterData[sliceIndex][clusterY][clusterX].LightsCount > 0 || m_ClusterData[sliceIndex][clusterY][clusterX].DecalsCount > 0 || m_ClusterData[sliceIndex][clusterY][clusterX].ProbesCount > 0)
                 {
                     p[0] = Float4(clusterMins.X, clusterMins.Y, clusterMins.Z, 1.0f);
                     p[1] = Float4(clusterMaxs.X, clusterMins.Y, clusterMins.Z, 1.0f);
@@ -817,15 +810,15 @@ void LightVoxelizer::GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 co
                     p[5] = Float4(clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f);
                     p[6] = Float4(clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f);
                     p[7] = Float4(clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f);
-                    LinePoints.Resize(LinePoints.Size() + 8);
-                    lineP = LinePoints.ToPtr() + LinePoints.Size() - 8;
+                    lineVertices.Resize(lineVertices.Size() + 8);
+                    lineP = lineVertices.ToPtr() + lineVertices.Size() - 8;
                     for (int i = 0; i < 8; i++)
                     {
-                        p[i]              = ViewProjectionInversed * p[i];
+                        p[i] = viewProjectionInversed * p[i];
                         const float Denom = 1.0f / p[i].W;
-                        lineP[i].X        = p[i].X * Denom;
-                        lineP[i].Y        = p[i].Y * Denom;
-                        lineP[i].Z        = p[i].Z * Denom;
+                        lineP[i].X = p[i].X * Denom;
+                        lineP[i].Y = p[i].Y * Denom;
+                        lineP[i].Z = p[i].Z * Denom;
                     }
                 }
             }
@@ -833,30 +826,29 @@ void LightVoxelizer::GatherVoxelGeometry(Vector<Float3>& LinePoints, Float4x4 co
     }
 }
 
-void LightVoxelizer::DrawVoxels(DebugRenderer* InRenderer)
+void LightVoxelizer::DrawVoxels(DebugRenderer& renderer, Float4x4 const& cameraViewMatrix, Float4x4 const& clusterProjectionMatrix)
 {
     if (!com_FreezeFrustumClusters)
     {
-        RenderViewData const* view = InRenderer->GetRenderView();
-        const Float4x4 viewProjInv = view->ViewMatrix.ViewInverseFast() * view->ClusterProjectionMatrix.PerspectiveProjectionInverseFast();
+        const Float4x4 viewProjInv = cameraViewMatrix.ViewInverseFast() * clusterProjectionMatrix.PerspectiveProjectionInverseFast();
 
-        GatherVoxelGeometry(DebugLinePoints, viewProjInv);
+        GatherVoxelGeometry(m_DebugDrawVertices, viewProjInv);
     }
 
-    if (bUseSSE)
-        InRenderer->SetColor(Color4(0, 0, 1));
+    if (m_UseSSE)
+        renderer.SetColor(Color4(0, 0, 1));
     else
-        InRenderer->SetColor(Color4(1, 0, 0));
+        renderer.SetColor(Color4(1, 0, 0));
 
     int n = 0;
-    for (Float3* lineP = DebugLinePoints.ToPtr(); n < DebugLinePoints.Size(); lineP += 8, n += 8)
+    for (Float3* lineP = m_DebugDrawVertices.ToPtr(); n < m_DebugDrawVertices.Size(); lineP += 8, n += 8)
     {
-        InRenderer->DrawLine(ArrayView<Float3>(lineP, 4), true);
-        InRenderer->DrawLine(ArrayView<Float3>(lineP + 4, 4), true);
-        InRenderer->DrawLine(lineP[0], lineP[5]);
-        InRenderer->DrawLine(lineP[1], lineP[4]);
-        InRenderer->DrawLine(lineP[2], lineP[7]);
-        InRenderer->DrawLine(lineP[3], lineP[6]);
+        renderer.DrawLine(ArrayView<Float3>(lineP, 4), true);
+        renderer.DrawLine(ArrayView<Float3>(lineP + 4, 4), true);
+        renderer.DrawLine(lineP[0], lineP[5]);
+        renderer.DrawLine(lineP[1], lineP[4]);
+        renderer.DrawLine(lineP[2], lineP[7]);
+        renderer.DrawLine(lineP[3], lineP[6]);
     }
 }
 
