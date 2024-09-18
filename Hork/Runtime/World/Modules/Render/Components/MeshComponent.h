@@ -33,8 +33,8 @@ SOFTWARE.
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/Modules/Render/ProceduralMesh.h>
 #include <Hork/Runtime/World/Modules/Skeleton/SkeletonPose.h>
-#include <Hork/Runtime/Resources/Resource_Mesh.h>
 #include <Hork/Runtime/Materials/Material.h>
+#include <Hork/Resources/Resource_Mesh.h>
 
 #include <Hork/Runtime/World/GameObject.h>
 #include <Hork/Runtime/World/World.h>

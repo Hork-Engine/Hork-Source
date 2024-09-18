@@ -148,10 +148,10 @@ public:
         desktop->SetFocusWidget(viewport);
 
         // Hide mouse cursor
-        GUIManager->bCursorVisible = false;
+        sGetUIManager().bCursorVisible = false;
 
         // Add desktop and set current
-        GUIManager->AddDesktop(desktop);
+        sGetUIManager().AddDesktop(desktop);
 
         // Add shortcuts
         UIShortcutContainer* shortcuts = UINew(UIShortcutContainer);

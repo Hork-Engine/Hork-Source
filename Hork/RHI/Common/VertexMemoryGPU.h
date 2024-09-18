@@ -250,10 +250,10 @@ private:
         RHI::SyncObject Sync;
     };
 
-    Ref<RHI::IDevice>  m_pDevice;
-    RHI::IImmediateContext* m_pImmediateContext;
+    Ref<RHI::IDevice>         m_pDevice;
+    RHI::IImmediateContext*   m_pImmediateContext;
     ChainBuffer               m_ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
-    Ref<RHI::IBuffer>  m_Buffer;
+    Ref<RHI::IBuffer>         m_Buffer;
     void*                     m_pMappedMemory;
     int                       m_BufferIndex;
     size_t                    m_MaxMemoryUsage;

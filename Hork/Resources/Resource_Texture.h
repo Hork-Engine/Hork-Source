@@ -54,55 +54,55 @@ public:
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 
-    void                        Upload() override;
+    void                        Upload(RHI::IDevice* device) override;
 
     /// Allocate empty 1D texture
-    void                        Allocate1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width);
+    void                        Allocate1D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
 
     /// Allocate empty 1D array texture
-    void                        Allocate1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize);
+    void                        Allocate1DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
 
     /// Allocate empty 2D texture
-    void                        Allocate2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height);
+    void                        Allocate2D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height);
 
     /// Allocate empty 2D array texture
-    void                        Allocate2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize);
+    void                        Allocate2DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t arraySize);
 
     /// Allocate empty 3D texture
-    void                        Allocate3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth);
+    void                        Allocate3D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t depth);
 
     /// Allocate empty cubemap texture
-    void                        AllocateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width);
+    void                        AllocateCubemap(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
 
     /// Allocate empty cubemap array texture
-    void                        AllocateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize);
+    void                        AllocateCubemapArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
 
     /// Fill texture data for any texture type.
-    bool                        WriteData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData);
+    bool                        WriteData(uint32_t locationX, uint32_t locationY, uint32_t locationZ, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteData1D(uint32_t LocationX, uint32_t Width, uint32_t MipLevel, const void* pData);
+    bool                        WriteData1D(uint32_t locationX, uint32_t width, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteData1DArray(uint32_t LocationX, uint32_t Width, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData);
+    bool                        WriteData1DArray(uint32_t locationX, uint32_t width, uint32_t arrayLayer, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteData2D(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t MipLevel, const void* pData);
+    bool                        WriteData2D(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteData2DArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData);
+    bool                        WriteData2DArray(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t arrayLayer, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteData3D(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData);
+    bool                        WriteData3D(uint32_t locationX, uint32_t locationY, uint32_t locationZ, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteDataCubemap(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t MipLevel, const void* pData);
+    bool                        WriteDataCubemap(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t faceIndex, uint32_t mipLevel, const void* pData);
 
     /// Helper. Fill texture data.
-    bool                        WriteDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData);
+    bool                        WriteDataCubemapArray(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t faceIndex, uint32_t arrayLayer, uint32_t mipLevel, const void* pData);
 
     void                        SetTextureGPU(RHI::ITexture* texture);
-    RHI::ITexture*       GetTextureGPU() { return m_TextureGPU; }
+    RHI::ITexture*              GetTextureGPU() { return m_TextureGPU; }
 
     TEXTURE_TYPE                GetType() const { return m_Type; }
     TEXTURE_FORMAT              GetFormat() const { return m_Format; }
@@ -114,7 +114,7 @@ public:
 private:
     ImageStorage                m_Image;
 
-    Ref<RHI::ITexture>   m_TextureGPU;
+    Ref<RHI::ITexture>          m_TextureGPU;
     TEXTURE_TYPE                m_Type = TEXTURE_2D;
     TEXTURE_FORMAT              m_Format = TEXTURE_FORMAT_BGRA8_UNORM;
     uint32_t                    m_Width = 0;

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Delegate.h>
 #include <Hork/Audio/AudioStream.h>
-#include <Hork/Runtime/Resources/Resource_Texture.h>
+#include <Hork/Resources/Resource_Texture.h>
 
 struct plm_t;
 

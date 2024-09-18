@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Image/Gif.h>
 #include <Hork/Core/Delegate.h>
-#include <Hork/Runtime/Resources/Resource_Texture.h>
+#include <Hork/Resources/Resource_Texture.h>
 
 HK_NAMESPACE_BEGIN
 

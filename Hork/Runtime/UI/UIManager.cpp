@@ -37,12 +37,13 @@ HK_NAMESPACE_BEGIN
 
 static ConsoleVar ui_SimulateCursorBallistics("ui_SimulateCursorBallistics"_s, "1"_s);
 
-UIManager* GUIManager = nullptr;
+UIManager* UIManager::s_Instance = nullptr;
 
-UIManager::UIManager(RHI::IGenericWindow* mainWindow) :
-    m_MainWindow(mainWindow)
+UIManager::UIManager(RHI::IGenericWindow* mainWindow, Canvas* canvas) :
+    m_MainWindow(mainWindow),
+    m_Canvas(canvas)
 {
-    GUIManager = this;
+    s_Instance = this;
 
     m_Console.ReadStoryLines();
 }
@@ -126,7 +127,7 @@ static Float2 CalcTooltipPosition(UIWidget* widget)
     switch (widget->TooltipPosition)
     {
         case UI_TOOLTIP_POSITION_AT_CURSOR:
-            return GUIManager->CursorPosition;
+            return UIManager::sInstance().CursorPosition;
 
         case UI_TOOLTIP_POSITION_LEFT_TOP_BOUNDARY:
             return Float2(geometry.Mins.X - tooltipSize.X - padding, geometry.Mins.Y);
@@ -390,36 +391,38 @@ void UIManager::GenerateCharEvents(CharEvent const& event)
         m_ActiveDesktop->GenerateCharEvents(event);
 }
 
-void UIManager::Draw(Canvas& cv)
+void UIManager::Draw()
 {
+    HK_PROFILER_EVENT("Draw UI");
+
     if (m_ActiveDesktop)
-        m_ActiveDesktop->Draw(cv);
+        m_ActiveDesktop->Draw(*m_Canvas);
 
     if (m_TooltipWidget && m_TooltipTime < 0)
     {
         Float2 clipMins(0.0f);
         Float2 clipMaxs(m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
 
-        m_TooltipWidget->Draw(cv, clipMins, clipMaxs, 1.0f);
+        m_TooltipWidget->Draw(*m_Canvas, clipMins, clipMaxs, 1.0f);
     }
 
     if (!m_MainWindow->IsCursorEnabled())
     {
-        DrawCursor(cv);
+        DrawCursor();
     }
 
-    m_Console.Draw(cv, ConsoleBackground, m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
+    m_Console.Draw(*m_Canvas, ConsoleBackground, m_MainWindow->GetFramebufferWidth(), m_MainWindow->GetFramebufferHeight());
 }
 
-void UIManager::DrawCursor(Canvas& cv)
+void UIManager::DrawCursor()
 {
     if (!bCursorVisible)
         return;
 
     if (m_Cursor)
     {
-        cv.ResetScissor();
-        m_Cursor->Draw(cv, CursorPosition);
+        m_Canvas->ResetScissor();
+        m_Cursor->Draw(*m_Canvas, CursorPosition);
     }
 }
 

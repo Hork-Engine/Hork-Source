@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <Hork/MaterialGraph/MaterialGraph.h>
 #include <Hork/MaterialGraph/MaterialCompiler.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -78,10 +77,10 @@ void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
     m_Binary->Write(stream);
 }
 
-void MaterialResource::Upload()
+void MaterialResource::Upload(RHI::IDevice* device)
 {
     if (m_Binary)
-        m_GpuMaterial = CompileMaterial(GameApplication::sGetRenderDevice(), *m_Binary.RawPtr());
+        m_GpuMaterial = CompileMaterial(device, *m_Binary.RawPtr());
 }
 
 bool MaterialResource::IsCastShadow() const

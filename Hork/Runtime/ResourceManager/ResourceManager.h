@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Hork/Core/Containers/PagedVector.h>
 #include <Hork/Core/Containers/Hash.h>
 
-#include "ResourceHandle.h"
+#include <Hork/Resources/ResourceHandle.h>
 #include "ResourceProxy.h"
 
 #include "ThreadSafeQueue.h"

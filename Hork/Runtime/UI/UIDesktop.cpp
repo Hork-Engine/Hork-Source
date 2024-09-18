@@ -371,6 +371,8 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
     UIWidget* widget = nullptr;
     const VirtualKey DraggingButton = VirtualKey::MouseLeftBtn;
 
+    Float2 cursorPosition = UIManager::sInstance().CursorPosition;
+
     m_MouseFocusWidget.Reset();
 
     if (m_DraggingWidget)
@@ -385,7 +387,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
                 UIDockContainer* dockContainer = dockWidget->GetContainer();
                 if (dockContainer)
                 {
-                    if (dockContainer->AttachWidgetAt(dockWidget, GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y))
+                    if (dockContainer->AttachWidgetAt(dockWidget, cursorPosition.X, cursorPosition.Y))
                     {
                         RemoveWidget(dockWidget);
                     }
@@ -404,7 +406,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
     {
         if (m_Popup)
         {
-            widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            widget = m_Popup->Trace(cursorPosition.X, cursorPosition.Y);
             if (!widget)
             {
                 ClosePopupWidget();
@@ -415,13 +417,13 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
             widget = GetExclusive();
             if (widget)
             {
-                widget = widget->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+                widget = widget->Trace(cursorPosition.X, cursorPosition.Y);
                 if (!widget)
                     return;
             }
             else
             {
-                widget = Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+                widget = Trace(cursorPosition.X, cursorPosition.Y);
             }
         }
         while (widget && widget->bNoInput)
@@ -435,7 +437,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
 
             uint64_t newMouseTimeMsec = Core::SysMilliseconds();
             uint64_t clickTime        = newMouseTimeMsec - m_MouseClickTime;
-            if (m_MouseClickWidget == widget && clickTime < DOUBLECLICKTIME_MSEC && GUIManager->CursorPosition.X > m_MouseClickPos.X - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.X < m_MouseClickPos.X + DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y > m_MouseClickPos.Y - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y < m_MouseClickPos.Y + DOUBLECLICKHALFSIZE)
+            if (m_MouseClickWidget == widget && clickTime < DOUBLECLICKTIME_MSEC && cursorPosition.X > m_MouseClickPos.X - DOUBLECLICKHALFSIZE && cursorPosition.X < m_MouseClickPos.X + DOUBLECLICKHALFSIZE && cursorPosition.Y > m_MouseClickPos.Y - DOUBLECLICKHALFSIZE && cursorPosition.Y < m_MouseClickPos.Y + DOUBLECLICKHALFSIZE)
             {
                 if (!widget->IsDisabled())
                 {
@@ -445,7 +447,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
 
                         if (window && window->bResizable)
                         {
-                            if (window->CaptionHitTest(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y))
+                            if (window->CaptionHitTest(cursorPosition.X, cursorPosition.Y))
                             {
                                 if (window->IsMaximized())
                                     window->SetNormal();
@@ -468,8 +470,8 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
 
             m_MouseClickTime   = newMouseTimeMsec;
             m_MouseClickWidget = widget;
-            m_MouseClickPos.X  = GUIManager->CursorPosition.X;
-            m_MouseClickPos.Y  = GUIManager->CursorPosition.Y;
+            m_MouseClickPos.X  = cursorPosition.X;
+            m_MouseClickPos.Y  = cursorPosition.Y;
 
             // Check dragging
             if (event.Button == DraggingButton)
@@ -481,7 +483,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
                 }
 
                 UIWindow* window = dynamic_cast<UIWindow*>(widget);
-                if (window && window->CaptionHitTest(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y))
+                if (window && window->CaptionHitTest(cursorPosition.X, cursorPosition.Y))
                 {
                     StartDragging(widget);
                     return;
@@ -512,20 +514,22 @@ void UIDesktop::GenerateMouseWheelEvents(MouseWheelEvent const& event)
         return;
     }
 
+    Float2 cursorPosition = UIManager::sInstance().CursorPosition;
+
     if (m_Popup)
     {
-        widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+        widget = m_Popup->Trace(cursorPosition.X, cursorPosition.Y);
     }
     else
     {
         widget = GetExclusive();
         if (widget)
         {
-            widget = widget->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            widget = widget->Trace(cursorPosition.X, cursorPosition.Y);
         }
         else
         {
-            widget = Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            widget = Trace(cursorPosition.X, cursorPosition.Y);
         }
     }
     while (widget && widget->bNoInput)
@@ -555,20 +559,21 @@ void UIDesktop::GenerateMouseMoveEvents(MouseMoveEvent const& event)
 
     if (!m_MouseFocusWidget)
     {
+        auto const& cursorPosition = UIManager::sInstance().CursorPosition;
         if (m_Popup)
         {
-            widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            widget = m_Popup->Trace(cursorPosition.X, cursorPosition.Y);
         }
         else
         {
             widget = GetExclusive();
             if (widget)
             {
-                widget = widget->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+                widget = widget->Trace(cursorPosition.X, cursorPosition.Y);
             }
             else
             {
-                widget = Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+                widget = Trace(cursorPosition.X, cursorPosition.Y);
             }
         }
         while (widget && widget->bNoInput)
@@ -649,6 +654,8 @@ bool UIDesktop::HandleDraggingWidget()
         maxs = parent->m_Geometry.PaddedMaxs;
     }
 
+    auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
     UIWindow* window = dynamic_cast<UIWindow*>(m_DraggingWidget.RawPtr());
     if (window && window->bResizable && !window->GetParent())
     {
@@ -657,7 +664,7 @@ bool UIDesktop::HandleDraggingWidget()
             window->SetNormal();
 
             const Float2 parentSize = maxs - mins;
-            const Float2 cursor     = Math::Clamp(GUIManager->CursorPosition - mins, Float2(0.0f), parentSize);
+            const Float2 cursor     = Math::Clamp(cursorPosition - mins, Float2(0.0f), parentSize);
 
             const float widgetWidth = window->Size.X;
             const float widgetHalfWidth = widgetWidth * 0.5f;
@@ -678,7 +685,7 @@ bool UIDesktop::HandleDraggingWidget()
             window->ForwardDragEvent(newWidgetPos);
             window->Position = newWidgetPos;
 
-            m_DraggingCursor    = GUIManager->CursorPosition;
+            m_DraggingCursor    = cursorPosition;
             m_DraggingWidgetPos = mins + newWidgetPos;
 
             return true;
@@ -688,7 +695,7 @@ bool UIDesktop::HandleDraggingWidget()
     if (maxs.X - mins.X > 2 && maxs.Y - mins.Y > 2)
     {
         // clamp cursor position
-        Float2 clampedCursorPos = Math::Clamp(GUIManager->CursorPosition, mins + 1, maxs - 1);
+        Float2 clampedCursorPos = Math::Clamp(cursorPosition, mins + 1, maxs - 1);
 
         Float2 draggingVector = clampedCursorPos - m_DraggingCursor;
 
@@ -728,7 +735,7 @@ void UIDesktop::CancelDragging()
 void UIDesktop::StartDragging(UIWidget* widget)
 {
     m_DraggingWidget    = widget;
-    m_DraggingCursor    = GUIManager->CursorPosition;
+    m_DraggingCursor    = UIManager::sInstance().CursorPosition;
     m_DraggingWidgetPos = widget->m_Geometry.Mins;
 
     UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(widget);
@@ -763,7 +770,7 @@ void UIDesktop::StartDragging(UIWidget* widget)
 //            UIDockContainer* dockContainer = dockWidget->GetContainer();
 //            if (dockContainer)
 //            {
-//                dockContainer->AttachDragWidget(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+//                dockContainer->AttachDragWidget(UIManager::sInstance().CursorPosition.X, UIManager::sInstance().CursorPosition.Y);
 //            }
 //        }
 //    }

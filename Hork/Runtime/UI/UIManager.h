@@ -57,12 +57,17 @@ public:
 
     WeakRef<UIWidget> HoveredWidget;
 
-    UIManager(RHI::IGenericWindow* mainWindow);
+    UIManager(RHI::IGenericWindow* mainWindow, Canvas* canvas);
     ~UIManager();
 
     RHI::IGenericWindow* GetGenericWindow()
     {
         return m_MainWindow;
+    }
+
+    Canvas& GetCanvas()
+    {
+        return *m_Canvas;
     }
 
     UICursor* ArrowCursor() const;
@@ -88,7 +93,7 @@ public:
 
     void Tick(float timeStep);
 
-    void Draw(Canvas& cv);
+    void Draw();
 
     void GenerateKeyEvents(struct KeyEvent const& event, CommandContext& commandCtx, CommandProcessor& commandProcessor);
 
@@ -104,24 +109,30 @@ public:
 
     void GenerateCharEvents(struct CharEvent const& event);
 
-private:
-    void DrawCursor(Canvas& cv);
+    static UIManager& sInstance()
+    {
+        return *s_Instance;
+    }
 
-    Ref<RHI::IGenericWindow> m_MainWindow;
-    UIConsole                        m_Console;
-    Vector<Ref<UIDesktop>>         m_Desktops;
+private:
+    void DrawCursor();
+
+    static UIManager*               s_Instance;
+
+    Ref<RHI::IGenericWindow>        m_MainWindow;
+    Canvas*                         m_Canvas;
+    UIConsole                       m_Console;
+    Vector<Ref<UIDesktop>>          m_Desktops;
     Ref<UIDesktop>                  m_ActiveDesktop;
     Ref<UICursor>                   m_Cursor;
     mutable Ref<UICursor>           m_ArrowCursor;
     mutable Ref<UICursor>           m_TextInputCursor;
     mutable Ref<UIBrush>            m_SliderBrush;
     mutable Ref<UIBrush>            m_ScrollbarBrush;
-    bool                             m_bInsertMode{};
+    bool                            m_bInsertMode{};
     WeakRef<UIWidget>               m_TooltipWidget;
-    float                            m_TooltipTime{};
-    Float2                           m_TooltipPosition;
+    float                           m_TooltipTime{};
+    Float2                          m_TooltipPosition;
 };
-
-extern UIManager* GUIManager;
 
 HK_NAMESPACE_END

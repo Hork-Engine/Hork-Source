@@ -97,8 +97,11 @@ static void STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* row, UITextEdit* obj, int lin
     FontStyle fontStyle;
     fontStyle.FontSize = obj->GetFontSize();
 
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+
     TextMetrics metrics;
-    obj->GetFont()->GetTextMetrics(fontStyle, metrics);
+    canvas.FontFace(obj->GetFont());
+    canvas.GetTextMetrics(fontStyle, metrics);
 
     row->x0               = 0.0f;
     row->x1               = r.MaxX; // - r.MinX;
@@ -121,7 +124,9 @@ static float STB_TEXTEDIT_GETWIDTH(UITextEdit* obj, int lineStartIndex, int char
     FontStyle fontStyle;
     fontStyle.FontSize = obj->GetFontSize();
 
-    return obj->GetFont()->GetCharAdvance(fontStyle, c);
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+    canvas.FontFace(obj->GetFont());
+    return canvas.GetCharAdvance(fontStyle, c);
 }
 
 typedef struct
@@ -139,13 +144,14 @@ static void stb_textedit_find_charpos(StbFindState* find, UITextEdit* str, int n
     WideChar const* text = str->GetText().CBegin();
     int length = str->GetText().Size();
 
-    FontResource* font = str->GetFont();
-
     FontStyle fontStyle;
     fontStyle.FontSize = str->GetFontSize();
 
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+    canvas.FontFace(str->GetFont());
+
     TextMetrics metrics;
-    font->GetTextMetrics(fontStyle, metrics);
+    canvas.GetTextMetrics(fontStyle, metrics);
 
     if (n == length && single_line)
     {
@@ -179,7 +185,7 @@ static void stb_textedit_find_charpos(StbFindState* find, UITextEdit* str, int n
 
         HK_ASSERT(c != '\n');
 
-        find->x += font->GetCharAdvance(fontStyle, c);
+        find->x += canvas.GetCharAdvance(fontStyle, c);
     }
 }
 
@@ -193,10 +199,11 @@ int UITextEdit::LocateCoord(float x, float y)
     if (m_Text.IsEmpty())
         return 0;
 
-    FontResource* font = GetFont();
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+    canvas.FontFace(GetFont());
 
     TextMetrics metrics;
-    font->GetTextMetrics(m_FontStyle, metrics);
+    canvas.GetTextMetrics(m_FontStyle, metrics);
 
     x -= m_Geometry.Mins.X;
     y -= m_Geometry.Mins.Y;
@@ -220,7 +227,7 @@ int UITextEdit::LocateCoord(float x, float y)
     float prev_x       = row->MinX;
     for (int k = 0; k < numChars; ++k)
     {
-        float w = font->GetCharAdvance(m_FontStyle, row->Start[k]);
+        float w = canvas.GetCharAdvance(m_FontStyle, row->Start[k]);
         if (x < prev_x + w)
         {
             if (x < prev_x + w / 2)
@@ -333,7 +340,8 @@ Float2 UITextEdit::CalcCursorOffset(int cursor)
     {
         TextRowW const* row = &m_Rows[rowNum];
 
-        FontResource* font = GetFont();
+        Canvas& canvas = UIManager::sInstance().GetCanvas();
+        canvas.FontFace(m_Font);
 
         float lineWidth = 0.0f;
 
@@ -341,11 +349,11 @@ Float2 UITextEdit::CalcCursorOffset(int cursor)
         WideChar const* end = m_Text.ToPtr() + cursor;
         while (s < end)
         {
-            lineWidth += font->GetCharAdvance(m_FontStyle, *s++);
+            lineWidth += canvas.GetCharAdvance(m_FontStyle, *s++);
         }
 
         TextMetrics metrics;
-        font->GetTextMetrics(m_FontStyle, metrics);
+        canvas.GetTextMetrics(m_FontStyle, metrics);
 
         offset.X = lineWidth;
         offset.Y = rowNum * metrics.LineHeight;
@@ -379,7 +387,7 @@ UITextEdit::UITextEdit()
     m_SelectionColor       = Color4(0.32f, 0.32f, 0.9f);
     m_TextColor            = Color4(0.9f, 0.9f, 0.9f);
 
-    Cursor = GUIManager->TextInputCursor();
+    Cursor = UIManager::sInstance().TextInputCursor();
 }
 
 UITextEdit::~UITextEdit()
@@ -541,18 +549,9 @@ UITextEdit& UITextEdit::ShouldKeepSelection(bool bShouldKeepSelection)
     return *this;
 }
 
-FontResource* UITextEdit::GetFont() const
+FontHandle UITextEdit::GetFont() const
 {
-    FontResource* resource = GameApplication::sGetResourceManager().TryGet(m_Font);
-
-    return resource ? resource : GameApplication::sGetDefaultFont();
-}
-
-FontHandle UITextEdit::GetFontHandle() const
-{
-    FontResource* resource = GameApplication::sGetResourceManager().TryGet(m_Font);
-
-    return resource ? m_Font : GameApplication::sGetDefaultFontHandle();
+    return m_Font;
 }
 
 float UITextEdit::GetFontSize() const
@@ -686,8 +685,11 @@ void UITextEdit::ScrollPageUp(bool bMoveCursor)
     UIScroll* scroll = GetScroll();
     if (scroll)
     {
+        Canvas& canvas = UIManager::sInstance().GetCanvas();
+        canvas.FontFace(m_Font);
+
         TextMetrics metrics;
-        GetFont()->GetTextMetrics(m_FontStyle, metrics);
+        canvas.GetTextMetrics(m_FontStyle, metrics);
 
         float pageSize = scroll->GetViewSize().Y;
         pageSize       = Math::Snap(pageSize, metrics.LineHeight);
@@ -716,8 +718,11 @@ void UITextEdit::ScrollPageDown(bool bMoveCursor)
     UIScroll* scroll = GetScroll();
     if (scroll)
     {
+        Canvas& canvas = UIManager::sInstance().GetCanvas();
+        canvas.FontFace(m_Font);
+
         TextMetrics metrics;
-        GetFont()->GetTextMetrics(m_FontStyle, metrics);
+        canvas.GetTextMetrics(m_FontStyle, metrics);
 
         float pageSize = scroll->GetViewSize().Y;
         pageSize       = Math::Snap(pageSize, metrics.LineHeight);
@@ -759,7 +764,10 @@ void UITextEdit::ScrollLines(int numLines)
         Float2 scrollPosition = scroll->GetScrollPosition();
 
         TextMetrics metrics;
-        GetFont()->GetTextMetrics(m_FontStyle, metrics);
+
+        Canvas& canvas = UIManager::sInstance().GetCanvas();
+        canvas.FontFace(m_Font);
+        canvas.GetTextMetrics(m_FontStyle, metrics);
 
         scrollPosition.Y = Math::Snap(scrollPosition.Y, metrics.LineHeight);
         scrollPosition.Y -= numLines * metrics.LineHeight;
@@ -819,14 +827,15 @@ void UITextEdit::ScrollToCursor()
         return;
     }
 
-    FontResource const* font = GetFont();
-
     Float2 scrollMins = scroll->m_Geometry.PaddedMins;
     Float2 scrollMaxs = scroll->m_Geometry.PaddedMaxs;
     Float2 pageSize   = scrollMaxs - scrollMins;
 
     TextMetrics metrics;
-    font->GetTextMetrics(m_FontStyle, metrics);
+
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+    canvas.FontFace(m_Font);
+    canvas.GetTextMetrics(m_FontStyle, metrics);
 
     Float2 cursorOffset = CalcCursorOffset(m_State->cursor);
 
@@ -1272,7 +1281,7 @@ void UITextEdit::OnKeyEvent(KeyEvent const& event)
             case VirtualKey::Insert:
                 if (event.ModMask == 0)
                 {
-                    GUIManager->SetInsertMode(!GUIManager->IsInsertMode());
+                    UIManager::sInstance().SetInsertMode(!UIManager::sInstance().IsInsertMode());
                 }
                 break;
         }
@@ -1307,7 +1316,7 @@ void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
 
     if (event.Action == InputAction::Pressed)
     {
-        Float2 CursorPos = GUIManager->CursorPosition;
+        Float2 cursorPos = UIManager::sInstance().CursorPosition;
 
         if (!HasSelection())
         {
@@ -1316,7 +1325,7 @@ void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
 
         if (event.Button == VirtualKey::MouseLeftBtn && (event.ModMask.Shift))
         {
-            stb_textedit_click(this, m_State, CursorPos.X, CursorPos.Y);
+            stb_textedit_click(this, m_State, cursorPos.X, cursorPos.Y);
 
             m_State->select_start = m_TempCursor > m_Text.Size() ? m_State->cursor : m_TempCursor;
             m_State->select_end   = m_State->cursor;
@@ -1328,7 +1337,7 @@ void UITextEdit::OnMouseButtonEvent(MouseButtonEvent const& event)
         }
         else
         {
-            stb_textedit_click(this, m_State, CursorPos.X, CursorPos.Y);
+            stb_textedit_click(this, m_State, cursorPos.X, cursorPos.Y);
 
             m_TempCursor = m_State->cursor;
         }
@@ -1380,9 +1389,9 @@ void UITextEdit::OnMouseMoveEvent(MouseMoveEvent const& event)
 {
     if (m_bStartDragging)
     {
-        Float2 CursorPos = GUIManager->CursorPosition;
+        Float2 cursorPos = UIManager::sInstance().CursorPosition;
 
-        stb_textedit_drag(this, m_State, CursorPos.X, CursorPos.Y);
+        stb_textedit_drag(this, m_State, cursorPos.X, cursorPos.Y);
 
         ScrollToCursor();
     }
@@ -1437,17 +1446,12 @@ void UITextEdit::AdjustSize(Float2 const& size)
 
 void UITextEdit::Draw(Canvas& cv)
 {
-    m_State->insert_mode = GUIManager->IsInsertMode();
+    m_State->insert_mode = UIManager::sInstance().IsInsertMode();
 
-    FontHandle fontHandle = GetFontHandle();
-    FontResource* font = GameApplication::sGetResourceManager().TryGet(fontHandle);
-
-    HK_ASSERT(font);
-
-    cv.FontFace(fontHandle);
+    cv.FontFace(GetFont());
 
     TextMetrics metrics;
-    font->GetTextMetrics(m_FontStyle, metrics);
+    cv.GetTextMetrics(m_FontStyle, metrics);
 
     float lineHeight = metrics.LineHeight;
 
@@ -1496,7 +1500,7 @@ void UITextEdit::Draw(Canvas& cv)
         {
             if (s >= row->End)
             {
-                lineWidth = Math::Max(lineWidth, font->GetCharAdvance(m_FontStyle, ' ') * 0.4f);
+                lineWidth = Math::Max(lineWidth, cv.GetCharAdvance(m_FontStyle, ' ') * 0.4f);
                 cv.DrawRectFilled(selstart, selstart + Float2(lineWidth, lineHeight), m_SelectionColor);
                 selstart.X = m_Geometry.Mins.X;
                 selstart.Y += lineHeight;
@@ -1512,7 +1516,7 @@ void UITextEdit::Draw(Canvas& cv)
             {
                 continue;
             }
-            lineWidth += font->GetCharAdvance(m_FontStyle, c);
+            lineWidth += cv.GetCharAdvance(m_FontStyle, c);
         }
 
         if (lineWidth > 0)
@@ -1529,7 +1533,7 @@ void UITextEdit::Draw(Canvas& cv)
 
             if (m_State->insert_mode)
             {
-                float w = m_State->cursor < m_Text.Size() ? font->GetCharAdvance(m_FontStyle, m_Text[m_State->cursor]) : font->GetCharAdvance(m_FontStyle, ' ');
+                float w = m_State->cursor < m_Text.Size() ? cv.GetCharAdvance(m_FontStyle, m_Text[m_State->cursor]) : cv.GetCharAdvance(m_FontStyle, ' ');
 
                 cv.DrawRectFilled(cursor, Float2(cursor.X + w, cursor.Y + m_FontStyle.FontSize), m_TextColor);
             }
@@ -1575,8 +1579,6 @@ void UITextEdit::Draw(Canvas& cv)
 // OPTIMIZ: Recalc only modified rows
 void UITextEdit::UpdateRows()
 {
-    FontResource* font = GetFont();
-
     const bool bKeepSpaces = true;
 
     static TextRowW rows[128];
@@ -1589,7 +1591,10 @@ void UITextEdit::UpdateRows()
 
     m_Rows.Clear();
 
-    while ((nrows = font->TextBreakLines(m_FontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
+    Canvas& canvas = UIManager::sInstance().GetCanvas();
+    canvas.FontFace(m_Font);
+
+    while ((nrows = canvas.TextBreakLines(m_FontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
     {
         for (int i = 0; i < nrows; i++)
         {
@@ -1617,7 +1622,7 @@ void UITextEdit::UpdateRows()
 
     // Recalc widget bounds
     TextMetrics metrics;
-    font->GetTextMetrics(m_FontStyle, metrics);
+    canvas.GetTextMetrics(m_FontStyle, metrics);
 
     const int granularity = 100;
     const int mod         = (int)w % granularity;

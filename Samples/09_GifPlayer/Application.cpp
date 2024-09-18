@@ -63,7 +63,7 @@ void SampleApplication::Initialize()
 {
     // Create UI
     UIDesktop* desktop = UINew(UIDesktop);
-    GUIManager->AddDesktop(desktop);
+    sGetUIManager().AddDesktop(desktop);
 
     m_Desktop = desktop;
 
@@ -81,7 +81,7 @@ void SampleApplication::Initialize()
         .WithPadding({0,0,0,0}));
 
     // Hide mouse cursor
-    GUIManager->bCursorVisible = false;
+    sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
     Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
@@ -263,7 +263,7 @@ void SampleApplication::CreateScene()
         MeshResourceBuilder builder;
         UniqueRef<MeshResource> quadMesh = builder.Build(rawMesh);
         if (quadMesh)
-            quadMesh->Upload();
+            quadMesh->Upload(sGetRenderDevice());
 
         auto surfaceHandle = resourceMngr.CreateResourceWithData<MeshResource>("monitor_surface", std::move(quadMesh));
 

@@ -181,8 +181,6 @@ private:
     HashMap<int, int>   m_GamepadIDToPlayerIndex;
 
     bool                m_ShouldGenerateInputEvents{true};
-
-    Ref<class FontStash>       m_FontStash;
 };
 
 HK_NAMESPACE_END

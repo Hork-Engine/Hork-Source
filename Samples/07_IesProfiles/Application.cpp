@@ -53,7 +53,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/PunctualLightComponent.h>
 #include <Hork/Image/PhotometricData.h>
 
-#include <Hork/Runtime/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Resource_Mesh.h>
 
 using namespace Hk;
 
@@ -68,7 +68,7 @@ void SampleApplication::Initialize()
 {
     // Create UI
     UIDesktop* desktop = UINew(UIDesktop);
-    GUIManager->AddDesktop(desktop);
+    sGetUIManager().AddDesktop(desktop);
 
     m_Desktop = desktop;
 
@@ -86,7 +86,7 @@ void SampleApplication::Initialize()
         .WithPadding({0,0,0,0}));
 
     // Hide mouse cursor
-    GUIManager->bCursorVisible = false;
+    sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
     Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
@@ -223,7 +223,7 @@ void SampleApplication::ShowLoadingScreen(bool show)
             auto texture = resourceMngr.TryGet(textureHandle);
             if (texture)
             {
-                texture->Upload();
+                texture->Upload(sGetRenderDevice());
 
                 m_LoadingScreen->AddWidget(UINew(UIImage)
                     .WithTexture(textureHandle)

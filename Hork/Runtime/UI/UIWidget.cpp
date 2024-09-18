@@ -55,7 +55,7 @@ UIWidget::UIWidget() :
     bShortcutsAllowed{true},
     bAllowDrag{false}
 {
-    Cursor = GUIManager->ArrowCursor();
+    Cursor = UIManager::sInstance().ArrowCursor();
 }
 
 UIWidget::~UIWidget()

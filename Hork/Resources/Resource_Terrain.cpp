@@ -166,7 +166,7 @@ bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
     return true;
 }
 
-void TerrainResource::Upload()
+void TerrainResource::Upload(RHI::IDevice* device)
 {}
 
 void TerrainResource::Allocate(uint32_t resolution)

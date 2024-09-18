@@ -135,7 +135,7 @@ public:
 
     int GetSelectionEnd() const;
 
-    FontResource* GetFont() const;
+    FontHandle GetFont() const;
 
     float GetFontSize() const;
 
@@ -184,31 +184,29 @@ private:
     void            UpdateRows();
     Float2          CalcCursorOffset(int cursor);
 
-    FontHandle      GetFontHandle() const;
-
-    FontHandle         m_Font;
-    WideString         m_Text;
-    Vector<TextRowW>  m_Rows;
-    FontStyle          m_FontStyle;
-    Color4             m_TextColor;
-    Color4             m_SelectionColor;
-    int                m_MaxChars;
-    int                m_CharacterFilter;
-    int                m_InsertSpacesOnTab;
-    STB_TexteditState* m_State;
-    int                m_TempCursor;
-    int                m_PrevCursorPos = -1;
-    Float2             m_CurSize;
-    bool               m_bSingleLine : 1;
-    bool               m_bReadOnly : 1;
-    bool               m_bPassword : 1;
-    bool               m_bCtrlEnterForNewLine : 1;
-    bool               m_bAllowTabInput : 1;
-    bool               m_bAllowUndo : 1;
-    bool               m_bCustomCharFilter : 1;
-    bool               m_bStartDragging : 1;
-    bool               m_bShouldKeepSelection : 1;
-    bool               m_bWithWordWrap : 1;
+    FontHandle          m_Font{};
+    WideString          m_Text;
+    Vector<TextRowW>    m_Rows;
+    FontStyle           m_FontStyle;
+    Color4              m_TextColor;
+    Color4              m_SelectionColor;
+    int                 m_MaxChars;
+    int                 m_CharacterFilter;
+    int                 m_InsertSpacesOnTab;
+    STB_TexteditState*  m_State;
+    int                 m_TempCursor;
+    int                 m_PrevCursorPos = -1;
+    Float2              m_CurSize;
+    bool                m_bSingleLine : 1;
+    bool                m_bReadOnly : 1;
+    bool                m_bPassword : 1;
+    bool                m_bCtrlEnterForNewLine : 1;
+    bool                m_bAllowTabInput : 1;
+    bool                m_bAllowUndo : 1;
+    bool                m_bCustomCharFilter : 1;
+    bool                m_bStartDragging : 1;
+    bool                m_bShouldKeepSelection : 1;
+    bool                m_bWithWordWrap : 1;
 };
 
 HK_NAMESPACE_END

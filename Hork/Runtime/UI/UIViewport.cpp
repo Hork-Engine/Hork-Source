@@ -97,8 +97,10 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
     Float2 const& pos  = m_Geometry.Mins;
     Float2 size = m_Geometry.Maxs - m_Geometry.Mins;
 
-    //GameApplication::sGetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
-    GameApplication::sGetInputSystem().SetCursorPosition((GUIManager->CursorPosition - pos) / size);
+    auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
+    //GameApplication::sGetInputSystem().SetCursorPosition((cursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
+    GameApplication::sGetInputSystem().SetCursorPosition((cursorPosition - pos) / size);
 }
 
 void UIViewport::OnGamepadButtonEvent(GamepadKeyEvent const& event)
@@ -180,7 +182,9 @@ void UIViewport::Draw(Canvas& canvas)
 
     float aspectScale = 1;
     if (rt_UseWideScreenCorrection)
-        aspectScale = GUIManager->GetGenericWindow()->GetWideScreenCorrection();
+    {
+        aspectScale = UIManager::sInstance().GetGenericWindow()->GetWideScreenCorrection();
+    }
 
     camera->SetViewportPosition(m_Geometry.Mins);
     camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)}, aspectScale);

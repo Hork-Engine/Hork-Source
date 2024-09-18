@@ -48,8 +48,8 @@ class UISlider : public UIWidget
     UI_CLASS(UISlider, UIWidget)
 
 public:
-    Ref<UIBrush> SliderBrush;
-    Color4        LineColor = Color4::sWhite();
+    Ref<UIBrush>    SliderBrush;
+    Color4          LineColor = Color4::sWhite();
 
     Delegate<void(float)> E_OnUpdateValue;    
 

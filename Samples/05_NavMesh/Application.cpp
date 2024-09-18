@@ -174,7 +174,7 @@ private:
     {
         if (auto cameraObject = GetOwner()->FindChildrenRecursive(StringID("Camera")))
             if (auto cameraComponent = cameraObject->GetComponent<CameraComponent>())
-                return cameraComponent->ScreenPointToRay(GUIManager->CursorPosition, rayStart, rayDir);
+                return cameraComponent->ScreenPointToRay(GameApplication::sGetUIManager().CursorPosition, rayStart, rayDir);
         return false;
     }
     
@@ -290,7 +290,7 @@ void SampleApplication::Initialize()
 {
     // Create UI
     UIDesktop* desktop = UINew(UIDesktop);
-    GUIManager->AddDesktop(desktop);
+    sGetUIManager().AddDesktop(desktop);
 
     // Add shortcuts
     UIShortcutContainer* shortcuts = UINew(UIShortcutContainer);
@@ -308,7 +308,7 @@ void SampleApplication::Initialize()
     desktop->SetFocusWidget(mainViewport);
 
     // Show mouse cursor
-    GUIManager->bCursorVisible = true;
+    sGetUIManager().bCursorVisible = true;
 
     // Set input mappings
     Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
@@ -651,7 +651,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
         MeshResourceBuilder builder;
         auto resource = builder.Build(rawMesh);
-        resource->Upload();
+        resource->Upload(sGetRenderDevice());
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 

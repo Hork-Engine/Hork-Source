@@ -52,7 +52,7 @@ public:
 
     bool                        Read(IBinaryStreamReadInterface& stream);
 
-    void                        Upload() override;
+    void                        Upload(RHI::IDevice* device) override;
 
     /// Allocate empty height map
     void                        Allocate(uint32_t resolution);

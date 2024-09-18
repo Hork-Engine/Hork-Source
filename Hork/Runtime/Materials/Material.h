@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/Resources/Resource_Material.h>
-#include <Hork/Runtime/Resources/Resource_Texture.h>
+#include <Hork/Resources/Resource_Material.h>
+#include <Hork/Resources/Resource_Texture.h>
 
 #include <Hork/Renderer/RenderDefs.h>
 

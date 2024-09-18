@@ -180,21 +180,6 @@ public:
         return static_cast<GameApplication*>(sInstance())->m_AudioMixer.RawPtr();
     }
 
-    static FontHandle sGetDefaultFontHandle()
-    {
-        return static_cast<GameApplication*>(sInstance())->m_DefaultFontHandle;
-    }
-
-    static FontResource* sGetDefaultFont()
-    {
-        return static_cast<GameApplication*>(sInstance())->m_DefaultFont;
-    }
-
-    static Float2 const& sGetRetinaScale()
-    {
-        return static_cast<GameApplication*>(sInstance())->m_RetinaScale;
-    }
-
     static WorldRenderer& sGetRenderer()
     {
         return *static_cast<GameApplication*>(sInstance())->m_Renderer.RawPtr();
@@ -204,7 +189,6 @@ protected:
     bool bToggleFullscreenAltEnter{true};
 
 private:
-    void DrawCanvas();
     void ShowStats();
 
     void LoadConfigFile(StringView configFile);
@@ -275,9 +259,6 @@ private:
     bool                            m_bPostChangeWindowSettings{};
     bool                            m_bPostTerminateEvent{};
     bool                            m_bPostTakeScreenshot{};
-    FontHandle                      m_DefaultFontHandle;
-    FontResource*                   m_DefaultFont;
-    Float2                          m_RetinaScale;
 };
 
 HK_NAMESPACE_END

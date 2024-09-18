@@ -367,30 +367,32 @@ void UIScroll::OnMouseButtonEvent(MouseButtonEvent const& event)
 
     if (event.Action == InputAction::Pressed)
     {
-        if (BvPointInRect(m_VerticalSliderMins, m_VerticalSliderMaxs, GUIManager->CursorPosition))
+        auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
+        if (BvPointInRect(m_VerticalSliderMins, m_VerticalSliderMaxs, cursorPosition))
         {
             float size   = m_VerticalScrollbarMaxs.Y - m_VerticalScrollbarMins.Y;
-            m_DragCursor = GUIManager->CursorPosition.Y + m_ScrollPosition.Y / m_ContentSize.Y * size;
+            m_DragCursor = cursorPosition.Y + m_ScrollPosition.Y / m_ContentSize.Y * size;
 
             m_State = STATE_MOVE_VSLIDER;
         }
-        else if (BvPointInRect(m_VerticalScrollbarMins, m_VerticalScrollbarMaxs, GUIManager->CursorPosition))
+        else if (BvPointInRect(m_VerticalScrollbarMins, m_VerticalScrollbarMaxs, cursorPosition))
         {
-            float local = GUIManager->CursorPosition.Y - m_VerticalScrollbarMins.Y;
+            float local = cursorPosition.Y - m_VerticalScrollbarMins.Y;
             float sliderSize = m_VerticalSliderMaxs.Y - m_VerticalSliderMins.Y;
 
             MoveVSlider(local - sliderSize * 0.5f);
         }
-        else if (BvPointInRect(m_HorizontalSliderMins, m_HorizontalSliderMaxs, GUIManager->CursorPosition))
+        else if (BvPointInRect(m_HorizontalSliderMins, m_HorizontalSliderMaxs, cursorPosition))
         {
             float size   = m_HorizontalScrollbarMaxs.X - m_HorizontalScrollbarMins.X;
-            m_DragCursor = GUIManager->CursorPosition.X + m_ScrollPosition.X / m_ContentSize.X * size;
+            m_DragCursor = cursorPosition.X + m_ScrollPosition.X / m_ContentSize.X * size;
 
             m_State = STATE_MOVE_HSLIDER;
         }
-        else if (BvPointInRect(m_HorizontalScrollbarMins, m_HorizontalScrollbarMaxs, GUIManager->CursorPosition))
+        else if (BvPointInRect(m_HorizontalScrollbarMins, m_HorizontalScrollbarMaxs, cursorPosition))
         {
-            float local = GUIManager->CursorPosition.X - m_HorizontalScrollbarMins.X;
+            float local = cursorPosition.X - m_HorizontalScrollbarMins.X;
             float sliderSize = m_HorizontalSliderMaxs.X - m_HorizontalSliderMins.X;
 
             MoveHSlider(local - sliderSize * 0.5f);
@@ -401,7 +403,7 @@ void UIScroll::OnMouseButtonEvent(MouseButtonEvent const& event)
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    if (BvPointInRect(m_ButtonMins[i], m_ButtonMaxs[i], GUIManager->CursorPosition))
+                    if (BvPointInRect(m_ButtonMins[i], m_ButtonMaxs[i], cursorPosition))
                     {
                         m_PressButton = i;
                         m_State       = (STATE)(STATE_PRESS_BUTTON_LEFT + i);
@@ -439,10 +441,10 @@ void UIScroll::OnMouseMoveEvent(MouseMoveEvent const& event)
     switch (m_State)
     {
         case STATE_MOVE_HSLIDER:
-            MoveHSlider(GUIManager->CursorPosition.X - m_DragCursor);
+            MoveHSlider(UIManager::sInstance().CursorPosition.X - m_DragCursor);
             break;
         case STATE_MOVE_VSLIDER:
-            MoveVSlider(GUIManager->CursorPosition.Y - m_DragCursor);
+            MoveVSlider(UIManager::sInstance().CursorPosition.Y - m_DragCursor);
             break;
         default:
             break;
@@ -454,7 +456,7 @@ UIScroll::DRAW UIScroll::GetDrawType(int buttonNum) const
     if (IsDisabled())
         return DRAW_DISABLED;
 
-    bool hovered = BvPointInRect(m_ButtonMins[buttonNum], m_ButtonMaxs[buttonNum], GUIManager->CursorPosition);
+    bool hovered = BvPointInRect(m_ButtonMins[buttonNum], m_ButtonMaxs[buttonNum], UIManager::sInstance().CursorPosition);
 
     return m_PressButton == buttonNum ? DRAW_ACTIVE : (hovered ? DRAW_HOVERED : DRAW_INACTIVE);
 }
@@ -494,22 +496,24 @@ void UIScroll::Draw(Canvas& canvas)
 
     const float ScrollSpeed = static_cast<float>(delta) * 200;
 
+    auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
     switch (m_State)
     {
         case STATE_PRESS_BUTTON_LEFT:
-            if (BvPointInRect(m_ButtonMins[0], m_ButtonMaxs[0], GUIManager->CursorPosition))
+            if (BvPointInRect(m_ButtonMins[0], m_ButtonMaxs[0], cursorPosition))
                 ScrollDelta(Float2(ScrollSpeed, 0.0f));
             break;
         case STATE_PRESS_BUTTON_RIGHT:
-            if (BvPointInRect(m_ButtonMins[1], m_ButtonMaxs[1], GUIManager->CursorPosition))
+            if (BvPointInRect(m_ButtonMins[1], m_ButtonMaxs[1], cursorPosition))
                 ScrollDelta(Float2(-ScrollSpeed, 0.0f));
             break;
         case STATE_PRESS_BUTTON_UP:
-            if (BvPointInRect(m_ButtonMins[2], m_ButtonMaxs[2], GUIManager->CursorPosition))
+            if (BvPointInRect(m_ButtonMins[2], m_ButtonMaxs[2], cursorPosition))
                 ScrollDelta(Float2(0.0f, ScrollSpeed));
             break;
         case STATE_PRESS_BUTTON_DOWN:
-            if (BvPointInRect(m_ButtonMins[3], m_ButtonMaxs[3], GUIManager->CursorPosition))
+            if (BvPointInRect(m_ButtonMins[3], m_ButtonMaxs[3], cursorPosition))
                 ScrollDelta(Float2(0.0f, -ScrollSpeed));
             break;
         default:
@@ -519,10 +523,10 @@ void UIScroll::Draw(Canvas& canvas)
     if (m_bDrawHScroll || m_bDrawVScroll)
     {
         if (!m_SliderBrush)
-            m_SliderBrush = GUIManager->DefaultSliderBrush();
+            m_SliderBrush = UIManager::sInstance().DefaultSliderBrush();
 
         if (!m_ScrollbarBrush)
-            m_ScrollbarBrush = GUIManager->DefaultScrollbarBrush();
+            m_ScrollbarBrush = UIManager::sInstance().DefaultScrollbarBrush();
 
         if (m_bDrawHScroll)
         {

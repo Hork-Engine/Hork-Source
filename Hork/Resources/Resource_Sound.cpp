@@ -32,10 +32,17 @@ SOFTWARE.
 
 #include <Hork/Core/Logger.h>
 #include <Hork/Audio/AudioDecoder.h>
-#include <Hork/Audio/AudioDevice.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
+
+int SoundResource::s_DecoderSampleRate;
+bool SoundResource::s_IsStereo;
+
+void SoundResource::SetDecoderProperties(int sampleRate, bool stereo)
+{
+    s_DecoderSampleRate = sampleRate;
+    s_IsStereo = stereo;
+}
 
 SoundResource::~SoundResource()
 {}
@@ -50,9 +57,7 @@ UniqueRef<SoundResource> SoundResource::sLoad(IBinaryStreamReadInterface& stream
 
 bool SoundResource::Read(IBinaryStreamReadInterface& stream)
 {
-    AudioDevice* device = GameApplication::sGetAudioDevice();
-
-    auto sampleRate = device->GetSampleRate();
+    HK_ASSERT_(s_DecoderSampleRate != 0, "The audio decoder properties must be set! Use SoundResource::SetDecoderProperties");
 
     // TODO: Audio config file:
     // {
@@ -75,8 +80,8 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
     bool cfg_encoded = false;
 
     AudioResample resample;
-    resample.SampleRate = sampleRate;
-    resample.bForceMono = cfg_force_mono || device->GetChannels() == 1;
+    resample.SampleRate = s_DecoderSampleRate;
+    resample.bForceMono = cfg_force_mono || !s_IsStereo;
     resample.bForce8Bit = cfg_force_8bit;
 
     if (!cfg_encoded)
@@ -96,7 +101,7 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
             return false;
         }
 
-        m_Source = MakeRef<AudioSource>(info.FrameCount, sampleRate, info.SampleBits, info.Channels, stream.AsBlob());
+        m_Source = MakeRef<AudioSource>(info.FrameCount, s_DecoderSampleRate, info.SampleBits, info.Channels, stream.AsBlob());
     }
     return true;
 }

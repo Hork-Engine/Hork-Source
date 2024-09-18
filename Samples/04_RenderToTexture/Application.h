@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Runtime/GameApplication/GameApplication.h>
-#include <Hork/Runtime/Resources/ResourceManager.h>
+#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 #include <Hork/Runtime/World/Modules/Render/Components/CameraComponent.h>
 
 HK_NAMESPACE_BEGIN

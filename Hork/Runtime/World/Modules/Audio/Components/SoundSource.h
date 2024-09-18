@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Hork/Math/Quat.h>
 #include <Hork/Audio/AudioTrack.h>
-#include <Hork/Runtime/Resources/Resource_Sound.h>
+#include <Hork/Resources/Resource_Sound.h>
 
 #include <EASTL/queue.h>
 

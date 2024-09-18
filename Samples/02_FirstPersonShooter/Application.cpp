@@ -77,7 +77,7 @@ void SampleApplication::Initialize()
 {
     // Create UI
     UIDesktop* desktop = UINew(UIDesktop);
-    GUIManager->AddDesktop(desktop);
+    sGetUIManager().AddDesktop(desktop);
 
     m_Desktop = desktop;
 
@@ -136,7 +136,7 @@ void SampleApplication::Initialize()
 #endif
 
     // Hide mouse cursor
-    GUIManager->bCursorVisible = false;
+    sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
     Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
@@ -324,7 +324,7 @@ void SampleApplication::ShowLoadingScreen(bool show)
             auto texture = resourceMngr.TryGet(textureHandle);
             if (texture)
             {
-                texture->Upload();
+                texture->Upload(sGetRenderDevice());
 
                 m_LoadingScreen->AddWidget(UINew(UIImage)
                     .WithTexture(textureHandle)
@@ -362,7 +362,7 @@ void SampleApplication::CreateResources()
     ImageStorage skyboxImage = RenderUtils::GenerateAtmosphereSkybox(sGetRenderDevice(), SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT, 512, Float3(1, -1, -1).Normalized());
     // Convert image to resource
     UniqueRef<TextureResource> skybox = MakeUnique<TextureResource>(std::move(skyboxImage));
-    skybox->Upload();
+    skybox->Upload(sGetRenderDevice());
     // Register the resource in the resource manager with the name "internal_skybox" so that it can be accessed by name from the materials.
     resourceMngr.CreateResourceWithData<TextureResource>("internal_skybox", std::move(skybox));
 
@@ -640,7 +640,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
         MeshResourceBuilder builder;
         auto resource = builder.Build(rawMesh);
-        resource->Upload();
+        resource->Upload(sGetRenderDevice());
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 

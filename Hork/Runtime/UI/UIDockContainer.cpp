@@ -324,11 +324,13 @@ void UIDockContainer::PostDraw(Canvas& canvas)
 {
     Super::PostDraw(canvas);
 
+    Float2 cursorPosition = UIManager::sInstance().CursorPosition;
+
     if (bDrawPlacement && DragWidget)
     {
         //auto geometry = DragWidget->Geometry;
 
-        //UIDockPlacement placement = GetPlacement(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+        //UIDockPlacement placement = GetPlacement(cursorPosition.X, cursorPosition.Y);
         //if (placement)
         //{
         //    float splitDistance = 0.5f;
@@ -375,8 +377,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
         //    DragWidget->Geometry = geometry;            
         //}
 
-        Float2         cursorPos = GUIManager->CursorPosition;
-        UIDockPlacement placement = GetPlacement(cursorPos.X, cursorPos.Y);
+        UIDockPlacement placement = GetPlacement(cursorPosition.X, cursorPosition.Y);
         if (placement)
         {
             #if 1
@@ -452,8 +453,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
     }
     else if (m_DragSplitter)
     {
-        Float2 cursorPos = GUIManager->CursorPosition;
-        Float2 dragDelta = cursorPos - m_DragPos;
+        Float2 dragDelta = cursorPosition - m_DragPos;
 
         if (m_DragSplitter->m_NodeType == UIDockNode::NODE_SPLIT_VERTICAL)
         {
@@ -482,7 +482,7 @@ void UIDockContainer::PostDraw(Canvas& canvas)
     }
     else
     {
-        Float2 cursorPos = GUIManager->CursorPosition;
+        Float2 cursorPos = cursorPosition;
         cursorPos -= m_Geometry.PaddedMins;
 
         UIDockNode* node = m_Root->TraceSeparator(cursorPos.X, cursorPos.Y);
@@ -509,7 +509,7 @@ bool UIDockContainer::OnChildrenMouseButtonEvent(MouseButtonEvent const& event)
 
     if (event.Action == InputAction::Pressed && event.Button == VirtualKey::MouseLeftBtn)
     {
-        m_DragPos = GUIManager->CursorPosition;
+        m_DragPos = UIManager::sInstance().CursorPosition;
 
         m_DragSplitter = m_Root->TraceSeparator(m_DragPos.X - m_Geometry.PaddedMins.X, m_DragPos.Y - m_Geometry.PaddedMins.Y);
         if (m_DragSplitter)

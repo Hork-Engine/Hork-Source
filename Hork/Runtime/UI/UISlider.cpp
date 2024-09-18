@@ -37,11 +37,11 @@ HK_NAMESPACE_BEGIN
 
 UISlider& UISlider::SetValue(float value)
 {
-    float NewValue = Math::Clamp(m_Step > 0.0f ? Math::Snap(value, m_Step) : value, m_MinValue, m_MaxValue);
+    float newValue = Math::Clamp(m_Step > 0.0f ? Math::Snap(value, m_Step) : value, m_MinValue, m_MaxValue);
 
-    if (m_Value != NewValue)
+    if (m_Value != newValue)
     {
-        m_Value = NewValue;
+        m_Value = newValue;
 
         E_OnUpdateValue.Invoke(m_Value);
     }
@@ -96,44 +96,44 @@ void UISlider::UpdateSliderGeometry()
 
     if (m_bVerticalOrientation)
     {
-        float AvailableWidth    = maxs.Y - mins.Y;
-        float SliderActualWidth = Math::Min(AvailableWidth / 4.0f, m_SliderWidth);
-        float SliderHalfWidth   = SliderActualWidth * 0.5f;
+        float availableWidth    = maxs.Y - mins.Y;
+        float sliderActualWidth = Math::Min(availableWidth / 4.0f, m_SliderWidth);
+        float sliderHalfWidth   = sliderActualWidth * 0.5f;
 
         m_SliderGeometry.BgMins = mins;
         m_SliderGeometry.BgMaxs = maxs;
 
-        m_SliderGeometry.BgMins.Y += SliderHalfWidth;
-        m_SliderGeometry.BgMaxs.Y -= SliderHalfWidth;
+        m_SliderGeometry.BgMins.Y += sliderHalfWidth;
+        m_SliderGeometry.BgMaxs.Y -= sliderHalfWidth;
 
-        float SliderBarSize = m_SliderGeometry.BgMaxs.Y - m_SliderGeometry.BgMins.Y;
-        float SliderPos     = (m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * SliderBarSize;
+        float sliderBarSize = m_SliderGeometry.BgMaxs.Y - m_SliderGeometry.BgMins.Y;
+        float sliderPos     = (m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * sliderBarSize;
 
         m_SliderGeometry.SliderMins.X = m_SliderGeometry.BgMins.X;
-        m_SliderGeometry.SliderMins.Y = m_SliderGeometry.BgMins.Y + SliderPos - SliderHalfWidth;
+        m_SliderGeometry.SliderMins.Y = m_SliderGeometry.BgMins.Y + sliderPos - sliderHalfWidth;
 
         m_SliderGeometry.SliderMaxs.X = m_SliderGeometry.BgMaxs.X;
-        m_SliderGeometry.SliderMaxs.Y = m_SliderGeometry.SliderMins.Y + SliderActualWidth;
+        m_SliderGeometry.SliderMaxs.Y = m_SliderGeometry.SliderMins.Y + sliderActualWidth;
     }
     else
     {
-        float AvailableWidth    = maxs.X - mins.X;
-        float SliderActualWidth = Math::Min(AvailableWidth / 4.0f, m_SliderWidth);
-        float SliderHalfWidth   = SliderActualWidth * 0.5f;
+        float availableWidth    = maxs.X - mins.X;
+        float sliderActualWidth = Math::Min(availableWidth / 4.0f, m_SliderWidth);
+        float sliderHalfWidth   = sliderActualWidth * 0.5f;
 
         m_SliderGeometry.BgMins = mins;
         m_SliderGeometry.BgMaxs = maxs;
 
-        m_SliderGeometry.BgMins.X += SliderHalfWidth;
-        m_SliderGeometry.BgMaxs.X -= SliderHalfWidth;
+        m_SliderGeometry.BgMins.X += sliderHalfWidth;
+        m_SliderGeometry.BgMaxs.X -= sliderHalfWidth;
 
-        float SliderBarSize = m_SliderGeometry.BgMaxs.X - m_SliderGeometry.BgMins.X;
-        float SliderPos     = (m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * SliderBarSize;
+        float sliderBarSize = m_SliderGeometry.BgMaxs.X - m_SliderGeometry.BgMins.X;
+        float sliderPos     = (m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * sliderBarSize;
 
-        m_SliderGeometry.SliderMins.X = m_SliderGeometry.BgMins.X + SliderPos - SliderHalfWidth;
+        m_SliderGeometry.SliderMins.X = m_SliderGeometry.BgMins.X + sliderPos - sliderHalfWidth;
         m_SliderGeometry.SliderMins.Y = m_SliderGeometry.BgMins.Y;
 
-        m_SliderGeometry.SliderMaxs.X = m_SliderGeometry.SliderMins.X + SliderActualWidth;
+        m_SliderGeometry.SliderMaxs.X = m_SliderGeometry.SliderMins.X + sliderActualWidth;
         m_SliderGeometry.SliderMaxs.Y = m_SliderGeometry.BgMaxs.Y;
     }
 }
@@ -147,9 +147,9 @@ void UISlider::MoveSlider(float Vec)
 {
     UISliderGeometry const& geometry = m_SliderGeometry;
 
-    float SliderBarSize = m_bVerticalOrientation ? geometry.BgMaxs.Y - geometry.BgMins.Y : geometry.BgMaxs.X - geometry.BgMins.X;
+    float sliderBarSize = m_bVerticalOrientation ? geometry.BgMaxs.Y - geometry.BgMins.Y : geometry.BgMaxs.X - geometry.BgMins.X;
 
-    SetValue(Vec * (m_MaxValue - m_MinValue) / SliderBarSize + m_MinValue);
+    SetValue(Vec * (m_MaxValue - m_MinValue) / sliderBarSize + m_MinValue);
 }
 
 void UISlider::OnMouseButtonEvent(MouseButtonEvent const& event)
@@ -161,26 +161,25 @@ void UISlider::OnMouseButtonEvent(MouseButtonEvent const& event)
         return;
     }
 
-    Float2 const& CursorPos = GUIManager->CursorPosition;
+    Float2 cursorPos = UIManager::sInstance().CursorPosition;
 
     UISliderGeometry const& geometry = m_SliderGeometry;
 
-    if (BvPointInRect(geometry.SliderMins, geometry.SliderMaxs, CursorPos))
+    if (BvPointInRect(geometry.SliderMins, geometry.SliderMaxs, cursorPos))
     {
         m_Action = A_MOVE;
 
-        float SliderBarSize = m_bVerticalOrientation ? geometry.BgMaxs.Y - geometry.BgMins.Y : geometry.BgMaxs.X - geometry.BgMins.X;
+        float sliderBarSize = m_bVerticalOrientation ? geometry.BgMaxs.Y - geometry.BgMins.Y : geometry.BgMaxs.X - geometry.BgMins.X;
 
-        float cursor = m_bVerticalOrientation ? CursorPos.Y : CursorPos.X;
+        float cursor = m_bVerticalOrientation ? cursorPos.Y : cursorPos.X;
 
-        m_DragCursor = cursor - ((m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * SliderBarSize);
+        m_DragCursor = cursor - ((m_Value - m_MinValue) / (m_MaxValue - m_MinValue) * sliderBarSize);
         return;
     }
 
-    if (BvPointInRect(geometry.BgMins, geometry.BgMaxs, CursorPos))
+    if (BvPointInRect(geometry.BgMins, geometry.BgMaxs, cursorPos))
     {
-
-        float CursorLocalOffset = m_bVerticalOrientation ? CursorPos.Y - geometry.BgMins.Y : CursorPos.X - geometry.BgMins.X;
+        float CursorLocalOffset = m_bVerticalOrientation ? cursorPos.Y - geometry.BgMins.Y : cursorPos.X - geometry.BgMins.X;
 
         MoveSlider(CursorLocalOffset);
         return;
@@ -191,9 +190,9 @@ void UISlider::OnMouseMoveEvent(MouseMoveEvent const& event)
 {
     if (m_Action == A_MOVE)
     {
-        Float2 CursorPos = GUIManager->CursorPosition;
+        Float2 cursorPos = UIManager::sInstance().CursorPosition;
 
-        MoveSlider((m_bVerticalOrientation ? CursorPos.Y : CursorPos.X) - m_DragCursor);
+        MoveSlider((m_bVerticalOrientation ? cursorPos.Y : cursorPos.X) - m_DragCursor);
     }
 }
 
@@ -217,7 +216,7 @@ void UISlider::Draw(Canvas& cv)
     if (geometry.SliderMaxs.X > geometry.SliderMins.X && geometry.SliderMaxs.Y > geometry.SliderMins.Y)
     {
         if (!SliderBrush)
-            SliderBrush = GUIManager->DefaultSliderBrush();
+            SliderBrush = UIManager::sInstance().DefaultSliderBrush();
 
         Hk::DrawBrush(cv, geometry.SliderMins, geometry.SliderMaxs, {}, SliderBrush);
     }

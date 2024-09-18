@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Hork/Geometry/BV/BvSphere.h>
 #include <Hork/Math/Plane.h>
 #include <Hork/Core/Allocators/PoolAllocator.h>
+#include <Hork/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -125,16 +126,6 @@ enum SURFACE_FLAGS : uint8_t
 };
 
 HK_FLAG_ENUM_OPERATORS(SURFACE_FLAGS)
-
-struct TriangleHitResult
-{
-    Float3 Location;
-    Float3 Normal;
-    Float2 UV;
-    float Distance;
-    unsigned int Indices[3];
-    //MaterialInstance* Material;
-};
 
 using PRIMITIVE_RAYCAST_CALLBACK = bool (*)(PrimitiveDef const* Self,
                                             Float3 const& RayStart,

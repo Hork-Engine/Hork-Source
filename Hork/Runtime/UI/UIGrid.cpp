@@ -130,10 +130,12 @@ void UIGrid::OnMouseButtonEvent(MouseButtonEvent const& event)
     {
         if (event.Action == InputAction::Pressed)
         {
-            m_Splitter  = UIGrid::TraceSplitter(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
+            m_Splitter  = UIGrid::TraceSplitter(cursorPosition.X, cursorPosition.Y);
             if (m_Splitter)
             {
-                m_DragStart = GUIManager->CursorPosition;
+                m_DragStart = cursorPosition;
                 m_StartWidth = m_Layout->RowWidth[m_Splitter.Index]; // TODO also for columns
             }
         }
@@ -152,6 +154,8 @@ void UIGrid::Draw(Canvas& cv)
     if (!bResizableCells)
         return;
 
+    auto const& cursorPosition = UIManager::sInstance().CursorPosition;
+
     if (m_Splitter)
     {
         uint32_t numColumns = m_Layout->ColumnWidth.Size();
@@ -167,17 +171,17 @@ void UIGrid::Draw(Canvas& cv)
 
         //float p = m_DragStart.Y * sy;
 
-        float p = GUIManager->CursorPosition.Y / sy;
+        float p = cursorPosition.Y / sy;
         m_Layout->RowWidth[m_Splitter.Index] = p;
         m_Layout->RowWidth[m_Splitter.Index+1] = 1.0f - p;
 
-        //float dragDelta = GUIManager->CursorPosition.Y - m_DragStart.Y;
+        //float dragDelta = cursorPosition.Y - m_DragStart.Y;
 
         //cv.DrawRectFilled(m_Splitter.Mins, m_Splitter.Maxs, Color4::Orange());
     }
     else
     {
-        auto splitter = UIGrid::TraceSplitter(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+        auto splitter = UIGrid::TraceSplitter(cursorPosition.X, cursorPosition.Y);
         cv.DrawRectFilled(splitter.Mins, splitter.Maxs, Color4::sOrange());
     }
 }

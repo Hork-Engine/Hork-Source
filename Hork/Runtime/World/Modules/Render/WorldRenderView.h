@@ -31,9 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Renderer/VirtualTextureFeedback.h>
-#include <Hork/Runtime/Resources/ResourceManager.h>
-#include <Hork/Runtime/Resources/Resource_Texture.h>
-#include <Hork/Runtime/Resources/Resource_Terrain.h>
+#include <Hork/Runtime/ResourceManager/ResourceManager.h>
+#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Resource_Terrain.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Render/Components/CameraComponent.h>
 

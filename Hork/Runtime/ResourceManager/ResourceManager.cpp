@@ -30,13 +30,14 @@ SOFTWARE.
 
 #include "ResourceManager.h"
 
-#include "Resource_Animation.h"
-#include "Resource_Mesh.h"
-#include "Resource_Material.h"
-#include "Resource_Texture.h"
-#include "Resource_Font.h"
-#include "Resource_Terrain.h"
-#include "Resource_Sound.h"
+#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Resource_Material.h>
+#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Resource_Terrain.h>
+#include <Hork/Resources/Resource_Sound.h>
+
+#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Hork/Core/CoreApplication.h>
 #include <Hork/Core/Platform.h>
@@ -218,8 +219,6 @@ UniqueRef<ResourceBase> ResourceManager::LoadResourceAsync(RESOURCE_TYPE type, S
             return MaterialResource::sLoad(f);
         case RESOURCE_SOUND:
             return SoundResource::sLoad(f);
-        case RESOURCE_FONT:
-            return FontResource::sLoad(f);
         case RESOURCE_TERRAIN:
             return TerrainResource::sLoad(f);
         default:
@@ -272,7 +271,7 @@ void ResourceManager::MainThread_Update(float timeBudget)
             proxy.m_State = RESOURCE_STATE_READY;
 
             // Upload resource to gpu
-            proxy.Upload();
+            proxy.Upload(GameApplication::sGetRenderDevice());
         }
         else
         {

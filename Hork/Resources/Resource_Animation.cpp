@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "Resource_Animation.h"
-#include "ResourceManager.h"
 
 #include "Implementation/OzzIO.h"
 

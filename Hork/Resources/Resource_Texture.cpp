@@ -30,8 +30,6 @@ SOFTWARE.
 
 #include "Resource_Texture.h"
 
-#include <Hork/Runtime/GameApplication/GameApplication.h>
-
 HK_NAMESPACE_BEGIN
 
 namespace
@@ -112,7 +110,7 @@ bool CreateTexture(IBinaryStreamWriteInterface& stream, ImageStorage const& stor
 
 }
 
-void TextureResource::Upload()
+void TextureResource::Upload(RHI::IDevice* device)
 {
     if (!m_Image)
     {
@@ -125,25 +123,25 @@ void TextureResource::Upload()
     switch (m_Image.GetDesc().Type)
     {
         case TEXTURE_1D:
-            Allocate1D(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width);
+            Allocate1D(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width);
             break;
         case TEXTURE_1D_ARRAY:
-            Allocate1DArray(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().SliceCount);
+            Allocate1DArray(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().SliceCount);
             break;
         case TEXTURE_2D:
-            Allocate2D(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height);
+            Allocate2D(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height);
             break;
         case TEXTURE_2D_ARRAY:
-            Allocate2DArray(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height, m_Image.GetDesc().SliceCount);
+            Allocate2DArray(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height, m_Image.GetDesc().SliceCount);
             break;
         case TEXTURE_3D:
-            Allocate3D(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height, m_Image.GetDesc().Depth);
+            Allocate3D(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().Height, m_Image.GetDesc().Depth);
             break;
         case TEXTURE_CUBE:
-            AllocateCubemap(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width);
+            AllocateCubemap(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width);
             break;
         case TEXTURE_CUBE_ARRAY:
-            AllocateCubemapArray(format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().SliceCount / 6);
+            AllocateCubemapArray(device, format, m_Image.GetDesc().NumMipmaps, m_Image.GetDesc().Width, m_Image.GetDesc().SliceCount / 6);
             break;
         default:
             HK_ASSERT(0);
@@ -170,9 +168,9 @@ void TextureResource::Upload()
 namespace
 {
 
-void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RHI::TextureSwizzle& _Swizzle)
+void SetTextureSwizzle(TEXTURE_FORMAT const& format, RHI::TextureSwizzle& _Swizzle)
 {
-    TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+    TextureFormatInfo const& info = GetTextureFormatInfo(format);
 
     int numChannels = 0;
     if (info.bHasRed)
@@ -196,168 +194,168 @@ void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RHI::TextureSwizzle& _Swizz
 
 } // namespace
 
-void TextureResource::Allocate1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+void TextureResource::Allocate1D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width)
 {
     m_Type = TEXTURE_1D;
-    m_Format = Format;
-    m_Width = Width;
+    m_Format = format;
+    m_Width = width;
     m_Height = 1;
     m_Depth = 1;
-    m_NumMipmaps = NumMipLevels;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolution1D(Width));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolution1D(width));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::Allocate1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+void TextureResource::Allocate1DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize)
 {
     m_Type = TEXTURE_1D_ARRAY;
-    m_Format = Format;
-    m_Width = Width;
+    m_Format = format;
+    m_Width = width;
     m_Height = 1;
-    m_Depth = ArraySize;
-    m_NumMipmaps = NumMipLevels;
+    m_Depth = arraySize;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolution1DArray(Width, ArraySize));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolution1DArray(width, arraySize));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::Allocate2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
+void TextureResource::Allocate2D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height)
 {
     m_Type = TEXTURE_2D;
-    m_Format = Format;
-    m_Width = Width;
-    m_Height = Height;
+    m_Format = format;
+    m_Width = width;
+    m_Height = height;
     m_Depth = 1;
-    m_NumMipmaps = NumMipLevels;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolution2D(Width, Height));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolution2D(width, height));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::Allocate2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
+void TextureResource::Allocate2DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t arraySize)
 {
     m_Type = TEXTURE_2D_ARRAY;
-    m_Format = Format;
-    m_Width = Width;
-    m_Height = Height;
-    m_Depth = ArraySize;
-    m_NumMipmaps = NumMipLevels;
+    m_Format = format;
+    m_Width = width;
+    m_Height = height;
+    m_Depth = arraySize;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolution2DArray(Width, Height, ArraySize));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolution2DArray(width, height, arraySize));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::Allocate3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
+void TextureResource::Allocate3D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t depth)
 {
     m_Type = TEXTURE_3D;
-    m_Format = Format;
-    m_Width = Width;
-    m_Height = Height;
-    m_Depth = Depth;
-    m_NumMipmaps = NumMipLevels;
+    m_Format = format;
+    m_Width = width;
+    m_Height = height;
+    m_Depth = depth;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolution3D(Width, Height, Depth));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolution3D(width, height, depth));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::AllocateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
+void TextureResource::AllocateCubemap(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width)
 {
     m_Type = TEXTURE_CUBE;
-    m_Format = Format;
-    m_Width = Width;
-    m_Height = Width;
+    m_Format = format;
+    m_Width = width;
+    m_Height = width;
     m_Depth = 1;
-    m_NumMipmaps = NumMipLevels;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolutionCubemap(Width));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolutionCubemap(width));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-void TextureResource::AllocateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
+void TextureResource::AllocateCubemapArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize)
 {
     m_Type = TEXTURE_CUBE_ARRAY;
-    m_Format = Format;
-    m_Width = Width;
-    m_Height = Width;
-    m_Depth = ArraySize;
-    m_NumMipmaps = NumMipLevels;
+    m_Format = format;
+    m_Width = width;
+    m_Height = width;
+    m_Depth = arraySize;
+    m_NumMipmaps = numMipLevels;
 
     RHI::TextureDesc textureDesc;
-    textureDesc.SetResolution(RHI::TextureResolutionCubemapArray(Width, ArraySize));
-    textureDesc.SetFormat(Format);
-    textureDesc.SetMipLevels(NumMipLevels);
+    textureDesc.SetResolution(RHI::TextureResolutionCubemapArray(width, arraySize));
+    textureDesc.SetFormat(format);
+    textureDesc.SetMipLevels(numMipLevels);
     textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(Format, textureDesc.Swizzle);
+    SetTextureSwizzle(format, textureDesc.Swizzle);
 
-    GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+    device->CreateTexture(textureDesc, &m_TextureGPU);
 
     //if (m_View)
     //    m_View->SetResource(m_TextureGPU);
 }
 
-bool TextureResource::WriteData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData(uint32_t locationX, uint32_t locationY, uint32_t locationZ, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, const void* pData)
 {
     if (!m_Width)
     {
@@ -370,27 +368,27 @@ bool TextureResource::WriteData(uint32_t LocationX, uint32_t LocationY, uint32_t
     if (info.BlockSize > 1)
     {
         // Compressed 3D textures are not supported
-        Depth = 1;
+        depth = 1;
     }
 
-    HK_ASSERT((LocationX % info.BlockSize) == 0);
-    HK_ASSERT((LocationY % info.BlockSize) == 0);
-    HK_ASSERT((Width % info.BlockSize) == 0);
-    HK_ASSERT((Height % info.BlockSize) == 0);
+    HK_ASSERT((locationX % info.BlockSize) == 0);
+    HK_ASSERT((locationY % info.BlockSize) == 0);
+    HK_ASSERT((width % info.BlockSize) == 0);
+    HK_ASSERT((height % info.BlockSize) == 0);
 
     // TODO: bounds check?
 
     RHI::TextureRect rect;
-    rect.Offset.X = LocationX;
-    rect.Offset.Y = LocationY;
-    rect.Offset.Z = LocationZ;
-    rect.Offset.MipLevel = MipLevel;
-    rect.Dimension.X = Width;
-    rect.Dimension.Y = Height;
-    rect.Dimension.Z = Depth;
+    rect.Offset.X = locationX;
+    rect.Offset.Y = locationY;
+    rect.Offset.Z = locationZ;
+    rect.Offset.MipLevel = mipLevel;
+    rect.Dimension.X = width;
+    rect.Dimension.Y = height;
+    rect.Dimension.Z = depth;
 
-    size_t rowWidth = Width / info.BlockSize * info.BytesPerBlock;
-    size_t sizeInBytes = rowWidth * Height / info.BlockSize * Depth;
+    size_t rowWidth = width / info.BlockSize * info.BytesPerBlock;
+    size_t sizeInBytes = rowWidth * height / info.BlockSize * depth;
 
     int rowAlignment;
     if (IsAligned(rowWidth, 8))
@@ -407,74 +405,74 @@ bool TextureResource::WriteData(uint32_t LocationX, uint32_t LocationY, uint32_t
     return true;
 }
 
-bool TextureResource::WriteData1D(uint32_t LocationX, uint32_t Width, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData1D(uint32_t locationX, uint32_t width, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_1D && m_Type != TEXTURE_1D_ARRAY)
     {
         LOG("Texture::WriteData1D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, 0, 0, Width, 1, 1, MipLevel, pData);
+    return WriteData(locationX, 0, 0, width, 1, 1, mipLevel, pData);
 }
 
-bool TextureResource::WriteData1DArray(uint32_t LocationX, uint32_t Width, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData1DArray(uint32_t locationX, uint32_t width, uint32_t arrayLayer, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_1D_ARRAY)
     {
         LOG("Texture::WriteData1DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, 0, ArrayLayer, Width, 1, 1, MipLevel, pData);
+    return WriteData(locationX, 0, arrayLayer, width, 1, 1, mipLevel, pData);
 }
 
-bool TextureResource::WriteData2D(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData2D(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_2D && m_Type != TEXTURE_2D_ARRAY)
     {
         LOG("Texture::WriteData2D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, LocationY, 0, Width, Height, 1, MipLevel, pData);
+    return WriteData(locationX, locationY, 0, width, height, 1, mipLevel, pData);
 }
 
-bool TextureResource::WriteData2DArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData2DArray(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t arrayLayer, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_2D_ARRAY)
     {
         LOG("Texture::WriteData2DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, LocationY, ArrayLayer, Width, Height, 1, MipLevel, pData);
+    return WriteData(locationX, locationY, arrayLayer, width, height, 1, mipLevel, pData);
 }
 
-bool TextureResource::WriteData3D(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteData3D(uint32_t locationX, uint32_t locationY, uint32_t locationZ, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_3D)
     {
         LOG("Texture::WriteData3D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, LocationY, LocationZ, Width, Height, Depth, MipLevel, pData);
+    return WriteData(locationX, locationY, locationZ, width, height, depth, mipLevel, pData);
 }
 
-bool TextureResource::WriteDataCubemap(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteDataCubemap(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t faceIndex, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_CUBE && m_Type != TEXTURE_CUBE_ARRAY)
     {
         LOG("Texture::WriteDataCubemap: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, LocationY, FaceIndex, Width, Height, 1, MipLevel, pData);
+    return WriteData(locationX, locationY, faceIndex, width, height, 1, mipLevel, pData);
 }
 
-bool TextureResource::WriteDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
+bool TextureResource::WriteDataCubemapArray(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, uint32_t faceIndex, uint32_t arrayLayer, uint32_t mipLevel, const void* pData)
 {
     if (m_Type != TEXTURE_CUBE_ARRAY)
     {
         LOG("Texture::WriteDataCubemapArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteData(LocationX, LocationY, ArrayLayer * 6 + FaceIndex, Width, Height, 1, MipLevel, pData);
+    return WriteData(locationX, locationY, arrayLayer * 6 + faceIndex, width, height, 1, mipLevel, pData);
 }
 
 void TextureResource::SetTextureGPU(RHI::ITexture* texture)

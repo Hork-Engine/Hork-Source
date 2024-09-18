@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/Modules/Skeleton/SkeletonPose.h>
-#include <Hork/Runtime/Resources/Resource_Mesh.h>
-#include <Hork/Runtime/Resources/Resource_Animation.h>
+#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Resource_Animation.h>
 
 HK_NAMESPACE_BEGIN
 

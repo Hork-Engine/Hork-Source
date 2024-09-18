@@ -33,11 +33,12 @@ SOFTWARE.
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Renderer/RenderDefs.h>
 
-#include <Hork/Runtime/Resources/ResourceManager.h>
-#include <Hork/Runtime/Resources/Resource_Font.h>
+#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 
 #include "Paint.h"
 #include "Transform2D.h"
+
+struct FONScontext;
 
 HK_NAMESPACE_BEGIN
 
@@ -189,11 +190,80 @@ struct VGPathCache
     CanvasVertex*           AllocVerts(int nverts);
 };
 
+struct TextMetrics
+{
+    float                   Ascender;
+    float                   Descender;
+    float                   LineHeight;
+};
+
+struct TextRow
+{
+    /// Pointer to the input text where the row starts.
+    const char*             Start;
+
+    /// Pointer to the input text where the row ends(one past the last character).
+    const char*             End;
+
+    /// Pointer to the beginning of the next row.
+    const char*             Next;
+
+    /// Logical width of the row.
+    float                   Width;
+
+    /// Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
+    float                   MinX, MaxX;
+
+    StringView              GetStringView() const { return StringView(Start, End); }
+};
+
+struct TextRowW
+{
+    /// Pointer to the input text where the row starts.
+    const WideChar*         Start;
+
+    /// Pointer to the input text where the row ends(one past the last character).
+    const WideChar*         End;
+
+    /// Pointer to the beginning of the next row.
+    const WideChar*         Next;
+
+    /// Logical width of the row.
+    float                   Width;
+
+    /// Actual bounds of the row. Logical width and bounds can differ because of kerning and some parts over extending.
+    float                   MinX, MaxX;
+
+    WideStringView          GetStringView() const { return WideStringView(Start, End); }
+};
+
+struct FontStyle
+{
+    float                   FontSize{14};
+
+    /// Font blur allows you to create simple text effects such as drop shadows.
+    float                   FontBlur{0};
+
+    /// Letter spacing.
+    float                   LetterSpacing{0};
+
+    /// Proportional line height. The line height is specified as multiple of font size.
+    float                   LineHeight{1};
+};
+
+using FontHandle = uint16_t;
+
+inline constexpr int MAX_FONTS = 32;
+
 class Canvas final : public Noncopyable
 {
 public:
                             Canvas();
                             ~Canvas();
+
+    void                    SetDefaultFont(StringView path);
+
+    void                    SetRetinaScale(float retinaScale);
 
     /// Begin drawing a new frame
     void                    NewFrame();
@@ -414,8 +484,15 @@ public:
     // Text
     //
 
+    bool                    AddFont(FontHandle faceIndex, StringView font);
+    void                    RemoveFont(FontHandle faceIndex);
+
+    FontHandle              FindFont(StringView font) const;
+
+    bool                    IsValidFont(FontHandle faceIndex) const;
+
     /// Sets the font face. If the font is not loaded by the resource manager, the default fallback font will be used.
-    void                    FontFace(FontHandle font);
+    void                    FontFace(FontHandle faceIndex);
 
     /// Sets the font face. If the font is not loaded by the resource manager, the default fallback font will be used.
     void                    FontFace(StringView font);
@@ -427,6 +504,28 @@ public:
     /// Draws multi-line text string at specified box.
     void                    TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, StringView text);
     void                    TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, WideStringView text);
+
+    //
+    // Text metrics
+    //
+
+    /// Returns the vertical metrics based on the current text style.
+    void                    GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics);
+
+    float                   GetCharAdvance(FontStyle const& fontStyle, WideChar ch);
+
+    /// Measures the size of specified multi-text string
+    Float2                  GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, StringView text, bool bKeepSpaces = false);
+    Float2                  GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, WideStringView text, bool bKeepSpaces = false);
+
+    /// Breaks the specified text into lines.
+    /// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
+    /// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
+    int                     TextBreakLines(FontStyle const& fontStyle, StringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces = false);
+    int                     TextBreakLines(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces = false);
+
+    int                     TextLineCount(FontStyle const& fontStyle, StringView text, float breakRowWidth, bool bKeepSpaces = false);
+    int                     TextLineCount(FontStyle const& fontStyle, WideStringView text, float breakRowWidth, bool bKeepSpaces = false);
 
     //
     // Utilites
@@ -477,7 +576,7 @@ private:
         float               Alpha;
         Transform2D         Xform;
         VGScissor           Scissor;
-        FontHandle          Font;
+        FontHandle          FontFace;
     };
 
     void                    FlattenPaths();
@@ -514,12 +613,16 @@ private:
 
     RHI::ITexture*          GetTexture(CanvasPaint const* paint);
 
-    FontResource*           CurrentFont();
+    // Returns the current font ID. If the font is invalid, returns the default font ID.
+    int                     CurrentFontID();
+
+    void                    PrepareFontAtlas();
+    bool                    ReallocFontAtlas();
+    void                    UpdateFontAtlas();
 
     Vector<VGState>         m_States;
     int                     m_NumStates{};
     CanvasDrawData          m_DrawData;
-    mutable Ref<FontStash>  m_FontStash;
     Vector<float>           m_Commands;
     Float2                  m_CommandPos;
     VGPathCache             m_PathCache;
@@ -542,6 +645,25 @@ private:
     // Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
     // slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
     bool                    m_StencilStrokes{};
+
+    struct FontData
+    {
+        String      Name;
+        int         ID = -1;
+        HeapBlob    Blob;
+    };
+
+    Vector<FontData>        m_Fonts;
+
+    enum
+    {
+        MAX_FONT_IMAGES = 4,
+        MAX_FONTIMAGE_SIZE = 2048,
+        INITIAL_FONTIMAGE_SIZE = 512
+    };
+    FONScontext*            m_FontStash{};
+    Ref<RHI::ITexture>      m_FontImages[MAX_FONT_IMAGES];
+    int                     m_FontImageIdx{};
 };
 
 HK_NAMESPACE_END

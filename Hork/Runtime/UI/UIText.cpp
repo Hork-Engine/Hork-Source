@@ -48,15 +48,13 @@ Float2 UIText::GetTextBoxSize(float breakRowWidth) const
         style.LetterSpacing = m_LetterSpacing;
         style.LineHeight    = m_LineHeight;
 
-        FontResource* font = GameApplication::sGetResourceManager().TryGet(m_Font);
+        Canvas& canvas = UIManager::sInstance().GetCanvas();
+        canvas.FontFace(m_Font);
 
-        if (font)
-            m_CachedSize = font->GetTextBoxSize(style, breakRowWidth, Text);
-        else
-            m_CachedSize = GameApplication::sGetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
+        m_CachedSize = canvas.GetTextBoxSize(style, breakRowWidth, Text);
 
         // Update m_BreakRowWidth only if font is valid.
-        if (font)
+        if (canvas.IsValidFont(m_Font))
             m_BreakRowWidth = breakRowWidth;
     }
     return m_CachedSize;

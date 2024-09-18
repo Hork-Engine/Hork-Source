@@ -91,10 +91,28 @@ void MeshComponent::DrawDebug(DebugRenderer& renderer)
         if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             renderer.PushTransform(GetOwner()->GetWorldTransformMatrix());
-            resource->DrawDebug(renderer);
+
+            renderer.SetDepthTest(false);
+            renderer.SetColor(Color4::sWhite());
+            renderer.DrawAABB(resource->GetBoundingBox());
+
             int surfaceCount = resource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
-                resource->DrawDebugSurface(renderer, surfaceIndex);
+            {
+                MeshSurface const* surface = resource->GetSurfaces() + surfaceIndex;
+
+                renderer.DrawAABB(surface->BoundingBox);
+
+                auto& bvhNodes = surface->Bvh.GetNodes();
+                if (!bvhNodes.IsEmpty())
+                {
+                    for (BvhNode const& node : bvhNodes)
+                    {
+                        if (node.IsLeaf())
+                            renderer.DrawAABB(node.Bounds);
+                    }
+                }
+            }
             renderer.PopTransform();
         }
     }

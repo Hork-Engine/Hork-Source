@@ -41,6 +41,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
 #include <Hork/Runtime/Renderer/WorldRenderer.h>
+#include <Hork/Resources/Resource_Sound.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -73,7 +74,6 @@ ConsoleVar rt_SwapInterval("rt_SwapInterval"_s, "0"_s, 0, "1 - enable vsync, 0 -
 enum
 {
     RENDER_FRONTEND_JOB_LIST,
-    //RENDER_BACKEND_JOB_LIST,
     MAX_RUNTIME_JOB_LISTS
 };
 
@@ -266,7 +266,6 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
     int jobManagerThreadCount = Thread::NumHardwareThreads ? Math::Min(Thread::NumHardwareThreads, AsyncJobManager::MAX_WORKER_THREADS) : AsyncJobManager::MAX_WORKER_THREADS;
     m_AsyncJobManager = MakeUnique<AsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
     m_RenderFrontendJobList = m_AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
-    //pRenderBackendJobList  = m_AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
     ShaderCompiler::sInitialize();
 
@@ -274,15 +273,18 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     CreateMainWindowAndSwapChain();
 
-    // FIXME: Move to RenderModule?
-    m_RetinaScale = Float2(1.0f);
     m_VertexMemoryGPU = MakeUnique<VertexMemoryGPU>(m_RenderDevice);
+
+    MeshResource::SetVertexMemoryGPU(m_VertexMemoryGPU.RawPtr());
 
     InitializeThirdPartyLibraries();
 
     PhysicsModule::sInitialize();
 
     m_AudioDevice = MakeRef<AudioDevice>();
+
+    SoundResource::SetDecoderProperties(m_AudioDevice->GetSampleRate(), m_AudioDevice->IsStereo());
+
     m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
     m_AudioMixer->StartAsync();
 
@@ -293,23 +295,14 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
     m_ResourceManager = MakeUnique<ResourceManager>();
     m_MaterialManager = MakeUnique<MaterialManager>();
 
-    // Q: Move RobotoMono-Regular.ttf to embedded files?
-    m_DefaultFontHandle = m_ResourceManager->CreateResourceFromFile<FontResource>("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf");
-    m_DefaultFont = m_ResourceManager->TryGet(m_DefaultFontHandle);
-    HK_ASSERT(m_DefaultFont);
-    m_DefaultFont->Upload();
-    HK_ASSERT(m_DefaultFont->IsValid());
+    m_Canvas = MakeUnique<Canvas>();
+    m_UIManager = MakeUnique<UIManager>(m_Window, m_Canvas.RawPtr());
 
     m_FrameLoop = MakeUnique<FrameLoop>(m_RenderDevice);
 
     // Process initial events
     m_FrameLoop->SetGenerateInputEvents(false);
     m_FrameLoop->PollEvents(this);
-
-    m_Canvas = MakeUnique<Canvas>();
-
-    m_UIManager = MakeUnique<UIManager>(m_Window);
-
     m_FrameLoop->SetGenerateInputEvents(true);
 
     AddCommand("quit"_s, {this, &GameApplication::Cmd_Quit}, "Quit the game"_s);
@@ -326,8 +319,6 @@ GameApplication::~GameApplication()
     m_Canvas.Reset();
 
     m_FrameLoop.Reset();
-
-    m_ResourceManager->UnloadResource(m_DefaultFontHandle);
 
     // Process resource unload
     m_ResourceManager->MainThread_Update(1);
@@ -417,10 +408,19 @@ void GameApplication::RunMainLoop()
         if (!m_AudioMixer->IsAsync())
             m_AudioMixer->Update();
 
+        m_Canvas->NewFrame();
+
         m_UIManager->Tick(m_FrameDurationInSeconds);
 
         // Draw widgets, HUD, etc
-        DrawCanvas();
+        if (m_bIsWindowVisible)
+        {
+            m_UIManager->Draw();
+
+            ShowStats();
+        }
+
+        m_Canvas->Finish(m_FrameLoop->GetStreamedMemoryGPU());
 
         // Build frame data for rendering
         m_Renderer->Render(m_FrameLoop.RawPtr());
@@ -431,22 +431,6 @@ void GameApplication::RunMainLoop()
         SaveMemoryStats();
 
     } while (!m_bPostTerminateEvent);
-}
-
-void GameApplication::DrawCanvas()
-{
-    HK_PROFILER_EVENT("Draw Canvas");
-
-    m_Canvas->NewFrame();
-
-    if (m_bIsWindowVisible)
-    {
-        m_UIManager->Draw(*m_Canvas);
-
-        ShowStats();
-    }
-
-    m_Canvas->Finish(m_FrameLoop->GetStreamedMemoryGPU());
 }
 
 void GameApplication::ShowStats()
@@ -471,7 +455,7 @@ void GameApplication::ShowStats()
         FontStyle fontStyle;
         fontStyle.FontSize = 12;
 
-        m_Canvas->FontFace(FontHandle{});
+        m_Canvas->FontFace(0);
 
         pos.Y = 100;
         for (int n = 0; n < HEAP_MAX; n++)
@@ -532,7 +516,7 @@ void GameApplication::ShowStats()
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         FontStyle fontStyle;
         fontStyle.FontSize = 14;
-        m_Canvas->FontFace(FontHandle{});
+        m_Canvas->FontFace(0);
         m_Canvas->DrawText(fontStyle, Float2(10, 30), Color4::sWhite(), sb.Sprintf("Frame time %.1f ms (FPS: %d, AVG %d)", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
     }
 }
@@ -682,8 +666,7 @@ void GameApplication::OnCloseEvent()
 
 void GameApplication::OnResize()
 {
-    m_RetinaScale = Float2(static_cast<float>(m_Window->GetFramebufferWidth()) / m_Window->GetWidth(),
-                           static_cast<float>(m_Window->GetFramebufferHeight()) / m_Window->GetHeight());
+    m_Canvas->SetRetinaScale(static_cast<float>(m_Window->GetFramebufferWidth()) / m_Window->GetWidth());
 }
 
 void GameApplication::ChangeMainWindowSettings(WindowSettings const& windowSettings)

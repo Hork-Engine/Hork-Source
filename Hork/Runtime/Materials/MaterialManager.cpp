@@ -31,7 +31,7 @@ SOFTWARE.
 #include "MaterialManager.h"
 
 #include <Hork/Core/DOM.h>
-#include <Hork/Runtime/Resources/ResourceManager.h>
+#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN

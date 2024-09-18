@@ -63,7 +63,7 @@ bool GifPlayer::Open(StringView filename)
     HK_ASSERT(texture);
 
     if (!texture->GetTextureGPU() || texture->GetWidth() != m_Image.GetWidth() || texture->GetHeight() != m_Image.GetHeight())
-        texture->Allocate2D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Image.GetWidth(), m_Image.GetHeight());
+        texture->Allocate2D(GameApplication::sGetRenderDevice(), TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Image.GetWidth(), m_Image.GetHeight());
 
     return true;
 }

@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "UIWidget.h"
-#include <Hork/Runtime/Resources/Resource_Font.h>
 
 HK_NAMESPACE_BEGIN
 

@@ -29,8 +29,7 @@ SOFTWARE.
 */
 
 #include "FrameLoop.h"
-#include <Hork/Runtime/Resources/Resource_Font.h>
-#include <Hork/Runtime/Resources/ResourceManager.h>
+#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/Profiler.h>
@@ -58,8 +57,6 @@ FrameLoop::FrameLoop(RHI::IDevice* renderDevice) :
     m_FrameTimeStamp = Core::SysStartMicroseconds();
     m_FrameDuration = 1000000.0 / 60;
     m_FrameNumber = 0;
-
-    m_FontStash = GetSharedInstance<FontStash>();
 }
 
 FrameLoop::~FrameLoop()
@@ -181,8 +178,6 @@ void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterva
 
     // Free frame memory for new frame
     m_FrameMemory.ResetAndMerge();
-
-    m_FontStash->Cleanup();
 }
 
 static const VirtualKey InvalidKey = VirtualKey(0xffff);

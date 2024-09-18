@@ -29,9 +29,8 @@ SOFTWARE.
 */
 
 #include "Utils.h"
-#include "ResourceManager.h"
-#include "Resource_Mesh.h"
-#include <Hork/Runtime/GameApplication/GameApplication.h>
+#include <Hork/Resources/Resource_Material.h>
+#include <Hork/Resources/Resource_Mesh.h>
 #include <Hork/MaterialGraph/MaterialGraph.h>
 
 HK_NAMESPACE_BEGIN
@@ -201,8 +200,8 @@ void CreateDefaultResources()
         resource->Write(file);
     }
 
-    CompileMaterial("/Root/materials/default.mg", "Data/default/materials/default.mat");
-    CompileMaterial("/Root/materials/unlit.mg", "Data/default/materials/unlit.mat");
+    //CompileMaterial("Data/materials/default.mg", "Data/default/materials/default.mat");
+    //CompileMaterial("Data/materials/unlit.mg", "Data/default/materials/unlit.mat");
 
     {
         auto graph = MakeRef<MaterialGraph>();
@@ -236,8 +235,7 @@ void CreateDefaultResources()
 
 bool CompileMaterial(StringView input, StringView output)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (auto file = resourceMngr.OpenFile(input))
+    if (auto file = File::sOpenRead(input))
     {
         auto graph = MaterialGraph::sLoad(file);
 

@@ -54,8 +54,13 @@ public:
 
     Ref<AudioSource>            GetSource();
 
+    static void                 SetDecoderProperties(int sampleRate, bool stereo);
+
 private:
     Ref<AudioSource>            m_Source;
+
+    static int                  s_DecoderSampleRate;
+    static bool                 s_IsStereo;
 };
 
 using SoundHandle = ResourceHandle<SoundResource>;

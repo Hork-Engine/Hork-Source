@@ -57,7 +57,7 @@ bool UIDockWidget::OnChildrenMouseButtonEvent(MouseButtonEvent const& event, dou
             Float2 mins = Float2(m_Geometry.Maxs.X - 10, m_Geometry.Mins.Y);
             Float2 maxs = mins + 10.0f;
 
-            Float2 p = GUIManager->CursorPosition;
+            Float2 p = UIManager::sInstance().CursorPosition;
             if (BvPointInRect(mins, maxs, p.X, p.Y))
             {
                 desktop->SetDragWidget(this);

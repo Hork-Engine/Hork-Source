@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Hork/Core/Ref.h>
 #include <Hork/Core/Logger.h>
 
-#include "ResourceBase.h"
+#include <Hork/Resources/ResourceBase.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -86,9 +86,9 @@ public:
 
 private:
     // Called by resource manager on main thread to upload data to GPU.
-    void Upload()
+    void Upload(RHI::IDevice* device)
     {
-        m_Resource->Upload();
+        m_Resource->Upload(device);
     }
 
     // Called by resource manager on main thread to purge resource data (CPU and GPU).

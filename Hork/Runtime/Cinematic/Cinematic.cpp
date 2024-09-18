@@ -193,7 +193,7 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
     HK_ASSERT(texture);
 
     if (!texture->GetTextureGPU() || texture->GetWidth() != m_Width || texture->GetHeight() != m_Height)
-        texture->Allocate2D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Width, m_Height);
+        texture->Allocate2D(GameApplication::sGetRenderDevice(), TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Width, m_Height);
 
     if (audioEnabled)
     {

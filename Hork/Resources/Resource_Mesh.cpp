@@ -29,30 +29,32 @@ SOFTWARE.
 */
 
 #include "Resource_Mesh.h"
-#include "ResourceManager.h"
+#include "Implementation/OzzIO.h"
 
 #include <Hork/Core/ReadWriteBuffer.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 #include <Hork/Geometry/TangentSpace.h>
-#include <Hork/Runtime/World/DebugRenderer.h>
-#include <Hork/Runtime/World/Modules/Render/VisibilitySystem.h>
-#include <Hork/Runtime/GameApplication/GameApplication.h>
-
-#include "Implementation/OzzIO.h"
 
 #include <ozz/animation/runtime/animation.h>
 #include <ozz/animation/runtime/skeleton.h>
 
 HK_NAMESPACE_BEGIN
 
+VertexMemoryGPU* MeshResource::s_VertexMemory = nullptr;
+
+void MeshResource::SetVertexMemoryGPU(VertexMemoryGPU* vertexMemory)
+{
+    s_VertexMemory = vertexMemory;
+}
+
 MeshResource::~MeshResource()
 {
-    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
+    HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
 
-    vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_SkinBufferHandle);
-    vertexMemory->Deallocate(m_LightmapUVsGPU);
-    vertexMemory->Deallocate(m_IndexHandle);
+    s_VertexMemory->Deallocate(m_VertexHandle);
+    s_VertexMemory->Deallocate(m_SkinBufferHandle);
+    s_VertexMemory->Deallocate(m_LightmapUVsGPU);
+    s_VertexMemory->Deallocate(m_IndexHandle);
 }
 
 int16_t MeshResource::FindJoint(StringView name) const
@@ -289,8 +291,8 @@ void MeshResource::GetVertexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_VertexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_VertexHandle, ppBuffer, pOffset);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->GetPhysicalBufferAndOffset(m_VertexHandle, ppBuffer, pOffset);
     }
     else
     {
@@ -303,8 +305,8 @@ void MeshResource::GetSkinBufferBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffs
 {
     if (m_SkinBufferHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_SkinBufferHandle, ppBuffer, pOffset);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->GetPhysicalBufferAndOffset(m_SkinBufferHandle, ppBuffer, pOffset);
     }
     else
     {
@@ -317,8 +319,8 @@ void MeshResource::GetLightmapUVsGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_LightmapUVsGPU)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
     }
     else
     {
@@ -331,8 +333,8 @@ void MeshResource::GetIndexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset)
 {
     if (m_IndexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_IndexHandle, ppBuffer, pOffset);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->GetPhysicalBufferAndOffset(m_IndexHandle, ppBuffer, pOffset);
     }
     else
     {
@@ -382,21 +384,20 @@ void MeshResource::Allocate(MeshAllocateDesc const& desc)
     m_SkinBuffer.ShrinkToFit();
     m_LightmapUVs.ShrinkToFit();
 
-    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
+    HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+    s_VertexMemory->Deallocate(m_VertexHandle);
+    s_VertexMemory->Deallocate(m_SkinBufferHandle);
+    s_VertexMemory->Deallocate(m_LightmapUVsGPU);
+    s_VertexMemory->Deallocate(m_IndexHandle);
 
-    vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_SkinBufferHandle);
-    vertexMemory->Deallocate(m_LightmapUVsGPU);
-    vertexMemory->Deallocate(m_IndexHandle);
-
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, sGetVertexMemory, this);
-    m_IndexHandle  = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, sGetIndexMemory, this);
+    m_VertexHandle = s_VertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), nullptr, sGetVertexMemory, this);
+    m_IndexHandle  = s_VertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), nullptr, sGetIndexMemory, this);
     if (desc.SkinsCount)
-        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), nullptr, sGetSkinMemory, this);
+        m_SkinBufferHandle = s_VertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), nullptr, sGetSkinMemory, this);
     else
         m_SkinBufferHandle = nullptr;
     if (desc.HasLightmapChannel)
-        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
+        m_LightmapUVsGPU = s_VertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
 }
@@ -418,8 +419,8 @@ bool MeshResource::WriteVertexData(MeshVertex const* vertices, int vertexCount, 
 
     if (m_VertexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->Update(m_VertexHandle, startVertexLocation * sizeof(MeshVertex), vertexCount * sizeof(MeshVertex), m_Vertices.ToPtr() + startVertexLocation);
     }
 
     return true;
@@ -448,8 +449,8 @@ bool MeshResource::WriteSkinningData(SkinVertex const* vertices, int vertexCount
 
     if (m_SkinBufferHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->Update(m_SkinBufferHandle, startVertexLocation * sizeof(SkinVertex), vertexCount * sizeof(SkinVertex), m_SkinBuffer.ToPtr() + startVertexLocation);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->Update(m_SkinBufferHandle, startVertexLocation * sizeof(SkinVertex), vertexCount * sizeof(SkinVertex), m_SkinBuffer.ToPtr() + startVertexLocation);
     }
 
     return true;
@@ -474,8 +475,8 @@ bool MeshResource::WriteLightmapUVsData(MeshVertexUV const* UVs, int vertexCount
 
     if (m_LightmapUVsGPU)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->Update(m_LightmapUVsGPU, startVertexLocation * sizeof(MeshVertexUV), vertexCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + startVertexLocation);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->Update(m_LightmapUVsGPU, startVertexLocation * sizeof(MeshVertexUV), vertexCount * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr() + startVertexLocation);
     }
 
     return true;
@@ -498,32 +499,31 @@ bool MeshResource::WriteIndexData(unsigned int const* indices, int indexCount, i
 
     if (m_IndexHandle)
     {
-        VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
-        vertexMemory->Update(m_IndexHandle, startIndexLocation * sizeof(unsigned int), indexCount * sizeof(unsigned int), m_Indices.ToPtr() + startIndexLocation);
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+        s_VertexMemory->Update(m_IndexHandle, startIndexLocation * sizeof(unsigned int), indexCount * sizeof(unsigned int), m_Indices.ToPtr() + startIndexLocation);
     }
 
     return true;
 }
 
-void MeshResource::Upload()
+void MeshResource::Upload(RHI::IDevice* device)
 {
-    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
+    HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+    s_VertexMemory->Deallocate(m_VertexHandle);
+    s_VertexMemory->Deallocate(m_SkinBufferHandle);
+    s_VertexMemory->Deallocate(m_LightmapUVsGPU);
+    s_VertexMemory->Deallocate(m_IndexHandle);
 
-    vertexMemory->Deallocate(m_VertexHandle);
-    vertexMemory->Deallocate(m_SkinBufferHandle);
-    vertexMemory->Deallocate(m_LightmapUVsGPU);
-    vertexMemory->Deallocate(m_IndexHandle);
-
-    m_VertexHandle = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr(), sGetVertexMemory, this);
-    m_IndexHandle = vertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr(), sGetIndexMemory, this);
+    m_VertexHandle = s_VertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertex), m_Vertices.ToPtr(), sGetVertexMemory, this);
+    m_IndexHandle = s_VertexMemory->AllocateIndex(m_Indices.Size() * sizeof(unsigned int), m_Indices.ToPtr(), sGetIndexMemory, this);
 
     if (!m_SkinBuffer.IsEmpty())
-        m_SkinBufferHandle = vertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), m_SkinBuffer.ToPtr(), sGetSkinMemory, this);
+        m_SkinBufferHandle = s_VertexMemory->AllocateVertex(m_SkinBuffer.Size() * sizeof(SkinVertex), m_SkinBuffer.ToPtr(), sGetSkinMemory, this);
     else
         m_SkinBufferHandle = nullptr;
 
     if (!m_LightmapUVs.IsEmpty())
-        m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr(), sGetLightmapUVMemory, this);
+        m_LightmapUVsGPU = s_VertexMemory->AllocateVertex(m_LightmapUVs.Size() * sizeof(MeshVertexUV), m_LightmapUVs.ToPtr(), sGetLightmapUVMemory, this);
     else
         m_LightmapUVsGPU = nullptr;
 }
@@ -533,12 +533,12 @@ void MeshResource::AddLightmapUVs()
     if (m_LightmapUVsGPU && m_LightmapUVs.Size() == m_Vertices.Size())
         return;
 
-    VertexMemoryGPU* vertexMemory = GameApplication::sGetVertexMemoryGPU();
+    HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
 
     if (m_LightmapUVsGPU)
-        vertexMemory->Deallocate(m_LightmapUVsGPU);
+        s_VertexMemory->Deallocate(m_LightmapUVsGPU);
 
-    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
+    m_LightmapUVsGPU = s_VertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(MeshVertexUV), nullptr, sGetLightmapUVMemory, this);
     m_LightmapUVs.Resize(m_Vertices.Size());
 }
 
@@ -557,7 +557,7 @@ void MeshResource::GenerateBVH(uint16_t trianglesPerLeaf)
         surface.Bvh = BvhTree(ArrayView<MeshVertex>(m_Vertices), ArrayView<unsigned int>(m_Indices.ToPtr() + surface.FirstIndex, (size_t)surface.IndexCount), surface.BaseVertex, trianglesPerLeaf);
 }
 
-bool MeshResource::SurfaceRaycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
+bool MeshResource::Raycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const
 {
     bool ret = false;
     float d, u, v;
@@ -662,7 +662,7 @@ bool MeshResource::SurfaceRaycast(int surfaceIndex, Float3 const& rayStart, Floa
     return ret;
 }
 
-bool MeshResource::SurfaceRaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const
+bool MeshResource::RaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const
 {
     bool ret = false;
     float d, u, v;
@@ -782,7 +782,7 @@ bool MeshResource::Raycast(Float3 const& rayStart, Float3 const& rayDir, float d
 
     for (int i = 0; i < m_Surfaces.Size(); i++)
     {
-        ret |= SurfaceRaycast(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitResult);
+        ret |= Raycast(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitResult);
     }
     return ret;
 }
@@ -806,7 +806,7 @@ bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, 
 
     for (int i = 0; i < m_Surfaces.Size(); i++)
     {
-        if (SurfaceRaycastClosest(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitLocation, hitUV, hitDistance, triangle))
+        if (RaycastClosest(i, rayStart, rayDir, invRayDir, distance, bCullBackFace, hitLocation, hitUV, hitDistance, triangle))
         {
             surfaceIndex = i;
             distance = hitDistance;
@@ -815,36 +815,6 @@ bool MeshResource::RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, 
     }
 
     return ret;
-}
-
-void MeshResource::DrawDebug(DebugRenderer& renderer) const
-{
-    renderer.SetDepthTest(false);
-    renderer.SetColor(Color4::sWhite());
-
-    renderer.DrawAABB(m_BoundingBox);
-}
-
-void MeshResource::DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) const
-{
-    if (surfaceIndex >= m_Surfaces.Size())
-        return;
-
-    MeshSurface const& surface = m_Surfaces[surfaceIndex];
-
-    renderer.SetDepthTest(false);
-    renderer.SetColor(Color4::sWhite());
-    renderer.DrawAABB(surface.BoundingBox);
-
-    if (!surface.Bvh.GetNodes().IsEmpty())
-    {
-        BvOrientedBox orientedBox;
-        for (BvhNode const& node : surface.Bvh.GetNodes())
-        {
-            if (node.IsLeaf())
-                renderer.DrawAABB(node.Bounds);
-        }
-    }
 }
 
 namespace

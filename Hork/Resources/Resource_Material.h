@@ -57,7 +57,7 @@ public:
 
     MaterialGPU*                GetGpuMaterial() { return m_GpuMaterial; }
 
-    void                        Upload() override;
+    void                        Upload(RHI::IDevice* device) override;
 
 private:
     Ref<MaterialGPU>            m_GpuMaterial;

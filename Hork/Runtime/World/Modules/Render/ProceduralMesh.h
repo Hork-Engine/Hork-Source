@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Geometry/Utilites.h>
 #include <Hork/RHI/Common/Buffer.h>
-#include <Hork/Runtime/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
 

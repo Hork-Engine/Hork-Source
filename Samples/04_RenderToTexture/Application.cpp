@@ -130,7 +130,7 @@ void SampleApplication::Initialize()
 {
     // Create UI
     UIDesktop* desktop = UINew(UIDesktop);
-    GUIManager->AddDesktop(desktop);
+    sGetUIManager().AddDesktop(desktop);
 
     // Add shortcuts
     UIShortcutContainer* shortcuts = UINew(UIShortcutContainer);
@@ -148,7 +148,7 @@ void SampleApplication::Initialize()
     desktop->SetFocusWidget(mainViewport);
 
     // Hide mouse cursor
-    GUIManager->bCursorVisible = false;
+    sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
     Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
@@ -197,7 +197,7 @@ void SampleApplication::Initialize()
     mainViewport->SetWorldRenderView(m_WorldRenderView);
 
     // Create offscreen render view. Use resolution of window frame buffer
-    auto window = GUIManager->GetGenericWindow();
+    auto window = sGetUIManager().GetGenericWindow();
     uint32_t width = window->GetFramebufferWidth();
     uint32_t height = window->GetFramebufferHeight();
     m_OffscreenRenderView = MakeRef<WorldRenderView>();
@@ -327,7 +327,7 @@ void SampleApplication::CreateScene()
         MeshResourceBuilder builder;
         UniqueRef<MeshResource> quadMesh = builder.Build(rawMesh);
         if (quadMesh)
-            quadMesh->Upload();
+            quadMesh->Upload(sGetRenderDevice());
 
         auto surfaceHandle = resourceMngr.CreateResourceWithData<MeshResource>("mirror_surface", std::move(quadMesh));
 
@@ -455,7 +455,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
         MeshResourceBuilder builder;
         auto resource = builder.Build(rawMesh);
-        resource->Upload();
+        resource->Upload(sGetRenderDevice());
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 

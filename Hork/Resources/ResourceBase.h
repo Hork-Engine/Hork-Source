@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/BaseTypes.h>
+#include <Hork/RHI/Common/Device.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -44,7 +45,6 @@ enum RESOURCE_TYPE : uint8_t
     RESOURCE_MATERIAL,//ok
     RESOURCE_COLLISION,// todo
     RESOURCE_SOUND,//ok
-    RESOURCE_FONT,//ok
     RESOURCE_TERRAIN,// ok
     RESOURCE_VIRTUAL_TEXTURE,// todo
 
@@ -66,7 +66,7 @@ class ResourceBase
 public:
     virtual ~ResourceBase() = default;
 
-    virtual void Upload() {}
+    virtual void Upload(RHI::IDevice* device) {}
 };
 
 HK_FORCEINLINE uint32_t MakeResourceMagic(uint8_t type, uint8_t version)

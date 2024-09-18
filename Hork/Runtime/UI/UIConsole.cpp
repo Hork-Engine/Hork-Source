@@ -334,7 +334,7 @@ void UIConsole::OnKeyEvent(KeyEvent const& event, CommandContext& commandCtx, Co
             case VirtualKey::Insert:
                 if (event.ModMask.IsEmpty())
                 {
-                    GUIManager->SetInsertMode(!GUIManager->IsInsertMode());
+                    UIManager::sInstance().SetInsertMode(!UIManager::sInstance().IsInsertMode());
                 }
                 break;
             default:
@@ -350,7 +350,7 @@ void UIConsole::OnCharEvent(CharEvent const& event)
         return;
     }
 
-    if (!GUIManager->IsInsertMode() || m_CmdLinePos == m_CmdLineLength)
+    if (!UIManager::sInstance().IsInsertMode() || m_CmdLinePos == m_CmdLineLength)
     {
         if (m_CmdLineLength < MAX_CMD_LINE_CHARS)
         {
@@ -402,11 +402,10 @@ void UIConsole::DrawCmdLine(Canvas& cv, int x, int y, int maxLineChars)
 
     if ((Core::SysMicroseconds() >> 18) & 1)
     {
-        FontResource* font = GameApplication::sGetDefaultFont();
         for (int i = 0; i < m_CmdLinePos - offset; i++)
-            x += font->GetCharAdvance(fontStyle, m_CmdLine[i]);
+            x += cv.GetCharAdvance(fontStyle, m_CmdLine[i]);
 
-        if (GUIManager->IsInsertMode())
+        if (UIManager::sInstance().IsInsertMode())
         {
             cv.DrawRectFilled(Float2(x, y), Float2(x + ConsoleBuffer::CharacterWidth * 0.7f, y + ConsoleBuffer::CharacterWidth), Color4::sWhite());
         }
@@ -461,7 +460,7 @@ void UIConsole::Draw(Canvas& cv, UIBrush* background, float width, float height)
     const float fontSize = ConsoleBuffer::CharacterWidth;
 
     cv.ResetScissor();
-    cv.FontFace(GameApplication::sGetDefaultFontHandle());
+    cv.FontFace(0);
 
     FontStyle fontStyle;
     fontStyle.FontSize = fontSize;

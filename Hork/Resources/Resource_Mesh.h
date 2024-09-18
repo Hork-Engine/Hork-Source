@@ -50,7 +50,16 @@ namespace ozz::animation
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
-struct TriangleHitResult;
+
+struct TriangleHitResult
+{
+    Float3 Location;
+    Float3 Normal;
+    Float2 UV;
+    float Distance;
+    unsigned int Indices[3];
+    //Material* MaterialInstance;
+};
 
 struct MeshSurface
 {
@@ -115,7 +124,7 @@ public:
     bool                        Read(IBinaryStreamReadInterface& stream);
     void                        Write(IBinaryStreamWriteInterface& stream) const;
 
-    void                        Upload() override;
+    void                        Upload(RHI::IDevice* device) override;
 
     bool                        HasLightmapUVs() const { return m_LightmapUVsGPU != nullptr; }
     bool                        HasSkinning() const { return !m_SkinBuffer.IsEmpty(); }
@@ -170,8 +179,7 @@ public:
     /// Check ray intersection
     bool                        RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& surfaceIndex) const;
 
-    void                        DrawDebug(DebugRenderer& renderer) const;
-    void                        DrawDebugSurface(DebugRenderer& renderer, int surfaceIndex) const;
+    static void                 SetVertexMemoryGPU(VertexMemoryGPU* vertexMemory);
 
 private:
     static void*                sGetVertexMemory(void* _This);
@@ -182,8 +190,8 @@ private:
     void                        Clear();
     void                        AddLightmapUVs();
 
-    bool                        SurfaceRaycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
-    bool                        SurfaceRaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
+    bool                        Raycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
+    bool                        RaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
 
     Vector<MeshSurface>         m_Surfaces;
     Vector<MeshSkin>            m_Skins;
@@ -200,6 +208,8 @@ private:
     VertexHandle*               m_SkinBufferHandle{};
     VertexHandle*               m_LightmapUVsGPU{};
     VertexHandle*               m_IndexHandle{};
+
+    static VertexMemoryGPU*     s_VertexMemory;
 
     friend class                MeshResourceBuilder;
 };
