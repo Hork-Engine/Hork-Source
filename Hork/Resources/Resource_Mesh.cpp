@@ -49,12 +49,15 @@ void MeshResource::SetVertexMemoryGPU(VertexMemoryGPU* vertexMemory)
 
 MeshResource::~MeshResource()
 {
-    HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
+    if (m_VertexHandle)
+    {
+        HK_ASSERT_(s_VertexMemory, "The vertex memory allocator must be set! Use MeshResource::SetVertexMemoryGPU");
 
-    s_VertexMemory->Deallocate(m_VertexHandle);
-    s_VertexMemory->Deallocate(m_SkinBufferHandle);
-    s_VertexMemory->Deallocate(m_LightmapUVsGPU);
-    s_VertexMemory->Deallocate(m_IndexHandle);
+        s_VertexMemory->Deallocate(m_VertexHandle);
+        s_VertexMemory->Deallocate(m_SkinBufferHandle);
+        s_VertexMemory->Deallocate(m_LightmapUVsGPU);
+        s_VertexMemory->Deallocate(m_IndexHandle);
+    }
 }
 
 int16_t MeshResource::FindJoint(StringView name) const

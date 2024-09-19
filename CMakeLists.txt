@@ -18,3 +18,5 @@ add_subdirectory_with_folder("Hork" Hork)
 if (HK_BUILD_SAMPLES)
 add_subdirectory(Samples)
 endif()
+
+add_subdirectory(Tools)
