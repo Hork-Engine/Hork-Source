@@ -34,7 +34,7 @@ HK_NAMESPACE_BEGIN
 
 void LOG(const char* message)
 {
-    CoreApplication::sWriteMessage(message);
+    CoreApplication::sWriteMessage(MSG_ALL, message);
 }
 
 HK_NAMESPACE_END

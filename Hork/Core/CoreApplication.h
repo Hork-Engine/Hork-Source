@@ -73,6 +73,21 @@ private:
     bool   m_bNeedFree{};
 };
 
+enum MessageFlags
+{
+    /// Write a message to the IDE console (DEBUG build only)
+    MSG_DEBUG   = 1,
+    /// Write a message to the system console
+    MSG_SYSCON  = 2,
+    /// Write a message to the engine console
+    MSG_CON     = 4,
+    /// Write a message to the log file
+    MSG_LOG     = 8,
+    /// Write a message to all outlets
+    MSG_ALL     = MSG_DEBUG | MSG_SYSCON | MSG_CON | MSG_LOG
+};
+HK_FLAG_ENUM_OPERATORS(MessageFlags)
+
 class CoreApplication : public Noncopyable
 {
 public:
@@ -115,9 +130,9 @@ public:
         return s_Instance->m_ConsoleBuffer;
     }
 
-    static void sWriteMessage(const char* message)
+    static void sWriteMessage(MessageFlags flags, const char* message)
     {
-        s_Instance->_WriteMessage(message);
+        s_Instance->_WriteMessage(flags, message);
     }
 
     static void sSetClipboard(StringView text);
@@ -136,7 +151,7 @@ public:
     }
 
 private:
-    void _WriteMessage(const char* message);
+    void _WriteMessage(MessageFlags flags, const char* message);
     void _TerminateWithError(const char* message);
 
     void Cleanup();

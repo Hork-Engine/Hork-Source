@@ -524,13 +524,18 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
 #endif
 
     m_LogFile = nullptr;
-    if (m_Arguments.Has("-bEnableLog"))
+    if (m_Arguments.Has("-enableLog"))
     {
         // TODO: Set correct path for log file
         m_LogFile = fopen("log.txt", "ab");
     }
 
-    if (!m_Arguments.Has("-bAllowMultipleInstances"))
+    if (m_Arguments.Has("-enableConsoleOutput"))
+    {
+        Core::SetEnableConsoleOutput(true);
+    }
+
+    if (!m_Arguments.Has("-allowMultipleInstances"))
     {
         switch (m_ProcessAttribute)
         {
@@ -736,17 +741,22 @@ void CoreApplication::Cleanup()
 #endif
 }
 
-void CoreApplication::_WriteMessage(const char* message)
+void CoreApplication::_WriteMessage(MessageFlags flags, const char* message)
 {
-    Core::WriteDebugString(message);
-
-    m_ConsoleBuffer.Print(message);
-
-    if (m_LogFile)
+    if (flags & MSG_DEBUG)
+        Core::WriteDebugString(message);
+    if (flags & MSG_SYSCON)
+        Core::WriteConsoleString(message);
+    if (flags & MSG_CON)
+        m_ConsoleBuffer.Print(message);
+    if (flags & MSG_LOG)
     {
-        MutexGuard lock(m_LogWriterSync);
-        fprintf(m_LogFile, "%s", message);
-        fflush(m_LogFile);
+        if (m_LogFile)
+        {
+            MutexGuard lock(m_LogWriterSync);
+            fprintf(m_LogFile, "%s", message);
+            fflush(m_LogFile);
+        }
     }
 }
 

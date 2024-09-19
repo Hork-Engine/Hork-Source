@@ -51,6 +51,8 @@ static int64_t StartMicroseconds = std::chrono::duration_cast<std::chrono::micro
 static int64_t StartMilliseconds = StartMicroseconds * 0.001;
 static int64_t StartSeconds = StartMicroseconds * 0.000001;
 
+static bool EnableConsoleOutput = false;
+
 HK_NAMESPACE_BEGIN
 
 namespace Core
@@ -104,7 +106,7 @@ double SysMicroseconds_d()
 void WriteDebugString(const char* message)
 {
 #if defined HK_DEBUG
-#    if defined HK_COMPILER_MSVC
+#   if defined HK_COMPILER_MSVC
     {
         int n = MultiByteToWideChar(CP_UTF8, 0, message, -1, NULL, 0);
         if (0 != n)
@@ -130,15 +132,33 @@ void WriteDebugString(const char* message)
             }
         }
     }
-#    else
-#        ifdef HK_OS_ANDROID
-    __android_log_print(ANDROID_LOG_INFO, "Hork Engine", message);
-#        else
-    fprintf(stdout, "%s", message);
-    fflush(stdout);
-#        endif
-#    endif
+#   endif
 #endif
+}
+
+void WriteConsoleString(const char* message)
+{
+    if (EnableConsoleOutput)
+    {
+#if defined HK_OS_WIN32
+        static HWND hwndConsole = GetConsoleWindow();
+        if (hwndConsole)
+        {
+            fprintf(stdout, "%s", message);
+            fflush(stdout);
+        }
+#elif defined HK_OS_ANDROID
+        __android_log_print(ANDROID_LOG_INFO, "Hork Engine", message);
+#else
+        fprintf(stdout, "%s", message);
+        fflush(stdout);
+#endif
+    }
+}
+
+void SetEnableConsoleOutput(bool enable)
+{
+    EnableConsoleOutput = enable;
 }
 
 void* LoadDynamicLib(const char* libraryName)

@@ -76,6 +76,10 @@ double SysMicroseconds_d();
 
 void WriteDebugString(const char* message);
 
+void WriteConsoleString(const char* message);
+
+void SetEnableConsoleOutput(bool enable);
+
 /// Load dynamic library (.dll or .so)
 void* LoadDynamicLib(const char* libraryName);
 
