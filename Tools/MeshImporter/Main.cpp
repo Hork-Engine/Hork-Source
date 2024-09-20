@@ -31,7 +31,6 @@ SOFTWARE.
 #include <Hork/Core/CoreApplication.h>
 
 #include <Hork/Core/IO.h>
-#include <Hork/Core/WindowsDefs.h>
 #include <Hork/Core/Parse.h>
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Platform.h>
@@ -53,7 +52,7 @@ void ImportMesh(RawMesh const& rawMesh, StringView outputFile)
         return;
     }
 
-    String fileName{HK_FORMAT("{}.mesh", outputFile)};
+    String fileName{HK_FORMAT("{}.asset", outputFile)};
 
     File file = File::sOpenWrite(fileName);
     if (!file)
@@ -84,7 +83,7 @@ void ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
         return;
     }
 
-    String fileName{HK_FORMAT("{}_{}.anim", outputFile, animationIndex)};
+    String fileName{HK_FORMAT("{}_{}.asset", outputFile, animationIndex)};
 
     File file = File::sOpenWrite(fileName);
     if (!file)
@@ -100,20 +99,26 @@ int RunApplication()
 {
     Core::SetEnableConsoleOutput(true);
 
-    /*
-    
-    -f <filename>           -- Specify source filename
+    const char* help = R"(    
+    -s <filename>           -- Source filename
     -m                      -- Tag to import mesh
     -a <index/all>          -- Tag to import animation(s)
-    
-    */
+    )";
+
     auto& args = CoreApplication::sArgs();
     int i;
 
     RawMesh mesh;
     String outputFile;
 
-    i = args.Find("-f");
+    i = args.Find("-h");
+    if (i != -1)
+    {
+        LOG(help);
+        return 0;
+    }
+
+    i = args.Find("-s");
     if (i != -1 && i + 1 < args.Count())
     {
         const char* filename = args.At(i + 1);
@@ -129,7 +134,7 @@ int RunApplication()
     }
     else
     {
-        LOG("Input file is not specified. Use -f <filename>\n");
+        LOG("Source file is not specified. Use -s <filename>\n");
         return 0;
     }
 
@@ -173,12 +178,7 @@ using ApplicationClass = Hk::CoreApplication;
 
 alignas(alignof(ApplicationClass)) static char AppData[sizeof(ApplicationClass)];
 
-//#ifdef HK_OS_WIN32
-//#    include <Hork/Core/WindowsDefs.h>
-//int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
-//#else
 int main(int argc, char* argv[])
-//#endif
 {
     using namespace Hk;
 

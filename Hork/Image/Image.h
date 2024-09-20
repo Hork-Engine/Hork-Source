@@ -205,6 +205,8 @@ struct TextureFormatInfo
 
 TextureFormatInfo const& GetTextureFormatInfo(TEXTURE_FORMAT Format);
 
+TEXTURE_FORMAT FindTextureFormat(StringView name);
+
 HK_FORCEINLINE bool IsCompressedFormat(TEXTURE_FORMAT Format)
 {
     return Format >= TEXTURE_FORMAT_BC1_UNORM && Format <= TEXTURE_FORMAT_BC7_UNORM_SRGB;
@@ -327,7 +329,7 @@ struct TextureOffset
 /// Resampling edge mode for 2D/Array textures.
 enum IMAGE_RESAMPLE_EDGE_MODE
 {
-    IMAGE_RESAMPLE_EDGE_CLAMP     = 1,
+    IMAGE_RESAMPLE_EDGE_CLAMP   = 1,
     IMAGE_RESAMPLE_EDGE_REFLECT = 2,
     IMAGE_RESAMPLE_EDGE_WRAP    = 3,
     IMAGE_RESAMPLE_EDGE_ZERO    = 4,
@@ -367,6 +369,10 @@ struct ImageMipmapConfig
     /// Resampling filter for 3D textures (Not yet implemented. Reserved for future.)
     IMAGE_RESAMPLE_FILTER_3D Filter3D = IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
 };
+
+IMAGE_RESAMPLE_EDGE_MODE GetResampleEdgeMode(StringView name);
+IMAGE_RESAMPLE_FILTER GetResampleFilter(StringView name);
+IMAGE_RESAMPLE_FILTER_3D GetResampleFilter3D(StringView name);
 
 class ImageStorage final
 {

@@ -132,6 +132,59 @@ TextureFormatInfo const& GetTextureFormatInfo(TEXTURE_FORMAT Format)
     return info;
 }
 
+TEXTURE_FORMAT FindTextureFormat(StringView name)
+{
+    for (auto const& info : TexFormat)
+    {
+        if (!name.Icmp(info.Name))
+            return info.Format;
+    }
+    LOG("FindTextureFormat: texture format {} is not found\n", name);
+    return TEXTURE_FORMAT_UNDEFINED;
+}
+
+IMAGE_RESAMPLE_EDGE_MODE GetResampleEdgeMode(StringView name)
+{
+    if (!name.Icmp("clamp"))
+        return IMAGE_RESAMPLE_EDGE_CLAMP;
+    if (!name.Icmp("reflect"))
+        return IMAGE_RESAMPLE_EDGE_REFLECT;
+    if (!name.Icmp("wrap"))
+        return IMAGE_RESAMPLE_EDGE_WRAP;
+    if (!name.Icmp("zero"))
+        return IMAGE_RESAMPLE_EDGE_ZERO;
+    LOG("GetResampleEdgeMode: unknown mode {}, return wrap mode\n", name);
+    return IMAGE_RESAMPLE_EDGE_WRAP;
+}
+
+IMAGE_RESAMPLE_FILTER GetResampleFilter(StringView name)
+{
+    if (!name.Icmp("box"))
+        return IMAGE_RESAMPLE_FILTER_BOX;
+    if (!name.Icmp("triangle"))
+        return IMAGE_RESAMPLE_FILTER_TRIANGLE;
+    if (!name.Icmp("cubicspline"))
+        return IMAGE_RESAMPLE_FILTER_CUBICBSPLINE;
+    if (!name.Icmp("catmullrom"))
+        return IMAGE_RESAMPLE_FILTER_CATMULLROM;
+    if (!name.Icmp("mitchell"))
+        return IMAGE_RESAMPLE_FILTER_MITCHELL;
+    LOG("GetResampleFilter: unknown filter {}, return mitchell filter\n", name);
+    return IMAGE_RESAMPLE_FILTER_MITCHELL;
+}
+
+IMAGE_RESAMPLE_FILTER_3D GetResampleFilter3D(StringView name)
+{
+    if (!name.Icmp("average"))
+        return IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
+    if (!name.Icmp("min"))
+        return IMAGE_RESAMPLE_FILTER_3D_MIN;
+    if (!name.Icmp("max"))
+        return IMAGE_RESAMPLE_FILTER_3D_MAX;
+    LOG("GetResampleFilter3D: unknown filter {}, return average filter\n", name);
+    return IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
+}
+
 uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth)
 {
     HK_ASSERT(Width > 0);

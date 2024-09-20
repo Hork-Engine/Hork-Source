@@ -8,11 +8,7 @@ source_group("res" FILES ${RESOURCES})
 
 set(SOURCE_FILES ${SOURCE_FILES} ${RESOURCES})
 
-if(WIN32)
-add_executable(${PROJECT_NAME} WIN32 ${SOURCE_FILES})
-else()
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-endif()
 
 target_link_libraries(${PROJECT_NAME} Runtime)
 
