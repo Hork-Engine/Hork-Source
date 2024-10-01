@@ -74,15 +74,11 @@ enum PBR_PRESET
     //DISPLACEMENT_BC4,
 };
 PBR_PRESET pbrPreset = UNDEFINED;
+bool pbrCompressed = false;
 RawImageResampleParams resampleParams;
 bool resample = false;
 const char* outputPBRMap = nullptr;
 const char* outputNormalMap = nullptr;
-
-bool IsCompressionRequired()
-{
-    return pbrPreset == ORMX_BC1 || pbrPreset == ORMX_BC3 || pbrPreset == ORMX_BC7;
-}
 
 RawImage CreateORMX()
 {
@@ -154,7 +150,7 @@ RawImage CreateORMX()
         }
     }
 
-    const uint32_t blockSize = IsCompressionRequired() ? 4 : 1;
+    const uint32_t blockSize = pbrCompressed ? 4 : 1;
 
     resampleParams.ScaledWidth = generateMipmaps ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(width), blockSize) : Align(width, blockSize);
     resampleParams.ScaledHeight = generateMipmaps ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(height), blockSize) : Align(height, blockSize);
@@ -198,7 +194,7 @@ RawImage CreateORMX()
     return combinedImage;
 }
 
-static void NormalizeVectors(Float3* pVectors, size_t Count)
+void NormalizeVectors(Float3* pVectors, size_t Count)
 {
     Float3* end = pVectors + Count;
     while (pVectors < end)
@@ -369,11 +365,20 @@ int RunApplication()
         if (!Core::Stricmp(args.At(i + 1), "ORMX"))
             pbrPreset = ORMX;
         else if (!Core::Stricmp(args.At(i + 1), "ORMX_BC1"))
+        {
             pbrPreset = ORMX_BC1;
+            pbrCompressed = true;
+        }
         else if (!Core::Stricmp(args.At(i + 1), "ORMX_BC3"))
+        {
             pbrPreset = ORMX_BC3;
+            pbrCompressed = true;
+        }
         else if (!Core::Stricmp(args.At(i + 1), "ORMX_BC7"))
+        {
             pbrPreset = ORMX_BC7;
+            pbrCompressed = true;
+        }
         else
         {
             LOG("Unknown PBR preset: {}\n", args.At(i + 1));
@@ -537,7 +542,7 @@ int RunApplication()
         }
         resample = true;
 
-        if (IsCompressionRequired())
+        if (pbrCompressed)
         {
             const uint32_t blockSize = 4;
 
@@ -677,7 +682,7 @@ int RunApplication()
     }
 
     // Compress ORMX
-    if (pbrPreset == ORMX_BC1 || pbrPreset == ORMX_BC3 || pbrPreset == ORMX_BC7)
+    if (pbrCompressed)
     {
         ImageStorageDesc desc;
         desc.Type       = TEXTURE_2D;
@@ -693,6 +698,9 @@ int RunApplication()
         case ORMX_BC7:
             desc.Format = TEXTURE_FORMAT_BC7_UNORM;
             break;
+        default:
+            HK_ASSERT(0);
+            return -1;
         }
 
         desc.Width      = uncompressedORMX.GetDesc().Width;
@@ -721,6 +729,9 @@ int RunApplication()
             case ORMX_BC7:
                 TextureBlockCompression::CompressBC7(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
                 break;
+            default:
+                HK_ASSERT(0);
+                return -1;
             }            
         }
 
