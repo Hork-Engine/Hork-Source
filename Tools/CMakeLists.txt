@@ -7,3 +7,4 @@ project(Hork-Samples)
 
 add_subdirectory_with_folder("Tools" MeshImporter)
 add_subdirectory_with_folder("Tools" TextureImporter)
+add_subdirectory_with_folder("Tools" PBRImporter)
