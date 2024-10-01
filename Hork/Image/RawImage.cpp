@@ -1167,7 +1167,10 @@ RawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT For
 
 RawImage CreateRawImage(StringView FileName, RAW_IMAGE_FORMAT Format)
 {
-    return CreateRawImage(File::sOpenRead(FileName).ReadInterface(), Format);
+    auto stream = File::sOpenRead(FileName);
+    if (!stream)
+        return {};
+    return CreateRawImage(stream, Format);
 }
 
 RawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)

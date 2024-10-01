@@ -1909,7 +1909,10 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
 ImageStorage CreateImage(StringView FileName, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
-    return CreateImage(File::sOpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
+    auto stream = File::sOpenRead(FileName);
+    if (!stream)
+        return {};
+    return CreateImage(stream, pMipmapConfig, Flags, Format);
 }
 
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
@@ -2264,7 +2267,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     // clang-format off
     struct CompressInfo
     {
-        RawImage        (*PackRoutine)(Float3 const* Normals, uint32_t Width, uint32_t Height);
+        RawImage         (*PackRoutine)(Float3 const* Normals, uint32_t Width, uint32_t Height);
         void             (*CompressionRoutine)(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
         TEXTURE_FORMAT   CompressedFormat;
         TEXTURE_FORMAT   UncompressedFormat;
@@ -2387,7 +2390,10 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
 
 ImageStorage CreateNormalMap(StringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    return CreateNormalMap(File::sOpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+    auto stream = File::sOpenRead(FileName);
+    if (!stream)
+        return {};
+    return CreateNormalMap(stream, Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
 }
 
 ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
