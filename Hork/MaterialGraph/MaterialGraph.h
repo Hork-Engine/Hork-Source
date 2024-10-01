@@ -536,6 +536,26 @@ protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
 
+class MGORMXLoad : public MGNode
+{
+    HK_CLASS(MGORMXLoad, MGNode)
+
+    MGInput                     Texture{"Texture"};
+    MGInput                     TexCoord{"TexCoord"};
+
+    MGOutput                    RGBA{"RGBA", MG_VALUE_TYPE_FLOAT4};
+    MGOutput                    Occlusion{"Occlusion", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Roughness{"Roughness", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Metallic{"Metallic", MG_VALUE_TYPE_FLOAT1};
+    MGOutput                    Extended{"Extended", MG_VALUE_TYPE_FLOAT1};
+
+public:
+                                MGORMXLoad();
+
+protected:
+    void                        Compute(MaterialBuildContext& Context) override;
+};
+
 class MGParallaxMapLoad : public MGSingleton
 {
     HK_CLASS(MGParallaxMapLoad, MGSingleton)

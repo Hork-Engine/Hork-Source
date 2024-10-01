@@ -2157,10 +2157,97 @@ void MGNormalLoad::Compute(MaterialBuildContext& Context)
 
         X.Expression = "0.0";
         Y.Expression = "0.0";
-        Z.Expression = "0.0";
+        Z.Expression = "1.0";
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+HK_BEGIN_CLASS_META(MGORMXLoad)
+HK_END_CLASS_META()
+
+MGORMXLoad::MGORMXLoad() :
+    Super("ORMX Sampler")
+{
+    SetSlots({&Texture, &TexCoord}, {&Occlusion, &Roughness, &Metallic, &Extended});
+}
+
+void MGORMXLoad::Compute(MaterialBuildContext& Context)
+{
+    bool bValid = false;
+
+    MGOutput* texSlotCon = Texture.GetConnection();
+    if (texSlotCon)
+    {
+        MGNode* node = Texture.ConnectedNode();
+        if (node->FinalClassId() == MGTextureSlot::sClassId() && node->Build(Context))
+        {
+            MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
+
+            MG_VALUE_TYPE sampleType = MG_VALUE_TYPE_FLOAT2;
+
+            // TODO: table?
+            switch (texSlot->TextureType)
+            {
+            case TEXTURE_1D:
+                sampleType = MG_VALUE_TYPE_FLOAT1;
+                break;
+            case TEXTURE_1D_ARRAY:
+                sampleType = MG_VALUE_TYPE_FLOAT2;
+                break;
+            case TEXTURE_2D:
+                sampleType = MG_VALUE_TYPE_FLOAT2;
+                break;
+            case TEXTURE_2D_ARRAY:
+                sampleType = MG_VALUE_TYPE_FLOAT3;
+                break;
+            case TEXTURE_3D:
+                sampleType = MG_VALUE_TYPE_FLOAT3;
+                break;
+            case TEXTURE_CUBE:
+                sampleType = MG_VALUE_TYPE_FLOAT3;
+                break;
+            case TEXTURE_CUBE_ARRAY:
+                sampleType = MG_VALUE_TYPE_FLOAT3;
+                break;
+            default:
+                HK_ASSERT(0);
+            };
+
+            int32_t slotIndex = texSlot->GetSlotIndex();
+            if (slotIndex != -1)
+            {
+                MGOutput* texCoordCon = TexCoord.GetConnection();
+
+                if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
+                {
+                    const char* sampleFunc = "texture_ormx";
+
+                    RGBA.Expression = Context.GenerateVariableName();
+                    Context.SourceCode += "const vec4 " + RGBA.Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
+                    bValid = true;
+                }
+            }
+        }
+    }
+
+    if (bValid)
+    {
+        Occlusion.Expression = RGBA.Expression + ".x";
+        Roughness.Expression = RGBA.Expression + ".y";
+        Metallic.Expression = RGBA.Expression + ".z";
+        Extended.Expression = RGBA.Expression + ".w";
+    }
+    else
+    {
+        Context.GenerateSourceCode(RGBA, "vec4(1.0, 1.0, 0.0, 0.0)", false);
+
+        Occlusion.Expression = "1.0";
+        Roughness.Expression = "1.0";
+        Metallic.Expression = "0.0";
+        Extended.Expression = "0.0";
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2744,23 +2831,31 @@ static const char* texture_nm_dxt5 =
     "  return decodedN;\n"
     "}\n";
 
-static const char* builtin_spheremap_coord =
-    "vec2 builtin_spheremap_coord( in vec3 dir ) {\n"
-    "  vec2 uv = vec2( atan( dir.z, dir.x ), asin( dir.y ) );\n"
-    "  return uv * vec2(0.1591, 0.3183) + 0.5;\n"
-    "}\n";
+//static const char* builtin_spheremap_coord =
+//    "vec2 builtin_spheremap_coord( in vec3 dir ) {\n"
+//    "  vec2 uv = vec2( atan( dir.z, dir.x ), asin( dir.y ) );\n"
+//    "  return uv * vec2(0.1591, 0.3183) + 0.5;\n"
+//    "}\n";
+//
+//static const char* builtin_luminance =
+//    "float builtin_luminance( in vec3 color ) {\n"
+//    "  return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n"
+//    "}\n"
+//    "float builtin_luminance( in vec4 color ) {\n"
+//    "  return dot( color, vec4( 0.2126, 0.7152, 0.0722, 0.0 ) );\n"
+//    "}\n";
+//
+//static const char* builtin_saturate =
+//    "%s builtin_saturate( in %s color ) {\n"
+//    "  return clamp( color, %s(0.0), %s(1.0) );\n"
+//    "}\n";
 
-static const char* builtin_luminance =
-    "float builtin_luminance( in vec3 color ) {\n"
-    "  return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n"
-    "}\n"
-    "float builtin_luminance( in vec4 color ) {\n"
-    "  return dot( color, vec4( 0.2126, 0.7152, 0.0722, 0.0 ) );\n"
-    "}\n";
-
-static const char* builtin_saturate =
-    "%s builtin_saturate( in %s color ) {\n"
-    "  return clamp( color, %s(0.0), %s(1.0) );\n"
+static const char* texture_ormx =
+    "vec4 texture_ormx( in %s sampler, in %s texCoord )\n"
+    "{\n"
+    "  vec4 ormx = texture( sampler, texCoord );\n"
+    "  ormx.x = pow(ormx.x, 2.2);\n"
+    "  return ormx;\n"
     "}\n";
 
 static void GenerateBuiltinSource()
@@ -2791,11 +2886,14 @@ static void GenerateBuiltinSource()
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
         builtin += format.Sprintf(texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
 
-    builtin += builtin_spheremap_coord;
-    builtin += builtin_luminance;
+    for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
+        builtin += format.Sprintf(texture_ormx, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
 
-    for (int i = MG_VALUE_TYPE_FLOAT1; i <= MG_VALUE_TYPE_FLOAT4; i++)
-        builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
+    //builtin += builtin_spheremap_coord;
+    //builtin += builtin_luminance;
+
+    //for (int i = MG_VALUE_TYPE_FLOAT1; i <= MG_VALUE_TYPE_FLOAT4; i++)
+    //    builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
 
     File f = File::sOpenWrite("material_builtin.glsl");
     if (f)
@@ -3875,6 +3973,7 @@ public:
         Register(MGUniformAddress::sGetClassMeta(), "UniformAddress");
         Register(MGTextureLoad::sGetClassMeta(), "TextureLoad");
         Register(MGNormalLoad::sGetClassMeta(), "NormalLoad");
+        Register(MGORMXLoad::sGetClassMeta(), "ORMXLoad");
         Register(MGParallaxMapLoad::sGetClassMeta(), "ParallaxMapLoad", MG_NODE_SINGLETON);
         Register(MGVirtualTextureLoad::sGetClassMeta(), "VirtualTextureLoad");
         Register(MGVirtualTextureNormalLoad::sGetClassMeta(), "VirtualTextureNormalLoad");
