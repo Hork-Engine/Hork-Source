@@ -40,20 +40,19 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void ImportImage(ImageStorage& storage, StringView outputFile)
+bool ImportImage(ImageStorage& storage, StringView fileName)
 {
-    LOG("Importing texture {}...\n", outputFile);
-
-    String fileName{HK_FORMAT("{}.asset", outputFile)};
+    LOG("Importing texture {}...\n", fileName);
 
     File file = File::sOpenWrite(fileName);
     if (!file)
     {
         LOG("Failed to open \"{}\"\n", fileName);
-        return;
+        return false;
     }
 
     AssetUtils::CreateTexture(file, storage);
+    return true;
 }
 
 int RunApplication()
@@ -63,6 +62,7 @@ int RunApplication()
     const char* help = R"(
     -h                      -- Help
     -s <filename>           -- Source filename
+    -o <filename>           -- Output filename
     -no_alpha               -- Don't aware about alpha channel or ignore it
     -alpha_premult          -- Set this flag if your texture has premultiplied alpha
     -format                 -- Output texture format (See Image.cpp, TexFormat)
@@ -93,7 +93,7 @@ int RunApplication()
     int i;
 
     ImageStorage source;
-    String outputFile;
+    const char* outputFile = nullptr;
 
     IMAGE_STORAGE_FLAGS flags = IMAGE_STORAGE_FLAGS_DEFAULT;
     TEXTURE_FORMAT format = TEXTURE_FORMAT_UNDEFINED;
@@ -136,6 +136,17 @@ int RunApplication()
         generateMipmaps = true;
     }
 
+    i = args.Find("-o");
+    if (i != -1 && i + 1 < args.Count())
+    {
+        outputFile = args.At(i + 1);
+    }
+    else
+    {
+        LOG("Output file is not specified. Use -o <filename>\n");
+        return -1;
+    }
+
     i = args.Find("-s");
     if (i != -1 && i + 1 < args.Count())
     {
@@ -147,17 +158,16 @@ int RunApplication()
         if (!source)
         {
             LOG("Failed to load {}\n", filename);
-            return 0;
+            return -1;
         }
 
-        outputFile = PathUtils::sGetFilenameNoExt(filename);
-
-        ImportImage(source, outputFile);
+        if (!ImportImage(source, outputFile))
+            return -1;
     }
     else
     {
         LOG("Source file is not specified. Use -s <filename>\n");
-        return 0;
+        return -1;
     }
 
     return 0;

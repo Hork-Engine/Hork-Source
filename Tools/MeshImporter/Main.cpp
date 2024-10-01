@@ -40,7 +40,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void ImportMesh(RawMesh const& rawMesh, StringView outputFile)
+bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
 {
     LOG("Importing mesh {}...\n", outputFile);
 
@@ -49,50 +49,56 @@ void ImportMesh(RawMesh const& rawMesh, StringView outputFile)
     if (!meshResource)
     {
         LOG("Failed to build mesh\n");
-        return;
+        return false;
     }
 
-    String fileName{HK_FORMAT("{}.asset", outputFile)};
 
-    File file = File::sOpenWrite(fileName);
+    File file = File::sOpenWrite(outputFile);
     if (!file)
     {
-        LOG("Failed to open \"{}\"\n", fileName);
-        return;
+        LOG("Failed to open \"{}\"\n", outputFile);
+        return false;
     }
 
     meshResource->Write(file);
+    return true;
 }
 
-void ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView outputFile)
+bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView outputFile)
 {
     AnimationResourceBuilder builder;
 
     if (animationIndex >= rawMesh.Animations.Size())
     {
         LOG("Invalid animation index {}\n", animationIndex);
-        return;
+        return false;
     }
 
-    LOG("Importing animation {} from {}...\n", animationIndex, outputFile);
+    LOG("Importing animation {}...\n", animationIndex);
 
     UniqueRef<AnimationResource> animationResource = builder.Build(*rawMesh.Animations[animationIndex].RawPtr(), rawMesh.Skeleton);
     if (!animationResource)
     {
         LOG("Failed to build animation {}\n", animationIndex);
-        return;
+        return false;
     }
 
-    String fileName{HK_FORMAT("{}_{}.asset", outputFile, animationIndex)};
-
+    String fileName;
+    
+    if (animationIndex > 0)
+        fileName = HK_FORMAT("{}_{}.asset", PathUtils::sGetFilenameNoExt(outputFile), animationIndex);
+    else
+        fileName = outputFile;
+    
     File file = File::sOpenWrite(fileName);
     if (!file)
     {
         LOG("Failed to open \"{}\"\n", fileName);
-        return;
+        return false;
     }
 
     animationResource->Write(file);
+    return true;
 }
 
 int RunApplication()
@@ -100,16 +106,18 @@ int RunApplication()
     Core::SetEnableConsoleOutput(true);
 
     const char* help = R"(    
-    -s <filename>           -- Source filename
-    -m                      -- Tag to import mesh
-    -a <index/all>          -- Tag to import animation(s)
+    -s <filename>             -- Source filename
+    -o <filename>             -- Output filename
+    -m                        -- Tag to import mesh
+    -a <index/all> <filename> -- Tag to import animation(s)
     )";
 
     auto& args = CoreApplication::sArgs();
     int i;
+    const char* inputFile = nullptr;
+    const char* outputFile = nullptr;
 
     RawMesh mesh;
-    String outputFile;
 
     i = args.Find("-h");
     if (i != -1)
@@ -119,54 +127,64 @@ int RunApplication()
     }
 
     i = args.Find("-s");
-    if (i != -1 && i + 1 < args.Count())
-    {
-        const char* filename = args.At(i + 1);
-
-        LOG("Loading {}...\n", filename);
-        if (!mesh.Load(filename))
-        {
-            LOG("Failed to load {}\n", filename);
-            return 0;
-        }
-
-        outputFile = PathUtils::sGetFilenameNoExt(filename);
-    }
-    else
+    if (i == -1 || i + 1 >= args.Count())
     {
         LOG("Source file is not specified. Use -s <filename>\n");
-        return 0;
+        return -1;
+    }
+
+    inputFile = args.At(i + 1);
+
+    i = args.Find("-o");
+    if (i == -1 || i + 1 >= args.Count())
+    {
+        LOG("Output file is not specified. Use -o <filename>\n");
+        return -1;
+    }
+
+    outputFile = args.At(i + 1);
+
+    LOG("Loading {}...\n", inputFile);
+    if (!mesh.Load(inputFile))
+    {
+        LOG("Failed to load {}\n", inputFile);
+        return -1;
     }
 
     i = args.Find("-a");
     if (i != -1)
     {
-        if (i + 1 < args.Count())
+        if (i + 2 < args.Count())
         {
             const char* value = args.At(i + 1);
+            outputFile = args.At(i + 2);
             if (!Core::Stricmp(value, "all"))
             {
                 for (uint32_t animationIndex = 0; animationIndex < mesh.Animations.Size(); ++animationIndex)
                 {
-                    ImportAnimation(mesh, animationIndex, outputFile);
+                    if (!ImportAnimation(mesh, animationIndex, outputFile))
+                        return -1;
                 }
             }
             else
             {
                 uint32_t animationIndex = Core::ParseUInt32(value);
-                ImportAnimation(mesh, animationIndex, outputFile);
+                if (!ImportAnimation(mesh, animationIndex, outputFile))
+                    return -1;
             }
         }
         else
         {
-            LOG("Expected -a <index/all>\n");
+            LOG("Expected -a <index/all> <filename>\n");
+            return -1;
         }
     }
 
     i = args.Find("-m");
     if (i != -1)
     {
-        ImportMesh(mesh, outputFile);
+        if (!ImportMesh(mesh, outputFile))
+            return -1;
     }
 
     return 0;
