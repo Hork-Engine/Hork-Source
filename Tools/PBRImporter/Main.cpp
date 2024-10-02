@@ -594,7 +594,6 @@ int RunApplication()
         return -1;
     }
 
-    ImageStorage uncompressedORMX;
     if (ormx)
     {
         ImageStorageDesc desc;
@@ -606,7 +605,7 @@ int RunApplication()
         desc.NumMipmaps = generateMipmaps ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
         desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
-        uncompressedORMX = ImageStorage(desc);
+        ImageStorage uncompressedORMX(desc);
         ImageSubresource subresource = uncompressedORMX.GetSubresource({0, 0});
 
         subresource.Write(0, 0, desc.Width, desc.Height, ormx.GetData());
@@ -679,69 +678,68 @@ int RunApplication()
                 }
             }
         }
-    }
 
-    // Compress ORMX
-    if (pbrCompressed)
-    {
-        ImageStorageDesc desc;
-        desc.Type       = TEXTURE_2D;
-
-        switch (pbrPreset)
+        // Compress ORMX
+        if (pbrCompressed)
         {
-        case ORMX_BC1:
-            desc.Format = TEXTURE_FORMAT_BC1_UNORM;
-            break;
-        case ORMX_BC3:
-            desc.Format = TEXTURE_FORMAT_BC3_UNORM;
-            break;
-        case ORMX_BC7:
-            desc.Format = TEXTURE_FORMAT_BC7_UNORM;
-            break;
-        default:
-            HK_ASSERT(0);
-            return -1;
-        }
-
-        desc.Width      = uncompressedORMX.GetDesc().Width;
-        desc.Height     = uncompressedORMX.GetDesc().Height;
-        desc.SliceCount = 1;
-        desc.NumMipmaps = generateMipmaps ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
-        desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
-
-        ImageStorage compressedORMX = ImageStorage(desc);
-
-        for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
-        {
-            ImageSubresource src = uncompressedORMX.GetSubresource({0, level});
-            ImageSubresource dst = compressedORMX.GetSubresource({0, level});
-
-            HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
+            desc.Type = TEXTURE_2D;
 
             switch (pbrPreset)
             {
             case ORMX_BC1:
-                TextureBlockCompression::CompressBC1(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                desc.Format = TEXTURE_FORMAT_BC1_UNORM;
                 break;
             case ORMX_BC3:
-                TextureBlockCompression::CompressBC3(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                desc.Format = TEXTURE_FORMAT_BC3_UNORM;
                 break;
             case ORMX_BC7:
-                TextureBlockCompression::CompressBC7(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                desc.Format = TEXTURE_FORMAT_BC7_UNORM;
                 break;
             default:
                 HK_ASSERT(0);
                 return -1;
-            }            
-        }
+            }
 
-        if (!ImportImage(compressedORMX, outputPBRMap))
-            return -1;
-    }
-    else
-    {
-        if (!ImportImage(uncompressedORMX, outputPBRMap))
-            return -1;
+            desc.Width      = uncompressedORMX.GetDesc().Width;
+            desc.Height     = uncompressedORMX.GetDesc().Height;
+            desc.SliceCount = 1;
+            desc.NumMipmaps = generateMipmaps ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
+            desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+            ImageStorage compressedORMX = ImageStorage(desc);
+
+            for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
+            {
+                ImageSubresource src = uncompressedORMX.GetSubresource({0, level});
+                ImageSubresource dst = compressedORMX.GetSubresource({0, level});
+
+                HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
+
+                switch (pbrPreset)
+                {
+                case ORMX_BC1:
+                    TextureBlockCompression::CompressBC1(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                    break;
+                case ORMX_BC3:
+                    TextureBlockCompression::CompressBC3(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                    break;
+                case ORMX_BC7:
+                    TextureBlockCompression::CompressBC7(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                    break;
+                default:
+                    HK_ASSERT(0);
+                    return -1;
+                }            
+            }
+
+            if (!ImportImage(compressedORMX, outputPBRMap))
+                return -1;
+        }
+        else
+        {
+            if (!ImportImage(uncompressedORMX, outputPBRMap))
+                return -1;
+        }
     }
 
     if (normal)
