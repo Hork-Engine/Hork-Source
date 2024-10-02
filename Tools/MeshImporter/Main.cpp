@@ -42,7 +42,9 @@ HK_NAMESPACE_BEGIN
 
 bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
 {
-    LOG("Importing mesh {}...\n", outputFile);
+    String fileName = PathUtils::sGetFilenameNoExt(outputFile) + ".mesh";
+
+    LOG("Importing mesh {}...\n", fileName);
 
     MeshResourceBuilder builder;
     auto meshResource = builder.Build(rawMesh);
@@ -53,10 +55,10 @@ bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
     }
 
 
-    File file = File::sOpenWrite(outputFile);
+    File file = File::sOpenWrite(fileName);
     if (!file)
     {
-        LOG("Failed to open \"{}\"\n", outputFile);
+        LOG("Failed to open \"{}\"\n", fileName);
         return false;
     }
 
@@ -86,9 +88,9 @@ bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
     String fileName;
     
     if (animationIndex > 0)
-        fileName = HK_FORMAT("{}_{}.asset", PathUtils::sGetFilenameNoExt(outputFile), animationIndex);
+        fileName = HK_FORMAT("{}_{}.anim", PathUtils::sGetFilenameNoExt(outputFile), animationIndex);
     else
-        fileName = outputFile;
+        fileName = PathUtils::sGetFilenameNoExt(outputFile) + ".anim";
     
     File file = File::sOpenWrite(fileName);
     if (!file)
@@ -275,7 +277,7 @@ int RunApplication()
     -s <filename>             -- Source filename
     -o <filename>             -- Output filename
     -m                        -- Tag to import mesh
-    -a <index/all> <filename> -- Tag to import animation(s)
+    -a <index/all>            -- Tag to import animation(s)
     -d <path>                 -- Tag for creating default meshes such as box, cylinder, sphere, etc
     )";
 
@@ -328,10 +330,9 @@ int RunApplication()
     i = args.Find("-a");
     if (i != -1)
     {
-        if (i + 2 < args.Count())
+        if (i + 1 < args.Count())
         {
             const char* value = args.At(i + 1);
-            outputFile = args.At(i + 2);
             if (!Core::Stricmp(value, "all"))
             {
                 for (uint32_t animationIndex = 0; animationIndex < mesh.Animations.Size(); ++animationIndex)
@@ -349,7 +350,7 @@ int RunApplication()
         }
         else
         {
-            LOG("Expected -a <index/all> <filename>\n");
+            LOG("Expected -a <index/all>\n");
             return -1;
         }
     }
