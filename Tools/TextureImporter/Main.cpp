@@ -67,6 +67,10 @@ int RunApplication()
     -alpha_premult          -- Set this flag if your texture has premultiplied alpha
     -format                 -- Output texture format (See Image.cpp, TexFormat)
 
+    -resample <width> <height>                  -- Scale input textures
+    -resample_edge_mode <mode_h> <mode_v>       -- Use edge mode for resampling (clamp/reflect/wrap/zero)
+    -resample_filter <filter_h> <filter_v>      -- Use filter for resampling (box/triangle/cubicspline/catmullrom/mitchell)
+
     Mipmap generation:
         Don't specify if you don't want to generate mipmaps
 
@@ -83,7 +87,7 @@ int RunApplication()
                                         catmullrom
                                         mitchell
 
-        -filter_3d <filter>     -- Mipmap resampling filter for 3D textures (Not yet implemented. Reserved for future.):
+        -mip_filter_3d <filter>  -- Mipmap resampling filter for 3D textures (Not yet implemented. Reserved for future.):
                                         average
                                         min
                                         max
@@ -99,6 +103,8 @@ int RunApplication()
     TEXTURE_FORMAT format = TEXTURE_FORMAT_UNDEFINED;
     ImageMipmapConfig mipmapConfig;
     bool generateMipmaps = false;
+    RawImageResampleParams resampleParams;
+    bool resample = false;
 
     i = args.Find("-h");
     if (i != -1)
@@ -129,11 +135,60 @@ int RunApplication()
         mipmapConfig.Filter = GetResampleFilter(args.At(i + 1));
         generateMipmaps = true;
     }
-    i = args.Find("-filter_3d");
+    i = args.Find("-mip_filter_3d");
     if (i != -1 && i + 1 < args.Count())
     {
         mipmapConfig.Filter3D = GetResampleFilter3D(args.At(i + 1));
         generateMipmaps = true;
+    }
+
+    i = args.Find("-resample");
+    if (i != -1 && i + 2 < args.Count())
+    {
+        resample = true;
+
+        resampleParams.ScaledWidth = Core::ParseUInt32(args.At(i + 1));
+        resampleParams.ScaledHeight = Core::ParseUInt32(args.At(i + 2));
+        if (resampleParams.ScaledWidth == 0 || resampleParams.ScaledHeight == 0)
+        {
+            LOG("Invalid resample size {} x {}\n", resampleParams.ScaledWidth, resampleParams.ScaledHeight);
+            return -1;
+        }
+        if (resampleParams.ScaledWidth > 4096 || resampleParams.ScaledHeight > 4096)
+        {
+            LOG("Resulting texture size is too large {} x {}\n", resampleParams.ScaledWidth, resampleParams.ScaledHeight);
+            return -1;
+        }
+
+        auto const& texFormat = GetTextureFormatInfo(format);
+        const uint32_t blockSize = texFormat.BlockSize;
+
+        resampleParams.ScaledWidth  = generateMipmaps ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(resampleParams.ScaledWidth), blockSize) : Align(resampleParams.ScaledWidth, blockSize);
+        resampleParams.ScaledHeight = generateMipmaps ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(resampleParams.ScaledHeight), blockSize) : Align(resampleParams.ScaledHeight, blockSize);
+
+        resampleParams.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+        if (texFormat.bHasAlpha && !(flags & IMAGE_STORAGE_NO_ALPHA))
+        {
+            resampleParams.Flags |= RAW_IMAGE_RESAMPLE_HAS_ALPHA;
+            if (flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED)
+                resampleParams.Flags |= RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED;
+        }
+        if (texFormat.bSRGB)
+            resampleParams.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
+    }
+
+    i = args.Find("-resample_edge_mode");
+    if (i != -1 && i + 2 < args.Count())
+    {
+        resampleParams.HorizontalEdgeMode = GetResampleEdgeMode(args.At(i + 1));
+        resampleParams.VerticalEdgeMode = GetResampleEdgeMode(args.At(i + 2));
+    }
+
+    i = args.Find("-resample_filter");
+    if (i != -1 && i + 2 < args.Count())
+    {
+        resampleParams.HorizontalFilter = GetResampleFilter(args.At(i + 1));
+        resampleParams.VerticalFilter = GetResampleFilter(args.At(i + 2));
     }
 
     i = args.Find("-o");
@@ -150,9 +205,33 @@ int RunApplication()
     i = args.Find("-s");
     if (i != -1 && i + 1 < args.Count())
     {
-        const char* filename = args.At(i + 1);
+        String filename = args.At(i + 1);
 
         LOG("Loading {}...\n", filename);
+
+        if (resample)
+        {
+            RawImage image = CreateRawImage(filename);
+            if (!image)
+            {
+                LOG("Failed to load {}\n", filename);
+                return -1;
+            }
+
+            RawImage resampled = ResampleRawImage(image, resampleParams);
+            if (!resampled)
+            {
+                LOG("Failed to resample {}\n", filename);
+                return -1;
+            }
+
+            filename += ".resample.png";
+            if (!WriteImage(filename, resampled))
+            {
+                LOG("Failed to write resampled image\n");
+                return -1;
+            }
+        }
 
         source = CreateImage(filename, generateMipmaps ? &mipmapConfig : nullptr, flags, format);
         if (!source)
