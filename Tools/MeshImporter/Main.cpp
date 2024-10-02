@@ -101,6 +101,172 @@ bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
     return true;
 }
 
+void CreateDefaultMeshes(StringView path)
+{
+    {
+        RawMesh mesh;
+        mesh.CreateBox(Float3(1), 1.0f);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+
+        auto file = File::sOpenWrite(path / "box.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateSphere(0.5f, 1.0f);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "sphere.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateCylinder(0.5f, 1.0f, 1.0f);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "cylinder.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateCone(0.5f, 1.0f, 1.0f);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "cone.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateCapsule(0.5f, 1.0f, 1.0f);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "capsule.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreatePlaneXZ(256, 256, Float2(256));
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+
+        auto file = File::sOpenWrite(path / "plane_xz.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreatePlaneXY(256, 256, Float2(256));
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+
+        auto file = File::sOpenWrite(path / "plane_xy.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreatePlaneXZ(1, 1, Float2(1));
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+
+        auto file = File::sOpenWrite(path / "quad_xz.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreatePlaneXY(1, 1, Float2(1));
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+
+        auto file = File::sOpenWrite(path / "quad_xy.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateSkybox(Float3(1), 1);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "skybox.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateSkydome(0.5f, 1, 32, 32, false);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "skydome.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+
+    {
+        RawMesh mesh;
+        mesh.CreateSkydome(0.5f, 1, 32, 32, true);
+
+        MeshResourceBuilder builder;
+        auto resource = builder.Build(mesh);
+        HK_ASSERT(resource);
+        resource->GenerateBVH();
+
+        auto file = File::sOpenWrite(path / "skydome_hemisphere.mesh");
+        HK_ASSERT(file);
+        resource->Write(file);
+    }
+}
+
 int RunApplication()
 {
     Core::SetEnableConsoleOutput(true);
@@ -110,6 +276,7 @@ int RunApplication()
     -o <filename>             -- Output filename
     -m                        -- Tag to import mesh
     -a <index/all> <filename> -- Tag to import animation(s)
+    -d <path>                 -- Tag for creating default meshes such as box, cylinder, sphere, etc
     )";
 
     auto& args = CoreApplication::sArgs();
@@ -123,6 +290,13 @@ int RunApplication()
     if (i != -1)
     {
         LOG(help);
+        return 0;
+    }
+
+    i = args.Find("-d");
+    if (i != -1 && i + 1 < args.Count())
+    {
+        CreateDefaultMeshes(args.At(i + 1));
         return 0;
     }
 
