@@ -279,8 +279,8 @@ void SampleApplication::CreateResources()
         resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
         resourceMngr.GetResource<MeshResource>("/Root/default/capsule.mesh"),
         resourceMngr.GetResource<MaterialResource>("/Root/default/materials/default.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/default.mg"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/mirror.mg"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/mirror.mat"),
         resourceMngr.GetResource<TextureResource>("/Root/dirt.png"),
         resourceMngr.GetResource<TextureResource>("/Root/blank256.webp"),
         resourceMngr.GetResource<TextureResource>("/Root/blank512.webp")
@@ -336,7 +336,7 @@ void SampleApplication::CreateScene()
         
         Ref<MaterialLibrary> matlib = materialMngr.CreateLibrary();
         Material* material = matlib->CreateMaterial("render_to_tex_material");
-        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/mirror.mg"));
+        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/mirror.mat"));
         material->SetTexture(0, m_OffscreenRenderView->GetTextureHandle());
         face->SetMaterial(material);
     }

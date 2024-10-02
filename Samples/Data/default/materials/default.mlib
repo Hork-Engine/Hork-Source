@@ -1,7 +1,6 @@
 white
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/white.png"
@@ -18,8 +17,7 @@ white
 
 gray
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/gray.png"
@@ -36,8 +34,7 @@ gray
 
 dirt
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/dirt.png"
@@ -54,8 +51,7 @@ dirt
 
 dirt_sslr
 {
-	//Material "/Root/default/materials/default_sslr.mat"
-	Material "/Root/default/materials/mg/default_sslr.mg"
+	Material "/Root/default/materials/compiled/default_sslr.mat"
 	Textures
 	[
 		"/Root/dirt.png"
@@ -73,8 +69,7 @@ dirt_sslr
 
 grid8
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/grid8.webp"
@@ -91,8 +86,7 @@ grid8
 
 blank256
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/blank256.webp"
@@ -109,8 +103,7 @@ blank256
 
 blank512
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/blank512.webp"
@@ -127,8 +120,7 @@ blank512
 
 blank512_glossy
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/blank512.webp"
@@ -145,8 +137,7 @@ blank512_glossy
 
 red512
 {
-	//Material "/Root/default/materials/default.mat"
-	Material "/Root/default/materials/mg/default.mg"
+	Material "/Root/default/materials/compiled/default.mat"
 	Textures
 	[
 		"/Root/red512.png"
@@ -163,7 +154,7 @@ red512
 
 MetalRoughSpheres
 {
-	Material "/Root/default/materials/mg/metal_roughness.mg"
+	Material "/Root/default/materials/compiled/metal_roughness.mat"
 	Textures
 	[
 		"/Root/models/MetalRoughSpheres/Spheres_BaseColor.png"
@@ -173,7 +164,7 @@ MetalRoughSpheres
 
 skybox
 {
-	Material "/Root/default/materials/mg/skybox.mg"
+	Material "/Root/default/materials/compiled/skybox.mat"
 	Textures
 	[
 		"internal_skybox"

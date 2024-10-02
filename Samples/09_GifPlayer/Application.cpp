@@ -232,9 +232,9 @@ void SampleApplication::CreateResources()
     // List of resources used in scene
     ResourceID sceneResources[] = {
         resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/default.mg"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/default_sslr.mg"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/unlit_clamped.mg"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_sslr.mat"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/unlit_clamped.mat"),
         resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
         resourceMngr.GetResource<TextureResource>("/Root/dirt.png")
     };
@@ -276,7 +276,7 @@ void SampleApplication::CreateScene()
 
         Ref<MaterialLibrary> matlib = materialMngr.CreateLibrary();
         Material* material = matlib->CreateMaterial("cinematic_surface");
-        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/unlit_clamped.mg"));
+        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/unlit_clamped.mat"));
         material->SetTexture(0, m_GifPlayer.GetTextureHandle());
         face->SetMaterial(material);
     }

@@ -261,7 +261,7 @@ void SampleApplication::CreateResources()
     ResourceID sceneResources[] = {
         resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
         resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/mg/default.mg"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
         resourceMngr.GetResource<TextureResource>("/Root/grid8.webp"),
         resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
         resourceMngr.GetResource<TextureResource>("/Root/gray.png")
