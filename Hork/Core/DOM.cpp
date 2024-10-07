@@ -525,7 +525,7 @@ void Parser::Tokenizer::NextToken()
 
     // Check member
     m_Token.Begin = m_Cur;
-    while ((*m_Cur >= 'a' && *m_Cur <= 'z') || (*m_Cur >= 'A' && *m_Cur <= 'Z') || (*m_Cur >= '0' && *m_Cur <= '9') || *m_Cur == '_' || *m_Cur == '.' || *m_Cur == '$')
+    while ((*m_Cur >= 'a' && *m_Cur <= 'z') || (*m_Cur >= 'A' && *m_Cur <= 'Z') || (*m_Cur >= '0' && *m_Cur <= '9') || *m_Cur == '_' || *m_Cur == '.' || *m_Cur == '$' || *m_Cur == '\\' || *m_Cur == '/' || *m_Cur == '-')
     {
         m_Cur++;
     }
