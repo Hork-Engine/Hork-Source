@@ -379,9 +379,9 @@ class ImageStorage final
 public:
     ImageStorage() = default;
 
-    ImageStorage(ImageStorageDesc const& _Desc)
+    explicit ImageStorage(ImageStorageDesc const& Desc)
     {
-        Reset(_Desc);
+        Reset(Desc);
     }
 
     ~ImageStorage() = default;
