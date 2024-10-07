@@ -53,6 +53,7 @@ ConsoleVar r_VertexLight("r_VertexLight"_s, "0"_s);
 ConsoleVar r_MotionBlur("r_MotionBlur"_s, "1"_s);
 ConsoleVar r_RenderMeshes("r_RenderMeshes"_s, "1"_s, CVAR_CHEAT);
 ConsoleVar r_RenderTerrain("r_RenderTerrain"_s, "1"_s, CVAR_CHEAT);
+ConsoleVar r_Brightness("r_Brightness"_s, "1"_s);
 
 extern ConsoleVar r_HBAO;
 extern ConsoleVar r_HBAODeinterleaved;
@@ -992,6 +993,11 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     }
 
     view->Exposure = camera->GetExposure();
+
+    if (Math::IsNan(worldRenderView->Brightness))
+        view->Brightness = r_Brightness.GetFloat();
+    else
+        view->Brightness = worldRenderView->Brightness;
 
     if (worldRenderView->ColorGrading)
     {

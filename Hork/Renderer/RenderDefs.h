@@ -861,6 +861,8 @@ struct RenderViewData
 
     float Exposure;
 
+    float Brightness;
+
     /// Source color grading texture
     RHI::ITexture* ColorGradingLUT;
     /// Current color grading texture

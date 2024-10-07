@@ -137,6 +137,7 @@ public:
     Ref<VignetteParameters>     Vignette;
     TEXTURE_FORMAT              TextureFormat = TEXTURE_FORMAT_SRGBA8_UNORM;
     //uint32_t                  RenderingOrder{}; // TODO
+    float                       Brightness = std::numeric_limits<float>::quiet_NaN();
 
                                 WorldRenderView();
                                 ~WorldRenderView();

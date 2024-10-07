@@ -57,7 +57,6 @@ ConsoleVar r_BloomParam1("r_BloomParam1"_s, "0.3"_s);
 ConsoleVar r_BloomParam2("r_BloomParam2"_s, "0.04"_s);
 ConsoleVar r_BloomParam3("r_BloomParam3"_s, "0.01"_s);
 ConsoleVar r_ExposureScale("r_ExposureScale"_s, "1.0"_s);
-ConsoleVar r_Brightness("r_Brightness"_s, "1"_s);
 ConsoleVar r_TessellationLevel("r_TessellationLevel"_s, "0.05"_s);
 ConsoleVar r_SSLR("r_SSLR"_s, "1"_s, 0, "Required to rebuld materials to apply"_s);
 ConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"_s, "10"_s);
@@ -532,7 +531,7 @@ void RenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->VignetteOuterRadiusSqr      = GRenderView->VignetteOuterRadiusSqr;
     pViewCBuf->VignetteInnerRadiusSqr      = GRenderView->VignetteInnerRadiusSqr;
     pViewCBuf->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
-    pViewCBuf->ViewBrightness              = Math::Saturate(r_Brightness.GetFloat());
+    pViewCBuf->ViewBrightness              = GRenderView->Brightness;
 
     pViewCBuf->SSLRSampleOffset  = r_SSLRSampleOffset.GetFloat();
     pViewCBuf->SSLRMaxDist       = r_SSLRMaxDist.GetFloat();

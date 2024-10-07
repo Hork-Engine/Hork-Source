@@ -207,6 +207,7 @@ void SampleApplication::Initialize()
     m_OffscreenRenderView->bClearBackground = true;
     m_OffscreenRenderView->bAllowMotionBlur = false;
     m_OffscreenRenderView->TextureFormat = TEXTURE_FORMAT_RGBA16_FLOAT;
+    m_OffscreenRenderView->Brightness = 1;
     m_OffscreenRenderView->AcquireRenderTarget();
 
     sGetStateMachine().Bind("State_Play", this, &SampleApplication::OnStartPlay, {}, &SampleApplication::OnUpdate);
