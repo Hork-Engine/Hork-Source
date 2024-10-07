@@ -240,7 +240,7 @@ void SampleApplication::ShowIntro(bool show)
 {
     if (show)
     {
-        m_Cinematic.Open("/Root/ai_generated.mpg");
+        m_Cinematic.Open("/Root/cinematic/ai_generated.mpg");
         m_Cinematic.SetLoop(false);
 
         if (!m_IntroWidget)
@@ -320,7 +320,7 @@ void SampleApplication::CreateScene()
         face->SetMesh(surfaceHandle);
         face->SetLocalBoundingBox(rawMesh.CalcBoundingBox());
 
-        m_Cinematic.Open("/Root/ai_generated.mpg");
+        m_Cinematic.Open("/Root/cinematic/ai_generated.mpg");
         m_Cinematic.SetLoop(true);
         m_Cinematic.E_OnImageUpdate.Bind(this, &SampleApplication::OnVideoFrameUpdated);
 
@@ -348,7 +348,7 @@ void SampleApplication::CreateScene()
     }
 
     // Room
-    CreateSceneFromMap(m_World, "/Root/sample8_9.map", "dirt_sslr");
+    CreateSceneFromMap(m_World, "/Root/maps/sample8_9.map", "dirt_sslr");
 }
 
 GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& rotation)

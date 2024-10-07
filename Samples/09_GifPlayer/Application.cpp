@@ -298,7 +298,7 @@ void SampleApplication::CreateScene()
     }
 
     // Room
-    CreateSceneFromMap(m_World, "/Root/sample8_9.map", "dirt");
+    CreateSceneFromMap(m_World, "/Root/maps/sample8_9.map", "dirt");
 }
 
 GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& rotation)

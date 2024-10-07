@@ -301,7 +301,7 @@ void SampleApplication::CreateScene()
     auto& materialMngr = GameApplication::sGetMaterialManager();
 
     // Create level geometry
-    CreateSceneFromMap(m_World, "/Root/sample4.map", "dirt");
+    CreateSceneFromMap(m_World, "/Root/maps/sample4.map", "dirt");
 
     // Create mirror
     {

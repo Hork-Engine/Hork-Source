@@ -215,7 +215,7 @@ void SampleApplication::CreateScene()
     auto& resourceMngr = GameApplication::sGetResourceManager();
     auto& materialMngr = GameApplication::sGetMaterialManager();
 
-    CreateSceneFromMap(m_World, "/Root/sample3.map");
+    CreateSceneFromMap(m_World, "/Root/maps/sample3.map");
 
     Float3 playerSpawnPosition = Float3(12,0,0);
     Quat playerSpawnRotation = Quat::sRotationY(Math::_HALF_PI);

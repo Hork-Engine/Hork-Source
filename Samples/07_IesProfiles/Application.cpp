@@ -275,7 +275,7 @@ void SampleApplication::CreateResources()
 
 void SampleApplication::CreateScene()
 {
-    CreateSceneFromMap(m_World, "/Root/sample7.map", "gray");
+    CreateSceneFromMap(m_World, "/Root/maps/sample7.map", "gray");
 
     auto& resourceMngr = GameApplication::sGetResourceManager();
     auto& materialMngr = GameApplication::sGetMaterialManager();
