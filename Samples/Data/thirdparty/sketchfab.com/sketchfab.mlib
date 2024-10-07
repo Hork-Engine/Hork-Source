@@ -1,0 +1,11 @@
+thirdparty/sketchfab/barrel
+{
+	Material "/Root/default/materials/compiled/default_orm.mat"
+	Textures
+	[
+		"/Root/thirdparty/sketchfab.com/barrel/albedo.tex"
+		"/Root/black.png" // Emissive
+		"/Root/thirdparty/sketchfab.com/barrel/orm.tex"
+		"/Root/thirdparty/sketchfab.com/barrel/normal.tex"		
+	]
+}

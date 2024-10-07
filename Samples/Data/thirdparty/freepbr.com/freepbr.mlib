@@ -1,0 +1,11 @@
+grime-alley-brick2
+{
+	Material "/Root/default/materials/compiled/default_orm.mat"
+	Textures
+	[
+		"/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"
+		"/Root/black.png" // Emissive
+		"/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"
+		"/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"		
+	]
+}

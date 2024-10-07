@@ -1,0 +1,9 @@
+thirdparty/mixamo/paladin
+{
+	Material "/Root/thirdparty/mixamo/paladin/paladin.mg"
+	Textures
+	[
+		"/Root/thirdparty/mixamo/paladin/albedo.tex"
+		"/Root/thirdparty/mixamo/paladin/normal.tex"
+	]
+}
