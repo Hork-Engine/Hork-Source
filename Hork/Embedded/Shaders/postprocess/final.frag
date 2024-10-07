@@ -63,9 +63,6 @@ void main() {
     }
 
     vec3 fragColor = FS_FragColor.rgb;
-	
-	// Apply brightness
-	fragColor *= GetFrameBrightness();
 
     // Tonemapping
     if ( IsTonemappingEnabled() ) {
@@ -82,13 +79,13 @@ void main() {
         //}
     }
     
-	// Apply brightness
-    //fragColor *= GetFrameBrightness();
-	
-	//float srclum = builtin_luminance(fragColor);
+    // Apply brightness
+    fragColor *= GetFrameBrightness();
+
+    //float srclum = builtin_luminance(fragColor);
     //float lum = srclum*GetFrameBrightness();
-	//fragColor = fragColor * (lum / srclum);
-	
+    //fragColor = fragColor * (lum / srclum);
+
     // Saturate color
     fragColor = saturate( fragColor );
 
@@ -115,7 +112,7 @@ void main() {
 
     //float srclum = builtin_luminance(FS_FragColor.rgb);
     //float lum = floor(srclum*128)/128;
-	//FS_FragColor.rgb = FS_FragColor.rgb/srclum * lum;
+    //FS_FragColor.rgb = FS_FragColor.rgb/srclum * lum;
 
     // Pack pixel luminance to alpha channel for FXAA algorithm
     FS_FragColor.a = IsFXAAEnabled()
