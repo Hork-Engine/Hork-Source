@@ -104,8 +104,13 @@ public:
 
     void                        AddCodeBlock(String sourceName, String sourceCode);
 
+    struct TranslationParams
+    {
+        bool IsDebugMode = false;
+    };
+
     /// Translate source code to SpirV
-    UniqueRef<MaterialBinary>   Translate();
+    UniqueRef<MaterialBinary>   Translate(TranslationParams const& params);
 };
 
 

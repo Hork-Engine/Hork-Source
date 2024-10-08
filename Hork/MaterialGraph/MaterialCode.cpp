@@ -39,17 +39,6 @@ HK_NAMESPACE_BEGIN
 
 using namespace RHI;
 
-ConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"_s,
-#ifdef HK_DEBUG
-    "1"_s,
-#else
-    "0"_s,
-#endif
-    CVAR_CHEAT);
-
-extern ConsoleVar r_SSLR;
-extern ConsoleVar r_HBAO;
-
 namespace
 {
     constexpr SAMPLER_FILTER SamplerFilterLUT[] =
@@ -288,15 +277,17 @@ private:
 
     void AddPredefines(ShaderCompiler::SourceList& sources)
     {
-        if (r_MaterialDebugMode)
+        if (IsDebugMode)
             sources.Add("#define DEBUG_RENDER_MODE\n");
-        if (r_SSLR)
+        //if (r_SSLR)
             sources.Add("#define WITH_SSLR\n");
-        if (r_HBAO)
+        //if (r_HBAO)
             sources.Add("#define WITH_SSAO\n");
     }
 
 public:
+    bool IsDebugMode = false;
+
     bool CreateDepth(MaterialCommonProperties const& properties)
     {
         Clear();
@@ -577,7 +568,7 @@ public:
     }
 };
 
-UniqueRef<MaterialBinary> MaterialCode::Translate()
+UniqueRef<MaterialBinary> MaterialCode::Translate(TranslationParams const& params)
 {
     UniqueRef<MaterialBinary> binary = MakeUnique<MaterialBinary>();
 
@@ -605,6 +596,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
     {
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateDepth(properties))
                 return {};
 
@@ -657,6 +649,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateDepthVelocity(properties))
                 return {};
 
@@ -719,6 +712,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateLight(properties))
                 return {};
 
@@ -830,6 +824,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateShadowMap(properties))
                 return {};
 
@@ -906,6 +901,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateOmniShadowMap(properties))
                 return {};
 
@@ -960,6 +956,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateFeedback(properties))
                 return {};
 
@@ -1024,6 +1021,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateOutline(properties))
                 return {};
 
@@ -1078,6 +1076,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateWireframe(properties))
                 return {};
 
@@ -1135,6 +1134,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateNormals(properties))
                 return {};
 
@@ -1191,6 +1191,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateLightmap(properties))
                 return {};
 
@@ -1253,6 +1254,7 @@ UniqueRef<MaterialBinary> MaterialCode::Translate()
 
         {
             MaterialPassTranslator translator;
+            translator.IsDebugMode = params.IsDebugMode;
             if (!translator.CreateVertexLight(properties))
                 return {};
 

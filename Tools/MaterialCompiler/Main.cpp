@@ -41,7 +41,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-bool CompileMaterial(StringView input, StringView output)
+bool CompileMaterial(StringView input, StringView output, bool debugMode)
 {
     LOG("Loading {}\n", input);
     auto file = File::sOpenRead(input);
@@ -60,7 +60,7 @@ bool CompileMaterial(StringView input, StringView output)
 
     LOG("Compiling {}\n", input);
     MaterialResourceBuilder builder;
-    auto material = builder.Build(*graph);
+    auto material = builder.Build(*graph, debugMode);
     if (!material)
     {
         LOG("Failed to build material graph {}\n", input);
@@ -87,6 +87,7 @@ int RunApplication()
     -h                      -- Help
     -s <filename>           -- Source filename (material graph)
     -o <filename>           -- Output filename
+    -debug                  -- Compile material in debug mode
     )";
 
     auto& args = CoreApplication::sArgs();
@@ -120,9 +121,11 @@ int RunApplication()
 
     outputFile = args.At(i + 1);
 
+    bool debugMode = args.Find("-debug") != -1;
+
     ShaderCompiler::sInitialize();
 
-    bool result = CompileMaterial(inputFile, outputFile);
+    bool result = CompileMaterial(inputFile, outputFile, debugMode);
 
     ShaderCompiler::sDeinitialize();
 

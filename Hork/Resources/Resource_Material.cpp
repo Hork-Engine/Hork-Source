@@ -45,7 +45,13 @@ UniqueRef<MaterialResource> MaterialResource::sLoad(IBinaryStreamReadInterface& 
         if (!graph)
             return {};
 
-        return MaterialResourceBuilder().Build(*graph.RawPtr());
+#ifdef HK_DEBUG
+        bool debugMode = true;
+#else
+        bool debugMode = false;
+#endif
+
+        return MaterialResourceBuilder().Build(*graph.RawPtr(), debugMode);
     }
 
     UniqueRef<MaterialResource> resource = MakeUnique<MaterialResource>();
@@ -108,14 +114,17 @@ uint32_t MaterialResource::GetUniformVectorCount() const
     return m_Binary->UniformVectorCount;
 }
 
-UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph)
+UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph, bool debugMode)
 {
     auto materialCode = graph.Build();
     if (!materialCode)
         return {};
 
+    MaterialCode::TranslationParams translationParams;
+    translationParams.IsDebugMode = debugMode;
+
     auto material = MakeUnique<MaterialResource>();
-    material->m_Binary = materialCode->Translate();
+    material->m_Binary = materialCode->Translate(translationParams);
 
     return material;
 }

@@ -71,7 +71,7 @@ using MaterialHandle = ResourceHandle<MaterialResource>;
 class MaterialResourceBuilder
 {
 public:
-    UniqueRef<MaterialResource> Build(class MaterialGraph& graph);
+    UniqueRef<MaterialResource> Build(class MaterialGraph& graph, bool debugMode);
 };
 
 HK_NAMESPACE_END
