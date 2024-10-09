@@ -42,12 +42,12 @@ void DirectionalLightComponent::UpdateEffectiveColor()
     const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
     float energy = m_IlluminanceInLux * EnergyUnitScale;
 
-    Color4 temperatureColor;
+    Color3 temperatureColor;
     temperatureColor.SetTemperature(m_Temperature);
 
-    m_EffectiveColor[0] = m_Color[0] * temperatureColor[0] * energy;
-    m_EffectiveColor[1] = m_Color[1] * temperatureColor[1] * energy;
-    m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * energy;
+    m_EffectiveColor[0] = Math::Pow(m_Color[0] * temperatureColor[0], 2.2f) * energy;
+    m_EffectiveColor[1] = Math::Pow(m_Color[1] * temperatureColor[1], 2.2f) * energy;
+    m_EffectiveColor[2] = Math::Pow(m_Color[2] * temperatureColor[2], 2.2f) * energy;
 }
 
 void DirectionalLightComponent::DrawDebug(DebugRenderer& renderer)

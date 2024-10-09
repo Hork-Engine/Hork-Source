@@ -48,9 +48,9 @@ public:
 
     float                       GetTemperature() const { return m_Temperature; }
 
-    void                        SetColor(Float3 const& color) { m_Color = color; }
+    void                        SetColor(Color3 const& color) { m_Color = color; }
 
-    Float3 const&               GetColor() const { return m_Color; }
+    Color3 const&               GetColor() const { return m_Color; }
 
     void                        SetIlluminance(float illuminanceInLux) { m_IlluminanceInLux = illuminanceInLux; }
 
@@ -87,7 +87,7 @@ public:
     void                        DrawDebug(DebugRenderer& renderer);
 
 private:
-    Float3                      m_Color = Float3(1.0f);
+    Color3                      m_Color;
     float                       m_Temperature = 6590.0f;
     float                       m_IlluminanceInLux = 110000.0f;
     Float4                      m_EffectiveColor;

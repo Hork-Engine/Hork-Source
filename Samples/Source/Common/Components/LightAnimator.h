@@ -122,7 +122,7 @@ public:
 
             float speed = 10;
             float brightness = GetBrightness(sequence, TimeOffset + GetWorld()->GetTick().FrameTime * speed, 0);
-            lightComponent->SetColor(Float3(brightness));
+            lightComponent->SetColor(Color3(brightness));
         }        
     }
 

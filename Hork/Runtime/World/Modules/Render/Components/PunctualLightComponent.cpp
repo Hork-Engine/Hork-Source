@@ -114,14 +114,14 @@ void PunctualLightComponent::UpdateEffectiveColor()
         candela = m_Lumens * lumensToCandela;
     }
 
-    Color4 temperatureColor;
+    Color3 temperatureColor;
     temperatureColor.SetTemperature(m_Temperature);
 
     float scale = candela * EnergyUnitScale;
 
-    m_EffectiveColor[0] = m_Color[0] * temperatureColor[0] * scale;
-    m_EffectiveColor[1] = m_Color[1] * temperatureColor[1] * scale;
-    m_EffectiveColor[2] = m_Color[2] * temperatureColor[2] * scale;
+    m_EffectiveColor[0] = Math::Pow(m_Color[0] * temperatureColor[0], 2.2f) * scale;
+    m_EffectiveColor[1] = Math::Pow(m_Color[1] * temperatureColor[1], 2.2f) * scale;
+    m_EffectiveColor[2] = Math::Pow(m_Color[2] * temperatureColor[2], 2.2f) * scale;
 }
 
 void PunctualLightComponent::UpdateWorldBoundingBox()

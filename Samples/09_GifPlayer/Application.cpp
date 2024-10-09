@@ -155,26 +155,20 @@ void SampleApplication::OnUpdate(float timeStep)
 
 void SampleApplication::OnVideoFrameUpdated(uint8_t const* data, uint32_t width, uint32_t height)
 {
-    uint32_t pixcount = width * height;
-    float r_avg = 0;
-    float g_avg = 0;
-    float b_avg = 0;
+    uint32_t r_avg = 0;
+    uint32_t g_avg = 0;
+    uint32_t b_avg = 0;
     uint32_t total = 0;
-    for (uint32_t i = 0; i < pixcount; i += 10)
+    for (uint32_t i = 0, pixcount = width * height; i < pixcount; i += 10)
     {
         uint8_t const* color = data + i * 4;
-
-        b_avg += color[0] / 255.0f;
-        g_avg += color[1] / 255.0f;
-        r_avg += color[2] / 255.0f;
-        total++;
+        b_avg += color[0];
+        g_avg += color[1];
+        r_avg += color[2];
+        total += 255;
     }
-
-    r_avg = ColorUtils::LinearFromSRGB(r_avg / total);
-    g_avg = ColorUtils::LinearFromSRGB(g_avg / total);
-    b_avg = ColorUtils::LinearFromSRGB(b_avg / total);
     PunctualLightComponent* light = m_World->GetComponent(m_Light);
-    light->SetColor({r_avg,g_avg,b_avg});
+    light->SetColor({static_cast<float>(r_avg) / total,static_cast<float>(g_avg) / total,static_cast<float>(b_avg) / total});
 }
 
 void SampleApplication::OnStartPlay()

@@ -428,9 +428,24 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         torch->CreateComponent(light);
         light->SetCastShadow(true);
         light->SetLumens(100);
-        light->SetTemperature(3500);
+        light->SetTemperature(2600);
         LightAnimator* animator;
         torch->CreateComponent(animator);
+
+        //RawImage image;
+        //image.Reset(1024, 256, RAW_IMAGE_FORMAT_RGB8);
+        //uint8_t* pixels = reinterpret_cast<uint8_t*>(image.GetData());
+        //Color3 t;
+        //for (int y=0;y<256;++y)
+        //    for (int x=0;x<1024;++x)
+        //    {
+        //        t.SetTemperature(Math::Lerp(1000.0f, 12000.0f, x / 1023.0f));
+
+        //        //t = t.ToSRGB();
+        //        t.GetByte(pixels[0], pixels[1], pixels[2]);
+        //        pixels += 3;                
+        //    }
+        //WriteImage("temperature.png", image);
     }
 
     // Create view camera

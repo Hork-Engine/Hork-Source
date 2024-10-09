@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/Color.h>
 #include <Hork/Geometry/BV/BvSphere.h>
 #include <Hork/Geometry/BV/BvOrientedBox.h>
 #include <Hork/Math/Quat.h>
@@ -60,9 +61,9 @@ public:
 
     float                       GetTemperature() const { return m_Temperature; }
 
-    void                        SetColor(Float3 const& color) { m_Color = color; }
+    void                        SetColor(Color3 const& color) { m_Color = color; }
 
-    Float3 const&               GetColor() const { return m_Color; }
+    Color3 const&               GetColor() const { return m_Color; }
 
     void                        SetRadius(float radius);
 
@@ -142,7 +143,7 @@ private:
     uint32_t                    m_PrimID;
     bool                        m_CastShadow = false;
 
-    Float3                      m_Color = Float3(1.0f);
+    Color3                      m_Color;
     float                       m_Temperature = 6590.0f;
     float                       m_Lumens = 3000.0f;
     float                       m_PhotometricIntensity = 1;
