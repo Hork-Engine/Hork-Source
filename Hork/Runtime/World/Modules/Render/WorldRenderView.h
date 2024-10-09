@@ -126,7 +126,7 @@ public:
     // Public properties
     //
 
-    Color4                      BackgroundColor  = Color4(0.3f, 0.3f, 0.8f);
+    Color3                      BackgroundColor  = Color3(0.3f, 0.3f, 0.8f);
     bool                        bClearBackground = false;
     bool                        bWireframe       = false;
     bool                        bDrawDebug       = false;

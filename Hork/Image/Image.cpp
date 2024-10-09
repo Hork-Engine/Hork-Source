@@ -2644,15 +2644,14 @@ Color4 ApplyColorGrading(ColorGradingSettings const& Settings, Color4 const& Col
 {
     float lum = Color.GetLuminance();
 
-    Color4 mult;
+    Color3 mult;
 
     mult.SetTemperature(Math::Clamp(Settings.ColorTemperature, 1000.0f, 40000.0f));
 
-    Color4 c;
+    Color3 c;
     c.R = Math::Lerp(Color.R, Color.R * mult.R, Settings.ColorTemperatureStrength.X);
     c.G = Math::Lerp(Color.G, Color.G * mult.G, Settings.ColorTemperatureStrength.Y);
     c.B = Math::Lerp(Color.B, Color.B * mult.B, Settings.ColorTemperatureStrength.Z);
-    c.A = 1;
 
     float newLum = c.GetLuminance();
     float scale = Math::Lerp(1.0f, (newLum > 1e-6) ? (lum / newLum) : 1.0f, Settings.ColorTemperatureBrightnessNormalization);

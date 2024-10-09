@@ -170,9 +170,9 @@ void SampleApplication::OnVideoFrameUpdated(uint8_t const* data, uint32_t width,
         total++;
     }
 
-    r_avg = LinearFromSRGB(r_avg / total);
-    g_avg = LinearFromSRGB(g_avg / total);
-    b_avg = LinearFromSRGB(b_avg / total);
+    r_avg = ColorUtils::LinearFromSRGB(r_avg / total);
+    g_avg = ColorUtils::LinearFromSRGB(g_avg / total);
+    b_avg = ColorUtils::LinearFromSRGB(b_avg / total);
     PunctualLightComponent* light = m_World->GetComponent(m_Light);
     light->SetColor({r_avg,g_avg,b_avg});
 }

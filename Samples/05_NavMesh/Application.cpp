@@ -330,7 +330,7 @@ void SampleApplication::Initialize()
     m_WorldRenderView = MakeRef<WorldRenderView>();
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bClearBackground = true;
-    m_WorldRenderView->BackgroundColor = Color4(0.2f, 0.2f, 0.3f, 1);
+    m_WorldRenderView->BackgroundColor = Color3(0.2f, 0.2f, 0.3f);
     m_WorldRenderView->bDrawDebug = true;
     mainViewport->SetWorldRenderView(m_WorldRenderView);
 

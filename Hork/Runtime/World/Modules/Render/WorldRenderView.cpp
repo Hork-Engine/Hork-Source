@@ -70,12 +70,12 @@ void ColorGradingParameters::SetTemperature(float temperature)
 {
     m_Temperature = temperature;
 
-    Color4 color;
+    Color3 color;
     color.SetTemperature(m_Temperature);
 
-    m_TemperatureScale.X           = color.R;
-    m_TemperatureScale.Y           = color.G;
-    m_TemperatureScale.Z           = color.B;
+    m_TemperatureScale.X = color.R;
+    m_TemperatureScale.Y = color.G;
+    m_TemperatureScale.Z = color.B;
 }
 
 void ColorGradingParameters::SetTemperatureStrength(Float3 const& temperatureStrength)
@@ -106,7 +106,7 @@ void ColorGradingParameters::SetDefaults()
     m_AdaptationSpeed         = 2;
     m_Temperature             = 6500.0f;
 
-    Color4 color;
+    Color3 color;
     color.SetTemperature(m_Temperature);
     m_TemperatureScale.X = color.R;
     m_TemperatureScale.Y = color.G;

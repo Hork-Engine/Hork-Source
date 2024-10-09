@@ -805,9 +805,9 @@ void RawImage::PremultiplyAlpha()
         {
             float scale = data[3] / 255.0f;
 
-            data[0] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[0]) * scale);
-            data[1] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[1]) * scale);
-            data[2] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[2]) * scale);
+            data[0] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[0]) * scale);
+            data[1] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[1]) * scale);
+            data[2] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[2]) * scale);
         }
 
         data += 4;
@@ -831,9 +831,9 @@ void RawImage::UnpremultiplyAlpha()
         {
             float scale = 255.0f / data[3];
 
-            data[0] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[0]) * scale);
-            data[1] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[1]) * scale);
-            data[2] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[2]) * scale);
+            data[0] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[0]) * scale);
+            data[1] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[1]) * scale);
+            data[2] = ColorUtils::LinearToSRGB_UChar(ColorUtils::LinearFromSRGB_UChar(data[2]) * scale);
         }
 
         data += 4;
@@ -1334,9 +1334,9 @@ void LinearToPremultipliedAlphaSRGB(const float* pSrc,
             }
         }
 
-        dst[0] = LinearToSRGB_UChar(r);
-        dst[1] = LinearToSRGB_UChar(g);
-        dst[2] = LinearToSRGB_UChar(b);
+        dst[0] = ColorUtils::LinearToSRGB_UChar(r);
+        dst[1] = ColorUtils::LinearToSRGB_UChar(g);
+        dst[2] = ColorUtils::LinearToSRGB_UChar(b);
         dst[3] = FloatToU8(src[3]);
     }
 }

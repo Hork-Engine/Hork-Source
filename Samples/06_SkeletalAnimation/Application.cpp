@@ -165,7 +165,6 @@ void SampleApplication::Initialize()
     // Set rendering parameters
     m_WorldRenderView = MakeRef<WorldRenderView>();
     m_WorldRenderView->SetWorld(m_World);
-    m_WorldRenderView->BackgroundColor = Color4(0.02f,0.02f,0.02f,0.0f);
     m_WorldRenderView->bDrawDebug = true;
     m_Viewport->SetWorldRenderView(m_WorldRenderView);
 
@@ -334,7 +333,7 @@ void SampleApplication::CreateScene()
 {
     SpawnPaladin(Float3(0,0,-2), Quat::sIdentity(), 1);
 
-    // Boxes
+    // Barrels
     {
         Float3 positions[] = {
             Float3( -2.5, 0.5, -1 ),

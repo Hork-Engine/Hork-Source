@@ -221,14 +221,14 @@ HK_FORCEINLINE MeshVertexLight MeshVertexLight::sLerp(MeshVertexLight const& ver
     float linearColor2[3];
     float resultColor[3];
 
-    DecodeRGBE(linearColor1, c0);
-    DecodeRGBE(linearColor2, c1);
+    ColorUtils::DecodeRGBE(linearColor1, c0);
+    ColorUtils::DecodeRGBE(linearColor2, c1);
 
     resultColor[0] = Math::Lerp(linearColor1[0], linearColor2[0], frac);
     resultColor[1] = Math::Lerp(linearColor1[1], linearColor2[1], frac);
     resultColor[2] = Math::Lerp(linearColor1[2], linearColor2[2], frac);
 
-    EncodeRGBE(r, resultColor);
+    ColorUtils::EncodeRGBE(r, resultColor);
 #endif
 
     return Result;
