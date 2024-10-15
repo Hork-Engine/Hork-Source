@@ -41,21 +41,6 @@ HK_NAMESPACE_BEGIN
 
 ---------------------------------------------------------------------------------------------------
 
-Now:
-
-MaterialGraph   ---->  Code injections    +    material.glsl  ---->    GpuMaterial
-  (nodes)                                                              (pipelines)
-  
-                                                                    inject predefines
-  
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                OFFLINE                   |                  RUNTIME
-               
-                       
----------------------------------------------------------------------------------------------------
-
-Planned:
-
                                                               Material resource
                                                    ________________________________________
                                                   |                                        |
@@ -80,10 +65,10 @@ MaterialGraph   ---->  Code injections
 
 Material Manager                          +------ Material 0  = resource handle, textures, constants
                                           |
-	Material library 0     ---------------+------ ....
-	Material library 1                    |
-	                                      +------ Material N
-	....
+    Material library 0     ---------------+------ ....
+    Material library 1                    |
+                                          +------ Material N
+    ....
 
 */
 
