@@ -77,6 +77,11 @@ HK_FORCEINLINE float LinearFromSRGB(float srgb)
     return (srgb <= 0.04045f) ? srgb / 12.92f : Math::Pow((srgb + 0.055f) / 1.055f, 2.4f);
 }
 
+HK_FORCEINLINE float LinearFromSRGB_Fast(float srgb)
+{
+    return srgb * (srgb * (srgb * 0.305306011f + 0.682171111f) + 0.012522878f);
+}
+
 HK_FORCEINLINE float LinearToSRGB(float linearColor)
 {
     if (linearColor < 0.0f) return 0.0f;
@@ -177,6 +182,11 @@ HK_FORCEINLINE Color3& Color3::operator/=(float rhs)
 HK_FORCEINLINE Color3 Color3::ToLinear() const
 {
     return Color3(ColorUtils::LinearFromSRGB(R), ColorUtils::LinearFromSRGB(G), ColorUtils::LinearFromSRGB(B));
+}
+
+HK_FORCEINLINE Color3 Color3::ToLinearFast() const
+{
+    return Color3(ColorUtils::LinearFromSRGB_Fast(R), ColorUtils::LinearFromSRGB_Fast(G), ColorUtils::LinearFromSRGB_Fast(B));
 }
 
 HK_FORCEINLINE Color3 Color3::ToSRGB() const
@@ -528,6 +538,11 @@ HK_FORCEINLINE Color4& Color4::operator/=(float rhs)
 HK_FORCEINLINE Color4 Color4::ToLinear() const
 {
     return Color4(ColorUtils::LinearFromSRGB(R), ColorUtils::LinearFromSRGB(G), ColorUtils::LinearFromSRGB(B), A);
+}
+
+HK_FORCEINLINE Color4 Color4::ToLinearFast() const
+{
+    return Color4(ColorUtils::LinearFromSRGB_Fast(R), ColorUtils::LinearFromSRGB_Fast(G), ColorUtils::LinearFromSRGB_Fast(B), A);
 }
 
 HK_FORCEINLINE Color4 Color4::ToSRGB() const

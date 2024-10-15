@@ -45,9 +45,9 @@ void DirectionalLightComponent::UpdateEffectiveColor()
     Color3 temperatureColor;
     temperatureColor.SetTemperature(m_Temperature);
 
-    m_EffectiveColor[0] = Math::Pow(m_Color[0] * temperatureColor[0], 2.2f) * energy;
-    m_EffectiveColor[1] = Math::Pow(m_Color[1] * temperatureColor[1], 2.2f) * energy;
-    m_EffectiveColor[2] = Math::Pow(m_Color[2] * temperatureColor[2], 2.2f) * energy;
+    m_EffectiveColor[0] = ColorUtils::LinearFromSRGB_Fast(m_Color[0] * temperatureColor[0]) * energy;
+    m_EffectiveColor[1] = ColorUtils::LinearFromSRGB_Fast(m_Color[1] * temperatureColor[1]) * energy;
+    m_EffectiveColor[2] = ColorUtils::LinearFromSRGB_Fast(m_Color[2] * temperatureColor[2]) * energy;
 }
 
 void DirectionalLightComponent::DrawDebug(DebugRenderer& renderer)

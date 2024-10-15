@@ -119,9 +119,9 @@ void PunctualLightComponent::UpdateEffectiveColor()
 
     float scale = candela * EnergyUnitScale;
 
-    m_EffectiveColor[0] = Math::Pow(m_Color[0] * temperatureColor[0], 2.2f) * scale;
-    m_EffectiveColor[1] = Math::Pow(m_Color[1] * temperatureColor[1], 2.2f) * scale;
-    m_EffectiveColor[2] = Math::Pow(m_Color[2] * temperatureColor[2], 2.2f) * scale;
+    m_EffectiveColor[0] = ColorUtils::LinearFromSRGB_Fast(m_Color[0] * temperatureColor[0]) * scale;
+    m_EffectiveColor[1] = ColorUtils::LinearFromSRGB_Fast(m_Color[1] * temperatureColor[1]) * scale;
+    m_EffectiveColor[2] = ColorUtils::LinearFromSRGB_Fast(m_Color[2] * temperatureColor[2]) * scale;
 }
 
 void PunctualLightComponent::UpdateWorldBoundingBox()

@@ -2854,7 +2854,7 @@ static const char* texture_ormx =
     "vec4 texture_ormx( in %s sampler, in %s texCoord )\n"
     "{\n"
     "  vec4 ormx = texture( sampler, texCoord );\n"
-    "  ormx.x = pow(ormx.x, 2.2);\n"
+    "  ormx.x = LinearFromSRGB_Fast(ormx.x);\n"
     "  return ormx;\n"
     "}\n";
 

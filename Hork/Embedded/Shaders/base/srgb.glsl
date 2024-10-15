@@ -67,4 +67,19 @@ vec4 LinearToSRGB_Alpha( in vec4 LinearValue ) {
 #endif
 }
 
+float LinearFromSRGB_Fast(in float srgb)
+{
+    return srgb * (srgb * (srgb * 0.305306011f + 0.682171111f) + 0.012522878f);
+}
+
+vec3 LinearFromSRGB_Fast(in vec3 srgb)
+{
+    return srgb * (srgb * (srgb * 0.305306011f + 0.682171111f) + 0.012522878f);
+}
+
+vec4 LinearFromSRGB_Fast(in vec4 srgb)
+{
+    return vec4(LinearFromSRGB_Fast(srgb.rgb), srgb.a);
+}
+
 #endif // SRGB_H

@@ -89,6 +89,7 @@ struct Color3
     float               GetLuminance() const { return R * 0.2126f + G * 0.7152f + B * 0.0722f; }
 
     Color3              ToLinear() const;
+    Color3              ToLinearFast() const;
     Color3              ToSRGB() const;
 
     /// Assume color is in linear space
@@ -138,6 +139,7 @@ struct Color4 : Color3
     void                SetAlpha(float alpha);
     float               GetAlpha() const { return A; }
 
+    bool                IsTranslucent() const { return A < 1.0f; }
     bool                IsTransparent() const { return A < 0.0001f; }
 
     void                SetByte(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -150,6 +152,7 @@ struct Color4 : Color3
     void                GetYCoCgAlpha(uint8_t YCoCgAlpha[4]) const;
 
     Color4              ToLinear() const;
+    Color4              ToLinearFast() const;
     Color4              ToSRGB() const;
 
     static constexpr int sNumComponents() { return 4; }
