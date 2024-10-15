@@ -186,9 +186,7 @@ EnumDef const* EnumDefinition<TEXTURE_COLOR_SPACE>()
 {
     static const EnumDef EnumDef[] = {
         {TEXTURE_COLOR_SPACE_RGBA, "RGBA"},
-        {TEXTURE_COLOR_SPACE_SRGB_ALPHA, "SRGBA"},
         {TEXTURE_COLOR_SPACE_YCOCG, "YCoCg"},
-        {TEXTURE_COLOR_SPACE_GRAYSCALED, "Grayscaled"},
         {0, nullptr}};
     return EnumDef;
 }
@@ -1957,12 +1955,8 @@ static const char* ChooseSampleFunction(TEXTURE_COLOR_SPACE _ColorSpace)
     {
         case TEXTURE_COLOR_SPACE_RGBA:
             return "texture";
-        case TEXTURE_COLOR_SPACE_SRGB_ALPHA:
-            return "texture_srgb_alpha";
         case TEXTURE_COLOR_SPACE_YCOCG:
             return "texture_ycocg";
-        case TEXTURE_COLOR_SPACE_GRAYSCALED:
-            return "texture_grayscaled";
         default:
             return "texture";
     }
@@ -2684,7 +2678,6 @@ void MGAtmosphere::Compute(MaterialBuildContext& Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 String MaterialGraph::SamplersString(int MaxtextureSlot)
 {
     String s;
@@ -2701,159 +2694,124 @@ String MaterialGraph::SamplersString(int MaxtextureSlot)
     return s;
 }
 
-static const char* texture_srgb_alpha =
-    "vec4 texture_srgb_alpha( in %s sampler, in %s texCoord )\n"
-    "{\n"
-    "  vec4 color = texture( sampler, texCoord );\n"
-    "#ifdef SRGB_GAMMA_APPROX\n"
-    "  return pow( color, vec4( 2.2, 2.2, 2.2, 1.0 ) );\n"
-    "#else\n"
-    "  const vec4 Shift = vec4( 0.055, 0.055, 0.055, 0.0 );\n"
-    "  const vec4 Scale = vec4( 1.0 / 1.055, 1.0 / 1.055, 1.0 / 1.055, 1.0 );\n"
-    "  const vec4 Pow = vec4( 2.4, 2.4, 2.4, 1.0 );\n"
-    "  const vec4 Scale2 = vec4( 1.0 / 12.92, 1.0 / 12.92, 1.0 / 12.92, 1.0 );\n"
-    "  return mix( pow( ( color + Shift ) * Scale, Pow ), color * Scale2, step( color, vec4(0.04045) ) );\n"
-    //LinearVal.x = ( sRGBValue.x <= 0.04045 ) ? sRGBValue.x / 12.92 : pow( ( sRGBValue.x + 0.055 ) / 1.055, 2.4 );
-    //LinearVal.y = ( sRGBValue.y <= 0.04045 ) ? sRGBValue.y / 12.92 : pow( ( sRGBValue.y + 0.055 ) / 1.055, 2.4 );
-    //LinearVal.z = ( sRGBValue.z <= 0.04045 ) ? sRGBValue.z / 12.92 : pow( ( sRGBValue.z + 0.055 ) / 1.055, 2.4 );
-    //LinearVal.w = sRGBValue.w;
-    //return LinearVal;
-    "#endif\n"
-    "}\n";
-
 static const char* texture_ycocg =
-    "vec4 texture_ycocg( in %s sampler, in %s texCoord )\n"
+    "vec4 texture_ycocg(in %s sampler, in %s texCoord)\n"
     "{\n"
-    "  vec4 ycocg = texture( sampler, texCoord );\n"
-    "  ycocg.z = ( ycocg.z * 31.875 ) + 1.0;\n"
+    "  vec4 ycocg = texture(sampler, texCoord);\n"
+    "  ycocg.z = (ycocg.z * 31.875) + 1.0;\n"
     "  ycocg.z = 1.0 / ycocg.z;\n"
     "  ycocg.xy *= ycocg.z;\n"
-    "  vec4 color = vec4( dot( ycocg, vec4( 1.0, -1.0, 0.0, 1.0 ) ),\n"
-    "                     dot( ycocg, vec4( 0.0, 1.0, -0.50196078, 1.0 ) ),\n"
-    "                     dot( ycocg, vec4( -1.0, -1.0, 1.00392156, 1.0 ) ),\n"
-    "                     1.0 );\n"
-    "#ifdef SRGB_GAMMA_APPROX\n"
-    "  return pow( color, vec4( 2.2, 2.2, 2.2, 1.0 ) );\n"
-    "#else\n"
-    "  const vec4 Shift = vec4( 0.055, 0.055, 0.055, 0.0 );\n"
-    "  const vec4 Scale = vec4( 1.0 / 1.055, 1.0 / 1.055, 1.0 / 1.055, 1.0 );\n"
-    "  const vec4 Pow = vec4( 2.4, 2.4, 2.4, 1.0 );\n"
-    "  const vec4 Scale2 = vec4( 1.0 / 12.92, 1.0 / 12.92, 1.0 / 12.92, 1.0 );\n"
-    "  return mix( pow( ( color + Shift ) * Scale, Pow ), color * Scale2, step( color, vec4(0.04045) ) );\n"
-    "#endif\n"
-    "}\n";
-
-static const char* texture_grayscaled =
-    "vec4 texture_grayscaled( in %s sampler, in %s texCoord )\n"
-    "{\n"
-    "  return vec4( texture( sampler, texCoord ).r );\n"
+    "  vec3 color = vec3(dot(ycocg, vec4(1.0, -1.0, 0.0, 1.0)),\n"
+    "                    dot(ycocg, vec4(0.0, 1.0, -0.50196078, 1.0)),\n"
+    "                    dot(ycocg, vec4(-1.0, -1.0, 1.00392156, 1.0)));\n"
+    "  return vec4(LinearFromSRGB_Fast(color), 1.0);\n"
     "}\n";
 
 static const char* texture_nm_xyz =
-    "vec3 texture_nm_xyz( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_xyz(in %s sampler, in %s texCoord)\n"
     "{\n"
-    "  return texture( sampler, texCoord ).xyz * 2.0 - 1.0;\n"
+    "  return texture(sampler, texCoord).xyz * 2.0 - 1.0;\n"
     "}\n";
 
 static const char* texture_nm_xy =
-    "vec3 texture_nm_xy( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_xy(in %s sampler, in %s texCoord)\n"
     "{\n"
-    "  vec3 decodedN = texture( sampler, texCoord ).xyz * 2.0 - 1.0;\n"
-    "  decodedN.z = sqrt( 1.0 - dot( decodedN.xy, decodedN.xy ) );\n"
+    "  vec3 decodedN = texture(sampler, texCoord).xyz * 2.0 - 1.0;\n"
+    "  decodedN.z = sqrt(1.0 - dot(decodedN.xy, decodedN.xy));\n"
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_spheremap =
-    "vec3 texture_nm_spheremap( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_spheremap(in %s sampler, in %s texCoord)\n"
     "{\n"
-    "  vec2 fenc = texture( sampler, texCoord ).xy * 4.0 - 2.0;\n"
-    "  float f = dot( fenc, fenc );\n"
+    "  vec2 fenc = texture(sampler, texCoord).xy * 4.0 - 2.0;\n"
+    "  float f = dot(fenc, fenc);\n"
     "  vec3 decodedN;\n"
-    "  decodedN.xy = fenc * sqrt( 1.0 - f / 4.0 );\n"
+    "  decodedN.xy = fenc * sqrt(1.0 - f / 4.0);\n"
     "  decodedN.z = 1.0 - f / 2.0;\n"
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_stereographic =
-    "vec3 texture_nm_stereographic( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_stereographic(in %s sampler, in %s texCoord)\n"
     "{\n"
     "  vec3 decodedN;\n"
-    "  decodedN.xy = texture( sampler, texCoord ).xy * 2.0 - 1.0;\n"
-    "  float denom = 2.0 / ( 1 + clamp( dot( decodedN.xy, decodedN.xy ), 0.0, 1.0 ) );\n"
+    "  decodedN.xy = texture(sampler, texCoord).xy * 2.0 - 1.0;\n"
+    "  float denom = 2.0 / (1 + clamp(dot(decodedN.xy, decodedN.xy), 0.0, 1.0));\n"
     "  decodedN.xy *= denom;\n"
     "  decodedN.z = denom - 1.0;\n"
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_paraboloid =
-    "vec3 texture_nm_paraboloid( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_paraboloid(in %s sampler, in %s texCoord)\n"
     "{\n"
     "  vec3 decodedN;\n"
-    "  decodedN.xy = texture( sampler, texCoord ).xy * 2.0 - 1.0;\n"
-    "  decodedN.z = 1.0 - clamp( dot( decodedN.xy, decodedN.xy ), 0.0, 1.0 );\n"
-    //n = normalize( n );
+    "  decodedN.xy = texture(sampler, texCoord).xy * 2.0 - 1.0;\n"
+    "  decodedN.z = 1.0 - clamp(dot(decodedN.xy, decodedN.xy), 0.0, 1.0);\n"
+    //n = normalize(n);
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_quartic =
-    "vec3 texture_nm_quartic( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_quartic(in %s sampler, in %s texCoord)\n"
     "{\n"
     "  vec3 decodedN;\n"
-    "  decodedN.xy = texture( sampler, texCoord ).xy * 2.0 - 1.0;\n"
-    "  decodedN.z = clamp( (1.0 - decodedN.x * decodedN.x) * (1.0 - decodedN.y * decodedN.y), 0.0, 1.0 );\n"
-    //n = normalize( n );
+    "  decodedN.xy = texture(sampler, texCoord).xy * 2.0 - 1.0;\n"
+    "  decodedN.z = clamp((1.0 - decodedN.x * decodedN.x) * (1.0 - decodedN.y * decodedN.y), 0.0, 1.0);\n"
+    //n = normalize(n);
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_float =
-    "vec3 texture_nm_float( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_float(in %s sampler, in %s texCoord)\n"
     "{\n"
     "  vec3 decodedN;\n"
-    "  decodedN.xy = texture( sampler, texCoord ).xy;\n"
-    "  decodedN.z = sqrt( 1.0 - dot( decodedN.xy, decodedN.xy ) );\n"
+    "  decodedN.xy = texture(sampler, texCoord).xy;\n"
+    "  decodedN.z = sqrt(1.0 - dot(decodedN.xy, decodedN.xy));\n"
     "  return decodedN;\n"
     "}\n";
 
 static const char* texture_nm_dxt5 =
-    "vec3 texture_nm_dxt5( in %s sampler, in %s texCoord )\n"
+    "vec3 texture_nm_dxt5(in %s sampler, in %s texCoord)\n"
     "{\n"
-//  vec4 bump = texture( sampler, texCoord );
-//	specularPage.xyz = ScaleSpecular( specularPage.xyz, bump.z );
+//  vec4 bump = texture(sampler, texCoord);
+//	specularPage.xyz = ScaleSpecular(specularPage.xyz, bump.z);
 //	float powerFactor = bump.x;
 #if 1
-    "  vec3 decodedN = texture( sampler, texCoord ).wyz - 0.5;\n"
-    "  decodedN.z = sqrt( abs( dot( decodedN.xy, decodedN.xy ) - 0.25 ) );\n"
-    "  decodedN = normalize( decodedN );\n"
+    "  vec3 decodedN = texture(sampler, texCoord).wyz - 0.5;\n"
+    "  decodedN.z = sqrt(abs(dot(decodedN.xy, decodedN.xy) - 0.25));\n"
+    "  decodedN = normalize(decodedN);\n"
 #else
-    "  vec3 decodedN = texture( sampler, texCoord ).wyz  * 2.0 - 1.0;\n"
-    "  decodedN.z = sqrt( 1.0 - Saturate( dot( decodedN.xy, decodedN.xy ) ) );\n"
+    "  vec3 decodedN = texture(sampler, texCoord).wyz  * 2.0 - 1.0;\n"
+    "  decodedN.z = sqrt(1.0 - Saturate(dot(decodedN.xy, decodedN.xy)));\n"
 #endif
     "  return decodedN;\n"
     "}\n";
 
 //static const char* builtin_spheremap_coord =
-//    "vec2 builtin_spheremap_coord( in vec3 dir ) {\n"
-//    "  vec2 uv = vec2( atan( dir.z, dir.x ), asin( dir.y ) );\n"
+//    "vec2 builtin_spheremap_coord(in vec3 dir) {\n"
+//    "  vec2 uv = vec2(atan(dir.z, dir.x), asin(dir.y));\n"
 //    "  return uv * vec2(0.1591, 0.3183) + 0.5;\n"
 //    "}\n";
 //
 //static const char* builtin_luminance =
-//    "float builtin_luminance( in vec3 color ) {\n"
-//    "  return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n"
+//    "float builtin_luminance(in vec3 color) {\n"
+//    "  return dot(color, vec3(0.2126, 0.7152, 0.0722));\n"
 //    "}\n"
-//    "float builtin_luminance( in vec4 color ) {\n"
-//    "  return dot( color, vec4( 0.2126, 0.7152, 0.0722, 0.0 ) );\n"
+//    "float builtin_luminance(in vec4 color) {\n"
+//    "  return dot(color, vec4(0.2126, 0.7152, 0.0722, 0.0));\n"
 //    "}\n";
 //
 //static const char* builtin_saturate =
-//    "%s builtin_saturate( in %s color ) {\n"
-//    "  return clamp( color, %s(0.0), %s(1.0) );\n"
+//    "%s builtin_saturate(in %s color) {\n"
+//    "  return clamp(color, %s(0.0), %s(1.0));\n"
 //    "}\n";
 
 static const char* texture_ormx =
-    "vec4 texture_ormx( in %s sampler, in %s texCoord )\n"
+    "vec4 texture_ormx(in %s sampler, in %s texCoord)\n"
     "{\n"
-    "  vec4 ormx = texture( sampler, texCoord );\n"
+    "  vec4 ormx = texture(sampler, texCoord);\n"
     "  ormx.x = LinearFromSRGB_Fast(ormx.x);\n"
     "  return ormx;\n"
     "}\n";
@@ -2864,11 +2822,7 @@ static void GenerateBuiltinSource()
 
     String builtin;
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-        builtin += format.Sprintf(texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
         builtin += format.Sprintf(texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
-    for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
-        builtin += format.Sprintf(texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
         builtin += format.Sprintf(texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)

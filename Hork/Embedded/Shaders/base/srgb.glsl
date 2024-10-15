@@ -31,40 +31,58 @@ SOFTWARE.
 #ifndef SRGB_H
 #define SRGB_H
 
-float LinearToSRGB( in float LinearValue ) {
+float LinearToSRGB(in float lin)
+{
 #ifdef SRGB_GAMMA_APPROX
-    return pow( LinearValue, 1.0/2.2 );
+    return pow(lin, 1.0 / 2.2);
 #else
-    return mix( 1.055 * pow( LinearValue, 1.0 / 2.4 ) - 0.055, LinearValue * 12.92, step( LinearValue, 0.0031308 ) );
+    return mix(1.055 * pow(lin, 1.0 / 2.4) - 0.055, lin * 12.92, step(lin, 0.0031308));
 #endif
 }
 
-vec2 LinearToSRGB( in vec2 LinearValue ) {
+vec3 LinearToSRGB(in vec3 lin)
+{
 #ifdef SRGB_GAMMA_APPROX
-    return pow( LinearValue, vec2( 1.0 / 2.2 ) );
+    return pow(lin, vec3(1.0 / 2.2));
 #else
-    return mix( 1.055 * pow( LinearValue, vec2( 1.0 / 2.4 ) ) - 0.055, LinearValue * 12.92, step( LinearValue, vec2( 0.0031308 ) ) );
+    return mix(1.055 * pow(lin, vec3(1.0 / 2.4)) - 0.055, lin * 12.92, step(lin, vec3(0.0031308)));
 #endif
 }
 
-vec3 LinearToSRGB( in vec3 LinearValue ) {
+vec4 LinearToSRGB_Alpha(in vec4 lin)
+{
 #ifdef SRGB_GAMMA_APPROX
-    return pow( LinearValue, vec3( 1.0 / 2.2 ) );
+    return pow(lin, vec4(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2, 1.0));
 #else
-    return mix( 1.055 * pow( LinearValue, vec3( 1.0 / 2.4 ) ) - 0.055, LinearValue * 12.92, step( LinearValue, vec3( 0.0031308 ) ) );
+    const vec4 Shift = vec4(-0.055, -0.055, -0.055, 0.0);
+    const vec4 Scale = vec4(1.055, 1.055, 1.055, 1.0);
+    const vec4 Pow = vec4(1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4, 1.0);
+    const vec4 Scale2 = vec4(12.92, 12.92, 12.92, 1.0);
+    return mix(Scale * pow(lin, Pow) + Shift, lin * Scale2, step(lin, vec4(0.0031308)));
 #endif
 }
 
-vec4 LinearToSRGB_Alpha( in vec4 LinearValue ) {
+float LinearFromSRGB(in float srgb)
+{
 #ifdef SRGB_GAMMA_APPROX
-    return pow( LinearValue, vec4( 1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2, 1.0 ) );
+    return pow(srgb, 2.2);
 #else
-    const vec4 Shift = vec4( -0.055, -0.055, -0.055, 0.0 );
-    const vec4 Scale = vec4( 1.055, 1.055, 1.055, 1.0 );
-    const vec4 Pow = vec4( 1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4, 1.0 );
-    const vec4 Scale2 = vec4( 12.92, 12.92, 12.92, 1.0 );
-    return mix( Scale * pow( LinearValue, Pow ) + Shift, LinearValue * Scale2, step( LinearValue, vec4( 0.0031308 ) ) );    
+    return mix(pow((color + 0.055) / 1.055, 2.4), color / 12.92, step(color, 0.04045));
 #endif
+}
+
+vec3 LinearFromSRGB(in vec3 srgb)
+{
+#ifdef SRGB_GAMMA_APPROX
+    return pow(srgb, vec3(2.2));
+#else
+    return mix(pow((color + 0.055) / 1.055, vec3(2.4)), color / 12.92, step(color, vec3(0.04045)));
+#endif
+}
+
+vec4 LinearFromSRGB(in vec4 srgb)
+{
+    return vec4(LinearFromSRGB(srgb.rgb), srgb.a);
 }
 
 float LinearFromSRGB_Fast(in float srgb)

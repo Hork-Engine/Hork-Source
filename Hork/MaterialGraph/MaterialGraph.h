@@ -495,6 +495,12 @@ protected:
     void                        Compute(MaterialBuildContext& Context) override;
 };
 
+enum TEXTURE_COLOR_SPACE
+{
+    TEXTURE_COLOR_SPACE_RGBA,
+    TEXTURE_COLOR_SPACE_YCOCG
+};
+
 class MGTextureLoad : public MGNode
 {
     HK_CLASS(MGTextureLoad, MGNode)
