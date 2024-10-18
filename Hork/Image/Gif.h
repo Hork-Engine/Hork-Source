@@ -61,7 +61,7 @@ public:
                     GifImage(GifImage&& Rhs) noexcept;
     GifImage&       operator=(GifImage&& Rhs) noexcept;
 
-    operator        bool() const { return !m_Frames.IsEmpty(); }
+                    operator bool() const { return !m_Frames.IsEmpty(); }
 
     void            Reset();
 
