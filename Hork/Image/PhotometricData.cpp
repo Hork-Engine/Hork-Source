@@ -144,7 +144,7 @@ float PhotometricData::Sample2D(float x, float y) const
         //const float angleH = Math::FMod( Math::Degrees( std::atan2( y, x ) ), 360.0f );
         float angleH = /*Angl::Normalize360*/ (Math::Degrees(std::atan2(z, x)));
 
-        angleH = 75;
+        //angleH = 75; // for debug
 
         for (int i = 0; i < (int)m_HorzAngles.Size() - 1; i++)
         {
