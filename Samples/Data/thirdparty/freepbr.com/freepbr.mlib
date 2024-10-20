@@ -9,3 +9,15 @@ grime-alley-brick2
 		"/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"		
 	]
 }
+
+alien-slime1
+{
+	Material "/Root/default/materials/compiled/water_orm.mat"
+	Textures
+	[
+		"/Root/thirdparty/freepbr.com/alien-slime1/albedo.tex"
+		"/Root/black.png" // Emissive
+		"/Root/thirdparty/freepbr.com/alien-slime1/orm.tex"
+		"/Root/thirdparty/freepbr.com/alien-slime1/normal.tex"		
+	]
+}
