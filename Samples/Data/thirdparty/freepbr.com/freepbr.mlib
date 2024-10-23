@@ -6,7 +6,7 @@ grime-alley-brick2
 		"/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"
 		"/Root/black.png" // Emissive
 		"/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"
-		"/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"		
+		"/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"
 	]
 }
 
@@ -18,6 +18,18 @@ alien-slime1
 		"/Root/thirdparty/freepbr.com/alien-slime1/albedo.tex"
 		"/Root/black.png" // Emissive
 		"/Root/thirdparty/freepbr.com/alien-slime1/orm.tex"
-		"/Root/thirdparty/freepbr.com/alien-slime1/normal.tex"		
+		"/Root/thirdparty/freepbr.com/alien-slime1/normal.tex"
+	]
+}
+
+stone-house-siding
+{
+	Material "/Root/default/materials/compiled/default_orm.mat"
+	Textures
+	[
+		"/Root/thirdparty/freepbr.com/stone-house-siding/albedo.tex"
+		"/Root/black.png" // Emissive
+		"/Root/thirdparty/freepbr.com/stone-house-siding/orm.tex"
+		"/Root/thirdparty/freepbr.com/stone-house-siding/normal.tex"
 	]
 }
