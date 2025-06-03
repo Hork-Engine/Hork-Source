@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/Modules/Render/ProceduralMesh.h>
-#include <Hork/Runtime/World/Modules/Skeleton/SkeletonPose.h>
+#include <Hork/Runtime/World/Modules/Skeleton/Components/SkeletonPoseComponent.h>
 #include <Hork/Runtime/Materials/Material.h>
-#include <Hork/Resources/Resource_Mesh.h>
-
 #include <Hork/Runtime/World/GameObject.h>
 #include <Hork/Runtime/World/World.h>
+
+#include <Hork/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -125,9 +125,6 @@ public:
 
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    void                        SetPose(SkeletonPose* pose);
-    SkeletonPose*               GetPose();
-
     /// Call to skip transform interpolation on this frame (useful for teleporting objects without smooth transition)
     void                        SkipInterpolation();
     
@@ -144,14 +141,33 @@ public:
 
     void                        DrawDebug(DebugRenderer& renderer);
 
+    struct StreamBuffer
+    {
+        // GPU memory offset/size for the mesh skin
+        size_t      Offset;
+        size_t      OffsetP;
+        size_t      Size;
+    };
+
+    struct SkinningData
+    {
+        Ref<SkeletonPose>       Pose;
+        // Skinning matrices from previous frame
+        Vector<Float3x4>        SkinningMatrices;
+        Vector<StreamBuffer>    StreamBuffers;
+    };
+
+    SkinningData const&         GetSkinningData() const { return m_SkinningData; }
+
 private:
     void                        UpdateSkinningMatrices();
 
-    Ref<SkeletonPose>           m_Pose;
+    Handle32<SkeletonPoseComponent> m_PoseComponent;
     Transform                   m_Transform[2];
     Float3x4                    m_RenderTransform[2];
     Float3x3                    m_RotationMatrix;
     uint32_t                    m_LastFrame{0};
+    SkinningData                m_SkinningData;
 };
 
 namespace TickGroup_PostTransform
@@ -161,16 +177,6 @@ namespace TickGroup_PostTransform
     {
         desc.TickEvenWhenPaused = true;
     }
-}
-
-HK_FORCEINLINE void DynamicMeshComponent::SetPose(SkeletonPose* pose)
-{
-    m_Pose = pose;
-}
-
-HK_FORCEINLINE SkeletonPose* DynamicMeshComponent::GetPose()
-{
-    return m_Pose;
 }
 
 HK_NAMESPACE_END

@@ -30,44 +30,48 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/World/TickFunction.h>
+#include <Hork/Runtime/World/Component.h>
+#include <Hork/Runtime/Animation/SkeletonPose.h>
+#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Resource_Animation.h>
+
+#include <Hork/Runtime/Animation/AnimPlayer.h>
+
 #include "SkeletonPoseComponent.h"
 
 HK_NAMESPACE_BEGIN
 
-class DebugRenderer;
-
-class SocketComponent final : public Component
+class AnimatorComponent : public Component
 {
 public:
-    //
-    // Meta info
-    //
+    static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
+                            AnimatorComponent();
+                            AnimatorComponent(AnimatorComponent&& rhs);
+                            ~AnimatorComponent();
 
-    Float3              Offset;
-    uint16_t            JointIndex{};
-    bool                bApplyJointScale = false;
-    
+    void                    SetAnimationGraph(AnimationGraph_Cooked* animGraph) { m_AnimGraph = animGraph; }
+
+    template <typename T>
+    void                    SetParam(StringID paramID, T value) { m_ParameterSet.m_Params[paramID] = AnimGraph_Value{static_cast<float>(value)}; }
+
+    AnimGraph_Value         GetParam(StringID paramID) { return m_ParameterSet.m_Params[paramID]; }
+
+    /// The mesh is only used to provide the skeleton.
+    void                    SetMesh(MeshHandle handle);
+
     // Internal
 
-    void                BeginPlay();
-    void                LateUpdate();
-
-    void                DrawDebug(DebugRenderer& renderer);
+    void                    BeginPlay();
+    void                    EndPlay();
+    void                    Update();
 
 private:
     Handle32<SkeletonPoseComponent> m_PoseComponent;
+    Ref<AnimationGraph_Cooked> m_AnimGraph;
+    UniqueRef<AnimationPlayer> m_AnimPlayer;
+    AnimationParameterSet   m_ParameterSet;
+    MeshHandle              m_Mesh;
 };
-
-namespace TickGroup_FixedUpdate
-{
-    template <>
-    HK_INLINE void InitializeTickFunction<SocketComponent>(TickFunctionDesc& desc)
-    {
-        desc.Name.FromString("Update Sockets");
-    }
-}
 
 HK_NAMESPACE_END

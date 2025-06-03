@@ -51,7 +51,11 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * Mapping to Axes and Actions
    
 ## Animation
-* Skeletal animation, inverse kinematics, sockets
+* Skeletal animation
+* Inverse kinematics
+* Sockets
+* Animation graph (based on eely), work still in progress
+* Skinning
 
 ## Navigation
 * Tiled navigation mesh
@@ -80,6 +84,7 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * cgltf
 * Clipper
 * EASTL
+* eely
 * FastLZ
 * fast_float
 * fast_obj

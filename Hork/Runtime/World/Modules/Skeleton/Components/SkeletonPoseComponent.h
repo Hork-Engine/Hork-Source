@@ -30,44 +30,29 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/World/TickFunction.h>
-#include "SkeletonPoseComponent.h"
+#include <Hork/Runtime/World/Component.h>
+#include <Hork/Runtime/Animation/SkeletonPose.h>
+
+#include <Hork/Resources/Resource_Mesh.h>
 
 HK_NAMESPACE_BEGIN
 
-class DebugRenderer;
-
-class SocketComponent final : public Component
+class SkeletonPoseComponent : public Component
 {
 public:
-    //
-    // Meta info
-    //
+    static constexpr ComponentMode Mode = ComponentMode::Static;
 
-    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
+    /// The mesh is only used to provide the skeleton.
+    void                    SetMesh(MeshHandle handle);
 
-    Float3              Offset;
-    uint16_t            JointIndex{};
-    bool                bApplyJointScale = false;
-    
-    // Internal
+    SkeletonPose*           GetPose() const { return m_Pose; }
 
-    void                BeginPlay();
-    void                LateUpdate();
-
-    void                DrawDebug(DebugRenderer& renderer);
+    void                    BeginPlay();
+    void                    DrawDebug(class DebugRenderer& renderer);
 
 private:
-    Handle32<SkeletonPoseComponent> m_PoseComponent;
+    Ref<SkeletonPose>       m_Pose;
+    MeshHandle              m_Mesh;
 };
-
-namespace TickGroup_FixedUpdate
-{
-    template <>
-    HK_INLINE void InitializeTickFunction<SocketComponent>(TickFunctionDesc& desc)
-    {
-        desc.Name.FromString("Update Sockets");
-    }
-}
 
 HK_NAMESPACE_END

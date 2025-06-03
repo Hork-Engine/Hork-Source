@@ -35,22 +35,11 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-struct SkeletonPose : RefCounted
+class SkeletonPose : public RefCounted
 {
+public:
     Vector<SoaTransform>        m_LocalMatrices;
     Vector<SimdFloat4x4>        m_ModelMatrices;
-
-    // Skinning matrices from previous frame
-    Vector<Float3x4>            m_SkinningMatrices;
-
-    struct StreamBuffer
-    {
-        // GPU memory offset/size for the mesh skin
-        size_t      Offset;
-        size_t      OffsetP;
-        size_t      Size;
-    };
-    Vector<StreamBuffer>        m_StreamBuffers;
 };
 
 HK_NAMESPACE_END

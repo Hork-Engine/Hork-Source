@@ -57,11 +57,6 @@ private:
     void ToggleWireframe();
     void Screenshot();
     void ShowLoadingScreen(bool show);
-    void SetAnimationIdle1();
-    void SetAnimationIdle3();
-    void SetAnimationCasting1();
-    void SetAnimationImpact();
-    void SetAnimationKick();
     void SpawnPaladin();
     void SpawnPaladin(Float3 const& position, Quat const& rotation, int anim);
     void SpawnBarrel(Float3 const& position, Quat const& rotation);
@@ -72,6 +67,11 @@ private:
     void OnUpdateLoading(float timeStep);
     void OnStartPlay();
 
+    void SetAnimationBlock();
+    void SetAnimationCast();
+    void SetAnimationSlash();
+    void SetAnimationIdle();
+
     UIDesktop* m_Desktop;
     UIViewport* m_Viewport;
     UIWidget* m_LoadingScreen;
@@ -80,7 +80,7 @@ private:
     World* m_World{};
     Ref<WorldRenderView> m_WorldRenderView;
     GameObject* m_Player{};
-    Handle32<class AnimationPlayerSimple> m_AnimPlayer;
+    Handle32<class AnimatorComponent> m_Animator;
 };
 
 HK_NAMESPACE_END
