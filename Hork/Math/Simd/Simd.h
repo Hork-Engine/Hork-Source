@@ -33,12 +33,14 @@ SOFTWARE.
 #include <Hork/Math/VectorMath.h>
 
 #include <ozz/base/maths/soa_transform.h>
+#include <ozz/base/maths/simd_quaternion.h>
 
 HK_NAMESPACE_BEGIN
 
 using SoaTransform  = ozz::math::SoaTransform;
 using SimdFloat4x4  = ozz::math::Float4x4;
 using SimdFloat4    = ozz::math::SimdFloat4;
+using SimdQuaternion = ozz::math::SimdQuaternion;
 
 namespace Simd
 {
