@@ -41,7 +41,7 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
 
-#include <Hork/Runtime/World/Modules/Skeleton/Components/AnimationPlayerSimple.h>
+#include <Hork/Runtime/World/Modules/Skeleton/Components/AnimatorComponent.h>
 
 #include <Hork/Runtime/World/Modules/Physics/Components/CharacterControllerComponent.h>
 #include <Hork/Runtime/World/Modules/Physics/Components/DynamicBodyComponent.h>
@@ -61,7 +61,15 @@ const char* PaladinAnimations[] =
     "/Root/thirdparty/mixamo/paladin/idle-3.anim",
     "/Root/thirdparty/mixamo/paladin/casting-1.anim",
     "/Root/thirdparty/mixamo/paladin/impact-2.anim",
-    "/Root/thirdparty/mixamo/paladin/kick.anim"
+    "/Root/thirdparty/mixamo/paladin/kick.anim",
+
+    "/Root/thirdparty/mixamo/paladin/block.anim",
+    "/Root/thirdparty/mixamo/paladin/block-idle.anim",
+    "/Root/thirdparty/mixamo/paladin/casting.anim",
+    "/Root/thirdparty/mixamo/paladin/casting-1.anim",
+
+    "/Root/thirdparty/mixamo/paladin/slash.anim",
+    "/Root/thirdparty/mixamo/paladin/slash-1.anim",
 };
 
 const char* PaladinTextures[] =
@@ -96,11 +104,10 @@ void SampleApplication::Initialize()
     shortcuts->AddShortcut(VirtualKey::Escape, {}, {this, &SampleApplication::Quit});
     shortcuts->AddShortcut(VirtualKey::Y, {}, {this, &SampleApplication::ToggleWireframe});
     shortcuts->AddShortcut(VirtualKey::F10, {}, {this, &SampleApplication::Screenshot});
-    shortcuts->AddShortcut(VirtualKey::F1, {}, {this, &SampleApplication::SetAnimationIdle1});
-    shortcuts->AddShortcut(VirtualKey::F2, {}, {this, &SampleApplication::SetAnimationIdle3});
-    shortcuts->AddShortcut(VirtualKey::F3, {}, {this, &SampleApplication::SetAnimationCasting1});
-    shortcuts->AddShortcut(VirtualKey::F4, {}, {this, &SampleApplication::SetAnimationImpact});
-    shortcuts->AddShortcut(VirtualKey::F5, {}, {this, &SampleApplication::SetAnimationKick});
+    shortcuts->AddShortcut(VirtualKey::F1, {}, {this, &SampleApplication::SetAnimationBlock});
+    shortcuts->AddShortcut(VirtualKey::F2, {}, {this, &SampleApplication::SetAnimationCast});
+    shortcuts->AddShortcut(VirtualKey::F3, {}, {this, &SampleApplication::SetAnimationSlash});
+    shortcuts->AddShortcut(VirtualKey::F4, {}, {this, &SampleApplication::SetAnimationIdle});
     shortcuts->AddShortcut(VirtualKey::E, {}, {this, &SampleApplication::DropBarrel});
     shortcuts->AddShortcut(VirtualKey::R, {}, {this, &SampleApplication::SpawnPaladin});
     shortcuts->AddShortcut(VirtualKey::F6, {}, {this, &SampleApplication::ShowSkeleton});
@@ -112,7 +119,7 @@ void SampleApplication::Initialize()
                            .WithPadding({0, 0, 0, 0})
                            .WithLayout(UINew(UIBoxLayout, UIBoxLayout::HALIGNMENT_CENTER, UIBoxLayout::VALIGNMENT_BOTTOM))
                                [UINew(UILabel)
-                                    .WithText(UINew(UIText, "F1 Idle, F2 Idle, F3 Cast, F4 Impact, F5 Kick, F6 Show Skeleton")
+                                    .WithText(UINew(UIText, "F1 Block, F2 Cast, F3 Slash, F4 Idle, F6 Show Skeleton")
                                                   .WithFontSize(20)
                                                   .WithWordWrap(false)
                                                   .WithAlignment(TEXT_ALIGNMENT_HCENTER))
@@ -371,44 +378,45 @@ void SampleApplication::CreateScene()
     CreateSceneFromMap(m_World, "/Root/maps/sample6.map", "grime-alley-brick2");
 }
 
-void SampleApplication::SetAnimationIdle1()
+enum class state { idle, block, slash, cast };
+
+void SampleApplication::SetAnimationBlock()
 {
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
+    if (auto animator = m_World->GetComponent(m_Animator))
     {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
-        animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[0]), 0.1f, 0.0f);
+        static StringID ParamID_State{"State"};
+
+        animator->SetParam(ParamID_State, state::block);
     }
 }
-void SampleApplication::SetAnimationIdle3()
+
+void SampleApplication::SetAnimationCast()
 {
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
+    if (auto animator = m_World->GetComponent(m_Animator))
     {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
-        animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[1]), 0.1f, 0.0f);
+        static StringID ParamID_State{"State"};
+
+        animator->SetParam(ParamID_State, state::cast);
     }
 }
-void SampleApplication::SetAnimationCasting1()
+
+void SampleApplication::SetAnimationSlash()
 {
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
+    if (auto animator = m_World->GetComponent(m_Animator))
     {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
-        animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[2]), 0.1f, 0.0f);
+        static StringID ParamID_State{"State"};
+
+        animator->SetParam(ParamID_State, state::slash);
     }
 }
-void SampleApplication::SetAnimationImpact()
+
+void SampleApplication::SetAnimationIdle()
 {
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
+    if (auto animator = m_World->GetComponent(m_Animator))
     {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
-        animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[3]), 0.1f, 0.0f);
-    }
-}
-void SampleApplication::SetAnimationKick()
-{
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
-    {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
-        animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[4]), 0.1f, 0.0f);
+        static StringID ParamID_State{"State"};
+
+        animator->SetParam(ParamID_State, state::idle);
     }
 }
 
@@ -478,6 +486,278 @@ void SampleApplication::SpawnPaladin()
     }
 }
 
+Ref<AnimationGraph_Cooked> CreateTestAnimationGraph()
+{
+    const StringID ParamID_State{"State"};
+    const StringID ParamID_PlaybackSpeed{"PlaybackSpeed"};
+
+    AnimationGraph graph;
+
+    // Clips
+
+    auto& idle = graph.AddNode<AnimGraph_Clip>();
+    idle.SetClipID(/*"idle"*/"/Root/thirdparty/mixamo/paladin/idle-3.anim");
+
+    auto& blockStart = graph.AddNode<AnimGraph_Clip>();
+    blockStart.SetClipID(/*"block_start"*/ "/Root/thirdparty/mixamo/paladin/block.anim");
+
+    auto& blockIdle = graph.AddNode<AnimGraph_Clip>();
+    blockIdle.SetClipID(/*"block_idle"*/ "/Root/thirdparty/mixamo/paladin/block-idle.anim");
+
+    auto& slash0 = graph.AddNode<AnimGraph_Clip>();
+    slash0.SetClipID(/*"slash_0"*/ "/Root/thirdparty/mixamo/paladin/slash.anim");
+
+    auto& slash1 = graph.AddNode<AnimGraph_Clip>();
+    slash1.SetClipID(/*"slash_1"*/ "/Root/thirdparty/mixamo/paladin/slash-1.anim");
+
+    auto& slash = graph.AddNode<AnimGraph_Random>();
+    slash.SetChildrenNodes({slash0.GetID(), slash1.GetID()});
+
+    auto& cast0 = graph.AddNode<AnimGraph_Clip>();
+    cast0.SetClipID(/*"cast_0"*/ "/Root/thirdparty/mixamo/paladin/casting.anim");
+
+    auto& cast1 = graph.AddNode<AnimGraph_Clip>();
+    cast1.SetClipID(/*"cast_1"*/ "/Root/thirdparty/mixamo/paladin/casting-1.anim");
+
+    auto& cast = graph.AddNode<AnimGraph_Random>();
+    cast.SetChildrenNodes({cast0.GetID(), cast1.GetID()});
+
+    // Nested state machine for block (start + idle states)
+
+    auto& stateBlockStart = graph.AddNode<AnimGraph_State>();
+    stateBlockStart.SetPoseNode(blockStart.GetID());
+    stateBlockStart.SetName("block start");
+
+    auto& stateBlockIdle = graph.AddNode<AnimGraph_State>();
+    stateBlockIdle.SetPoseNode(blockIdle.GetID());
+    stateBlockIdle.SetName("block idle");
+
+    auto& conditionBlockStartEnded = graph.AddNode<AnimGraph_StateCondition>();
+    conditionBlockStartEnded.SetPhase(1.0f);
+
+    auto& transitionBlockStartToBlockIdle = graph.AddNode<AnimGraph_StateTransition>();
+    transitionBlockStartToBlockIdle.SetConditionNode(conditionBlockStartEnded.GetID());
+    transitionBlockStartToBlockIdle.SetDestinationStateNode(stateBlockIdle.GetID());
+    transitionBlockStartToBlockIdle.SetDuration(0);//(0.1f);
+    stateBlockStart.AddOutputTransitionNode(transitionBlockStartToBlockIdle.GetID());
+
+    auto& blockStateMachine = graph.AddNode<AnimGraph_StateMachine>();
+    blockStateMachine.SetStateNodes({stateBlockStart.GetID(), stateBlockIdle.GetID()});
+
+    // Main state machine
+
+    auto& stateIdle = graph.AddNode<AnimGraph_State>();
+    stateIdle.SetPoseNode(idle.GetID());
+    stateIdle.SetName("idle");
+
+    auto& stateBlock = graph.AddNode<AnimGraph_State>();
+    stateBlock.SetPoseNode(blockStateMachine.GetID());
+    stateBlock.SetName("block");
+
+    auto& stateSlash = graph.AddNode<AnimGraph_State>();
+    stateSlash.SetPoseNode(slash.GetID());
+    stateSlash.SetName("slash");
+
+    auto& stateCast = graph.AddNode<AnimGraph_State>();
+    stateCast.SetPoseNode(cast.GetID());
+    stateCast.SetName("cast");
+
+    auto& conditionBlockEnded = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionBlockEnded.SetParamID(ParamID_State);
+    conditionBlockEnded.SetValue(static_cast<int>(state::block));
+    conditionBlockEnded.SetOp(AnimGraph_ParamComparison::Op::NotEqual);
+
+    auto& conditionStateIsBlock = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionStateIsBlock.SetParamID(ParamID_State);
+    conditionStateIsBlock.SetValue(static_cast<int>(state::block));
+
+    auto& conditionStateIsSlash = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionStateIsSlash.SetParamID(ParamID_State);
+    conditionStateIsSlash.SetValue(static_cast<int>(state::slash));
+
+    auto& conditionSlashAnimationEnded = graph.AddNode<AnimGraph_StateCondition>();
+    conditionSlashAnimationEnded.SetPhase(1.0f);
+
+    auto& conditionSlashStateEnded = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionSlashStateEnded.SetParamID(ParamID_State);
+    conditionSlashStateEnded.SetValue(static_cast<int>(state::slash));
+    conditionSlashStateEnded.SetOp(AnimGraph_ParamComparison::Op::NotEqual);
+
+    auto& conditionSlashEnded = graph.AddNode<AnimGraph_And>();
+    conditionSlashEnded.SetChildrenNodes({conditionSlashAnimationEnded.GetID(), conditionSlashStateEnded.GetID()});
+
+    auto& conditionStateIsCast = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionStateIsCast.SetParamID(ParamID_State);
+    conditionStateIsCast.SetValue(static_cast<int>(state::cast));
+
+    auto& conditionCastAnimationEnded = graph.AddNode<AnimGraph_StateCondition>();
+    conditionCastAnimationEnded.SetPhase(1.0f);
+
+    auto& conditionCastStateEnded = graph.AddNode<AnimGraph_ParamComparison>();
+    conditionCastStateEnded.SetParamID(ParamID_State);
+    conditionCastStateEnded.SetValue(static_cast<int>(state::cast));
+    conditionCastStateEnded.SetOp(AnimGraph_ParamComparison::Op::NotEqual);
+
+    auto& conditionCastEnded = graph.AddNode<AnimGraph_And>();
+    conditionCastEnded.SetChildrenNodes({conditionCastAnimationEnded.GetID(), conditionCastStateEnded.GetID()});
+
+    auto& transitionIdleToBlock = graph.AddNode<AnimGraph_StateTransition>();
+    transitionIdleToBlock.SetConditionNode(conditionStateIsBlock.GetID());
+    transitionIdleToBlock.SetDestinationStateNode(stateBlock.GetID());
+    transitionIdleToBlock.SetDuration(0.1F);
+    stateIdle.AddOutputTransitionNode(transitionIdleToBlock.GetID());
+
+    auto& transitionBlockToIdle = graph.AddNode<AnimGraph_StateTransition>();
+    transitionBlockToIdle.SetConditionNode(conditionBlockEnded.GetID());
+    transitionBlockToIdle.SetDestinationStateNode(stateIdle.GetID());
+    transitionBlockToIdle.SetDuration(0.2F);
+    stateBlock.AddOutputTransitionNode(transitionBlockToIdle.GetID());
+
+    auto& transitionIdleToSlash = graph.AddNode<AnimGraph_StateTransition>();
+    transitionIdleToSlash.SetConditionNode(conditionStateIsSlash.GetID());
+    transitionIdleToSlash.SetDestinationStateNode(stateSlash.GetID());
+    transitionIdleToSlash.SetDuration(0.1F);
+    stateIdle.AddOutputTransitionNode(transitionIdleToSlash.GetID());
+
+    auto& transitionSlashToIdle = graph.AddNode<AnimGraph_StateTransition>();
+    transitionSlashToIdle.SetConditionNode(conditionSlashEnded.GetID());
+    transitionSlashToIdle.SetDestinationStateNode(stateIdle.GetID());
+    transitionSlashToIdle.SetDuration(0.1F);
+    stateSlash.AddOutputTransitionNode(transitionSlashToIdle.GetID());
+
+    auto& transitionIdleToCast = graph.AddNode<AnimGraph_StateTransition>();
+    transitionIdleToCast.SetConditionNode(conditionStateIsCast.GetID());
+    transitionIdleToCast.SetDestinationStateNode(stateCast.GetID());
+    transitionIdleToCast.SetDuration(0.1F);
+    stateIdle.AddOutputTransitionNode(transitionIdleToCast.GetID());
+
+    auto& transitionCastToIdle = graph.AddNode<AnimGraph_StateTransition>();
+    transitionCastToIdle.SetConditionNode(conditionCastEnded.GetID());
+    transitionCastToIdle.SetDestinationStateNode(stateIdle.GetID());
+    transitionCastToIdle.SetDuration(0.1F);
+    stateCast.AddOutputTransitionNode(transitionCastToIdle.GetID());
+
+    auto& stateMachine = graph.AddNode<AnimGraph_StateMachine>();
+    stateMachine.SetStateNodes({stateIdle.GetID(), stateBlock.GetID(), stateCast.GetID(), stateSlash.GetID()});
+
+
+    // Playback speed node and input param
+
+    auto& playbackSpeedParam = graph.AddNode<AnimGraph_Param>();
+    playbackSpeedParam.SetParamID(ParamID_PlaybackSpeed);
+
+    auto& playback = graph.AddNode<AnimGraph_Playback>();
+    playback.SetSpeedProviderNode(playbackSpeedParam.GetID());
+    playback.SetChildNode(stateMachine.GetID());
+
+    graph.SetRootNode(playback.GetID());
+
+    graph.Validate();
+
+    return graph.Cook();
+}
+
+Ref<AnimationGraph_Cooked> CreateBlendTest()
+{
+    // Blending animation graph:
+    //  - three standing movement animations, blended by speed
+    //  - two crouching movement animations, blended by speed
+    //  - standing and movement animations are blended by crouching parameter
+    // Additional node controls playback speed of this whole tree.
+
+    AnimationGraph graph;
+
+    StringID ParamID_Speed("Speed");
+    StringID ParamID_Crouch("Crouch");
+    StringID ParamID_PlaybackSpeed("PlaybackSpeed");
+
+    constexpr float param_speed_walk{1.0F};
+    constexpr float param_speed_jog{2.0F};
+    constexpr float param_speed_run{3.0F};
+
+    //
+    // Animation clips
+    //
+
+    auto& walk = graph.AddNode<AnimGraph_Clip>();
+    walk.SetClipID("Walk");
+
+    auto& jog = graph.AddNode<AnimGraph_Clip>();
+    jog.SetClipID("jog");
+
+    auto& run = graph.AddNode<AnimGraph_Clip>();
+    run.SetClipID("run");
+
+    auto& crouchWalk = graph.AddNode<AnimGraph_Clip>();
+    crouchWalk.SetClipID("walk_crouch");
+
+    auto& crouchRun = graph.AddNode<AnimGraph_Clip>();
+    crouchRun.SetClipID("run_crouch");
+
+    //
+    // Parameters
+    //
+
+    auto& walkSpeed = graph.AddNode<AnimGraph_Param>();
+    walkSpeed.SetParamID(ParamID_Speed);
+
+    auto& crouchSpeed = graph.AddNode<AnimGraph_Param>();
+    crouchSpeed.SetParamID(ParamID_Speed);
+
+    auto& crouchParam = graph.AddNode<AnimGraph_Param>();
+    crouchParam.SetParamID(ParamID_Crouch);
+
+    auto& playbackSpeedParam = graph.AddNode<AnimGraph_Param>();
+    playbackSpeedParam.SetParamID(ParamID_PlaybackSpeed);
+
+    //
+    // Blending
+    //
+
+    auto& blendWalkJogRun = graph.AddNode<AnimGraph_Blend>();
+    blendWalkJogRun.AddPoseNode(walk.GetID(), param_speed_walk);
+    blendWalkJogRun.AddPoseNode(jog.GetID(), param_speed_jog);
+    blendWalkJogRun.AddPoseNode(run.GetID(), param_speed_run);
+    blendWalkJogRun.SetFactorNodeID(walkSpeed.GetID());
+
+    auto& blendCrouchWalkRun = graph.AddNode<AnimGraph_Blend>();
+    blendCrouchWalkRun.AddPoseNode(crouchWalk.GetID(), param_speed_walk);
+    blendCrouchWalkRun.AddPoseNode(crouchRun.GetID(), param_speed_run);
+    blendCrouchWalkRun.SetFactorNodeID(crouchSpeed.GetID());
+
+    auto& blendStandCrouch = graph.AddNode<AnimGraph_Blend>();
+    blendStandCrouch.AddPoseNode(blendWalkJogRun.GetID(), 0.0f);
+    blendStandCrouch.AddPoseNode(blendCrouchWalkRun.GetID(), 1.0f);
+    blendStandCrouch.SetFactorNodeID(crouchParam.GetID());
+
+    //
+    // Playback node
+    //
+
+    auto& playback = graph.AddNode<AnimGraph_Playback>();
+    playback.SetSpeedProviderNode(playbackSpeedParam.GetID());
+    playback.SetChildNode(blendStandCrouch.GetID());
+
+    graph.SetRootNode(playback.GetID());
+#if 0
+    AnimationPlayerContext context;
+    context.SetParam<float>(ParamID_Speed, param_speed_walk);
+    context.SetParam<float>(ParamID_Crouch, 0.0f);
+    context.SetParam<float>(ParamID_PlaybackSpeed, 1.0f);
+
+    int numSeconds = 10;
+    int n = 60 * numSeconds;
+    for (int i = 0 ; i < n ; i++)
+    {
+        if (i / 60 > 3)
+            context.SetParam<float>(ParamID_Speed, 1.5f);
+        graph.UpdatePlayer(context, 1.0f/60);
+    }
+#endif
+
+    return graph.Cook();
+}
+
 void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotation, int anim)
 {
     auto& resourceMngr = sGetResourceManager();
@@ -493,17 +773,24 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
     GameObject* object;
     m_World->CreateObject(desc, object);
 
-    AnimationPlayerSimple* animPlayer;
-    m_AnimPlayer = object->CreateComponent(animPlayer);
-    animPlayer->SetMesh(meshHandle);
-    animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[anim % HK_ARRAY_SIZE(PaladinAnimations)]), 0.1f, 0.0f);
+    static Ref<AnimationGraph_Cooked> animGraph = CreateTestAnimationGraph();
+
+    SkeletonPoseComponent* pose;
+    object->CreateComponent(pose);
+    pose->SetMesh(meshHandle);
+
+    AnimatorComponent* animator;
+    m_Animator = object->CreateComponent(animator);
+    animator->SetAnimationGraph(animGraph.RawPtr());
+    animator->SetMesh(meshHandle);
+
+    animator->SetParam(StringID{"PlaybackSpeed"}, 1.0f);
 
     MeshResource* meshResource = resourceMngr.TryGet(meshHandle);
 
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
     mesh->SetMesh(meshHandle);
-    mesh->SetPose(animPlayer->GetPose());
     mesh->SetMaterialCount(meshResource->GetSurfaceCount());
     for (int i = 0 ; i < meshResource->GetSurfaceCount(); ++i)
         mesh->SetMaterial(i, materialMngr.TryGet("thirdparty/mixamo/paladin"));

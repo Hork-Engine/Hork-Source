@@ -28,46 +28,18 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include <Hork/Runtime/World/TickFunction.h>
-#include "SkeletonPoseComponent.h"
+#include "AnimGraph_Cooked.h"
 
 HK_NAMESPACE_BEGIN
 
-class DebugRenderer;
-
-class SocketComponent final : public Component
+AnimationGraph_Cooked::~AnimationGraph_Cooked()
 {
-public:
-    //
-    // Meta info
-    //
-
-    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
-
-    Float3              Offset;
-    uint16_t            JointIndex{};
-    bool                bApplyJointScale = false;
-    
-    // Internal
-
-    void                BeginPlay();
-    void                LateUpdate();
-
-    void                DrawDebug(DebugRenderer& renderer);
-
-private:
-    Handle32<SkeletonPoseComponent> m_PoseComponent;
-};
-
-namespace TickGroup_FixedUpdate
-{
-    template <>
-    HK_INLINE void InitializeTickFunction<SocketComponent>(TickFunctionDesc& desc)
-    {
-        desc.Name.FromString("Update Sockets");
-    }
+    if (m_ParamIDs)
+        Core::GetHeapAllocator<HEAP_STRING>().Free(m_ParamIDs);
+    if (m_Names)
+        Core::GetHeapAllocator<HEAP_STRING>().Free(m_Names);
+    if (m_Clips)
+        Core::GetHeapAllocator<HEAP_STRING>().Free(m_Clips);
 }
 
 HK_NAMESPACE_END

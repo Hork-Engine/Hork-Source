@@ -41,7 +41,6 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"_s, "0"_s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"_s, "0"_s);
-ConsoleVar com_DrawSkeletons("com_DrawSkeletons"_s, "0"_s);
 
 void MeshComponent::SetMaterial(Material* material)
 {
@@ -156,6 +155,8 @@ void DynamicMeshComponent::BeginPlay()
     m_RenderTransform[1] = m_RenderTransform[0];
 
     m_WorldBoundingBox = m_LocalBoundingBox.Transform(GetOwner()->GetWorldTransformMatrix());
+
+    m_PoseComponent = GetOwner()->GetComponentHandle<SkeletonPoseComponent>();
 }
 
 void DynamicMeshComponent::PostTransform()
@@ -192,21 +193,24 @@ void DynamicMeshComponent::PreRender(PreRenderContext const& context)
 
 void DynamicMeshComponent::UpdateSkinningMatrices()
 {
-    if (m_Pose)
+    SkeletonPoseComponent* poseComponent = GetWorld()->GetComponent(m_PoseComponent);
+    if (poseComponent && poseComponent->GetPose())
     {
-        m_Pose->m_StreamBuffers.Clear();
+        SkeletonPose* pose = poseComponent->GetPose();
+        m_SkinningData.Pose = pose;
+        m_SkinningData.StreamBuffers.Clear();
         if (MeshResource const* meshResource = GameApplication::sGetResourceManager().TryGet(m_Resource))
         {
             auto& allJointRemaps = meshResource->GetJointRemaps();
             auto& allInverseBindPoses = meshResource->GetInverseBindPoses();
-            if (m_Pose->m_SkinningMatrices.Size() != allInverseBindPoses.Size())
-                m_Pose->m_SkinningMatrices.Resize(allInverseBindPoses.Size());
+            if (m_SkinningData.SkinningMatrices.Size() != allInverseBindPoses.Size())
+                m_SkinningData.SkinningMatrices.Resize(allInverseBindPoses.Size());
 
             alignas(16) Float4x4 jointTransform;
 
             for (auto& skin : meshResource->GetSkins())
             {
-                auto& buffer = m_Pose->m_StreamBuffers.EmplaceBack();
+                auto& buffer = m_SkinningData.StreamBuffers.EmplaceBack();
                 buffer.Size = skin.MatrixCount * sizeof(Float3x4);
                 HK_ASSERT(buffer.Size > 0);
 
@@ -223,55 +227,24 @@ void DynamicMeshComponent::UpdateSkinningMatrices()
 
                 for (size_t i = 0; i < skin.MatrixCount; ++i)
                 {
-                    dataP[i] = m_Pose->m_SkinningMatrices[skin.FirstMatrix + i];
+                    dataP[i] = m_SkinningData.SkinningMatrices[skin.FirstMatrix + i];
 
-                    Simd::StoreFloat4x4((m_Pose->m_ModelMatrices[jointRemaps[i]] * inverseBindPoses[i]).cols, jointTransform);
+                    Simd::StoreFloat4x4((pose->m_ModelMatrices[jointRemaps[i]] * inverseBindPoses[i]).cols, jointTransform);
 
-                    data[i] = m_Pose->m_SkinningMatrices[skin.FirstMatrix + i] = Float3x4(jointTransform.Transposed());
+                    data[i] = m_SkinningData.SkinningMatrices[skin.FirstMatrix + i] = Float3x4(jointTransform.Transposed());
                 }
             }
         }
+    }
+    else
+    {
+        m_SkinningData.Pose.Reset();
     }
 }
 
 void DynamicMeshComponent::DrawDebug(DebugRenderer& renderer)
 {
     MeshComponent::DrawDebug(renderer);
-
-    if (com_DrawSkeletons && m_Pose)
-    {
-        if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
-        {
-            Float3x4 worldTransform = GetOwner()->GetWorldTransformMatrix();
-            alignas(16) Float4x4 jointTransform;
-
-            renderer.SetDepthTest(false);
-            for (int jointIndex = 0, count = resource->GetJointCount(); jointIndex < count; ++jointIndex)
-            {
-                Simd::StoreFloat4x4(m_Pose->m_ModelMatrices[jointIndex].cols, jointTransform);
-
-                auto t = worldTransform * Float3x4(jointTransform.Transposed());
-
-                Float3 v1 = t.DecomposeTranslation();
-                Float3x3 r1 = t.DecomposeRotation();
-
-                renderer.SetColor(Color4(1, 0, 0, 1));
-                renderer.DrawOrientedBox(v1, r1, Float3(0.01f));
-
-                int parent = resource->GetJointParent(jointIndex);
-                if (parent >= 0)
-                {
-                    Simd::StoreFloat4x4(m_Pose->m_ModelMatrices[parent].cols, jointTransform);
-
-                    auto t0 = worldTransform * Float3x4(jointTransform.Transposed());
-                    Float3 v0 = t0.DecomposeTranslation();
-
-                    renderer.SetColor(Color4(1, 1, 0, 1));
-                    renderer.DrawLine(v0, v1);
-                }
-            }
-        }
-    }
 }
 
 HK_NAMESPACE_END

@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,44 +30,43 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Runtime/World/TickFunction.h>
-#include "SkeletonPoseComponent.h"
-
 HK_NAMESPACE_BEGIN
 
-class DebugRenderer;
-
-class SocketComponent final : public Component
+struct AnimGraph_Value
 {
-public:
-    //
-    // Meta info
-    //
+    float Value = 0;
 
-    static constexpr ComponentMode Mode = ComponentMode::Dynamic;
+    AnimGraph_Value() = default;
+    AnimGraph_Value(AnimGraph_Value const& rhs) = default;
+    AnimGraph_Value(bool v) : Value(v) {}
+    AnimGraph_Value(float v) : Value(v) {}
 
-    Float3              Offset;
-    uint16_t            JointIndex{};
-    bool                bApplyJointScale = false;
-    
-    // Internal
-
-    void                BeginPlay();
-    void                LateUpdate();
-
-    void                DrawDebug(DebugRenderer& renderer);
-
-private:
-    Handle32<SkeletonPoseComponent> m_PoseComponent;
-};
-
-namespace TickGroup_FixedUpdate
-{
-    template <>
-    HK_INLINE void InitializeTickFunction<SocketComponent>(TickFunctionDesc& desc)
+    template <typename T>
+    AnimGraph_Value& operator=(T const& in)
     {
-        desc.Name.FromString("Update Sockets");
+        Value = in;
+        return *this;
     }
-}
+
+    bool operator==(AnimGraph_Value const& rhs) const
+    {
+        return Value == rhs.Value;
+    }
+
+    bool operator!=(AnimGraph_Value const& rhs) const
+    {
+        return Value != rhs.Value;
+    }
+
+    bool GetBool() const
+    {
+        return Value != 0.0f;
+    }
+
+    float GetFloat() const
+    {
+        return Value;
+    }
+};
 
 HK_NAMESPACE_END

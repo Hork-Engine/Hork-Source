@@ -562,11 +562,12 @@ void WorldRenderer::AddMeshes()
 
                 if constexpr (IsDynamicMesh<MeshComponentType>())
                 {
-                    if (SkeletonPose* pose = mesh.GetPose())
+                    if (SkeletonPose* pose = mesh.GetSkinningData().Pose)
+                    //if (SkeletonPose* pose = mesh.GetPose())
                     {
                         if (surface.SkinIndex != -1)
                         {
-                            auto& buffer = pose->m_StreamBuffers[surface.SkinIndex];
+                            auto& buffer = mesh.GetSkinningData().StreamBuffers[surface.SkinIndex];
                             skeletonOffset = buffer.Offset;
                             skeletonOffsetMB = buffer.OffsetP;
                             skeletonSize = buffer.Size;
@@ -753,11 +754,12 @@ void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox 
 
                 if constexpr (IsDynamicMesh<MeshComponentType>())
                 {
-                    if (SkeletonPose* pose = mesh.GetPose())
+                    if (SkeletonPose* pose = mesh.GetSkinningData().Pose)
+                    //if (SkeletonPose* pose = mesh.GetPose())
                     {
                         if (surface.SkinIndex != -1)
                         {
-                            auto& buffer = pose->m_StreamBuffers[surface.SkinIndex];
+                            auto& buffer = mesh.GetSkinningData().StreamBuffers[surface.SkinIndex];
                             skeletonOffset = buffer.Offset;
                             skeletonSize = buffer.Size;
                         }

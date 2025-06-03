@@ -31,6 +31,7 @@ SOFTWARE.
 #include "SocketComponent.h"
 
 #include <Hork/Runtime/World/GameObject.h>
+#include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Core/ConsoleVar.h>
 
@@ -38,31 +39,44 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawSockets("com_DrawSockets"_s, "0"_s, CVAR_CHEAT);
 
+void SocketComponent::BeginPlay()
+{
+    m_PoseComponent = GetOwner()->GetComponentHandle<SkeletonPoseComponent>();
+}
+
 void SocketComponent::LateUpdate()
 {
-    if (Pose && JointIndex < Pose->m_ModelMatrices.Size())
+    SkeletonPoseComponent* poseComponent = GetWorld()->GetComponent(m_PoseComponent);
+    if (!poseComponent)
+        return;
+
+    SkeletonPose* pose = poseComponent->GetPose();
+    if (!pose)
+        return;
+
+    if (JointIndex >= pose->m_ModelMatrices.Size())
+        return;
+
+    SimdFloat4x4 transform = pose->m_ModelMatrices[JointIndex] * SimdFloat4x4::Translation(Simd::LoadFloat4(Offset.X, Offset.Y, Offset.Z, 0.0f));
+
+    SimdFloat4 p, r, s;
+    if (Simd::Decompose(transform, &p, &r, &s))
     {
-        SimdFloat4x4 transform = Pose->m_ModelMatrices[JointIndex] * SimdFloat4x4::Translation(Simd::LoadFloat4(Offset.X, Offset.Y, Offset.Z, 0.0f));
+        alignas(16) Float4 position;
+        alignas(16) Quat rotation;
 
-        SimdFloat4 p, r, s;
-        if (Simd::Decompose(transform, &p, &r, &s))
+        Simd::StorePtr(p, &position.X);
+        Simd::StorePtr(r, &rotation.X);
+
+        if (bApplyJointScale)
         {
-            alignas(16) Float4 position;
-            alignas(16) Quat rotation;
-
-            Simd::StorePtr(p, &position.X);
-            Simd::StorePtr(r, &rotation.X);
-        
-            if (bApplyJointScale)
-            {
-                alignas(16) Float4 scale;
-                Simd::StorePtr(s, &scale.X);
-                GetOwner()->SetTransform(Float3(position), rotation, Float3(scale));
-            }
-            else
-            {
-                GetOwner()->SetPositionAndRotation(Float3(position), rotation);
-            }        
+            alignas(16) Float4 scale;
+            Simd::StorePtr(s, &scale.X);
+            GetOwner()->SetTransform(Float3(position), rotation, Float3(scale));
+        }
+        else
+        {
+            GetOwner()->SetPositionAndRotation(Float3(position), rotation);
         }
     }
 }
