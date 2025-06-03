@@ -61,8 +61,6 @@ ConsoleVar com_AppDataPath("com_AppDataPath"_s, ""_s, CVAR_NOSAVE);
 
 ConsoleVar rt_VidWidth("rt_VidWidth"_s, "0"_s);
 ConsoleVar rt_VidHeight("rt_VidHeight"_s, "0"_s);
-//ConsoleVar rt_VidWidth("rt_VidWidth"_s, "1024"_s);
-//ConsoleVar rt_VidHeight("rt_VidHeight"_s, "768"_s);
 ConsoleVar rt_VidHz("rt_VidHz"_s, "0"_s);
 #ifdef HK_DEBUG
 ConsoleVar rt_VidMode("rt_VidMode"_s, "exclusive"_s);
