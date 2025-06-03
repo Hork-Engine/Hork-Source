@@ -77,7 +77,7 @@ HK_FORCEINLINE float LinearFromSRGB(float srgb)
     return (srgb <= 0.04045f) ? srgb / 12.92f : Math::Pow((srgb + 0.055f) / 1.055f, 2.4f);
 }
 
-HK_FORCEINLINE float LinearFromSRGB_Fast(float srgb)
+HK_FORCEINLINE constexpr float LinearFromSRGB_Fast(float srgb)
 {
     return srgb * (srgb * (srgb * 0.305306011f + 0.682171111f) + 0.012522878f);
 }
