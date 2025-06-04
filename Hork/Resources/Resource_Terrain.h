@@ -55,7 +55,7 @@ public:
     void                        Upload(RHI::IDevice* device) override;
 
     /// Allocate empty height map
-    void                        Allocate(uint32_t resolution);
+    void                        Allocate(uint32_t resolution, float const* data = nullptr);
 
     /// Fill height map data.
     bool                        WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData);

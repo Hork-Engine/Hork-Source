@@ -35,40 +35,6 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void FillTestHeightmap(int resolution, float* heightmap)
-{
-#if 0
-    for (int y = 0; y < resolution; y++)
-        for (int x = 0; x < resolution; x++)
-        {
-            float h = 0; //sin(x / 128.0F * Math::_2PI) * 10;
-            //sin(x * 0.01f) * 10 + cos(y * 0.01f) * 10 - 10;
-
-            if (x == 0 || x == resolution-1)
-                h = 1;
-
-            if (y == 0 || y == resolution - 1)
-                h = 1;
-
-            heightmap[y * resolution + x] = h;
-        }
-#endif
-
-    for (int y = 0; y < resolution; y++)
-        for (int x = 0; x < resolution; x++)
-        {
-            //float h = sin(x / 128.0F * Math::_2PI) * 10;
-            float h = sin(x * 0.1f) * 1 + cos(y * 0.1f) *  1 - 1;
-
-            //float h = 0;
-
-            if (x > resolution / 2 + 15 && y > resolution / 2 + 15 && x < resolution / 2 + 45 && y < resolution / 2 + 35)
-                h = FLT_MAX;
-
-            heightmap[y * resolution + x] = h;
-        }
-}
-
 void DownsampleHeightMap(int inSourceResolution, const float* inSourceMap, float* outDestMap)
 {
     HK_ASSERT((inSourceResolution & 1) == 0);
@@ -135,33 +101,10 @@ bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
     // TODO: read heightmap
 
     #if 0
-    Allocate(1024);
-    Core::Memcpy(m_Lods[0].GetData(), stream.AsBlob().GetData(), 1024 * 1024 * sizeof(float));
+    Allocate(1024, stream.AsBlob().GetData());
     #endif
 
-#if 1
-    Allocate(512);
-    FillTestHeightmap(m_Resolution, (float*)m_Lods[0].GetData());    
-#endif
-
-    GenerateLods();
-
-    float minHeight = std::numeric_limits<float>::max();
-    float maxHeight = -std::numeric_limits<float>::max();
-    for (int y = 0; y < m_Resolution; y++)
-        for (int x = 0; x < m_Resolution; x++)
-        {
-            float h = ((float*)m_Lods[0].GetData())[y * m_Resolution + x];
-            if (h != FLT_MAX)
-            {
-                minHeight = Math::Min(h, minHeight);
-                maxHeight = Math::Max(h, maxHeight);
-            }
-        }
-
-    // Update vertical bounds
-    m_BoundingBox.Mins.Y = minHeight;
-    m_BoundingBox.Maxs.Y = maxHeight;
+    Allocate(1024);
 
     return true;
 }
@@ -169,19 +112,19 @@ bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
 void TerrainResource::Upload(RHI::IDevice* device)
 {}
 
-void TerrainResource::Allocate(uint32_t resolution)
+void TerrainResource::Allocate(uint32_t resolution, float const* data)
 {
     HK_ASSERT(IsPowerOfTwo(resolution));
 
     m_Resolution = resolution;
 
     // Calc clipping region
-    int half_resolution_x = m_Resolution >> 1;
-    int half_resolution_y = m_Resolution >> 1;
-    m_ClipMin.X = half_resolution_x;
-    m_ClipMin.Y = half_resolution_y;
-    m_ClipMax.X = half_resolution_x - 1;
-    m_ClipMax.Y = half_resolution_y - 1;
+    int halfResolutionX = m_Resolution >> 1;
+    int halfResolutionY = m_Resolution >> 1;
+    m_ClipMin.X = halfResolutionX;
+    m_ClipMin.Y = halfResolutionY;
+    m_ClipMax.X = halfResolutionX - 1;
+    m_ClipMax.Y = halfResolutionY - 1;
 
     // Calc bounding box
     m_BoundingBox.Mins.X = -m_ClipMin.X;
@@ -192,18 +135,45 @@ void TerrainResource::Allocate(uint32_t resolution)
     m_BoundingBox.Maxs.Z = m_ClipMax.Y;
 
     // Allocate memory for terrain lods
-    size_t total_memory_allocated{};
+    size_t totalMemoryAllocated{};
     m_NumLods = Math::Log2(m_Resolution) + 1;
     m_Lods.Resize(m_NumLods);
     for (int i = 0; i < m_NumLods; i++)
     {
         int sz = 1 << (m_NumLods - i - 1);
         size_t size = sz * sz * sizeof(float);
-        m_Lods[i].Reset(size);
-        total_memory_allocated += size;
+        if (i == 0)
+            m_Lods[i].Reset(size, data);
+        else
+            m_Lods[i].Reset(size);
+        if (data == nullptr)
+            m_Lods[i].ZeroMem();
+        totalMemoryAllocated += size;
     }
 
-    LOG("Terrain height field memory usage: {} KB\n", total_memory_allocated >> 10);
+    if (data)
+    {
+        GenerateLods();
+
+        float minHeight = std::numeric_limits<float>::max();
+        float maxHeight = -std::numeric_limits<float>::max();
+        for (int y = 0; y < m_Resolution; y++)
+            for (int x = 0; x < m_Resolution; x++)
+            {
+                float h = data[y * m_Resolution + x];
+                if (h != FLT_MAX)
+                {
+                    minHeight = Math::Min(h, minHeight);
+                    maxHeight = Math::Max(h, maxHeight);
+                }
+            }
+
+        // Update vertical bounds
+        m_BoundingBox.Mins.Y = minHeight;
+        m_BoundingBox.Maxs.Y = maxHeight;
+    }
+
+    LOG("Terrain height field memory usage: {} KB\n", totalMemoryAllocated >> 10);
 }
 
 bool TerrainResource::WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData)
