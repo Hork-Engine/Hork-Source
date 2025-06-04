@@ -123,12 +123,22 @@ void MultiplySoATransformQuaternion(int jointIndex, SimdQuaternion const& quat, 
     Simd::Transpose4x4(&aosQuats->xyzw, &transform.rotation.x);
 }
 
+void IkLookAtComponent::BeginPlay()
+{
+    m_PoseComponent = GetOwner()->GetComponentHandle<SkeletonPoseComponent>();
+}
+
 void IkLookAtComponent::Update()
 {
     if (m_BlendWeight < std::numeric_limits<float>::min())
         return;
 
-    if (!m_Pose)
+    SkeletonPoseComponent* poseComponent = GetWorld()->GetComponent(m_PoseComponent);
+    if (!poseComponent)
+        return;
+
+    SkeletonPose* pose = poseComponent->GetPose();
+    if (!pose)
         return;
 
     auto& resourceMngr = GameApplication::sGetResourceManager();
@@ -139,13 +149,13 @@ void IkLookAtComponent::Update()
     Float3x4 worldTransformInverse = GetOwner()->GetWorldTransformMatrix().Inversed();
     Float3 targetLocalPosition = worldTransformInverse * m_TargetPosition;
 
-    UpdateLookAtIK(targetLocalPosition, *mesh->GetSkeleton());
+    UpdateLookAtIK(pose, targetLocalPosition, *mesh->GetSkeleton());
 }
 
-bool IkLookAtComponent::UpdateLookAtIK(Float3 const& target, OzzSkeleton const& skeleton)
+bool IkLookAtComponent::UpdateLookAtIK(SkeletonPose* pose, Float3 const& target, OzzSkeleton const& skeleton)
 {
-    auto& models = m_Pose->m_ModelMatrices;
-    auto& locals = m_Pose->m_LocalMatrices;
+    auto& models = pose->m_ModelMatrices;
+    auto& locals = pose->m_LocalMatrices;
 
     ozz::animation::IKAimJob ikJob;
 
@@ -205,8 +215,8 @@ bool IkLookAtComponent::UpdateLookAtIK(Float3 const& target, OzzSkeleton const& 
 
     ozz::animation::LocalToModelJob localToModel;
     localToModel.skeleton = &skeleton;
-    localToModel.input = ozz::span{m_Pose->m_LocalMatrices.ToPtr(), m_Pose->m_LocalMatrices.Size()};
-    localToModel.output = ozz::span{m_Pose->m_ModelMatrices.ToPtr(), m_Pose->m_ModelMatrices.Size()};
+    localToModel.input = ozz::span{pose->m_LocalMatrices.ToPtr(), pose->m_LocalMatrices.Size()};
+    localToModel.output = ozz::span{pose->m_ModelMatrices.ToPtr(), pose->m_ModelMatrices.Size()};
     localToModel.from = previousJoint;
     if (!localToModel.Run())
         return false;
@@ -218,10 +228,18 @@ void IkLookAtComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawIKLookAt)
     {
-        if (m_IkChain.Size() != 0 && m_Pose)
+        if (m_IkChain.Size() != 0)
         {
+            SkeletonPoseComponent* poseComponent = GetWorld()->GetComponent(m_PoseComponent);
+            if (!poseComponent)
+                return;
+
+            SkeletonPose* pose = poseComponent->GetPose();
+            if (!pose)
+                return;
+
             const int head = m_IkChain.JointsChain[0];
-            const SimdFloat4x4 offset = m_Pose->m_ModelMatrices[head] * SimdFloat4x4::Translation(Simd::Load3PtrU(&m_EyesOffset.X));
+            const SimdFloat4x4 offset = pose->m_ModelMatrices[head] * SimdFloat4x4::Translation(Simd::Load3PtrU(&m_EyesOffset.X));
 
             alignas(16) Float4x4 eyesTransform;
             Simd::StoreFloat4x4(offset.cols, eyesTransform);

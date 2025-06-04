@@ -65,6 +65,9 @@ void AnimatorComponent::BeginPlay()
     if (!skeleton)
         return;
 
+    if (!m_AnimGraph)
+        return;
+
     m_AnimPlayer = MakeUnique<AnimationPlayer>(m_AnimGraph, skeleton);
 }
 

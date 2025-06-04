@@ -41,7 +41,6 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
 
-#include <Hork/Runtime/World/Modules/Skeleton/Components/AnimationPlayerSimple.h>
 #include <Hork/Runtime/World/Modules/Skeleton/Components/IkLookAtComponent.h>
 
 #include <Hork/Runtime/World/Modules/Physics/Components/CharacterControllerComponent.h>
@@ -415,18 +414,48 @@ void SampleApplication::CreateScene()
     CreateSceneFromMap(m_World, "/Root/maps/sample10.map", "grime-alley-brick2");
 }
 
+Ref<AnimationGraph_Cooked> CreateSimplePlaybackAnimationGraph()
+{
+    AnimationGraph graph;
+
+    StringID ParamID_PlaybackSpeed("PlaybackSpeed");
+
+    //
+    // Animation clip
+    //
+
+    auto& idle = graph.AddNode<AnimGraph_Clip>();
+    idle.SetClipID("/Root/thirdparty/mixamo/paladin/idle-3.anim");
+
+    //
+    // Animation playback speed
+    //
+
+    auto& playbackSpeedParam = graph.AddNode<AnimGraph_Param>();
+    playbackSpeedParam.SetParamID(ParamID_PlaybackSpeed);
+
+    //
+    // Playback node
+    //
+
+    auto& playback = graph.AddNode<AnimGraph_Playback>();
+    playback.SetSpeedProviderNode(playbackSpeedParam.GetID());
+    playback.SetChildNode(idle.GetID());
+
+    graph.SetRootNode(playback.GetID());
+
+    return graph.Cook();
+}
+
 void SampleApplication::PlayAnimation()
 {
-    if (auto animPlayer = m_World->GetComponent(m_AnimPlayer))
+    if (auto animator = m_World->GetComponent(m_Animator))
     {
-        auto& resourceMngr = GameApplication::sGetResourceManager();
         if (!m_Play)
-        {
-            animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[0]), 0.1f, 0.0f);
-            animPlayer->SetPlaybackSpeed(1);
-        }
+            animator->SetParam(StringID{"PlaybackSpeed"}, 1.0f);
         else
-            animPlayer->SetPlaybackSpeed(0);
+            animator->SetParam(StringID{"PlaybackSpeed"}, 0.0f);
+
         m_Play = !m_Play;
     }
 }
@@ -515,14 +544,20 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
     GameObject* object;
     m_World->CreateObject(desc, object);
 
-    AnimationPlayerSimple* animPlayer;
-    m_AnimPlayer = object->CreateComponent(animPlayer);
-    animPlayer->SetMesh(meshHandle);
-    //animPlayer->PlayAnimation(resourceMngr.GetResource<AnimationResource>(PaladinAnimations[anim % HK_ARRAY_SIZE(PaladinAnimations)]), 0.1f, 0.0f);
+    SkeletonPoseComponent* pose;
+    object->CreateComponent(pose);
+    pose->SetMesh(meshHandle);
+
+    static Ref<AnimationGraph_Cooked> animGraph = CreateSimplePlaybackAnimationGraph();
+
+    AnimatorComponent* animator;
+    m_Animator = object->CreateComponent(animator);
+    animator->SetAnimationGraph(animGraph.RawPtr());
+    animator->SetMesh(meshHandle);
+    animator->SetParam(StringID{"PlaybackSpeed"}, 0.0f);
 
     IkLookAtComponent* ikLookAt;
     object->CreateComponent(ikLookAt);
-    ikLookAt->SetPose(animPlayer->GetPose());
     ikLookAt->SetMesh(meshHandle);
     ikLookAt->SetBlendWeight(0);
 
@@ -537,7 +572,6 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
     mesh->SetMesh(meshHandle);
-    mesh->SetPose(animPlayer->GetPose());
     mesh->SetMaterialCount(meshResource->GetSurfaceCount());
     for (int i = 0 ; i < meshResource->GetSurfaceCount(); ++i)
         mesh->SetMaterial(i, materialMngr.TryGet("thirdparty/mixamo/paladin"));

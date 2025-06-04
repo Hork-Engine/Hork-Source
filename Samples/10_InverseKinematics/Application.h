@@ -74,7 +74,7 @@ private:
     World* m_World{};
     Ref<WorldRenderView> m_WorldRenderView;
     GameObject* m_Player{};
-    Handle32<class AnimationPlayerSimple> m_AnimPlayer;
+    Handle32<class AnimatorComponent> m_Animator;
     bool m_Play{};
 };
 

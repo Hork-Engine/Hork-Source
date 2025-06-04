@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "AnimationPlayerSimple.h"
+#include "AnimatorComponent.h"
 
 #include <Hork/Runtime/World/TickFunction.h>
 #include <Hork/Math/Simd/Simd.h>
@@ -66,9 +66,9 @@ public:
     void                    SetMesh(MeshHandle mesh) { m_Mesh = mesh; }
     MeshHandle              GetMesh() const { return m_Mesh; }
 
-    void                    SetPose(SkeletonPose* pose) { m_Pose = pose; }
-    SkeletonPose*           GetPose() { return m_Pose; }
-    SkeletonPose const*     GetPose() const { return m_Pose; }
+    //void                    SetPose(SkeletonPose* pose) { m_Pose = pose; }
+    //SkeletonPose*           GetPose() { return m_Pose; }
+    //SkeletonPose const*     GetPose() const { return m_Pose; }
 
     // Forward vector in head local-space.
     void                    SetHeadForward(Float3 const& forward) { m_HeadForward = forward; }
@@ -92,14 +92,15 @@ public:
 
     // Internal
 
+    void                    BeginPlay();
     void                    Update();
     void                    DrawDebug(DebugRenderer& renderer);
 
 private:
-    bool                    UpdateLookAtIK(Float3 const& target, OzzSkeleton const& skeleton);
+    bool                    UpdateLookAtIK(SkeletonPose* pose, Float3 const& target, OzzSkeleton const& skeleton);
 
     MeshHandle              m_Mesh;
-    Ref<SkeletonPose>       m_Pose;
+    Handle32<SkeletonPoseComponent> m_PoseComponent;
     Float3                  m_HeadForward = Float3::sAxisZ();
     Float3                  m_EyesOffset{0, .07f, .1f};
     Float3                  m_TargetPosition;
@@ -112,7 +113,7 @@ namespace TickGroup_Update
     template <>
     HK_INLINE void InitializeTickFunction<IkLookAtComponent>(TickFunctionDesc& desc)
     {
-        desc.AddPrerequisiteComponent<AnimationPlayerSimple>();
+        desc.AddPrerequisiteComponent<AnimatorComponent>();
     }
 }
 
