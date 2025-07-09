@@ -46,6 +46,9 @@ public:
     RoundingDesc     Rounding;
     Color4           TintColor;
     CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_COPY;
+    bool             NearestFilter = false;
+    uint32_t         RenderTargetWidthOverride = 0;
+    uint32_t         RenderTargetHeightOverride = 0;
 
     UIViewport();
 
@@ -80,8 +83,8 @@ private:
     void Clear(Canvas& canvas);
 
     Ref<WorldRenderView>  m_WorldRenderView;
-    int                   m_ViewWidth{};
-    int                   m_ViewHeight{};
+    int                   m_RenderTargetWidth{};
+    int                   m_RenderTargetHeight{};
 };
 
 extern bool GUILockViewportScaling;

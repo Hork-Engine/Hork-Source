@@ -99,7 +99,7 @@ void UIViewport::OnMouseMoveEvent(MouseMoveEvent const& event)
 
     auto const& cursorPosition = UIManager::sInstance().CursorPosition;
 
-    //GameApplication::sGetInputSystem().SetCursorPosition((cursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
+    //GameApplication::sGetInputSystem().SetCursorPosition((cursorPosition - pos) / size * Float2(m_RenderTargetWidth, m_RenderTargetHeight));
     GameApplication::sGetInputSystem().SetCursorPosition((cursorPosition - pos) / size);
 }
 
@@ -134,8 +134,16 @@ void UIViewport::UpdateViewSize() // TODO: PostGeometryUpdate?
 {
     if (!GUILockViewportScaling)
     {
-        m_ViewWidth  = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.X - Math::Floor(m_Geometry.Mins.X)));
-        m_ViewHeight = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.Y - Math::Floor(m_Geometry.Mins.Y)));
+        if (RenderTargetWidthOverride && RenderTargetHeightOverride)
+        {
+            m_RenderTargetWidth = RenderTargetWidthOverride;
+            m_RenderTargetHeight = RenderTargetHeightOverride;
+        }
+        else
+        {
+            m_RenderTargetWidth  = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.X - Math::Floor(m_Geometry.Mins.X)));
+            m_RenderTargetHeight = static_cast<int>(Math::Max(0.0f, m_Geometry.Maxs.Y - Math::Floor(m_Geometry.Mins.Y)));
+        }
     }
 }
 
@@ -163,8 +171,7 @@ void UIViewport::Draw(Canvas& canvas)
         return;
     }
 
-    //m_WorldRenderView->SetViewport(size.X, size.Y);
-    m_WorldRenderView->SetViewport(m_ViewWidth, m_ViewHeight);
+    m_WorldRenderView->SetViewport(m_RenderTargetWidth, m_RenderTargetHeight);
 
     auto world = m_WorldRenderView->GetWorld();
     if (!world)
@@ -187,7 +194,7 @@ void UIViewport::Draw(Canvas& canvas)
     }
 
     camera->SetViewportPosition(m_Geometry.Mins);
-    camera->SetViewportSize({static_cast<float>(m_ViewWidth), static_cast<float>(m_ViewHeight)}, aspectScale);
+    camera->SetViewportSize({static_cast<float>(m_RenderTargetWidth), static_cast<float>(m_RenderTargetHeight)}, aspectScale);
 
     GameApplication::sGetRenderer().AddRenderView(m_WorldRenderView);
 
@@ -204,6 +211,7 @@ void UIViewport::Draw(Canvas& canvas)
     desc.TintColor = TintColor;
     desc.Composite = Composite;
     desc.bFlipY = true;
+    desc.bNearestFilter = NearestFilter;
     canvas.DrawTexture(desc);
 }
 
