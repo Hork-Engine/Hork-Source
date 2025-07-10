@@ -54,6 +54,15 @@ struct ComponentExtendedHandle
                             operator ComponentHandle() const    { return Handle; }
 
                             operator bool() const               { return Handle.operator bool(); }
+
+
+    HK_NODISCARD uint32_t   Hash() const
+    {
+        uint32_t h{};
+        h = HashTraits::HashCombine(h, Handle);
+        h = HashTraits::HashCombine(h, TypeID);
+        return h;
+    }
 };
 
 enum class ComponentMode
