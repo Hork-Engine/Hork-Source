@@ -54,6 +54,8 @@ public:
 
     void                    DestroyComponent(Component* component);
 
+    virtual bool            IsHandleValid(ComponentHandle handle) const = 0;
+
     virtual Component*      GetComponent(ComponentHandle handle) = 0;
     virtual Component*      GetComponentUnsafe(ComponentHandle handle) = 0;
 
@@ -103,7 +105,8 @@ public:
 
     void                    DestroyComponent(Handle32<ComponentType> handle);
 
-    bool                    IsHandleValid(Handle32<ComponentType> handle);
+    bool                    IsHandleValid(ComponentHandle handle) const override;
+    bool                    IsHandleValid(Handle32<ComponentType> handle) const;
 
     virtual Component*      GetComponent(ComponentHandle handle) override;
     virtual Component*      GetComponentUnsafe(ComponentHandle handle) override;

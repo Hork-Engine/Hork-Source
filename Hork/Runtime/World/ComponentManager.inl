@@ -183,7 +183,7 @@ HK_FORCEINLINE void ComponentManager<ComponentType>::DestroyComponent(Handle32<C
 }
 
 template <typename ComponentType>
-HK_FORCEINLINE bool ComponentManager<ComponentType>::IsHandleValid(Handle32<ComponentType> handle)
+HK_FORCEINLINE bool ComponentManager<ComponentType>::IsHandleValid(Handle32<ComponentType> handle) const
 {
     // TODO: Move to ObjectStorage?
 
@@ -201,6 +201,12 @@ HK_FORCEINLINE bool ComponentManager<ComponentType>::IsHandleValid(Handle32<Comp
 
     // Check version / id
     return components[id]->GetHandle().ToUInt32() == handle.ToUInt32();
+}
+
+template <typename ComponentType>
+HK_FORCEINLINE bool ComponentManager<ComponentType>::IsHandleValid(ComponentHandle handle) const
+{
+    return IsHandleValid(Handle32<ComponentType>(handle));
 }
 
 template <typename ComponentType>
