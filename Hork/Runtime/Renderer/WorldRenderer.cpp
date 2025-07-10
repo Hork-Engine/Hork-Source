@@ -879,6 +879,8 @@ bool WorldRenderer::AddLightShadowmap(PunctualLightComponent* light, float radiu
 
 void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData* view)
 {
+    worldRenderView->ClearComponentRenderViews();
+
     auto* world = worldRenderView->GetWorld();
     if (!world)
     {
@@ -1198,10 +1200,10 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
             localFrustum.FromMatrix(localMVP, true);
 
             // Update view
-            auto terrainView = worldRenderView->GetTerrainView(terrain.GetResource());
+            auto& terrainView = worldRenderView->GetComponentRenderView(&terrain);
 
-            terrainView->Update(localViewPosition, localFrustum);
-            if (terrainView->GetIndirectBufferDrawCount() == 0)
+            terrainView.Update(localViewPosition, localFrustum);
+            if (terrainView.GetIndirectBufferDrawCount() == 0)
             {
                 // Everything was culled
                 return;
@@ -1219,17 +1221,17 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
 
             m_FrameData.TerrainInstances.Add(instance);
 
-            instance->VertexBuffer = terrainView->GetVertexBufferGPU();
-            instance->IndexBuffer = terrainView->GetIndexBufferGPU();
-            instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
-            instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
-            instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
-            instance->Clipmaps = terrainView->GetClipmapArray();
-            instance->Normals = terrainView->GetNormalMapArray();
+            instance->VertexBuffer = terrainView.GetVertexBufferGPU();
+            instance->IndexBuffer = terrainView.GetIndexBufferGPU();
+            instance->InstanceBufferStreamHandle = terrainView.GetInstanceBufferStreamHandle();
+            instance->IndirectBufferStreamHandle = terrainView.GetIndirectBufferStreamHandle();
+            instance->IndirectBufferDrawCount = terrainView.GetIndirectBufferDrawCount();
+            instance->Clipmaps = terrainView.GetClipmapArray();
+            instance->Normals = terrainView.GetNormalMapArray();
             instance->ViewPositionAndHeight.X = localViewPosition.X;
             instance->ViewPositionAndHeight.Y = localViewPosition.Y;
             instance->ViewPositionAndHeight.Z = localViewPosition.Z;
-            instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
+            instance->ViewPositionAndHeight.W = terrainView.GetViewHeight();
             instance->LocalViewProjection = localMVP;
             instance->ModelNormalToViewSpace = view->NormalToViewMatrix * worldRotation;
             instance->ClipMin = terrainResource->GetClipMin();

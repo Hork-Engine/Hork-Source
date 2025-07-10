@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Resources/Resource_Terrain.h>
 #include "TerrainMesh.h"
+#include "WorldRenderView.h"
 
 #include <Hork/Geometry/BV/BvFrustum.h>
 #include <Hork/Renderer/RenderDefs.h>
@@ -71,10 +72,10 @@ enum
     MAX_TERRAIN_LODS = 10
 };
 
-class TerrainView final : public Noncopyable
+class TerrainView final : public ComponentRenderView
 {
 public:
-    TerrainView(TerrainHandle resource);
+    explicit TerrainView(TerrainHandle resource);
     ~TerrainView();
 
     void Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustum);

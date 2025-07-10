@@ -116,6 +116,11 @@ public:
     float                       InnerRadiusSqr = Math::Square(0.6f);
 };
 
+class ComponentRenderView : public RefCounted
+{
+public:
+};
+
 class WorldRenderView final : public RefCounted
 {
     friend class                WorldRenderer;
@@ -161,8 +166,6 @@ public:
 
     TextureHandle               GetTextureHandle();
 
-    class TerrainView*          GetTerrainView(TerrainHandle resource);
-
     /*
     TODO    
     enum CustomDepthStencil
@@ -203,6 +206,23 @@ public:
 
     RHI::ITexture*              AcquireRenderTarget();
 
+    template <typename ComponentType>
+    auto& GetComponentRenderView(ComponentType* component)
+    {
+        using RetType = decltype(component->CreateRenderView());
+
+        ComponentExtendedHandle extendedHandle{component->GetHandle(), ComponentRTTR::TypeID<ComponentType>};
+        auto& view = m_ComponentViews[extendedHandle];
+        if (!view)
+        {
+            view = component->CreateRenderView();
+            m_Components.Add(extendedHandle);
+        }
+        return *static_cast<typename RetType::ReferencedType*>(view.RawPtr());
+    }
+
+    void ClearComponentRenderViews();
+
 private:
     RHI::ITexture*              AcquireLightTexture();
     RHI::ITexture*              AcquireDepthTexture();
@@ -219,9 +239,9 @@ private:
     Ref<RHI::ITexture>          m_DepthTexture;
     Ref<RHI::ITexture>          m_HBAOMaps;
 
-    using TerrainViewHash =     HashMap<ResourceID, TerrainView*>;
+    HashMap<ComponentExtendedHandle, Ref<ComponentRenderView>> m_ComponentViews;
+    Vector<ComponentExtendedHandle> m_Components;
 
-    TerrainViewHash             m_TerrainViews;     // TODO: Needs to be cleaned from time to time
     Float4x4                    m_ProjectionMatrix; // last rendered projection
     Float4x4                    m_ViewMatrix;       // last rendered view
     float                       m_ScaledWidth{};

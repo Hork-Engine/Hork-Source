@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "WorldRenderView.h"
-#include "TerrainView.h"
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Hork/Core/Guid.h>
@@ -184,12 +183,6 @@ WorldRenderView::WorldRenderView() :
 WorldRenderView::~WorldRenderView()
 {
     GameApplication::sGetResourceManager().UnloadResource(m_HandleRT);
-
-    for (auto& it : m_TerrainViews)
-    {
-        TerrainView* terrainView = it.second;
-        delete terrainView;
-    }
 }
 
 void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
@@ -327,12 +320,23 @@ void WorldRenderView::ReleaseHBAOMaps()
     m_HBAOMaps.Reset();
 }
 
-TerrainView* WorldRenderView::GetTerrainView(TerrainHandle resource)
+void WorldRenderView::ClearComponentRenderViews()
 {
-    auto& terrainView = m_TerrainViews[resource.ID];
-    if (!terrainView)
-        terrainView = new TerrainView(resource);
-    return terrainView;
+    for (size_t i = 0, count = m_Components.Size(); i < count; )
+    {
+        auto componentMngr = m_World->TryGetComponentManager(m_Components[i].TypeID);
+        HK_ASSERT(componentMngr);
+        if (!componentMngr->IsHandleValid(m_Components[i].Handle))
+        {
+            m_ComponentViews.Erase(m_Components[i]);
+            m_Components[i] = m_Components.Last();
+            m_Components.RemoveLast();
+        }
+        else
+        {
+            ++i;
+        }
+    }
 }
 
 HK_NAMESPACE_END

@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/DebugRenderer.h>
 
 #include <Hork/Runtime/World/Modules/Render/RenderInterfaceImpl.h>
+#include <Hork/Runtime/World/Modules/Render/TerrainView.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -44,6 +45,8 @@ ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"_s, "0"_s);
 void TerrainComponent::SetResource(TerrainHandle resource)
 {
     m_Resource = resource;
+
+    // TODO: update render views
 }
 
 void TerrainComponent::DrawDebug(DebugRenderer& renderer)
@@ -80,6 +83,11 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
             renderer.PopTransform();
         }
     }
+}
+
+Ref<TerrainView> TerrainComponent::CreateRenderView()
+{
+    return MakeRef<TerrainView>(m_Resource);
 }
 
 HK_NAMESPACE_END

@@ -36,6 +36,7 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class DebugRenderer;
+class TerrainView;
 
 class TerrainComponent final : public Component
 {
@@ -54,6 +55,8 @@ public:
     // Internal
 
     void                        DrawDebug(DebugRenderer& renderer);
+
+    Ref<TerrainView>            CreateRenderView();
 
 private:
     TerrainHandle               m_Resource;
