@@ -53,8 +53,9 @@ jobs:
       run: sudo apt-get update
     - name: Install packages
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: sudo apt-get install --fix-missing libgl1-mesa-dev
-
+      run: |
+        sudo apt-get install --fix-missing libgl1-mesa-dev
+        sudo apt-get install --fix-missing libxext-dev
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
