@@ -414,7 +414,7 @@ void AnimPlayer_State::UpdateDuration(AnimPlayerContext& context)
 
 uint32_t AnimPlayer_State::Tick(AnimPlayerContext& context)
 {
-    LOG("State: {}\n", m_Name);
+    //LOG("State: {}\n", m_Name);
 
     Super::Tick(context);
 
