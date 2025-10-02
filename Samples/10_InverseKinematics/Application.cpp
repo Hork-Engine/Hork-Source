@@ -264,12 +264,13 @@ void SampleApplication::OnStartPlay()
     ShowLoadingScreen(false);
 
     // Create player
-    m_Player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
+    GameObject* player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
+    m_Player = player->GetHandle();
 
     // Create scene
     CreateScene();    
 
-    if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+    if (GameObject* camera = player->FindChildren(StringID("Camera")))
     {
         // Set camera for rendering
         m_WorldRenderView->SetCamera(camera->GetComponentHandle<CameraComponent>());
@@ -278,7 +279,7 @@ void SampleApplication::OnStartPlay()
     // Bind input to the player
     InputInterface& input = m_World->GetInterface<InputInterface>();
     input.SetActive(true);
-    input.BindInput(m_Player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
+    input.BindInput(player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
 }
 
 void SampleApplication::Pause()
@@ -507,11 +508,11 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
 
 void SampleApplication::SpawnPaladin()
 {
-    if (m_Player)
+    if (GameObject* player = m_World->GetObject(m_Player))
     {
-        if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+        if (GameObject* camera = player->FindChildren(StringID("Camera")))
         {
-            Float3 rayPos = m_Player->GetPosition() + camera->GetWorldForwardVector() + Float3::sAxisY();
+            Float3 rayPos = player->GetPosition() + camera->GetWorldForwardVector() + Float3::sAxisY();
 
             RayCastResult rayResult;
             RayCastFilter rayFilter;
@@ -563,7 +564,10 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
 
     PaladinHeadController* headController;
     object->CreateComponent(headController);
-    headController->Target = m_Player->FindChildren(StringID("Camera"))->GetHandle();
+
+    GameObject* player = m_World->GetObject(m_Player);
+    GameObject* playerCamera = player->FindChildren(StringID("Camera"));
+    headController->Target = playerCamera->GetHandle();
 
     StaticVector<StringView, 4> jointsChain = {"mixamorig:Head", "mixamorig:Neck", "mixamorig:Spine2", "mixamorig:Spine1"};
 

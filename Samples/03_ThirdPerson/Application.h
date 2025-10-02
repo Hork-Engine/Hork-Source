@@ -48,6 +48,7 @@ public:
 private:
     void CreateResources();
     void CreateScene();
+    void SpawnBarrel(Float3 const& position, Quat const& rotation);
     GameObject* CreatePlayer(Float3 const& position, Quat const& rotation);
     void Pause();
     void Quit();

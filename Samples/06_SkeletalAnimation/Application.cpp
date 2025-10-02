@@ -212,9 +212,10 @@ void SampleApplication::OnStartPlay()
     CreateScene();
 
     // Create player
-    m_Player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
+    GameObject* player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
+    m_Player = player->GetHandle();
 
-    if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+    if (GameObject* camera = player->FindChildren(StringID("Camera")))
     {
         // Set camera for rendering
         m_WorldRenderView->SetCamera(camera->GetComponentHandle<CameraComponent>());
@@ -223,7 +224,7 @@ void SampleApplication::OnStartPlay()
     // Bind input to the player
     InputInterface& input = m_World->GetInterface<InputInterface>();
     input.SetActive(true);
-    input.BindInput(m_Player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
+    input.BindInput(player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
 }
 
 void SampleApplication::Pause()
@@ -467,11 +468,11 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
 
 void SampleApplication::SpawnPaladin()
 {
-    if (m_Player)
+    if (GameObject* player = m_World->GetObject(m_Player))
     {
-        if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+        if (GameObject* camera = player->FindChildren(StringID("Camera")))
         {
-            Float3 rayPos = m_Player->GetPosition() + camera->GetWorldForwardVector() + Float3::sAxisY();
+            Float3 rayPos = player->GetPosition() + camera->GetWorldForwardVector() + Float3::sAxisY();
 
             RayCastResult rayResult;
             RayCastFilter rayFilter;
@@ -837,11 +838,11 @@ void SampleApplication::SpawnBarrel(Float3 const& position, Quat const& rotation
 
 void SampleApplication::DropBarrel()
 {
-    if (m_Player)
+    if (GameObject* player = m_World->GetObject(m_Player))
     {
-        if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+        if (GameObject* camera = player->FindChildren(StringID("Camera")))
         {
-            SpawnBarrel(m_Player->GetPosition() + camera->GetWorldForwardVector() * 0.8f + Float3::sAxisY(), Quat::sIdentity());            
+            SpawnBarrel(player->GetPosition() + camera->GetWorldForwardVector() * 0.8f + Float3::sAxisY(), Quat::sIdentity());            
         }
     }
 }

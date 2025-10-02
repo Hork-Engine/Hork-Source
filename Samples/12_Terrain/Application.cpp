@@ -182,12 +182,12 @@ void SampleApplication::OnStartPlay()
     ShowLoadingScreen(false);
 
     // Create player
-    m_Player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
+    GameObject* player = CreatePlayer(Float3(0,0,4), Quat::sIdentity());
 
     // Create scene
     CreateScene();    
 
-    if (GameObject* camera = m_Player->FindChildren(StringID("Camera")))
+    if (GameObject* camera = player->FindChildren(StringID("Camera")))
     {
         // Set camera for rendering
         m_WorldRenderView->SetCamera(camera->GetComponentHandle<CameraComponent>());
@@ -196,7 +196,7 @@ void SampleApplication::OnStartPlay()
     // Bind input to the player
     InputInterface& input = m_World->GetInterface<InputInterface>();
     input.SetActive(true);
-    input.BindInput(m_Player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
+    input.BindInput(player->GetComponentHandle<FirstPersonComponent>(), PlayerController::_1);   
 }
 
 void SampleApplication::Pause()

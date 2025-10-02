@@ -138,7 +138,7 @@ void SampleApplication::Initialize()
     m_WorldRenderView = MakeRef<WorldRenderView>();
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bClearBackground = true;
-    m_WorldRenderView->BackgroundColor = Color3::sBlack();
+    m_WorldRenderView->BackgroundColor = Color3(0.2f, 0.2f, 0.3f);
     m_WorldRenderView->bDrawDebug = true;
     mainViewport->SetWorldRenderView(m_WorldRenderView);
 
@@ -190,6 +190,8 @@ void SampleApplication::CreateResources()
     auto& materialMngr = sGetMaterialManager();
 
     materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
+    materialMngr.LoadLibrary("/Root/thirdparty/freepbr.com/freepbr.mlib");
+    materialMngr.LoadLibrary("/Root/thirdparty/sketchfab.com/sketchfab.mlib");
 
     // List of resources used in scene
     ResourceID sceneResources[] = {
@@ -197,9 +199,18 @@ void SampleApplication::CreateResources()
         resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
         resourceMngr.GetResource<MeshResource>("/Root/default/capsule.mesh"),
         resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
+        resourceMngr.GetResource<TextureResource>("/Root/black.png"),
         resourceMngr.GetResource<TextureResource>("/Root/grid8.webp"),
         resourceMngr.GetResource<TextureResource>("/Root/blank256.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp")
+        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"),
+        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_orm.mat"),
+        resourceMngr.GetResource<MeshResource>("/Root/thirdparty/sketchfab.com/barrel/barrel.mesh"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/albedo.tex"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/orm.tex"),
+        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/normal.tex")
     };
 
     // Load resources asynchronously
@@ -215,10 +226,30 @@ void SampleApplication::CreateScene()
     auto& resourceMngr = GameApplication::sGetResourceManager();
     auto& materialMngr = GameApplication::sGetMaterialManager();
 
-    CreateSceneFromMap(m_World, "/Root/maps/sample3.map");
+    CreateSceneFromMap(m_World, "/Root/maps/sample3.map", "grime-alley-brick2");
 
     Float3 playerSpawnPosition = Float3(12,0,0);
     Quat playerSpawnRotation = Quat::sRotationY(Math::_HALF_PI);
+
+    // Light
+    {
+        Float3 lightDirection = Float3(0.5f, -1, -0.1f).Normalized();
+
+        GameObjectDesc desc;
+        desc.IsDynamic = true;
+
+        GameObject* object;
+        m_World->CreateObject(desc, object);
+        object->SetDirection(lightDirection);
+
+        DirectionalLightComponent* dirlight;
+        object->CreateComponent(dirlight);
+        dirlight->SetIlluminance(20000.0f);
+        dirlight->SetShadowMaxDistance(50);
+        dirlight->SetShadowCascadeResolution(2048);
+        dirlight->SetShadowCascadeOffset(0.0f);
+        dirlight->SetShadowCascadeSplitLambda(0.8f);
+    }
 
     {
         GameObjectDesc desc;
@@ -267,22 +298,25 @@ void SampleApplication::CreateScene()
 
         for (int i = 0; i < HK_ARRAY_SIZE(positions); i++)
         {
-            GameObjectDesc desc;
-            desc.Position = positions[i] + Float3(22-33, 0, -28-6);
-            desc.Rotation.FromAngles(0, Math::Radians(yaws[i]), 0);
-            desc.Scale = Float3(1.5f);
-            desc.IsDynamic = true;
-            GameObject* object;
-            m_World->CreateObject(desc, object);
-            DynamicBodyComponent* phys;
-            object->CreateComponent(phys);
-            phys->Mass = 30;
-            object->CreateComponent<BoxCollider>();
-            DynamicMeshComponent* mesh;
-            object->CreateComponent(mesh);
-            mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            mesh->SetMaterial(materialMngr.TryGet("blank256"));
-            mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
+            Quat rotation;
+            rotation.FromAngles(0, Math::Radians(yaws[i]), 0);
+            SpawnBarrel(positions[i] + Float3(22-33, 0, -28-6), rotation);
+            //GameObjectDesc desc;
+            //desc.Position = positions[i] + Float3(22-33, 0, -28-6);
+            //desc.Rotation.FromAngles(0, Math::Radians(yaws[i]), 0);
+            //desc.Scale = Float3(1.5f);
+            //desc.IsDynamic = true;
+            //GameObject* object;
+            //m_World->CreateObject(desc, object);
+            //DynamicBodyComponent* phys;
+            //object->CreateComponent(phys);
+            //phys->Mass = 30;
+            //object->CreateComponent<BoxCollider>();
+            //DynamicMeshComponent* mesh;
+            //object->CreateComponent(mesh);
+            //mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
+            //mesh->SetMaterial(materialMngr.TryGet("blank256"));
+            //mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
         }
     }
 
@@ -355,8 +389,38 @@ void SampleApplication::CreateScene()
     }
 
     m_PlayerSpawnPoints.Add({playerSpawnPosition, playerSpawnRotation});
+
+    RenderInterface& render = m_World->GetInterface<RenderInterface>();
+    render.SetAmbient(0.01f);
 }
 
+void SampleApplication::SpawnBarrel(Float3 const& position, Quat const& rotation)
+{
+    auto& resourceMngr = sGetResourceManager();
+    auto& materialMngr = sGetMaterialManager();
+
+    static MeshHandle meshHandle = resourceMngr.GetResource<MeshResource>("/Root/thirdparty/sketchfab.com/barrel/barrel.mesh");
+
+    GameObjectDesc desc;
+    desc.Position = position;
+    desc.Rotation = rotation;
+    desc.IsDynamic = true;
+    GameObject* object;
+    m_World->CreateObject(desc, object);
+    DynamicBodyComponent* phys;
+    object->CreateComponent(phys);
+    phys->Mass = 50;
+    CylinderCollider* collider;
+    object->CreateComponent<CylinderCollider>(collider);
+    collider->Height = 0.85f;
+    collider->Radius = 0.35f;
+    DynamicMeshComponent* mesh;
+    object->CreateComponent(mesh);
+    mesh->SetMesh(meshHandle);
+    mesh->SetMaterial(0, materialMngr.TryGet("thirdparty/sketchfab/barrel"));
+    mesh->SetMaterial(1, materialMngr.TryGet("thirdparty/sketchfab/barrel"));
+    mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
+}
 
 GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& rotation)
 {
@@ -427,7 +491,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         PunctualLightComponent* light;
         torch->CreateComponent(light);
         light->SetCastShadow(true);
-        light->SetLumens(100);
+        light->SetLumens(1000);
         light->SetTemperature(2600);
         LightAnimator* animator;
         torch->CreateComponent(animator);

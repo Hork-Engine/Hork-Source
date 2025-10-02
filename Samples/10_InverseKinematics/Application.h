@@ -73,7 +73,7 @@ private:
     TextureHandle m_LoadingTexture;
     World* m_World{};
     Ref<WorldRenderView> m_WorldRenderView;
-    GameObject* m_Player{};
+    GameObjectHandle m_Player;
     Handle32<class AnimatorComponent> m_Animator;
     bool m_Play{};
 };

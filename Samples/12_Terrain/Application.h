@@ -69,7 +69,6 @@ private:
     TextureHandle m_LoadingTexture;
     World* m_World{};
     Ref<WorldRenderView> m_WorldRenderView;
-    GameObject* m_Player{};
 };
 
 HK_NAMESPACE_END
