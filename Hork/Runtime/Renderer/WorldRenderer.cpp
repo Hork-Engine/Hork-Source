@@ -469,6 +469,9 @@ void WorldRenderer::AddMeshes()
         if (!mesh.IsInitialized())
             continue;
 
+        if (mesh.IsCastOnlyShadow())
+            continue;
+
         if (!(m_Context.VisibilityMask & (1 << mesh.GetVisibilityLayer())))
             continue;
 
@@ -697,6 +700,9 @@ void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox 
         MeshComponentType& mesh = *it;
 
         if (!mesh.IsInitialized())
+            continue;
+
+        if (!mesh.IsCastShadow())
             continue;
 
         if (!(m_Context.VisibilityMask & (1 << mesh.GetVisibilityLayer())))
