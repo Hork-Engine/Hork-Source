@@ -62,7 +62,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
     static constexpr float  MinSoundDistance = 0.1f;
-    static constexpr float  MaxSoundDsitance = 1000.0f;
+    static constexpr float  MaxSoundDistance = 1000.0f;
 
     /// Start playing sound. This function cancels any sound that is already being played by the source.
     void                    PlaySound(SoundHandle inSound, int inStartFrame = 0, int inLoopStart = -1);
@@ -135,19 +135,19 @@ public:
     float                   GetVolume() const { return m_Volume; }
 
     /// Distance attenuation parameter
-    /// Can be from MinSoundDistance to MaxSoundDsitance
+    /// Can be from MinSoundDistance to MaxSoundDistance
     void                    SetReferenceDistance(float inDist);
 
     /// Distance attenuation parameter
-    /// Can be from MinSoundDistance to MaxSoundDsitance
+    /// Can be from MinSoundDistance to MaxSoundDistance
     float                   GetReferenceDistance() const { return m_ReferenceDistance; }
 
     /// Distance attenuation parameter
-    /// Can be from ReferenceDistance to MaxSoundDsitance
+    /// Can be from ReferenceDistance to MaxSoundDistance
     void                    SetMaxDistance(float inDist);
 
     /// Distance attenuation parameter
-    /// Can be from ReferenceDistance to MaxSoundDsitance
+    /// Can be from ReferenceDistance to MaxSoundDistance
     float                   GetMaxDistance() const { return m_MaxDistance; }
 
     /// Distance at which sound can be heard
