@@ -88,6 +88,9 @@ public:
     /// Get total files in archive
     int                         GetNumFiles() const;
 
+    /// Archive size
+    size_t                      GetTotalSize() const;
+
     /// Get file handle. Returns an invalid handle if file wasn't found.
     FileHandle                  LocateFile(StringView fileName) const;
 

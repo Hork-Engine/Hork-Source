@@ -737,6 +737,11 @@ int Archive::GetNumFiles() const
     return mz_zip_reader_get_num_files((mz_zip_archive*)m_Handle);
 }
 
+size_t Archive::GetTotalSize() const
+{
+    return mz_zip_get_archive_size((mz_zip_archive*)m_Handle);
+}
+
 FileHandle Archive::LocateFile(StringView fileName) const
 {
     return FileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, fileName.IsNullTerminated() ? fileName.Begin() : String(fileName).CStr(), NULL, 0));
