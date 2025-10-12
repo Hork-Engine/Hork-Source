@@ -100,17 +100,20 @@ public:
 
     RawImage& operator=(RawImage&& Rhs) noexcept
     {
-        Reset();
+        if HK_LIKELY(this != &Rhs)
+        {
+            Reset();
 
-        m_pData  = Rhs.m_pData;
-        m_Width  = Rhs.m_Width;
-        m_Height = Rhs.m_Height;
-        m_Format = Rhs.m_Format;
+            m_pData  = Rhs.m_pData;
+            m_Width  = Rhs.m_Width;
+            m_Height = Rhs.m_Height;
+            m_Format = Rhs.m_Format;
 
-        Rhs.m_pData  = nullptr;
-        Rhs.m_Width  = 0;
-        Rhs.m_Height = 0;
-        Rhs.m_Format = RAW_IMAGE_FORMAT_UNDEFINED;
+            Rhs.m_pData  = nullptr;
+            Rhs.m_Width  = 0;
+            Rhs.m_Height = 0;
+            Rhs.m_Format = RAW_IMAGE_FORMAT_UNDEFINED;
+        }
 
         return *this;
     }

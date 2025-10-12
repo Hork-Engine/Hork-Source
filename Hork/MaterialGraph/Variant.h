@@ -334,24 +334,27 @@ public:
 
     Variant& operator=(Variant const& rhs)
     {
-        Reset();
-
-        m_Type = rhs.m_Type;
-
-        switch (rhs.m_Type)
+        if HK_LIKELY(this != &rhs)
         {
-            case VARIANT_STRING:
-                new (m_RawData) String;
-                *(String*)&m_RawData[0] = *(String*)&rhs.m_RawData[0];
-                break;
-            case VARIANT_ENUM:
-                m_EnumType = rhs.m_EnumType;
-                break;
-            case VARIANT_UNDEFINED:
-                break;
-            default:
-                Core::Memcpy(m_RawData, rhs.m_RawData, sizeof(m_RawData));
-                break;
+            Reset();
+
+            m_Type = rhs.m_Type;
+
+            switch (rhs.m_Type)
+            {
+                case VARIANT_STRING:
+                    new (m_RawData) String;
+                    *(String*)&m_RawData[0] = *(String*)&rhs.m_RawData[0];
+                    break;
+                case VARIANT_ENUM:
+                    m_EnumType = rhs.m_EnumType;
+                    break;
+                case VARIANT_UNDEFINED:
+                    break;
+                default:
+                    Core::Memcpy(m_RawData, rhs.m_RawData, sizeof(m_RawData));
+                    break;
+            }
         }
         return *this;
     }
@@ -379,26 +382,29 @@ public:
 
     Variant& operator=(Variant&& rhs) noexcept
     {
-        Reset();
-
-        m_Type = rhs.m_Type;
-
-        switch (rhs.m_Type)
+        if HK_LIKELY(this != &rhs)
         {
-            case VARIANT_STRING:
-                new (m_RawData) String(std::move(*(String*)&rhs.m_RawData[0]));
-                break;
-            case VARIANT_ENUM:
-                m_EnumType = rhs.m_EnumType;
-                break;
-            case VARIANT_UNDEFINED:
-                break;
-            default:
-                Core::Memcpy(m_RawData, rhs.m_RawData, sizeof(m_RawData));
-                break;
-        }
+            Reset();
 
-        rhs.m_Type = VARIANT_UNDEFINED;
+            m_Type = rhs.m_Type;
+
+            switch (rhs.m_Type)
+            {
+                case VARIANT_STRING:
+                    new (m_RawData) String(std::move(*(String*)&rhs.m_RawData[0]));
+                    break;
+                case VARIANT_ENUM:
+                    m_EnumType = rhs.m_EnumType;
+                    break;
+                case VARIANT_UNDEFINED:
+                    break;
+                default:
+                    Core::Memcpy(m_RawData, rhs.m_RawData, sizeof(m_RawData));
+                    break;
+            }
+
+            rhs.m_Type = VARIANT_UNDEFINED;
+        }
         return *this;
     }
 

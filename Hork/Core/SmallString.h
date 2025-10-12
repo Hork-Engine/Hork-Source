@@ -103,12 +103,15 @@ public:
     }
     SmallStringBE& operator=(SmallStringBE&& Rhs) noexcept
     {
-        Free();
+        if HK_LIKELY(this != &Rhs)
+        {
+            Free();
 
-        Core::Memcpy(&m_Data, &Rhs.m_Data, sizeof(m_Data));
+            Core::Memcpy(&m_Data, &Rhs.m_Data, sizeof(m_Data));
 
-        Rhs.m_SSO.Size = 1 << 7;
-        Rhs.m_SSO.Str[0] = 0;
+            Rhs.m_SSO.Size = 1 << 7;
+            Rhs.m_SSO.Str[0] = 0;
+        }
         return *this;
     }
 
@@ -244,12 +247,15 @@ public:
     }
     SmallStringLE& operator=(SmallStringLE&& Rhs) noexcept
     {
-        Free();
+        if HK_LIKELY(this != &Rhs)
+        {
+            Free();
 
-        Core::Memcpy(&m_Data, &Rhs.m_Data, sizeof(m_Data));
+            Core::Memcpy(&m_Data, &Rhs.m_Data, sizeof(m_Data));
 
-        Rhs.m_SSO.Size = 1;
-        Rhs.m_SSO.Str[0] = 0;
+            Rhs.m_SSO.Size = 1;
+            Rhs.m_SSO.Str[0] = 0;
+        }
         return *this;
     }
 

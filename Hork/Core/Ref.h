@@ -258,24 +258,26 @@ public:
 
     Ref<T>& operator=(T* rhs)
     {
-        if (m_RawPtr == rhs)
-            return *this;
-        if (m_RawPtr)
-            m_RawPtr->RemoveRef();
-        m_RawPtr = rhs;
-        if (m_RawPtr)
-            m_RawPtr->AddRef();
+        if HK_LIKELY(m_RawPtr != rhs)
+        {
+            if (m_RawPtr)
+                m_RawPtr->RemoveRef();
+            m_RawPtr = rhs;
+            if (m_RawPtr)
+                m_RawPtr->AddRef();
+        }
         return *this;
     }
 
     Ref<T>& operator=(Ref&& rhs) noexcept
     {
-        if (m_RawPtr == rhs.m_RawPtr)
-            return *this;
-        if (m_RawPtr)
-            m_RawPtr->RemoveRef();
-        m_RawPtr = rhs.m_RawPtr;
-        rhs.m_RawPtr = nullptr;
+        if HK_LIKELY(this != &rhs)
+        {
+            if (m_RawPtr)
+                m_RawPtr->RemoveRef();
+            m_RawPtr = rhs.m_RawPtr;
+            rhs.m_RawPtr = nullptr;
+        }
         return *this;
     }
 
@@ -470,13 +472,13 @@ public:
 
     WeakRef<T>& operator=(WeakRef<T>&& rhs) noexcept
     {
-        if (*this == rhs)
-            return *this;
+        if HK_LIKELY(this != &rhs)
+        {
+            Reset();
 
-        Reset();
-
-        m_WeakRefCounter      = rhs.m_WeakRefCounter;
-        rhs.m_WeakRefCounter = nullptr;
+            m_WeakRefCounter      = rhs.m_WeakRefCounter;
+            rhs.m_WeakRefCounter = nullptr;
+        }
 
         return *this;
     }

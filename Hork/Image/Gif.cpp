@@ -52,20 +52,23 @@ GifImage::GifImage(GifImage&& Rhs) noexcept :
 
 GifImage& GifImage::operator=(GifImage&& Rhs) noexcept
 {
-    Reset();
+    if HK_LIKELY(this != &Rhs)
+    {
+        Reset();
 
-    m_Width = Rhs.m_Width;
-    m_Height = Rhs.m_Height;
-    m_BackgroundColor = Rhs.m_BackgroundColor;
-    m_ColorMap = std::move(Rhs.m_ColorMap);
-    m_FrameData = std::move(Rhs.m_FrameData);
-    m_Frames = std::move(Rhs.m_Frames);
-    m_Duration = Rhs.m_Duration;
+        m_Width = Rhs.m_Width;
+        m_Height = Rhs.m_Height;
+        m_BackgroundColor = Rhs.m_BackgroundColor;
+        m_ColorMap = std::move(Rhs.m_ColorMap);
+        m_FrameData = std::move(Rhs.m_FrameData);
+        m_Frames = std::move(Rhs.m_Frames);
+        m_Duration = Rhs.m_Duration;
 
-    Rhs.m_Width = 0;
-    Rhs.m_Height = 0;
-    Rhs.m_BackgroundColor = 0;
-    Rhs.m_Duration = 0;
+        Rhs.m_Width = 0;
+        Rhs.m_Height = 0;
+        Rhs.m_BackgroundColor = 0;
+        Rhs.m_Duration = 0;
+    }
 
     return *this;
 }

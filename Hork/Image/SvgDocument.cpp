@@ -50,8 +50,11 @@ SvgDocument::~SvgDocument()
 
 SvgDocument& SvgDocument::operator=(SvgDocument&& Rhs) noexcept
 {
-    Reset();
-    Core::Swap(m_Root, Rhs.m_Root);
+    if HK_LIKELY(this != &Rhs)
+    {
+        Reset();
+        Core::Swap(m_Root, Rhs.m_Root);
+    }
     return *this;
 }
 

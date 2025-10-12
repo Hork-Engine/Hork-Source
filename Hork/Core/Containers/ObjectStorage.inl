@@ -57,12 +57,15 @@ HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>::~ObjectStorage()
 template <typename T, uint32_t PageSize, ObjectStorageType StorageType, MEMORY_HEAP Heap>
 HK_FORCEINLINE ObjectStorage<T, PageSize, StorageType, Heap>& ObjectStorage<T, PageSize, StorageType, Heap>::operator=(ObjectStorage&& rhs) noexcept
 {
-    m_Data = std::move(rhs.m_Data);
-    m_Size = rhs.m_Size;
-    m_RandomAccess = std::move(rhs.m_RandomAccess);
-    m_FreeListHead = rhs.m_FreeListHead;
-    rhs.m_Size = 0;
-    rhs.m_FreeListHead = 0;
+    if HK_LIKELY(this != &rhs)
+    {
+        m_Data = std::move(rhs.m_Data);
+        m_Size = rhs.m_Size;
+        m_RandomAccess = std::move(rhs.m_RandomAccess);
+        m_FreeListHead = rhs.m_FreeListHead;
+        rhs.m_Size = 0;
+        rhs.m_FreeListHead = 0;
+    }
     return *this;
 }
 

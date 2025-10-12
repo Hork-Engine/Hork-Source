@@ -102,24 +102,27 @@ File::File(File&& rhs) noexcept :
 
 File& File::operator=(File&& rhs) noexcept
 {
-    Close();
+    if HK_LIKELY(this != &rhs)
+    {
+        Close();
 
-    m_Name               = std::move(rhs.m_Name);
-    m_Type               = rhs.m_Type;
-    m_Handle             = rhs.m_Handle;
-    m_RWOffset           = rhs.m_RWOffset;
-    m_FileSize           = rhs.m_FileSize;
-    m_ReservedSize       = rhs.m_ReservedSize;
-    m_Granularity        = rhs.m_Granularity;
-    m_IsMemoryBufferOwner = rhs.m_IsMemoryBufferOwner;
+        m_Name               = std::move(rhs.m_Name);
+        m_Type               = rhs.m_Type;
+        m_Handle             = rhs.m_Handle;
+        m_RWOffset           = rhs.m_RWOffset;
+        m_FileSize           = rhs.m_FileSize;
+        m_ReservedSize       = rhs.m_ReservedSize;
+        m_Granularity        = rhs.m_Granularity;
+        m_IsMemoryBufferOwner = rhs.m_IsMemoryBufferOwner;
 
-    rhs.m_Type               = FileType::Undefined;
-    rhs.m_Handle             = nullptr;
-    rhs.m_RWOffset           = 0;
-    rhs.m_FileSize           = 0;
-    rhs.m_ReservedSize       = 0;
-    rhs.m_Granularity        = 0;
-    rhs.m_IsMemoryBufferOwner = true;
+        rhs.m_Type               = FileType::Undefined;
+        rhs.m_Handle             = nullptr;
+        rhs.m_RWOffset           = 0;
+        rhs.m_FileSize           = 0;
+        rhs.m_ReservedSize       = 0;
+        rhs.m_Granularity        = 0;
+        rhs.m_IsMemoryBufferOwner = true;
+    }
 
     return *this;
 }
@@ -635,8 +638,11 @@ Archive::Archive(Archive&& rhs) noexcept :
 
 Archive& Archive::operator=(Archive&& rhs) noexcept
 {
-    Close();
-    Core::Swap(m_Handle, rhs.m_Handle);
+    if HK_LIKELY(this != &rhs)
+    {
+        Close();
+        Core::Swap(m_Handle, rhs.m_Handle);
+    }
     return *this;
 }
 

@@ -92,8 +92,11 @@ public:
 
     Thread& operator=(Thread&& rhs) noexcept
     {
-        Join();
-        Core::Swap(m_Internal, rhs.m_Internal);
+        if HK_LIKELY(this != &rhs)
+        {
+            Join();
+            Core::Swap(m_Internal, rhs.m_Internal);
+        }
         return *this;
     }
 

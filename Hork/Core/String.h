@@ -747,34 +747,38 @@ HK_FORCEINLINE CharT& TString<CharT, Allocator>::operator[](SizeType Index)
 template <typename CharT, typename Allocator>
 HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TString<CharT, Allocator> const& Rhs)
 {
-    Construct(Rhs.ToPtr(), Rhs.Size());
+    if HK_LIKELY(this != &Rhs)
+        Construct(Rhs.ToPtr(), Rhs.Size());
     return *this;
 }
 
 template <typename CharT, typename Allocator>
 HK_INLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TString<CharT, Allocator>&& Rhs) noexcept
 {
-    Free();
-
-    if (Rhs.m_pData == &Rhs.m_Base[0])
+    if HK_LIKELY(this != &Rhs)
     {
-        Core::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
-        m_pData        = m_Base;
-        m_Capacity     = Rhs.m_Capacity;
-        m_Size         = Rhs.m_Size;
-        m_Base[m_Size] = 0;
-    }
-    else
-    {
-        m_pData    = Rhs.m_pData;
-        m_Capacity = Rhs.m_Capacity;
-        m_Size     = Rhs.m_Size;
+        Free();
 
-        Rhs.m_pData    = Rhs.m_Base;
-        Rhs.m_Capacity = BaseCapacity;
+        if (Rhs.m_pData == &Rhs.m_Base[0])
+        {
+            Core::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
+            m_pData        = m_Base;
+            m_Capacity     = Rhs.m_Capacity;
+            m_Size         = Rhs.m_Size;
+            m_Base[m_Size] = 0;
+        }
+        else
+        {
+            m_pData    = Rhs.m_pData;
+            m_Capacity = Rhs.m_Capacity;
+            m_Size     = Rhs.m_Size;
+
+            Rhs.m_pData    = Rhs.m_Base;
+            Rhs.m_Capacity = BaseCapacity;
+        }
+        Rhs.m_Size     = 0;
+        Rhs.m_pData[0] = 0;
     }
-    Rhs.m_Size     = 0;
-    Rhs.m_pData[0] = 0;
 
     return *this;
 }

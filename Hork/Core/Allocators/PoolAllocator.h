@@ -57,12 +57,15 @@ public:
 
     PoolAllocator& operator=(PoolAllocator&& rhs) noexcept
     {
-        Free();
+        if HK_LIKELY(this != &rhs)
+        {
+            Free();
 
-        Core::Swap(m_Blocks, rhs.m_Blocks);
-        Core::Swap(m_CurBlock, rhs.m_CurBlock);
-        Core::Swap(m_TotalChunks, rhs.m_TotalChunks);
-        Core::Swap(m_TotalBlocks, rhs.m_TotalBlocks);
+            Core::Swap(m_Blocks, rhs.m_Blocks);
+            Core::Swap(m_CurBlock, rhs.m_CurBlock);
+            Core::Swap(m_TotalChunks, rhs.m_TotalChunks);
+            Core::Swap(m_TotalBlocks, rhs.m_TotalBlocks);
+        }
 
         return *this;
     }

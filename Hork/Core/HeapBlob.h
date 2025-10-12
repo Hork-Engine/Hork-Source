@@ -57,11 +57,14 @@ struct HeapBlob final
 
     HeapBlob& operator=(HeapBlob&& rhs) noexcept
     {
-        Reset();
-        m_HeapPtr      = rhs.m_HeapPtr;
-        m_HeapSize     = rhs.m_HeapSize;
-        rhs.m_HeapPtr  = nullptr;
-        rhs.m_HeapSize = 0;
+        if HK_LIKELY(this != &rhs)
+        {
+            Reset();
+            m_HeapPtr      = rhs.m_HeapPtr;
+            m_HeapSize     = rhs.m_HeapSize;
+            rhs.m_HeapPtr  = nullptr;
+            rhs.m_HeapSize = 0;
+        }
         return *this;
     }
 

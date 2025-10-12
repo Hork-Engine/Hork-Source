@@ -111,9 +111,12 @@ HK_FORCEINLINE PageStorage<T, PageSize>::~PageStorage()
 template <typename T, size_t PageSize>
 HK_FORCEINLINE PageStorage<T, PageSize>& PageStorage<T, PageSize>::operator=(PageStorage&& rhs) noexcept
 {
-    m_Data = std::move(rhs.m_Data);
-    m_Size = rhs.m_Size;
-    rhs.m_Size = 0;
+    if HK_LIKELY(this != &rhs)
+    {
+        m_Data = std::move(rhs.m_Data);
+        m_Size = rhs.m_Size;
+        rhs.m_Size = 0;
+    }
     return *this;
 }
 

@@ -54,11 +54,14 @@ public:
 
     LinearAllocator& operator=(LinearAllocator&& rhs) noexcept
     {
-        Free();
+        if HK_LIKELY(this != &rhs)
+        {
+            Free();
 
-        Core::Swap(m_Blocks, rhs.m_Blocks);
-        Core::Swap(m_TotalAllocs, rhs.m_TotalAllocs);
-        Core::Swap(m_TotalMemoryUsage, rhs.m_TotalMemoryUsage);
+            Core::Swap(m_Blocks, rhs.m_Blocks);
+            Core::Swap(m_TotalAllocs, rhs.m_TotalAllocs);
+            Core::Swap(m_TotalMemoryUsage, rhs.m_TotalMemoryUsage);
+        }
 
         return *this;
     }

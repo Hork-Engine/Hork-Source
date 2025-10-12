@@ -109,7 +109,7 @@ struct RawSkeleton
     Vector<Joint>                   Joints;
 };
 
-class RawMesh
+class RawMesh : public Noncopyable
 {
 public:
     struct Skin

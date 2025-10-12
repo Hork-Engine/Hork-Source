@@ -70,23 +70,26 @@ ReadWriteBuffer::ReadWriteBuffer(ReadWriteBuffer&& rhs) noexcept :
 
 ReadWriteBuffer& ReadWriteBuffer::operator=(ReadWriteBuffer&& rhs) noexcept
 {
-    if (!m_bExternalBuffer)
-        Free(m_RawPtr);
+    if HK_LIKELY(this != &rhs)
+    {
+        if (!m_bExternalBuffer)
+            Free(m_RawPtr);
 
-    m_Name = std::move(rhs.m_Name);
-    m_RawPtr = rhs.m_RawPtr;
-    m_RWOffset = rhs.m_RWOffset;
-    m_Size = rhs.m_Size;
-    m_Capacity = rhs.m_Capacity;
-    m_Granularity = rhs.m_Granularity;
-    m_bExternalBuffer = rhs.m_bExternalBuffer;
+        m_Name = std::move(rhs.m_Name);
+        m_RawPtr = rhs.m_RawPtr;
+        m_RWOffset = rhs.m_RWOffset;
+        m_Size = rhs.m_Size;
+        m_Capacity = rhs.m_Capacity;
+        m_Granularity = rhs.m_Granularity;
+        m_bExternalBuffer = rhs.m_bExternalBuffer;
 
-    rhs.m_RawPtr = nullptr;
-    rhs.m_RWOffset = 0;
-    rhs.m_Size = 0;
-    rhs.m_Capacity = 0;
-    rhs.m_Granularity = 1024;
-    rhs.m_bExternalBuffer = false;
+        rhs.m_RawPtr = nullptr;
+        rhs.m_RWOffset = 0;
+        rhs.m_Size = 0;
+        rhs.m_Capacity = 0;
+        rhs.m_Granularity = 1024;
+        rhs.m_bExternalBuffer = false;
+    }
 
     return *this;
 }

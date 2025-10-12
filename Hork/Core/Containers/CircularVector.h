@@ -73,15 +73,33 @@ public:
         rhs.m_Size = 0;
     }
 
+    ThisType& operator=(ThisType const& rhs)
+    {
+        if HK_LIKELY(this != &rhs)
+        {
+            Resize(0);
+
+            m_Head = rhs.Size() & (MaxCapacity - 1);
+            m_Size = rhs.Size();
+            for (SizeType i = 0; i < m_Size; ++i)
+                Construct(i, *rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1)));
+        }
+        return *this;
+    }
+
     ThisType& operator=(ThisType&& rhs) noexcept
     {
-        Resize(0);
+        if HK_LIKELY(this != &rhs)
+        {
+            Resize(0);
 
-        m_Head = rhs.m_Size & (MaxCapacity - 1);
-        m_Size = rhs.m_Size;
+            m_Head = rhs.m_Size & (MaxCapacity - 1);
+            m_Size = rhs.m_Size;
 
-        for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, *rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1)));
+            for (SizeType i = 0; i < m_Size; ++i)
+                Construct(i, *rhs.InternalGet((rhs.m_Head + i) & (MaxCapacity - 1)));
+        }
+        return *this;
     }
 
     ~CircularVector()

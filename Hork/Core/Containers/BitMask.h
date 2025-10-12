@@ -100,9 +100,13 @@ public:
 
     BitMask& operator=(BitMask&& rhs)
     {
-        m_Bits = std::move(rhs.m_Bits);
-        m_NumBits = rhs.m_NumBits;
-        rhs.m_NumBits = 0;
+        if HK_LIKELY(this != &rhs)
+        {
+            m_Bits = std::move(rhs.m_Bits);
+            m_NumBits = rhs.m_NumBits;
+            rhs.m_NumBits = 0;
+        }
+        return *this;
     }
 
     void Resize(size_t numBits)
