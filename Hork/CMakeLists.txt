@@ -1,7 +1,6 @@
 add_subdirectory(Deps)
 add_subdirectory(Core)
 add_subdirectory(Math)
-add_subdirectory(ECS)
 add_subdirectory(Geometry)
 add_subdirectory(Image)
 add_subdirectory(Audio)
