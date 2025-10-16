@@ -35,7 +35,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-template <typename Entity>
+template <typename Tag>
 class Handle32
 {
     union
@@ -125,7 +125,7 @@ public:
     }
 };
 
-template <typename Entity>
+template <typename Tag>
 class Handle64
 {
     uint64_t m_Handle{};
