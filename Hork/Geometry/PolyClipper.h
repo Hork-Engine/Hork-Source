@@ -49,16 +49,16 @@ struct ClipperPolygon
     Vector<ClipperContour>  Holes;
 };
 
-enum class PolyClip
-{
-    Intersect,
-    Union,
-    Diff,
-    XOR
-};
-
 class PolyClipper final : public Noncopyable
 {
+    enum class PolyClip
+    {
+        Intersect,
+        Union,
+        Diff,
+        XOR
+    };
+
 public:
                                     PolyClipper();
                                     ~PolyClipper();
@@ -87,13 +87,20 @@ public:
     /// Add clip contour
     void                            AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
-    /// Execute and build polygons
-    bool                            Execute(PolyClip clipType, Vector<ClipperPolygon>& polygons);
+    bool                            MakeIntersect(Vector<ClipperPolygon>& polygons) { return Execute(PolyClip::Intersect, polygons); }
+    bool                            MakeUnion(Vector<ClipperPolygon>& polygons) { return Execute(PolyClip::Union, polygons); }
+    bool                            MakeDiff(Vector<ClipperPolygon>& polygons) { return Execute(PolyClip::Diff, polygons); }
+    bool                            MakeXOR(Vector<ClipperPolygon>& polygons) { return Execute(PolyClip::XOR, polygons); }
 
-    /// Execute and build contours
-    bool                            Execute(PolyClip clipType, Vector<ClipperContour>& contours);
+    bool                            MakeIntersect(Vector<ClipperContour>& contours) { return Execute(PolyClip::Intersect, contours); }
+    bool                            MakeUnion(Vector<ClipperContour>& contours) { return Execute(PolyClip::Union, contours); }
+    bool                            MakeDiff(Vector<ClipperContour>& contours) { return Execute(PolyClip::Diff, contours); }
+    bool                            MakeXOR(Vector<ClipperContour>& contours) { return Execute(PolyClip::XOR, contours); }
 
 private:
+    bool                            Execute(PolyClip clipType, Vector<ClipperPolygon>& polygons);
+    bool                            Execute(PolyClip clipType, Vector<ClipperContour>& contours);
+
     UniqueRef<ClipperLib::Clipper>  m_pImpl;
     Float3x3                        m_Transform3D;
     Float3x3                        m_InvTransform3D;

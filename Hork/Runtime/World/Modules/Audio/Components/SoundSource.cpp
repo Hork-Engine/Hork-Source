@@ -279,12 +279,12 @@ void SoundSource::SetVolume(float inVolume)
 
 void SoundSource::SetReferenceDistance(float inDist)
 {
-    m_ReferenceDistance = Math::Clamp(inDist, MinSoundDistance, MaxSoundDsitance);
+    m_ReferenceDistance = Math::Clamp(inDist, MinSoundDistance, MaxSoundDistance);
 }
 
 void SoundSource::SetMaxDistance(float inDist)
 {
-    m_MaxDistance = Math::Clamp(inDist, MinSoundDistance, MaxSoundDsitance);
+    m_MaxDistance = Math::Clamp(inDist, MinSoundDistance, MaxSoundDistance);
 }
 
 void SoundSource::SetRolloffRate(float inRolloff)
@@ -329,7 +329,7 @@ HK_FORCEINLINE float FalloffDistance(float inMaxDistance)
 
 float SoundSource::GetCullDistance() const
 {
-    float maxDist = Math::Clamp(m_MaxDistance, m_ReferenceDistance, MaxSoundDsitance);
+    float maxDist = Math::Clamp(m_MaxDistance, m_ReferenceDistance, MaxSoundDistance);
     float falloff = FalloffDistance(maxDist);
     return maxDist + falloff;
 }

@@ -100,7 +100,7 @@ public:
     {
         ContourVertex*                          OuterContour;
         int                                     OuterContourVertexCount;
-        Vector<std::pair<ContourVertex*, int>> HoleContours;
+        Vector<std::pair<ContourVertex*, int>>  HoleContours;
         Double3                                 Normal;
     };
 

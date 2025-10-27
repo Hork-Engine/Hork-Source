@@ -41,6 +41,17 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+enum class ShadowMode : uint8_t
+{
+    // The first bit is the visibility of the object, the second bit is the visibility of the shadow
+
+    CastShadow      = 0x3,
+    NoShadow        = 0x1,
+    CastOnlyShadow  = 0x2,
+
+    Default = CastShadow
+};
+
 class MeshComponent : public Component
 {
 public:
@@ -60,8 +71,12 @@ public:
     void                        SetOutline(bool enable) { m_Outline = enable; }
     bool                        HasOutline() const { return m_Outline; }
 
-    void                        SetCastShadow(bool castShadow) { m_CastShadow = castShadow; }
-    bool                        IsCastShadow() const { return m_CastShadow; }
+    void                        SetShadowMode(ShadowMode mode) { m_ShadowMode = mode; }
+    ShadowMode                  GetShadowMode() const { return m_ShadowMode; }
+
+    void                        SetCastShadow(bool castShadow) { if (castShadow) m_ShadowMode = static_cast<ShadowMode>(static_cast<uint8_t>(m_ShadowMode) | 0x2); else m_ShadowMode = static_cast<ShadowMode>(static_cast<uint8_t>(m_ShadowMode) & ~0x2); }
+    bool                        IsCastShadow() const { return static_cast<uint8_t>(m_ShadowMode) & 0x2; }
+    bool                        IsCastOnlyShadow() const { return m_ShadowMode == ShadowMode::CastOnlyShadow; }
 
     void                        SetCascadeMask(uint32_t cascadeMask) { m_CascadeMask = cascadeMask; }
     uint32_t                    GetCascadeMask() const { return m_CascadeMask; }
@@ -86,7 +101,7 @@ protected:
     Ref<ProceduralMesh>         m_ProceduralData;
     uint8_t                     m_VisibilityLayer = 0;
     bool                        m_Outline = false;
-    bool                        m_CastShadow = true;
+    ShadowMode                  m_ShadowMode = ShadowMode::Default;
     uint32_t                    m_CascadeMask = 0;
     BvAxisAlignedBox            m_LocalBoundingBox;
     BvAxisAlignedBox            m_WorldBoundingBox;

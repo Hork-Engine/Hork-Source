@@ -317,6 +317,14 @@ public:
         object.Read(*this);
     }
 
+    template <typename T, typename... Args>
+    T ReadObject(Args&&... args)
+    {
+        T object(std::forward<Args>(args)...);
+        object.Read(*this);
+        return object;
+    }
+
     template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
     void ReadArray(T& array)
     {
