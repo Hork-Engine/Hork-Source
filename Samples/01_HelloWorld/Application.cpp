@@ -221,7 +221,7 @@ public:
     {
         static ResourceFinder<Mesh> playerMeshFinder("/Root/default/box.mesh");
 
-        MeshHandle playerMesh = playerMeshFinder.Load();
+        MeshRef playerMesh = playerMeshFinder.Load();
 
         GameObject* player;
         Handle32<PlayerComponent> playerComponent;
@@ -297,7 +297,7 @@ public:
 
         // Spawn ground
         {
-            MeshHandle groundMesh = sGetResourceManager().Acquire<Mesh>("/Root/default/plane_xz.mesh");
+            MeshRef groundMesh = sGetResourceManager().Acquire<Mesh>("/Root/default/plane_xz.mesh");
 
             GameObjectDesc desc;
             desc.Scale = {2, 1, 2};

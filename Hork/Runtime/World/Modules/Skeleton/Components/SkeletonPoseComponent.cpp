@@ -38,9 +38,9 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawSkeletons("com_DrawSkeletons"_s, "0"_s);
 
-void SkeletonPoseComponent::SetMesh(MeshHandle handle)
+void SkeletonPoseComponent::SetMesh(MeshRef mesh)
 {
-    m_Mesh = std::move(handle);
+    m_Mesh = std::move(mesh);
 }
 
 void SkeletonPoseComponent::BeginPlay()

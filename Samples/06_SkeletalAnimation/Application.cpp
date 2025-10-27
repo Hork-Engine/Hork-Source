@@ -756,7 +756,7 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
 
     static ResourceFinder<Mesh> paladinModelFinder(PaladinModel);
 
-    MeshHandle meshHandle = paladinModelFinder.Load();
+    MeshRef meshHandle = paladinModelFinder.Load();
 
     GameObjectDesc desc;
     desc.IsDynamic = true;

@@ -405,7 +405,7 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXZ(32, 32, Float2(8));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 

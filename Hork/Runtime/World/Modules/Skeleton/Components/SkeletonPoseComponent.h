@@ -43,7 +43,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Static;
 
     /// The mesh is only used to provide the skeleton.
-    void                    SetMesh(MeshHandle handle);
+    void                    SetMesh(MeshRef mesh);
 
     SkeletonPose*           GetPose() const { return m_Pose; }
 
@@ -52,7 +52,7 @@ public:
 
 private:
     Ref<SkeletonPose>       m_Pose;
-    MeshHandle              m_Mesh;
+    MeshRef                 m_Mesh;
 };
 
 HK_NAMESPACE_END

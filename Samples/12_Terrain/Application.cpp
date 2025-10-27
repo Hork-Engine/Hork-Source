@@ -343,7 +343,7 @@ void SampleApplication::CreateScene()
                 //    h = FLT_MAX;
             }
 
-        TerrainHandle terrainResource(new Terrain);
+        TerrainRef terrainResource(new Terrain);
         terrainResource->Allocate(resolution, heightmap);
 
         TerrainComponent* terrain;

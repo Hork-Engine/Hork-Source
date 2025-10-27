@@ -164,8 +164,8 @@ HK_OS_STRING       - Operating system name (string)
 
 #ifndef HK_LIKELY
 #    if defined(__GNUC__) && (__GNUC__ >= 3)
-#        define HK_LIKELY(x)      __builtin_expect(!!(x), true)
-#        define HK_UNLIKELY(x) __builtin_expect(!!(x), false)
+#        define HK_LIKELY(x)   (__builtin_expect(!!(x), true))
+#        define HK_UNLIKELY(x) (__builtin_expect(!!(x), false))
 #    else
 #        define HK_LIKELY(x)   (x)
 #        define HK_UNLIKELY(x) (x)
@@ -261,14 +261,14 @@ HK_NAMESPACE_END
 #define HK_VERIFY(Expression, Message)                               \
     do                                                               \
     {                                                                \
-        if (HK_UNLIKELY(!(Expression)))                              \
+        if HK_UNLIKELY(!(Expression))                                \
             CoreApplication::sTerminateWithError("{} Expected {}\n", Message, #Expression); \
     } while (false)
 
 #define HK_VERIFY_R(Expression, Message)                   \
     do                                                     \
     {                                                      \
-        if (HK_UNLIKELY(!(Expression)))                    \
+        if HK_UNLIKELY(!(Expression))                      \
         {                                                  \
             Hk::LOG("{} Expected {}\n", Message, #Expression); \
             return {};                                     \

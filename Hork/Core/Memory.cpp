@@ -297,7 +297,7 @@ void* MemoryHeap::_Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flag
     size_t size = sizeInBytes + sizeof(HeapChunk) + (alignment - 1);
 
     byte* p = (byte*)malloc(size);
-    if (HK_UNLIKELY(!p))
+    if HK_UNLIKELY(!p)
         return nullptr;
 
     void* aligned = AlignPtr(p + sizeof(HeapChunk), alignment);
@@ -345,7 +345,7 @@ void* MemoryHeap::_Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALL
         return ptr;
 
     void* NewPtr = _Alloc(sizeInBytes, alignment, flags);
-    if (HK_LIKELY(NewPtr))
+    if HK_LIKELY(NewPtr)
     {
         if (!(flags & MALLOC_DISCARD))
             Core::Memcpy(NewPtr, ptr, OldSize);
@@ -378,7 +378,7 @@ void* MemoryHeap::_Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flag
         ptr = (flags & MALLOC_ZERO) ? mi_zalloc_aligned(sizeInBytes, alignment) : mi_malloc_aligned(sizeInBytes, alignment);
     }
 
-    if (HK_UNLIKELY(!ptr))
+    if HK_UNLIKELY(!ptr)
         return nullptr;
     HK_ASSERT(sizeInBytes <= mi_malloc_size(ptr));
     sizeInBytes = mi_malloc_size(ptr);
@@ -419,7 +419,7 @@ void* MemoryHeap::_Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALL
     m_MemoryAllocated.Sub(mi_malloc_size(ptr));
 
     ptr = alignment == 0 ? mi_realloc(ptr, sizeInBytes) : mi_realloc_aligned(ptr, sizeInBytes, alignment);
-    if (HK_LIKELY(ptr))
+    if HK_LIKELY(ptr)
     {
         HK_ASSERT(sizeInBytes <= mi_malloc_size(ptr));
         sizeInBytes = mi_malloc_size(ptr);
@@ -445,7 +445,7 @@ void* MemoryHeap::Alloc(size_t sizeInBytes, size_t alignment, MALLOC_FLAGS flags
     }
 
     void* ptr = _Alloc(sizeInBytes, alignment, flags);
-    if (HK_UNLIKELY(!ptr))
+    if HK_UNLIKELY(!ptr)
         CoreApplication::sTerminateWithError("Failed on allocation of {} bytes\n", sizeInBytes);
     return ptr;
 }
@@ -458,7 +458,7 @@ void* MemoryHeap::Realloc(void* ptr, size_t sizeInBytes, size_t alignment, MALLO
     }
 
     ptr = _Realloc(ptr, sizeInBytes, alignment, flags);
-    if (HK_UNLIKELY(!ptr))
+    if HK_UNLIKELY(!ptr)
         CoreApplication::sTerminateWithError("Failed on allocation of {} bytes\n", sizeInBytes);
     return ptr;
 }

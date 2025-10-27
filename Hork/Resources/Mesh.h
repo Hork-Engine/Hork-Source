@@ -238,6 +238,6 @@ private:
     static VertexMemoryGPU*     s_VertexMemory;
 };
 
-using MeshHandle = IntrusiveRef<Mesh>;
+using MeshRef = IntrusiveRef<Mesh>;
 
 HK_NAMESPACE_END

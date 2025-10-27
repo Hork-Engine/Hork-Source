@@ -643,7 +643,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         RawMesh rawMesh;
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 

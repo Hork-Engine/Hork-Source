@@ -318,7 +318,7 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXY(4.0f, 8.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 
@@ -329,7 +329,7 @@ void SampleApplication::CreateScene()
         
         MatInstanceHandle matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/mirror.mat"));
-        matInstance->SetTexture(0, m_OffscreenRenderView->GetTextureHandle());
+        matInstance->SetTexture(0, m_OffscreenRenderView->GetTexture());
         face->SetMaterial(std::move(matInstance));
     }
     {
@@ -445,7 +445,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         RawMesh rawMesh;
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 

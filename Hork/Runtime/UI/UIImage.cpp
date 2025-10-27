@@ -36,7 +36,7 @@ void UIImage::AdjustSize(Float2 const& size)
 {
     Super::AdjustSize(size);
 
-    if (!TexHandle)
+    if (!Texture)
         return;
 
     if (bAutoWidth && !Flags.StretchedX && !Flags.TiledX)
@@ -56,7 +56,7 @@ void UIImage::AdjustSize(Float2 const& size)
 
 void UIImage::Draw(Canvas& canvas)
 {
-    if (!TexHandle)
+    if (!Texture)
         return;
 
     Float2 pos = m_Geometry.Mins;
@@ -96,7 +96,7 @@ void UIImage::Draw(Canvas& canvas)
         imageFlags |= CANVAS_IMAGE_NEAREST;
 
     CanvasPaint paint;
-    paint.ImagePattern(pos, size.X, size.Y, 0.0f, TexHandle, TintColor, imageFlags);
+    paint.ImagePattern(pos, size.X, size.Y, 0.0f, Texture, TintColor, imageFlags);
 
     auto prevComposite = canvas.CompositeOperation(Composite);
 

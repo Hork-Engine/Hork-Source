@@ -70,7 +70,7 @@ public:
     AnimJob_Sample() : AnimJob(AnimJobType::Sample)
     {}
 
-    AnimationHandle m_Clip;
+    AnimationRef m_Clip;
     float m_Phase = 0;
     std::shared_ptr<AnimationSampleContext> m_SamplingContext;
 };

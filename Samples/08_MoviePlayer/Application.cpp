@@ -240,7 +240,7 @@ void SampleApplication::ShowIntro(bool show)
         if (!m_IntroWidget)
         {
             m_IntroWidget = UINew(UIImage)
-                .WithTexture(m_Cinematic.GetTextureHandle())
+                .WithTexture(m_Cinematic.GetTexture())
                 .WithTextureSize(m_Cinematic.GetWidth(), m_Cinematic.GetHeight())
                 .WithStretchedX(true)
                 .WithStretchedY(true)
@@ -296,7 +296,7 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXY(16.0f/4, 9.0f/4, Float2(1,1));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 
@@ -311,7 +311,7 @@ void SampleApplication::CreateScene()
 
         MatInstanceHandle matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/unlit_clamped.mat"));
-        matInstance->SetTexture(0, m_Cinematic.GetTextureHandle());
+        matInstance->SetTexture(0, m_Cinematic.GetTexture());
         face->SetMaterial(std::move(matInstance));
     }
 

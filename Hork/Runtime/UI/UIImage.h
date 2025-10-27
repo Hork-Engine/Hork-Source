@@ -39,7 +39,7 @@ class UIImage : public UIWidget
     UI_CLASS(UIImage, UIWidget)
 
 public:
-    TextureHandle     TexHandle;
+    TextureRef        Texture;
     uint32_t          TexWidth{32};
     uint32_t          TexHeight{32};
     Color4            TintColor;
@@ -64,9 +64,9 @@ public:
         } Flags;
     };
     
-    UIImage& WithTexture(TextureHandle texture)
+    UIImage& WithTexture(TextureRef texture)
     {
-        TexHandle = std::move(texture);
+        Texture = std::move(texture);
         return *this;
     }
 

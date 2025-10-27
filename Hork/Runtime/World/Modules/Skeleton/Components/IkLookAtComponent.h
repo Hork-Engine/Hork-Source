@@ -63,8 +63,8 @@ public:
 
     IKChain                 m_IkChain; // TODO: Move to skeleton!
 
-    void                    SetMesh(MeshHandle mesh) { m_Mesh = mesh; }
-    MeshHandle              GetMesh() const { return m_Mesh; }
+    void                    SetMesh(MeshRef mesh) { m_Mesh = mesh; }
+    MeshRef                 GetMesh() const { return m_Mesh; }
 
     //void                    SetPose(SkeletonPose* pose) { m_Pose = pose; }
     //SkeletonPose*           GetPose() { return m_Pose; }
@@ -99,7 +99,7 @@ public:
 private:
     bool                    UpdateLookAtIK(SkeletonPose* pose, Float3 const& target, OzzSkeleton const& skeleton);
 
-    MeshHandle              m_Mesh;
+    MeshRef                 m_Mesh;
     Handle32<SkeletonPoseComponent> m_PoseComponent;
     Float3                  m_HeadForward = Float3::sAxisZ();
     Float3                  m_EyesOffset{0, .07f, .1f};

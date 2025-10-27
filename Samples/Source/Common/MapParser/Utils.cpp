@@ -70,7 +70,7 @@ void CreateSceneFromMap(World* world, StringView mapFilename, StringView default
             {
                 int surfaceIndex = entity.FirstSurface + surfaceNum;
                 auto& surface = surfaces[surfaceIndex];
-                MeshHandle surfaceHandle(new Mesh);
+                MeshRef surfaceHandle(new Mesh);
 
                 BvAxisAlignedBox bounds;
                 bounds.Clear();

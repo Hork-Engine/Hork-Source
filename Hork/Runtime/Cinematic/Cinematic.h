@@ -96,7 +96,7 @@ public:
     /// Get the samplerate of the audio stream in samples per second.
     int             GetSampleRate() const;
 
-    TextureHandle   GetTextureHandle() const;
+    TextureRef      GetTexture() const;
 
 private:
     struct Frame;
@@ -114,7 +114,7 @@ private:
     uint32_t        m_Height = 0;
     double          m_SeekTo = -1;
     HeapBlob        m_Blob;
-    TextureHandle   m_Texture;
+    TextureRef      m_Texture;
     Ref<AudioStream>m_AudioStream;
 };
 

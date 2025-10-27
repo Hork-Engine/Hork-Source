@@ -164,6 +164,6 @@ private:
     TerrainData                 m_Data;
 };
 
-using TerrainHandle = IntrusiveRef<Terrain>;
+using TerrainRef = IntrusiveRef<Terrain>;
 
 HK_NAMESPACE_END

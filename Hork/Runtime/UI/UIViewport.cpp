@@ -201,7 +201,7 @@ void UIViewport::Draw(Canvas& canvas)
     m_WorldRenderView->AcquireRenderTarget();
 
     DrawTextureDesc desc;
-    desc.TexHandle = m_WorldRenderView->GetTextureHandle();
+    desc.Texture = m_WorldRenderView->GetTexture();
     desc.X = m_Geometry.Mins.X;
     desc.Y = m_Geometry.Mins.Y;
     desc.W = size.X;

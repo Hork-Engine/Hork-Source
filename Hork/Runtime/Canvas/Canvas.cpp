@@ -848,7 +848,7 @@ void Canvas::DrawTexture(DrawTextureDesc const& desc)
                        desc.W * desc.UVScale.X,
                        desc.H * desc.UVScale.Y,
                        desc.Angle,
-                       desc.TexHandle,
+                       desc.Texture,
                        desc.TintColor,
                        imageFlags);
     BeginPath();
@@ -947,7 +947,7 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
     frag->StrokeMult = (width * 0.5f + fringe * 0.5f) / fringe;
     frag->StrokeThr  = strokeThr;
 
-    if (paint->TexHandle || forceTexurePath)
+    if (paint->Texture || forceTexurePath)
     {
         frag->Type    = CANVAS_SHADER_FILLIMG;
         frag->TexType = (paint->ImageFlags & CANVAS_IMAGE_PREMULTIPLIED) ? 0 : 1;
@@ -974,10 +974,10 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
 
 RHI::ITexture* Canvas::GetTexture(CanvasPaint const* paint)
 {
-    if (!paint->TexHandle)
+    if (!paint->Texture)
         return nullptr;
 
-    return paint->TexHandle->GetTextureGPU();
+    return paint->Texture->GetTextureGPU();
 }
 
 void Canvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds)
@@ -3459,7 +3459,7 @@ void Canvas::DrawCursor(CanvasCursor cursor, Float2 const& position, Color4 cons
         CreateCursorMap();
 
     DrawTextureDesc desc;
-    desc.TexHandle = m_CursorMap;
+    desc.Texture   = m_CursorMap;
     desc.W         = size.X;
     desc.H         = size.Y;
     desc.UVScale.X = 1.0f / desc.W * m_CursorMapWidth;

@@ -92,7 +92,7 @@ float RolloffRate = SOUND_ROLLOFF_RATE_DEFAULT;
 
 */
 
-void AudioInterface::PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, SoundGroup* inGroup, float inVolume, int inStartFrame)
+void AudioInterface::PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroup* inGroup, float inVolume, int inStartFrame)
 {
     if (inVolume <= 0.0001f)
         return;
@@ -138,7 +138,7 @@ void AudioInterface::PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, 
     m_OneShotSound.Add(one_shot);// TODO: Thread-safe
 }
 
-void AudioInterface::PlaySoundBackground(SoundHandle inSound, SoundGroup* inGroup, float inVolume, int inStartFrame)
+void AudioInterface::PlaySoundBackground(SoundRef inSound, SoundGroup* inGroup, float inVolume, int inStartFrame)
 {
     if (inVolume <= 0.0001f)
         return;

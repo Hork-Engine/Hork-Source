@@ -75,7 +75,7 @@ enum
 class TerrainView final : public ComponentRenderView
 {
 public:
-    explicit TerrainView(TerrainHandle resource);
+    explicit TerrainView(TerrainRef resource);
     ~TerrainView();
 
     void Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
@@ -164,7 +164,7 @@ private:
         INTERIOR_BOTTOM_RIGHT
     };
 
-    TerrainHandle m_Terrain;
+    TerrainRef m_Terrain;
 
     /// Current lod state
     TerrainLodInfo m_LodInfo[MAX_TERRAIN_LODS];

@@ -53,7 +53,7 @@ ConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"_s, "0"_s);
 UniqueRef<TerrainMesh> TerrainView::s_TerrainMesh;
 uint32_t TerrainView::s_InstanceCount{};
 
-TerrainView::TerrainView(TerrainHandle resource)
+TerrainView::TerrainView(TerrainRef resource)
 {
     RHI::IDevice* device = GameApplication::sGetRenderDevice();
 

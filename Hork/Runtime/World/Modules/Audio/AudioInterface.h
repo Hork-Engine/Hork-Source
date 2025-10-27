@@ -128,10 +128,10 @@ public:
     Handle32<AudioListenerComponent> GetListener() const { return m_ListenerComponent; }
 
     /// Plays a sound at a given position in world space.
-    void                    PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+    void                    PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
 
     /// Plays a sound at background.
-    void                    PlaySoundBackground(SoundHandle inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+    void                    PlaySoundBackground(SoundRef inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
 
 protected:
     virtual void            Initialize() override;

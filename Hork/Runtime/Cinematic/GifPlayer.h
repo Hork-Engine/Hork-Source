@@ -77,10 +77,10 @@ public:
     /// Get the video duration in seconds.
     float           GetDuration() const;
 
-    TextureHandle   GetTextureHandle() const;
+    TextureRef      GetTexture() const;
 
 private:
-    TextureHandle   m_Texture;
+    TextureRef      m_Texture;
     GifImage        m_Image;
     GifImage::DecodeContext m_DecContext;
     float           m_Time = 0;

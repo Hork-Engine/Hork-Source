@@ -189,7 +189,7 @@ float GifPlayer::GetDuration() const
     return m_Image.GetDuration();
 }
 
-TextureHandle GifPlayer::GetTextureHandle() const
+TextureRef GifPlayer::GetTexture() const
 {
     return m_Texture;
 }

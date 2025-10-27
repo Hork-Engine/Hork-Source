@@ -49,7 +49,7 @@ public:
 
     // Public
 
-    void                        SetResource(TerrainHandle resource);
+    void                        SetResource(TerrainRef resource);
     Terrain*                    GetResource() const { return m_Resource.RawPtr(); }
 
     // Internal
@@ -59,7 +59,7 @@ public:
     Ref<TerrainView>            CreateRenderView();
 
 private:
-    TerrainHandle               m_Resource;
+    TerrainRef                  m_Resource;
 };
 
 HK_NAMESPACE_END

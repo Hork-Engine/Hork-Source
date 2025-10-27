@@ -79,6 +79,6 @@ private:
    
 };
 
-using SoundHandle = IntrusiveRef<Sound>;
+using SoundRef = IntrusiveRef<Sound>;
 
 HK_NAMESPACE_END

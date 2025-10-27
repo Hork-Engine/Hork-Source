@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-void MatInstance::SetTexture(uint32_t slot, TextureHandle handle)
+void MatInstance::SetTexture(uint32_t slot, TextureRef handle)
 {
     if (slot < MAX_MATERIAL_TEXTURES)
         m_Textures[slot] = std::move(handle);
@@ -42,7 +42,7 @@ void MatInstance::SetTexture(uint32_t slot, TextureHandle handle)
         LOG("MatInstance::SetTexture: Invalid texture slot {}\n", slot);
 }
 
-TextureHandle MatInstance::GetTexture(uint32_t slot) const
+TextureRef MatInstance::GetTexture(uint32_t slot) const
 {
     if (slot < MAX_MATERIAL_TEXTURES)
         return m_Textures[slot];
@@ -100,7 +100,7 @@ MaterialFrameData* MatInstance::PreRender(int frameNumber)
 
     for (int i = 0, count = m_FrameData->NumTextures; i < count; ++i)
     {
-        TextureHandle& texture = m_Textures[i];
+        TextureRef& texture = m_Textures[i];
 
         if (!texture || texture->IsPurged())
         {

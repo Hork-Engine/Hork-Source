@@ -40,7 +40,7 @@ ColorGradingParameters::ColorGradingParameters()
     SetDefaults();
 }
 
-void ColorGradingParameters::SetLUT(TextureHandle Texture)
+void ColorGradingParameters::SetLUT(TextureRef Texture)
 {
     m_LUT = std::move(Texture);
 }
@@ -204,7 +204,7 @@ void WorldRenderView::SetCullingCamera(Handle32<CameraComponent> camera)
     m_CullingCamera = camera;
 }
 
-TextureHandle WorldRenderView::GetTextureHandle()
+TextureRef WorldRenderView::GetTexture()
 {
     return m_HandleRT;
 }

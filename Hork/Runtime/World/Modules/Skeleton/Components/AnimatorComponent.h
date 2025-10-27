@@ -58,7 +58,7 @@ public:
     AnimGraph_Value         GetParam(StringID paramID) { return m_ParameterSet.m_Params[paramID]; }
 
     /// The mesh is only used to provide the skeleton.
-    void                    SetMesh(MeshHandle handle);
+    void                    SetMesh(MeshRef mesh);
 
     // Internal
 
@@ -71,7 +71,7 @@ private:
     Ref<AnimationGraph_Cooked> m_AnimGraph;
     UniqueRef<AnimationPlayer> m_AnimPlayer;
     AnimationParameterSet   m_ParameterSet;
-    MeshHandle              m_Mesh;
+    MeshRef                 m_Mesh;
 };
 
 HK_NAMESPACE_END

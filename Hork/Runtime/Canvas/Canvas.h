@@ -72,7 +72,7 @@ struct RoundingDesc
 
 struct DrawTextureDesc
 {
-    TextureHandle    TexHandle{};
+    TextureRef       Texture{};
     float            X{};
     float            Y{};
     float            W{};
@@ -632,7 +632,7 @@ private:
     int                     m_FillTriCount{};
     int                     m_StrokeTriCount{};
     int                     m_TextTriCount{};
-    TextureHandle           m_CursorMap;
+    TextureRef              m_CursorMap;
     uint32_t                m_CursorMapWidth{};
     uint32_t                m_CursorMapHeight{};
     mutable bool            m_UpdateFontTexture{};

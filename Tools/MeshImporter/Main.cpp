@@ -46,7 +46,7 @@ bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
 
     LOG("Importing mesh {}...\n", fileName);
 
-    MeshHandle resource(new Mesh);
+    MeshRef resource(new Mesh);
     auto data = MakeUnique<MeshData>();
     data->FromRawMesh(rawMesh);
     resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -72,7 +72,7 @@ bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
 
     LOG("Importing animation {}...\n", animationIndex);
 
-    AnimationHandle animation(new Animation);
+    AnimationRef animation(new Animation);
     if (!animation->FromRawAnimation(*rawMesh.Animations[animationIndex].RawPtr(), rawMesh.Skeleton))
     {
         LOG("Failed to build animation {}\n", animationIndex);
@@ -103,7 +103,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateBox(Float3(1), 1.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -117,7 +117,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSphere(0.5f, 1.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -132,7 +132,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCylinder(0.5f, 1.0f, 1.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -147,7 +147,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCone(0.5f, 1.0f, 1.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -162,7 +162,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCapsule(0.5f, 1.0f, 1.0f);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -177,7 +177,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXZ(256, 256, Float2(256));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -191,7 +191,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXY(256, 256, Float2(256));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -205,7 +205,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXZ(1, 1, Float2(1));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -219,7 +219,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXY(1, 1, Float2(1));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -233,7 +233,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkybox(Float3(1), 1);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -248,7 +248,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkydome(0.5f, 1, 32, 32, false);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
@@ -263,7 +263,7 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkydome(0.5f, 1, 32, 32, true);
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(mesh);
         resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);

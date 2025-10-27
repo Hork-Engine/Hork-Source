@@ -74,6 +74,6 @@ private:
     UniqueRef<MaterialBinary>   m_Binary;
 };
 
-using MaterialHandle = IntrusiveRef<Material>;
+using MaterialRef = IntrusiveRef<Material>;
 
 HK_NAMESPACE_END

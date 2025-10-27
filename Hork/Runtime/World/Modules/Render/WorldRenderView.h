@@ -47,8 +47,8 @@ class ColorGradingParameters final : public RefCounted
 public:
                                 ColorGradingParameters();
 
-    void                        SetLUT(TextureHandle Texture);
-    TextureHandle               GetLUT() { return m_LUT; }
+    void                        SetLUT(TextureRef Texture);
+    TextureRef                  GetLUT() { return m_LUT; }
 
     void                        SetGrain(Float3 const& grain);
     Float3 const&               GetGrain() const { return m_Grain; }
@@ -79,7 +79,7 @@ public:
     void                        SetDefaults();
 
 private:
-    TextureHandle               m_LUT;
+    TextureRef                  m_LUT;
     Float3                      m_Grain;
     Float3                      m_Gamma;
     Float3                      m_Lift;
@@ -163,7 +163,7 @@ public:
     RHI::ITexture*              GetCurrentExposure() { return m_CurrentExposure; }
     RHI::ITexture*              GetCurrentColorGradingLUT() { return m_CurrentColorGradingLUT; }
 
-    TextureHandle               GetTextureHandle();
+    TextureRef                  GetTexture();
 
     /*
     TODO    
@@ -249,7 +249,7 @@ private:
     Ref<RHI::ITexture>          m_CurrentColorGradingLUT;
     Ref<RHI::ITexture>          m_CurrentExposure;
     int                         m_FrameNum{};
-    TextureHandle               m_HandleRT;
+    TextureRef                  m_HandleRT;
 };
 
 HK_NAMESPACE_END

@@ -160,14 +160,14 @@ public:
 
     IntrusiveRef& operator=(IntrusiveRef const& rhs)
     {
-        if (HK_LIKELY(this != &rhs))
+        if HK_LIKELY(this != &rhs)
             IntrusiveRef(rhs).Swap(*this);
         return *this;
     }
 
     template <typename U> IntrusiveRef& operator=(IntrusiveRef<U> const& rhs)
     {
-        if (HK_LIKELY(m_RawPtr != rhs.RawPtr()))
+        if HK_LIKELY(m_RawPtr != rhs.RawPtr())
             IntrusiveRef(rhs).Swap(*this);
         return *this;
     }
@@ -193,7 +193,7 @@ public:
 
     void Reset(T* rhs)
     {
-        if (HK_LIKELY(m_RawPtr != rhs))
+        if HK_LIKELY(m_RawPtr != rhs)
             IntrusiveRef(rhs).Swap(*this);
     }
 

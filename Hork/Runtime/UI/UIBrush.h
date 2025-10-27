@@ -52,7 +52,7 @@ public:
         CUSTOM
     };
 
-    const TYPE Type;
+    const TYPE       Type;
 
     CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_SOURCE_OVER;
     RoundingDesc     Rounding;
@@ -248,7 +248,7 @@ class UIImageBrush : public UIBrush
     UI_CLASS(UIImageBrush, UIBrush)
 
 public:
-    TextureHandle TexHandle;
+    TextureRef    Texture;
     uint32_t      TexWidth{32};
     uint32_t      TexHeight{32};
     Color4        TintColor;
@@ -263,14 +263,14 @@ public:
         UIBrush(IMAGE)
     {}
 
-    UIImageBrush(TextureHandle texture) :
+    UIImageBrush(TextureRef texture) :
         UIBrush(IMAGE),
-        TexHandle(std::move(texture))
+        Texture(std::move(texture))
     {}
 
-    UIImageBrush& WithTexture(TextureHandle texture)
+    UIImageBrush& WithTexture(TextureRef texture)
     {
-        TexHandle = std::move(texture);
+        Texture = std::move(texture);
         return *this;
     }
 

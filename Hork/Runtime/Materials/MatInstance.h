@@ -75,11 +75,11 @@ Material Manager                          +------ MatInstance 0  = resource hand
 class MatInstance final : public IntrusiveRefCounter<MatInstance>
 {
 public:
-    void                    SetResource(MaterialHandle resource) { m_Resource = std::move(resource); }
+    void                    SetResource(MaterialRef resource) { m_Resource = std::move(resource); }
     Material*               GetResource() const { return m_Resource.RawPtr(); }
 
-    void                    SetTexture(uint32_t slot, TextureHandle handle);
-    TextureHandle           GetTexture(uint32_t slot) const;
+    void                    SetTexture(uint32_t slot, TextureRef handle);
+    TextureRef              GetTexture(uint32_t slot) const;
 
     void                    SetConstant(uint32_t index, float Value);
     float                   GetConstant(uint32_t index) const;
@@ -90,8 +90,8 @@ public:
     MaterialFrameData*      PreRender(int frameNumber);
 
 private:
-    MaterialHandle          m_Resource;
-    TextureHandle           m_Textures[MAX_MATERIAL_TEXTURES];
+    MaterialRef             m_Resource;
+    TextureRef              m_Textures[MAX_MATERIAL_TEXTURES];
     float                   m_Constants[MAX_MATERIAL_UNIFORMS] = {};
     MaterialFrameData*      m_FrameData{};
     int                     m_VisFrame = -1;

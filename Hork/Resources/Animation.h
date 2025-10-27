@@ -74,6 +74,6 @@ private:
     UniqueRef<OzzAnimation>     m_OzzAnimation;
 };
 
-using AnimationHandle = IntrusiveRef<Animation>;
+using AnimationRef = IntrusiveRef<Animation>;
 
 HK_NAMESPACE_END

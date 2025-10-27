@@ -247,7 +247,7 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXY(16.0f/4, 9.0f/4, Float2(1,1));
 
-        MeshHandle resource(new Mesh);
+        MeshRef resource(new Mesh);
         auto data = MakeUnique<MeshData>();
         data->FromRawMesh(rawMesh);
 
@@ -262,7 +262,7 @@ void SampleApplication::CreateScene()
 
         MatInstanceHandle matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/unlit_clamped.mat"));
-        matInstance->SetTexture(0, m_GifPlayer.GetTextureHandle());
+        matInstance->SetTexture(0, m_GifPlayer.GetTexture());
         face->SetMaterial(std::move(matInstance));
     }
 

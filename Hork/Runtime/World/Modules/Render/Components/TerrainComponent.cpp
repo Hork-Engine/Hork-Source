@@ -42,7 +42,7 @@ HK_NAMESPACE_BEGIN
 
 ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"_s, "0"_s);
 
-void TerrainComponent::SetResource(TerrainHandle resource)
+void TerrainComponent::SetResource(TerrainRef resource)
 {
     m_Resource = std::move(resource);
 

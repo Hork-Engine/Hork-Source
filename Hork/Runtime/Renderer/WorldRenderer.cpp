@@ -1008,7 +1008,7 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     {
         ColorGradingParameters* params = worldRenderView->ColorGrading;
 
-        TextureHandle lutTexture = params->GetLUT();
+        TextureRef lutTexture = params->GetLUT();
 
         view->ColorGradingLUT = lutTexture ? lutTexture->GetTextureGPU() : nullptr;
         view->CurrentColorGradingLUT = worldRenderView->GetCurrentColorGradingLUT();

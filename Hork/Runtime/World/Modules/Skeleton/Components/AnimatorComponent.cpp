@@ -47,9 +47,9 @@ AnimatorComponent::AnimatorComponent(AnimatorComponent&& rhs) = default;
 AnimatorComponent::~AnimatorComponent()
 {}
 
-void AnimatorComponent::SetMesh(MeshHandle handle)
+void AnimatorComponent::SetMesh(MeshRef mesh)
 {
-   m_Mesh = std::move(handle);
+   m_Mesh = std::move(mesh);
 }
 
 void AnimatorComponent::BeginPlay()

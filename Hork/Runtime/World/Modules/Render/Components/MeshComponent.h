@@ -44,8 +44,8 @@ HK_NAMESPACE_BEGIN
 class MeshComponent : public Component
 {
 public:
-    void                        SetMesh(MeshHandle handle) { m_Resource = handle; }
-    MeshHandle                  GetMesh() const { return m_Resource; }
+    void                        SetMesh(MeshRef handle) { m_Resource = handle; }
+    MeshRef                     GetMesh() const { return m_Resource; }
 
     void                        SetProceduralMesh(ProceduralMesh* proceduralMesh) { m_ProceduralData = proceduralMesh; }
     ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData; }
@@ -81,7 +81,7 @@ public:
     void                        DrawDebug(DebugRenderer& renderer);
 
 protected:
-    MeshHandle                  m_Resource;
+    MeshRef                     m_Resource;
     Vector<MatInstanceHandle>   m_MatInstances;
     Ref<ProceduralMesh>         m_ProceduralData;
     uint8_t                     m_VisibilityLayer = 0;

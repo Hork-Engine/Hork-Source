@@ -331,7 +331,7 @@ int Cinematic::GetSampleRate() const
     return m_SampleRate;
 }
 
-TextureHandle Cinematic::GetTextureHandle() const
+TextureRef Cinematic::GetTexture() const
 {
     return m_Texture;
 }

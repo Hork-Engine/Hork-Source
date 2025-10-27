@@ -62,7 +62,7 @@ static void DrawSolid(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs
 
 static void DrawImage(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs, UIImageBrush* brush)
 {
-    if (brush->TexHandle)
+    if (brush->Texture)
     {
         CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_REPEATX | CANVAS_IMAGE_REPEATY;
 
@@ -77,11 +77,11 @@ static void DrawImage(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs
 
         if (brush->bStretch)
         {
-            paint.ImagePattern(mins, maxs.X - mins.X, maxs.Y - mins.Y, 0.0f, brush->TexHandle, brush->TintColor, imageFlags);
+            paint.ImagePattern(mins, maxs.X - mins.X, maxs.Y - mins.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
         }
         else
         {
-            paint.ImagePattern({mins.X + brush->Offset.X, mins.Y + brush->Offset.Y}, brush->TexWidth * brush->Scale.X, brush->TexHeight * brush->Scale.Y, 0.0f, brush->TexHandle, brush->TintColor, imageFlags);
+            paint.ImagePattern({mins.X + brush->Offset.X, mins.Y + brush->Offset.Y}, brush->TexWidth * brush->Scale.X, brush->TexHeight * brush->Scale.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
         }
     }
     else

@@ -256,7 +256,7 @@ public:
 private:
                             AnimPlayer_Clip() : AnimPlayer_Pose(AnimGraph_NodeType::Clip) {}
 
-    AnimationHandle         m_AnimClip;
+    AnimationRef            m_AnimClip;
 
     std::shared_ptr<AnimationSampleContext> m_SamplingContext;
 };

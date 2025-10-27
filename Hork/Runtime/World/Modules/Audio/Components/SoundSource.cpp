@@ -40,14 +40,14 @@ extern ConsoleVar Snd_HRTF;
 void SoundSource::ClearSound()
 {
     m_Track.Reset();
-    m_SoundHandle = {};
+    m_Sound = {};
     m_ChanVolume[0] = 0;
     m_ChanVolume[1] = 0;
 
     ClearQueue();
 }
 
-void SoundSource::AddToQueue(SoundHandle inSound)
+void SoundSource::AddToQueue(SoundRef inSound)
 {
     if (!inSound)
     {
@@ -86,11 +86,11 @@ bool SoundSource::SelectNextSound()
     bool wasSelected = false;
 
     m_Track.Reset();
-    m_SoundHandle.Reset();
+    m_Sound.Reset();
 
     while (!m_AudioQueue.empty() && !wasSelected)
     {
-        SoundHandle playSound = std::move(m_AudioQueue.front());
+        SoundRef playSound = std::move(m_AudioQueue.front());
         m_AudioQueue.pop();
         wasSelected = StartPlay(std::move(playSound), 0, -1);
     }
@@ -104,13 +104,13 @@ void SoundSource::ClearQueue()
         m_AudioQueue.pop();
 }
 
-void SoundSource::PlaySound(SoundHandle inSound, int inStartFrame, int inLoopStart)
+void SoundSource::PlaySound(SoundRef inSound, int inStartFrame, int inLoopStart)
 {
     ClearSound();
     StartPlay(std::move(inSound), inStartFrame, inLoopStart);
 }
 
-void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inStartFrame)
+void SoundSource::PlayOneShot(SoundRef inSound, float inVolumeScale, int inStartFrame)
 {
     if (inVolumeScale <= 0.0001f)
         return;
@@ -152,7 +152,7 @@ void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inSt
     oneShot.VolumeScale = Math::Saturate(inVolumeScale);
 }
 
-bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopStart)
+bool SoundSource::StartPlay(SoundRef inSound, int inStartFrame, int inLoopStart)
 {
     if (!inSound)
     {
@@ -195,7 +195,7 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
         loopsCount++;
     }
 
-    m_SoundHandle = std::move(inSound);
+    m_Sound = std::move(inSound);
 
     m_Track.Attach(new AudioTrack(source, inStartFrame, inLoopStart, loopsCount, m_VirtualizeWhenSilent));
     m_NeedToSubmit = true;
@@ -205,7 +205,7 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
 
 bool SoundSource::RestartSound()
 {
-    SoundHandle newSound = std::move(m_SoundHandle);
+    SoundRef newSound = std::move(m_Sound);
 
     int loop_start = m_Track ? m_Track->GetLoopStart() : -1;
 
@@ -319,7 +319,7 @@ bool SoundSource::IsMuted() const
 
 bool SoundSource::IsSilent() const
 {
-    return m_SoundHandle == nullptr;
+    return m_Sound == nullptr;
 }
 
 HK_FORCEINLINE float FalloffDistance(float inMaxDistance)
@@ -538,7 +538,7 @@ void SoundSource::UpdateTrack(AudioMixerSubmitQueue& submitQueue, bool inPaused)
         it++;
     }
 
-    if (!m_SoundHandle)
+    if (!m_Sound)
     {
         // silent
         return;

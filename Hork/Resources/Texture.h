@@ -135,6 +135,6 @@ private:
     uint32_t                    m_NumMipmaps = 0;
 };
 
-using TextureHandle = IntrusiveRef<Texture>;
+using TextureRef = IntrusiveRef<Texture>;
 
 HK_NAMESPACE_END

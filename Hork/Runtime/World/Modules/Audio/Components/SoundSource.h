@@ -65,17 +65,17 @@ public:
     static constexpr float  MaxSoundDsitance = 1000.0f;
 
     /// Start playing sound. This function cancels any sound that is already being played by the source.
-    void                    PlaySound(SoundHandle inSound, int inStartFrame = 0, int inLoopStart = -1);
+    void                    PlaySound(SoundRef inSound, int inStartFrame = 0, int inLoopStart = -1);
     
     /// Play one shot. Does not cancel sounds that are already being played by PlayOneShot and PlaySound.
     /// This function creates a separate track for sound playback.
-    void                    PlayOneShot(SoundHandle inSound, float inVolumeScale, int inStartFrame = 0);
+    void                    PlayOneShot(SoundRef inSound, float inVolumeScale, int inStartFrame = 0);
 
     /// Stops playing any sound from this source.
     void                    ClearSound();
 
     /// Add sound to queue
-    void                    AddToQueue(SoundHandle inSound);
+    void                    AddToQueue(SoundRef inSound);
 
     /// Clear sound queue
     void                    ClearQueue();
@@ -190,16 +190,16 @@ public:
     void                    UpdateTrack(class AudioMixerSubmitQueue& submitQueue, bool inPaused);
 
 private:
-    bool                    StartPlay(SoundHandle inSound, int inStartFrame, int inLoopStart);
+    bool                    StartPlay(SoundRef inSound, int inStartFrame, int inLoopStart);
 
-    using Queue = eastl::queue<SoundHandle, eastl::deque<SoundHandle, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundHandle)>>;
+    using Queue = eastl::queue<SoundRef, eastl::deque<SoundRef, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundRef)>>;
 
     Queue                   m_AudioQueue;
     Ref<SoundGroup>         m_Group;
     GameObjectHandle        m_TargetListener;
     uint32_t                m_ListenerMask = ~0u;
     SoundSourceType         m_SourceType = SoundSourceType::Point;
-    SoundHandle             m_SoundHandle;
+    SoundRef                m_Sound;
     Ref<AudioTrack>         m_Track;
     float                   m_Volume = 1.0f;
     float                   m_ReferenceDistance = 1;
