@@ -36,11 +36,11 @@ SOFTWARE.
 #include <Hork/Core/Platform.h>
 #include <Hork/Image/RawImage.h>
 #include <Hork/Image/Image.h>
-#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
-bool ImportImage(ImageStorage& storage, StringView fileName)
+bool ImportImage(ImageStorage& image, StringView fileName)
 {
     LOG("Importing texture {}...\n", fileName);
 
@@ -51,7 +51,7 @@ bool ImportImage(ImageStorage& storage, StringView fileName)
         return false;
     }
 
-    AssetUtils::CreateTexture(file, storage);
+    Texture::sWriteImage(file, image);
     return true;
 }
 

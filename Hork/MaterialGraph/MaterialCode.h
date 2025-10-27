@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Renderer/RenderDefs.h>
 #include <Hork/ShaderUtils/ShaderLoader.h>
+#include <Hork/Core/UniqueRef.h>
 
 HK_NAMESPACE_BEGIN
 

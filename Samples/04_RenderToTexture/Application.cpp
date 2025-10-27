@@ -274,25 +274,18 @@ void SampleApplication::CreateResources()
 
     materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
 
-    // List of resources used in scene
-    ResourceID sceneResources[] = {
-        resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/capsule.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/default.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/mirror.mat"),
-        resourceMngr.GetResource<TextureResource>("/Root/dirt.png"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank256.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp")
-    };
-    
     // Load resources asynchronously
-    ResourceAreaID resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(resources);
-
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/mirror.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/box.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/capsule.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/dirt.png"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank256.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    
     // Wait for the resources to load
-    resourceMngr.MainThread_WaitResourceArea(resources);
+    resourceMngr.WaitForBatch(BATCH_LEVEL_RESOURCES);
 }
 
 void SampleApplication::CreateScene()
@@ -325,21 +318,19 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXY(4.0f, 8.0f);
 
-        MeshResourceBuilder builder;
-        UniqueRef<MeshResource> quadMesh = builder.Build(rawMesh);
-        if (quadMesh)
-            quadMesh->Upload(sGetRenderDevice());
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(rawMesh);
 
-        auto surfaceHandle = resourceMngr.CreateResourceWithData<MeshResource>("mirror_surface", std::move(quadMesh));
+        resource->InitFromData(std::move(data));
 
-        face->SetMesh(surfaceHandle);
+        face->SetMesh(resource);
         face->SetLocalBoundingBox(rawMesh.CalcBoundingBox());
         
-        Ref<MaterialLibrary> matlib = materialMngr.CreateLibrary();
-        Material* material = matlib->CreateMaterial("render_to_tex_material");
-        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/mirror.mat"));
-        material->SetTexture(0, m_OffscreenRenderView->GetTextureHandle());
-        face->SetMaterial(material);
+        MatInstanceHandle matInstance(new MatInstance);
+        matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/mirror.mat"));
+        matInstance->SetTexture(0, m_OffscreenRenderView->GetTextureHandle());
+        face->SetMaterial(std::move(matInstance));
     }
     {
         GameObjectDesc desc;
@@ -410,8 +401,8 @@ void SampleApplication::CreateScene()
             object->CreateComponent<BoxCollider>();
             DynamicMeshComponent* mesh;
             object->CreateComponent(mesh);
-            mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            mesh->SetMaterial(materialMngr.TryGet("blank256"));
+            mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+            mesh->SetMaterial(materialMngr.FindMaterial("blank256"));
             mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
         }
     }
@@ -419,7 +410,6 @@ void SampleApplication::CreateScene()
 
 GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& rotation)
 {
-    auto& resourceMngr = sGetResourceManager();
     auto& materialMngr = sGetMaterialManager();
 
     const float HeightStanding = 1.20f;
@@ -454,16 +444,17 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
 
         RawMesh rawMesh;
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(rawMesh);
-        resource->Upload(sGetRenderDevice());
+
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(rawMesh);
+
+        resource->InitFromData(std::move(data));
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 
-        resourceMngr.CreateResourceWithData("character_controller_capsule", std::move(resource));
-
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("character_controller_capsule"));
-        mesh->SetMaterial(materialMngr.TryGet("blank512"));
+        mesh->SetMesh(resource);
+        mesh->SetMaterial(materialMngr.FindMaterial("blank512"));
     }
 
     GameObject* viewPoint;

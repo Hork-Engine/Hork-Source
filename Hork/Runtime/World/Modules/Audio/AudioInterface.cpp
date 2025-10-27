@@ -97,20 +97,19 @@ void AudioInterface::PlaySoundAt(SoundHandle inSound, Float3 const& inPosition, 
     if (inVolume <= 0.0001f)
         return;
 
-    if (!inSound.IsValid())
+    if (!inSound)
     {
         LOG("SoundSource::StartPlay: No sound specified\n");
         return;
     }
 
-    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
-    if (!resource)
+    if (inSound->IsPurged())
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
         return;
     }
 
-    auto source = resource->GetSource();
+    auto source = inSound->GetSource();
     if (!source)
     {
         LOG("SoundSource::StartPlay: Resource has no audio\n");
@@ -144,20 +143,19 @@ void AudioInterface::PlaySoundBackground(SoundHandle inSound, SoundGroup* inGrou
     if (inVolume <= 0.0001f)
         return;
 
-    if (!inSound.IsValid())
+    if (!inSound)
     {
         LOG("SoundSource::StartPlay: No sound specified\n");
         return;
     }
 
-    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
-    if (!resource)
+    if (inSound->IsPurged())
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
         return;
     }
 
-    auto source = resource->GetSource();
+    auto source = inSound->GetSource();
     if (!source)
     {
         LOG("SoundSource::StartPlay: Resource has no audio\n");

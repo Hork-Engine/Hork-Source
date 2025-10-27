@@ -28,87 +28,81 @@ SOFTWARE.
 
 */
 
-#include "Material.h"
+#include "MatInstance.h"
 
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
-Material::Material(StringView name) :
-    m_Name(name)
-{}
-
-void Material::SetTexture(uint32_t slot, TextureHandle handle)
+void MatInstance::SetTexture(uint32_t slot, TextureHandle handle)
 {
     if (slot < MAX_MATERIAL_TEXTURES)
-        m_Textures[slot] = handle;
+        m_Textures[slot] = std::move(handle);
     else
-        LOG("Material::SetTexture: Invalid texture slot {}\n", slot);
+        LOG("MatInstance::SetTexture: Invalid texture slot {}\n", slot);
 }
 
-TextureHandle Material::GetTexture(uint32_t slot) const
+TextureHandle MatInstance::GetTexture(uint32_t slot) const
 {
     if (slot < MAX_MATERIAL_TEXTURES)
         return m_Textures[slot];
-    LOG("Material::GetTexture: Invalid texture slot {}\n", slot);
+    LOG("MatInstance::GetTexture: Invalid texture slot {}\n", slot);
     return {};
 }
 
-void Material::SetConstant(uint32_t index, float Value)
+void MatInstance::SetConstant(uint32_t index, float Value)
 {
     if (index < MAX_MATERIAL_UNIFORMS)
         m_Constants[index] = Value;
     else
-        LOG("Material::SetConstant: Invalid index {}\n", index);
+        LOG("MatInstance::SetConstant: Invalid index {}\n", index);
 }
 
-float Material::GetConstant(uint32_t index) const
+float MatInstance::GetConstant(uint32_t index) const
 {
     if (index < MAX_MATERIAL_UNIFORMS)
         return m_Constants[index];
-    LOG("Material::GetConstant: Invalid index {}\n", index);
+    LOG("MatInstance::GetConstant: Invalid index {}\n", index);
     return 0.0f;
 }
 
-void Material::SetVector(uint32_t index, Float4 const& Value)
+void MatInstance::SetVector(uint32_t index, Float4 const& Value)
 {
     if (index < MAX_MATERIAL_UNIFORM_VECTORS)
         *(Float4*)&m_Constants[index * 4] = Value;
     else
-        LOG("Material::SetVector: Invalid index {}\n", index);
+        LOG("MatInstance::SetVector: Invalid index {}\n", index);
 }
 
-Float4 const& Material::GetVector(uint32_t index) const
+Float4 const& MatInstance::GetVector(uint32_t index) const
 {
     if (index < MAX_MATERIAL_UNIFORM_VECTORS)
         return *(Float4*)&m_Constants[index * 4];
-    LOG("Material::GetVector: Invalid index {}\n", index);
+    LOG("MatInstance::GetVector: Invalid index {}\n", index);
     return Float4::sZero();
 }
 
-MaterialFrameData* Material::PreRender(int frameNumber)
+MaterialFrameData* MatInstance::PreRender(int frameNumber)
 {
     if (m_VisFrame == frameNumber)
         return m_FrameData;
 
-    MaterialResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource);
-    if (!resource)
+    if (!m_Resource || m_Resource->IsPurged())
         return nullptr;
 
     m_FrameData = (MaterialFrameData*)GameApplication::sGetFrameLoop().AllocFrameMem(sizeof(MaterialFrameData));
     m_VisFrame = frameNumber;
 
-    m_FrameData->Material    = resource->GetGpuMaterial();
-    m_FrameData->NumTextures = resource->GetTextureCount();
+    m_FrameData->Material    = m_Resource->GetGpuMaterial();
+    m_FrameData->NumTextures = m_Resource->GetTextureCount();
 
     HK_ASSERT(m_FrameData->NumTextures <= MAX_MATERIAL_TEXTURES);
 
     for (int i = 0, count = m_FrameData->NumTextures; i < count; ++i)
     {
-        TextureHandle texHandle = m_Textures[i];
+        TextureHandle& texture = m_Textures[i];
 
-        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(texHandle);
-        if (!texture)
+        if (!texture || texture->IsPurged())
         {
             m_FrameData = nullptr;
             return nullptr;
@@ -123,7 +117,7 @@ MaterialFrameData* Material::PreRender(int frameNumber)
         }
     }
 
-    m_FrameData->NumUniformVectors = resource->GetUniformVectorCount();
+    m_FrameData->NumUniformVectors = m_Resource->GetUniformVectorCount();
     Core::Memcpy(m_FrameData->UniformVectors, m_Constants, sizeof(Float4) * m_FrameData->NumUniformVectors);
 
     return m_FrameData;

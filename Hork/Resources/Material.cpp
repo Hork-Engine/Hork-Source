@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -28,14 +28,16 @@ SOFTWARE.
 
 */
 
-#include "Resource_Material.h"
+#include "Material.h"
 
 #include <Hork/MaterialGraph/MaterialGraph.h>
 #include <Hork/MaterialGraph/MaterialCompiler.h>
 
 HK_NAMESPACE_BEGIN
 
-UniqueRef<MaterialResource> MaterialResource::sLoad(IBinaryStreamReadInterface& stream)
+extern RHI::IDevice* g_RenderDevice;
+
+UniqueRef<MaterialBinary> Material::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
 {
     StringView extension = PathUtils::sGetExt(stream.GetName());
 
@@ -51,82 +53,88 @@ UniqueRef<MaterialResource> MaterialResource::sLoad(IBinaryStreamReadInterface& 
         bool debugMode = false;
 #endif
 
-        return MaterialResourceBuilder().Build(*graph.RawPtr(), debugMode);
+        auto materialCode = graph->Build();
+        if (!materialCode)
+            return {};
+
+        MaterialCode::TranslationParams translationParams;
+        translationParams.IsDebugMode = debugMode;
+
+        return materialCode->Translate(translationParams);
     }
 
-    UniqueRef<MaterialResource> resource = MakeUnique<MaterialResource>();
-    if (!resource->Read(stream))
-        return {};
-    return resource;
-}
-
-bool MaterialResource::Read(IBinaryStreamReadInterface& stream)
-{
     uint32_t fileMagic = stream.ReadUInt32();
 
     if (fileMagic != MakeResourceMagic(Type, Version))
     {
         LOG("Unexpected file format\n");
-        return false;
+        return {};
     }
 
-    m_Binary = MakeUnique<MaterialBinary>();
-    m_Binary->Read(stream);
+    auto materialData = MakeUnique<MaterialBinary>();
+    materialData->Read(stream);
 
-    return true;
+    return materialData;
 }
 
-void MaterialResource::Write(IBinaryStreamWriteInterface& stream)
+void Material::InitFromData(UniqueRef<MaterialBinary> data)
 {
+    if (!data)
+        return;
+
+    m_Binary = std::move(data);
+    m_GpuMaterial = CompileMaterial(g_RenderDevice, *m_Binary.RawPtr());
+
+    m_IsPurged = false;
+}
+
+void Material::Load(IBinaryStreamReadInterface& stream)
+{
+    auto tempData = BeginAsyncLoad(stream);
+    if (tempData)
+        InitFromData(std::move(tempData));
+}
+
+void Material::Write(IBinaryStreamWriteInterface& stream)
+{
+    if (!m_Binary)
+        return;
+
     stream.WriteUInt32(MakeResourceMagic(Type, Version));
 
     m_Binary->Write(stream);
 }
 
-void MaterialResource::Upload(RHI::IDevice* device)
+void Material::Purge()
 {
-    if (m_Binary)
-        m_GpuMaterial = CompileMaterial(device, *m_Binary.RawPtr());
+    m_Binary.Reset();
+   
+    m_IsPurged = true;
 }
 
-bool MaterialResource::IsCastShadow() const
+bool Material::IsCastShadow() const
 {
-    return m_Binary->IsCastShadow;
+    return m_Binary ? m_Binary->IsCastShadow : false;
 }
 
-bool MaterialResource::IsTranslucent() const
+bool Material::IsTranslucent() const
 {
-    return m_Binary->IsTranslucent;
+    return m_Binary ? m_Binary->IsTranslucent : false;
 }
 
-RENDERING_PRIORITY MaterialResource::GetRenderingPriority() const
+RENDERING_PRIORITY Material::GetRenderingPriority() const
 {
-    return m_Binary->RenderingPriority;
+    return m_Binary ? m_Binary->RenderingPriority : RENDERING_PRIORITY_DEFAULT;
 }
 
-uint32_t MaterialResource::GetTextureCount() const
+uint32_t Material::GetTextureCount() const
 {
-    return m_Binary->TextureCount;
+    return m_Binary ? m_Binary->TextureCount : 0;
 }
 
-uint32_t MaterialResource::GetUniformVectorCount() const
+uint32_t Material::GetUniformVectorCount() const
 {
-    return m_Binary->UniformVectorCount;
-}
-
-UniqueRef<MaterialResource> MaterialResourceBuilder::Build(MaterialGraph& graph, bool debugMode)
-{
-    auto materialCode = graph.Build();
-    if (!materialCode)
-        return {};
-
-    MaterialCode::TranslationParams translationParams;
-    translationParams.IsDebugMode = debugMode;
-
-    auto material = MakeUnique<MaterialResource>();
-    material->m_Binary = materialCode->Translate(translationParams);
-
-    return material;
+    return m_Binary ? m_Binary->UniformVectorCount : 0;
 }
 
 HK_NAMESPACE_END

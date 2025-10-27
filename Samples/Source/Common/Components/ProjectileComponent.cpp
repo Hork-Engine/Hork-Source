@@ -37,6 +37,8 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/MeshComponent.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
+#include <Hork/Resources/ResourceManager.h>
+#include <Hork/Resources/ResourceFinder.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -87,10 +89,9 @@ void ProjectileComponent::DrawDebug(DebugRenderer& renderer)
 
 void SpawnProjectile(World* world, Float3 const& position, Float3 const& impulse, PlayerTeam team)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
     auto& materialMngr = GameApplication::sGetMaterialManager();
 
-    static auto meshResource = resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh");
+    static ResourceFinder<Mesh> meshFinder("/Root/default/sphere.mesh");
 
     GameObjectDesc desc;
     desc.Name.FromString("Projectile");
@@ -112,8 +113,8 @@ void SpawnProjectile(World* world, Float3 const& position, Float3 const& impulse
     collider->Radius = 0.5f;
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
-    mesh->SetMesh(meshResource);
-    mesh->SetMaterial(materialMngr.TryGet(team == PlayerTeam::Blue ? "blank512" : "red512"));
+    mesh->SetMesh(meshFinder.Acquire());
+    mesh->SetMaterial(materialMngr.FindMaterial(team == PlayerTeam::Blue ? "blank512" : "red512"));
     mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
     LifeSpanComponent* lifespan;
     object->CreateComponent(lifespan);

@@ -66,7 +66,7 @@ public:
     
     UIImage& WithTexture(TextureHandle texture)
     {
-        TexHandle = texture;
+        TexHandle = std::move(texture);
         return *this;
     }
 

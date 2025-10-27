@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,52 +30,66 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceHandle.h"
-#include "ResourceBase.h"
+#include "Resource.h"
 
-#include <Hork/Core/BinaryStream.h>
+#include <Hork/Core/IntrusiveRef.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Image/Image.h>
 #include <Hork/RHI/Common/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
-class TextureResource : public ResourceBase
+// Временное хранилище для асинхронно загруженных данных
+struct TextureData
+{
+    ImageStorage Image;
+};
+
+class Texture : public Resource
 {
 public:
-    static const uint8_t        Type = RESOURCE_TEXTURE;
+    using DataType = TextureData;
+
+    static const uint8_t        Type = 4;
     static const uint8_t        Version = 1;
 
-                                TextureResource() = default;
-    explicit                    TextureResource(ImageStorage image);
-                                ~TextureResource();
+                                Texture() = default;
 
-    static UniqueRef<TextureResource> sLoad(IBinaryStreamReadInterface& stream);
-    //static bool                 Write(IBinaryStreamWriteInterface& stream, ImageStorage const& storage);
+    static UniqueRef<TextureData> BeginAsyncLoad(IBinaryStreamReadInterface& stream);
 
-    bool                        Read(IBinaryStreamReadInterface& stream);
+    void                        InitFromData(UniqueRef<TextureData> textureData);
 
-    void                        Upload(RHI::IDevice* device) override;
+    static void                 sWriteImage(IBinaryStreamWriteInterface& stream, ImageStorage const& image);
+
+    // Синхронная загрузка
+    void                        Load(IBinaryStreamReadInterface& stream) override;
+
+    void                        Purge();
+
+    void                        CreateFromImage(ImageStorage const& image);
+
+    void                        CreateRenderTarget(TEXTURE_FORMAT format, uint32_t width, uint32_t height);
 
     /// Allocate empty 1D texture
-    void                        Allocate1D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
+    void                        Allocate1D(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
 
     /// Allocate empty 1D array texture
-    void                        Allocate1DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
+    void                        Allocate1DArray(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
 
     /// Allocate empty 2D texture
-    void                        Allocate2D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height);
+    void                        Allocate2D(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height);
 
     /// Allocate empty 2D array texture
-    void                        Allocate2DArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t arraySize);
+    void                        Allocate2DArray(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t arraySize);
 
     /// Allocate empty 3D texture
-    void                        Allocate3D(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t depth);
+    void                        Allocate3D(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t height, uint32_t depth);
 
     /// Allocate empty cubemap texture
-    void                        AllocateCubemap(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
+    void                        AllocateCubemap(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width);
 
     /// Allocate empty cubemap array texture
-    void                        AllocateCubemapArray(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
+    void                        AllocateCubemapArray(TEXTURE_FORMAT format, uint32_t numMipLevels, uint32_t width, uint32_t arraySize);
 
     /// Fill texture data for any texture type.
     bool                        WriteData(uint32_t locationX, uint32_t locationY, uint32_t locationZ, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, const void* pData);
@@ -112,8 +126,6 @@ public:
     uint32_t                    GetNumMipmaps() const { return m_NumMipmaps; }
 
 private:
-    ImageStorage                m_Image;
-
     Ref<RHI::ITexture>          m_TextureGPU;
     TEXTURE_TYPE                m_Type = TEXTURE_2D;
     TEXTURE_FORMAT              m_Format = TEXTURE_FORMAT_BGRA8_UNORM;
@@ -123,13 +135,6 @@ private:
     uint32_t                    m_NumMipmaps = 0;
 };
 
-using TextureHandle = ResourceHandle<TextureResource>;
-
-namespace AssetUtils
-{
-
-bool CreateTexture(IBinaryStreamWriteInterface& stream, ImageStorage const& storage);
-
-}
+using TextureHandle = IntrusiveRef<Texture>;
 
 HK_NAMESPACE_END

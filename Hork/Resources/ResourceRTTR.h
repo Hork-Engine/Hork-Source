@@ -30,51 +30,28 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceHandle.h"
-#include "ResourceBase.h"
-
-#include <Hork/Geometry/RawMesh.h>
-#include <Hork/Core/Ref.h>
-
-namespace ozz::animation
-{
-    class Animation;
-}
+#include <Hork/Core/BaseTypes.h>
 
 HK_NAMESPACE_BEGIN
 
-using OzzAnimation = ozz::animation::Animation;
+using ResourceTypeID = uint32_t;
 
-class AnimationResource : public ResourceBase
+namespace ResourceRTTR
 {
-public:
-    static const uint8_t        Type = RESOURCE_ANIMATION;
-    static const uint8_t        Version = 2;
 
-                                AnimationResource() = default;
-                                ~AnimationResource();
+    /// Static time ID generation. Do not use.
+    HK_INLINE ResourceTypeID __StaticTimeTypeIDGenerator = 0;
 
-    static UniqueRef<AnimationResource> sLoad(IBinaryStreamReadInterface& stream);
+    // NOTE: ID is used for runtime. For static time use __StaticTimeTypeIDGenerator
+    template <typename T>
+    HK_INLINE const ResourceTypeID TypeID = __StaticTimeTypeIDGenerator++;
 
-    bool                        Read(IBinaryStreamReadInterface& stream);
-    void                        Write(IBinaryStreamWriteInterface& stream) const;
+    /// Total types count
+    HK_FORCEINLINE size_t GetTypesCount()
+    {
+        return __StaticTimeTypeIDGenerator;
+    }
 
-    float                       GetDuration() const;
-
-    OzzAnimation*               GetImpl() { return m_OzzAnimation.RawPtr(); }
-
-private:
-    UniqueRef<OzzAnimation>     m_OzzAnimation;
-
-    friend class                AnimationResourceBuilder;
-};
-
-using AnimationHandle = ResourceHandle<AnimationResource>;
-
-class AnimationResourceBuilder
-{
-public:
-    UniqueRef<AnimationResource> Build(RawAnimation const& rawAnimation, RawSkeleton const& rawSkeleton);
-};
+} // namespace ResourceRTTR
 
 HK_NAMESPACE_END

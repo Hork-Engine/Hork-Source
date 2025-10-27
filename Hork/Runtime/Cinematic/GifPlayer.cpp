@@ -36,7 +36,7 @@ HK_NAMESPACE_BEGIN
 
 GifPlayer::GifPlayer(StringView resourceName)
 {
-    m_Texture = GameApplication::sGetResourceManager().CreateResource<TextureResource>(resourceName);
+    m_Texture = GameApplication::sGetResourceManager().Acquire<Texture>(resourceName);
 }
 
 GifPlayer::~GifPlayer()
@@ -59,11 +59,8 @@ bool GifPlayer::Open(StringView filename)
     m_Time = 0;
     m_Image.StartDecode(m_DecContext);
 
-    TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-    HK_ASSERT(texture);
-
-    if (!texture->GetTextureGPU() || texture->GetWidth() != m_Image.GetWidth() || texture->GetHeight() != m_Image.GetHeight())
-        texture->Allocate2D(GameApplication::sGetRenderDevice(), TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Image.GetWidth(), m_Image.GetHeight());
+    if (!m_Texture->GetTextureGPU() || m_Texture->GetWidth() != m_Image.GetWidth() || m_Texture->GetHeight() != m_Image.GetHeight())
+        m_Texture->Allocate2D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Image.GetWidth(), m_Image.GetHeight());
 
     return true;
 }
@@ -72,13 +69,7 @@ void GifPlayer::Close()
 {
     m_Image.Reset();
 
-    if (m_Texture)
-    {
-        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-        HK_ASSERT(texture);
-
-        texture->SetTextureGPU(nullptr);
-    }
+    m_Texture->Purge();
 
     m_Time = 0;
     m_Loop = false;
@@ -174,8 +165,7 @@ void GifPlayer::Tick(float timeStep)
 
     if (updateTexture)
     {
-        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-        texture->WriteData2D(0, 0, GetWidth(), GetHeight(), 0, m_DecContext.Data.GetData());
+        m_Texture->WriteData2D(0, 0, GetWidth(), GetHeight(), 0, m_DecContext.Data.GetData());
 
         E_OnImageUpdate.Invoke((uint8_t*)m_DecContext.Data.GetData(), GetWidth(), GetHeight());
     }

@@ -49,19 +49,17 @@ AnimatorComponent::~AnimatorComponent()
 
 void AnimatorComponent::SetMesh(MeshHandle handle)
 {
-   m_Mesh = handle;
+   m_Mesh = std::move(handle);
 }
 
 void AnimatorComponent::BeginPlay()
 {
     m_PoseComponent = GetOwner()->GetComponentHandle<SkeletonPoseComponent>();
 
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    MeshResource* mesh = resourceMngr.TryGet(m_Mesh);
-    if (!mesh)
+    if (!m_Mesh || m_Mesh->IsPurged())
         return;
 
-    auto skeleton = mesh->GetSkeleton();
+    auto skeleton = m_Mesh->GetSkeleton();
     if (!skeleton)
         return;
 
@@ -81,13 +79,10 @@ void AnimatorComponent::Update()
     if (!m_AnimPlayer)
         return;
 
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-
-    MeshResource* mesh = resourceMngr.TryGet(m_Mesh);
-    if (!mesh)
+    if (!m_Mesh || m_Mesh->IsPurged())
         return;
 
-    auto skeleton = mesh->GetSkeleton();
+    auto skeleton = m_Mesh->GetSkeleton();
     if (!skeleton)
         return;
 

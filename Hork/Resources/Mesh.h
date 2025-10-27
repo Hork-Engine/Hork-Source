@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceHandle.h"
-#include "ResourceBase.h"
+#include "Resource.h"
+
+#include <Hork/Core/IntrusiveRef.h>
 
 #include <Hork/RHI/Common/VertexMemoryGPU.h>
 
@@ -42,24 +43,7 @@ SOFTWARE.
 
 #include <ozz/animation/runtime/skeleton.h> // TODO: move to cpp
 
-namespace ozz::animation
-{
-    class Skeleton;
-}
-
 HK_NAMESPACE_BEGIN
-
-class DebugRenderer;
-
-struct TriangleHitResult
-{
-    Float3 Location;
-    Float3 Normal;
-    Float2 UV;
-    float Distance;
-    unsigned int Indices[3];
-    //Material* MaterialInstance;
-};
 
 struct MeshSurface
 {
@@ -86,14 +70,6 @@ struct MeshSkin
     void                Write(IBinaryStreamWriteInterface& stream) const;
 };
 
-template <typename VertexType>
-using VertexBufferCPU = Vector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
-
-template <typename IndexType>
-using IndexBufferCPU = Vector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
-
-using OzzSkeleton = ozz::animation::Skeleton;
-
 struct MeshAllocateDesc
 {
     uint32_t            SurfaceCount = 0;
@@ -105,26 +81,75 @@ struct MeshAllocateDesc
     bool                HasLightmapChannel = false;
 };
 
-class MeshResource : public ResourceBase
+template <typename VertexType>
+using VertexBufferCPU = Vector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
+
+template <typename IndexType>
+using IndexBufferCPU = Vector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
+
+using OzzSkeleton = ozz::animation::Skeleton;
+
+struct TriangleHitResult
+{
+    Float3 Location;
+    Float3 Normal;
+    Float2 UV;
+    float Distance;
+    unsigned int Indices[3];
+    //Material* MaterialInstance;
+};
+
+using VertexBuffer =        VertexBufferCPU<MeshVertex>;
+using UvBuffer =            VertexBufferCPU<MeshVertexUV>;
+using SkinBuffer =          VertexBufferCPU<SkinVertex>;
+using IndexBuffer =         IndexBufferCPU<unsigned int>;
+
+enum class MeshLoadFlags : uint32_t
+{
+    Default         = 0,
+    DontUploadToGpu = HK_BIT(0)
+};
+HK_FLAG_ENUM_OPERATORS(MeshLoadFlags)
+
+struct MeshData
+{
+    Vector<MeshSurface>         m_Surfaces;
+    Vector<MeshSkin>            m_Skins;
+    Vector<uint16_t>            m_JointRemaps;
+    Vector<SimdFloat4x4>        m_InverseBindPoses;
+    UniqueRef<OzzSkeleton>      m_Skeleton;
+    VertexBuffer                m_Vertices;
+    SkinBuffer                  m_SkinBuffer;
+    UvBuffer                    m_LightmapUVs;
+    IndexBuffer                 m_Indices; // TODO: unsigned short, split large meshes to surfaces
+    BvAxisAlignedBox            m_BoundingBox;
+
+    void FromRawMesh(RawMesh const& rawMesh);
+};
+
+class Mesh : public Resource
 {
 public:
-    static const uint8_t        Type = RESOURCE_MESH;
+    using DataType = MeshData;
+
+    static const uint8_t        Type = 1;
     static const uint8_t        Version = 2;
 
-    using VertexBuffer =        VertexBufferCPU<MeshVertex>;
-    using UvBuffer =            VertexBufferCPU<MeshVertexUV>;
-    using SkinBuffer =          VertexBufferCPU<SkinVertex>;
-    using IndexBuffer =         IndexBufferCPU<unsigned int>;
+                                Mesh() = default;
+                                ~Mesh();
 
-                                MeshResource() = default;
-                                ~MeshResource();
+    // Асинхронная загрузка - запускается в фоновом потоке
+    static UniqueRef<MeshData>  BeginAsyncLoad(IBinaryStreamReadInterface& stream);
 
-    static UniqueRef<MeshResource> sLoad(IBinaryStreamReadInterface& stream);
+    // Копирование данных из временного хранилища - вызывается только в основном потоке
+    void                        InitFromData(UniqueRef<MeshData> meshData, MeshLoadFlags flags = MeshLoadFlags::Default);
 
-    bool                        Read(IBinaryStreamReadInterface& stream);
+    // Синхронная загрузка
+    void                        Load(IBinaryStreamReadInterface& stream) override;
+
     void                        Write(IBinaryStreamWriteInterface& stream) const;
 
-    void                        Upload(RHI::IDevice* device) override;
+    void                        Purge();
 
     bool                        HasLightmapUVs() const { return m_LightmapUVsGPU != nullptr; }
     bool                        HasSkinning() const { return !m_SkinBuffer.IsEmpty(); }
@@ -174,10 +199,10 @@ public:
     void                        GetIndexBufferGPU(RHI::IBuffer** ppBuffer, size_t* pOffset);
 
     /// Check ray intersection. Result is unordered by distance to save performance
-    bool                        Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
+    bool                        Raycast(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Vector<TriangleHitResult>& hitResult) const;
 
     /// Check ray intersection
-    bool                        RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& surfaceIndex) const;
+    bool                        RaycastClosest(Float3 const& rayStart, Float3 const& rayDir, float distance, bool cullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3], int& surfaceIndex) const;
 
     static void                 SetVertexMemoryGPU(VertexMemoryGPU* vertexMemory);
 
@@ -187,11 +212,12 @@ private:
     static void*                sGetLightmapUVMemory(void* _This);
     static void*                sGetIndexMemory(void* _This);
 
-    void                        Clear();
+    void                        CreateGpuBuffers(bool copyFromCPU);
+    void                        ReleaseGpuBuffers();
     void                        AddLightmapUVs();
 
-    bool                        Raycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Vector<TriangleHitResult>& hitResult) const;
-    bool                        RaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool bCullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
+    bool                        Raycast(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool cullBackFace, Vector<TriangleHitResult>& hitResult) const;
+    bool                        RaycastClosest(int surfaceIndex, Float3 const& rayStart, Float3 const& rayDir, Float3 const& invRayDir, float distance, bool cullBackFace, Float3& hitLocation, Float2& hitUV, float& hitDistance, unsigned int triangle[3]) const;
 
     Vector<MeshSurface>         m_Surfaces;
     Vector<MeshSkin>            m_Skins;
@@ -201,7 +227,7 @@ private:
     VertexBuffer                m_Vertices;
     SkinBuffer                  m_SkinBuffer;
     UvBuffer                    m_LightmapUVs;
-    IndexBuffer                 m_Indices; // TODO: unsigned short, split large meshes to surfaces
+    IndexBuffer                 m_Indices;
     BvAxisAlignedBox            m_BoundingBox;
 
     VertexHandle*               m_VertexHandle{};
@@ -210,16 +236,8 @@ private:
     VertexHandle*               m_IndexHandle{};
 
     static VertexMemoryGPU*     s_VertexMemory;
-
-    friend class                MeshResourceBuilder;
 };
 
-using MeshHandle = ResourceHandle<MeshResource>;
-
-class MeshResourceBuilder
-{
-public:
-    UniqueRef<MeshResource>     Build(RawMesh const& rawMesh);
-};
+using MeshHandle = IntrusiveRef<Mesh>;
 
 HK_NAMESPACE_END

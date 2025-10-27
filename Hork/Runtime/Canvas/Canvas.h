@@ -33,8 +33,6 @@ SOFTWARE.
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Renderer/RenderDefs.h>
 
-#include <Hork/Runtime/ResourceManager/ResourceManager.h>
-
 #include "Paint.h"
 #include "Transform2D.h"
 
@@ -585,7 +583,7 @@ private:
     int                     ExpandStroke(float w, float fringe, CanvasLineCap lineCap, CanvasLineJoin lineJoin, float miterLimit);
     int                     ExpandFill(float w, CanvasLineJoin lineJoin, float miterLimit);
 
-    void                    ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr);
+    void                    ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr, bool forceTexurePath = false);
 
     void                    RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds);
 

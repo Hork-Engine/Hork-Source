@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -36,6 +36,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
+// TODO: Переименовать в AudioData например
 class AudioSource final : public InterlockedRef
 {
 public:

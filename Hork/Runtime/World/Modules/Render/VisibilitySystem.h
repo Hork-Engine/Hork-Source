@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Hork/Geometry/BV/BvSphere.h>
 #include <Hork/Math/Plane.h>
 #include <Hork/Core/Allocators/PoolAllocator.h>
-#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Mesh.h>
 
 HK_NAMESPACE_BEGIN
 

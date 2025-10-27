@@ -31,45 +31,14 @@ SOFTWARE.
 #include "MaterialManager.h"
 
 #include <Hork/Core/DOM.h>
-#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
 HK_NAMESPACE_BEGIN
 
-Ref<Material> MaterialLibrary::CreateMaterial(StringView name)
+void MaterialLibrary::Load(IBinaryStreamReadInterface& stream)
 {
-    if (name.IsEmpty())
-    {
-        LOG("MaterialLibrary::CreateMaterial: invalid name\n");
-        return {};
-    }
+    Clear();
 
-    if (TryGet(name))
-    {
-        LOG("MaterialLibrary::CreateMaterial: material {} already exists\n", name);
-        return {};
-    }
-
-    // TODO: Use pool allocator
-    Ref<Material> instance = MakeRef<Material>(name);
-    m_Instances[name] = instance;
-    return instance;
-}
-
-void MaterialLibrary::DestroyMaterial(Material* material)
-{
-    if (!material)
-        return;
-
-    auto it = m_Instances.Find(material->GetName());
-    if (it == m_Instances.End())
-        return;
-
-    m_Instances.Erase(it);
-}
-
-void MaterialLibrary::Read(IBinaryStreamReadInterface& stream)
-{
     ResourceManager& resourceMngr = GameApplication::sGetResourceManager();
 
     DOM::Object document = DOM::Parser().Parse(stream.AsString());
@@ -83,73 +52,123 @@ void MaterialLibrary::Read(IBinaryStreamReadInterface& stream)
         if (!dinstance.IsStructure())
             continue;
 
-        Material* instance = CreateMaterial(materialName.GetStringView());
-        if (!instance)
-            continue;
+        MatInstanceHandle matInstance(new MatInstance);
 
         auto resource = dinstance["Material"].AsString();
-        instance->SetResource(resourceMngr.GetResource<MaterialResource>(!resource.IsEmpty() ? resource : "/Default/Materials/Unlit"));
+        if (!resource.IsEmpty())
+        {
+            if (resource[0] == '/') // path to file
+                matInstance->SetResource(resourceMngr.Load<Material>(resource));
+            else // procedural
+                matInstance->SetResource(resourceMngr.Acquire<Material>(resource));
+        }
 
         auto dtextures = dinstance["Textures"];
         uint32_t textureCount = Math::Min<uint32_t>(MAX_MATERIAL_TEXTURES, dtextures.GetArraySize());
         for (uint32_t slot = 0; slot < textureCount; ++slot)
-            instance->SetTexture(slot, resourceMngr.GetResource<TextureResource>(dtextures.At(slot).AsString()));
+        {
+            resource = dtextures.At(slot).AsString();
+            if (!resource.IsEmpty())
+            {
+                if (resource[0] == '/') // path to file
+                    matInstance->SetTexture(slot, resourceMngr.Load<Texture>(resource));
+                else
+                    matInstance->SetTexture(slot, resourceMngr.Acquire<Texture>(resource));
+            }
+        }
 
         auto dconstants = dinstance["Constants"];
         uint32_t constantCount = Math::Min<uint32_t>(MAX_MATERIAL_UNIFORMS, dconstants.GetArraySize());
         for (uint32_t index = 0; index < constantCount; ++index)
-            instance->SetConstant(index, dconstants.At(index).As<float>());
+            matInstance->SetConstant(index, dconstants.At(index).As<float>());
+
+        AddMaterial(materialName.GetStringView(), std::move(matInstance));
     }
 }
 
-void MaterialLibrary::Write(IBinaryStreamWriteInterface& stream)
+void MaterialLibrary::Clear()
 {
-    // TODO
+    m_Instances.Clear();
 }
 
-Ref<Material> MaterialLibrary::TryGet(StringView name)
+void MaterialLibrary::AddMaterial(StringView name, MatInstanceHandle matInstance)
+{
+    m_Instances[name] = std::move(matInstance);
+}
+
+void MaterialLibrary::RemoveMaterial(StringView name)
+{
+    m_Instances.Erase(name);
+}
+
+bool MaterialLibrary::HasMaterial(StringView name) const
+{
+    return m_Instances.Find(name) != m_Instances.End();
+}
+
+MatInstanceHandle MaterialLibrary::FindMaterial(StringView name)
 {
     auto it = m_Instances.Find(name);
-    if (it == m_Instances.End())
-        return {};
-    return it->second;
+    return (it != m_Instances.End()) ? it->second : nullptr;
 }
 
-Ref<MaterialLibrary> MaterialManager::CreateLibrary()
+Vector<String> MaterialLibrary::GetMaterialNames() const
 {
-    Ref<MaterialLibrary> library;
-    library.Attach(new MaterialLibrary);
-    m_Libraries.Add(library);
-    return library;
+    Vector<String> names;
+    names.Reserve(m_Instances.Size());
+    for (auto& it : m_Instances)
+        names.EmplaceBack(it.first);
+    return names;
 }
 
-Ref<MaterialLibrary> MaterialManager::LoadLibrary(StringView fileName)
+size_t MaterialLibrary::GetMaterialCount() const
+{
+    return m_Instances.Size();
+}
+
+void MaterialManager::Clear()
+{
+    m_Libraries.Clear();
+}
+
+void MaterialManager::AddLibrary(StringView name, IntrusiveRef<MaterialLibrary> library)
+{
+    m_Libraries[name] = std::move(library);
+}
+
+IntrusiveRef<MaterialLibrary> MaterialManager::LoadLibrary(StringView name)
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (auto file = resourceMngr.OpenFile(fileName))
+    if (auto file = resourceMngr.OpenFile(name))
     {
-        auto library = CreateLibrary();
-        library->Read(file);
+        auto& library = m_Libraries[name];
+        if (!library)
+            library.Reset(new MaterialLibrary);
+        library->Load(file);
         return library;
     }
-    return {};
+    return nullptr;
 }
 
-void MaterialManager::RemoveLibrary(MaterialLibrary* library)
+IntrusiveRef<MaterialLibrary> MaterialManager::GetLibrary(StringView name) const
 {
-    auto i = m_Libraries.IndexOf(library, [](auto& a, MaterialLibrary* b) { return a.RawPtr() == b; } );
-    if (i != Core::NPOS)
-        m_Libraries.Remove(i);
+    auto it = m_Libraries.Find(name);
+    return it != m_Libraries.End() ? it->second : nullptr;
 }
 
-Ref<Material> MaterialManager::TryGet(StringView name)
+void MaterialManager::RemoveLibrary(StringView name)
 {
-    for (auto& library : m_Libraries)
+    m_Libraries.Erase(name);
+}
+
+MatInstanceHandle MaterialManager::FindMaterial(StringView name) const
+{
+    for (auto& pair : m_Libraries)
     {
-        if (auto instance = library->TryGet(name))
+        if (auto instance = pair.second->FindMaterial(name))
             return instance;
     }
-    return {};
+    return nullptr;
 }
 
 HK_NAMESPACE_END

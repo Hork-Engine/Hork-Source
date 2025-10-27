@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -42,7 +42,7 @@ ColorGradingParameters::ColorGradingParameters()
 
 void ColorGradingParameters::SetLUT(TextureHandle Texture)
 {
-    m_LUT = Texture;
+    m_LUT = std::move(Texture);
 }
 
 void ColorGradingParameters::SetGrain(Float3 const& grain)
@@ -174,15 +174,13 @@ WorldRenderView::WorldRenderView() :
         m_CurrentExposure->WriteRect(rect, sizeof(initialExposure), 4, initialExposure);
     }
 
-    Hk::GUID renderTargetGUID;
-    renderTargetGUID.Generate();
-
-    m_HandleRT = GameApplication::sGetResourceManager().CreateResource<TextureResource>(renderTargetGUID.ToString());
+    // TODO: Мы можем создать текстуру с помощью ResourceManager, тогда у нее будет имя,
+    // по которому мы сможем биндить ее в материалах
+    m_HandleRT.Reset(new Texture);
 }
 
 WorldRenderView::~WorldRenderView()
 {
-    GameApplication::sGetResourceManager().UnloadResource(m_HandleRT);
 }
 
 void WorldRenderView::SetViewport(uint32_t width, uint32_t height)
@@ -219,30 +217,12 @@ RHI::ITexture* WorldRenderView::AcquireRenderTarget()
         return nullptr;
     }
 
-    TextureResource* renderTarget = GameApplication::sGetResourceManager().TryGet(m_HandleRT);
-    HK_ASSERT(renderTarget);
-
-    auto* texture = renderTarget->GetTextureGPU();
-
-    if (!texture || (texture->GetWidth() != m_Width || texture->GetHeight() != m_Height || texture->GetDesc().Format != TextureFormat))
+    if (!m_HandleRT || (m_HandleRT->GetWidth() != m_Width || m_HandleRT->GetHeight() != m_Height || m_HandleRT->GetFormat() != TextureFormat))
     {
-        renderTarget->SetTextureGPU(nullptr);
-
-        RHI::TextureDesc textureDesc;
-        textureDesc.SetResolution(RHI::TextureResolution2D(m_Width, m_Height));
-        textureDesc.SetFormat(TextureFormat);
-        textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RHI::BIND_SHADER_RESOURCE | RHI::BIND_RENDER_TARGET);
-
-        Ref<RHI::ITexture> newTex;
-        GameApplication::sGetRenderDevice()->CreateTexture(textureDesc, &newTex);
-
-        renderTarget->SetTextureGPU(newTex);
-
-        texture = newTex;
+        m_HandleRT->CreateRenderTarget(TextureFormat, m_Width, m_Height);
     }
 
-    return texture;
+    return m_HandleRT->GetTextureGPU();
 }
 
 RHI::ITexture* WorldRenderView::AcquireLightTexture()

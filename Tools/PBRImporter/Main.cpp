@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Hork/Image/RawImage.h>
 #include <Hork/Image/Image.h>
 #include <Hork/Image/ImageEncoders.h>
-#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Texture.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -266,7 +266,7 @@ NORMAL_MAP_PACK GetNormalMapPack(StringView name)
     return NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 }
 
-bool ImportImage(ImageStorage& storage, StringView fileName)
+bool ImportImage(ImageStorage& image, StringView fileName)
 {
     LOG("Importing texture {}...\n", fileName);
 
@@ -277,7 +277,7 @@ bool ImportImage(ImageStorage& storage, StringView fileName)
         return false;
     }
 
-    AssetUtils::CreateTexture(file, storage);
+    Texture::sWriteImage(file, image);
     return true;
 }
 

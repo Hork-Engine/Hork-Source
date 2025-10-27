@@ -90,7 +90,7 @@ struct Cinematic::Frame
 
 Cinematic::Cinematic(StringView resourceName)
 {
-    m_Texture = GameApplication::sGetResourceManager().CreateResource<TextureResource>(resourceName);
+    m_Texture = GameApplication::sGetResourceManager().Acquire<Texture>(resourceName);
 }
 
 Cinematic::~Cinematic()
@@ -189,11 +189,8 @@ bool Cinematic::Open(StringView filename, CinematicFlags flags)
         plm_set_audio_lead_time(m_pImpl, (double)audioSamples / m_SampleRate);
     }
 
-    TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-    HK_ASSERT(texture);
-
-    if (!texture->GetTextureGPU() || texture->GetWidth() != m_Width || texture->GetHeight() != m_Height)
-        texture->Allocate2D(GameApplication::sGetRenderDevice(), TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Width, m_Height);
+    if (!m_Texture->GetTextureGPU() || m_Texture->GetWidth() != m_Width || m_Texture->GetHeight() != m_Height)
+        m_Texture->Allocate2D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, m_Width, m_Height);
 
     if (audioEnabled)
     {
@@ -220,13 +217,7 @@ void Cinematic::Close()
         m_pImpl = nullptr;
     }
 
-    if (m_Texture)
-    {
-        TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-        HK_ASSERT(texture);
-
-        texture->SetTextureGPU(nullptr);
-    }
+    m_Texture->Purge();
 
     m_AudioStream.Reset();
 
@@ -364,8 +355,7 @@ void Cinematic::OnVideoDecode(Frame& frame)
 
     plm_frame_to_bgra(frame.data, (uint8_t*)m_Blob.GetData(), frame.data->width * 4);
 
-    TextureResource* texture = GameApplication::sGetResourceManager().TryGet(m_Texture);
-    texture->WriteData2D(0, 0, width, height, 0, m_Blob.GetData());
+    m_Texture->WriteData2D(0, 0, width, height, 0, m_Blob.GetData());
 
     E_OnImageUpdate.Invoke((uint8_t*)m_Blob.GetData(), width, height);
 }

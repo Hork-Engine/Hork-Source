@@ -28,40 +28,27 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include <Hork/Core/Thread.h>
-
-#include <queue>
+#include "Resource.h"
+#include "ResourceCache.h"
 
 HK_NAMESPACE_BEGIN
 
-template <typename T>
-class ThreadSafeQueue
+void IntrusiveRef_AddRef(Resource* p)
 {
-public:
-    void Push(T const& v)
+    p->m_RefCount.fetch_add(1, std::memory_order_relaxed);
+}
+
+void IntrusiveRef_RemoveRef(Resource* p)
+{
+    if (p->m_RefCount.fetch_sub(1, std::memory_order_release) == 1)
     {
-        MutexGuard lock(m_Mutex);
-        m_Data.push(v);
+        std::atomic_thread_fence(std::memory_order_acquire);
+
+        if (p->m_Cache)
+            p->m_Cache->AddToPurgeQueue(p);
+        else
+            delete p;
     }
-
-    bool TryPop(T& v)
-    {
-        MutexGuard lock(m_Mutex);
-
-        if (m_Data.empty())
-            return false;
-
-        v = std::move(m_Data.front());
-        m_Data.pop();
-
-        return true;
-    }
-
-private:
-    std::queue<T> m_Data;
-    Mutex m_Mutex;
-};
+}
 
 HK_NAMESPACE_END

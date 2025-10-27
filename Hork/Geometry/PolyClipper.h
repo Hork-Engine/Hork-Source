@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/Vector.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Math/VectorMath.h>
 
 namespace ClipperLib

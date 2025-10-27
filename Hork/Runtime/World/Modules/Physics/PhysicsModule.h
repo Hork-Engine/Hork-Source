@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Runtime/World/BaseModule.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 
 namespace JPH
 {

@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -28,49 +28,15 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "ResourceID.h"
+#include "ResourceFinder.h"
 
 HK_NAMESPACE_BEGIN
 
-template <typename T>
-struct ResourceHandle
+ResourceManager* ResourceFinderBase::s_ResourceManager = nullptr;
+
+void ResourceFinderBase::SetResourceManager(ResourceManager* resourceMngr)
 {
-    ResourceID ID;
-
-    ResourceHandle() = default;
-
-    explicit ResourceHandle(ResourceID id) :
-        ID(id)
-    {
-        HK_ASSERT(id.GetType() == T::Type);
-    }
-
-    bool operator==(ResourceHandle const& rhs) const
-    {
-        return ID == rhs.ID;
-    }
-
-    bool operator!=(ResourceHandle const& rhs) const
-    {
-        return ID != rhs.ID;
-    }
-
-    operator ResourceID() const
-    {
-        return ID;
-    }
-
-    operator bool() const
-    {
-        return ID.operator bool();
-    }
-
-    bool IsValid() const
-    {
-        return ID.IsValid();
-    }
-};
+    s_ResourceManager = resourceMngr;
+}
 
 HK_NAMESPACE_END

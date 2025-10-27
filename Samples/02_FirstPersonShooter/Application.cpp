@@ -263,7 +263,7 @@ void SampleApplication::OnStartLoading()
 void SampleApplication::OnUpdateLoading(float timeStep)
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (resourceMngr.IsAreaReady(m_Resources))
+    if (resourceMngr.GetBatchRemainingTaskCount(BATCH_LEVEL_RESOURCES) == 0)
     {
         sGetStateMachine().MakeCurrent("State_Play");
     }
@@ -283,7 +283,7 @@ void SampleApplication::OnStartPlay()
         object->CreateComponent(sound);
         sound->SetVolume(0.2f);
         sound->SetSourceType(SoundSourceType::Background);
-        sound->PlaySound(resourceMngr.GetResource<SoundResource>("/Root/soundtrack.ogg"), 0, 0);
+        sound->PlaySound(resourceMngr.Acquire<Sound>("/Root/soundtrack.ogg"), 0, 0);
     }
 #endif
 }
@@ -320,14 +320,11 @@ void SampleApplication::ShowLoadingScreen(bool show)
 
             m_Desktop->AddWidget(m_LoadingScreen);
 
-            auto textureHandle = resourceMngr.CreateResourceFromFile<TextureResource>("/Root/loading.png");
-            auto texture = resourceMngr.TryGet(textureHandle);
-            if (texture)
+            auto texture = resourceMngr.Load<Texture>("/Root/loading.png");
+            if (!texture->IsPurged())
             {
-                texture->Upload(sGetRenderDevice());
-
                 m_LoadingScreen->AddWidget(UINew(UIImage)
-                    .WithTexture(textureHandle)
+                    .WithTexture(texture)
                     .WithTextureSize(texture->GetWidth(), texture->GetHeight())
                     .WithSize(Float2(texture->GetWidth(), texture->GetHeight())));
             }
@@ -342,9 +339,6 @@ void SampleApplication::ShowLoadingScreen(bool show)
         {
             m_Desktop->RemoveWidget(m_LoadingScreen);
             m_LoadingScreen = nullptr;
-
-            resourceMngr.PurgeResourceData(m_LoadingTexture);
-            m_LoadingTexture = {};
         }
         m_Desktop->SetFullscreenWidget(m_SplitView);
         m_Desktop->SetFocusWidget(m_Viewports[0]);
@@ -360,37 +354,30 @@ void SampleApplication::CreateResources()
 
     // Procedurally generate a skybox image
     ImageStorage skyboxImage = RenderUtils::GenerateAtmosphereSkybox(sGetRenderDevice(), SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT, 512, Float3(1, -1, -1).Normalized());
-    // Convert image to resource
-    UniqueRef<TextureResource> skybox = MakeUnique<TextureResource>(std::move(skyboxImage));
-    skybox->Upload(sGetRenderDevice());
-    // Register the resource in the resource manager with the name "internal_skybox" so that it can be accessed by name from the materials.
-    resourceMngr.CreateResourceWithData<TextureResource>("internal_skybox", std::move(skybox));
 
-    // List of resources used in scene
-    ResourceID sceneResources[] = {
-        resourceMngr.GetResource<MeshResource>("/Root/default/skybox.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/capsule.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/skybox.mat"),
-        //resourceMngr.GetResource<TextureResource>("/Root/dirt.png"),
-        resourceMngr.GetResource<TextureResource>("/Root/grid8.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank256.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/red512.png")
-    };
+    // Register the resource in the resource manager with the name "internal_skybox" so that it can be accessed by name from the materials.
+    auto skyboxTexture = resourceMngr.Acquire<Texture>("internal_skybox");
+    // Initialize texture from skybox image
+    skyboxTexture->CreateFromImage(skyboxImage);
+    // Keep the pointer while we use the resource
+    m_LevelResources.EmplaceBack(std::move(skyboxTexture));
 
     // Load resources asynchronously
-    m_Resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(m_Resources);
-
-    //resourceMngr.MainThread_WaitResourceArea(m_Resources);
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/skybox.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/skybox.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/box.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/capsule.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/grid8.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank256.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/red512.png"));
 }
 
 void SampleApplication::CreateScene()
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
+    auto& resourceMngr2 = GameApplication::sGetResourceManager();
     auto& materialMngr = GameApplication::sGetMaterialManager();
 
     CreateSceneFromMap(m_World, "/Root/maps/sample2.map");
@@ -439,8 +426,8 @@ void SampleApplication::CreateScene()
 
         DynamicMeshComponent* mesh;
         object->CreateComponent(mesh);
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-        mesh->SetMaterial(materialMngr.TryGet("grid8"));
+        mesh->SetMesh(resourceMngr2.Load<Mesh>("/Root/default/box.mesh"));
+        mesh->SetMaterial(materialMngr.FindMaterial("grid8"));
         mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
 
         uint32_t nodeID = 0;
@@ -535,8 +522,8 @@ void SampleApplication::CreateScene()
             object->CreateComponent<BoxCollider>();
             DynamicMeshComponent* mesh;
             object->CreateComponent(mesh);
-            mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            mesh->SetMaterial(materialMngr.TryGet("blank256"));
+            mesh->SetMesh(resourceMngr2.Load<Mesh>("/Root/default/box.mesh"));
+            mesh->SetMaterial(materialMngr.FindMaterial("blank256"));
             mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
         }
     }
@@ -570,8 +557,8 @@ void SampleApplication::CreateElevator(Float3 const& position)
 
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
-    mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-    mesh->SetMaterial(materialMngr.TryGet("grid8"));
+    mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+    mesh->SetMaterial(materialMngr.FindMaterial("grid8"));
     mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
 
     ElevatorComponent* elevatorComp;
@@ -638,18 +625,21 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
 
         RawMesh rawMesh;
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(rawMesh);
-        resource->Upload(sGetRenderDevice());
+
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(rawMesh);
+
+        resource->InitFromData(std::move(data));
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 
-        resourceMngr.CreateResourceWithData("character_controller_capsule", std::move(resource));
-
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("character_controller_capsule"));
-        mesh->SetMaterial(materialMngr.TryGet(team == PlayerTeam::Blue ? "blank512" : "red512"));
+        mesh->SetMesh(resource);
+        mesh->SetMaterial(materialMngr.FindMaterial(team == PlayerTeam::Blue ? "blank512" : "red512"));
 
         mesh->SetVisibilityLayer(team == PlayerTeam::Blue ? 1 : 2);
+
+        
     }
 
     // Create view camera
@@ -690,8 +680,8 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         skybox->CreateComponent(mesh);
         mesh->SetLocalBoundingBox({{-0.5f,-0.5f,-0.5f},{0.5f,0.5f,0.5f}});
 
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/skybox.mesh"));
-        mesh->SetMaterial(materialMngr.TryGet("skybox"));
+        mesh->SetMesh(resourceMngr.Load<Mesh>("/Root/default/skybox.mesh"));
+        mesh->SetMaterial(materialMngr.FindMaterial("skybox"));
 
         mesh->SetVisibilityLayer(team == PlayerTeam::Blue ? 2 : 1);
     }

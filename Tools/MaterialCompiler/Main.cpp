@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Hork/MaterialGraph/MaterialCompiler.h>
 #include <Hork/MaterialGraph/MaterialGraph.h>
 #include <Hork/ShaderUtils/ShaderCompiler.h>
-#include <Hork/Resources/Resource_Material.h>
+#include <Hork/Resources/Material.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -59,11 +59,21 @@ bool CompileMaterial(StringView input, StringView output, bool debugMode)
     }
 
     LOG("Compiling {}\n", input);
-    MaterialResourceBuilder builder;
-    auto material = builder.Build(*graph, debugMode);
-    if (!material)
+
+    auto materialCode = graph->Build();
+    if (!materialCode)
     {
         LOG("Failed to build material graph {}\n", input);
+        return false;
+    }
+
+    MaterialCode::TranslationParams translationParams;
+    translationParams.IsDebugMode = debugMode;
+
+    auto material = materialCode->Translate(translationParams);
+    if (!material)
+    {
+        LOG("Failed to translate to binary {}\n", input);
         return false;
     }
 

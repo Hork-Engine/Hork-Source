@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/ArrayView.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Math/Quat.h>
 #include <Hork/Runtime/World/Component.h>
 

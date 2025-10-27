@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Containers/Array.h>
 #include <Hork/Core/Color.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Geometry/BV/BvAxisAlignedBox.h>
 #include <Hork/Runtime/World/WorldInterface.h>
 

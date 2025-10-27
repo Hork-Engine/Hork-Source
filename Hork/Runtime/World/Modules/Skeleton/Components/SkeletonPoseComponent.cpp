@@ -40,17 +40,15 @@ ConsoleVar com_DrawSkeletons("com_DrawSkeletons"_s, "0"_s);
 
 void SkeletonPoseComponent::SetMesh(MeshHandle handle)
 {
-    m_Mesh = handle;
+    m_Mesh = std::move(handle);
 }
 
 void SkeletonPoseComponent::BeginPlay()
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    MeshResource* mesh = resourceMngr.TryGet(m_Mesh);
-    if (!mesh)
+    if (!m_Mesh || m_Mesh->IsPurged())
         return;
 
-    auto skeleton = mesh->GetSkeleton();
+    auto skeleton = m_Mesh->GetSkeleton();
     if (!skeleton)
         return;
 
@@ -65,13 +63,13 @@ void SkeletonPoseComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawSkeletons && m_Pose)
     {
-        if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Mesh))
+        if (m_Mesh && !m_Mesh->IsPurged())
         {
             Float3x4 worldTransform = GetOwner()->GetWorldTransformMatrix();
             alignas(16) Float4x4 jointTransform;
 
             renderer.SetDepthTest(false);
-            for (int jointIndex = 0, count = resource->GetJointCount(); jointIndex < count; ++jointIndex)
+            for (int jointIndex = 0, count = m_Mesh->GetJointCount(); jointIndex < count; ++jointIndex)
             {
                 Simd::StoreFloat4x4(m_Pose->m_ModelMatrices[jointIndex].cols, jointTransform);
 
@@ -83,7 +81,7 @@ void SkeletonPoseComponent::DrawDebug(DebugRenderer& renderer)
                 renderer.SetColor(Color4(1, 0, 0, 1));
                 renderer.DrawOrientedBox(v1, r1, Float3(0.01f));
 
-                int parent = resource->GetJointParent(jointIndex);
+                int parent = m_Mesh->GetJointParent(jointIndex);
                 if (parent >= 0)
                 {
                     Simd::StoreFloat4x4(m_Pose->m_ModelMatrices[parent].cols, jointTransform);

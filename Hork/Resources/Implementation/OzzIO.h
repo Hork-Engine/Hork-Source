@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Core/IO.h>
 
 namespace ozz::animation

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "Resource_Animation.h"
+#include "Animation.h"
 
 #include "Implementation/OzzIO.h"
 
@@ -40,61 +40,6 @@ SOFTWARE.
 #include <ozz/animation/runtime/animation.h>
 
 HK_NAMESPACE_BEGIN
-
-float AnimationResource::GetDuration() const
-{
-    return m_OzzAnimation ? m_OzzAnimation->duration() : 0.0f;
-}
-
-AnimationResource::~AnimationResource()
-{}
-
-UniqueRef<AnimationResource> AnimationResource::sLoad(IBinaryStreamReadInterface& stream)
-{
-    StringView extension = PathUtils::sGetExt(stream.GetName());
-
-    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx"))
-    {
-        RawMesh mesh;
-        RawMeshLoadFlags flags = RawMeshLoadFlags::Skeleton | RawMeshLoadFlags::SingleAnimation;
-
-        bool result;
-        if (!extension.Icmp(".fbx"))
-            result = mesh.LoadFBX(stream, flags);
-        else
-            result = mesh.LoadGLTF(stream, flags);
-
-        if (!result || mesh.Animations.IsEmpty())
-            return {};
-
-        return AnimationResourceBuilder().Build(*mesh.Animations[0].RawPtr(), mesh.Skeleton);
-    }
-
-    UniqueRef<AnimationResource> resource = MakeUnique<AnimationResource>();
-    if (!resource->Read(stream))
-        return {};
-    return resource;
-}
-
-bool AnimationResource::Read(IBinaryStreamReadInterface& stream)
-{
-    uint32_t fileMagic = stream.ReadUInt32();
-
-    if (fileMagic != MakeResourceMagic(Type, Version))
-    {
-        LOG("Unexpected file format\n");
-        return false;
-    }
-
-    m_OzzAnimation = OzzReadAnimation(stream);
-    return m_OzzAnimation.RawPtr() != nullptr;
-}
-
-void AnimationResource::Write(IBinaryStreamWriteInterface& stream) const
-{
-    stream.WriteUInt32(MakeResourceMagic(Type, Version));
-    OzzWriteAnimation(stream, m_OzzAnimation.RawPtr());
-}
 
 namespace
 {
@@ -363,7 +308,10 @@ namespace
             for (RawAnimation::Channel const* channel : channels)
             {
                 if (!SampleAnimationChannel(channel, sampleRate, track, ozzAnimation.duration))
+                {
+                    LOG("Failed to sample animation channel\n");
                     return {};
+                }
             }
 
             // Pads the rest pose transform for any joints which do not have an
@@ -382,24 +330,99 @@ namespace
         ozz::animation::offline::AnimationBuilder builder;
         ozz::unique_ptr<ozz::animation::Animation> animation = builder(ozzAnimation);
         if (!animation)
+        {
+            LOG("Failed to build animation\n");
             return {};
+        }
 
         // NOTE: Ozz использует свой Deleter для unique_ptr, поэтому мы не можем просто забрать указатель на анимацию
-        // и поместить его в наш UniqueRef. Чтобы все было нормально, мы выделяем память под анимацию своим аллокатором и
+        // и поместить его в наш UniqueRef. Чтобы объект правильно удалился, мы выделяем память под анимацию своим аллокатором и
         // делаем 'move' полученной анимации.
         return MakeUnique<ozz::animation::Animation>(std::move(*animation.get()));
     }
 
 }
 
-UniqueRef<AnimationResource> AnimationResourceBuilder::Build(RawAnimation const& rawAnimation, RawSkeleton const& rawSkeleton)
+UniqueRef<OzzAnimation> Animation::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
+{
+    StringView extension = PathUtils::sGetExt(stream.GetName());
+
+    if (!extension.Icmp(".gltf") || !extension.Icmp(".glb") || !extension.Icmp(".fbx"))
+    {
+        RawMesh mesh;
+        RawMeshLoadFlags flags = RawMeshLoadFlags::Skeleton | RawMeshLoadFlags::SingleAnimation;
+
+        bool result;
+        if (!extension.Icmp(".fbx"))
+            result = mesh.LoadFBX(stream, flags);
+        else
+            result = mesh.LoadGLTF(stream, flags);
+
+        if (!result || mesh.Animations.IsEmpty())
+            return {};
+
+        return ConvertAnimationToOzz(mesh.Animations[0].RawPtr(), &mesh.Skeleton);
+    }
+
+    uint32_t fileMagic = stream.ReadUInt32();
+
+    if (fileMagic != MakeResourceMagic(Type, Version))
+    {
+        LOG("Unexpected file format\n");
+        return {};
+    }
+
+    return OzzReadAnimation(stream);
+}
+
+void Animation::InitFromData(UniqueRef<OzzAnimation> data)
+{
+    if (!data)
+        return;
+
+    m_OzzAnimation = std::move(data);
+
+    m_IsPurged = false;
+}
+
+void Animation::Load(IBinaryStreamReadInterface& stream)
+{
+    auto tempData = BeginAsyncLoad(stream);
+    if (tempData)
+        InitFromData(std::move(tempData));
+}
+
+bool Animation::FromRawAnimation(RawAnimation const& rawAnimation, RawSkeleton const& rawSkeleton)
 {
     auto ozzAnimation = ConvertAnimationToOzz(&rawAnimation, &rawSkeleton);
     if (!ozzAnimation)
-        return {};
-    auto animation = MakeUnique<AnimationResource>();
-    animation->m_OzzAnimation = std::move(ozzAnimation);
-    return animation;
+        return false;
+
+    m_OzzAnimation = std::move(ozzAnimation);
+
+    m_IsPurged = false;
+    return true;
+}
+
+void Animation::Write(IBinaryStreamWriteInterface& stream)
+{
+    if (!m_OzzAnimation)
+        return;
+
+    stream.WriteUInt32(MakeResourceMagic(Type, Version));
+    OzzWriteAnimation(stream, m_OzzAnimation.RawPtr());
+}
+
+void Animation::Purge()
+{
+    m_OzzAnimation.Reset();
+   
+    m_IsPurged = true;
+}
+
+float Animation::GetDuration() const
+{
+    return m_OzzAnimation ? m_OzzAnimation->duration() : 0.0f;
 }
 
 HK_NAMESPACE_END

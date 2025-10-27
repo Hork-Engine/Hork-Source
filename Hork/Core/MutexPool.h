@@ -30,39 +30,27 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceHandle.h"
-#include "ResourceBase.h"
+#include "Containers/Array.h"
 
-#include <Hork/Core/BinaryStream.h>
+#include <mutex>
 
 HK_NAMESPACE_BEGIN
 
-class AudioSource;
-
-class SoundResource : public ResourceBase
+template <size_t POOL_SIZE = 16>
+class MutexPool
 {
+    Array<std::mutex, POOL_SIZE> m_Mutexes;
+
 public:
-    static const uint8_t        Type = RESOURCE_SOUND;
-    static const uint8_t        Version = 1;
+    std::mutex& GetMutexForPtr(const void* ptr)
+    {
+        return GetMutex(std::hash<const void*>{}(ptr));
+    }
 
-                                SoundResource() = default;
-                                ~SoundResource();
-
-    static UniqueRef<SoundResource> sLoad(IBinaryStreamReadInterface& stream);
-
-    bool                        Read(IBinaryStreamReadInterface& stream);
-
-    Ref<AudioSource>            GetSource();
-
-    static void                 SetDecoderProperties(int sampleRate, bool stereo);
-
-private:
-    Ref<AudioSource>            m_Source;
-
-    static int                  s_DecoderSampleRate;
-    static bool                 s_IsStereo;
+    std::mutex& GetMutex(size_t hash)
+    {
+        return m_Mutexes[hash % POOL_SIZE];
+    }
 };
-
-using SoundHandle = ResourceHandle<SoundResource>;
 
 HK_NAMESPACE_END

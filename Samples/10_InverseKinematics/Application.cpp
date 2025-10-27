@@ -50,7 +50,8 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/MeshComponent.h>
 #include <Hork/Runtime/World/Modules/Render/RenderInterface.h>
 
-#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Animation.h>
+#include <Hork/Resources/ResourceFinder.h>
 
 const char* PaladinModel = "/Root/thirdparty/mixamo/paladin/paladin.mesh";
 const char* PaladinMaterial = "/Root/thirdparty/mixamo/paladin/paladin.mg";
@@ -253,7 +254,7 @@ void SampleApplication::OnStartLoading()
 void SampleApplication::OnUpdateLoading(float timeStep)
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (resourceMngr.IsAreaReady(m_Resources))
+    if (resourceMngr.GetBatchRemainingTaskCount(BATCH_LEVEL_RESOURCES) == 0)
     {
         sGetStateMachine().MakeCurrent("State_Play");
     }
@@ -316,14 +317,11 @@ void SampleApplication::ShowLoadingScreen(bool show)
 
             m_Desktop->AddWidget(m_LoadingScreen);
 
-            auto textureHandle = resourceMngr.CreateResourceFromFile<TextureResource>("/Root/loading.png");
-            auto texture = resourceMngr.TryGet(textureHandle);
-            if (texture)
+            auto texture = resourceMngr.Load<Texture>("/Root/loading.png");
+            if (!texture->IsPurged())
             {
-                texture->Upload(sGetRenderDevice());
-
                 m_LoadingScreen->AddWidget(UINew(UIImage)
-                    .WithTexture(textureHandle)
+                    .WithTexture(texture)
                     .WithTextureSize(texture->GetWidth(), texture->GetHeight())
                     .WithSize(Float2(texture->GetWidth(), texture->GetHeight())));
             }
@@ -338,9 +336,6 @@ void SampleApplication::ShowLoadingScreen(bool show)
         {
             m_Desktop->RemoveWidget(m_LoadingScreen);
             m_LoadingScreen = nullptr;
-
-            resourceMngr.PurgeResourceData(m_LoadingTexture);
-            m_LoadingTexture = {};
         }
         m_Desktop->SetFullscreenWidget(m_Viewport);
         m_Desktop->SetFocusWidget(m_Viewport);
@@ -357,33 +352,27 @@ void SampleApplication::CreateResources()
     materialMngr.LoadLibrary("/Root/thirdparty/freepbr.com/freepbr.mlib");
     materialMngr.LoadLibrary("/Root/thirdparty/sketchfab.com/sketchfab.mlib");
 
-    // List of resources used in scene
-    SmallVector<ResourceID, 32> sceneResources;
+    // Load resources asynchronously
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
 
-    sceneResources.Add(resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default_orm.mat"));
 
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"));
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_orm.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/black.png"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/dirt.png"));
 
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/black.png"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/dirt.png"));
-
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"));
 
     // Paladin resources
-    sceneResources.Add(resourceMngr.GetResource<MeshResource>(PaladinModel));
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>(PaladinMaterial));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, PaladinModel));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, PaladinMaterial));
     for (auto animation : PaladinAnimations)
-        sceneResources.Add(resourceMngr.GetResource<AnimationResource>(animation));
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Animation>(BATCH_LEVEL_RESOURCES, animation));
     for (auto texture : PaladinTextures)
-        sceneResources.Add(resourceMngr.GetResource<TextureResource>(texture));
-
-    // Load resources asynchronously
-    m_Resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(m_Resources);
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, texture));
 }
 
 void SampleApplication::CreateScene()
@@ -529,12 +518,11 @@ void SampleApplication::SpawnPaladin()
 
 void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotation, int anim)
 {
-    auto& resourceMngr = sGetResourceManager();
     auto& materialMngr = sGetMaterialManager();
 
-    static MeshHandle meshHandle = resourceMngr.GetResource<MeshResource>(PaladinModel);
+    static ResourceFinder<Mesh> paladinMeshFinder(PaladinModel);
 
-    MeshResource* meshResource = resourceMngr.TryGet(meshHandle);
+    auto meshHandle = paladinMeshFinder.Load();
 
     GameObjectDesc desc;
     desc.IsDynamic = true;
@@ -571,14 +559,14 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
 
     StaticVector<StringView, 4> jointsChain = {"mixamorig:Head", "mixamorig:Neck", "mixamorig:Spine2", "mixamorig:Spine1"};
 
-    ikLookAt->m_IkChain.Init(*meshResource->GetSkeleton(), jointsChain);    
+    ikLookAt->m_IkChain.Init(*meshHandle->GetSkeleton(), jointsChain);    
 
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
     mesh->SetMesh(meshHandle);
-    mesh->SetMaterialCount(meshResource->GetSurfaceCount());
-    for (int i = 0 ; i < meshResource->GetSurfaceCount(); ++i)
-        mesh->SetMaterial(i, materialMngr.TryGet("thirdparty/mixamo/paladin"));
+    mesh->SetMaterialCount(meshHandle->GetSurfaceCount());
+    for (int i = 0 ; i < meshHandle->GetSurfaceCount(); ++i)
+        mesh->SetMaterial(i, materialMngr.FindMaterial("thirdparty/mixamo/paladin"));
     mesh->SetLocalBoundingBox({{-0.4f,0,-0.4f},{0.4f,1.8f,0.4f}});
 
     CapsuleCollider* collider;

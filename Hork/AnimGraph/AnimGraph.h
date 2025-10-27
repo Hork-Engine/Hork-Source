@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Hork/Core/StringID.h>
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 
 #include "Value.h"
 
@@ -362,7 +363,7 @@ private:
 
 class AnimationGraph_Cooked;
 
-class AnimationGraph : public RefCounted
+class AnimationGraph final : public RefCounted
 {
 public:
     template <typename T>

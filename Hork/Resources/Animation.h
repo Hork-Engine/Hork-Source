@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,48 +30,50 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceHandle.h"
-#include "ResourceBase.h"
-#include <Hork/MaterialGraph/MaterialBinary.h>
+#include "Resource.h"
+
+#include <Hork/Core/IntrusiveRef.h>
+#include <Hork/Core/UniqueRef.h>
+
+#include <ozz/animation/runtime/animation.h>
 
 HK_NAMESPACE_BEGIN
 
-class MaterialResource : public ResourceBase
+using OzzAnimation = ozz::animation::Animation;
+struct RawAnimation;
+struct RawSkeleton;
+class IBinaryStreamWriteInterface;
+
+class Animation : public Resource
 {
 public:
-    static const uint8_t        Type = RESOURCE_MATERIAL;
+    using DataType = OzzAnimation;
+
+    static const uint8_t        Type = 2;
     static const uint8_t        Version = 2;
 
-    static UniqueRef<MaterialResource> sLoad(IBinaryStreamReadInterface& stream);
+                                Animation() = default;
 
-    bool                        Read(IBinaryStreamReadInterface& stream);
+    static UniqueRef<OzzAnimation> BeginAsyncLoad(IBinaryStreamReadInterface& stream);
+
+    void                        InitFromData(UniqueRef<OzzAnimation> data);
+
+    void                        Load(IBinaryStreamReadInterface& stream) override;
+
+    bool                        FromRawAnimation(RawAnimation const& rawAnimation, RawSkeleton const& rawSkeleton);
+
     void                        Write(IBinaryStreamWriteInterface& stream);
 
-    bool                        IsCastShadow() const;
-    bool                        IsTranslucent() const;
+    void                        Purge() override;
 
-    RENDERING_PRIORITY          GetRenderingPriority() const;
+    float                       GetDuration() const;
 
-    uint32_t                    GetTextureCount() const;
-    uint32_t                    GetUniformVectorCount() const;
-
-    MaterialGPU*                GetGpuMaterial() { return m_GpuMaterial; }
-
-    void                        Upload(RHI::IDevice* device) override;
+    OzzAnimation*               GetImpl() { return m_OzzAnimation.RawPtr(); }
 
 private:
-    Ref<MaterialGPU>            m_GpuMaterial;
-    UniqueRef<MaterialBinary>   m_Binary;
-
-    friend class                MaterialResourceBuilder;
+    UniqueRef<OzzAnimation>     m_OzzAnimation;
 };
 
-using MaterialHandle = ResourceHandle<MaterialResource>;
-
-class MaterialResourceBuilder
-{
-public:
-    UniqueRef<MaterialResource> Build(class MaterialGraph& graph, bool debugMode);
-};
+using AnimationHandle = IntrusiveRef<Animation>;
 
 HK_NAMESPACE_END

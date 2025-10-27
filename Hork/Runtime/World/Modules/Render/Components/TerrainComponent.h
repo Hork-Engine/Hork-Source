@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Resources/Resource_Terrain.h>
+#include <Hork/Resources/Terrain.h>
 #include <Hork/Runtime/World/Component.h>
 
 HK_NAMESPACE_BEGIN
@@ -50,7 +50,7 @@ public:
     // Public
 
     void                        SetResource(TerrainHandle resource);
-    TerrainHandle               GetResource() const { return m_Resource; }
+    Terrain*                    GetResource() const { return m_Resource.RawPtr(); }
 
     // Internal
 

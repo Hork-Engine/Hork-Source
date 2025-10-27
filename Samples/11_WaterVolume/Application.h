@@ -35,9 +35,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class UIGrid;
 class UIViewport;
-class UIImage;
+class WorldRenderView;
 
 class SampleApplication final : public GameApplication
 {
@@ -67,11 +66,11 @@ private:
     UIDesktop* m_Desktop;
     UIViewport* m_Viewport;
     UIWidget* m_LoadingScreen;
-    ResourceAreaID m_Resources;
-    TextureHandle m_LoadingTexture;
     World* m_World{};
     Ref<WorldRenderView> m_WorldRenderView;
     GameObjectHandle m_Player;
+    Vector<ResourceRef> m_LevelResources;
+    const uint32_t BATCH_LEVEL_RESOURCES = 1;
 };
 
 HK_NAMESPACE_END

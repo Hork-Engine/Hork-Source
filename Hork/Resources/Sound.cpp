@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -28,36 +28,24 @@ SOFTWARE.
 
 */
 
-#include "Resource_Sound.h"
+#include "Sound.h"
 
-#include <Hork/Core/Logger.h>
 #include <Hork/Audio/AudioDecoder.h>
 
 HK_NAMESPACE_BEGIN
 
-int SoundResource::s_DecoderSampleRate;
-bool SoundResource::s_IsStereo;
+int Sound::s_DecoderSampleRate;
+bool Sound::s_IsStereo;
 
-void SoundResource::SetDecoderProperties(int sampleRate, bool stereo)
+void Sound::SetDecoderProperties(int sampleRate, bool stereo)
 {
     s_DecoderSampleRate = sampleRate;
     s_IsStereo = stereo;
 }
 
-SoundResource::~SoundResource()
-{}
-
-UniqueRef<SoundResource> SoundResource::sLoad(IBinaryStreamReadInterface& stream)
+UniqueRef<SoundData> Sound::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
 {
-    UniqueRef<SoundResource> resource = MakeUnique<SoundResource>();
-    if (!resource->Read(stream))
-        return {};
-    return resource;
-}
-
-bool SoundResource::Read(IBinaryStreamReadInterface& stream)
-{
-    HK_ASSERT_(s_DecoderSampleRate != 0, "The audio decoder properties must be set! Use SoundResource::SetDecoderProperties");
+    HK_ASSERT_(s_DecoderSampleRate != 0, "The audio decoder properties must be set! Use Sound::SetDecoderProperties");
 
     // TODO: Audio config file:
     // {
@@ -84,12 +72,14 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
     resample.bForceMono = cfg_force_mono || !s_IsStereo;
     resample.bForce8Bit = cfg_force_8bit;
 
+    Ref<AudioSource> source;
+
     if (!cfg_encoded)
     {
-        if (!DecodeAudio(stream, resample, m_Source))
+        if (!DecodeAudio(stream, resample, source))
         {
             LOG("Failed to decode audio {}\n", stream.GetName());
-            return false;
+            return {};
         }
     }
     else
@@ -98,15 +88,48 @@ bool SoundResource::Read(IBinaryStreamReadInterface& stream)
         if (!ReadAudioInfo(stream, resample, &info))
         {
             LOG("Failed to read audio {}\n", stream.GetName());
-            return false;
+            return {};
         }
 
-        m_Source = MakeRef<AudioSource>(info.FrameCount, s_DecoderSampleRate, info.SampleBits, info.Channels, stream.AsBlob());
+        source = MakeRef<AudioSource>(info.FrameCount, s_DecoderSampleRate, info.SampleBits, info.Channels, stream.AsBlob());
     }
-    return true;
+
+    UniqueRef<SoundData> data = MakeUnique<SoundData>();
+    data->Source = std::move(source);
+
+    return data;
 }
 
-Ref<AudioSource> SoundResource::GetSource()
+void Sound::InitFromData(UniqueRef<SoundData> data)
+{
+    if (!data)
+        return;
+
+    m_Source = std::move(data->Source);
+
+    m_IsPurged = false;
+}
+
+void Sound::Load(IBinaryStreamReadInterface& stream)
+{
+    auto tempData = BeginAsyncLoad(stream);
+    if (tempData)
+        InitFromData(std::move(tempData));
+}
+
+void Sound::Write(IBinaryStreamWriteInterface& stream)
+{
+    // TODO
+}
+
+void Sound::Purge()
+{
+    m_Source.Reset();
+   
+    m_IsPurged = true;
+}
+
+Ref<AudioSource> Sound::GetSource()
 {
     return m_Source;
 }

@@ -52,7 +52,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/TerrainComponent.h>
 #include <Hork/Runtime/World/Modules/Render/RenderInterface.h>
 
-#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Animation.h>
 
 #include <Hork/RenderUtils/Utilites.h>
 
@@ -171,7 +171,7 @@ void SampleApplication::OnStartLoading()
 void SampleApplication::OnUpdateLoading(float timeStep)
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (resourceMngr.IsAreaReady(m_Resources))
+    if (resourceMngr.GetBatchRemainingTaskCount(BATCH_LEVEL_RESOURCES) == 0)
     {
         sGetStateMachine().MakeCurrent("State_Play");
     }
@@ -233,14 +233,11 @@ void SampleApplication::ShowLoadingScreen(bool show)
 
             m_Desktop->AddWidget(m_LoadingScreen);
 
-            auto textureHandle = resourceMngr.CreateResourceFromFile<TextureResource>("/Root/loading.png");
-            auto texture = resourceMngr.TryGet(textureHandle);
-            if (texture)
+            auto texture = resourceMngr.Load<Texture>("/Root/loading.png");
+            if (!texture->IsPurged())
             {
-                texture->Upload(sGetRenderDevice());
-
                 m_LoadingScreen->AddWidget(UINew(UIImage)
-                    .WithTexture(textureHandle)
+                    .WithTexture(texture)
                     .WithTextureSize(texture->GetWidth(), texture->GetHeight())
                     .WithSize(Float2(texture->GetWidth(), texture->GetHeight())));
             }
@@ -255,9 +252,6 @@ void SampleApplication::ShowLoadingScreen(bool show)
         {
             m_Desktop->RemoveWidget(m_LoadingScreen);
             m_LoadingScreen = nullptr;
-
-            resourceMngr.PurgeResourceData(m_LoadingTexture);
-            m_LoadingTexture = {};
         }
         m_Desktop->SetFullscreenWidget(m_Viewport);
         m_Desktop->SetFocusWidget(m_Viewport);
@@ -275,34 +269,30 @@ void SampleApplication::CreateResources()
 
     // Procedurally generate a skybox image
     ImageStorage skyboxImage = RenderUtils::GenerateAtmosphereSkybox(sGetRenderDevice(), SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT, 512, Float3(1, -1, -1).Normalized());
-    // Convert image to resource
-    UniqueRef<TextureResource> skybox = MakeUnique<TextureResource>(std::move(skyboxImage));
-    skybox->Upload(sGetRenderDevice());
+
     // Register the resource in the resource manager with the name "internal_skybox" so that it can be accessed by name from the materials.
-    resourceMngr.CreateResourceWithData<TextureResource>("internal_skybox", std::move(skybox));
-
-    // List of resources used in scene
-    SmallVector<ResourceID, 32> sceneResources;
-
-    sceneResources.Add(resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"));
-
-    sceneResources.Add(resourceMngr.GetResource<MeshResource>("/Root/default/skybox.mesh"));
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/skybox.mat"));
-
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"));
-    sceneResources.Add(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_orm.mat"));
-
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/black.png"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/dirt.png"));
-
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"));
-    sceneResources.Add(resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"));
+    auto skyboxTexture = resourceMngr.Acquire<Texture>("internal_skybox");
+    // Initialize texture from skybox image
+    skyboxTexture->CreateFromImage(skyboxImage);
+    // Keep the pointer while we use the resource
+    m_LevelResources.EmplaceBack(std::move(skyboxTexture));
 
     // Load resources asynchronously
-    m_Resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(m_Resources);
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/skybox.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/skybox.mat"));
+
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default_orm.mat"));
+
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/black.png"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/dirt.png"));
+
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"));
 }
 
 void SampleApplication::CreateScene()
@@ -353,14 +343,12 @@ void SampleApplication::CreateScene()
                 //    h = FLT_MAX;
             }
 
-        UniqueRef<TerrainResource> terrainResource = MakeUnique<TerrainResource>();
+        TerrainHandle terrainResource(new Terrain);
         terrainResource->Allocate(resolution, heightmap);
-
-        auto terrainHandle = sGetResourceManager().CreateResourceWithData("terrain_surface", std::move(terrainResource));
 
         TerrainComponent* terrain;
         object->CreateComponent(terrain);
-        terrain->SetResource(terrainHandle);
+        terrain->SetResource(std::move(terrainResource));
 
         HeightFieldComponent* heightfield;
         object->CreateComponent(heightfield);
@@ -428,8 +416,8 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         skybox->CreateComponent(mesh);
         mesh->SetLocalBoundingBox({{-0.5f,-0.5f,-0.5f},{0.5f,0.5f,0.5f}});
 
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/skybox.mesh"));
-        mesh->SetMaterial(materialMngr.TryGet("skybox"));
+        mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/skybox.mesh"));
+        mesh->SetMaterial(materialMngr.FindMaterial("skybox"));
     }
 
     // Create input

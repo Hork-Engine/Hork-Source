@@ -42,34 +42,34 @@ HK_NAMESPACE_BEGIN
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"_s, "0"_s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"_s, "0"_s);
 
-void MeshComponent::SetMaterial(Material* material)
+void MeshComponent::SetMaterial(MatInstanceHandle material)
 {
-    SetMaterial(0, material);
+    SetMaterial(0, std::move(material));
 }
 
-void MeshComponent::SetMaterial(uint32_t index, Material* material)
+void MeshComponent::SetMaterial(uint32_t index, MatInstanceHandle material)
 {
-    while (m_Materials.Size() <= index)
-        m_Materials.EmplaceBack();
-    m_Materials[index] = material;
+    while (m_MatInstances.Size() <= index)
+        m_MatInstances.EmplaceBack();
+    m_MatInstances[index] = std::move(material);
 }
 
-Material* MeshComponent::GetMaterial(uint32_t index)
+MatInstance* MeshComponent::GetMaterial(uint32_t index)
 {
-    return (index < m_Materials.Size()) ? m_Materials[index].RawPtr() : nullptr;
+    return (index < m_MatInstances.Size()) ? m_MatInstances[index].RawPtr() : nullptr;
 }
 
 void MeshComponent::SetMaterialCount(uint32_t count)
 {
-    m_Materials.Reserve(count);
-    while (m_Materials.Size() < count)
-        m_Materials.EmplaceBack();
-    m_Materials.Resize(count);
+    m_MatInstances.Reserve(count);
+    while (m_MatInstances.Size() < count)
+        m_MatInstances.EmplaceBack();
+    m_MatInstances.Resize(count);
 }
 
 uint32_t MeshComponent::GetMaterialCount() const
 {
-    return m_Materials.Size();
+    return m_MatInstances.Size();
 }
 
 void MeshComponent::SetLocalBoundingBox(BvAxisAlignedBox const& boundingBox)
@@ -87,18 +87,18 @@ void MeshComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawMeshDebug)
     {
-        if (MeshResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
+        if (m_Resource && !m_Resource->IsPurged())
         {
             renderer.PushTransform(GetOwner()->GetWorldTransformMatrix());
 
             renderer.SetDepthTest(false);
             renderer.SetColor(Color4::sWhite());
-            renderer.DrawAABB(resource->GetBoundingBox());
+            renderer.DrawAABB(m_Resource->GetBoundingBox());
 
-            int surfaceCount = resource->GetSurfaceCount();
+            int surfaceCount = m_Resource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
             {
-                MeshSurface const* surface = resource->GetSurfaces() + surfaceIndex;
+                MeshSurface const* surface = m_Resource->GetSurfaces() + surfaceIndex;
 
                 renderer.DrawAABB(surface->BoundingBox);
 
@@ -199,16 +199,16 @@ void DynamicMeshComponent::UpdateSkinningMatrices()
         SkeletonPose* pose = poseComponent->GetPose();
         m_SkinningData.Pose = pose;
         m_SkinningData.StreamBuffers.Clear();
-        if (MeshResource const* meshResource = GameApplication::sGetResourceManager().TryGet(m_Resource))
+        if (m_Resource && !m_Resource->IsPurged())
         {
-            auto& allJointRemaps = meshResource->GetJointRemaps();
-            auto& allInverseBindPoses = meshResource->GetInverseBindPoses();
+            auto& allJointRemaps = m_Resource->GetJointRemaps();
+            auto& allInverseBindPoses = m_Resource->GetInverseBindPoses();
             if (m_SkinningData.SkinningMatrices.Size() != allInverseBindPoses.Size())
                 m_SkinningData.SkinningMatrices.Resize(allInverseBindPoses.Size());
 
             alignas(16) Float4x4 jointTransform;
 
-            for (auto& skin : meshResource->GetSkins())
+            for (auto& skin : m_Resource->GetSkins())
             {
                 auto& buffer = m_SkinningData.StreamBuffers.EmplaceBack();
                 buffer.Size = skin.MatrixCount * sizeof(Float3x4);

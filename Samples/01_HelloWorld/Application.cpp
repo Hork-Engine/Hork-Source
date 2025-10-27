@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/RenderInterface.h>
 #include <Hork/Runtime/World/Modules/Input/InputInterface.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
+#include <Hork/Resources/ResourceFinder.h>
 
 using namespace Hk;
 
@@ -108,6 +109,9 @@ class SampleApplication final : public GameApplication
     World*                      m_World{};
     Ref<WorldRenderView>        m_WorldRenderView;
     Handle32<CameraComponent>   m_MainCamera;
+    Vector<ResourceRef>         m_LevelResources;
+
+    const uint32_t              BATCH_LEVEL_RESOURCES = 1;
 
 public:
     SampleApplication(ArgumentPack const& args) :
@@ -203,25 +207,21 @@ public:
 
         materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
 
-        // List of resources used in scene
-        ResourceID sceneResources[] = {
-            resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
-            resourceMngr.GetResource<MeshResource>("/Root/default/plane_xz.mesh"),
-            resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-            resourceMngr.GetResource<TextureResource>("/Root/grid8.webp")
-        };
-
         // Load resources asynchronously
-        ResourceAreaID resources = resourceMngr.CreateResourceArea(sceneResources);
-        resourceMngr.LoadArea(resources);
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/box.mesh"));
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/plane_xz.mesh"));
+        m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/grid8.webp"));
 
         // Wait for the resources to load
-        resourceMngr.MainThread_WaitResourceArea(resources);
+        resourceMngr.WaitForBatch(BATCH_LEVEL_RESOURCES);
     }
 
     GameObject* CreatePlayer(Float3 const& position, Quat const& rotation)
     {
-        static MeshHandle playerMesh = sGetResourceManager().GetResource<MeshResource>("/Root/default/box.mesh");
+        static ResourceFinder<Mesh> playerMeshFinder("/Root/default/box.mesh");
+
+        MeshHandle playerMesh = playerMeshFinder.Load();
 
         GameObject* player;
         Handle32<PlayerComponent> playerComponent;
@@ -255,7 +255,7 @@ public:
             DynamicMeshComponent* mesh;
             model->CreateComponent(mesh);
             mesh->SetMesh(playerMesh);
-            mesh->SetMaterial(sGetMaterialManager().TryGet("grid8"));
+            mesh->SetMaterial(sGetMaterialManager().FindMaterial("grid8"));
             mesh->SetLocalBoundingBox({Float3(-0.5f), Float3(0.5f)});
         }
 
@@ -297,7 +297,7 @@ public:
 
         // Spawn ground
         {
-            static MeshHandle groundMesh = sGetResourceManager().GetResource<MeshResource>("/Root/default/plane_xz.mesh");
+            MeshHandle groundMesh = sGetResourceManager().Acquire<Mesh>("/Root/default/plane_xz.mesh");
 
             GameObjectDesc desc;
             desc.Scale = {2, 1, 2};
@@ -309,7 +309,7 @@ public:
             ground->CreateComponent(groundModel);
 
             groundModel->SetMesh(groundMesh);
-            groundModel->SetMaterial(sGetMaterialManager().TryGet("grid8"));
+            groundModel->SetMaterial(sGetMaterialManager().FindMaterial("grid8"));
             groundModel->SetCastShadow(false);
             groundModel->SetLocalBoundingBox({Float3(-128,-0.1f,-128), Float3(128,0.1f,128)});
         }

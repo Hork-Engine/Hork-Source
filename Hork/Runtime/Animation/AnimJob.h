@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/BaseTypes.h>
-#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Animation.h>
 
 #include <Hork/Math/Simd/Simd.h>
 

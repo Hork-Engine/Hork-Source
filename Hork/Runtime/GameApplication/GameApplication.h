@@ -37,6 +37,7 @@ SOFTWARE.
 #include <Hork/Renderer/RenderBackend.h>
 #include <Hork/Runtime/Materials/MaterialManager.h>
 #include <Hork/Runtime/UI/UIManager.h>
+#include <Hork/Resources/ResourceManager.h>
 
 #include "FrameLoop.h"
 #include "InputSystem.h"

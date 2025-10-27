@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,75 +30,38 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Format.h>
-#include <Hork/Core/HashFunc.h>
+#include <Hork/Resources/ResourceManager.h>
 
 HK_NAMESPACE_BEGIN
 
-class ResourceID
+class ResourceFinderBase
 {
-    uint32_t m_Id;
-
 public:
-    ResourceID() :
-        m_Id(0)
-    {}
+    static void         SetResourceManager(ResourceManager* resourceMngr);
 
-    explicit ResourceID(uint32_t id) :
-        m_Id(id)
-    {}
+protected:
+    static ResourceManager* s_ResourceManager;
+};
 
-    ResourceID(uint8_t type, uint32_t index) :
-        m_Id((uint32_t(type) << 24) | (index & 0xffffff))
-    {}
+template <typename T>
+class ResourceFinder final : private ResourceFinderBase
+{
+public:
+    explicit            ResourceFinder(StringView name);
 
-    bool operator==(ResourceID const& rhs) const
-    {
-        return m_Id == rhs.m_Id;
-    }
+    /// Возвращает указатель на ресурс, не гарантирует, что ресурс загружен
+    IntrusiveRef<T>     Acquire();
 
-    bool operator!=(ResourceID const& rhs) const
-    {
-        return m_Id != rhs.m_Id;
-    }
+    /// Возвращает указатель на ресурс, загружает если ресурс еще не загружен
+    IntrusiveRef<T>     Load();
 
-    uint8_t GetType() const
-    {
-        return m_Id >> 24;
-    }
+    /// Возвращает указатель на ресурс, загружает асинхронно если ресурс еще не загружен
+    IntrusiveRef<T>     LoadAsync(uint32_t batchId = BATCH_DEFAULT, TaskPriority priority = TaskPriority::Normal);
 
-    uint32_t GetIndex() const
-    {
-        return m_Id & 0xffffff;
-    }
-
-    template <typename T>
-    bool Is()
-    {
-        return GetType() == T::Type;
-    }
-
-    bool IsValid() const
-    {
-        return m_Id != 0;
-    }
-
-    operator bool() const
-    {
-        return m_Id != 0;
-    }
-
-    operator uint32_t() const
-    {
-        return m_Id;
-    }
-
-    uint32_t Hash() const
-    {
-        return HashTraits::Hash(m_Id);
-    }
+private:
+    T*                  m_Resource;
 };
 
 HK_NAMESPACE_END
 
-HK_FORMAT_DEF_(Hk::ResourceID, "[{}:{}]", v.GetType(), v.GetIndex());
+#include "ResourceFinder.inl"

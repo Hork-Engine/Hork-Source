@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/Animation/SkeletonPose.h>
-#include <Hork/Resources/Resource_Mesh.h>
-#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Mesh.h>
+#include <Hork/Resources/Animation.h>
 
 #include <Hork/Runtime/Animation/AnimPlayer.h>
 

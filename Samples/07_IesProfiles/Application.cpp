@@ -53,7 +53,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/Modules/Render/Components/PunctualLightComponent.h>
 #include <Hork/Image/PhotometricData.h>
 
-#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Mesh.h>
 
 using namespace Hk;
 
@@ -153,7 +153,7 @@ void SampleApplication::OnStartLoading()
 void SampleApplication::OnUpdateLoading(float timeStep)
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (resourceMngr.IsAreaReady(m_Resources))
+    if (resourceMngr.GetBatchRemainingTaskCount(BATCH_LEVEL_RESOURCES) == 0)
     {
         sGetStateMachine().MakeCurrent("State_Play");
     }
@@ -219,14 +219,11 @@ void SampleApplication::ShowLoadingScreen(bool show)
 
             m_Desktop->AddWidget(m_LoadingScreen);
 
-            auto textureHandle = resourceMngr.CreateResourceFromFile<TextureResource>("/Root/loading.png");
-            auto texture = resourceMngr.TryGet(textureHandle);
-            if (texture)
+            auto texture = resourceMngr.Load<Texture>("/Root/loading.png");
+            if (!texture->IsPurged())
             {
-                texture->Upload(sGetRenderDevice());
-
                 m_LoadingScreen->AddWidget(UINew(UIImage)
-                    .WithTexture(textureHandle)
+                    .WithTexture(texture)
                     .WithTextureSize(texture->GetWidth(), texture->GetHeight())
                     .WithSize(Float2(texture->GetWidth(), texture->GetHeight())));
             }
@@ -241,9 +238,6 @@ void SampleApplication::ShowLoadingScreen(bool show)
         {
             m_Desktop->RemoveWidget(m_LoadingScreen);
             m_LoadingScreen = nullptr;
-
-            resourceMngr.PurgeResourceData(m_LoadingTexture);
-            m_LoadingTexture = {};
         }
         m_Desktop->SetFullscreenWidget(m_Viewport);
         m_Desktop->SetFocusWidget(m_Viewport);
@@ -257,20 +251,13 @@ void SampleApplication::CreateResources()
 
     materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
 
-    // List of resources used in scene
-    ResourceID sceneResources[] = {
-        resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-        resourceMngr.GetResource<TextureResource>("/Root/grid8.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/gray.png")
-        
-    };
-
     // Load resources asynchronously
-    m_Resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(m_Resources);
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/box.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/grid8.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/gray.png"));
 }
 
 void SampleApplication::CreateScene()
@@ -342,8 +329,8 @@ void SampleApplication::CreateScene()
             object->CreateComponent<BoxCollider>();
             DynamicMeshComponent* mesh;
             object->CreateComponent(mesh);
-            mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            mesh->SetMaterial(materialMngr.TryGet("gray"));
+            mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+            mesh->SetMaterial(materialMngr.FindMaterial("gray"));
             mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
         }
     }
@@ -371,8 +358,8 @@ void SampleApplication::CreateScene()
 
             DynamicMeshComponent* mesh;
             object->CreateComponent(mesh);
-            mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            mesh->SetMaterial(materialMngr.TryGet("grid8"));
+            mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+            mesh->SetMaterial(materialMngr.FindMaterial("grid8"));
             mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
     }
 #endif

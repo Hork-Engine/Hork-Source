@@ -70,10 +70,7 @@ void CreateSceneFromMap(World* world, StringView mapFilename, StringView default
             {
                 int surfaceIndex = entity.FirstSurface + surfaceNum;
                 auto& surface = surfaces[surfaceIndex];
-                auto surfaceHandle = GameApplication::sGetResourceManager().CreateResource<MeshResource>("surface_" + Core::ToString(surfaceIndex));
-
-                MeshResource* resource = GameApplication::sGetResourceManager().TryGet(surfaceHandle);
-                HK_ASSERT(resource);
+                MeshHandle surfaceHandle(new Mesh);
 
                 BvAxisAlignedBox bounds;
                 bounds.Clear();
@@ -85,18 +82,18 @@ void CreateSceneFromMap(World* world, StringView mapFilename, StringView default
                 alloc.VertexCount = surface.VertexCount;
                 alloc.IndexCount = surface.IndexCount;
 
-                resource->Allocate(alloc);
-                resource->WriteVertexData(&vertices[surface.FirstVert], surface.VertexCount, 0);
-                resource->WriteIndexData(&indices[surface.FirstIndex], surface.IndexCount, 0);
-                resource->SetBoundingBox(bounds);
+                surfaceHandle->Allocate(alloc);
+                surfaceHandle->WriteVertexData(&vertices[surface.FirstVert], surface.VertexCount, 0);
+                surfaceHandle->WriteIndexData(&indices[surface.FirstIndex], surface.IndexCount, 0);
+                surfaceHandle->SetBoundingBox(bounds);
 
-                MeshSurface& meshSurface = resource->LockSurface(0);
+                MeshSurface& meshSurface = surfaceHandle->LockSurface(0);
                 meshSurface.BoundingBox = bounds;
 
                 StaticMeshComponent* mesh;
                 object->CreateComponent(mesh);
-                mesh->SetMesh(surfaceHandle);
-                mesh->SetMaterial(materialMngr.TryGet(defaultMaterial));
+                mesh->SetMesh(std::move(surfaceHandle));
+                mesh->SetMaterial(materialMngr.FindMaterial(defaultMaterial));
                 mesh->SetLocalBoundingBox(bounds);
             }
 

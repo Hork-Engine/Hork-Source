@@ -30,40 +30,50 @@ SOFTWARE.
 
 #pragma once
 
-#include "Material.h"
+#include "MatInstance.h"
 
 HK_NAMESPACE_BEGIN
 
-class MaterialLibrary final : public RefCounted
+class MaterialLibrary final : public IntrusiveRefCounter<MaterialLibrary>
 {
 public:
-    Ref<Material>           CreateMaterial(StringView name);
-    void                    DestroyMaterial(Material* material);
+    void                    Load(IBinaryStreamReadInterface& stream);
 
-    void                    Read(IBinaryStreamReadInterface& stream);
-    void                    Write(IBinaryStreamWriteInterface& stream);
+    void                    Clear();
 
-    Ref<Material>           TryGet(StringView name);
+    void                    AddMaterial(StringView name, MatInstanceHandle matInstance);
+
+    void                    RemoveMaterial(StringView name);
+
+    bool                    HasMaterial(StringView name) const;
+
+    MatInstanceHandle       FindMaterial(StringView name);
+
+    Vector<String>          GetMaterialNames() const;
+
+    size_t                  GetMaterialCount() const;
 
 private:
-                            MaterialLibrary() = default;
-
-    StringHashMap<Ref<Material>> m_Instances;
-
-    friend class            MaterialManager;
+    StringHashMap<MatInstanceHandle> m_Instances;
 };
 
 class MaterialManager final : public Noncopyable
 {
 public:
-    Ref<MaterialLibrary>    CreateLibrary();
-    Ref<MaterialLibrary>    LoadLibrary(StringView fileName);
-    void                    RemoveLibrary(MaterialLibrary* library);
+    void                    Clear();
 
-    Ref<Material>           TryGet(StringView name);
+    void                    AddLibrary(StringView name, IntrusiveRef<MaterialLibrary> library);
+
+    IntrusiveRef<MaterialLibrary>   LoadLibrary(StringView name);
+    
+    void                    RemoveLibrary(StringView name);
+
+    IntrusiveRef<MaterialLibrary>    GetLibrary(StringView name) const;
+
+    MatInstanceHandle       FindMaterial(StringView name) const;
 
 private:
-    Vector<Ref<MaterialLibrary>> m_Libraries;
+    StringHashMap<IntrusiveRef<MaterialLibrary>> m_Libraries;
 };
 
 HK_NAMESPACE_END

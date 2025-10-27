@@ -915,7 +915,7 @@ void Canvas::DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const
     Stroke();
 }
 
-void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr)
+void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr, bool forceTexurePath)
 {
     Transform2D invxform;
 
@@ -947,7 +947,7 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
     frag->StrokeMult = (width * 0.5f + fringe * 0.5f) / fringe;
     frag->StrokeThr  = strokeThr;
 
-    if (paint->TexHandle)
+    if (paint->TexHandle || forceTexurePath)
     {
         frag->Type    = CANVAS_SHADER_FILLIMG;
         frag->TexType = (paint->ImageFlags & CANVAS_IMAGE_PREMULTIPLIED) ? 0 : 1;
@@ -974,13 +974,10 @@ void Canvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor co
 
 RHI::ITexture* Canvas::GetTexture(CanvasPaint const* paint)
 {
-    auto* textureResource = GameApplication::sGetResourceManager().TryGet(paint->TexHandle);
-    if (!textureResource)
-    {
+    if (!paint->TexHandle)
         return nullptr;
-    }
 
-    return textureResource->GetTextureGPU();
+    return paint->TexHandle->GetTextureGPU();
 }
 
 void Canvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds)
@@ -3430,10 +3427,9 @@ void Canvas::CreateCursorMap()
         }
     }
 
-    UniqueRef<TextureResource> cursorMap = MakeUnique<TextureResource>(CreateImage(image, nullptr));
-    cursorMap->Upload(GameApplication::sGetRenderDevice());
+    m_CursorMap = GameApplication::sGetResourceManager().Acquire<Texture>("internal_cursor_map");
+    m_CursorMap->CreateFromImage(CreateImage(image, nullptr));
 
-    m_CursorMap = GameApplication::sGetResourceManager().CreateResourceWithData("internal_cursor_map", std::move(cursorMap));
     m_CursorMapWidth = w;
     m_CursorMapHeight = h;
 }
@@ -3510,9 +3506,6 @@ void Canvas::RenderText(CanvasVertex* verts, int nverts)
     RenderTriangles(&paint, state->CompositeOperation, state->Scissor, verts, nverts, m_FringeWidth);
     #else
 
-    // Set Dummy texture for ConvertPaint
-    paint.TexHandle = TextureHandle(ResourceID(RESOURCE_TEXTURE, 1));
-
     CanvasDrawCmd*  drawCommand = AllocDrawCommand();
     CanvasUniforms* frag;
 
@@ -3531,7 +3524,7 @@ void Canvas::RenderText(CanvasVertex* verts, int nverts)
     drawCommand->UniformOffset = AllocUniforms(1);
 
     frag = GetUniformPtr(drawCommand->UniformOffset);
-    ConvertPaint(frag, &paint, state->Scissor, 1.0f, m_FringeWidth, -1.0f);
+    ConvertPaint(frag, &paint, state->Scissor, 1.0f, m_FringeWidth, -1.0f, true);
     frag->Type = CANVAS_SHADER_IMAGE;
 
     #endif

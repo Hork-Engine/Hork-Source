@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Renderer/RenderDefs.h>
-#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Texture.h>
 #include "Transform2D.h"
 
 HK_NAMESPACE_BEGIN

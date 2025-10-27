@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -30,43 +30,45 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/BaseTypes.h>
-#include <Hork/RHI/Common/Device.h>
+#include "ResourceRTTR.h"
 
 HK_NAMESPACE_BEGIN
 
-enum RESOURCE_TYPE : uint8_t
+class IBinaryStreamReadInterface;
+
+class ResourceCacheBase;
+
+class Resource : public Noncopyable
 {
-    RESOURCE_UNDEFINED,
-    RESOURCE_MESH,//ok
-    RESOURCE_ANIMATION,//ok
-    RESOURCE_NODE_MOTION,     // todo
-    RESOURCE_TEXTURE,//ok
-    RESOURCE_MATERIAL,//ok
-    RESOURCE_COLLISION,// todo
-    RESOURCE_SOUND,//ok
-    RESOURCE_TERRAIN,// ok
-    RESOURCE_VIRTUAL_TEXTURE,// todo
+    friend class        ResourceCacheBase;
 
+    friend void         IntrusiveRef_AddRef(Resource* p);
+    friend void         IntrusiveRef_RemoveRef(Resource *p);
 
-    // BAKE:
-    //
-    // Navigation Mesh
-    // Lightmaps
-    // Photometric profiles
-    // Envmaps? - can be streamed lod by lod
-    // Collision models
-    // Areas and portals (spatial structure)
-
-    RESOURCE_TYPE_MAX
-};
-
-class ResourceBase
-{
 public:
-    virtual ~ResourceBase() = default;
+    virtual             ~Resource() = default;
 
-    virtual void Upload(RHI::IDevice* device) {}
+    const char*         GetName() const { return m_Name; }    
+
+    bool                IsPurged() const { return m_IsPurged; }
+
+    virtual void        Purge() = 0;
+
+    virtual void        Load(IBinaryStreamReadInterface& stream) = 0;
+
+    int32_t             UseCount() const { return m_RefCount.load(std::memory_order_acquire); }
+
+private:
+    std::atomic<int32_t>m_RefCount = 0;
+
+protected:
+    bool                m_IsPurged = true;
+
+private:
+    bool                m_InGarbageList = false;
+    Resource*           m_NextGarbage = nullptr;
+    ResourceCacheBase*  m_Cache = nullptr;
+    const char*         m_Name = "";
 };
 
 HK_FORCEINLINE uint32_t MakeResourceMagic(uint8_t type, uint8_t version)

@@ -122,7 +122,7 @@ CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float 
     Extent[0] = w;
     Extent[1] = h;
 
-    TexHandle = texture;
+    TexHandle = std::move(texture);
     ImageFlags = imageFlags;
 
     InnerColor = OuterColor = tintColor;

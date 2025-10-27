@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "FrameLoop.h"
-#include <Hork/Runtime/ResourceManager/ResourceManager.h>
+#include <Hork/Resources/ResourceManager.h>
 
 #include <Hork/Core/Platform.h>
 #include <Hork/Core/Profiler.h>
@@ -108,7 +108,7 @@ void FrameLoop::SetGenerateInputEvents(bool shouldGenerateInputEvents)
     m_ShouldGenerateInputEvents = shouldGenerateInputEvents;
 }
 
-void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceManager)
+void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceMngr)
 {
     HK_PROFILER_EVENT("Setup new frame");
 
@@ -145,7 +145,7 @@ void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterva
         // First frame
         m_FrameDuration = 1000000.0 / 60;
 
-        resourceManager->MainThread_Update(m_FrameDuration * 0.000001);
+        resourceMngr->Update(m_FrameDuration * 0.001);
     }
     else
     {        
@@ -153,7 +153,7 @@ void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterva
 
         if (m_FrameDuration < maxFrameRate)
         {
-            resourceManager->MainThread_Update((maxFrameRate - m_FrameDuration) * 0.000001);
+            resourceMngr->Update(Math::Max(0.01, (maxFrameRate - m_FrameDuration) * 0.001));
 
             m_FrameTimeStamp = Core::SysMicroseconds();
             m_FrameDuration = m_FrameTimeStamp - prevTimeStamp;
@@ -167,7 +167,9 @@ void FrameLoop::NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterva
             }
         }
         else
-            resourceManager->MainThread_Update(0.001f);
+        {
+            resourceMngr->Update(1);
+        }
     }
 
     m_FrameNumber++;

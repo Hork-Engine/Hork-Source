@@ -35,6 +35,7 @@ SOFTWARE.
 
 #include <Hork/Core/Containers/ArrayView.h>
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/UniqueRef.h>
 
 HK_NAMESPACE_BEGIN
 

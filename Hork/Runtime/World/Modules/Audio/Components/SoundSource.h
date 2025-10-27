@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Hork/Math/Quat.h>
 #include <Hork/Audio/AudioTrack.h>
-#include <Hork/Resources/Resource_Sound.h>
+#include <Hork/Resources/Sound.h>
 
 #include <EASTL/queue.h>
 
@@ -192,7 +192,7 @@ public:
 private:
     bool                    StartPlay(SoundHandle inSound, int inStartFrame, int inLoopStart);
 
-    using Queue = eastl::queue<SoundHandle, eastl::deque<SoundHandle, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundHandle)>>;//PodQueue<SoundHandle, 1, true>;
+    using Queue = eastl::queue<SoundHandle, eastl::deque<SoundHandle, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundHandle)>>;
 
     Queue                   m_AudioQueue;
     Ref<SoundGroup>         m_Group;

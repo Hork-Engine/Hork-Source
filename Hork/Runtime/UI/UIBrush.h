@@ -265,12 +265,12 @@ public:
 
     UIImageBrush(TextureHandle texture) :
         UIBrush(IMAGE),
-        TexHandle(texture)
+        TexHandle(std::move(texture))
     {}
 
     UIImageBrush& WithTexture(TextureHandle texture)
     {
-        TexHandle = texture;
+        TexHandle = std::move(texture);
         return *this;
     }
 

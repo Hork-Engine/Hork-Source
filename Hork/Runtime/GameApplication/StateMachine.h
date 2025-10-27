@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/Hash.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Core/Delegate.h>
 
 HK_NAMESPACE_BEGIN

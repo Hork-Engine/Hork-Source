@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Resources/Resource_Terrain.h>
+#include <Hork/Resources/Terrain.h>
 #include "TerrainMesh.h"
 #include "WorldRenderView.h"
 

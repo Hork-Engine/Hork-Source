@@ -482,20 +482,21 @@ void WorldRenderer::AddMeshes()
 
         Float3x3 modelNormalToViewSpace = m_View->NormalToViewMatrix * mesh.GetRotationMatrix();
 
-        if (auto* meshResource = GameApplication::sGetResourceManager().TryGet(mesh.GetMesh()))
+        auto meshResource = mesh.GetMesh().RawPtr();
+        if (meshResource && !meshResource->IsPurged())
         {
             int surfaceCount = meshResource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
             {
-                Material* materialInstance = mesh.GetMaterial(surfaceIndex);
-                if (!materialInstance)
+                MatInstance* matInstance = mesh.GetMaterial(surfaceIndex);
+                if (!matInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
-                if (!material)
+                auto material = matInstance->GetResource();
+                if (!material || material->IsPurged())
                     continue;
 
-                MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
+                MaterialFrameData* materialInstanceFrameData = matInstance->PreRender(m_FrameNumber);
                 if (!materialInstanceFrameData)
                     continue;
             
@@ -613,15 +614,15 @@ void WorldRenderer::AddMeshes()
         ProceduralMesh* proceduralMesh = mesh.GetProceduralMesh();
         if (proceduralMesh && !proceduralMesh->IndexCache.IsEmpty())
         {
-            Material* materialInstance = mesh.GetMaterial(0);
-            if (!materialInstance)
+            MatInstance* matInstance = mesh.GetMaterial(0);
+            if (!matInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
-            if (!material)
+            auto material = matInstance->GetResource();
+            if (!material || material->IsPurged())
                 continue;
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = matInstance->PreRender(m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -712,24 +713,24 @@ void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox 
 
         Float3x4 const& instanceMatrix = mesh.GetRenderTransform();
 
-        auto* meshResource = GameApplication::sGetResourceManager().TryGet(mesh.GetMesh());
-        if (meshResource)
+        auto meshResource = mesh.GetMesh().RawPtr();
+        if (meshResource && !meshResource->IsPurged())
         {
             int surfaceCount = meshResource->GetSurfaceCount();
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; ++surfaceIndex)
             {
-                Material* materialInstance = mesh.GetMaterial(surfaceIndex);
-                if (!materialInstance)
+                MatInstance* matInstance = mesh.GetMaterial(surfaceIndex);
+                if (!matInstance)
                     continue;
 
-                MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
-                if (!material)
+                auto material = matInstance->GetResource();
+                if (!material || material->IsPurged())
                     continue;
 
                 if (!material->IsCastShadow())
                     continue;
 
-                MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
+                MaterialFrameData* materialInstanceFrameData = matInstance->PreRender(m_FrameNumber);
                 if (!materialInstanceFrameData)
                     continue;
             
@@ -792,18 +793,18 @@ void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox 
         ProceduralMesh* proceduralMesh = mesh.GetProceduralMesh();
         if (proceduralMesh && !proceduralMesh->IndexCache.IsEmpty())
         {        
-            Material* materialInstance = mesh.GetMaterial(0);
-            if (!materialInstance)
+            MatInstance* matInstance = mesh.GetMaterial(0);
+            if (!matInstance)
                 continue;
 
-            MaterialResource* material = GameApplication::sGetResourceManager().TryGet(materialInstance->GetResource());
-            if (!material)
+            auto material = matInstance->GetResource();
+            if (!material || material->IsPurged())
                 continue;
 
             if (!material->IsCastShadow())
                 continue;
 
-            MaterialFrameData* materialInstanceFrameData = materialInstance->PreRender(m_FrameNumber);
+            MaterialFrameData* materialInstanceFrameData = matInstance->PreRender(m_FrameNumber);
             if (!materialInstanceFrameData)
                 continue;
 
@@ -1007,8 +1008,7 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     {
         ColorGradingParameters* params = worldRenderView->ColorGrading;
 
-        TextureHandle lut = params->GetLUT();
-        TextureResource* lutTexture = GameApplication::sGetResourceManager().TryGet(lut);
+        TextureHandle lutTexture = params->GetLUT();
 
         view->ColorGradingLUT = lutTexture ? lutTexture->GetTextureGPU() : nullptr;
         view->CurrentColorGradingLUT = worldRenderView->GetCurrentColorGradingLUT();
@@ -1159,8 +1159,8 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
         {
             TerrainComponent& terrain = *it;
 
-            auto* terrainResource = GameApplication::sGetResourceManager().TryGet(terrain.GetResource());
-            if (!terrainResource)
+            auto resource = terrain.GetResource();
+            if (!resource || resource->IsPurged())
                 continue;
 
             auto* gameObject = terrain.GetOwner();
@@ -1234,8 +1234,8 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
             instance->ViewPositionAndHeight.W = terrainView.GetViewHeight();
             instance->LocalViewProjection = localMVP;
             instance->ModelNormalToViewSpace = view->NormalToViewMatrix * worldRotation;
-            instance->ClipMin = terrainResource->GetClipMin();
-            instance->ClipMax = terrainResource->GetClipMax();
+            instance->ClipMin = resource->GetClipMin();
+            instance->ClipMax = resource->GetClipMax();
 
             view->TerrainInstanceCount++;
         }

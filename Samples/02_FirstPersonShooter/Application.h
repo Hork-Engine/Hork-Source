@@ -38,7 +38,7 @@ HK_NAMESPACE_BEGIN
 
 class UIGrid;
 class UIViewport;
-class UIImage;
+class WorldRenderView;
 
 class SampleApplication final : public GameApplication
 {
@@ -67,9 +67,8 @@ private:
     UIGrid* m_SplitView;
     UIViewport* m_Viewports[2];
     UIWidget* m_LoadingScreen;
-    ResourceAreaID m_Resources;
-    TextureHandle m_LoadingTexture;
-
+    Vector<ResourceRef> m_LevelResources;
+    const uint32_t BATCH_LEVEL_RESOURCES = 1;
     World* m_World{};
 
     struct SpawnPoint

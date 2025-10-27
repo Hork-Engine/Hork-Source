@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/WorldInterface.h>
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/ComponentManager.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Core/Containers/ArrayView.h>
 #include <Hork/Math/Quat.h>
 

@@ -64,6 +64,8 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Modules/Audio/AudioInterface.h>
 
+#include <Hork/Resources/ResourceFinder.h>
+
 using namespace Hk;
 
 SampleApplication::SampleApplication(ArgumentPack const& args) :
@@ -193,32 +195,26 @@ void SampleApplication::CreateResources()
     materialMngr.LoadLibrary("/Root/thirdparty/freepbr.com/freepbr.mlib");
     materialMngr.LoadLibrary("/Root/thirdparty/sketchfab.com/sketchfab.mlib");
 
-    // List of resources used in scene
-    ResourceID sceneResources[] = {
-        resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MeshResource>("/Root/default/capsule.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-        resourceMngr.GetResource<TextureResource>("/Root/black.png"),
-        resourceMngr.GetResource<TextureResource>("/Root/grid8.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank256.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_orm.mat"),
-        resourceMngr.GetResource<MeshResource>("/Root/thirdparty/sketchfab.com/barrel/barrel.mesh"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/albedo.tex"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/orm.tex"),
-        resourceMngr.GetResource<TextureResource>("/Root/thirdparty/sketchfab.com/barrel/normal.tex")
-    };
-
     // Load resources asynchronously
-    ResourceAreaID resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(resources);
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default_orm.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/box.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/capsule.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/sketchfab.com/barrel/barrel.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/black.png"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/grid8.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank256.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/albedo.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/orm.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/freepbr.com/grime-alley-brick2/normal.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/sketchfab.com/barrel/albedo.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/sketchfab.com/barrel/orm.tex"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/thirdparty/sketchfab.com/barrel/normal.tex"));
 
     // Wait for the resources to load
-    resourceMngr.MainThread_WaitResourceArea(resources);
+    resourceMngr.WaitForBatch(BATCH_LEVEL_RESOURCES);
 }
 
 void SampleApplication::CreateScene()
@@ -314,8 +310,8 @@ void SampleApplication::CreateScene()
             //object->CreateComponent<BoxCollider>();
             //DynamicMeshComponent* mesh;
             //object->CreateComponent(mesh);
-            //mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-            //mesh->SetMaterial(materialMngr.TryGet("blank256"));
+            //mesh->SetMesh(resourceMngr.Load<Mesh>("/Root/default/box.mesh"));
+            //mesh->SetMaterial(materialMngr.FindMaterial("blank256"));
             //mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
         }
     }
@@ -348,8 +344,8 @@ void SampleApplication::CreateScene()
         object->CreateComponent<BoxCollider>();
         DynamicMeshComponent* mesh;
         object->CreateComponent(mesh);
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-        mesh->SetMaterial(materialMngr.TryGet("grid8"));
+        mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+        mesh->SetMaterial(materialMngr.FindMaterial("grid8"));
         mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
 
         DoorComponent* doorComponent;
@@ -374,8 +370,8 @@ void SampleApplication::CreateScene()
         object->CreateComponent<BoxCollider>();
         DynamicMeshComponent* mesh;
         object->CreateComponent(mesh);
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("/Root/default/box.mesh"));
-        mesh->SetMaterial(materialMngr.TryGet("grid8"));
+        mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/box.mesh"));
+        mesh->SetMaterial(materialMngr.FindMaterial("grid8"));
         mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
 
         DoorComponent* doorComponent;
@@ -396,10 +392,9 @@ void SampleApplication::CreateScene()
 
 void SampleApplication::SpawnBarrel(Float3 const& position, Quat const& rotation)
 {
-    auto& resourceMngr = sGetResourceManager();
     auto& materialMngr = sGetMaterialManager();
 
-    static MeshHandle meshHandle = resourceMngr.GetResource<MeshResource>("/Root/thirdparty/sketchfab.com/barrel/barrel.mesh");
+    static ResourceFinder<Mesh> barrelMeshFinder("/Root/thirdparty/sketchfab.com/barrel/barrel.mesh");
 
     GameObjectDesc desc;
     desc.Position = position;
@@ -416,15 +411,14 @@ void SampleApplication::SpawnBarrel(Float3 const& position, Quat const& rotation
     collider->Radius = 0.35f;
     DynamicMeshComponent* mesh;
     object->CreateComponent(mesh);
-    mesh->SetMesh(meshHandle);
-    mesh->SetMaterial(0, materialMngr.TryGet("thirdparty/sketchfab/barrel"));
-    mesh->SetMaterial(1, materialMngr.TryGet("thirdparty/sketchfab/barrel"));
+    mesh->SetMesh(barrelMeshFinder.Acquire());
+    mesh->SetMaterial(0, materialMngr.FindMaterial("thirdparty/sketchfab/barrel"));
+    mesh->SetMaterial(1, materialMngr.FindMaterial("thirdparty/sketchfab/barrel"));
     mesh->SetLocalBoundingBox({Float3(-0.5f),Float3(0.5f)});
 }
 
 GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& rotation)
 {
-    auto& resourceMngr = sGetResourceManager();
     auto& materialMngr = sGetMaterialManager();
 
     const float HeightStanding = 1.20f;
@@ -459,16 +453,17 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
 
         RawMesh rawMesh;
         rawMesh.CreateCapsule(RadiusStanding, HeightStanding, 1.0f, 12, 10);
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(rawMesh);
-        resource->Upload(sGetRenderDevice());
+
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(rawMesh);
+
+        resource->InitFromData(std::move(data));
 
         mesh->SetLocalBoundingBox(resource->GetBoundingBox());
 
-        resourceMngr.CreateResourceWithData("character_controller_capsule", std::move(resource));
-
-        mesh->SetMesh(resourceMngr.GetResource<MeshResource>("character_controller_capsule"));
-        mesh->SetMaterial(materialMngr.TryGet("blank512"));
+        mesh->SetMesh(resource);
+        mesh->SetMaterial(materialMngr.FindMaterial("blank512"));
     }
 
     GameObject* viewPoint;

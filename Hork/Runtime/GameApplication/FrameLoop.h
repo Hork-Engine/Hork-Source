@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/Allocators/LinearAllocator.h>
 #include <Hork/Core/Containers/ArrayView.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 #include "VirtualKey.h"
@@ -120,7 +121,7 @@ public:
     virtual void    OnResize() = 0;
 };
 
-class WorldRenderView;
+class ResourceManager;
 
 class FrameLoop final : public Noncopyable
 {
@@ -158,7 +159,7 @@ public:
     void            SetGenerateInputEvents(bool shouldGenerateInputEvents);
 
     /// Begin a new frame
-    void            NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, class ResourceManager* resourceManager);
+    void            NewFrame(ArrayView<RHI::ISwapChain*> swapChains, int swapInterval, ResourceManager* resourceMngr);
 
     /// Poll runtime events
     void            PollEvents(IEventListener* listener);

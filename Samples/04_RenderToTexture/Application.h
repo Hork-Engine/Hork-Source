@@ -31,10 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Runtime/GameApplication/GameApplication.h>
-#include <Hork/Runtime/ResourceManager/ResourceManager.h>
 #include <Hork/Runtime/World/Modules/Render/Components/CameraComponent.h>
 
 HK_NAMESPACE_BEGIN
+
+class WorldRenderView;
 
 class SampleApplication final : public GameApplication
 {
@@ -59,6 +60,9 @@ private:
 
     Ref<WorldRenderView> m_WorldRenderView;
     Ref<WorldRenderView> m_OffscreenRenderView;
+
+    Vector<ResourceRef> m_LevelResources;
+    const uint32_t BATCH_LEVEL_RESOURCES = 1;
 };
 
 HK_NAMESPACE_END

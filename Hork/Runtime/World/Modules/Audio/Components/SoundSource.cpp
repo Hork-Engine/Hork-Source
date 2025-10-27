@@ -49,20 +49,19 @@ void SoundSource::ClearSound()
 
 void SoundSource::AddToQueue(SoundHandle inSound)
 {
-    if (!inSound.IsValid())
+    if (!inSound)
     {
         LOG("SoundComponent::AddToQueue: No sound specified\n");
         return;
     }
 
-    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
-    if (!resource)
+    if (inSound->IsPurged())
     {
         LOG("SoundComponent::AddToQueue: Sound is not loaded\n");
         return;
     }
 
-    auto source = resource->GetSource();
+    auto source = inSound->GetSource();
     if (source->GetFrameCount() == 0)
     {
         LOG("SoundComponent::AddToQueue: Sound has no frames\n");
@@ -87,13 +86,13 @@ bool SoundSource::SelectNextSound()
     bool wasSelected = false;
 
     m_Track.Reset();
-    m_SoundHandle = {};
+    m_SoundHandle.Reset();
 
     while (!m_AudioQueue.empty() && !wasSelected)
     {
-        SoundHandle playSound = m_AudioQueue.front();
+        SoundHandle playSound = std::move(m_AudioQueue.front());
         m_AudioQueue.pop();
-        wasSelected = StartPlay(playSound, 0, -1);
+        wasSelected = StartPlay(std::move(playSound), 0, -1);
     }
 
     return wasSelected;
@@ -108,7 +107,7 @@ void SoundSource::ClearQueue()
 void SoundSource::PlaySound(SoundHandle inSound, int inStartFrame, int inLoopStart)
 {
     ClearSound();
-    StartPlay(inSound, inStartFrame, inLoopStart);
+    StartPlay(std::move(inSound), inStartFrame, inLoopStart);
 }
 
 void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inStartFrame)
@@ -116,20 +115,19 @@ void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inSt
     if (inVolumeScale <= 0.0001f)
         return;
 
-    if (!inSound.IsValid())
+    if (!inSound)
     {
         LOG("SoundSource::StartPlay: No sound specified\n");
         return;
     }
 
-    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
-    if (!resource)
+    if (inSound->IsPurged())
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
         return;
     }
 
-    auto source = resource->GetSource();
+    auto source = inSound->GetSource();
     if (!source)
     {
         LOG("SoundSource::StartPlay: Resource has no audio\n");
@@ -156,20 +154,19 @@ void SoundSource::PlayOneShot(SoundHandle inSound, float inVolumeScale, int inSt
 
 bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopStart)
 {
-    if (!inSound.IsValid())
+    if (!inSound)
     {
         LOG("SoundSource::StartPlay: No sound specified\n");
         return false;
     }
 
-    auto resource = GameApplication::sGetResourceManager().TryGet(inSound);
-    if (!resource)
+    if (inSound->IsPurged())
     {
         LOG("SoundSource::StartPlay: Sound is not loaded\n");
         return false;
     }
 
-    auto source = resource->GetSource();
+    auto source = inSound->GetSource();
     if (!source)
     {
         LOG("SoundSource::StartPlay: Resource has no audio\n");
@@ -198,7 +195,7 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
         loopsCount++;
     }
 
-    m_SoundHandle = inSound;
+    m_SoundHandle = std::move(inSound);
 
     m_Track.Attach(new AudioTrack(source, inStartFrame, inLoopStart, loopsCount, m_VirtualizeWhenSilent));
     m_NeedToSubmit = true;
@@ -208,12 +205,11 @@ bool SoundSource::StartPlay(SoundHandle inSound, int inStartFrame, int inLoopSta
 
 bool SoundSource::RestartSound()
 {
-    SoundHandle newSound = m_SoundHandle;
+    SoundHandle newSound = std::move(m_SoundHandle);
 
     int loop_start = m_Track ? m_Track->GetLoopStart() : -1;
 
     m_Track.Reset();
-    m_SoundHandle = {};
 
     return StartPlay(newSound, 0, loop_start);
 }
@@ -323,7 +319,7 @@ bool SoundSource::IsMuted() const
 
 bool SoundSource::IsSilent() const
 {
-    return !m_SoundHandle.IsValid();
+    return m_SoundHandle == nullptr;
 }
 
 HK_FORCEINLINE float FalloffDistance(float inMaxDistance)
@@ -542,7 +538,7 @@ void SoundSource::UpdateTrack(AudioMixerSubmitQueue& submitQueue, bool inPaused)
         it++;
     }
 
-    if (!m_SoundHandle.IsValid())
+    if (!m_SoundHandle)
     {
         // silent
         return;

@@ -62,7 +62,7 @@ TerrainView::TerrainView(TerrainHandle resource)
 
     s_InstanceCount++;
 
-    m_Terrain = resource;
+    m_Terrain = std::move(resource);
 
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
@@ -112,8 +112,6 @@ TerrainView::~TerrainView()
 
 void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-
     m_BoundingBoxes.Clear();
 
     m_IndirectBuffer.Clear();
@@ -121,11 +119,10 @@ void TerrainView::Update(Float3 const& ViewPosition, BvFrustum const& ViewFrustu
 
     m_StartInstanceLocation = 0;
 
-    auto resource = resourceMngr.TryGet(m_Terrain);
-    if (!resource)
+    if (!m_Terrain || m_Terrain->IsPurged())
         return;
 
-    m_TerrainBoundingBox = resource->GetBoundingBox();
+    m_TerrainBoundingBox = m_Terrain->GetBoundingBox();
     if (!ViewFrustum.IsBoxVisible(m_TerrainBoundingBox))
         return;
  
@@ -350,16 +347,12 @@ void TerrainView::AddCrackLines(TerrainLodInfo const& Lod)
 
 void TerrainView::MakeView(Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-
     int minLod = Math::Max(com_TerrainMinLod.GetInteger(), 0);
     int maxLod = Math::Min(com_TerrainMaxLod.GetInteger(), MAX_TERRAIN_LODS - 1);
 
-    auto resource = resourceMngr.TryGet(m_Terrain);
-
     float terrainH;
-    if (resource)
-        terrainH = resource->Sample(ViewPosition.X, ViewPosition.Z);
+    if (m_Terrain && !m_Terrain->IsPurged())
+        terrainH = m_Terrain->Sample(ViewPosition.X, ViewPosition.Z);
     else
         terrainH = 0;
 
@@ -849,16 +842,13 @@ void TerrainView::AddPatches(BvFrustum const& ViewFrustum)
 
 void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& CoarserLod, int MinX, int MaxX, int MinY, int MaxY)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-
     Int2 texelWorldPos;
     float h[4];
     Float3 n;
 
     const float InvGridSizeCoarse = 1.0f / CoarserLod.GridScale;
 
-    auto resource = resourceMngr.TryGet(m_Terrain); // TODO: ѕереместить куда-нибудь выше
-    if (!resource)
+    if (!m_Terrain || m_Terrain->IsPurged())
         return;
 
     // TODO: Move this to GPU
@@ -880,16 +870,16 @@ void TerrainView::UpdateRect(TerrainLodInfo const& Lod, TerrainLodInfo const& Co
 
             Float2& heightMap = Lod.HeightMap[wrapY * TERRAIN_CLIPMAP_SIZE + wrapX];
 
-            heightMap.X = resource->Fetch(texelWorldPos.X, texelWorldPos.Y, sampleLod);
+            heightMap.X = m_Terrain->Fetch(texelWorldPos.X, texelWorldPos.Y, sampleLod);
 
             if (heightMap.X > 32768)
                 heightMap.X = 32768;
 
             const int texelStep = Lod.GridScale;
-            h[0] = resource->Fetch(texelWorldPos.X, texelWorldPos.Y - texelStep, sampleLod);
-            h[1] = resource->Fetch(texelWorldPos.X - texelStep, texelWorldPos.Y, sampleLod);
-            h[2] = resource->Fetch(texelWorldPos.X + texelStep, texelWorldPos.Y, sampleLod);
-            h[3] = resource->Fetch(texelWorldPos.X, texelWorldPos.Y + texelStep, sampleLod);
+            h[0] = m_Terrain->Fetch(texelWorldPos.X, texelWorldPos.Y - texelStep, sampleLod);
+            h[1] = m_Terrain->Fetch(texelWorldPos.X - texelStep, texelWorldPos.Y, sampleLod);
+            h[2] = m_Terrain->Fetch(texelWorldPos.X + texelStep, texelWorldPos.Y, sampleLod);
+            h[3] = m_Terrain->Fetch(texelWorldPos.X, texelWorldPos.Y + texelStep, sampleLod);
 
             // normal = tangent ^ binormal
             // correct tangent t = cross( binormal, normal );

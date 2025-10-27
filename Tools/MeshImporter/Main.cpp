@@ -35,8 +35,8 @@ SOFTWARE.
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/Geometry/RawMesh.h>
-#include <Hork/Resources/Resource_Mesh.h>
-#include <Hork/Resources/Resource_Animation.h>
+#include <Hork/Resources/Mesh.h>
+#include <Hork/Resources/Animation.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -46,14 +46,10 @@ bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
 
     LOG("Importing mesh {}...\n", fileName);
 
-    MeshResourceBuilder builder;
-    auto meshResource = builder.Build(rawMesh);
-    if (!meshResource)
-    {
-        LOG("Failed to build mesh\n");
-        return false;
-    }
-
+    MeshHandle resource(new Mesh);
+    auto data = MakeUnique<MeshData>();
+    data->FromRawMesh(rawMesh);
+    resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
     File file = File::sOpenWrite(fileName);
     if (!file)
@@ -62,14 +58,12 @@ bool ImportMesh(RawMesh const& rawMesh, StringView outputFile)
         return false;
     }
 
-    meshResource->Write(file);
+    resource->Write(file);
     return true;
 }
 
 bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView outputFile)
 {
-    AnimationResourceBuilder builder;
-
     if (animationIndex >= rawMesh.Animations.Size())
     {
         LOG("Invalid animation index {}\n", animationIndex);
@@ -78,8 +72,8 @@ bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
 
     LOG("Importing animation {}...\n", animationIndex);
 
-    UniqueRef<AnimationResource> animationResource = builder.Build(*rawMesh.Animations[animationIndex].RawPtr(), rawMesh.Skeleton);
-    if (!animationResource)
+    AnimationHandle animation(new Animation);
+    if (!animation->FromRawAnimation(*rawMesh.Animations[animationIndex].RawPtr(), rawMesh.Skeleton))
     {
         LOG("Failed to build animation {}\n", animationIndex);
         return false;
@@ -99,7 +93,7 @@ bool ImportAnimation(RawMesh const& rawMesh, uint32_t animationIndex, StringView
         return false;
     }
 
-    animationResource->Write(file);
+    animation->Write(file);
     return true;
 }
 
@@ -109,9 +103,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateBox(Float3(1), 1.0f);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
         auto file = File::sOpenWrite(path / "box.mesh");
         HK_ASSERT(file);
@@ -122,9 +117,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSphere(0.5f, 1.0f);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "sphere.mesh");
@@ -136,9 +132,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCylinder(0.5f, 1.0f, 1.0f);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "cylinder.mesh");
@@ -150,9 +147,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCone(0.5f, 1.0f, 1.0f);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "cone.mesh");
@@ -164,9 +162,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateCapsule(0.5f, 1.0f, 1.0f);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "capsule.mesh");
@@ -178,9 +177,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXZ(256, 256, Float2(256));
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
         auto file = File::sOpenWrite(path / "plane_xz.mesh");
         HK_ASSERT(file);
@@ -191,9 +191,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXY(256, 256, Float2(256));
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
         auto file = File::sOpenWrite(path / "plane_xy.mesh");
         HK_ASSERT(file);
@@ -204,9 +205,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXZ(1, 1, Float2(1));
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
         auto file = File::sOpenWrite(path / "quad_xz.mesh");
         HK_ASSERT(file);
@@ -217,9 +219,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreatePlaneXY(1, 1, Float2(1));
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
 
         auto file = File::sOpenWrite(path / "quad_xy.mesh");
         HK_ASSERT(file);
@@ -230,9 +233,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkybox(Float3(1), 1);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "skybox.mesh");
@@ -244,9 +248,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkydome(0.5f, 1, 32, 32, false);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "skydome.mesh");
@@ -258,9 +263,10 @@ void CreateDefaultMeshes(StringView path)
         RawMesh mesh;
         mesh.CreateSkydome(0.5f, 1, 32, 32, true);
 
-        MeshResourceBuilder builder;
-        auto resource = builder.Build(mesh);
-        HK_ASSERT(resource);
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(mesh);
+        resource->InitFromData(std::move(data), MeshLoadFlags::DontUploadToGpu);
         resource->GenerateBVH();
 
         auto file = File::sOpenWrite(path / "skydome_hemisphere.mesh");

@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Resources/Resource_Material.h>
-#include <Hork/Resources/Resource_Texture.h>
+#include <Hork/Resources/Material.h>
+#include <Hork/Resources/Texture.h>
 
 #include <Hork/Renderer/RenderDefs.h>
 
@@ -63,24 +63,20 @@ MaterialGraph   ---->  Code injections
 ---------------------------------------------------------------------------------------------------
 
 
-Material Manager                          +------ Material 0  = resource handle, textures, constants
+Material Manager                          +------ MatInstance 0  = resource handle, textures, constants
                                           |
     Material library 0     ---------------+------ ....
     Material library 1                    |
-                                          +------ Material N
+                                          +------ MatInstance N
     ....
 
 */
 
-class Material : public RefCounted
+class MatInstance final : public IntrusiveRefCounter<MatInstance>
 {
 public:
-                            Material(StringView name);
-
-    String const&           GetName() const { return m_Name; }
-
-    void                    SetResource(MaterialHandle resource) { m_Resource = resource; }
-    MaterialHandle          GetResource() const { return m_Resource; }
+    void                    SetResource(MaterialHandle resource) { m_Resource = std::move(resource); }
+    Material*               GetResource() const { return m_Resource.RawPtr(); }
 
     void                    SetTexture(uint32_t slot, TextureHandle handle);
     TextureHandle           GetTexture(uint32_t slot) const;
@@ -94,12 +90,13 @@ public:
     MaterialFrameData*      PreRender(int frameNumber);
 
 private:
-    String                  m_Name;
     MaterialHandle          m_Resource;
     TextureHandle           m_Textures[MAX_MATERIAL_TEXTURES];
     float                   m_Constants[MAX_MATERIAL_UNIFORMS] = {};
     MaterialFrameData*      m_FrameData{};
     int                     m_VisFrame = -1;
 };
+
+using MatInstanceHandle = IntrusiveRef<MatInstance>;
 
 HK_NAMESPACE_END

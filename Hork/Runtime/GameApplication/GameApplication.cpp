@@ -41,7 +41,8 @@ SOFTWARE.
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
 #include <Hork/Runtime/Renderer/WorldRenderer.h>
-#include <Hork/Resources/Resource_Sound.h>
+#include <Hork/Resources/Sound.h>
+#include <Hork/Resources/ResourceFinder.h>
 
 #if defined HK_OS_WIN32
 #include <ShlObj.h>
@@ -68,6 +69,8 @@ ConsoleVar rt_VidMode("rt_VidMode"_s, "exclusive"_s);
 ConsoleVar rt_VidMode("rt_VidMode"_s, "exclusive"_s, 0, "windowed/borderless/exclusive"_s);
 #endif
 ConsoleVar rt_SwapInterval("rt_SwapInterval"_s, "0"_s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"_s);
+
+extern RHI::IDevice* g_RenderDevice;
 
 enum
 {
@@ -269,11 +272,13 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     CreateLogicalDevice("OpenGL 4.5", &m_RenderDevice);
 
+    g_RenderDevice = m_RenderDevice;
+
     CreateMainWindowAndSwapChain();
 
     m_VertexMemoryGPU = MakeUnique<VertexMemoryGPU>(m_RenderDevice);
 
-    MeshResource::SetVertexMemoryGPU(m_VertexMemoryGPU.RawPtr());
+    Mesh::SetVertexMemoryGPU(m_VertexMemoryGPU.RawPtr());
 
     InitializeThirdPartyLibraries();
 
@@ -281,7 +286,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     m_AudioDevice = MakeRef<AudioDevice>();
 
-    SoundResource::SetDecoderProperties(m_AudioDevice->GetSampleRate(), m_AudioDevice->IsStereo());
+    Sound::SetDecoderProperties(m_AudioDevice->GetSampleRate(), m_AudioDevice->IsStereo());
 
     m_AudioMixer = MakeUnique<AudioMixer>(m_AudioDevice);
     m_AudioMixer->StartAsync();
@@ -291,6 +296,9 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
     m_Renderer = MakeUnique<WorldRenderer>();
 
     m_ResourceManager = MakeUnique<ResourceManager>();
+
+    ResourceFinderBase::SetResourceManager(m_ResourceManager.RawPtr());
+
     m_MaterialManager = MakeUnique<MaterialManager>();
 
     m_Canvas = MakeUnique<Canvas>();
@@ -319,7 +327,7 @@ GameApplication::~GameApplication()
     m_FrameLoop.Reset();
 
     // Process resource unload
-    m_ResourceManager->MainThread_Update(1);
+    m_ResourceManager->PurgeUnusedResources();
 
     m_Renderer.Reset();
 

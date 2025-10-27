@@ -268,7 +268,9 @@ Ref<AudioStream> AudioDevice::CreateStream(AudioStreamDesc const& desc)
     if (!stream)
         return {};
 
-    Ref<AudioStream> result = Ref<AudioStream>::sCreate(new AudioStream);
+    Ref<AudioStream> result;
+    result.Attach(new AudioStream);
+
     result->m_AudioStream = stream;
     return result;
 }

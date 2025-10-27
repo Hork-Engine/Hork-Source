@@ -44,7 +44,7 @@ ConsoleVar com_DrawTerrainMesh("com_DrawTerrainMesh"_s, "0"_s);
 
 void TerrainComponent::SetResource(TerrainHandle resource)
 {
-    m_Resource = resource;
+    m_Resource = std::move(resource);
 
     // TODO: update render views
 }
@@ -53,7 +53,7 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
 {
     if (com_DrawTerrainMesh)
     {
-        if (TerrainResource* resource = GameApplication::sGetResourceManager().TryGet(m_Resource))
+        if (m_Resource && !m_Resource->IsPurged())
         {
             auto* renderInterfaceImpl = GetWorld()->GetInterface<RenderInterface>().GetImpl();
 
@@ -76,7 +76,7 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
 
             vertices.Clear();
             indices.Clear();
-            resource->GatherGeometry(local_bounds, vertices, indices);
+            m_Resource->GatherGeometry(local_bounds, vertices, indices);
 
             renderer.PushTransform(transform_matrix);
             renderer.DrawTriangleSoupWireframe(vertices, indices);

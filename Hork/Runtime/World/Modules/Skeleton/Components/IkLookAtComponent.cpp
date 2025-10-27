@@ -141,15 +141,13 @@ void IkLookAtComponent::Update()
     if (!pose)
         return;
 
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    MeshResource* mesh = resourceMngr.TryGet(m_Mesh);
-    if (!mesh)
+    if (!m_Mesh || m_Mesh->IsPurged())
         return;
 
     Float3x4 worldTransformInverse = GetOwner()->GetWorldTransformMatrix().Inversed();
     Float3 targetLocalPosition = worldTransformInverse * m_TargetPosition;
 
-    UpdateLookAtIK(pose, targetLocalPosition, *mesh->GetSkeleton());
+    UpdateLookAtIK(pose, targetLocalPosition, *m_Mesh->GetSkeleton());
 }
 
 bool IkLookAtComponent::UpdateLookAtIK(SkeletonPose* pose, Float3 const& target, OzzSkeleton const& skeleton)

@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Hork/Runtime/World/WorldInterface.h>
 #include <Hork/Runtime/World/GameObject.h>
 
-#include <Hork/Resources/Resource_Sound.h>
+#include <Hork/Resources/Sound.h>
 
 #include <Hork/Audio/AudioMixer.h>
 

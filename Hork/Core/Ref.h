@@ -49,6 +49,7 @@ struct WeakRefCounter
     }
 };
 
+// DEPRECATED. Use IntrusiveRef whenever possible.
 class RefCounted
 {
 private:
@@ -117,6 +118,8 @@ InterlockedRef
 
 Reference counter is interlocked variable.
 
+DEPRECATED. Use IntrusiveRef whenever possible.
+
 */
 struct InterlockedRef : public Noncopyable
 {
@@ -158,6 +161,8 @@ Ref
 
 Shared pointer
 
+DEPRECATED. Use IntrusiveRef whenever possible.
+
 */
 template <typename T>
 class Ref final
@@ -165,9 +170,9 @@ class Ref final
 public:
     using ReferencedType = T;
 
-    Ref() = default;
+    Ref() noexcept = default;
 
-    Ref(Ref<T> const& rhs) :
+    Ref(Ref<T> const& rhs) noexcept :
         m_RawPtr(rhs.m_RawPtr)
     {
         if (m_RawPtr)
@@ -175,14 +180,14 @@ public:
     }
 
     template <typename U>
-    Ref(Ref<U> const& rhs) :
+    Ref(Ref<U> const& rhs) noexcept :
         m_RawPtr(rhs.m_RawPtr)
     {
         if (m_RawPtr)
             m_RawPtr->AddRef();
     }
 
-    explicit Ref(T* rhs) :
+    explicit Ref(T* rhs) noexcept :
         m_RawPtr(rhs)
     {
         if (m_RawPtr)
@@ -201,34 +206,34 @@ public:
             m_RawPtr->RemoveRef();
     }
 
-    T* RawPtr()
+    T* RawPtr() noexcept
     {
         return m_RawPtr;
     }
 
-    T const* RawPtr() const
+    T const* RawPtr() const noexcept
     {
         return m_RawPtr;
     }
 
-    operator T*() const
+    operator T*() const noexcept
     {
         return m_RawPtr;
     }
 
-    T& operator*() const
+    T& operator*() const noexcept
     {
         HK_ASSERT(m_RawPtr);
         return *m_RawPtr;
     }
 
-    T* operator->()
+    T* operator->() noexcept
     {
         HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 
-    T const* operator->() const
+    T const* operator->() const noexcept
     {
         HK_ASSERT(m_RawPtr);
         return m_RawPtr;
@@ -283,24 +288,18 @@ public:
 
     void Attach(T* ptr)
     {
-        if (m_RawPtr == ptr)
-            return;
-        if (m_RawPtr)
-            m_RawPtr->RemoveRef();
-        m_RawPtr = ptr;
+        if HK_LIKELY(m_RawPtr != ptr)
+        {
+            if (m_RawPtr)
+                m_RawPtr->RemoveRef();
+            m_RawPtr = ptr;
+        }
     }
 
-    T* Detach()
+    T* Detach() noexcept
     {
         T* ptr = m_RawPtr;
         m_RawPtr = nullptr;
-        return ptr;
-    }
-
-    static Ref<T> sCreate(T* rhs)
-    {
-        Ref<T> ptr;
-        ptr.Attach(rhs);
         return ptr;
     }
 
@@ -515,130 +514,12 @@ HK_FORCEINLINE bool operator==(T const* lhs, WeakRef<U> const& rhs) { return lhs
 template <typename T, typename U>
 HK_FORCEINLINE bool operator!=(T const* lhs, WeakRef<U> const& rhs) { return lhs != rhs.RawPtr(); }
 
-
 template <typename T, typename... Args>
 inline Ref<T> MakeRef(Args&&... args)
 {
-    return Ref<T>::sCreate(new T(std::forward<Args>(args)...));
-}
-
-template <typename T>
-HK_FORCEINLINE void CheckedDelete(T* Ptr)
-{
-    using type_must_be_complete = char[sizeof(T) ? 1 : -1];
-    (void)sizeof(type_must_be_complete);
-    delete Ptr;
-}
-
-template <typename T>
-class UniqueRef
-{
-public:
-    UniqueRef() = default;
-
-    explicit UniqueRef(T* ptr) :
-        m_RawPtr(ptr)
-    {}
-
-    UniqueRef(UniqueRef<T> const&) = delete;
-    UniqueRef& operator=(UniqueRef<T> const&) = delete;
-
-    template <typename U>
-    UniqueRef(UniqueRef<U>&& rhs) :
-        m_RawPtr(rhs.Detach())
-    {}
-
-    ~UniqueRef()
-    {
-        CheckedDelete(m_RawPtr);
-    }
-
-    template <typename U>
-    UniqueRef& operator=(UniqueRef<U>&& rhs)
-    {
-        Attach(rhs.Detach());
-        return *this;
-    }
-
-    T* operator->() const
-    {
-        HK_ASSERT(m_RawPtr);
-        return m_RawPtr;
-    }
-
-    T& operator*() const
-    {
-        HK_ASSERT(m_RawPtr);
-        return *m_RawPtr;
-    }
-
-    template <typename U>
-    bool operator==(UniqueRef<U> const& rhs)
-    {
-        return m_RawPtr == rhs.m_RawPtr;
-    }
-
-    template <typename U>
-    bool operator!=(UniqueRef<U> const& rhs)
-    {
-        return m_RawPtr != rhs.m_RawPtr;
-    }
-
-    operator bool() const
-    {
-        return m_RawPtr != nullptr;
-    }
-
-    T* RawPtr() const
-    {
-        return m_RawPtr;
-    }
-
-    void Reset()
-    {
-        CheckedDelete(m_RawPtr);
-        m_RawPtr = nullptr;
-    }
-
-    void Attach(T* ptr)
-    {
-        CheckedDelete(m_RawPtr);
-        m_RawPtr = ptr;
-    }
-
-    T* Detach()
-    {
-        T* ptr = m_RawPtr;
-        m_RawPtr = nullptr;
-        return ptr;
-    }
-
-private:
-    T* m_RawPtr{};
-};
-
-template <typename T, typename... Args>
-UniqueRef<T> MakeUnique(Args&&... args)
-{
-    return UniqueRef<T>(new T(std::forward<Args>(args)...));
-}
-
-template <typename T>
-Ref<T> GetSharedInstance()
-{
-    static WeakRef<T> weakPtr;
-    Ref<T>            strongPtr;
-
-    if (weakPtr.IsExpired())
-    {
-        strongPtr = MakeRef<T>();
-        weakPtr   = strongPtr;
-    }
-    else
-    {
-        strongPtr = weakPtr;
-    }
-    return strongPtr;
+    Ref<T> ptr;
+    ptr.Attach(new T(std::forward<Args>(args)...));
+    return ptr;
 }
 
 HK_NAMESPACE_END

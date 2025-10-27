@@ -173,7 +173,7 @@ void SampleApplication::OnVideoFrameUpdated(uint8_t const* data, uint32_t width,
 
 void SampleApplication::OnStartPlay()
 {
-    sGetResourceManager().MainThread_WaitResourceArea(m_Resources);
+    sGetResourceManager().WaitForBatch(BATCH_LEVEL_RESOURCES);
 
     m_Desktop->SetFullscreenWidget(m_Viewport);
     m_Desktop->SetFocusWidget(m_Viewport);
@@ -223,25 +223,18 @@ void SampleApplication::CreateResources()
 
     materialMngr.LoadLibrary("/Root/default/materials/default.mlib");
 
-    // List of resources used in scene
-    ResourceID sceneResources[] = {
-        resourceMngr.GetResource<MeshResource>("/Root/default/sphere.mesh"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/default_sslr.mat"),
-        resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/unlit_clamped.mat"),
-        resourceMngr.GetResource<TextureResource>("/Root/blank512.webp"),
-        resourceMngr.GetResource<TextureResource>("/Root/dirt.png")
-    };
-
     // Load resources asynchronously
-    m_Resources = resourceMngr.CreateResourceArea(sceneResources);
-    resourceMngr.LoadArea(m_Resources);
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/default_sslr.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Material>(BATCH_LEVEL_RESOURCES, "/Root/default/materials/compiled/unlit_clamped.mat"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Mesh>(BATCH_LEVEL_RESOURCES, "/Root/default/sphere.mesh"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/blank512.webp"));
+    m_LevelResources.EmplaceBack(resourceMngr.LoadAsync<Texture>(BATCH_LEVEL_RESOURCES, "/Root/dirt.png"));
 }
 
 void SampleApplication::CreateScene()
 {
     auto& resourceMngr = GameApplication::sGetResourceManager();
-    auto& materialMngr = GameApplication::sGetMaterialManager();
 
     {
         GameObjectDesc desc;
@@ -254,25 +247,23 @@ void SampleApplication::CreateScene()
         RawMesh rawMesh;
         rawMesh.CreatePlaneXY(16.0f/4, 9.0f/4, Float2(1,1));
 
-        MeshResourceBuilder builder;
-        UniqueRef<MeshResource> quadMesh = builder.Build(rawMesh);
-        if (quadMesh)
-            quadMesh->Upload(sGetRenderDevice());
+        MeshHandle resource(new Mesh);
+        auto data = MakeUnique<MeshData>();
+        data->FromRawMesh(rawMesh);
 
-        auto surfaceHandle = resourceMngr.CreateResourceWithData<MeshResource>("monitor_surface", std::move(quadMesh));
+        resource->InitFromData(std::move(data));
 
-        face->SetMesh(surfaceHandle);
+        face->SetMesh(resource);
         face->SetLocalBoundingBox(rawMesh.CalcBoundingBox());
 
         m_GifPlayer.Open("/Root/airplane.gif");
         m_GifPlayer.SetLoop(true);
         m_GifPlayer.E_OnImageUpdate.Bind(this, &SampleApplication::OnVideoFrameUpdated);
 
-        Ref<MaterialLibrary> matlib = materialMngr.CreateLibrary();
-        Material* material = matlib->CreateMaterial("cinematic_surface");
-        material->SetResource(resourceMngr.GetResource<MaterialResource>("/Root/default/materials/compiled/unlit_clamped.mat"));
-        material->SetTexture(0, m_GifPlayer.GetTextureHandle());
-        face->SetMaterial(material);
+        MatInstanceHandle matInstance(new MatInstance);
+        matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/unlit_clamped.mat"));
+        matInstance->SetTexture(0, m_GifPlayer.GetTextureHandle());
+        face->SetMaterial(std::move(matInstance));
     }
 
     // Light

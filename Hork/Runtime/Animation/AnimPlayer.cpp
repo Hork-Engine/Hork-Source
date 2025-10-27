@@ -129,10 +129,9 @@ uint32_t AnimPlayer_Clip::Tick(AnimPlayerContext& context)
 {
     Super::Tick(context);
 
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (AnimationResource* animation = resourceMngr.TryGet(m_AnimClip))
+    if (m_AnimClip && !m_AnimClip->IsPurged())
     {
-        m_Duration = animation->GetDuration();
+        m_Duration = m_AnimClip->GetDuration();
     }
     else
     {
@@ -900,7 +899,7 @@ void AnimationPlayer::CreatePlayerNode(BuildContext& context, uint16_t id) const
     {
         auto& resourceMngr = GameApplication::sGetResourceManager();
         auto player = context.GetNode<AnimPlayer_Clip>(id);
-        player->m_AnimClip = resourceMngr.GetResource<AnimationResource>(&m_AnimGraph->GetClips()[node->NodeClip.ClipIDOffset]);
+        player->m_AnimClip = resourceMngr.Acquire<Animation>(&m_AnimGraph->GetClips()[node->NodeClip.ClipIDOffset]);
         break;
     }
     case AnimGraph_NodeType::Blend:
@@ -1047,16 +1046,15 @@ struct AnimationMixerContext
     }
 };
 
-void Sample(AnimationMixerContext& context, AnimationSampleContext* samplingContext, SoaTransform* pose, AnimationHandle animClip, float phase)
+void Sample(AnimationMixerContext& context, AnimationSampleContext* samplingContext, SoaTransform* pose, Animation* animClip, float phase)
 {
-    auto& resourceMngr = GameApplication::sGetResourceManager();
-    if (AnimationResource* animation = resourceMngr.TryGet(animClip))
+    if (animClip && !animClip->IsPurged())
     {
         if (static_cast<uint32_t>(samplingContext->max_soa_tracks()) != context.SoaJointCount)
             samplingContext->Resize(context.Skeleton->num_joints());
 
         ozz::animation::SamplingJob samplingJob;
-        samplingJob.animation = animation->GetImpl();
+        samplingJob.animation = animClip->GetImpl();
         samplingJob.context = samplingContext;
         samplingJob.ratio = phase;
         samplingJob.output = ozz::span{pose, context.SoaJointCount};
@@ -1158,7 +1156,7 @@ void AnimationPlayer::Tick(float timeStep, AnimationParameterSet* parameterSet, 
                 //LOG("{} Job [Sample]: {} phase {})\n", jobID, clip->m_Clip, clip->m_Phase);
 
                 clip->Pose = mixerContext.AllocatePose();
-                Sample(mixerContext, clip->m_SamplingContext.get(), clip->Pose, clip->m_Clip, clip->m_Phase);
+                Sample(mixerContext, clip->m_SamplingContext.get(), clip->Pose, clip->m_Clip.RawPtr(), clip->m_Phase);
                 break;
             }
             case AnimJobType::Blend:

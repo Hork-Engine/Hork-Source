@@ -33,11 +33,11 @@ SOFTWARE.
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/Modules/Render/ProceduralMesh.h>
 #include <Hork/Runtime/World/Modules/Skeleton/Components/SkeletonPoseComponent.h>
-#include <Hork/Runtime/Materials/Material.h>
+#include <Hork/Runtime/Materials/MatInstance.h>
 #include <Hork/Runtime/World/GameObject.h>
 #include <Hork/Runtime/World/World.h>
 
-#include <Hork/Resources/Resource_Mesh.h>
+#include <Hork/Resources/Mesh.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -50,9 +50,9 @@ public:
     void                        SetProceduralMesh(ProceduralMesh* proceduralMesh) { m_ProceduralData = proceduralMesh; }
     ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData; }
 
-    void                        SetMaterial(Material* material);
-    void                        SetMaterial(uint32_t index, Material* material);
-    Material*                   GetMaterial(uint32_t index);
+    void                        SetMaterial(MatInstanceHandle material);
+    void                        SetMaterial(uint32_t index, MatInstanceHandle material);
+    MatInstance*                GetMaterial(uint32_t index);
     void                        SetMaterialCount(uint32_t count);
     uint32_t                    GetMaterialCount() const;
 
@@ -82,7 +82,7 @@ public:
 
 protected:
     MeshHandle                  m_Resource;
-    Vector<Ref<Material>>       m_Materials; // NOTE: pointers will be replaced by handles!
+    Vector<MatInstanceHandle>   m_MatInstances;
     Ref<ProceduralMesh>         m_ProceduralData;
     uint8_t                     m_VisibilityLayer = 0;
     bool                        m_Outline = false;

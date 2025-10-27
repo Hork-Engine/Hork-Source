@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -28,67 +28,63 @@ SOFTWARE.
 
 */
 
-#include "Resource_Terrain.h"
+#include "Terrain.h"
 
-#include <Hork/Core/Logger.h>
 #include <Hork/Geometry/BV/BvIntersect.h>
 
 HK_NAMESPACE_BEGIN
 
-void DownsampleHeightMap(int inSourceResolution, const float* inSourceMap, float* outDestMap)
+namespace
 {
-    HK_ASSERT((inSourceResolution & 1) == 0);
-
-    float h1, h2, h3, h4;
-    int x, y;
-
-    int lod_resolution = inSourceResolution >> 1;
-
-    for (y = 0; y < lod_resolution; y++)
+    void DownsampleHeightMap(int inSourceResolution, const float* inSourceMap, float* outDestMap)
     {
-        int src_y = y << 1;
-        for (x = 0; x < lod_resolution; x++)
+        HK_ASSERT((inSourceResolution & 1) == 0);
+
+        float h1, h2, h3, h4;
+        int x, y;
+
+        int lod_resolution = inSourceResolution >> 1;
+
+        for (y = 0; y < lod_resolution; y++)
         {
-            int src_x = x << 1;
-            h1 = inSourceMap[src_y * inSourceResolution + src_x];
-            h2 = inSourceMap[src_y * inSourceResolution + src_x + 1];
-            h3 = inSourceMap[(src_y + 1) * inSourceResolution + src_x];
-            h4 = inSourceMap[(src_y + 1) * inSourceResolution + src_x + 1];
+            int src_y = y << 1;
+            for (x = 0; x < lod_resolution; x++)
+            {
+                int src_x = x << 1;
+                h1 = inSourceMap[src_y * inSourceResolution + src_x];
+                h2 = inSourceMap[src_y * inSourceResolution + src_x + 1];
+                h3 = inSourceMap[(src_y + 1) * inSourceResolution + src_x];
+                h4 = inSourceMap[(src_y + 1) * inSourceResolution + src_x + 1];
 
-            float result = 0;
-            float count = 0;
-            if (h1 != FLT_MAX)
-                result += h1, count++;
-            if (h2 != FLT_MAX)
-                result += h2, count++;
-            if (h3 != FLT_MAX)
-                result += h3, count++;
-            if (h4 != FLT_MAX)
-                result += h4, count++;
+                float result = 0;
+                float count = 0;
+                if (h1 != FLT_MAX)
+                    result += h1, count++;
+                if (h2 != FLT_MAX)
+                    result += h2, count++;
+                if (h3 != FLT_MAX)
+                    result += h3, count++;
+                if (h4 != FLT_MAX)
+                    result += h4, count++;
 
-            if (count > 0)
-                result /= count;
-            else
-                result = FLT_MAX;
+                if (count > 0)
+                    result /= count;
+                else
+                    result = FLT_MAX;
 
-            outDestMap[y * lod_resolution + x] = result;
+                outDestMap[y * lod_resolution + x] = result;
+            }
         }
     }
 }
 
-TerrainResource::~TerrainResource()
+void TerrainData::GenerateLods(/* TODO: Add region */)
 {
+    for (int i = 1; i < m_NumLods; i++)
+        DownsampleHeightMap(1 << (m_NumLods - i), (const float*)m_Lods[i - 1].GetData(), (float*)m_Lods[i].GetData());
 }
 
-UniqueRef<TerrainResource> TerrainResource::sLoad(IBinaryStreamReadInterface& stream)
-{
-    UniqueRef<TerrainResource> resource = MakeUnique<TerrainResource>();
-    if (!resource->Read(stream))
-        return {};
-    return resource;
-}
-
-bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
+UniqueRef<TerrainData> Terrain::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
 {
     //uint32_t fileMagic = stream.ReadUInt32();
 
@@ -100,105 +96,69 @@ bool TerrainResource::Read(IBinaryStreamReadInterface& stream)
 
     // TODO: read heightmap
 
-    #if 0
+#if 0
     Allocate(1024, stream.AsBlob().GetData());
-    #endif
+#endif
 
-    Allocate(1024);
+    UniqueRef<TerrainData> data = MakeUnique<TerrainData>();
+    data->Allocate(1024);
 
-    return true;
+    return data;
 }
 
-void TerrainResource::Upload(RHI::IDevice* device)
-{}
-
-void TerrainResource::Allocate(uint32_t resolution, float const* data)
+void Terrain::InitFromData(UniqueRef<TerrainData> data)
 {
-    HK_ASSERT(IsPowerOfTwo(resolution));
+    if (!data)
+        return;
 
-    m_Resolution = resolution;
+    m_Data = std::move(*data);
 
-    // Calc clipping region
-    int halfResolutionX = m_Resolution >> 1;
-    int halfResolutionY = m_Resolution >> 1;
-    m_ClipMin.X = halfResolutionX;
-    m_ClipMin.Y = halfResolutionY;
-    m_ClipMax.X = halfResolutionX - 1;
-    m_ClipMax.Y = halfResolutionY - 1;
-
-    // Calc bounding box
-    m_BoundingBox.Mins.X = -m_ClipMin.X;
-    m_BoundingBox.Mins.Y = 0;
-    m_BoundingBox.Mins.Z = -m_ClipMin.Y;
-    m_BoundingBox.Maxs.X = m_ClipMax.X;
-    m_BoundingBox.Maxs.Y = 0;
-    m_BoundingBox.Maxs.Z = m_ClipMax.Y;
-
-    // Allocate memory for terrain lods
-    size_t totalMemoryAllocated{};
-    m_NumLods = Math::Log2(m_Resolution) + 1;
-    m_Lods.Resize(m_NumLods);
-    for (int i = 0; i < m_NumLods; i++)
-    {
-        int sz = 1 << (m_NumLods - i - 1);
-        size_t size = sz * sz * sizeof(float);
-        if (i == 0)
-            m_Lods[i].Reset(size, data);
-        else
-            m_Lods[i].Reset(size);
-        if (data == nullptr)
-            m_Lods[i].ZeroMem();
-        totalMemoryAllocated += size;
-    }
-
-    if (data)
-    {
-        GenerateLods();
-
-        float minHeight = std::numeric_limits<float>::max();
-        float maxHeight = -std::numeric_limits<float>::max();
-        for (int y = 0; y < m_Resolution; y++)
-            for (int x = 0; x < m_Resolution; x++)
-            {
-                float h = data[y * m_Resolution + x];
-                if (h != FLT_MAX)
-                {
-                    minHeight = Math::Min(h, minHeight);
-                    maxHeight = Math::Max(h, maxHeight);
-                }
-            }
-
-        // Update vertical bounds
-        m_BoundingBox.Mins.Y = minHeight;
-        m_BoundingBox.Maxs.Y = maxHeight;
-    }
-
-    LOG("Terrain height field memory usage: {} KB\n", totalMemoryAllocated >> 10);
+    m_IsPurged = false;
 }
 
-bool TerrainResource::WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData)
+void Terrain::Load(IBinaryStreamReadInterface& stream)
+{
+    auto tempData = BeginAsyncLoad(stream);
+    if (tempData)
+        InitFromData(std::move(tempData));
+}
+
+void Terrain::Write(IBinaryStreamWriteInterface& stream)
+{
+    // TODO
+}
+
+void Terrain::Purge()
+{
+    m_Data.m_Lods.Free();
+   
+    m_IsPurged = true;
+}
+
+void Terrain::Allocate(uint32_t resolution, float const* data)
+{
+    m_Data.Allocate(resolution, data);
+
+    m_IsPurged = false;
+}
+
+bool Terrain::WriteData(uint32_t locationX, uint32_t locationY, uint32_t width, uint32_t height, const void* pData)
 {
     // TODO
     return true;
 }
 
-void TerrainResource::GenerateLods(/* TODO: Add region */)
-{
-    for (int i = 1; i < m_NumLods; i++)
-        DownsampleHeightMap(1 << (m_NumLods - i), (const float*)m_Lods[i - 1].GetData(), (float*)m_Lods[i].GetData());
-}
-
-float TerrainResource::Sample(float x, float z) const
+float Terrain::Sample(float x, float z) const
 {
     float minX = Math::Floor(x);
     float minZ = Math::Floor(z);
 
-    int quadX = minX + (m_Resolution >> 1);
-    int quadZ = minZ + (m_Resolution >> 1);
+    int quadX = minX + (m_Data.m_Resolution >> 1);
+    int quadZ = minZ + (m_Data.m_Resolution >> 1);
 
-    if (quadX < 0 || quadX >= m_Resolution - 1)
+    if (quadX < 0 || quadX >= m_Data.m_Resolution - 1)
         return 0.0f;
-    if (quadZ < 0 || quadZ >= m_Resolution - 1)
+    if (quadZ < 0 || quadZ >= m_Data.m_Resolution - 1)
         return 0.0f;
 
     /*
@@ -213,10 +173,10 @@ float TerrainResource::Sample(float x, float z) const
 
     */
 
-    const float* data = (const float*)m_Lods[0].GetData();
+    const float* data = (const float*)m_Data.m_Lods[0].GetData();
 
-    float h1 = data[quadZ * m_Resolution + quadX + 1];
-    float h3 = data[(quadZ + 1) * m_Resolution + quadX];
+    float h1 = data[quadZ * m_Data.m_Resolution + quadX + 1];
+    float h3 = data[(quadZ + 1) * m_Data.m_Resolution + quadX];
 
     if (h1 == FLT_MAX || h3 == FLT_MAX)
         return 0;
@@ -227,7 +187,7 @@ float TerrainResource::Sample(float x, float z) const
     fz = 1.0f - fz;
     if (fx >= fz)
     {
-        float h2 = data[(quadZ + 1) * m_Resolution + quadX + 1];
+        float h2 = data[(quadZ + 1) * m_Data.m_Resolution + quadX + 1];
         if (h2 == FLT_MAX)
             return 0;
         float u = fz;
@@ -237,7 +197,7 @@ float TerrainResource::Sample(float x, float z) const
     }
     else
     {
-        float h0 = data[quadZ * m_Resolution + quadX];
+        float h0 = data[quadZ * m_Data.m_Resolution + quadX];
         if (h0 == FLT_MAX)
             return 0;
         float u = fz - fx;
@@ -247,33 +207,33 @@ float TerrainResource::Sample(float x, float z) const
     }
 }
 
-float TerrainResource::Fetch(int x, int z, int lod) const
+float Terrain::Fetch(int x, int z, int lod) const
 {
-    if (lod < 0 || lod >= m_NumLods)
+    if (lod < 0 || lod >= m_Data.m_NumLods)
         return 0.0f;
 
     int sampleX = x >> lod;
     int sampleY = z >> lod;
 
-    int lodResoultion = 1 << (m_NumLods - lod - 1);
+    int lodResoultion = 1 << (m_Data.m_NumLods - lod - 1);
 
     sampleX = Math::Clamp(sampleX + (lodResoultion >> 1), 0, (lodResoultion - 1));
     sampleY = Math::Clamp(sampleY + (lodResoultion >> 1), 0, (lodResoultion - 1));
-    return ((const float*)m_Lods[lod].GetData())[sampleY * lodResoultion + sampleX];
+    return ((const float*)m_Data.m_Lods[lod].GetData())[sampleY * lodResoultion + sampleX];
 }
 
-bool TerrainResource::GetTriangleVertices(float x, float z, Float3& outV0, Float3& outV1, Float3& outV2) const
+bool Terrain::GetTriangleVertices(float x, float z, Float3& outV0, Float3& outV1, Float3& outV2) const
 {
     float minX = Math::Floor(x);
     float minZ = Math::Floor(z);
 
-    int quadX = minX + (m_Resolution >> 1);
-    int quadZ = minZ + (m_Resolution >> 1);
+    int quadX = minX + (m_Data.m_Resolution >> 1);
+    int quadZ = minZ + (m_Data.m_Resolution >> 1);
 
-    if (quadX < 0 || quadX >= m_Resolution - 1)
+    if (quadX < 0 || quadX >= m_Data.m_Resolution - 1)
         return false;
 
-    if (quadZ < 0 || quadZ >= m_Resolution - 1)
+    if (quadZ < 0 || quadZ >= m_Data.m_Resolution - 1)
         return false;
 
     /*
@@ -288,12 +248,12 @@ bool TerrainResource::GetTriangleVertices(float x, float z, Float3& outV0, Float
 
     */
 
-    const float* data = (const float*)m_Lods[0].GetData();
+    const float* data = (const float*)m_Data.m_Lods[0].GetData();
 
-    float h0 = data[quadZ * m_Resolution + quadX];
-    float h1 = data[quadZ * m_Resolution + quadX + 1];
-    float h2 = data[(quadZ + 1) * m_Resolution + quadX + 1];
-    float h3 = data[(quadZ + 1) * m_Resolution + quadX];
+    float h0 = data[quadZ * m_Data.m_Resolution + quadX];
+    float h1 = data[quadZ * m_Data.m_Resolution + quadX + 1];
+    float h2 = data[(quadZ + 1) * m_Data.m_Resolution + quadX + 1];
+    float h3 = data[(quadZ + 1) * m_Data.m_Resolution + quadX];
 
     float maxX = minX + 1.0f;
     float maxZ = minZ + 1.0f;
@@ -333,7 +293,7 @@ bool TerrainResource::GetTriangleVertices(float x, float z, Float3& outV0, Float
     return true;
 }
 
-bool TerrainResource::GetNormal(float x, float z, Float3& outNormal) const
+bool Terrain::GetNormal(float x, float z, Float3& outNormal) const
 {
     Float3 v0, v1, v2;
     if (!GetTriangleVertices(x, z, v0, v1, v2))
@@ -342,9 +302,9 @@ bool TerrainResource::GetNormal(float x, float z, Float3& outNormal) const
     return true;
 }
 
-bool TerrainResource::GetTexcoord(float x, float z, Float2& outTexcoord) const
+bool Terrain::GetTexcoord(float x, float z, Float2& outTexcoord) const
 {
-    const float invResolution = 1.0f / m_Resolution;
+    const float invResolution = 1.0f / m_Data.m_Resolution;
 
     outTexcoord.X = Math::Clamp(x * invResolution + 0.5f, 0.0f, 1.0f);
     outTexcoord.Y = Math::Clamp(z * invResolution + 0.5f, 0.0f, 1.0f);
@@ -352,9 +312,9 @@ bool TerrainResource::GetTexcoord(float x, float z, Float2& outTexcoord) const
     return true;
 }
 
-void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
+void Terrain::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vector<Float3>& outVertices, Vector<unsigned int>& outIndices) const
 {
-    if (!BvBoxOverlapBox(m_BoundingBox, inLocalBounds))
+    if (!BvBoxOverlapBox(m_Data.m_BoundingBox, inLocalBounds))
         return;
 
     float minX = Math::Floor(inLocalBounds.Mins.X);
@@ -364,7 +324,7 @@ void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vect
     float minY = inLocalBounds.Mins.Y;
     float maxY = inLocalBounds.Maxs.Y;
 
-    int halfResolution = m_Resolution >> 1;
+    int halfResolution = m_Data.m_Resolution >> 1;
 
     int minQuadX = minX + halfResolution;
     int minQuadZ = minZ + halfResolution;
@@ -373,19 +333,19 @@ void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vect
 
     minQuadX = Math::Max(minQuadX, 0);
     minQuadZ = Math::Max(minQuadZ, 0);
-    maxQuadX = Math::Min(maxQuadX, (int)m_Resolution - 1);
-    maxQuadZ = Math::Min(maxQuadZ, (int)m_Resolution - 1);
+    maxQuadX = Math::Min(maxQuadX, (int)m_Data.m_Resolution - 1);
+    maxQuadZ = Math::Min(maxQuadZ, (int)m_Data.m_Resolution - 1);
 
     int n = outVertices.Size();
 
-    const float* data = (const float*)m_Lods[0].GetData();
+    const float* data = (const float*)m_Data.m_Lods[0].GetData();
 
     for (int qz = minQuadZ; qz < maxQuadZ; qz++)
     {
         float z = qz - halfResolution;
 
-        float h0 = data[qz * m_Resolution + minQuadX];
-        float h3 = data[(qz + 1) * m_Resolution + minQuadX];
+        float h0 = data[qz * m_Data.m_Resolution + minQuadX];
+        float h3 = data[(qz + 1) * m_Data.m_Resolution + minQuadX];
 
         for (int qx = minQuadX; qx < maxQuadX; qx++)
         {
@@ -403,8 +363,8 @@ void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vect
 
             */
 
-            float h1 = data[qz * m_Resolution + qx + 1];
-            float h2 = data[(qz + 1) * m_Resolution + qx + 1];
+            float h1 = data[qz * m_Data.m_Resolution + qx + 1];
+            float h2 = data[(qz + 1) * m_Data.m_Resolution + qx + 1];
 
             // Check shared vertices
             if (h1 != FLT_MAX && h3 != FLT_MAX)
@@ -414,8 +374,8 @@ void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vect
                 // Triangle h0 h3 h1
                 if (h0 != FLT_MAX &&
                     ((h0 >= minY && h0 <= maxY) ||
-                     (h3 >= minY && h3 <= maxY) ||
-                     (h1 >= minY && h1 <= maxY)))
+                        (h3 >= minY && h3 <= maxY) ||
+                        (h1 >= minY && h1 <= maxY)))
                 {
                     // emit triangle
 
@@ -434,8 +394,8 @@ void TerrainResource::GatherGeometry(BvAxisAlignedBox const& inLocalBounds, Vect
                 // Triangle h1 h3 h2
                 if (h2 != FLT_MAX &&
                     ((h1 >= minY && h1 <= maxY) ||
-                     (h3 >= minY && h3 <= maxY) ||
-                     (h2 >= minY && h2 <= maxY)))
+                        (h3 >= minY && h3 <= maxY) ||
+                        (h2 >= minY && h2 <= maxY)))
                 {
                     // emit triangle
                     if (firstTriangleCut)

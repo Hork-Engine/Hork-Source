@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Core/SmallString.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/Math/Quat.h>
 #include <Hork/Geometry/VertexFormat.h>
 #include <Hork/Geometry/BV/BvAxisAlignedBox.h>
