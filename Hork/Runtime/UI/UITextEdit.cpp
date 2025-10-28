@@ -644,7 +644,7 @@ bool UITextEdit::HasSelection() const
 
 UIScroll* UITextEdit::GetScroll()
 {
-    return dynamic_cast<UIScroll*>(m_Parent.RawPtr());
+    return m_Parent->CastToScroll();
 }
 
 void UITextEdit::ScrollHome()

@@ -48,6 +48,7 @@ option(BUILD_SHARED_LIBS "Use shared libraries" OFF)
 if(MSVC)
     option(USE_MSVC_RUNTIME_LIBRARY_DLL "Use MSVC runtime library DLL" OFF)
 endif()
+
 macro(setup_msvc_runtime_library)
 if (MSVC)
     if (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
@@ -56,11 +57,11 @@ if (MSVC)
                       CMAKE_C_FLAGS_RELEASE
                       CMAKE_C_FLAGS_MINSIZEREL
                       CMAKE_C_FLAGS_RELWITHDEBINFO
-					  CMAKE_CXX_FLAGS
-					  CMAKE_CXX_FLAGS_DEBUG
-					  CMAKE_CXX_FLAGS_RELEASE
-					  CMAKE_CXX_FLAGS_MINSIZEREL
-					  CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+                      CMAKE_CXX_FLAGS
+                      CMAKE_CXX_FLAGS_DEBUG
+                      CMAKE_CXX_FLAGS_RELEASE
+                      CMAKE_CXX_FLAGS_MINSIZEREL
+                      CMAKE_CXX_FLAGS_RELWITHDEBINFO)
 
             if (${flag} MATCHES "/MD")
                 string(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
@@ -100,6 +101,7 @@ endmacro()
 # Compiler flags
 if(MSVC)
     set(HK_COMPILER_FLAGS
+        /GR-                # Disable RTTI
         /W4                 # Warning level 4
         /WX                 # Treat warnings as errors
         /wd4018             # Ignore signed/unsigned mismatch
@@ -116,7 +118,7 @@ if(MSVC)
         /wd4611
         /wd4714             # Ignore "force inline warning"
         /wd4996             # Ignore "deprecated functions"
-		/wd26812            # Suppress C++ code analysis warning C26812
+        /wd26812            # Suppress C++ code analysis warning C26812
         /Zc:threadSafeInit  # Thread-safe statics
         /utf-8
         /FC                 # __FILE__ contains full path
@@ -124,13 +126,14 @@ if(MSVC)
 else()
     set(HK_COMPILER_FLAGS
         -fvisibility=hidden
-        -fno-exceptions                 # Disable exceptions
-#       -Werror                         # Treat warnings as errors
-        -Wall                           # Enable all warnings
-        -Wno-unused-parameter           # Don't warn about unused parameters
-        -Wno-unused-function            # Don't warn about unused local function
-        -Wno-sign-compare               # Don't warn about about mixed signed/unsigned type comparisons
-        -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
+        -fno-rtti
+        -fno-exceptions
+#       -Werror
+        -Wall
+        -Wno-unused-parameter
+        -Wno-unused-function
+        -Wno-sign-compare
+        -Wno-strict-aliasing
         -Wno-maybe-uninitialized
         -Wno-enum-compare
         -Wno-unused-local-typedefs
@@ -138,7 +141,7 @@ else()
         -Wno-switch
         -Wno-deprecated-declarations
         )
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 endif()
 
 # Compiler defines
@@ -181,57 +184,57 @@ endfunction()
 
 # Recursive scan current source directory and group by folders. Store result in SRC.
 function(make_source_list SRC)
-	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "*.h" "*.hpp" "*.c" "*.cpp" "*.inl")
+    file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "*.h" "*.hpp" "*.c" "*.cpp" "*.inl")
 
-	foreach(FILE ${SOURCE_LIST}) 
-	  get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
+    foreach(FILE ${SOURCE_LIST}) 
+      get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 
-	  file(RELATIVE_PATH RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PARENT_DIR})
+      file(RELATIVE_PATH RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PARENT_DIR})
 
-	  string(REPLACE "/" "\\" GROUP "${RELATIVE}")
+      string(REPLACE "/" "\\" GROUP "${RELATIVE}")
 
-	  source_group("${GROUP}" FILES "${FILE}")
+      source_group("${GROUP}" FILES "${FILE}")
 
-	  #message("GROUP: " ${GROUP} " FILE: "${FILE})
-	endforeach()
-	set(${SRC} ${SOURCE_LIST} PARENT_SCOPE)
+      #message("GROUP: " ${GROUP} " FILE: "${FILE})
+    endforeach()
+    set(${SRC} ${SOURCE_LIST} PARENT_SCOPE)
 endfunction()
 
 # Recursive scan specified source directory and group by folders. Store result in SRC.
 function(make_source_list_for_directory DIR SRC)
-	file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "${DIR}/*.h" "${DIR}/*.hpp" "${DIR}/*.c" "${DIR}/*.cpp"  "${DIR}/*.inl")
-	
-	set(BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${DIR})
+    file(GLOB_RECURSE SOURCE_LIST CONFIGURE_DEPENDS "${DIR}/*.h" "${DIR}/*.hpp" "${DIR}/*.c" "${DIR}/*.cpp"  "${DIR}/*.inl")
+    
+    set(BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${DIR})
 
-	foreach(FILE ${SOURCE_LIST}) 
-	  get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
+    foreach(FILE ${SOURCE_LIST}) 
+      get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
 
-	  file(RELATIVE_PATH RELATIVE ${BASE_DIR} ${PARENT_DIR})
+      file(RELATIVE_PATH RELATIVE ${BASE_DIR} ${PARENT_DIR})
 
-	  string(REPLACE "/" "\\" GROUP "${RELATIVE}")
+      string(REPLACE "/" "\\" GROUP "${RELATIVE}")
 
-	  source_group("${GROUP}" FILES "${FILE}")
+      source_group("${GROUP}" FILES "${FILE}")
 
-	  #message("GROUP: " ${GROUP} " FILE: " ${FILE})
-	endforeach()
-	set(${SRC} ${SOURCE_LIST} PARENT_SCOPE)
+      #message("GROUP: " ${GROUP} " FILE: " ${FILE})
+    endforeach()
+    set(${SRC} ${SOURCE_LIST} PARENT_SCOPE)
 endfunction()
 
 function(make_link SOURCE DESTINATION)
-	if(WIN32)
-	  file(TO_NATIVE_PATH "${DESTINATION}" DESTINATION_NATIVE)
-	  file(TO_NATIVE_PATH "${SOURCE}" SOURCE_NATIVE)	  
-	  if (NOT EXISTS ${DESTINATION_NATIVE})
-		execute_process(
-		  COMMAND cmd /c mklink /J "${DESTINATION_NATIVE}" "${SOURCE_NATIVE}"
-		  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		)
-	  endif()
-	else()
-	  if (NOT EXISTS ${DESTINATION})
-		execute_process(COMMAND ln -s ${SOURCE} ${DESTINATION})
-	  endif()
-	endif()
+    if(WIN32)
+      file(TO_NATIVE_PATH "${DESTINATION}" DESTINATION_NATIVE)
+      file(TO_NATIVE_PATH "${SOURCE}" SOURCE_NATIVE)  
+      if (NOT EXISTS ${DESTINATION_NATIVE})
+        execute_process(
+          COMMAND cmd /c mklink /J "${DESTINATION_NATIVE}" "${SOURCE_NATIVE}"
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        )
+      endif()
+    else()
+      if (NOT EXISTS ${DESTINATION})
+        execute_process(COMMAND ln -s ${SOURCE} ${DESTINATION})
+      endif()
+    endif()
 endfunction()
 
 # Macro from Urho source code
@@ -363,6 +366,6 @@ endmacro ()
 
 
 function(install_thirdparty_includes SOURCE_PATH DESTINATION_PATH)
-	set(header_files *.h *.hpp *.inl)
-	install_header_files(DIRECTORY ${SOURCE_PATH}/ DESTINATION include/ThirdParty/${DESTINATION_PATH} FILES_MATCHING PATTERN ${header_files})
+    set(header_files *.h *.hpp *.inl)
+    install_header_files(DIRECTORY ${SOURCE_PATH}/ DESTINATION include/ThirdParty/${DESTINATION_PATH} FILES_MATCHING PATTERN ${header_files})
 endfunction()

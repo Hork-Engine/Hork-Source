@@ -448,6 +448,10 @@ public:
 
     void ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight);
 
+    virtual class UIWindow* CastToWindow() { return nullptr; }
+    virtual class UIDockWidget* CastToDockWidget() { return nullptr; }
+    virtual class UIScroll* CastToScroll() { return nullptr; }
+
 protected:
     virtual void OnKeyEvent(struct KeyEvent const& event);
 

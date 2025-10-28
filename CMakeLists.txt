@@ -6,6 +6,12 @@ option(HK_BUILD_SAMPLES "Enable samples" ON)
 
 include(hork_config.cmake)
 
+if(MSVC)
+	add_compile_options(/GR-)
+else()
+	add_compile_options(-fno-rtti)
+endif()
+
 include_directories(${CMAKE_BINARY_DIR}/include/ThirdParty)
 include_directories(.)
 

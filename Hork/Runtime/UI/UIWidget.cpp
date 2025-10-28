@@ -632,7 +632,7 @@ UIScroll* UIWidget::FindScrollWidget()
 {
     for (UIWidget* p = m_Parent; p; p = p->m_Parent)
     {
-        UIScroll* scroll = dynamic_cast<UIScroll*>(p);
+        UIScroll* scroll = p->CastToScroll();
         if (scroll && scroll->CanScroll())
         {
             return scroll;

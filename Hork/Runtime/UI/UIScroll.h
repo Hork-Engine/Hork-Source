@@ -152,6 +152,8 @@ public:
 
     bool CanScroll() const;
 
+    UIScroll* CastToScroll() override { return this; }
+
 protected:
     void OnMouseWheelEvent(struct MouseWheelEvent const& event) override;
     void OnMouseButtonEvent(struct MouseButtonEvent const& event) override;

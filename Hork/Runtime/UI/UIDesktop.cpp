@@ -161,7 +161,7 @@ void UIDesktop::UpdateGeometry(float w, float h)
             if (widget->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
                 continue;
 
-            UIWindow* window = dynamic_cast<UIWindow*>(widget);
+            UIWindow* window = widget->CastToWindow();
             if (window && window->WindowState == UIWindow::WS_MAXIMIZED)
             {
                 widget->MeasureLayout(true, true, desktopSize);
@@ -177,7 +177,7 @@ void UIDesktop::UpdateGeometry(float w, float h)
             if (widget->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
                 continue;
 
-            UIWindow* window = dynamic_cast<UIWindow*>(widget);
+            UIWindow* window = widget->CastToWindow();
             if (window && window->WindowState == UIWindow::WS_MAXIMIZED)
             {
                 widget->m_Geometry.Mins = m_Geometry.PaddedMins;
@@ -381,11 +381,9 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
         {
             // Stop dragging
 
-            UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DraggingWidget.RawPtr());
-            if (dockWidget)
+            if (UIDockWidget* dockWidget = m_DraggingWidget->CastToDockWidget())
             {
-                UIDockContainer* dockContainer = dockWidget->GetContainer();
-                if (dockContainer)
+                if (UIDockContainer* dockContainer = dockWidget->GetContainer())
                 {
                     if (dockContainer->AttachWidgetAt(dockWidget, cursorPosition.X, cursorPosition.Y))
                     {
@@ -443,7 +441,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
                 {
                     if (event.Button == VirtualKey::MouseLeftBtn && !widget->GetParent())
                     {
-                        UIWindow* window = dynamic_cast<UIWindow*>(widget);
+                        UIWindow* window = widget->CastToWindow();
 
                         if (window && window->bResizable)
                         {
@@ -482,7 +480,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct MouseButtonEvent const& event)
                     return;
                 }
 
-                UIWindow* window = dynamic_cast<UIWindow*>(widget);
+                UIWindow* window = widget->CastToWindow();
                 if (window && window->CaptionHitTest(cursorPosition.X, cursorPosition.Y))
                 {
                     StartDragging(widget);
@@ -656,7 +654,7 @@ bool UIDesktop::HandleDraggingWidget()
 
     auto const& cursorPosition = UIManager::sInstance().CursorPosition;
 
-    UIWindow* window = dynamic_cast<UIWindow*>(m_DraggingWidget.RawPtr());
+    UIWindow* window = m_DraggingWidget->CastToWindow();
     if (window && window->bResizable && !window->GetParent())
     {
         if (window->IsMaximized())
@@ -738,13 +736,11 @@ void UIDesktop::StartDragging(UIWidget* widget)
     m_DraggingCursor    = UIManager::sInstance().CursorPosition;
     m_DraggingWidgetPos = widget->m_Geometry.Mins;
 
-    UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(widget);
-    if (dockWidget)
+    if (UIDockWidget* dockWidget = widget->CastToDockWidget())
     {
         dockWidget->Size = dockWidget->m_DockSize;
 
-        UIDockContainer* dockContainer = dockWidget->GetContainer();
-        if (dockContainer)
+        if (UIDockContainer* dockContainer = dockWidget->GetContainer())
         {
             dockContainer->DetachWidget(dockWidget);
 
@@ -764,7 +760,7 @@ void UIDesktop::StartDragging(UIWidget* widget)
 //{
 //    if (m_BeginDragWidget)
 //    {
-//        UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(m_DragWidget.RawPtr());
+//        UIDockWidget* dockWidget = m_DragWidget->CastToDockWidget();
 //        if (dockWidget)
 //        {
 //            UIDockContainer* dockContainer = dockWidget->GetContainer();

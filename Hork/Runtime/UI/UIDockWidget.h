@@ -60,6 +60,8 @@ public:
 
     UIDockContainer* GetContainer() { return m_Container; }
 
+    UIDockWidget* CastToDockWidget() override { return this; }
+
 protected:
     void PostDraw(Canvas& canvas) override;
 

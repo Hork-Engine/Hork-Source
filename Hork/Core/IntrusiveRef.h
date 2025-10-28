@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
+#include <atomic>
+
 HK_NAMESPACE_BEGIN
 
 class ThreadUnsafeCounter
@@ -317,13 +319,6 @@ IntrusiveRef<T> const_pointer_cast(IntrusiveRef<U> const& r)
 {
     return IntrusiveRef<T>(const_cast<T*>(r.RawPtr()));
 }
-
-
-//template <typename T, typename U>
-//IntrusiveRef<T> dynamic_pointer_cast(IntrusiveRef<U> const& r)
-//{
-//    return IntrusiveRef<T>(dynamic_cast<T*>(r.RawPtr()));
-//}
 
 namespace Core
 {

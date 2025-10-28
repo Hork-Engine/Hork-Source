@@ -123,6 +123,8 @@ public:
 
     void Draw(Canvas& canvas) override;
 
+    UIWindow* CastToWindow() override { return this; }
+
 private:
     struct WindowLayout : UIBaseLayout
     {
