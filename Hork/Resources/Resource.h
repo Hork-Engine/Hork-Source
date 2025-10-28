@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <atomic>
+
 #include "ResourceRTTR.h"
 
 HK_NAMESPACE_BEGIN

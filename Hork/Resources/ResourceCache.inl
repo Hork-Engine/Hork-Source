@@ -64,7 +64,7 @@ std::unique_ptr<void, void(*)(void*)> ResourceCache<ResourceType>::BeginAsyncLoa
 template <typename ResourceType>
 void ResourceCache<ResourceType>::InitFromData(ResourceRef const& resource, std::unique_ptr<void, void(*)(void*)> data)
 {
-    UniqueRef<ResourceType::DataType> specialized(static_cast<ResourceType::DataType*>(data.release()));
+    UniqueRef<typename ResourceType::DataType> specialized(static_cast<typename ResourceType::DataType*>(data.release()));
 
     static_pointer_cast<ResourceType>(resource)->InitFromData(std::move(specialized));
 }
