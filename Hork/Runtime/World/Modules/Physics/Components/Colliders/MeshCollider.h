@@ -65,6 +65,7 @@ class MeshCollisionData final : public RefCounted
 
 public:
                             MeshCollisionData();
+                            ~MeshCollisionData();
 
     void                    Clear();
     void                    CreateConvexHull(ArrayView<Float3> hullVertices);
@@ -80,7 +81,6 @@ private:
 };
 
 // TODO: Move to utils?
-bool CreateConvexDecomposition(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
 bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
 
 HK_NAMESPACE_END

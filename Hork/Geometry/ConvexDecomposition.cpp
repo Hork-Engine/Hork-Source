@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include <Hork/Core/Logger.h>
 
-#include <HACD/hacdHACD.h>
-
 #include <VHACD/VHACD.h>
 
 HK_NAMESPACE_BEGIN
@@ -186,142 +184,6 @@ void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vect
     ConvexHullVerticesFromPlanes(planes.ToPtr(), planes.Size(), outVertices);
 }
 
-bool PerformConvexDecomposition(Float3 const* vertices,
-                                int vertexCount,
-                                int vertexStride,
-                                unsigned int const* indices,
-                                int indexCount,
-                                Vector<Float3>& outVertices,
-                                Vector<unsigned int>& outIndices,
-                                Vector<ConvexHullDesc>& outHulls)
-{
-    outVertices.Clear();
-    outIndices.Clear();
-    outHulls.Clear();
-
-    HK_VERIFY_R(indexCount % 3 == 0, "PerformConvexDecomposition: The number of indices must be a multiple of 3");
-
-    Vector<HACD::Vec3<HACD::Real>> points(vertexCount);
-    Vector<HACD::Vec3<long>> triangles(indexCount / 3);
-
-    byte const* srcVertices = (byte const*)vertices;
-    for (int i = 0; i < vertexCount; i++)
-    {
-        Float3 const* vertex = (Float3 const*)srcVertices;
-
-        points[i] = HACD::Vec3<HACD::Real>(vertex->X, vertex->Y, vertex->Z);
-
-        srcVertices += vertexStride;
-    }
-
-    int triangleNum = 0;
-    for (int i = 0; i < indexCount; i += 3, triangleNum++)
-    {
-        triangles[triangleNum] = HACD::Vec3<long>(indices[i], indices[i + 1], indices[i + 2]);
-    }
-
-    HACD::HACD hacd;
-    hacd.SetPoints(points.ToPtr());
-    hacd.SetNPoints(vertexCount);
-    hacd.SetTriangles(triangles.ToPtr());
-    hacd.SetNTriangles(indexCount / 3);
-    //    hacd.SetCompacityWeight( 0.1 );
-    //    hacd.SetVolumeWeight( 0.0 );
-    //    hacd.SetNClusters( 2 );                     // recommended 2
-    //    hacd.SetNVerticesPerCH( 100 );
-    //    hacd.SetConcavity( 100 );                   // recommended 100
-    //    hacd.SetAddExtraDistPoints( false );        // recommended false
-    //    hacd.SetAddNeighboursDistPoints( false );   // recommended false
-    //    hacd.SetAddFacesPoints( false );            // recommended false
-
-    hacd.SetCompacityWeight(0.1);
-    hacd.SetVolumeWeight(0.0);
-    hacd.SetNClusters(2); // recommended 2
-    hacd.SetNVerticesPerCH(100);
-    hacd.SetConcavity(0.01);               // recommended 100
-    hacd.SetAddExtraDistPoints(true);      // recommended false
-    hacd.SetAddNeighboursDistPoints(true); // recommended false
-    hacd.SetAddFacesPoints(true);          // recommended false
-
-    hacd.Compute();
-
-    int maxPointsPerCluster = 0;
-    int maxTrianglesPerCluster = 0;
-    int totalPoints = 0;
-    int totalTriangles = 0;
-
-    int numClusters = hacd.GetNClusters();
-    for (int cluster = 0; cluster < numClusters; cluster++)
-    {
-        int numPoints = hacd.GetNPointsCH(cluster);
-        int numTriangles = hacd.GetNTrianglesCH(cluster);
-
-        totalPoints += numPoints;
-        totalTriangles += numTriangles;
-
-        maxPointsPerCluster = Math::Max(maxPointsPerCluster, numPoints);
-        maxTrianglesPerCluster = Math::Max(maxTrianglesPerCluster, numTriangles);
-    }
-
-    Vector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
-    Vector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
-
-    outHulls.Resize(numClusters);
-    outVertices.Resize(totalPoints);
-    outIndices.Resize(totalTriangles * 3);
-
-    totalPoints = 0;
-    totalTriangles = 0;
-
-    for (int cluster = 0; cluster < numClusters; cluster++)
-    {
-        int numPoints = hacd.GetNPointsCH(cluster);
-        int numTriangles = hacd.GetNTrianglesCH(cluster);
-
-        hacd.GetCH(cluster, hullPoints.ToPtr(), hullTriangles.ToPtr());
-
-        ConvexHullDesc& hull = outHulls[cluster];
-        hull.FirstVertex = totalPoints;
-        hull.VertexCount = numPoints;
-        hull.FirstIndex = totalTriangles * 3;
-        hull.IndexCount = numTriangles * 3;
-        hull.Centroid.Clear();
-
-        totalPoints += numPoints;
-        totalTriangles += numTriangles;
-
-        Float3* pVertices = outVertices.ToPtr() + hull.FirstVertex;
-        for (int i = 0; i < numPoints; i++, pVertices++)
-        {
-            pVertices->X = hullPoints[i].X();
-            pVertices->Y = hullPoints[i].Y();
-            pVertices->Z = hullPoints[i].Z();
-
-            hull.Centroid += *pVertices;
-        }
-
-        hull.Centroid /= (float)numPoints;
-
-        // Adjust vertices
-        pVertices = outVertices.ToPtr() + hull.FirstVertex;
-        for (int i = 0; i < numPoints; i++, pVertices++)
-        {
-            *pVertices -= hull.Centroid;
-        }
-
-        unsigned int* pIndices = outIndices.ToPtr() + hull.FirstIndex;
-        int n = 0;
-        for (int i = 0; i < hull.IndexCount; i += 3, n++)
-        {
-            *pIndices++ = hullTriangles[n].X();
-            *pIndices++ = hullTriangles[n].Y();
-            *pIndices++ = hullTriangles[n].Z();
-        }
-    }
-
-    return !outHulls.IsEmpty();
-}
-
 bool PerformConvexDecompositionVHACD(Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
@@ -410,9 +272,9 @@ bool PerformConvexDecompositionVHACD(Float3 const* vertices,
             vhacd->GetConvexHull(i, ch);
 
             hull.FirstVertex = totalVertices;
-            hull.VertexCount = ch.m_nPoints;
+            hull.VertexCount = ch.m_points.size();
             hull.FirstIndex = totalIndices;
-            hull.IndexCount = ch.m_nTriangles * 3;
+            hull.IndexCount = ch.m_triangles.size() * 3;
             hull.Centroid[0] = ch.m_center[0];
             hull.Centroid[1] = ch.m_center[1];
             hull.Centroid[2] = ch.m_center[2];
@@ -433,17 +295,17 @@ bool PerformConvexDecompositionVHACD(Float3 const* vertices,
             Float3* pVertices = outVertices.ToPtr() + hull.FirstVertex;
             for (int v = 0; v < hull.VertexCount; v++, pVertices++)
             {
-                pVertices->X = ch.m_points[v * 3 + 0] - ch.m_center[0];
-                pVertices->Y = ch.m_points[v * 3 + 1] - ch.m_center[1];
-                pVertices->Z = ch.m_points[v * 3 + 2] - ch.m_center[2];
+                pVertices->X = ch.m_points[v * 3 + 0].mX - ch.m_center[0];
+                pVertices->Y = ch.m_points[v * 3 + 1].mY - ch.m_center[1];
+                pVertices->Z = ch.m_points[v * 3 + 2].mZ - ch.m_center[2];
             }
 
             unsigned int* pIndices = outIndices.ToPtr() + hull.FirstIndex;
-            for (int v = 0; v < hull.IndexCount; v += 3, pIndices += 3)
+            for (int v = 0; v < ch.m_triangles.size(); ++v, pIndices += 3)
             {
-                pIndices[0] = ch.m_triangles[v + 0];
-                pIndices[1] = ch.m_triangles[v + 1];
-                pIndices[2] = ch.m_triangles[v + 2];
+                pIndices[0] = ch.m_triangles[v].mI0;
+                pIndices[1] = ch.m_triangles[v].mI1;
+                pIndices[2] = ch.m_triangles[v].mI2;
             }
         }
     }

@@ -93,7 +93,6 @@ Developed for Quake-style 3D games, but it is possible to create games of other 
 * giflib
 * glslang
 * glutess
-* HACD
 * Jolt Physics
 * libwebp
 * lunasvg (freetype, plutovg as part of lunasvg)

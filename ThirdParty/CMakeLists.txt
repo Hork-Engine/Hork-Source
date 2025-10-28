@@ -59,10 +59,6 @@ set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF)
 add_subdirectory_with_folder("ThirdParty/JoltPhysics" JoltPhysics/Build)
 install_thirdparty_includes(JoltPhysics/Jolt/ Jolt)
 
-message(STATUS "HACD.................................")
-add_subdirectory_with_folder("ThirdParty" HACD)
-install_thirdparty_includes(HACD/ HACD)
-
 message(STATUS "VHACD.................................")
 add_subdirectory_with_folder("ThirdParty" VHACD)
 install_thirdparty_includes(VHACD/ VHACD)

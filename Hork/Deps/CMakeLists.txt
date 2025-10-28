@@ -23,7 +23,6 @@ add_library(${PROJECT_NAME} ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c)
 target_link_libraries(${PROJECT_NAME}
     EASTL
     fmt::fmt-header-only
-    HACD
     vhacd
     SDL3-static
     MikkTSpace

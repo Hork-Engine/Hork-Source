@@ -42,6 +42,9 @@ MeshCollisionData::MeshCollisionData() :
     m_Data(new MeshCollisionDataInternal)
 {}
 
+MeshCollisionData::~MeshCollisionData()
+{}
+
 bool MeshCollisionData::IsEmpty() const
 {
     return m_Data->m_Shape != nullptr;
@@ -118,38 +121,6 @@ void MeshCollisionData::CreateTriangleSoup(Float3 const* vertices, size_t vertex
 
     JPH::ShapeSettings::ShapeResult result;
     m_Data->m_Shape = new JPH::MeshShape(meshSettings, result);
-}
-
-bool CreateConvexDecomposition(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
-{
-    Vector<Float3> hullVertices;
-    Vector<unsigned int> hullIndices;
-    Vector<ConvexHullDesc> hulls;
-
-    if (inVertexStride <= 0)
-    {
-        LOG("CreateConvexDecomposition: invalid VertexStride\n");
-        return false;
-    }
-
-    Geometry::PerformConvexDecomposition(inVertices, inVertexCount, inVertexStride, inIndices, inIndexCount, hullVertices, hullIndices, hulls);
-    if (hulls.IsEmpty())
-    {
-        LOG("CreateConvexDecomposition: failed on convex decomposition\n");
-        return false;
-    }
-
-    for (ConvexHullDesc const& hull : hulls)
-    {
-        MeshCollider* collider;
-        object->CreateComponent(collider);
-
-        collider->OffsetPosition = hull.Centroid;
-        collider->Data = MakeRef<MeshCollisionData>();
-        collider->Data->CreateConvexHull(ArrayView<Float3>(hullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount));
-    }
-
-    return true;
 }
 
 bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)

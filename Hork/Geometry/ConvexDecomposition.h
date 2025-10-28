@@ -49,15 +49,6 @@ namespace Geometry
 
 void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vector<Float3>& outVertices, float margin = 0.01f);
 
-bool PerformConvexDecomposition(Float3 const* vertices,
-                                int vertexCount,
-                                int vertexStride,
-                                unsigned int const* indices,
-                                int indexCount,
-                                Vector<Float3>& outVertices,
-                                Vector<unsigned int>& outIndices,
-                                Vector<ConvexHullDesc>& outHulls);
-
 bool PerformConvexDecompositionVHACD(Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
