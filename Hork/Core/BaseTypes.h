@@ -108,9 +108,19 @@ HK_OS_STRING       - Operating system name (string)
 #    define HK_COMPILER_MSVC
 #endif
 
+#if defined(__MINGW64__) || defined (__MINGW32__)
+#    define HK_COMPILER_STRING "MINGW"
+#    define HK_COMPILER_MINGW
+#endif
+
 #if defined __GNUC__ && !defined __clang__
 #    define HK_COMPILER_STRING "Gnu GCC"
 #    define HK_COMPILER_GCC    1
+#endif
+
+#if defined(__clang__)
+#    define HK_COMPILER_STRING "Clang"
+#    define HK_COMPILER_CLANG
 #endif
 
 #if !defined HK_COMPILER_STRING

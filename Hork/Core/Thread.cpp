@@ -34,6 +34,9 @@ SOFTWARE.
 #    include "WindowsDefs.h"
 #    include <process.h>
 #endif
+#ifdef HK_OS_LINUX
+#   include <sys/prctl.h>
+#endif
 
 #include <thread>
 #include <chrono>
@@ -90,6 +93,69 @@ size_t Thread::sThisThreadId()
     return pthread_self();
 #endif
 }
+
+#if defined(HK_OS_WIN32)
+
+#if !defined(HK_COMPILER_MINGW) // MinGW doesn't support __try/__except)
+// Sets the current thread name in MSVC debugger
+static void RaiseThreadNameException(const char *name)
+{
+#pragma pack(push, 8)
+
+    struct THREADNAME_INFO
+    {
+        DWORD    dwType;         // Must be 0x1000.
+        LPCSTR   szName;         // Pointer to name (in user addr space).
+        DWORD    dwThreadID;     // Thread ID (-1=caller thread).
+        DWORD    dwFlags;        // Reserved for future use, must be zero.
+    };
+
+#pragma pack(pop)
+
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = name;
+    info.dwThreadID = (DWORD)-1;
+    info.dwFlags = 0;
+
+    __try
+    {
+        RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR *)&info);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+}
+#endif
+
+void Thread::sSetThreadName(const char* name)
+{
+    using SetThreadDescriptionFunc = HRESULT(WINAPI*)(HANDLE hThread, PCWSTR lpThreadDescription);
+    static SetThreadDescriptionFunc SetThreadDescription = reinterpret_cast<SetThreadDescriptionFunc>(GetProcAddress(GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription"));
+
+    if (SetThreadDescription)
+    {
+        wchar_t nameBuffer[64] = {0};
+        if (MultiByteToWideChar(CP_UTF8, 0, name, -1, nameBuffer, sizeof(nameBuffer) / sizeof(wchar_t) - 1) == 0)
+            return;
+        SetThreadDescription(GetCurrentThread(), nameBuffer);
+    }
+#if !defined(HK_COMPILER_MINGW)
+    else if (IsDebuggerPresent())
+        RaiseThreadNameException(name);
+#endif
+}
+#elif defined(HK_OS_LINUX)
+void Thread::sSetThreadName(const char *name)
+{
+    HK_ASSERT(strlen(name) < 16); // String will be truncated if it is longer
+    prctl(PR_SET_NAME, name, 0, 0, 0);
+}
+#else
+void Thread::sSetThreadName(const char *name)
+{
+}
+#endif 
 
 #ifdef HK_OS_WIN32
 

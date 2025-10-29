@@ -81,6 +81,8 @@ void VirtualTextureFeedbackAnalyzer::WaitForNewPages()
 
 void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
 {
+    Thread::sSetThreadName("VT Stream Thread");
+
     VTPageDesc quedPage;
 
     while (!m_StopStreamThread.Load())

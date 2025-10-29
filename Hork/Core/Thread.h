@@ -113,6 +113,8 @@ public:
 
     static size_t sThisThreadId();
 
+    static void sSetThreadName(const char* name);
+
     /// Sleep current thread
     static void sWaitSeconds(int seconds);
 

@@ -43,8 +43,8 @@ public:
     {
         for (size_t i = 0; i < numThreads; ++i)
         {
-            m_Workers.EmplaceBack([this]
-                                  { WorkerThread(); });
+            m_Workers.EmplaceBack([this, i]
+                                  { WorkerThread(i); });
         }
     }
 
@@ -110,8 +110,12 @@ public:
     }
 
 private:
-    void WorkerThread()
+    void WorkerThread(int threadIndex)
     {
+        char name[64];
+        Core::Sprintf(name, sizeof(name), "IO Thead %d", int(threadIndex + 1));
+        Thread::sSetThreadName(name);
+
         while (true)
         {
             std::function<void()> task;
@@ -166,7 +170,7 @@ private:
 
 ResourceManager::ResourceManager()
 {
-    const int numHardwareThreads = std::thread::hardware_concurrency();
+    const int numHardwareThreads = Thread::NumHardwareThreads;
 
     int numWorkerThreads;
     if (numHardwareThreads < 2)
