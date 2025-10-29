@@ -229,13 +229,13 @@ public:
 
     T* operator->() noexcept
     {
-        HK_ASSERT(m_RawPtr);
+        //HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 
     T const* operator->() const noexcept
     {
-        HK_ASSERT(m_RawPtr);
+        //HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 

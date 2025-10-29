@@ -207,7 +207,7 @@ public:
 
     T* operator->() const noexcept
     {
-        HK_ASSERT(m_RawPtr);
+        //HK_ASSERT(m_RawPtr);
         return m_RawPtr;
     }
 
