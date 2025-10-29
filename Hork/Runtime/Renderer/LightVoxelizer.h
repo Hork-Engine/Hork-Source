@@ -115,8 +115,6 @@ public:
     void                        DrawVoxels(DebugRenderer& renderer, Float4x4 const& cameraViewMatrix, Float4x4 const& clusterProjectionMatrix);
 
 private:
-    static void                 sVoxelizeWork(void* data);
-
     void                        VoxelizeWork(int sliceIndex);
 
     void                        TransformItemsSSE();

@@ -33,13 +33,11 @@ SOFTWARE.
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/Profiler.h>
 #include <Hork/Core/Display.h>
-#include <Hork/Core/AsyncJobManager.h>
 #include <Hork/Core/Platform.h>
 #include <Hork/RHI/CreateDevice.h>
 #include <Hork/ShaderUtils/ShaderCompiler.h>
 #include <Hork/Audio/AudioMixer.h>
 #include <Hork/Runtime/World/World.h>
-#include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
 #include <Hork/Runtime/Renderer/WorldRenderer.h>
 #include <Hork/Resources/Sound.h>
 #include <Hork/Resources/ResourceFinder.h>
@@ -50,9 +48,6 @@ SOFTWARE.
 #endif
 
 #include <SDL3/SDL.h>
-#include <ozz/base/memory/allocator.h>
-#include <Recast/RecastAlloc.h>
-#include <Detour/DetourAlloc.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -168,50 +163,6 @@ String GetApplicationUserPath()
     #endif
 }
 
-void InitializeThirdPartyLibraries()
-{
-    {
-        class OzzAllocator : public ozz::memory::Allocator
-        {
-        public:
-            void* Allocate(size_t _size, size_t _alignment) override
-            {
-                return Core::GetHeapAllocator<HEAP_MISC>().Alloc(_size, _alignment);
-            }
-
-            void Deallocate(void* _block) override
-            {
-                return Core::GetHeapAllocator<HEAP_MISC>().Free(_block);
-            }
-        };
-
-        static OzzAllocator s_OzzAllocator;
-        ozz::memory::SetDefaulAllocator(&s_OzzAllocator);
-    }
-
-    {
-        auto detourAlloc = [](size_t sizeInBytes, dtAllocHint hint)
-        {
-            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
-        };
-
-        auto recastAlloc = [](size_t sizeInBytes, rcAllocHint hint)
-        {
-            if (sizeInBytes == 0)
-                sizeInBytes = 1;
-            return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
-        };
-
-        auto dealloc = [](void* bytes)
-        {
-            Core::GetHeapAllocator<HEAP_NAVIGATION>().Free(bytes);
-        };
-
-        dtAllocSetCustom(detourAlloc, dealloc);
-        rcAllocSetCustom(recastAlloc, dealloc);
-    }
-}
-
 GlobalStringView GetWindowModeString(WindowMode mode)
 {
     switch (mode)
@@ -264,10 +215,6 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     LoadConfigFile(m_ApplicationLocalData / "config.cfg");
 
-    int jobManagerThreadCount = Thread::NumHardwareThreads ? Math::Min(Thread::NumHardwareThreads, AsyncJobManager::MAX_WORKER_THREADS) : AsyncJobManager::MAX_WORKER_THREADS;
-    m_AsyncJobManager = MakeUnique<AsyncJobManager>(jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS);
-    m_RenderFrontendJobList = m_AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
-
     ShaderCompiler::sInitialize();
 
     CreateLogicalDevice("OpenGL 4.5", &m_RenderDevice);
@@ -280,9 +227,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     Mesh::SetVertexMemoryGPU(m_VertexMemoryGPU.RawPtr());
 
-    InitializeThirdPartyLibraries();
-
-    PhysicsModule::sInitialize();
+    m_TempAllocator = MakeUnique<TempAllocator>(10 * 1024 * 1024);
 
     m_AudioDevice = MakeRef<AudioDevice>();
 
@@ -339,11 +284,9 @@ GameApplication::~GameApplication()
     m_AudioMixer.Reset();
     m_AudioDevice.Reset();
     
-    PhysicsModule::sDeinitialize();
+    m_TempAllocator.Reset();
 
     ShaderCompiler::sDeinitialize();
-
-    //Hk::ECS::Shutdown();
 
     GarbageCollector::sShutdown();
 

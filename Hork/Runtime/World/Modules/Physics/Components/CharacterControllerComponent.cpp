@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "CharacterControllerComponent.h"
 #include <Hork/Runtime/World/Modules/Physics/PhysicsInterfaceImpl.h>
-#include <Hork/Runtime/World/Modules/Physics/PhysicsModule.h>
+#include <Hork/Runtime/GameApplication/GameApplication.h>
 
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
@@ -38,6 +38,20 @@ SOFTWARE.
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 HK_NAMESPACE_BEGIN
+
+class TempAllocatorImpl final : public JPH::TempAllocator
+{
+public:
+    void* Allocate(JPH::uint inSize) override
+    {
+        return GameApplication::sGetTempAllocator()->Alloc(inSize);
+    }
+    void Free(void *inAddress, JPH::uint inSize) override
+    {
+        GameApplication::sGetTempAllocator()->Free(inAddress, inSize);
+    }
+};
+static TempAllocatorImpl  s_TempAllocator;
 
 void CharacterControllerComponent::BeginPlay()
 {
@@ -305,7 +319,7 @@ bool CharacterControllerComponent::UpdateStance(CharacterStance stance, float ma
     CharacterControllerImpl::ShapeFilter shapeFilter;
 
     return m_pImpl->SetShape(stance == CharacterStance::Standing ? m_pImpl->m_StandingShape : m_pImpl->m_CrouchingShape,
-                             maxPenetrationDepth, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::sGet().GetTempAllocator());
+                             maxPenetrationDepth, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, s_TempAllocator);
 }
 
 HK_NAMESPACE_END

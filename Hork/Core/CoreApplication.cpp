@@ -37,6 +37,7 @@ SOFTWARE.
 #include "ConsoleVar.h"
 #include "HashFunc.h"
 #include "Containers/Hash.h"
+#include "JobSystem.h"
 
 #include <malloc.h>
 #include <SDL3/SDL.h>
@@ -49,6 +50,14 @@ SOFTWARE.
 #include <fcntl.h>
 #include <signal.h>
 #endif
+
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Core/Factory.h>
+
+#include <ozz/base/memory/allocator.h>
+
+#include <Recast/RecastAlloc.h>
+#include <Detour/DetourAlloc.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -395,6 +404,118 @@ void PrintCPUFeatures()
 
 }
 
+namespace
+{
+    void JPH_Trace(const char* inFMT, ...)
+    {
+        // Format the message
+        va_list list;
+        va_start(list, inFMT);
+        char buffer[1024];
+        Core::Sprintf(buffer, sizeof(buffer), inFMT, list);
+        va_end(list);
+
+        // Print to the TTY
+        LOG("{}\n", buffer);
+    }
+
+    bool JPH_AssertFailed(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine)
+    {
+        // Print to the TTY
+        LOG("{}:{}: ({}) {}\n", inFile, inLine, inExpression, (inMessage != nullptr ? inMessage : ""));
+
+        // Breakpoint
+        return true;
+    }
+
+    void InitializeThirdParty()
+    {
+        {
+            JPH::Allocate = [](size_t inSize)
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(inSize, 0);
+                };
+            JPH::Reallocate = [](void *inBlock, size_t inOldSize, size_t inNewSize)
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Realloc(inBlock, inNewSize, 0);
+                };
+            JPH::Free = [](void* inBlock)
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Free(inBlock);
+                };
+            JPH::AlignedAllocate = [](size_t inSize, size_t inAlignment)
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(inSize, inAlignment);
+                };
+            JPH::AlignedFree = [](void* inBlock)
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Free(inBlock);
+                };
+
+            // Install callbacks
+            JPH::Trace = JPH_Trace;
+
+#ifdef JPH_ENABLE_ASSERTS
+            JPH::AssertFailed = JPH_AssertFailed;
+#endif // JPH_ENABLE_ASSERTS
+
+            // Create a factory
+            JPH::Factory::sInstance = new JPH::Factory();
+
+            // Register all Jolt physics types
+            JPH::RegisterTypes();
+        }
+
+        {
+            class OzzAllocator : public ozz::memory::Allocator
+            {
+            public:
+                void* Allocate(size_t _size, size_t _alignment) override
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Alloc(_size, _alignment);
+                }
+
+                void Deallocate(void* _block) override
+                {
+                    return Core::GetHeapAllocator<HEAP_MISC>().Free(_block);
+                }
+            };
+
+            static OzzAllocator s_OzzAllocator;
+            ozz::memory::SetDefaulAllocator(&s_OzzAllocator);
+        }
+
+        {
+            auto detourAlloc = [](size_t sizeInBytes, dtAllocHint hint)
+                {
+                    return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
+                };
+
+            auto recastAlloc = [](size_t sizeInBytes, rcAllocHint hint)
+                {
+                    if (sizeInBytes == 0)
+                        sizeInBytes = 1;
+                    return Core::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(sizeInBytes);
+                };
+
+            auto dealloc = [](void* bytes)
+                {
+                    Core::GetHeapAllocator<HEAP_NAVIGATION>().Free(bytes);
+                };
+
+            dtAllocSetCustom(detourAlloc, dealloc);
+            rcAllocSetCustom(recastAlloc, dealloc);
+        }
+    }
+
+    void DeinitializeThirdParty()
+    {
+        // Destroy the factory
+        delete JPH::Factory::sInstance;
+        JPH::Factory::sInstance = nullptr;
+    }
+}
+
 enum PROCESS_ATTRIBUTE
 {
     PROCESS_COULDNT_CHECK_UNIQUE = 1,
@@ -641,6 +762,8 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
         },
         NULL);
 
+    InitializeThirdParty();
+
     ConsoleVar::sAllocateVariables();
 
     Core::InitializeProfiler();
@@ -684,6 +807,8 @@ CoreApplication::CoreApplication(ArgumentPack const& args) :
     m_EmbeddedArchive = Archive::sOpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
     if (!m_EmbeddedArchive)
         LOG("Failed to open embedded resources\n");
+
+    JobSystem::Initialize();
 }
 
 CoreApplication::~CoreApplication()
@@ -693,13 +818,17 @@ CoreApplication::~CoreApplication()
 
 void CoreApplication::Cleanup()
 {
+    JobSystem::Deinitialize();
+
     m_EmbeddedArchive.Close();
 
     Core::ShutdownProfiler();
 
-    m_WorkingDir.Free();
+    DeinitializeThirdParty();
 
     ConsoleVar::sFreeVariables();
+
+    m_WorkingDir.Free();
 
     if (m_LogFile)
     {

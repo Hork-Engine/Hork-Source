@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "PhysicsInterfaceImpl.h"
-#include "PhysicsModule.h"
 #include "Components/StaticBodyComponent.h"
 #include "Components/DynamicBodyComponent.h"
 #include "Components/CharacterControllerComponent.h"
@@ -37,12 +36,13 @@ SOFTWARE.
 #include "Components/TriggerComponent.h"
 #include "Components/WaterVolumeComponent.h"
 
+#include <Hork/Runtime/GameApplication/GameApplication.h>
 #include <Hork/Runtime/World/DebugRenderer.h>
 
 #include <Hork/Core/Logger.h>
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/JobSystem.h>
 
-#include <Jolt/Core/JobSystemThreadPool.h>
 #include <Jolt/Geometry/OrientedBox.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
@@ -131,6 +131,20 @@ public:
         return (HK_BIT(static_cast<uint8_t>(inLayer)) & m_CollisionMask) != 0;
     }
 };
+
+class TempAllocatorImpl final : public JPH::TempAllocator
+{
+public:
+    void* Allocate(JPH::uint inSize) override
+    {
+        return GameApplication::sGetTempAllocator()->Alloc(inSize);
+    }
+    void Free(void *inAddress, JPH::uint inSize) override
+    {
+        GameApplication::sGetTempAllocator()->Free(inAddress, inSize);
+    }
+};
+static TempAllocatorImpl  s_TempAllocator;
 
 PhysicsInterfaceImpl::PhysicsInterfaceImpl() :
     m_ObjectVsObjectLayerFilter(m_CollisionFilter)
@@ -233,7 +247,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
             m_TempCompoundShapeSettings.AddShape(m_TempShapeTransform[i].Position, m_TempShapeTransform[i].Rotation.Normalized(), m_TempShapes[i]);
 
         JPH::ShapeSettings::ShapeResult result;
-        outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, *PhysicsModule::sGet().GetTempAllocator(), result);
+        outShape = new JPH::StaticCompoundShape(m_TempCompoundShapeSettings, s_TempAllocator, result);
         outShape->AddRef();
 
         m_TempCompoundShapeSettings.mSubShapes.clear();
@@ -1025,7 +1039,7 @@ void BodyActivationListener::OnBodyDeactivated(const JPH::BodyID &inBodyID, JPH:
     }
 }
 
-JPH::ValidateResult	ContactListener::OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult)
+JPH::ValidateResult ContactListener::OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult)
 {
     return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
 }
@@ -1618,7 +1632,7 @@ void PhysicsInterface::UpdateCharacterControllers()
             CharacterControllerImpl::ShapeFilter shapeFilter;
 
             // Update the character position
-            physCharacter->ExtendedUpdate(m_TimeStep, m_Gravity, updateSettings, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, *PhysicsModule::sGet().GetTempAllocator());
+            physCharacter->ExtendedUpdate(m_TimeStep, m_Gravity, updateSettings, broadphaseFilter, layerFilter, bodyFilter, shapeFilter, s_TempAllocator);
 
             owner->SetWorldPositionAndRotation(ConvertVector(physCharacter->GetPosition()), ConvertQuaternion(physCharacter->GetRotation()));
 
@@ -1907,9 +1921,8 @@ void PhysicsInterface::Update()
     // Simulation step
     {
         const int numCollisionSteps = 1;
-        auto& physicsModule = PhysicsModule::sGet();
 
-        m_pImpl->m_PhysSystem.Update(tick.FixedTimeStep, numCollisionSteps, physicsModule.GetTempAllocator(), physicsModule.GetJobSystemThreadPool());
+        m_pImpl->m_PhysSystem.Update(tick.FixedTimeStep, numCollisionSteps, &s_TempAllocator, JobSystem::GetImpl());
     }
 
     // Capture active bodies transform

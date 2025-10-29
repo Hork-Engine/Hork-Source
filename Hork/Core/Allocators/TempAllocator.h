@@ -34,40 +34,21 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-template <typename T>
-class BaseModule : public Noncopyable
+class TempAllocator final : public Noncopyable
 {
+    uint8_t*        m_Base;
+    size_t          m_Size;
+    size_t          m_Top = 0;
+
+    static constexpr int Alignment = 16;
+
 public:
-    static void sInitialize()
-    {
-        HK_ASSERT(!m_pModule);
-        if (m_pModule)
-            return;
+    explicit        TempAllocator(size_t capacity);
+                    ~TempAllocator();
 
-        m_pModule = new T;
-    }
+    void*           Alloc(size_t sizeInBytes);
 
-    static void sDeinitialize()
-    {
-        BaseModule* base = m_pModule;
-        delete base;
-        m_pModule = nullptr;
-    }
-
-    static T& sGet()
-    {
-        return *m_pModule;
-    }
-
-protected:
-    BaseModule() = default;
-    virtual ~BaseModule() = default;
-
-private:
-    static T* m_pModule;
+    void            Free(void *address, size_t sizeInBytes);
 };
-
-template <typename T>
-T* BaseModule<T>::m_pModule = {};
 
 HK_NAMESPACE_END

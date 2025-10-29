@@ -31,7 +31,7 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Hork/Runtime/GameApplication/GameApplication.h>
 
-#include <Hork/Core/AsyncJobManager.h>
+#include <Hork/Core/JobSystem.h>
 #include <Hork/Core/ConsoleVar.h>
 
 HK_NAMESPACE_BEGIN
@@ -429,19 +429,11 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* streamMemory, RenderViewData* v
 
     m_ItemCounter.StoreRelaxed(0);
 
-    VoxelizerWork works[MAX_FRUSTUM_CLUSTERS_Z];
 
-    auto* jobList = GameApplication::sGetRenderFrontendJobList();
-
-    for (int i = 0; i < MAX_FRUSTUM_CLUSTERS_Z; i++)
-    {
-        works[i].SliceIndex = i;
-        works[i].Self = this;
-
-        jobList->AddJob(sVoxelizeWork, &works[i]);
-    }
-
-    jobList->SubmitAndWait();
+    JobSystem::Dispatch(1, 1, MAX_FRUSTUM_CLUSTERS_Z, [this](JobSystem::DispatchArgs args)
+        {
+            VoxelizeWork(args.GroupZ);
+        });
 
     view->ClusterPackedIndexCount = m_ItemCounter.Load();
 
@@ -454,13 +446,6 @@ void LightVoxelizer::Voxelize(StreamedMemoryGPU* streamMemory, RenderViewData* v
 
     // Shrink ClusterItems
     streamMemory->ShrinkLastAllocatedMemoryBlock(view->ClusterPackedIndexCount * sizeof(ClusterPackedIndex));
-}
-
-void LightVoxelizer::sVoxelizeWork(void* data)
-{
-    VoxelizerWork* work = reinterpret_cast<VoxelizerWork*>(data);
-
-    work->Self->VoxelizeWork(work->SliceIndex);
 }
 
 void LightVoxelizer::VoxelizeWork(int sliceIndex)

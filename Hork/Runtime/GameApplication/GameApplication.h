@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Hork/Core/CoreApplication.h>
 #include <Hork/Core/CommandProcessor.h>
 #include <Hork/Core/Random.h>
+#include <Hork/Core/Allocators/TempAllocator.h>
 
 #include <Hork/Renderer/RenderBackend.h>
 #include <Hork/Runtime/Materials/MaterialManager.h>
@@ -46,8 +47,6 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 class World;
-class AsyncJobManager;
-class AsyncJobList;
 class AudioDevice;
 class AudioMixer;
 class WorldRenderer;
@@ -166,11 +165,6 @@ public:
         return *static_cast<GameApplication*>(sInstance())->m_RenderBackend.RawPtr();
     }
 
-    static AsyncJobList* sGetRenderFrontendJobList()
-    {
-        return static_cast<GameApplication*>(sInstance())->m_RenderFrontendJobList;
-    }
-
     static AudioDevice* sGetAudioDevice()
     {
         return static_cast<GameApplication*>(sInstance())->m_AudioDevice;
@@ -184,6 +178,11 @@ public:
     static WorldRenderer& sGetRenderer()
     {
         return *static_cast<GameApplication*>(sInstance())->m_Renderer.RawPtr();
+    }
+
+    static TempAllocator* sGetTempAllocator()
+    {
+        return static_cast<GameApplication*>(sInstance())->m_TempAllocator.RawPtr();
     }
 
 protected:
@@ -230,8 +229,7 @@ private:
     void OnResize() override final;
 
 private:
-    UniqueRef<AsyncJobManager>      m_AsyncJobManager;
-    AsyncJobList*                   m_RenderFrontendJobList{};
+    UniqueRef<TempAllocator>        m_TempAllocator;
     UniqueRef<ResourceManager>      m_ResourceManager;
     UniqueRef<MaterialManager>      m_MaterialManager;
     String                          m_Title;
