@@ -34,6 +34,9 @@ SOFTWARE.
 #include <Hork/Core/CoreApplication.h>
 #include <Hork/Core/Platform.h>
 
+#include <thread>
+#include <condition_variable>
+
 HK_NAMESPACE_BEGIN
 
 class PriorityThreadPool

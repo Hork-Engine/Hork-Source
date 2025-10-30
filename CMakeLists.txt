@@ -6,11 +6,11 @@ option(HK_BUILD_SAMPLES "Enable samples" ON)
 
 include(hork_config.cmake)
 
-if(MSVC)
-	add_compile_options(/GR-)
-else()
-	add_compile_options(-fno-rtti)
-endif()
+add_compile_options(
+    "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:GNU>>:-fno-rtti>"
+    "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:Clang>>:-fno-rtti>"
+    "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/GR->"
+)
 
 include_directories(${CMAKE_BINARY_DIR}/include/ThirdParty)
 include_directories(.)

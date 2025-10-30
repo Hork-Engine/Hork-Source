@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/UniqueRef.h>
+
 HK_NAMESPACE_BEGIN
 
 template <typename ResourceType>
@@ -53,10 +55,10 @@ IntrusiveRef<ResourceType> ResourceCache<ResourceType>::Find(StringView name)
 template <typename ResourceType>
 std::unique_ptr<void, void(*)(void*)> ResourceCache<ResourceType>::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
 {
-    UniqueRef<ResourceType::DataType> data = ResourceType::BeginAsyncLoad(stream);
+    UniqueRef<typename ResourceType::DataType> data = ResourceType::BeginAsyncLoad(stream);
     std::unique_ptr<void, void(*)(void*)> p(data.Detach(),
         [](void* ptr) {
-            delete static_cast<ResourceType::DataType*>(ptr);
+            delete static_cast<typename ResourceType::DataType*>(ptr);
         });
     return p;
 }
