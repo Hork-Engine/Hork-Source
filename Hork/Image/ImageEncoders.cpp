@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "ImageEncoders.h"
 #include <Hork/Core/ScopedTimer.h>
+#include <Hork/Core/JobSystem.h>
 
 #include <bc7enc_rdo/rgbcx.h>
 #include <bc7enc_rdo/bc7decomp.h>
@@ -396,113 +397,32 @@ void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height
 {
     ScopedTimer timer("CompressBC6h");
 
-    //uint8_t const* src = (uint8_t const*)pSrc;
-    //uint8_t*       dst = (uint8_t*)pDest;
-    //uint8_t        block[4 * 4 * 4 * sizeof(float)];
     const uint32_t blockWidth = 4;
     const uint32_t bpp        = 4 * sizeof(float);
-    //const uint32_t blockRowStride   = blockWidth * bpp;
-    //const size_t   blockSizeInBytes = 16;
     uint32_t numBlocksX = Width / blockWidth;
     uint32_t numBlocksY = Height / blockWidth;
     size_t   rowStride  = Width * bpp;
 
-    const int num_threads = 16;
-
-    Thread threads[num_threads];
-
-    struct ThreadData
-    {
-        uint32_t    firstBlock;
-        uint32_t    numBlocks;
-        uint32_t    numBlocksX;
-        uint32_t    numBlocksY;
-        size_t      rowStride;
-        void const* pSrc;
-        void*       pDest;
-        bool        bSigned;
-    };
-
-    uint32_t numBlocks       = numBlocksX * numBlocksY;
-    uint32_t blocksPerThread = numBlocks / num_threads;
-    uint32_t firstBlock      = 0;
+    uint32_t numBlocks = numBlocksX * numBlocksY;
 
     AtomicInt counter{};
 
-    ThreadData data[num_threads];
-    for (int i = 0; i < num_threads; i++)
-    {
-        data[i].firstBlock = firstBlock;
-        data[i].numBlocks  = blocksPerThread;
-        data[i].numBlocksX = numBlocksX;
-        data[i].numBlocksY = numBlocksY;
-        data[i].rowStride  = rowStride;
-        data[i].pSrc       = pSrc;
-        data[i].pDest      = pDest;
-        data[i].bSigned    = bSigned;
-        firstBlock += blocksPerThread;
-
-        threads[i] = Thread(
-            [](ThreadData& data, uint32_t numBlocks, AtomicInt& counter)
-            {
-                uint8_t block[4 * 4 * 4 * sizeof(float)];
-
-                const uint32_t blockWidth       = 4;
-                const uint32_t bpp              = 4 * sizeof(float);
-                const uint32_t blockRowStride   = blockWidth * bpp;
-                const size_t   blockSizeInBytes = 16;
-
-                for (uint32_t blockIndex = 0; blockIndex < data.numBlocks; blockIndex++)
-                {
-                    uint32_t i = blockIndex + data.firstBlock;
-
-                    uint32_t bx = i % data.numBlocksX;
-                    uint32_t by = i / data.numBlocksX;
-
-                    uint8_t*       dst = (uint8_t*)data.pDest + i * blockSizeInBytes;
-                    uint8_t const* p   = (uint8_t const*)data.pSrc + by * blockWidth * data.rowStride + bx * (blockWidth * bpp);
-
-                    memcpy(block + blockRowStride * 0, p, blockRowStride);
-                    p += data.rowStride;
-                    memcpy(block + blockRowStride * 1, p, blockRowStride);
-                    p += data.rowStride;
-                    memcpy(block + blockRowStride * 2, p, blockRowStride);
-                    p += data.rowStride;
-                    memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-                    TextureBlockCompression::Encode_BC6h_f32(block, dst, data.bSigned);
-
-                    int n = counter.Increment();
-                    if (!(n % 512))
-                        LOG("Blocks processed {} from {}\n", n, numBlocks);
-                }
-            },
-            std::ref(data[i]), numBlocks, std::ref(counter));
-    }
-
-    for (int i = 0; i < num_threads; i++)
-    {
-        threads[i].Join();
-    }
-
-    #if 0
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 4 * sizeof(float)];
-    const uint32_t blockWidth = 4;
-    const uint32_t bpp        = 4 * sizeof(float);
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 16;
-    uint32_t numBlocksX = Width / blockWidth;
-    uint32_t numBlocksY = Height / blockWidth;
-    size_t   rowStride  = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+    JobSystem::Dispatch(numBlocksX, numBlocksY, 1, [=, &counter](JobSystem::DispatchArgs args)
         {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+            uint8_t block[4 * 4 * 4 * sizeof(float)];
+
+            const uint32_t blockWidth       = 4;
+            const uint32_t bpp              = 4 * sizeof(float);
+            const uint32_t blockRowStride   = blockWidth * bpp;
+            const size_t   blockSizeInBytes = 16;
+
+            uint32_t bx = args.GroupX;
+            uint32_t by = args.GroupY;
+
+            uint32_t blockIndex = by * numBlocksX + bx;
+
+            uint8_t*       dst = (uint8_t*)pDest + blockIndex * blockSizeInBytes;
+            uint8_t const* p   = (uint8_t const*)pSrc + by * blockWidth * rowStride + bx * (blockWidth * bpp);
 
             memcpy(block + blockRowStride * 0, p, blockRowStride);
             p += rowStride;
@@ -514,10 +434,10 @@ void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height
 
             TextureBlockCompression::Encode_BC6h_f32(block, dst, bSigned);
 
-            dst += blockSizeInBytes;
-        }
-    }
-    #endif
+            int n = counter.Increment();
+            if (!(n % 512))
+                LOG("Blocks processed {} from {}\n", n, numBlocks);
+        }, 64);
 }
 
 // Input RGBA8 image, output BC7 compressed image

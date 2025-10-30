@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Hork Engine Source Code
 
@@ -85,32 +85,50 @@ namespace JobSystem
         return g_JobSystemThreadPool->GetMaxConcurrency();
     }
 
-    void DispatchBarrier(Barrier* barrier, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function)
+    void DispatchBarrier(Barrier* barrier, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function, uint32_t maxJobs)
     {
-        DispatchArgs args;
+        uint32_t totalGroups = numGroupsX * numGroupsY * numGroupsZ;
+        if (totalGroups == 0)
+            return;
 
-        for (uint32_t z = 0; z < numGroupsZ; ++z)
-            for (uint32_t y = 0; y < numGroupsY; ++y)
-                for (uint32_t x = 0; x < numGroupsX; ++x)
+        maxJobs = Math::Clamp(maxJobs, 1u, MAX_JOBS);
+
+        uint32_t groupsPerJob = std::max(1u, (totalGroups + maxJobs - 1) / maxJobs);
+
+        // Гарантируем, что не создадим больше maxJobs
+        if (groupsPerJob == 1 && totalGroups > maxJobs)
+            groupsPerJob = (totalGroups + maxJobs - 1) / maxJobs;
+
+        for (uint32_t startGroupIndex = 0; startGroupIndex < totalGroups; startGroupIndex += groupsPerJob)
+        {
+            uint32_t endGroupIndex = std::min(startGroupIndex + groupsPerJob, totalGroups);
+
+            JobHandle job = CreateJob("DispatchGroup", Color4::sWhite(), 
+                [startGroupIndex, endGroupIndex, numGroupsX, numGroupsY, numGroupsZ, function]()
                 {
-                    args.GroupX = x;
-                    args.GroupY = y;
-                    args.GroupZ = z;
+                    DispatchArgs args;
+                    for (uint32_t groupIndex = startGroupIndex; groupIndex < endGroupIndex; ++groupIndex)
+                    {
+                        args.GroupX = groupIndex % numGroupsX;
+                        args.GroupY = (groupIndex / numGroupsX) % numGroupsY;
+                        args.GroupZ = groupIndex / (numGroupsX * numGroupsY);
 
-                    JobHandle job = CreateJob("DispatchGroup", Color4::sWhite(), [args, function]()
-                        {
-                            function(args);
-                        });
+                        function(args);
+                    }
+                });
 
-                    barrier->AddJob(job);
-                }
+            barrier->AddJob(job);
+        }
     }
 
-    void Dispatch(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function)
+    void Dispatch(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function, uint32_t maxJobs)
     {
+        if (numGroupsX == 0 || numGroupsY == 0 || numGroupsZ == 0)
+            return;
+
         auto barrier = CreateBarrier();
 
-        DispatchBarrier(barrier, numGroupsX, numGroupsY, numGroupsZ, function);
+        DispatchBarrier(barrier, numGroupsX, numGroupsY, numGroupsZ, std::move(function), maxJobs);
 
         WaitForJobs(barrier);
         DestroyBarrier(barrier);

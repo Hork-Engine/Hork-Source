@@ -40,10 +40,10 @@ HK_NAMESPACE_BEGIN
 namespace JobSystem
 {
     /// Maximum amount of jobs to allow
-    constexpr int MAX_JOBS      = 2048;
+    constexpr uint32_t MAX_JOBS      = 2048;
 
     /// Maximum amount of barriers to allow
-    constexpr int MAX_BARRIERS  = 8;
+    constexpr uint32_t MAX_BARRIERS  = 8;
 
     using JobFunction = std::function<void()>;
 
@@ -60,14 +60,36 @@ namespace JobSystem
     using DispatchFunction = std::function<void(DispatchArgs)>;
 
     void            Initialize();
+
     void            Deinitialize();
+
     JobHandle       CreateJob(const char *jobName, Color4 const& color, const JobFunction &jobFunction, uint32_t numDependencies = 0);
+
     Barrier*        CreateBarrier();
+
     void            DestroyBarrier(Barrier* barrier);
+
     void            WaitForJobs(Barrier* barrier);
+
     int             GetMaxConcurrency();
-    void            DispatchBarrier(Barrier* barrier, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function);
-    void            Dispatch(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function);
+
+    void            DispatchBarrier(Barrier* barrier, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function, uint32_t maxJobs = 192);
+
+    void            Dispatch(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ, DispatchFunction function, uint32_t maxJobs = 192);
+
+    template<typename Iterator, typename Function>
+    void            ForEach(Iterator begin, Iterator end, Function function, uint32_t maxJobs = 192)
+    {
+        uint32_t count = static_cast<uint32_t>(std::distance(begin, end));
+        Dispatch(count, 1, 1,
+            [begin, function](DispatchArgs args)
+            {
+                function(*(begin + args.GroupX));
+            },
+            maxJobs
+        );
+    }
+
     JPH::JobSystem* GetImpl();
 }
 
