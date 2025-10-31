@@ -123,7 +123,7 @@ void MeshCollisionData::CreateTriangleSoup(Float3 const* vertices, size_t vertex
     m_Data->m_Shape = new JPH::MeshShape(meshSettings, result);
 }
 
-bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
+bool CreateConvexDecompositionVHACD(VHACDParameters const& inParams, GameObject* inObject, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount)
 {
     Vector<Float3> hullVertices;
     Vector<unsigned int> hullIndices;
@@ -136,7 +136,7 @@ bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices
         return {};
     }
 
-    Geometry::PerformConvexDecompositionVHACD(inVertices, inVertexCount, inVertexStride, inIndices, inIndexCount, hullVertices, hullIndices, hulls, decompositionCenterOfMass);
+    Geometry::PerformConvexDecompositionVHACD(inParams, inVertices, inVertexCount, inVertexStride, inIndices, inIndexCount, hullVertices, hullIndices, hulls, decompositionCenterOfMass);
     if (hulls.IsEmpty())
     {
         LOG("CreateConvexDecompositionVHACD: failed on convex decomposition\n");
@@ -146,7 +146,7 @@ bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices
     for (ConvexHullDesc const& hull : hulls)
     {
         MeshCollider* collider;
-        object->CreateComponent(collider);
+        inObject->CreateComponent(collider);
 
         collider->OffsetPosition = hull.Centroid;
         collider->Data.Reset(new MeshCollisionData);

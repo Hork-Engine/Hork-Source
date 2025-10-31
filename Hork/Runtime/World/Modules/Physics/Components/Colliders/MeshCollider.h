@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Hork/Core/UniqueRef.h>
 #include <Hork/Math/Quat.h>
 #include <Hork/Runtime/World/Component.h>
+#include <Hork/Geometry/ConvexDecomposition.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -82,6 +83,6 @@ private:
 };
 
 // TODO: Move to utils?
-bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
+bool CreateConvexDecompositionVHACD(VHACDParameters const& inParams, GameObject* inObject, Float3 const* inVertices, int inVertexCount, int inVertexStride, unsigned int const* inIndices, int inIndexCount);
 
 HK_NAMESPACE_END

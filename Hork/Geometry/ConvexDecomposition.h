@@ -44,12 +44,56 @@ struct ConvexHullDesc
     Float3 Centroid;
 };
 
+struct VHACDParameters
+{
+    enum class FillMode
+    {
+        /// This is the default behavior, after the voxelization step it uses a flood fill to determine 'inside'
+        /// from 'outside'. However, meshes with holes can fail and create hollow results.
+        FLOOD_FILL,
+
+        /// Only consider the 'surface', will create 'skins' with hollow centers.
+        SURFACE_ONLY,
+
+        /// Uses raycasting to determine inside from outside.
+        RAYCAST_FILL,
+    };
+
+    /// The maximum number of convex hulls to produce
+    uint32_t            MaxConvexHulls{64};
+
+    /// The voxel resolution to use
+    uint32_t            VoxelResolution{400000};
+
+    /// if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
+    double              MinimumVolumePercentErrorAllowed{1};
+
+    /// The maximum recursion depth
+    uint32_t            MaxRecursionDepth{10};
+
+    /// Whether or not to shrinkwrap the voxel positions to the source mesh on output
+    bool                ShrinkWrap{true};
+
+    /// How to fill the interior of the voxelized mesh
+    VHACDParameters::FillMode FillMode{FillMode::FLOOD_FILL};
+
+    /// The maximum number of vertices allowed in any output convex hull
+    uint32_t            MaxNumVerticesPerCH{64};
+
+    /// Once a voxel patch has an edge length of less than 2 on all 3 sides, we don't keep recursing
+    uint32_t            MinEdgeLength{2};
+
+    /// Whether or not to attempt to split planes along the best location
+    bool                FindBestPlane{false};
+};
+
 namespace Geometry
 {
 
 void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vector<Float3>& outVertices, float margin = 0.01f);
 
-bool PerformConvexDecompositionVHACD(Float3 const* vertices,
+bool PerformConvexDecompositionVHACD(VHACDParameters const& params,
+                                     Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
                                      unsigned int const* indices,

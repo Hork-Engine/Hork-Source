@@ -184,7 +184,8 @@ void BakeCollisionMarginConvexHull(Float3 const* vertices, int vertexCount, Vect
     ConvexHullVerticesFromPlanes(planes.ToPtr(), planes.Size(), outVertices);
 }
 
-bool PerformConvexDecompositionVHACD(Float3 const* vertices,
+bool PerformConvexDecompositionVHACD(VHACDParameters const& inParams,
+                                     Float3 const* vertices,
                                      int vertexCount,
                                      int vertexStride,
                                      unsigned int const* indices,
@@ -220,19 +221,25 @@ bool PerformConvexDecompositionVHACD(Float3 const* vertices,
     VHACD::IVHACD* vhacd = VHACD::CreateVHACD();
 
     VHACD::IVHACD::Parameters params;
-    params.m_callback = &callback;                   // Optional user provided callback interface for progress
-    params.m_logger = &logger;                       // Optional user provided callback interface for log messages
-    params.m_taskRunner = nullptr;                   // Optional user provided interface for creating tasks
-    params.m_maxConvexHulls = 64;                    // The maximum number of convex hulls to produce
-    params.m_resolution = 400000;                    // The voxel resolution to use
-    params.m_minimumVolumePercentErrorAllowed = 1;   // if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
-    params.m_maxRecursionDepth = 14;                 // The maximum recursion depth
-    params.m_shrinkWrap = true;                      // Whether or not to shrinkwrap the voxel positions to the source mesh on output
-    params.m_fillMode = VHACD::FillMode::FLOOD_FILL; // How to fill the interior of the voxelized mesh //FLOOD_FILL SURFACE_ONLY RAYCAST_FILL
-    params.m_maxNumVerticesPerCH = 64;               // The maximum number of vertices allowed in any output convex hull
-    params.m_asyncACD = true;                        // Whether or not to run asynchronously, taking advantage of additonal cores
-    params.m_minEdgeLength = 2;                      // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
-    params.m_findBestPlane = false;                  // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
+    params.m_callback = &callback;
+    params.m_logger = &logger;
+    params.m_taskRunner = nullptr; // TODO
+    params.m_maxConvexHulls = inParams.MaxConvexHulls;
+    params.m_resolution = inParams.VoxelResolution;
+    params.m_minimumVolumePercentErrorAllowed = inParams.MinimumVolumePercentErrorAllowed;
+    params.m_maxRecursionDepth = inParams.MaxRecursionDepth;
+    params.m_shrinkWrap = inParams.ShrinkWrap;
+    switch (inParams.FillMode)
+    {
+    case VHACDParameters::FillMode::FLOOD_FILL: params.m_fillMode = VHACD::FillMode::FLOOD_FILL; break;
+    case VHACDParameters::FillMode::SURFACE_ONLY: params.m_fillMode = VHACD::FillMode::SURFACE_ONLY; break;
+    case VHACDParameters::FillMode::RAYCAST_FILL: params.m_fillMode = VHACD::FillMode::RAYCAST_FILL; break;
+    default: params.m_fillMode = VHACD::FillMode::FLOOD_FILL; break;
+    }
+    params.m_maxNumVerticesPerCH = inParams.MaxNumVerticesPerCH;
+    params.m_asyncACD = true;
+    params.m_minEdgeLength = inParams.MinEdgeLength;
+    params.m_findBestPlane = inParams.FindBestPlane;
 
     outVertices.Clear();
     outIndices.Clear();
