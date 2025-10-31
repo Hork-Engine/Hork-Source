@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -49,7 +50,7 @@ struct AudioStreamDesc
     int                 SampleRate;
 };
 
-class AudioDevice final : public RefCounted
+class AudioDevice final : public IntrusiveRefCounter<AudioDevice>
 {
 public:
                         AudioDevice();
@@ -89,7 +90,7 @@ public:
     /// Pass MixerCallback for async mixing
     void                SetMixerCallback(std::function<void(uint8_t*, int, int, int)> MixerCallback);
 
-    Ref<AudioStream>    CreateStream(AudioStreamDesc const& desc);
+    IntrusiveRef<AudioStream> CreateStream(AudioStreamDesc const& desc);
 
 private:
     void                RenderAudio(uint8_t* pStream, int StreamLength);

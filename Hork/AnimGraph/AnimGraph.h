@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/StringID.h>
 #include <Hork/Core/Containers/Vector.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/UniqueRef.h>
 
 #include "Value.h"
@@ -363,7 +363,7 @@ private:
 
 class AnimationGraph_Cooked;
 
-class AnimationGraph final : public RefCounted
+class AnimationGraph final : public IntrusiveRefCounter<AnimationGraph>
 {
 public:
     template <typename T>
@@ -381,7 +381,7 @@ public:
 
     bool                    Validate() const;
 
-    Ref<AnimationGraph_Cooked> Cook();
+    IntrusiveRef<AnimationGraph_Cooked> Cook();
 
 private:
     uint32_t                GenerateNodeID() { return m_NodeIDGen++; }

@@ -102,7 +102,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::W, 1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::S, -1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::Up, 1);
@@ -142,7 +142,7 @@ void SampleApplication::Initialize()
     render.SetAmbient(0.1f);
 
     // Set rendering parameters
-    m_WorldRenderView = MakeRef<WorldRenderView>();
+    m_WorldRenderView.Reset(new WorldRenderView);
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bDrawDebug = true;
     m_WorldRenderView->bClearBackground = false;
@@ -353,9 +353,7 @@ void SampleApplication::CreateScene()
         HeightFieldComponent* heightfield;
         object->CreateComponent(heightfield);
 
-        
-
-        heightfield->Data = MakeRef<TerrainCollisionData>();
+        heightfield->Data.Reset(new TerrainCollisionData);
         heightfield->Data->Create(heightmap, resolution);
     }
 

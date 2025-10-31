@@ -311,7 +311,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = true;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAction(PlayerController::_1, "Pick", VirtualKey::MouseLeftBtn, {});
     inputMappings->MapAction(PlayerController::_1, "Drag", VirtualKey::MouseRightBtn, {});
 
@@ -327,7 +327,7 @@ void SampleApplication::Initialize()
     m_World->GetInterface<PhysicsInterface>().SetCollisionFilter(CollisionLayer::CreateFilter());
 
     // Set rendering parameters
-    m_WorldRenderView = MakeRef<WorldRenderView>();
+    m_WorldRenderView.Reset(new WorldRenderView);
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bClearBackground = true;
     m_WorldRenderView->BackgroundColor = Color3(0.2f, 0.2f, 0.3f);

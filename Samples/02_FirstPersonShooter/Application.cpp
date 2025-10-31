@@ -139,7 +139,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAxis(PlayerController::_2, "MoveForward", VirtualKey::W, 1);
     inputMappings->MapAxis(PlayerController::_2, "MoveForward", VirtualKey::S, -1);
     inputMappings->MapAxis(PlayerController::_2, "MoveForward", VirtualKey::Up, 1);
@@ -188,7 +188,7 @@ void SampleApplication::Initialize()
 #ifdef SPLIT_SCREEN
     for (int i = 0; i < 2; ++i)
     {
-        m_WorldRenderView[i] = MakeRef<WorldRenderView>();
+        m_WorldRenderView[i].Reset(new WorldRenderView);
         m_WorldRenderView[i]->SetWorld(m_World);
         m_WorldRenderView[i]->bClearBackground = false;
         m_WorldRenderView[i]->bDrawDebug = true;
@@ -196,7 +196,7 @@ void SampleApplication::Initialize()
     m_Viewports[0]->SetWorldRenderView(m_WorldRenderView[0]);
     m_Viewports[1]->SetWorldRenderView(m_WorldRenderView[1]);
 #else
-    m_WorldRenderView[0] = MakeRef<WorldRenderView>();
+    m_WorldRenderView[0].Reset(new WorldRenderView);
     m_WorldRenderView[0]->SetWorld(m_World);
     m_WorldRenderView[0]->bClearBackground = true;
     m_WorldRenderView[0]->BackgroundColor = Color3(0.2f, 0.2f, 0.3f);
@@ -432,7 +432,7 @@ void SampleApplication::CreateScene()
 
         uint32_t nodeID = 0;
 
-        Ref<NodeMotion> animation = MakeRef<NodeMotion>();
+        NodeMotionRef animation(new NodeMotion);
         {
             NodeMotion::AnimationChannel& channel = animation->m_Channels.Add();
             channel.TargetNode = nodeID;
@@ -459,7 +459,7 @@ void SampleApplication::CreateScene()
 
         NodeMotionComponent* nodeMotion;
         object->CreateComponent(nodeMotion);
-        nodeMotion->Animation = animation;
+        nodeMotion->Animation = std::move(animation);
         nodeMotion->Timer.LoopTime = 10;
         nodeMotion->NodeID = nodeID;
     }
@@ -680,7 +680,7 @@ GameObject* SampleApplication::CreatePlayer(Float3 const& position, Quat const& 
         skybox->CreateComponent(mesh);
         mesh->SetLocalBoundingBox({{-0.5f,-0.5f,-0.5f},{0.5f,0.5f,0.5f}});
 
-        mesh->SetMesh(resourceMngr.Load<Mesh>("/Root/default/skybox.mesh"));
+        mesh->SetMesh(resourceMngr.Acquire<Mesh>("/Root/default/skybox.mesh"));
         mesh->SetMaterial(materialMngr.FindMaterial("skybox"));
 
         mesh->SetVisibilityLayer(team == PlayerTeam::Blue ? 2 : 1);

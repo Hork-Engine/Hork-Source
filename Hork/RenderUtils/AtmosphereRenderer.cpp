@@ -41,9 +41,9 @@ using namespace RHI;
 //static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA32_FLOAT;
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_R11G11B10_FLOAT;
 
-AtmosphereRenderer::AtmosphereRenderer(IDevice* device, RenderUtils::SphereMesh* sphereMesh) :
+AtmosphereRenderer::AtmosphereRenderer(IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh) :
     m_Device(device),
-    m_SphereMesh(sphereMesh)
+    m_SphereMesh(std::move(sphereMesh))
 {
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;

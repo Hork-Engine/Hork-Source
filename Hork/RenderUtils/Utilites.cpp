@@ -43,22 +43,22 @@ namespace RenderUtils
 
 void GenerateIrradianceMap(RHI::IDevice* device, RHI::ITexture* cubemap, Ref<RHI::ITexture>* ppTexture)
 {
-    SphereMesh sphereMesh(device);
-    IrradianceGenerator irradianceGenerator(device, &sphereMesh);
+    IntrusiveRef<SphereMesh> sphereMesh(new SphereMesh(device));
+    IrradianceGenerator irradianceGenerator(device, std::move(sphereMesh));
     irradianceGenerator.Generate(cubemap, ppTexture);
 }
 
 void GenerateReflectionMap(RHI::IDevice* device, RHI::ITexture* cubemap, Ref<RHI::ITexture>* ppTexture)
 {
-    SphereMesh sphereMesh(device);
-    EnvProbeGenerator envProbeGenerator(device, &sphereMesh);
+    IntrusiveRef<SphereMesh> sphereMesh(new SphereMesh(device));
+    EnvProbeGenerator envProbeGenerator(device, std::move(sphereMesh));
     envProbeGenerator.Generate(7, cubemap, ppTexture);
 }
 
 void GenerateSkybox(RHI::IDevice* device, TEXTURE_FORMAT format, uint32_t resolution, Float3 const& lightDir, Ref<RHI::ITexture>* ppTexture)
 {
-    SphereMesh sphereMesh(device);
-    AtmosphereRenderer atmosphereRenderer(device, &sphereMesh);
+    IntrusiveRef<SphereMesh> sphereMesh(new SphereMesh(device));
+    AtmosphereRenderer atmosphereRenderer(device, std::move(sphereMesh));
     atmosphereRenderer.Render(format, resolution, lightDir, ppTexture);
 }
 

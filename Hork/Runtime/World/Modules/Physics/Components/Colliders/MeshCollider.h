@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/ArrayView.h>
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/UniqueRef.h>
 #include <Hork/Math/Quat.h>
 #include <Hork/Runtime/World/Component.h>
@@ -47,7 +48,7 @@ public:
     Float3                  OffsetPosition;
     Quat                    OffsetRotation;
 
-    Ref<MeshCollisionData>  Data;
+    IntrusiveRef<MeshCollisionData>  Data;
 };
 
 namespace ComponentMeta
@@ -59,7 +60,7 @@ namespace ComponentMeta
     }
 }
 
-class MeshCollisionData final : public RefCounted
+class MeshCollisionData final : public IntrusiveRefCounter<MeshCollisionData>
 {
     friend class PhysicsInterfaceImpl;
 

@@ -36,7 +36,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class CanvasRenderer : public RefCounted
+class CanvasRenderer : public Noncopyable
 {
 public:
     CanvasRenderer();

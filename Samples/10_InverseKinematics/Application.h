@@ -69,7 +69,7 @@ private:
     UIViewport* m_Viewport;
     UIWidget* m_LoadingScreen;
     World* m_World{};
-    Ref<WorldRenderView> m_WorldRenderView;
+    IntrusiveRef<WorldRenderView> m_WorldRenderView;
     GameObjectHandle m_Player;
     Handle32<class AnimatorComponent> m_Animator;
     bool m_Play{};

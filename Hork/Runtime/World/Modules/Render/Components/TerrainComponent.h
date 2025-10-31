@@ -56,7 +56,7 @@ public:
 
     void                        DrawDebug(DebugRenderer& renderer);
 
-    Ref<TerrainView>            CreateRenderView();
+    IntrusiveRef<TerrainView>   CreateRenderView();
 
 private:
     TerrainRef                  m_Resource;

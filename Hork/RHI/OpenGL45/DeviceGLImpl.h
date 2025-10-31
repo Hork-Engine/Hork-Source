@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/RHI/Common/Device.h>
 
 HK_NAMESPACE_BEGIN
@@ -155,7 +156,7 @@ public:
                                            VertexAttribInfo const* pVertexAttribs,
                                            uint32_t                NumVertexAttribs);
 
-    HashMap<VertexLayoutDescGL, VertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
+    HashMap<VertexLayoutDescGL, UniqueRef<VertexLayoutGL>> const& GetVertexLayouts() const { return VertexLayouts; }
 
     BlendingStateInfo const*     CachedBlendingState(BlendingStateInfo const& _BlendingState);
     RasterizerStateInfo const*   CachedRasterizerState(RasterizerStateInfo const& _RasterizerState);
@@ -170,7 +171,7 @@ private:
 
     WeakRef<IGenericWindow> pMainWindow;
 
-    HashMap<VertexLayoutDescGL, VertexLayoutGL*> VertexLayouts;
+    HashMap<VertexLayoutDescGL, UniqueRef<VertexLayoutGL>> VertexLayouts;
 
     HashMap<SamplerDesc, struct SamplerInfo*> Samplers;
 

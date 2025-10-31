@@ -111,50 +111,6 @@ public:
     }
 };
 
-
-/**
-
-InterlockedRef
-
-Reference counter is interlocked variable.
-
-DEPRECATED. Use IntrusiveRef whenever possible.
-
-*/
-struct InterlockedRef : public Noncopyable
-{
-private:
-    /// Reference counter
-    AtomicInt m_RefCount{1};
-
-public:
-    InterlockedRef() = default;
-
-    virtual ~InterlockedRef() = default;
-
-    /// Add reference.
-    HK_FORCEINLINE void AddRef()
-    {
-        m_RefCount.Increment();
-    }
-
-    /// Remove reference.
-    HK_FORCEINLINE void RemoveRef()
-    {
-        if (m_RefCount.Decrement() == 0)
-        {
-            delete this;
-        }
-    }
-
-    /// Reference count
-    HK_FORCEINLINE int GetRefCount() const
-    {
-        return m_RefCount.Load();
-    }
-};
-
-
 /**
 
 Ref

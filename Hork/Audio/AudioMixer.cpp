@@ -80,11 +80,11 @@ namespace
     const SampleLookup8BitTable SampleLookup8Bit;
 }
 
-AudioMixer::AudioMixer(AudioDevice* device) :
-    m_Device(device), m_DeviceRawPtr(device), m_IsAsync(false), m_RenderFrame(0)
+AudioMixer::AudioMixer(IntrusiveRef<AudioDevice> device) :
+    m_Device(std::move(device)), m_IsAsync(false), m_RenderFrame(0)
 {
-    m_Hrtf = MakeUnique<AudioHRTF>(m_DeviceRawPtr->GetSampleRate());
-    m_ReverbFilter = MakeUnique<Freeverb>(m_DeviceRawPtr->GetSampleRate());
+    m_Hrtf = MakeUnique<AudioHRTF>(m_Device->GetSampleRate());
+    m_ReverbFilter = MakeUnique<Freeverb>(m_Device->GetSampleRate());
 
     m_Tracks = nullptr;
     m_TracksTail = nullptr;
@@ -107,7 +107,7 @@ AudioMixer::~AudioMixer()
     for (AudioTrack* track = m_Tracks; track; track = next)
     {
         next = track->Next;
-        track->RemoveRef();
+        IntrusiveRef_RemoveRef(track);
     }
 
     AudioTrack::sFreePool();
@@ -116,14 +116,14 @@ AudioMixer::~AudioMixer()
 void AudioMixer::StartAsync()
 {
     m_IsAsync = true;
-    m_DeviceRawPtr->SetMixerCallback([this](uint8_t* transferBuffer, int transferBufferSizeInFrames, int FrameNum, int minFramesToRender)
-                                     { UpdateAsync(transferBuffer, transferBufferSizeInFrames, FrameNum, minFramesToRender); });
+    m_Device->SetMixerCallback([this](uint8_t* transferBuffer, int transferBufferSizeInFrames, int FrameNum, int minFramesToRender)
+                               { UpdateAsync(transferBuffer, transferBufferSizeInFrames, FrameNum, minFramesToRender); });
 }
 
 void AudioMixer::StopAsync()
 {
     m_IsAsync = false;
-    m_DeviceRawPtr->SetMixerCallback(nullptr);
+    m_Device->SetMixerCallback(nullptr);
 }
 
 void AudioMixer::SubmitTracks(AudioMixerSubmitQueue& submitQueue)
@@ -133,12 +133,12 @@ void AudioMixer::SubmitTracks(AudioMixerSubmitQueue& submitQueue)
     auto& tracks = submitQueue.GetTracks();
     for (int i = 0; i < tracks.Size(); i++)
     {
-        AudioTrack* track = tracks[i];
+        AudioTrack* track = tracks[i].RawPtr();
 
         HK_ASSERT(!INTRUSIVE_EXISTS(track, Next, Prev, m_PendingList, m_PendingListTail));
         INTRUSIVE_ADD(track, Next, Prev, m_PendingList, m_PendingListTail);
 
-        track->AddRef();
+        IntrusiveRef_AddRef(track);
 
         track->Volume[0] = track->Volume_LOCK[0];
         track->Volume[1] = track->Volume_LOCK[1];
@@ -179,7 +179,7 @@ void AudioMixer::AddPendingTracks()
 void AudioMixer::RejectTrack(AudioTrack* track)
 {
     INTRUSIVE_REMOVE(track, Next, Prev, m_Tracks, m_TracksTail);
-    track->RemoveRef();
+    IntrusiveRef_RemoveRef(track);
     m_TotalTracks.Decrement();
 }
 
@@ -193,7 +193,7 @@ void AudioMixer::Update()
 
     int64_t frameNum;
 
-    m_TransferBuffer = m_DeviceRawPtr->MapTransferBuffer(&frameNum);
+    m_TransferBuffer = m_Device->MapTransferBuffer(&frameNum);
 
     if (m_RenderFrame < frameNum)
     {
@@ -202,14 +202,14 @@ void AudioMixer::Update()
         m_RenderFrame = frameNum;
     }
 
-    int framesToRender = Snd_MixAhead.GetFloat() * m_DeviceRawPtr->GetSampleRate();
-    framesToRender = Math::Clamp(framesToRender, 0, m_DeviceRawPtr->GetTransferBufferSizeInFrames());
+    int framesToRender = Snd_MixAhead.GetFloat() * m_Device->GetSampleRate();
+    framesToRender = Math::Clamp(framesToRender, 0, m_Device->GetTransferBufferSizeInFrames());
 
     int64_t endFrame = frameNum + framesToRender;
 
     RenderTracks(endFrame);
 
-    m_DeviceRawPtr->UnmapTransferBuffer();
+    m_Device->UnmapTransferBuffer();
 
 #if 0
     // Update reverb
@@ -246,7 +246,7 @@ void AudioMixer::UpdateAsync(uint8_t* transferBuffer, int transferBufferSizeInFr
     }
 
 #if 0
-    int framesToRender = Snd_MixAhead.GetFloat() * m_DeviceRawPtr->GetSampleRate();
+    int framesToRender = Snd_MixAhead.GetFloat() * m_Device->GetSampleRate();
     framesToRender = Math::Clamp( framesToRender, minFramesToRender, transferBufferSizeInFrames );
 #else
     int framesToRender = minFramesToRender;
@@ -285,7 +285,7 @@ void AudioMixer::RenderTracks(int64_t endFrame)
         {
             next = track->Next;
 
-            if (track->GetRefCount() == 1)
+            if (track->UseCount() == 1)
             {
                 // Track was removed from main thread
                 RejectTrack(track);
@@ -1110,21 +1110,21 @@ namespace
 
 void AudioMixer::WriteToTransferBuffer(int const* samples, int64_t endFrame)
 {
-    int64_t wrapMask = m_DeviceRawPtr->GetTransferBufferSizeInFrames() - 1;
+    int64_t wrapMask = m_Device->GetTransferBufferSizeInFrames() - 1;
 
     for (int64_t frameNum = m_RenderFrame; frameNum < endFrame;)
     {
         int frameOffset = frameNum & wrapMask;
 
-        int frameCount = m_DeviceRawPtr->GetTransferBufferSizeInFrames() - frameOffset;
+        int frameCount = m_Device->GetTransferBufferSizeInFrames() - frameOffset;
         if (frameNum + frameCount > endFrame)
             frameCount = endFrame - frameNum;
 
         frameNum += frameCount;
 
-        if (m_DeviceRawPtr->GetChannels() == 1)
+        if (m_Device->GetChannels() == 1)
         {
-            if (m_DeviceRawPtr->GetTransferFormat() == AudioTransferFormat::FLOAT32)
+            if (m_Device->GetTransferFormat() == AudioTransferFormat::FLOAT32)
                 WriteSamples_FLOAT32_Mono(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
             else
                 WriteSamples_INT16_Mono(samples, (int16_t*)m_TransferBuffer + frameOffset, frameCount);
@@ -1136,7 +1136,7 @@ void AudioMixer::WriteToTransferBuffer(int const* samples, int64_t endFrame)
             frameOffset <<= 1;
             frameCount <<= 1;
 
-            if (m_DeviceRawPtr->GetTransferFormat() == AudioTransferFormat::FLOAT32)
+            if (m_Device->GetTransferFormat() == AudioTransferFormat::FLOAT32)
                 WriteSamples_FLOAT32(samples, (float*)m_TransferBuffer + frameOffset, frameCount);
             else
                 WriteSamples_INT16(samples, (int16_t*)m_TransferBuffer + frameOffset, frameCount);

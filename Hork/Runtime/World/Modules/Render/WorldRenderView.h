@@ -30,19 +30,21 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Renderer/RenderDefs.h>
 #include <Hork/Renderer/VirtualTextureFeedback.h>
 #include <Hork/Resources/Texture.h>
 #include <Hork/Resources/Terrain.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/World/Modules/Render/Components/CameraComponent.h>
+#include <Hork/Core/Color.h>
 
-#include "VisibilitySystem.h"
+//#include "VisibilitySystem.h"
 
 HK_NAMESPACE_BEGIN
 
 class World;
 
-class ColorGradingParameters final : public RefCounted
+class ColorGradingParameters final : public IntrusiveRefCounter<ColorGradingParameters>
 {
 public:
                                 ColorGradingParameters();
@@ -91,7 +93,7 @@ private:
     float                       m_AdaptationSpeed;
 };
 
-class VignetteParameters final : public RefCounted
+class VignetteParameters final : public IntrusiveRefCounter<VignetteParameters>
 {
 public:
                                 VignetteParameters() = default;
@@ -115,12 +117,13 @@ public:
     float                       InnerRadiusSqr = Math::Square(0.6f);
 };
 
-class ComponentRenderView : public RefCounted
+class ComponentRenderView : public IntrusiveRefCounter<ComponentRenderView>
 {
 public:
+    virtual ~ComponentRenderView() {}
 };
 
-class WorldRenderView final : public RefCounted
+class WorldRenderView final : public IntrusiveRefCounter<WorldRenderView>
 {
     friend class                WorldRenderer;
 
@@ -137,8 +140,8 @@ public:
     bool                        bAllowHBAO       = true;
     bool                        bAllowMotionBlur = true;
     ANTIALIASING_TYPE           AntialiasingType = ANTIALIASING_SMAA;
-    Ref<ColorGradingParameters> ColorGrading;
-    Ref<VignetteParameters>     Vignette;
+    IntrusiveRef<ColorGradingParameters> ColorGrading;
+    IntrusiveRef<VignetteParameters>     Vignette;
     TEXTURE_FORMAT              TextureFormat = TEXTURE_FORMAT_SRGBA8_UNORM;
     //uint32_t                  RenderingOrder{}; // TODO
     float                       Brightness = std::numeric_limits<float>::quiet_NaN();
@@ -238,7 +241,7 @@ private:
     Ref<RHI::ITexture>          m_DepthTexture;
     Ref<RHI::ITexture>          m_HBAOMaps;
 
-    HashMap<ComponentExtendedHandle, Ref<ComponentRenderView>> m_ComponentViews;
+    HashMap<ComponentExtendedHandle, IntrusiveRef<ComponentRenderView>> m_ComponentViews;
     Vector<ComponentExtendedHandle> m_Components;
 
     Float4x4                    m_ProjectionMatrix; // last rendered projection

@@ -35,17 +35,16 @@ HK_NAMESPACE_BEGIN
 PoolAllocator<AudioTrack> AudioTrack::TrackPool;
 Mutex AudioTrack::PoolMutex;
 
-AudioTrack::AudioTrack(AudioSource* inSource, int inStartFrame, int inLoopStart, int inLoopsCount, bool inVirtualizeWhenSilent) :
-    Stopped(false), RefCount(1)
+AudioTrack::AudioTrack(IntrusiveRef<AudioSource> inSource, int inStartFrame, int inLoopStart, int inLoopsCount, bool inVirtualizeWhenSilent) :
+    pSource(std::move(inSource)), Stopped(false), RefCount(1)
 {
-    pSource = inSource;
-    if (inSource->IsEncoded())
-        pDecoder = MakeRef<AudioDecoder>(inSource);
+    if (pSource->IsEncoded())
+        pDecoder.Reset(new AudioDecoder(pSource));
 
-    FrameCount = inSource->GetFrameCount();
-    Channels = inSource->GetChannels();
-    SampleBits = inSource->GetSampleBits();
-    SampleStride = inSource->GetSampleStride();
+    FrameCount = pSource->GetFrameCount();
+    Channels = pSource->GetChannels();
+    SampleBits = pSource->GetSampleBits();
+    SampleStride = pSource->GetSampleStride();
     PlaybackPos.StoreRelaxed(inStartFrame);
     PlaybackPos_LOCK = -1;
     PlaybackEnd = 0;

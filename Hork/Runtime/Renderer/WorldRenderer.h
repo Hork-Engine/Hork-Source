@@ -43,7 +43,7 @@ class WorldRenderer final : public Noncopyable
 {
 public:
     /// Add render view to render
-    void                        AddRenderView(WorldRenderView* renderView);
+    void                        AddRenderView(IntrusiveRef<WorldRenderView> renderView);
 
     /// Build frame data
     void                        Render(class FrameLoop* frameLoop);
@@ -67,7 +67,7 @@ private:
     void                        SortRenderInstances();
     void                        SortShadowInstances(LightShadowmap const* shadowMap);
     void                        QueryVisiblePrimitives(World* world);
-    void                        QueryShadowCasters(World* world, Float4x4 const& lightViewProjection, Float3 const& lightPosition, Float3x3 const& lightBasis, Vector<PrimitiveDef*>& primitives);
+    //void                        QueryShadowCasters(World* world, Float4x4 const& lightViewProjection, Float3 const& lightPosition, Float3x3 const& lightBasis, Vector<PrimitiveDef*>& primitives);
     void                        AddShadowmapCascades(class DirectionalLightComponent const& light, Float3x3 const& rotationMat, StreamedMemoryGPU* streamedMemory, RenderViewData* view, size_t* viewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
     void                        AddDirectionalLightShadows(LightShadowmap* shadowmap, DirectionalLightInstance const* lightDef);
 
@@ -77,7 +77,7 @@ private:
     void                        AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox const& lightBounds={});
     bool                        AddLightShadowmap(class PunctualLightComponent* light, float radius);
 
-    Vector<Ref<WorldRenderView>>m_RenderViews;
+    Vector<IntrusiveRef<WorldRenderView>>m_RenderViews;
     FrameLoop*                  m_FrameLoop;
     RenderFrameData             m_FrameData;
     RenderContext               m_Context;

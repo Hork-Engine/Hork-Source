@@ -447,11 +447,11 @@ private:
 class AnimationPlayer final : public Noncopyable
 {
 public:
-    explicit                AnimationPlayer(AnimationGraph_Cooked* animGraph, OzzSkeleton const* skeleton);
+    explicit                AnimationPlayer(IntrusiveRef<AnimationGraph_Cooked> animGraph, OzzSkeleton const* skeleton);
 
     void                    Tick(float timeStep, AnimationParameterSet* parameterSet, class SkeletonPose* resultPose);
 
-    AnimationGraph_Cooked*  GetGraph() const { return m_AnimGraph; }
+    AnimationGraph_Cooked*  GetGraph() const { return m_AnimGraph.RawPtr(); }
 
 private:
     struct BuildContext;
@@ -467,7 +467,7 @@ private:
     };
 
     Vector<SavedPose>       m_SavedPoseSlots;
-    Ref<AnimationGraph_Cooked> m_AnimGraph;
+    IntrusiveRef<AnimationGraph_Cooked> m_AnimGraph;
     OzzSkeleton const*      m_Skeleton; // TODO: Ref count
 };
 

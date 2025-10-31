@@ -107,7 +107,7 @@ public:
 class SampleApplication final : public GameApplication
 {
     World*                      m_World{};
-    Ref<WorldRenderView>        m_WorldRenderView;
+    IntrusiveRef<WorldRenderView>m_WorldRenderView;
     Handle32<CameraComponent>   m_MainCamera;
     Vector<ResourceRef>         m_LevelResources;
 
@@ -121,7 +121,7 @@ public:
     void Initialize()
     {
         // Set input mappings
-        Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+        IntrusiveRef<InputMappings> inputMappings(new InputMappings);
         inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::W, 1.0f);
         inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::S, -1.0f);
         inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::Up, 1.0f);
@@ -137,7 +137,7 @@ public:
         sGetInputSystem().SetInputMappings(inputMappings);
 
         // Set rendering parameters
-        m_WorldRenderView = MakeRef<WorldRenderView>();
+        m_WorldRenderView.Reset(new WorldRenderView);
         m_WorldRenderView->bDrawDebug = true;
 
         // Create UI desktop

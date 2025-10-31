@@ -50,7 +50,7 @@ public:
                             InputSystem();
                             ~InputSystem();
 
-    void                    SetInputMappings(InputMappings* mappings);
+    void                    SetInputMappings(IntrusiveRef<InputMappings> mappings);
 
     void                    ResetKeyState();
 
@@ -104,7 +104,7 @@ private:
 
     PlayerGamepadState*     GetPlayerGamepadState(PlayerController player);
 
-    Ref<InputMappings>      m_InputMappings;
+    IntrusiveRef<InputMappings> m_InputMappings;
 
     struct PressedKey
     {

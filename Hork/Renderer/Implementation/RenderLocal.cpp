@@ -63,7 +63,7 @@ StreamedMemoryGPU* GStreamedMemory;
 
 /// Circular buffer. Contains constant data for single draw call.
 /// Don't use to store long-live data.
-Ref<CircularBuffer> GCircularBuffer;
+UniqueRef<CircularBuffer> GCircularBuffer;
 
 /// Simple white texture
 Ref<ITexture> GWhiteTexture;

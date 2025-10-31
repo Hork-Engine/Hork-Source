@@ -738,7 +738,7 @@ MGNode& MGNode::BindInput(StringView InputSlot, MGOutput* pSlot)
                 return *this;
             }
             input->m_Slot     = pSlot;
-            input->m_SlotNode = node;
+            input->m_SlotNode.Reset(node);
             return *this;
         }
     }
@@ -3975,8 +3975,7 @@ MGNode* MaterialGraph::Add(StringView Name)
                 return node.RawPtr();
     }
 
-    Ref<MGNode> node;
-    node.Attach(static_cast<MGNode*>(nodeClass->CreateInstance().Detach()));
+    IntrusiveRef<MGNode> node = static_pointer_cast<MGNode>(nodeClass->CreateInstance());
     m_Nodes.Add(node);
     node->m_ID = ++m_NodeIdGen;
     return node.RawPtr();
@@ -3995,7 +3994,7 @@ MGTextureSlot* MaterialGraph::GetTexture(uint32_t Slot)
 
     if (!m_TextureSlots[Slot])
     {
-        auto node = MakeRef<MGTextureSlot>();
+        auto node = MakeIntrusive<MGTextureSlot>();
         m_TextureSlots[Slot] = node.RawPtr();
         m_TextureSlots[Slot]->m_ID        = ++m_NodeIdGen;
         m_TextureSlots[Slot]->m_SlotIndex = Slot;
@@ -4006,7 +4005,7 @@ MGTextureSlot* MaterialGraph::GetTexture(uint32_t Slot)
     return m_TextureSlots[Slot];
 }
 
-Ref<MaterialGraph> MaterialGraph::sLoad(IBinaryStreamReadInterface& Stream)
+IntrusiveRef<MaterialGraph> MaterialGraph::sLoad(IBinaryStreamReadInterface& Stream)
 {
     if (!Stream.IsValid())
         return {};
@@ -4020,7 +4019,7 @@ Ref<MaterialGraph> MaterialGraph::sLoad(IBinaryStreamReadInterface& Stream)
         return {};
     }
 
-    auto graph = MakeRef<MaterialGraph>();
+    auto graph = MakeIntrusive<MaterialGraph>();
 
     auto dtextureSlots = documentView["textures"];
    

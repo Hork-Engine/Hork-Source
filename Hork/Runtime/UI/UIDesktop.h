@@ -98,21 +98,21 @@ private:
 
     bool HandleDraggingWidget();
 
-    UIWidgetGeometry          m_Geometry;
-    Vector<UIWidget*>        m_Widgets;
-    WeakRef<UIWidget>        m_FocusWidget;
-    Ref<UIWidget>            m_MouseFocusWidget;
-    Ref<UIWidget>            m_Popup;
-    Ref<UIWidget>            m_PendingDrag;
-    Ref<UIWidget>            m_FullscreenWidget;
-    Ref<UIWidget>            m_DraggingWidget;
-    Ref<UIWidget>            m_MouseClickWidget;
-    Ref<UIShortcutContainer> m_ShortcutContainer;
-    Ref<UIBrush>             m_Wallpaper;
-    uint64_t                  m_MouseClickTime{};
-    Float2                    m_MouseClickPos{};
-    Float2                    m_DraggingCursor{};
-    Float2                    m_DraggingWidgetPos{};
+    UIWidgetGeometry            m_Geometry;
+    Vector<UIWidget*>           m_Widgets;
+    WeakRef<UIWidget>           m_FocusWidget;
+    Ref<UIWidget>               m_MouseFocusWidget;
+    Ref<UIWidget>               m_Popup;
+    Ref<UIWidget>               m_PendingDrag;
+    Ref<UIWidget>               m_FullscreenWidget;
+    Ref<UIWidget>               m_DraggingWidget;
+    Ref<UIWidget>               m_MouseClickWidget;
+    Ref<UIShortcutContainer>    m_ShortcutContainer;
+    Ref<UIBrush>                m_Wallpaper;
+    uint64_t                    m_MouseClickTime{};
+    Float2                      m_MouseClickPos{};
+    Float2                      m_DraggingCursor{};
+    Float2                      m_DraggingWidgetPos{};
 };
 
 HK_NAMESPACE_END

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Color.h>
 #include <Hork/Math/Quat.h>
 #include <Hork/RHI/Common/Device.h>
@@ -277,7 +278,7 @@ namespace MaterialPass
     };
 }
 
-class MaterialGPU : public RefCounted
+class MaterialGPU final : public IntrusiveRefCounter<MaterialGPU>
 {
 public:
     MATERIAL_TYPE               MaterialType{MATERIAL_TYPE_PBR};

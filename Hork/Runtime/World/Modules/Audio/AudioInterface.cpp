@@ -92,7 +92,7 @@ float RolloffRate = SOUND_ROLLOFF_RATE_DEFAULT;
 
 */
 
-void AudioInterface::PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroup* inGroup, float inVolume, int inStartFrame)
+void AudioInterface::PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroupRef inGroup, float inVolume, int inStartFrame)
 {
     if (inVolume <= 0.0001f)
         return;
@@ -129,16 +129,16 @@ void AudioInterface::PlaySoundAt(SoundRef inSound, Float3 const& inPosition, Sou
         return;
 
     OneShotSound one_shot;
-    one_shot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, false));
+    one_shot.Track.Reset(new AudioTrack(source, inStartFrame, -1, 0, false));
     one_shot.NeedToSubmit = true;
     one_shot.Volume = Math::Saturate(inVolume);
-    one_shot.Group = inGroup;
+    one_shot.Group = std::move(inGroup);
     one_shot.Position = inPosition;
     one_shot.IsBackground = false;
     m_OneShotSound.Add(one_shot);// TODO: Thread-safe
 }
 
-void AudioInterface::PlaySoundBackground(SoundRef inSound, SoundGroup* inGroup, float inVolume, int inStartFrame)
+void AudioInterface::PlaySoundBackground(SoundRef inSound, SoundGroupRef inGroup, float inVolume, int inStartFrame)
 {
     if (inVolume <= 0.0001f)
         return;
@@ -175,10 +175,10 @@ void AudioInterface::PlaySoundBackground(SoundRef inSound, SoundGroup* inGroup, 
         return;
 
     OneShotSound one_shot;
-    one_shot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, false));
+    one_shot.Track.Reset(new AudioTrack(source, inStartFrame, -1, 0, false));
     one_shot.NeedToSubmit = true;
     one_shot.Volume = Math::Saturate(inVolume);
-    one_shot.Group = inGroup;
+    one_shot.Group = std::move(inGroup);
     one_shot.IsBackground = true;
     m_OneShotSound.Add(one_shot); // TODO: Thread-safe
 }

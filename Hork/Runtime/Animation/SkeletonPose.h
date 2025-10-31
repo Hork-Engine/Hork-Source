@@ -30,12 +30,13 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Math/Simd/Simd.h>
 
 HK_NAMESPACE_BEGIN
 
-class SkeletonPose : public RefCounted
+class SkeletonPose final : public IntrusiveRefCounter<SkeletonPose>
 {
 public:
     Vector<SoaTransform>        m_LocalMatrices;

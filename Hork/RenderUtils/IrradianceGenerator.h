@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 class IrradianceGenerator
 {
 public:
-                            IrradianceGenerator(RHI::IDevice* device, RenderUtils::SphereMesh* sphereMesh);
+                            IrradianceGenerator(RHI::IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh);
 
     void                    GenerateArray(int cubemapsCount, RHI::ITexture** cubemaps, Ref<RHI::ITexture>* ppTextureArray);
     void                    Generate(RHI::ITexture* sourceCubemap, Ref<RHI::ITexture>* ppTexture);
@@ -51,7 +51,7 @@ private:
         Float4      Index;
     };
     Ref<RHI::IDevice>       m_Device;
-    Ref<RenderUtils::SphereMesh> m_SphereMesh;
+    IntrusiveRef<RenderUtils::SphereMesh> m_SphereMesh;
     Ref<RHI::IBuffer>       m_ConstantBuffer;
     ConstantData            m_ConstantBufferData;
     Ref<RHI::IPipeline>     m_Pipeline;

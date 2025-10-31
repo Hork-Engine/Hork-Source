@@ -498,7 +498,7 @@ ImmediateContextGLImpl::ImmediateContextGLImpl(DeviceGLImpl* pDevice, WindowPool
 
     CurrentResourceTable = static_cast<ResourceTableGLImpl*>(RootResourceTable.RawPtr());
 
-    pFramebufferCache = MakeRef<FramebufferCacheGL>();
+    pFramebufferCache = MakeUnique<FramebufferCacheGL>();
 }
 
 void ImmediateContextGLImpl::sMakeCurrent(ImmediateContextGLImpl* pContext)
@@ -527,7 +527,7 @@ ImmediateContextGLImpl::~ImmediateContextGLImpl()
 
         for (auto& it : static_cast<DeviceGLImpl*>(GetDevice())->GetVertexLayouts())
         {
-            VertexLayoutGL* pVertexLayout = it.second;
+            auto& pVertexLayout = it.second;
             pVertexLayout->DestroyVAO(this);
         }
 

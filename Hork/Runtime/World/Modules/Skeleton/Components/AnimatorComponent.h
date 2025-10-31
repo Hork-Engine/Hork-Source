@@ -50,7 +50,7 @@ public:
                             AnimatorComponent(AnimatorComponent&& rhs);
                             ~AnimatorComponent();
 
-    void                    SetAnimationGraph(AnimationGraph_Cooked* animGraph) { m_AnimGraph = animGraph; }
+    void                    SetAnimationGraph(IntrusiveRef<AnimationGraph_Cooked> animGraph) { m_AnimGraph = std::move(animGraph); }
 
     template <typename T>
     void                    SetParam(StringID paramID, T value) { m_ParameterSet.m_Params[paramID] = AnimGraph_Value{static_cast<float>(value)}; }
@@ -68,7 +68,7 @@ public:
 
 private:
     Handle32<SkeletonPoseComponent> m_PoseComponent;
-    Ref<AnimationGraph_Cooked> m_AnimGraph;
+    IntrusiveRef<AnimationGraph_Cooked> m_AnimGraph;
     UniqueRef<AnimationPlayer> m_AnimPlayer;
     AnimationParameterSet   m_ParameterSet;
     MeshRef                 m_Mesh;

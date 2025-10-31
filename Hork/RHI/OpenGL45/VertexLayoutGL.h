@@ -51,10 +51,10 @@ public:
     {}
 };
 
-class VertexLayoutGL : public RefCounted
+class VertexLayoutGL : public Noncopyable
 {
 public:
-    VertexLayoutGL(VertexLayoutDescGL const& Desc) :
+    explicit VertexLayoutGL(VertexLayoutDescGL const& Desc) :
         Desc(Desc)
     {
         for (VertexBindingInfo const* binding = Desc.VertexBindings; binding < &Desc.VertexBindings[Desc.NumVertexBindings]; binding++)

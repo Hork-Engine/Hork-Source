@@ -115,7 +115,7 @@ private:
     double          m_SeekTo = -1;
     HeapBlob        m_Blob;
     TextureRef      m_Texture;
-    Ref<AudioStream>m_AudioStream;
+    IntrusiveRef<AudioStream>m_AudioStream;
 };
 
 HK_NAMESPACE_END

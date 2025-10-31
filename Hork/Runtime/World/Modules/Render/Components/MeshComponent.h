@@ -58,8 +58,8 @@ public:
     void                        SetMesh(MeshRef handle) { m_Resource = handle; }
     MeshRef                     GetMesh() const { return m_Resource; }
 
-    void                        SetProceduralMesh(ProceduralMesh* proceduralMesh) { m_ProceduralData = proceduralMesh; }
-    ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData; }
+    void                        SetProceduralMesh(IntrusiveRef<ProceduralMesh> proceduralMesh) { m_ProceduralData = std::move(proceduralMesh); }
+    ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData.RawPtr(); }
 
     void                        SetMaterial(MatInstanceHandle material);
     void                        SetMaterial(uint32_t index, MatInstanceHandle material);
@@ -98,7 +98,7 @@ public:
 protected:
     MeshRef                     m_Resource;
     Vector<MatInstanceHandle>   m_MatInstances;
-    Ref<ProceduralMesh>         m_ProceduralData;
+    IntrusiveRef<ProceduralMesh>m_ProceduralData;
     uint8_t                     m_VisibilityLayer = 0;
     bool                        m_Outline = false;
     ShadowMode                  m_ShadowMode = ShadowMode::Default;
@@ -166,7 +166,7 @@ public:
 
     struct SkinningData
     {
-        Ref<SkeletonPose>       Pose;
+        IntrusiveRef<SkeletonPose> Pose;
         // Skinning matrices from previous frame
         Vector<Float3x4>        SkinningMatrices;
         Vector<StreamBuffer>    StreamBuffers;

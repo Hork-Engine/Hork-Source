@@ -151,7 +151,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::W, 100.0f);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::S, -100.0f);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::Up, 100.0f);
@@ -189,7 +189,7 @@ void SampleApplication::Initialize()
     m_World->GetInterface<PhysicsInterface>().SetCollisionFilter(CollisionLayer::CreateFilter());
 
     // Create main render view
-    m_WorldRenderView = MakeRef<WorldRenderView>();
+    m_WorldRenderView.Reset(new WorldRenderView);
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bClearBackground = true;
     m_WorldRenderView->BackgroundColor = Color3::sBlack();
@@ -200,7 +200,7 @@ void SampleApplication::Initialize()
     auto window = sGetUIManager().GetGenericWindow();
     uint32_t width = window->GetFramebufferWidth();
     uint32_t height = window->GetFramebufferHeight();
-    m_OffscreenRenderView = MakeRef<WorldRenderView>();
+    m_OffscreenRenderView.Reset(new WorldRenderView);
     m_OffscreenRenderView->SetViewport(width, height);
     m_OffscreenRenderView->SetWorld(m_World);
     m_OffscreenRenderView->BackgroundColor = m_WorldRenderView->BackgroundColor;

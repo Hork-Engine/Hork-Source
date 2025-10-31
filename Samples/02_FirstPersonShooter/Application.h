@@ -78,7 +78,7 @@ private:
     };
     Vector<SpawnPoint> m_PlayerSpawnPoints;
 
-    Ref<WorldRenderView> m_WorldRenderView[2];
+    IntrusiveRef<WorldRenderView> m_WorldRenderView[2];
 };
 
 HK_NAMESPACE_END

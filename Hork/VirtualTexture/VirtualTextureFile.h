@@ -32,14 +32,15 @@ SOFTWARE.
 
 #include "VT.h"
 #include <Hork/RHI/Common/DeviceObject.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 HK_NAMESPACE_BEGIN
 
-class VirtualTextureFile : public RefCounted
+class VirtualTextureFile : public IntrusiveRefCounter<VirtualTextureFile, ThreadSafeCounter>
 {
 public:
                                 VirtualTextureFile(const char* fileName);
-                                ~VirtualTextureFile();
+    virtual                     ~VirtualTextureFile();
 
     /// Resolution of virtual texture in pixels
     uint32_t                    GetTextureResolution() const { return m_TextureResolution; }

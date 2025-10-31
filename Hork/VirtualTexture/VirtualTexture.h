@@ -37,7 +37,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class VirtualTexture : public VirtualTextureFile
+class VirtualTexture final : public VirtualTextureFile
 {
     friend class                VirtualTextureCache;
     friend class                VirtualTextureFeedbackAnalyzer;

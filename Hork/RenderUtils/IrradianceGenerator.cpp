@@ -40,9 +40,9 @@ using namespace RHI;
 
 static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_R11G11B10_FLOAT; //TEXTURE_FORMAT_RGBA16_FLOAT;
 
-IrradianceGenerator::IrradianceGenerator(IDevice* device, RenderUtils::SphereMesh* sphereMesh) :
+IrradianceGenerator::IrradianceGenerator(IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh) :
     m_Device(device),
-    m_SphereMesh(sphereMesh)
+    m_SphereMesh(std::move(sphereMesh))
 {
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;

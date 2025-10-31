@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Containers/Hash.h>
 #include "Variant.h"
 
@@ -49,8 +50,8 @@ public:
 
     const char* GetTag() const { return m_Tag; }
 
-    Ref<BaseObject> CreateInstance(StringView ClassName) const;
-    Ref<BaseObject> CreateInstance(uint64_t ClassId) const;
+    IntrusiveRef<BaseObject> CreateInstance(StringView ClassName) const;
+    IntrusiveRef<BaseObject> CreateInstance(uint64_t ClassId) const;
 
     ClassMeta const* GetClassList() const;
 
@@ -110,7 +111,7 @@ public:
         return IsSubclassOf(Superclass::sGetClassMeta());
     }
 
-    virtual Ref<BaseObject> CreateInstance() const = 0;
+    virtual IntrusiveRef<BaseObject> CreateInstance() const = 0;
 
     static void sCloneProperties(BaseObject const* Template, BaseObject* Destination);
 
@@ -149,16 +150,16 @@ private:
     Property const*      m_PropertyListTail;
 };
 
-HK_FORCEINLINE Ref<BaseObject> ObjectFactory::CreateInstance(StringView ClassName) const
+HK_FORCEINLINE IntrusiveRef<BaseObject> ObjectFactory::CreateInstance(StringView ClassName) const
 {
     ClassMeta const* classMeta = LookupClass(ClassName);
-    return classMeta ? classMeta->CreateInstance() : Ref<BaseObject>{};
+    return classMeta ? classMeta->CreateInstance() : IntrusiveRef<BaseObject>{};
 }
 
-HK_FORCEINLINE Ref<BaseObject> ObjectFactory::CreateInstance(uint64_t ClassId) const
+HK_FORCEINLINE IntrusiveRef<BaseObject> ObjectFactory::CreateInstance(uint64_t ClassId) const
 {
     ClassMeta const* classMeta = LookupClass(ClassId);
-    return classMeta ? classMeta->CreateInstance() : Ref<BaseObject>{};
+    return classMeta ? classMeta->CreateInstance() : IntrusiveRef<BaseObject>{};
 }
 
 HK_FORCEINLINE ClassMeta const* ObjectFactory::GetClassList() const
@@ -380,9 +381,9 @@ public:                                                                         
         {                                                                                                   \
             RegisterProperties();                                                                           \
         }                                                                                                   \
-        Ref<BaseObject> CreateInstance() const override                                                     \
+        IntrusiveRef<BaseObject> CreateInstance() const override                                            \
         {                                                                                                   \
-            return MakeRef<ThisClass>();                                                                    \
+            return MakeIntrusive<ThisClass>();                                                              \
         }                                                                                                   \
                                                                                                             \
     private:                                                                                                \

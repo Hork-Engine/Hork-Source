@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Random.h>
 #include <Hork/Core/Containers/Vector.h>
 
@@ -251,7 +251,7 @@ public:
     void Update(BehaviorTreeContext& context) override;
 };
 
-class BehaviorTree : public RefCounted
+class BehaviorTree final : public IntrusiveRefCounter<BehaviorTree>
 {
     BehaviorTreeNode* m_Root;
 

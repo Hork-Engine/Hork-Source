@@ -133,7 +133,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::W, 1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::S, -1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::Up, 1);
@@ -173,7 +173,7 @@ void SampleApplication::Initialize()
     render.SetAmbient(0.015f);
 
     // Set rendering parameters
-    m_WorldRenderView = MakeRef<WorldRenderView>();
+    m_WorldRenderView.Reset(new WorldRenderView);
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bDrawDebug = true;
     m_Viewport->SetWorldRenderView(m_WorldRenderView);
@@ -478,7 +478,7 @@ void SampleApplication::SpawnPaladin()
     }
 }
 
-Ref<AnimationGraph_Cooked> CreateTestAnimationGraph()
+IntrusiveRef<AnimationGraph_Cooked> CreateTestAnimationGraph()
 {
     const StringID ParamID_State{"State"};
     const StringID ParamID_PlaybackSpeed{"PlaybackSpeed"};
@@ -649,7 +649,7 @@ Ref<AnimationGraph_Cooked> CreateTestAnimationGraph()
     return graph.Cook();
 }
 
-Ref<AnimationGraph_Cooked> CreateBlendTest()
+IntrusiveRef<AnimationGraph_Cooked> CreateBlendTest()
 {
     // Blending animation graph:
     //  - three standing movement animations, blended by speed
@@ -766,7 +766,7 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
     GameObject* object;
     m_World->CreateObject(desc, object);
 
-    static Ref<AnimationGraph_Cooked> animGraph = CreateTestAnimationGraph();
+    static IntrusiveRef<AnimationGraph_Cooked> animGraph = CreateTestAnimationGraph();
 
     SkeletonPoseComponent* pose;
     object->CreateComponent(pose);
@@ -774,7 +774,7 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
 
     AnimatorComponent* animator;
     m_Animator = object->CreateComponent(animator);
-    animator->SetAnimationGraph(animGraph.RawPtr());
+    animator->SetAnimationGraph(animGraph);
     animator->SetMesh(meshHandle);
 
     animator->SetParam(StringID{"PlaybackSpeed"}, 1.0f);

@@ -46,7 +46,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class FrameRenderer : public RefCounted
+class FrameRenderer : public Noncopyable
 {
 public:
     FrameRenderer();

@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN
@@ -54,7 +55,7 @@ struct VTFeedbackData
 
 struct VTPageDesc
 {
-    VirtualTexture* pTexture;
+    IntrusiveRef<VirtualTexture> pTexture;
     uint32_t Hash;
     uint32_t Refs;
     uint32_t PageIndex;
@@ -67,16 +68,16 @@ struct VTUnit
     float Log2Size;
 };
 
-class VirtualTextureFeedbackAnalyzer : public RefCounted
+class VirtualTextureFeedbackAnalyzer final : public IntrusiveRefCounter<VirtualTextureFeedbackAnalyzer>
 {
 public:
                                 VirtualTextureFeedbackAnalyzer(RHI::IDevice* device);
-    virtual                     ~VirtualTextureFeedbackAnalyzer();
+                                ~VirtualTextureFeedbackAnalyzer();
 
     void                        AddFeedbackData(int feedbackSize, const void* feedbackData);
 
     /// Bind texture once per frame between Begin() and End()
-    void                        BindTexture(int unit, VirtualTexture* texture);
+    void                        BindTexture(int unit, IntrusiveRef<VirtualTexture> texture);
 
     VirtualTexture*             GetTexture(int unit);
 
@@ -96,7 +97,7 @@ private:
     Ref<RHI::IDevice>           m_Device;
 
     // Per-frame texture bindings
-    VirtualTexture*             m_Textures[2][VT_MAX_TEXTURE_UNITS];
+    IntrusiveRef<VirtualTexture> m_Textures[2][VT_MAX_TEXTURE_UNITS];
     int                         m_SwapIndex;
 
     // Per-frame binding data for shaders

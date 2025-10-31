@@ -39,6 +39,7 @@ SOFTWARE.
 #include <Hork/Audio/AudioMixer.h>
 #include <Hork/Runtime/World/World.h>
 #include <Hork/Runtime/Renderer/WorldRenderer.h>
+#include <Hork/Resources/Mesh.h>
 #include <Hork/Resources/Sound.h>
 #include <Hork/Resources/ResourceFinder.h>
 
@@ -229,7 +230,7 @@ GameApplication::GameApplication(ArgumentPack const& args, ApplicationDesc const
 
     m_TempAllocator = MakeUnique<TempAllocator>(10 * 1024 * 1024);
 
-    m_AudioDevice = MakeRef<AudioDevice>();
+    m_AudioDevice.Reset(new AudioDevice);
 
     Sound::SetDecoderProperties(m_AudioDevice->GetSampleRate(), m_AudioDevice->IsStereo());
 

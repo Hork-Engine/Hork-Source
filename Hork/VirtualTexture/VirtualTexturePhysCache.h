@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/Containers/Vector.h>
 #include <Hork/Math/VectorMath.h>
 #include <Hork/RHI/Common/FrameGraph.h>
@@ -63,15 +64,15 @@ struct VTCacheCreateInfo
 
 constexpr uint32_t MIN_PAGE_CACHE_CAPACITY = 8;
 
-class VirtualTextureCache : public RefCounted
+class VirtualTextureCache final : public IntrusiveRefCounter<VirtualTextureCache>
 {
 public:
                                 VirtualTextureCache(RHI::IDevice* device, VTCacheCreateInfo const& createInfo);
-    virtual                     ~VirtualTextureCache();
+                                ~VirtualTextureCache();
 
     RHI::IDevice*               GetDevice() { return m_Device; }
 
-    bool                        CreateTexture(const char* FileName, Ref<VirtualTexture>* ppTexture);
+    bool                        CreateTexture(const char* FileName, IntrusiveRef<VirtualTexture>* ppTexture);
     //void                      DestroyTexture( Ref< VirtualTexture > * ppTexture );
 
     /// Cache horizontal capacity
@@ -97,7 +98,7 @@ public:
     {
         size_t                  Offset;
         RHI::SyncObject         Fence;
-        VirtualTexture*         pTexture;
+        IntrusiveRef<VirtualTexture> pTexture;
         uint32_t                PageIndex;
         byte*                   Layers[VT_MAX_LAYERS];
     };
@@ -128,9 +129,7 @@ private:
     Vector<Ref<RHI::ITexture>>  m_PhysCacheLayers;
     Vector<VTCacheLayerInfo>    m_LayerInfo;
 
-    using VirtualTexturePtr =   VirtualTexture*;
-
-    Vector<VirtualTexturePtr>   m_VirtualTextures;
+    Vector<IntrusiveRef<VirtualTexture>>   m_VirtualTextures;
 
     /// Physical page info
     struct PhysPageInfo
@@ -142,7 +141,7 @@ private:
         uint32_t                PageIndex;
 
         /// Virtual texture
-        VirtualTexture*         pTexture;
+        IntrusiveRef<VirtualTexture> pTexture;
     };
 
     /// Physical pages sorted by time

@@ -167,7 +167,7 @@ public:
 
     static AudioDevice* sGetAudioDevice()
     {
-        return static_cast<GameApplication*>(sInstance())->m_AudioDevice;
+        return static_cast<GameApplication*>(sInstance())->m_AudioDevice.RawPtr();
     }
 
     static AudioMixer* sGetAudioMixer()
@@ -243,7 +243,7 @@ private:
     UniqueRef<UIManager>            m_UIManager;
     UniqueRef<WorldRenderer>        m_Renderer;
     UniqueRef<RenderBackend>        m_RenderBackend;
-    Ref<AudioDevice>                m_AudioDevice;
+    IntrusiveRef<AudioDevice>       m_AudioDevice;
     UniqueRef<AudioMixer>           m_AudioMixer;
     InputSystem                     m_InputSystem;
     CommandProcessor                m_CommandProcessor;

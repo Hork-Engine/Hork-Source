@@ -43,9 +43,9 @@ bool GUILockViewportScaling = false;
 UIViewport::UIViewport()
 {}
 
-UIViewport& UIViewport::SetWorldRenderView(WorldRenderView* worldRenderView)
+UIViewport& UIViewport::SetWorldRenderView(IntrusiveRef<WorldRenderView> worldRenderView)
 {
-    m_WorldRenderView = worldRenderView;
+    m_WorldRenderView = std::move(worldRenderView);
     return *this;
 }
 

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/RHI/Common/ImmediateContext.h>
 
 HK_NAMESPACE_BEGIN
@@ -37,7 +38,7 @@ HK_NAMESPACE_BEGIN
 namespace RenderUtils
 {
 
-class SphereMesh : public RefCounted
+class SphereMesh final : public IntrusiveRefCounter<SphereMesh>
 {
 public:
                         SphereMesh(RHI::IDevice* device, int HDiv = 128, int VDiv = 128);

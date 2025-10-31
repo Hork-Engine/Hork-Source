@@ -124,7 +124,7 @@ void CreateSceneFromMap(World* world, StringView mapFilename, StringView default
                 MeshCollider* collider;
                 collisionObject->CreateComponent(collider);
 #endif
-                collider->Data = MakeRef<MeshCollisionData>();
+                collider->Data.Reset(new MeshCollisionData);
                 collider->Data->CreateConvexHull(ArrayView(&clipVertices[chull.FirstVert], chull.VertexCount));
 
                 //collider->Data->CreateTriangleSoup(ArrayView(&clipVertices[chull.FirstVert], chull.VertexCount),

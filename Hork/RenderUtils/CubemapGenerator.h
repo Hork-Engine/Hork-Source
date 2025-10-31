@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 class CubemapGenerator
 {
 public:
-                            CubemapGenerator(RHI::IDevice* device, RenderUtils::SphereMesh* sphereMesh);
+                            CubemapGenerator(RHI::IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh);
 
     void                    GenerateArray(TEXTURE_FORMAT format, int resolution, int sourcesCount, RHI::ITexture** sources, Ref<RHI::ITexture>* ppTextureArray);
     void                    Generate(TEXTURE_FORMAT format, int resolution, RHI::ITexture* source, Ref<RHI::ITexture>* ppTexture);
@@ -51,7 +51,7 @@ private:
         Float4   Index;
     };
     Ref<RHI::IDevice>       m_Device;
-    Ref<RenderUtils::SphereMesh> m_SphereMesh;
+    IntrusiveRef<RenderUtils::SphereMesh> m_SphereMesh;
     Ref<RHI::IBuffer>       m_ConstantBuffer;
     ConstantData            m_ConstantBufferData;
     Ref<RHI::IPipeline>     m_Pipeline;

@@ -197,7 +197,7 @@ void DynamicMeshComponent::UpdateSkinningMatrices()
     if (poseComponent && poseComponent->GetPose())
     {
         SkeletonPose* pose = poseComponent->GetPose();
-        m_SkinningData.Pose = pose;
+        m_SkinningData.Pose.Reset(pose);
         m_SkinningData.StreamBuffers.Clear();
         if (m_Resource && !m_Resource->IsPurged())
         {

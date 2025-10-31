@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-Ref<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary);
+IntrusiveRef<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary);
 
 Ref<RHI::IPipeline> CreateTerrainMaterialDepth(RHI::IDevice* device);
 Ref<RHI::IPipeline> CreateTerrainMaterialLight(RHI::IDevice* device);

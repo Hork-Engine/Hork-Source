@@ -39,7 +39,7 @@ HK_NAMESPACE_BEGIN
 class AtmosphereRenderer
 {
 public:
-                            AtmosphereRenderer(RHI::IDevice* device, RenderUtils::SphereMesh* sphereMesh);
+                            AtmosphereRenderer(RHI::IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh);
 
     void                    Render(TEXTURE_FORMAT format, int cubemapWidth, Float3 const& lightDir, Ref<RHI::ITexture>* ppTexture);
 
@@ -50,7 +50,7 @@ private:
         Float4      LightDir;
     };
     Ref<RHI::IDevice>       m_Device;
-    Ref<RenderUtils::SphereMesh> m_SphereMesh;
+    IntrusiveRef<RenderUtils::SphereMesh> m_SphereMesh;
     Ref<RHI::IBuffer>       m_ConstantBuffer;
     ConstantData            m_ConstantBufferData;
     Ref<RHI::IPipeline>     m_Pipeline;

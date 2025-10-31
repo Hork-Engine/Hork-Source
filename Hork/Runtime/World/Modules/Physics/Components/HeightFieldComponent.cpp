@@ -117,6 +117,9 @@ TerrainCollisionData::TerrainCollisionData() :
     m_Data(MakeUnique<MeshCollisionDataInternal>())
 {}
 
+TerrainCollisionData::~TerrainCollisionData()
+{}
+
 void TerrainCollisionData::Create(const float* inSamples, uint32_t inSampleCount/*, const uint8_t* inMaterialIndices, const JPH::PhysicsMaterialList& inMaterialList*/)
 {
     const int BLOCK_SIZE_SHIFT = 2;

@@ -52,7 +52,7 @@ public:
 
     UIViewport();
 
-    UIViewport& SetWorldRenderView(WorldRenderView* worldRenderView);
+    UIViewport& SetWorldRenderView(IntrusiveRef<WorldRenderView> worldRenderView);
     UIViewport& WithRounding(RoundingDesc const& rounding);
     UIViewport& WithTint(Color4 const& tintColor);
     UIViewport& WithComposite(CANVAS_COMPOSITE composite);
@@ -82,7 +82,7 @@ private:
     void UpdateViewSize();
     void Clear(Canvas& canvas);
 
-    Ref<WorldRenderView>  m_WorldRenderView;
+    IntrusiveRef<WorldRenderView>  m_WorldRenderView;
     int                   m_RenderTargetWidth{};
     int                   m_RenderTargetHeight{};
 };

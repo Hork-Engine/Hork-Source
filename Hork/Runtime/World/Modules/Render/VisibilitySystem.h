@@ -28,6 +28,7 @@ SOFTWARE.
 
 */
 
+#if 0
 #pragma once
 
 #include <Hork/Renderer/RenderDefs.h>
@@ -666,7 +667,7 @@ private:
     PrimitiveDef* m_PrimitiveDirtyListTail = nullptr;
 };
 
-class VisibilityLevel : public RefCounted
+class VisibilityLevel final : public IntrusiveRefCounter<VisibilityLevel>
 {
 public:
     using ArrayOfNodes = Vector<BinarySpaceNode>;
@@ -817,3 +818,4 @@ private:
 };
 
 HK_NAMESPACE_END
+#endif

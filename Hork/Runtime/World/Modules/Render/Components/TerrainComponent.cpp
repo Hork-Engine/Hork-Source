@@ -85,9 +85,9 @@ void TerrainComponent::DrawDebug(DebugRenderer& renderer)
     }
 }
 
-Ref<TerrainView> TerrainComponent::CreateRenderView()
+IntrusiveRef<TerrainView> TerrainComponent::CreateRenderView()
 {
-    return MakeRef<TerrainView>(m_Resource);
+    return IntrusiveRef<TerrainView>(new TerrainView(m_Resource));
 }
 
 HK_NAMESPACE_END

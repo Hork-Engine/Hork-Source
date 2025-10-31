@@ -30,14 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Core/HeapBlob.h>
 #include <Hork/Core/BinaryStream.h>
 
 HK_NAMESPACE_BEGIN
 
 // TODO: Переименовать в AudioData например
-class AudioSource final : public InterlockedRef
+class AudioSource final : public IntrusiveRefCounter<AudioSource, ThreadSafeCounter>
 {
 public:
                                 AudioSource(int inFrameCount, int inSampleRate, int inSampleBits, int inChannels, HeapBlob blob);
@@ -111,7 +111,7 @@ struct AudioResample
     bool bForce8Bit;
 };
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource);
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, IntrusiveRef<AudioSource>& outSource);
 bool ReadAudioInfo(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, AudioFileInfo* outInfo);
 
 HK_NAMESPACE_END

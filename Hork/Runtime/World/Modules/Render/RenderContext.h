@@ -39,7 +39,7 @@ struct RenderContext
     WorldRenderView*            WorldRV;
     RenderViewData*             View;
     BvFrustum const*            Frustum;
-    VISIBILITY_GROUP            VisibilityMask;
+    uint32_t                    VisibilityMask;
     int                         FrameNumber;
     int                         PolyCount;
     int                         ShadowMapPolyCount;

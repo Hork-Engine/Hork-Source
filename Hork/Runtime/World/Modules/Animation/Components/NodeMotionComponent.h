@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Runtime/World/Component.h>
 #include <Hork/Runtime/World/TickFunction.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -55,7 +55,7 @@ public:
     static constexpr ComponentMode Mode = ComponentMode::Dynamic;
 
     uint32_t            NodeID;
-    Ref<NodeMotion>     Animation;
+    IntrusiveRef<NodeMotion> Animation;
     NodeMotionTimer     Timer;
 
     void                FixedUpdate();

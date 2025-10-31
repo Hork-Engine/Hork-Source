@@ -45,13 +45,13 @@ public:
     /// The mesh is only used to provide the skeleton.
     void                    SetMesh(MeshRef mesh);
 
-    SkeletonPose*           GetPose() const { return m_Pose; }
+    SkeletonPose*           GetPose() const { return m_Pose.RawPtr(); }
 
     void                    BeginPlay();
     void                    DrawDebug(class DebugRenderer& renderer);
 
 private:
-    Ref<SkeletonPose>       m_Pose;
+    IntrusiveRef<SkeletonPose> m_Pose;
     MeshRef                 m_Mesh;
 };
 

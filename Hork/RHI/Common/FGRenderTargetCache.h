@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/RHI/Common/Device.h>
 
 HK_NAMESPACE_BEGIN
@@ -37,10 +38,10 @@ HK_NAMESPACE_BEGIN
 namespace RHI
 {
 
-class FGRenderTargetCache : public RefCounted
+class FGRenderTargetCache final : public IntrusiveRefCounter<FGRenderTargetCache>
 {
 public:
-    FGRenderTargetCache(IDevice* pDevice);
+    explicit FGRenderTargetCache(IDevice* pDevice);
 
     ITexture* Acquire(TextureDesc const& TextureDesc);
 
@@ -48,7 +49,7 @@ public:
 
 private:
     Ref<IDevice>           pDevice;
-    Vector<Ref<ITexture>> Textures;     // All textures
+    Vector<Ref<ITexture>>  Textures;     // All textures
     Vector<ITexture*>      FreeTextures; // Free list
 };
 

@@ -53,7 +53,7 @@ void SkeletonPoseComponent::BeginPlay()
         return;
 
     auto jointCount = skeleton->num_joints();
-    m_Pose.Attach(new SkeletonPose);
+    m_Pose.Reset(new SkeletonPose);
     m_Pose->m_ModelMatrices.Resize(jointCount, SimdFloat4x4::identity());
     m_Pose->m_LocalMatrices.Resize(skeleton->num_soa_joints());
     Core::Memcpy(m_Pose->m_LocalMatrices.ToPtr(), skeleton->joint_rest_poses().data(), sizeof(m_Pose->m_LocalMatrices[0]) * m_Pose->m_LocalMatrices.Size());

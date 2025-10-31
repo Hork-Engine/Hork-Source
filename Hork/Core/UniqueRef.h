@@ -35,17 +35,11 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 template <typename T>
-HK_FORCEINLINE void CheckedDelete(T* Ptr)
-{
-    using type_must_be_complete = char[sizeof(T) ? 1 : -1];
-    (void)sizeof(type_must_be_complete);
-    delete Ptr;
-}
-
-template <typename T>
 class UniqueRef final
 {
 public:
+    using ReferencedType = T;
+
     UniqueRef() noexcept = default;
 
     UniqueRef(std::nullptr_t) noexcept {}
@@ -137,6 +131,13 @@ public:
     }
 
 private:
+    HK_FORCEINLINE void CheckedDelete(T* Ptr)
+    {
+        using type_must_be_complete = char[sizeof(T) ? 1 : -1];
+        (void)sizeof(type_must_be_complete);
+        delete Ptr;
+    }
+
     T* m_RawPtr{};
 };
 

@@ -184,7 +184,7 @@ void SampleApplication::Initialize()
     sGetUIManager().bCursorVisible = false;
 
     // Set input mappings
-    Ref<InputMappings> inputMappings = MakeRef<InputMappings>();
+    IntrusiveRef<InputMappings> inputMappings(new InputMappings);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::W, 1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::S, -1);
     inputMappings->MapAxis(PlayerController::_1, "MoveForward", VirtualKey::Up, 1);
@@ -224,7 +224,7 @@ void SampleApplication::Initialize()
     render.SetAmbient(0.1f);
 
     // Set rendering parameters
-    m_WorldRenderView = MakeRef<WorldRenderView>();
+    m_WorldRenderView.Reset(new WorldRenderView);
     m_WorldRenderView->SetWorld(m_World);
     m_WorldRenderView->bDrawDebug = true;
     m_WorldRenderView->BackgroundColor = Color3(0.1126f);
@@ -404,7 +404,7 @@ void SampleApplication::CreateScene()
     CreateSceneFromMap(m_World, "/Root/maps/sample10.map", "grime-alley-brick2");
 }
 
-Ref<AnimationGraph_Cooked> CreateSimplePlaybackAnimationGraph()
+IntrusiveRef<AnimationGraph_Cooked> CreateSimplePlaybackAnimationGraph()
 {
     AnimationGraph graph;
 
@@ -537,11 +537,11 @@ void SampleApplication::SpawnPaladin(Float3 const& position, Quat const& rotatio
     object->CreateComponent(pose);
     pose->SetMesh(meshHandle);
 
-    static Ref<AnimationGraph_Cooked> animGraph = CreateSimplePlaybackAnimationGraph();
+    static IntrusiveRef<AnimationGraph_Cooked> animGraph = CreateSimplePlaybackAnimationGraph();
 
     AnimatorComponent* animator;
     m_Animator = object->CreateComponent(animator);
-    animator->SetAnimationGraph(animGraph.RawPtr());
+    animator->SetAnimationGraph(animGraph);
     animator->SetMesh(meshHandle);
     animator->SetParam(StringID{"PlaybackSpeed"}, 0.0f);
 

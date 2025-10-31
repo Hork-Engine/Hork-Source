@@ -33,6 +33,8 @@ SOFTWARE.
 #include "DeviceGLImpl.h"
 #include "FramebufferGL.h"
 
+#include <Hork/Core/UniqueRef.h>
+
 HK_NAMESPACE_BEGIN
 
 namespace RHI
@@ -138,7 +140,7 @@ struct FrameBufferHash
     }
 };
 
-class FramebufferCacheGL : public RefCounted
+class FramebufferCacheGL : public Noncopyable
 {
 public:
     FramebufferCacheGL() = default;
@@ -714,7 +716,7 @@ private:
 
     Rect2D CurrentScissor;
 
-    Ref<FramebufferCacheGL> pFramebufferCache;
+    UniqueRef<FramebufferCacheGL> pFramebufferCache;
 
     HashMap<uint64_t, uint32_t> ProgramPipelines;
 };

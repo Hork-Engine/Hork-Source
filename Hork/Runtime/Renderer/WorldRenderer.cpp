@@ -60,10 +60,10 @@ extern ConsoleVar r_HBAODeinterleaved;
 
 ConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"_s, "0"_s, CVAR_CHEAT);
 
-void WorldRenderer::AddRenderView(WorldRenderView* renderView)
+void WorldRenderer::AddRenderView(IntrusiveRef<WorldRenderView> renderView)
 {
     // TODO: Sort by render order. Render order get from renderView
-    m_RenderViews.EmplaceBack(renderView);
+    m_RenderViews.EmplaceBack(std::move(renderView));
 }
 
 void WorldRenderer::Render(FrameLoop* frameLoop)
@@ -97,7 +97,7 @@ void WorldRenderer::Render(FrameLoop* frameLoop)
 
     for (int i = 0; i < m_FrameData.NumViews; i++)
     {
-        WorldRenderView* worldRenderView = m_RenderViews[i];
+        WorldRenderView* worldRenderView = m_RenderViews[i].RawPtr();
         RenderViewData* view = &m_FrameData.RenderViews[i];
 
         RenderView(worldRenderView, view);
@@ -566,7 +566,7 @@ void WorldRenderer::AddMeshes()
 
                 if constexpr (IsDynamicMesh<MeshComponentType>())
                 {
-                    if (SkeletonPose* pose = mesh.GetSkinningData().Pose)
+                    if (auto& pose = mesh.GetSkinningData().Pose)
                     //if (SkeletonPose* pose = mesh.GetPose())
                     {
                         if (surface.SkinIndex != -1)
@@ -761,7 +761,7 @@ void WorldRenderer::AddMeshesShadow(LightShadowmap* shadowMap, BvAxisAlignedBox 
 
                 if constexpr (IsDynamicMesh<MeshComponentType>())
                 {
-                    if (SkeletonPose* pose = mesh.GetSkinningData().Pose)
+                    if (auto& pose = mesh.GetSkinningData().Pose)
                     //if (SkeletonPose* pose = mesh.GetPose())
                     {
                         if (surface.SkinIndex != -1)
@@ -1010,10 +1010,8 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     else
         view->Brightness = worldRenderView->Brightness;
 
-    if (worldRenderView->ColorGrading)
+    if (auto& params = worldRenderView->ColorGrading)
     {
-        ColorGradingParameters* params = worldRenderView->ColorGrading;
-
         TextureRef lutTexture = params->GetLUT();
 
         view->ColorGradingLUT = lutTexture ? lutTexture->GetTextureGPU() : nullptr;
@@ -1105,7 +1103,7 @@ void WorldRenderer::RenderView(WorldRenderView* worldRenderView, RenderViewData*
     m_Context.FrameNumber = m_FrameNumber;
     m_Context.View = view;
     m_Context.Frustum = &frustum;
-    m_Context.VisibilityMask = (VISIBILITY_GROUP)camera->GetVisibilityMask();
+    m_Context.VisibilityMask = camera->GetVisibilityMask();
     m_Context.PolyCount = 0;
     m_Context.ShadowMapPolyCount = 0;
     m_Context.StreamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
@@ -1477,6 +1475,7 @@ void WorldRenderer::SortShadowInstances(LightShadowmap const* shadowMap)
 
 void WorldRenderer::QueryVisiblePrimitives(World* world)
 {
+#if 0
     VisibilityQuery query;
 
     for (int i = 0; i < 6; i++)
@@ -1489,9 +1488,11 @@ void WorldRenderer::QueryVisiblePrimitives(World* world)
     query.VisibilityMask = m_Context.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS; // | VSD_QUERY_MASK_SHADOW_CAST;
 
-    //world->QueryVisiblePrimitives(m_VisPrimitives, &m_VisPass, query);
+    world->QueryVisiblePrimitives(m_VisPrimitives, &m_VisPass, query);
+#endif
 }
 
+#if 0
 void WorldRenderer::QueryShadowCasters(World* world, Float4x4 const& lightViewProjection, Float3 const& lightPosition, Float3x3 const& lightBasis, Vector<PrimitiveDef*>& primitives)
 {
     VisibilityQuery query;
@@ -1587,6 +1588,6 @@ void WorldRenderer::QueryShadowCasters(World* world, Float4x4 const& lightViewPr
 #endif
     //world->QueryVisiblePrimitives(primitives, nullptr, query);
 }
-
+#endif
 
 HK_NAMESPACE_END

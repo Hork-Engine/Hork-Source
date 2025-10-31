@@ -99,10 +99,10 @@ public:
     bool                    SelectNextSound();
 
     /// We can control the volume by groups of sound sources
-    void                    SetSoundGroup(SoundGroup* inGroup);
+    void                    SetSoundGroup(SoundGroupRef inGroup);
 
     /// We can control the volume by groups of sound sources
-    SoundGroup*             GetSoundGroup() const { return m_Group; }
+    SoundGroupRef           GetSoundGroup() const { return m_Group; }
 
     /// If target listener is not specified, audio will be hearable for all listeners
     void                    SetTargetListener(GameObjectHandle inListener);
@@ -195,12 +195,12 @@ private:
     using Queue = eastl::queue<SoundRef, eastl::deque<SoundRef, Allocators::HeapMemoryAllocator<HEAP_VECTOR>, DEQUE_DEFAULT_SUBARRAY_SIZE(SoundRef)>>;
 
     Queue                   m_AudioQueue;
-    Ref<SoundGroup>         m_Group;
+    SoundGroupRef           m_Group;
     GameObjectHandle        m_TargetListener;
     uint32_t                m_ListenerMask = ~0u;
     SoundSourceType         m_SourceType = SoundSourceType::Point;
     SoundRef                m_Sound;
-    Ref<AudioTrack>         m_Track;
+    IntrusiveRef<AudioTrack>m_Track;
     float                   m_Volume = 1.0f;
     float                   m_ReferenceDistance = 1;
     float                   m_MaxDistance = 100.0f;
@@ -217,9 +217,9 @@ private:
 
     struct PlayOneShotData
     {
-        Ref<AudioTrack>     Track;
-        float               VolumeScale;
-        bool                NeedToSubmit;
+        IntrusiveRef<AudioTrack>    Track;
+        float                       VolumeScale;
+        bool                        NeedToSubmit;
     };
     Vector<PlayOneShotData> m_PlayOneShot;
 };

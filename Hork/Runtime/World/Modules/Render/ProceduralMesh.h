@@ -40,7 +40,7 @@ class StreamedMemoryGPU;
 struct RenderContext;
 struct TriangleHitResult;
 
-class ProceduralMesh : public RefCounted
+class ProceduralMesh final : public IntrusiveRefCounter<ProceduralMesh>
 {
 public:
     /// Update vertex cache occasionally or every frame

@@ -36,6 +36,7 @@ SOFTWARE.
 
 #include <Hork/Core/String.h>
 #include <Hork/Core/Containers/Stack.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 #include <Hork/RHI/Common/Device.h>
 
@@ -48,12 +49,12 @@ HK_NAMESPACE_BEGIN
 namespace RHI
 {
 
-class FrameGraph : public RefCounted
+class FrameGraph final : public IntrusiveRefCounter<FrameGraph>
 {
 public:
-    FrameGraph(IDevice* pDevice, FGRenderTargetCache* pRenderTargetCache = nullptr) :
+    FrameGraph(IDevice* pDevice, IntrusiveRef<FGRenderTargetCache> pRenderTargetCache = {}) :
         pDevice(pDevice),
-        pRenderTargetCache(pRenderTargetCache ? pRenderTargetCache : MakeRef<FGRenderTargetCache>(pDevice))
+        pRenderTargetCache(pRenderTargetCache ? pRenderTargetCache : MakeIntrusive<FGRenderTargetCache>(pDevice))
     {
     }
 
@@ -104,7 +105,7 @@ public:
 
     FGRenderTargetCache* GetRenderTargetCache()
     {
-        return pRenderTargetCache;
+        return pRenderTargetCache.RawPtr();
     }
 
     struct TimelineStep
@@ -153,7 +154,7 @@ private:
     void ReleaseCapturedResources();
 
     Ref<IDevice>             pDevice;
-    Ref<FGRenderTargetCache> pRenderTargetCache;
+    IntrusiveRef<FGRenderTargetCache> pRenderTargetCache;
 
     Vector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
     Vector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;

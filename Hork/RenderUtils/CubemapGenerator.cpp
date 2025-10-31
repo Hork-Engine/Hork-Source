@@ -38,9 +38,9 @@ HK_NAMESPACE_BEGIN
 
 using namespace RHI;
 
-CubemapGenerator::CubemapGenerator(IDevice* device, RenderUtils::SphereMesh* sphereMesh) :
+CubemapGenerator::CubemapGenerator(IDevice* device, IntrusiveRef<RenderUtils::SphereMesh> sphereMesh) :
     m_Device(device),
-    m_SphereMesh(sphereMesh)
+    m_SphereMesh(std::move(sphereMesh))
 {
     BufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;

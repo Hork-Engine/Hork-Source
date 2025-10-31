@@ -43,13 +43,14 @@ AudioTrack
 All members can be freely modified before submit to mixer thread
 All ***_LOCK members are protected by spinlock
 */
-struct AudioTrack final : public Noncopyable
+class AudioTrack final : public IntrusiveRefCounter<AudioTrack>
 {
+public:
     /// Audio source. Read only
-    Ref<AudioSource> pSource;
+    IntrusiveRef<AudioSource> pSource;
 
     /// Interface for audio decoding. Read only
-    Ref<AudioDecoder> pDecoder;
+    IntrusiveRef<AudioDecoder> pDecoder;
 
     /// Playback position in frames.
     /// Read only for main thread. Modified by mixer thread.
@@ -158,34 +159,13 @@ public:
         TrackPool.Deallocate(_Ptr);
     }
 
-    AudioTrack(AudioSource* inSource, int inStartFrame, int inLoopStart, int inLoopsCount, bool inVirtualizeWhenSilent);
+    AudioTrack(IntrusiveRef<AudioSource> inSource, int inStartFrame, int inLoopStart, int inLoopsCount, bool inVirtualizeWhenSilent);
 
     /// Update parameters. Called from main thread.
     void SetPlaybackParameters(const int inVolume[2], Float3 const& inLocalDir, bool inSpatializedStereo, bool inPaused);
 
     /// Change playback position. Called from main thread.
     void SetPlaybackPosition(int inPosition);
-
-    /// Add reference. Can be used from both main and mixer threads.
-    HK_FORCEINLINE void AddRef()
-    {
-        RefCount.Increment();
-    }
-
-    /// Remove reference. Can be used from both main and mixer threads.
-    HK_FORCEINLINE void RemoveRef()
-    {
-        if (RefCount.Decrement() == 0)
-        {
-            delete this;
-        }
-    }
-
-    /// Reference count
-    HK_FORCEINLINE int GetRefCount() const
-    {
-        return RefCount.Load();
-    }
 
     /// This function is called by a mixer at shutdown to cleanup the memory
     static void sFreePool();

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/IntrusiveRef.h>
 #include "Factory.h"
 
 HK_NAMESPACE_BEGIN
@@ -41,7 +42,7 @@ BaseObject
 Base object class.
 
 */
-class BaseObject : public RefCounted
+class BaseObject : public IntrusiveRefCounter<BaseObject>
 {
 public:
     typedef BaseObject                                 ThisClass;
@@ -53,13 +54,15 @@ public:
             ClassMeta(ClassMeta::sDummyFactory(), "BaseObject"_s, nullptr)
         {}
 
-        Ref<BaseObject> CreateInstance() const override
+        IntrusiveRef<BaseObject> CreateInstance() const override
         {
-            return MakeRef<ThisClass>();
+            return MakeIntrusive<ThisClass>();
         }
     };
 
     _HK_GENERATED_CLASS_BODY()
+
+    virtual ~BaseObject() {}
 
     void SetProperties(StringHashMap<String> const& Properties);
 

@@ -67,7 +67,7 @@ VirtualTextureFeedbackAnalyzer::~VirtualTextureFeedbackAnalyzer()
         {
             if (m_Textures[j][i])
             {
-                m_Textures[j][i]->RemoveRef();
+                m_Textures[j][i].Reset();
                 m_Textures[j][i] = nullptr;
             }
         }
@@ -101,7 +101,7 @@ void VirtualTextureFeedbackAnalyzer::StreamThreadMain()
             m_QueueLoadPos++;
         }
 
-        VirtualTexture* pTexture = quedPage.pTexture;
+        auto pTexture = quedPage.pTexture;
 
         if (!pTexture)
         {
@@ -180,8 +180,7 @@ void VirtualTextureFeedbackAnalyzer::ClearQueue()
         }
 
         // Remove outdated page from queue
-        quedPage->pTexture->RemoveRef();
-        quedPage->pTexture = nullptr;
+        quedPage->pTexture.Reset();
     }
 
     m_QueueLoadPos = 0;
@@ -196,11 +195,9 @@ void VirtualTextureFeedbackAnalyzer::SubmitPages(Vector<VTPageDesc> const& pages
     ClearQueue();
 
     // Refresh queue
-    Core::Memcpy(m_QuedPages, pages.ToPtr(), pages.Size() * sizeof(m_QuedPages[0]));
     for (int i = 0; i < pages.Size(); i++)
     {
-        VTPageDesc* quedPage = &m_QuedPages[i];
-        quedPage->pTexture->AddRef();
+        m_QuedPages[i] = pages[i];
     }
 
     if (pages.Size() > 0)
@@ -231,8 +228,7 @@ void VirtualTextureFeedbackAnalyzer::Begin(StreamedMemoryGPU* streamedMemory, RH
     {
         if (m_Textures[m_SwapIndex][i])
         {
-            m_Textures[m_SwapIndex][i]->RemoveRef();
-            m_Textures[m_SwapIndex][i] = nullptr;
+            m_Textures[m_SwapIndex][i].Reset();
         }
     }
 }
@@ -282,7 +278,7 @@ void VirtualTextureFeedbackAnalyzer::DecodePages()
         return;
     }
 
-    VirtualTexture** pTextureBindings = m_Textures[m_SwapIndex];
+    IntrusiveRef<VirtualTexture>* pTextureBindings = m_Textures[m_SwapIndex];
 
     ScopedTimer timecheck("VirtualTextureFeedbackAnalyzer::DecodePage");
 
@@ -317,7 +313,7 @@ void VirtualTextureFeedbackAnalyzer::DecodePages()
             // Decode page
             VT_FeedbackUnpack_RGBA8_11LODS_256UNITS(pData, x, y, lod, unit);
 
-            VirtualTexture* pTexture = pTextureBindings[unit];
+            auto& pTexture = pTextureBindings[unit];
             if (!pTexture)
             {
                 // No texture binded to unit
@@ -472,16 +468,11 @@ void VirtualTextureFeedbackAnalyzer::AddFeedbackData(int feedbackSize, const voi
     feedback.Data = feedbackData;
 }
 
-void VirtualTextureFeedbackAnalyzer::BindTexture(int unit, VirtualTexture* texture)
+void VirtualTextureFeedbackAnalyzer::BindTexture(int unit, IntrusiveRef<VirtualTexture> texture)
 {
     HK_ASSERT(unit >= 0 && unit < VT_MAX_TEXTURE_UNITS);
     if (texture)
     {
-        texture->AddRef();
-        if (m_Textures[m_SwapIndex][unit])
-        {
-            m_Textures[m_SwapIndex][unit]->RemoveRef();
-        }
         m_Textures[m_SwapIndex][unit] = texture;
 
         m_Bindings[unit].MaxLod = texture->GetStoredLods() - 1;
@@ -491,11 +482,7 @@ void VirtualTextureFeedbackAnalyzer::BindTexture(int unit, VirtualTexture* textu
     }
     else
     {
-        if (m_Textures[m_SwapIndex][unit])
-        {
-            m_Textures[m_SwapIndex][unit]->RemoveRef();
-            m_Textures[m_SwapIndex][unit] = nullptr;
-        }
+        m_Textures[m_SwapIndex][unit].Reset();
 
         m_Bindings[unit].MaxLod = 0;
         m_Bindings[unit].Log2Size = 0;
@@ -505,7 +492,7 @@ void VirtualTextureFeedbackAnalyzer::BindTexture(int unit, VirtualTexture* textu
 VirtualTexture* VirtualTextureFeedbackAnalyzer::GetTexture(int unit)
 {
     HK_ASSERT(unit >= 0 && unit < VT_MAX_TEXTURE_UNITS);
-    return m_Textures[m_SwapIndex][unit];
+    return m_Textures[m_SwapIndex][unit].RawPtr();
 }
 
 HK_NAMESPACE_END

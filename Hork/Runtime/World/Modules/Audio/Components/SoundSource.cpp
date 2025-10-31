@@ -147,7 +147,7 @@ void SoundSource::PlayOneShot(SoundRef inSound, float inVolumeScale, int inStart
         return;
 
     PlayOneShotData& oneShot = m_PlayOneShot.EmplaceBack();
-    oneShot.Track.Attach(new AudioTrack(source, inStartFrame, -1, 0, m_VirtualizeWhenSilent));
+    oneShot.Track.Reset(new AudioTrack(source, inStartFrame, -1, 0, m_VirtualizeWhenSilent));
     oneShot.NeedToSubmit = true;
     oneShot.VolumeScale = Math::Saturate(inVolumeScale);
 }
@@ -197,7 +197,7 @@ bool SoundSource::StartPlay(SoundRef inSound, int inStartFrame, int inLoopStart)
 
     m_Sound = std::move(inSound);
 
-    m_Track.Attach(new AudioTrack(source, inStartFrame, inLoopStart, loopsCount, m_VirtualizeWhenSilent));
+    m_Track.Reset(new AudioTrack(source, inStartFrame, inLoopStart, loopsCount, m_VirtualizeWhenSilent));
     m_NeedToSubmit = true;
  
     return true;
@@ -247,9 +247,9 @@ float SoundSource::GetPlaybackTime() const
     return (float)m_Track->GetPlaybackPos() / device->GetSampleRate();
 }
 
-void SoundSource::SetSoundGroup(SoundGroup* inGroup)
+void SoundSource::SetSoundGroup(SoundGroupRef inGroup)
 {
-    m_Group = inGroup;
+    m_Group = std::move(inGroup);
 }
 
 void SoundSource::SetTargetListener(GameObjectHandle inListener)

@@ -31,11 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/Containers/Vector.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 HK_NAMESPACE_BEGIN
 
-class AnimationGraph_Cooked final : public RefCounted
+class AnimationGraph_Cooked final : public IntrusiveRefCounter<AnimationGraph_Cooked>
 {
     friend class            AnimationGraph;
 
@@ -43,8 +43,7 @@ public:
                             ~AnimationGraph_Cooked();
 
     // TODO:
-    //static Ref<AnimationGraph_Cooked> sLoad(BinaryStreamReadInterface& stream);
-    //void                    Write(BinaryStreamWriteInterface& stream);
+    //Load/Write
 
     struct BlendPose
     {

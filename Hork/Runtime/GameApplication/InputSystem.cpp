@@ -74,9 +74,9 @@ InputSystem::~InputSystem()
         delete gamepadState;
 }
 
-void InputSystem::SetInputMappings(InputMappings* mappings)
+void InputSystem::SetInputMappings(IntrusiveRef<InputMappings> mappings)
 {
-    m_InputMappings = mappings;
+    m_InputMappings = std::move(mappings);
 }
 
 void InputSystem::SetKeyState(VirtualKey virtualKey, InputEvent event, KeyModifierMask modMask)

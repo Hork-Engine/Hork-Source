@@ -84,7 +84,7 @@ struct AudioListener
     uint32_t                Mask = ~0u;
 };
 
-class SoundGroup : public RefCounted
+class SoundGroup final : public IntrusiveRefCounter<SoundGroup>
 {
 public:
     /// Scale volume for all sounds in group
@@ -116,6 +116,8 @@ private:
     bool                    m_PlayEvenWhenPaused = false;
 };
 
+using SoundGroupRef = IntrusiveRef<SoundGroup>;
+
 class AudioInterface : public WorldInterfaceBase
 {
 public:
@@ -128,10 +130,10 @@ public:
     Handle32<AudioListenerComponent> GetListener() const { return m_ListenerComponent; }
 
     /// Plays a sound at a given position in world space.
-    void                    PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+    void                    PlaySoundAt(SoundRef inSound, Float3 const& inPosition, SoundGroupRef inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
 
     /// Plays a sound at background.
-    void                    PlaySoundBackground(SoundRef inSound, SoundGroup* inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
+    void                    PlaySoundBackground(SoundRef inSound, SoundGroupRef inGroup = nullptr, float inVolume = 1.0f, int inStartFrame = 0);
 
 protected:
     virtual void            Initialize() override;
@@ -148,8 +150,8 @@ private:
 
     struct OneShotSound
     {
-        Ref<AudioTrack>     Track;
-        Ref<SoundGroup>     Group;
+        IntrusiveRef<AudioTrack> Track;
+        SoundGroupRef       Group;
         Float3              Position;
         float               Volume;
         bool                IsBackground;

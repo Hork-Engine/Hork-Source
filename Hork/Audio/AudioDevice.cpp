@@ -261,16 +261,14 @@ void AudioDevice::ClearBuffer()
     UnmapTransferBuffer();
 }
 
-Ref<AudioStream> AudioDevice::CreateStream(AudioStreamDesc const& desc)
+IntrusiveRef<AudioStream> AudioDevice::CreateStream(AudioStreamDesc const& desc)
 {
     const SDL_AudioSpec spec = {desc.Format == AudioTransferFormat::FLOAT32 ? SDL_AUDIO_F32 : SDL_AUDIO_S16, desc.NumChannels, desc.SampleRate};
     SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
     if (!stream)
         return {};
 
-    Ref<AudioStream> result;
-    result.Attach(new AudioStream);
-
+    IntrusiveRef<AudioStream> result(new AudioStream);
     result->m_AudioStream = stream;
     return result;
 }

@@ -74,12 +74,12 @@ RenderBackend::RenderBackend(RHI::IDevice* device)
     rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
 
-    m_FrameGraph = MakeRef<FrameGraph>(GDevice);
+    m_FrameGraph = MakeUnique<FrameGraph>(GDevice);
 
-    m_FrameRenderer = MakeRef<FrameRenderer>();
-    m_CanvasRenderer = MakeRef<CanvasRenderer>();
+    m_FrameRenderer = MakeUnique<FrameRenderer>();
+    m_CanvasRenderer = MakeUnique<CanvasRenderer>();
 
-    GCircularBuffer = MakeRef<CircularBuffer>(2 * 1024 * 1024); // 2MB
+    GCircularBuffer = MakeUnique<CircularBuffer>(2 * 1024 * 1024); // 2MB
     //GFrameConstantBuffer = MakeRef< FrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
     //#define QUERY_TIMESTAMP
@@ -123,8 +123,8 @@ RenderBackend::RenderBackend(RHI::IDevice* device)
     GClusterLookup->SetDebugName("Cluster Lookup");
 
 
-    m_FeedbackAnalyzerVT = MakeRef<VirtualTextureFeedbackAnalyzer>(GDevice);
-    GFeedbackAnalyzerVT = m_FeedbackAnalyzerVT;
+    m_FeedbackAnalyzerVT.Reset(new VirtualTextureFeedbackAnalyzer(GDevice));
+    GFeedbackAnalyzerVT = m_FeedbackAnalyzerVT.RawPtr();
 
     {
         BRDFGenerator generator(GDevice);
@@ -386,7 +386,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* bac
 
         m_FrameGraph->Build();
         //m_FrameGraph->ExportGraphviz("frame.graphviz");
-        rcmd->ExecuteFrameGraph(m_FrameGraph);
+        rcmd->ExecuteFrameGraph(m_FrameGraph.RawPtr());
         m_FrameGraph->Clear();
     }
 
@@ -394,7 +394,7 @@ void RenderBackend::RenderFrame(StreamedMemoryGPU* streamedMemory, ITexture* bac
 
     m_FrameGraph->Build();
     //m_FrameGraph->ExportGraphviz("frame.graphviz");
-    rcmd->ExecuteFrameGraph(m_FrameGraph);
+    rcmd->ExecuteFrameGraph(m_FrameGraph.RawPtr());
 
     if (r_FrameGraphDebug)
     {
@@ -647,7 +647,7 @@ void RenderBackend::RenderView(int ViewportIndex, RenderViewData* pRenderView)
         pRenderView->VTFeedback->Begin(pRenderView->Width, pRenderView->Height);
     }
 
-    m_FrameRenderer->Render(*m_FrameGraph, bVirtualTexturing, m_PhysCacheVT);
+    m_FrameRenderer->Render(*m_FrameGraph, bVirtualTexturing, m_PhysCacheVT.RawPtr());
 
     // !!!!!!!!!!! FIXME: move outside of framegraph filling
     if (bVirtualTexturing)

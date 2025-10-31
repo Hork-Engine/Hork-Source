@@ -66,7 +66,7 @@ private:
     UIViewport* m_Viewport;
     UIWidget* m_IntroWidget;
     World* m_World{};
-    Ref<WorldRenderView> m_WorldRenderView;
+    IntrusiveRef<WorldRenderView> m_WorldRenderView;
     GifPlayer m_GifPlayer;
     Handle32<PunctualLightComponent> m_Light;
     Vector<ResourceRef> m_LevelResources;

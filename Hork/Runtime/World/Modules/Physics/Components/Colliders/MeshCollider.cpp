@@ -39,7 +39,7 @@ SOFTWARE.
 HK_NAMESPACE_BEGIN
 
 MeshCollisionData::MeshCollisionData() :
-    m_Data(new MeshCollisionDataInternal)
+    m_Data(MakeUnique<MeshCollisionDataInternal>())
 {}
 
 MeshCollisionData::~MeshCollisionData()
@@ -149,7 +149,7 @@ bool CreateConvexDecompositionVHACD(GameObject* object, Float3 const* inVertices
         object->CreateComponent(collider);
 
         collider->OffsetPosition = hull.Centroid;
-        collider->Data = MakeRef<MeshCollisionData>();
+        collider->Data.Reset(new MeshCollisionData);
         collider->Data->CreateConvexHull(ArrayView<Float3>(hullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount));
     }
 

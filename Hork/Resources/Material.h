@@ -66,11 +66,11 @@ public:
     uint32_t                    GetTextureCount() const;
     uint32_t                    GetUniformVectorCount() const;
 
-    MaterialGPU*                GetGpuMaterial() { return m_GpuMaterial; }
+    MaterialGPU*                GetGpuMaterial() { return m_GpuMaterial.RawPtr(); }
    
 
 private:
-    Ref<MaterialGPU>            m_GpuMaterial;
+    IntrusiveRef<MaterialGPU>   m_GpuMaterial;
     UniqueRef<MaterialBinary>   m_Binary;
 };
 

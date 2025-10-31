@@ -39,7 +39,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class IBinaryStreamBaseInterface : public RefCounted
+class IBinaryStreamBaseInterface : public Noncopyable
 {
 public:
     virtual ~IBinaryStreamBaseInterface() = default;

@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Hork/Core/ConsoleVar.h>
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/ShaderUtils/ShaderLoader.h>
 #include <Hork/ShaderUtils/ShaderUtils.h>
 #include <Hork/RenderUtils/DrawUtils.h>
@@ -211,7 +212,7 @@ extern StreamedMemoryGPU*  GStreamedMemory;
 
 /// Circular buffer. Contains constant data for single draw call.
 /// Don't use to store long-live data.
-extern Ref<CircularBuffer> GCircularBuffer;
+extern UniqueRef<CircularBuffer> GCircularBuffer;
 
 /// Simple white texture
 extern Ref<RHI::ITexture> GWhiteTexture;

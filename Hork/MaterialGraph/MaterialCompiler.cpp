@@ -352,7 +352,7 @@ Ref<RHI::IPipeline> CreateTerrainMaterialWireframe(RHI::IDevice* device)
     return pipeline;
 }
 
-Ref<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary)
+IntrusiveRef<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& binary)
 {
     Vector<Ref<RHI::IShaderModule>> compiledShaders;
 
@@ -364,7 +364,7 @@ Ref<MaterialGPU> CompileMaterial(RHI::IDevice* device, MaterialBinary const& bin
             return {};
     }
 
-    Ref<MaterialGPU> materialGPU = MakeRef<MaterialGPU>();
+    IntrusiveRef<MaterialGPU> materialGPU(new MaterialGPU);
     materialGPU->MaterialType = binary.MaterialType;
     materialGPU->LightmapSlot = binary.LightmapSlot;
     materialGPU->DepthPassTextureCount = binary.DepthPassTextureCount;

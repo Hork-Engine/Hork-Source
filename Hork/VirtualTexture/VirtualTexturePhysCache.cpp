@@ -167,7 +167,7 @@ VirtualTextureCache::~VirtualTextureCache()
     {
         for (PageTransfer* transfer : m_Transfers)
         {
-            transfer->pTexture->RemoveRef();
+            transfer->pTexture.Reset();
         }
         UnlockTransfers();
     }
@@ -176,18 +176,13 @@ VirtualTextureCache::~VirtualTextureCache()
     {
         context->RemoveSync(transfer->Fence);
     }
-
-    for (VirtualTexture* texture : m_VirtualTextures)
-    {
-        texture->RemoveRef();
-    }
 }
 
-bool VirtualTextureCache::CreateTexture(const char* FileName, Ref<VirtualTexture>* ppTexture)
+bool VirtualTextureCache::CreateTexture(const char* FileName, IntrusiveRef<VirtualTexture>* ppTexture)
 {
     ppTexture->Reset();
 
-    Ref<VirtualTexture> pTexture = MakeRef<VirtualTexture>(FileName, this);
+    IntrusiveRef<VirtualTexture> pTexture(new VirtualTexture(FileName, this));
     if (!pTexture->IsLoaded())
     {
         return false;
@@ -195,9 +190,7 @@ bool VirtualTextureCache::CreateTexture(const char* FileName, Ref<VirtualTexture
 
     *ppTexture = pTexture;
 
-    pTexture->AddRef();
-
-    m_VirtualTextures.Add(pTexture.RawPtr());
+    m_VirtualTextures.Add(pTexture);
 
     return true;
 }
@@ -284,7 +277,7 @@ void VirtualTextureCache::ResetCache()
         m_PhysPageInfoSorted[i].pInfo = &m_PhysPageInfo[i];
     }
 
-    for (VirtualTexturePtr texture : m_VirtualTextures)
+    for (auto& texture : m_VirtualTextures)
     {
         texture->m_PendingUpdateLRU.Clear();
         texture->CommitPageResidency();
@@ -306,7 +299,7 @@ void VirtualTextureCache::Update()
     if (!LockTransfers())
     {
         // no pages to upload
-        for (VirtualTexturePtr texture : m_VirtualTextures)
+        for (auto& texture : m_VirtualTextures)
         {
             maxPendingLRUs = Math::Max(maxPendingLRUs, texture->m_PendingUpdateLRU.Size());
             texture->m_PendingUpdateLRU.Clear(); // No need to update LRU
@@ -319,7 +312,7 @@ void VirtualTextureCache::Update()
 
     int64_t time = ++m_LRUTime;
 
-    for (VirtualTexturePtr texture : m_VirtualTextures)
+    for (auto& texture : m_VirtualTextures)
     {
         maxPendingLRUs = Math::Max(maxPendingLRUs, texture->m_PendingUpdateLRU.Size());
         for (int i = 0; i < texture->m_PendingUpdateLRU.Size(); i++)
@@ -374,7 +367,7 @@ void VirtualTextureCache::Update()
     {
         PageTransfer* transfer = m_Transfers[fetchIndex];
 
-        VirtualTexture* pTexture = transfer->pTexture;
+        IntrusiveRef<VirtualTexture>& pTexture = transfer->pTexture;
 
         if (pTexture->m_PIT[transfer->PageIndex] & PF_CACHED)
         {
@@ -415,7 +408,7 @@ void VirtualTextureCache::Update()
         TransferPageData(transfer, physPageIndex);
 
         pTexture->MakePageResident(transfer->PageIndex, physPageIndex);
-        pTexture->RemoveRef();
+        pTexture.Reset();
 
         physPage++;
         d_uploaded++;
@@ -433,13 +426,12 @@ void VirtualTextureCache::Update()
 
     for (int texIndex = m_VirtualTextures.Size() - 1; texIndex >= 0; texIndex--)
     {
-        VirtualTexturePtr texture = m_VirtualTextures[texIndex];
+        auto& texture = m_VirtualTextures[texIndex];
 
         texture->CommitPageResidency();
 
-        if (texture->GetRefCount() == 1)
+        if (texture->UseCount() == 1)
         {
-
             // Remove texture from the cache
             for (int i = 0; i < m_PageCacheCapacity; i++)
             {
@@ -451,8 +443,6 @@ void VirtualTextureCache::Update()
                 m_PhysPageInfo[i].PageIndex = 0;
                 m_PhysPageInfo[i].pTexture = 0;
             }
-
-            texture->RemoveRef();
 
             m_VirtualTextures.Remove(texIndex);
         }
@@ -509,7 +499,7 @@ void VirtualTextureCache::DiscardTransfers(PageTransfer** transfers, int count)
         for (int i = 0; i < count; i++)
         {
             transfers[i]->Fence = Fence;
-            transfers[i]->pTexture->RemoveRef();
+            transfers[i]->pTexture.Reset();
         }
     }
 }

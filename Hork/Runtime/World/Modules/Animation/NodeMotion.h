@@ -30,9 +30,10 @@ SOFTWARE.
 
 #pragma once
 
+#include <Hork/Core/Containers/Vector.h>
+#include <Hork/Core/IntrusiveRef.h>
 #include <Hork/Math/VectorMath.h>
 #include <Hork/Math/Quat.h>
-#include <Hork/Core/Containers/Vector.h>
 
 HK_NAMESPACE_BEGIN
 
@@ -50,7 +51,7 @@ enum NODE_ANIMATION_PATH_TYPE
     NODE_ANIMATION_PATH_SCALE
 };
 
-class NodeMotion : public RefCounted // TODO: Resource
+class NodeMotion final : public IntrusiveRefCounter<NodeMotion> // TODO: Resource
 {
 public:
     Vector<float> m_AnimationTimes;
@@ -82,5 +83,7 @@ public:
     Float3 SampleVector(Sampler& sampler, float time);
     Quat SampleQuaternion(Sampler& sampler, float time);
 };
+
+using NodeMotionRef = IntrusiveRef<NodeMotion>;
 
 HK_NAMESPACE_END

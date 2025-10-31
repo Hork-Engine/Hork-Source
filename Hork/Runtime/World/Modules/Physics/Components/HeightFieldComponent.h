@@ -55,7 +55,7 @@ public:
     /// The collision group this body belongs to (determines if two objects can collide)
     uint8_t                 CollisionLayer = 0;
 
-    Ref<TerrainCollisionData> Data;
+    IntrusiveRef<TerrainCollisionData> Data;
 
     //
     // Dynamic properties
@@ -88,10 +88,11 @@ namespace ComponentMeta
     }
 }
 
-class TerrainCollisionData : public RefCounted
+class TerrainCollisionData final : public IntrusiveRefCounter<TerrainCollisionData>
 {
 public:
                                     TerrainCollisionData();
+                                    ~TerrainCollisionData();
 
     void                            Create(const float* inSamples, uint32_t inSampleCount/*, const uint8_t* inMaterialIndices = nullptr, const JPH::PhysicsMaterialList& inMaterialList = JPH::PhysicsMaterialList()*/);
 

@@ -108,6 +108,8 @@ template <typename T>
 class IntrusiveRef final
 {
 public:
+    using ReferencedType = T;
+
     IntrusiveRef() noexcept : m_RawPtr(nullptr) {}
     IntrusiveRef(nullptr_t) noexcept : m_RawPtr(nullptr) {}
 

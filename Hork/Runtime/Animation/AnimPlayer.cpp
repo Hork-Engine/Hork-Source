@@ -816,7 +816,7 @@ struct AnimationPlayer::BuildContext
     Vector<UniqueRef<AnimPlayer_Node>>& m_Nodes;
 };
 
-AnimationPlayer::AnimationPlayer(AnimationGraph_Cooked* animGraph, OzzSkeleton const* skeleton)
+AnimationPlayer::AnimationPlayer(IntrusiveRef<AnimationGraph_Cooked> animGraph, OzzSkeleton const* skeleton)
 {
     m_AnimGraph = animGraph;
     // TODO: resourceMngr.AddRef(animGraph), in destructor call resourceMngr.RemoveRef to prevent resource unloading!!!

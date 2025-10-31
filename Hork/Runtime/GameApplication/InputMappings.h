@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Hork/Core/StringID.h>
 #include <Hork/Core/Containers/Hash.h>
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 #include "VirtualKey.h"
 
@@ -60,7 +60,7 @@ struct VirtualMapping
     PlayerController    Owner;
 };
 
-class InputMappings : public RefCounted
+class InputMappings final : public IntrusiveRefCounter<InputMappings>
 {
 public:
     void                    Clear();

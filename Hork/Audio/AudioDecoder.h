@@ -36,13 +36,13 @@ struct ma_decoder;
 
 HK_NAMESPACE_BEGIN
 
-class AudioDecoder final : public InterlockedRef
+class AudioDecoder final : public IntrusiveRefCounter<AudioDecoder, ThreadSafeCounter>
 {
 public:
-                        AudioDecoder(AudioSource* inSource);
+    explicit            AudioDecoder(IntrusiveRef<AudioSource> inSource);
                         ~AudioDecoder();
 
-    AudioSource*        GetSource() const { return m_Source; }
+    AudioSource*        GetSource() const { return m_Source.RawPtr(); }
 
     /// Seeks to a PCM frame based on it's absolute index.
     void                SeekToFrame(int inFrameNum);
@@ -51,7 +51,7 @@ public:
     int                 ReadFrames(void* outFrames, int inFrameCount, size_t inSizeInBytes);
 
 private:
-    Ref<AudioSource>    m_Source;
+    IntrusiveRef<AudioSource> m_Source;
     ma_decoder*         m_Decoder = nullptr;
     int                 m_FrameIndex = 0;
 };

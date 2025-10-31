@@ -435,11 +435,6 @@ DeviceGLImpl::~DeviceGLImpl()
 
     MainWindowHandle.ImmediateCtx->RemoveRef();
     WindowPool.Free(MainWindowHandle);
-
-    for (auto& it : VertexLayouts)
-    {
-        it.second->RemoveRef();
-    }
 }
 
 IImmediateContext* DeviceGLImpl::GetImmediateContext()
@@ -593,11 +588,11 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
         desc.VertexAttribs[i].SemanticName = nullptr;
     }
 
-    VertexLayoutGL*& vertexLayout = VertexLayouts[desc];
+    auto& vertexLayout = VertexLayouts[desc];
     if (vertexLayout)
     {
         //LOG("Caching vertex layout\n");
-        return vertexLayout;
+        return vertexLayout.RawPtr();
     }
 
     // Validate
@@ -625,14 +620,11 @@ VertexLayoutGL* DeviceGLImpl::GetVertexLayout(VertexBindingInfo const* pVertexBi
         }
     }
 
-    Ref<VertexLayoutGL> pVertexLayout;
-    pVertexLayout = MakeRef<VertexLayoutGL>(desc);
-    pVertexLayout->AddRef();
-    vertexLayout = pVertexLayout;
+    vertexLayout = MakeUnique<VertexLayoutGL>(desc);
 
     //LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
 
-    return pVertexLayout;
+    return vertexLayout.RawPtr();
 }
 
 BlendingStateInfo const* DeviceGLImpl::CachedBlendingState(BlendingStateInfo const& _BlendingState)

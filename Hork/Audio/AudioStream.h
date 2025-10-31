@@ -30,14 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Hork/Core/Ref.h>
+#include <Hork/Core/IntrusiveRef.h>
 
 HK_NAMESPACE_BEGIN
 
-class AudioStream : public RefCounted
+class AudioStream final : public IntrusiveRefCounter<AudioStream>
 {
 public:
-                        ~AudioStream();    
+                        ~AudioStream();
 
     void                Clear();
     void                QueueAudio(void const* data, size_t size);

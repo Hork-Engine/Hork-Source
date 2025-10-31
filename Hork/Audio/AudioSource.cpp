@@ -83,7 +83,7 @@ namespace
     }
 } // namespace
 
-bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, Ref<AudioSource>& outSource)
+bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inResample, IntrusiveRef<AudioSource>& outSource)
 {
     ma_decoder_config config = ma_decoder_config_init(inResample.bForce8Bit ? ma_format_u8 : ma_format_s16, inResample.bForceMono ? 1 : 0, inResample.SampleRate);
 
@@ -145,7 +145,7 @@ bool DecodeAudio(IBinaryStreamReadInterface& inStream, AudioResample const& inRe
     if (totalFramesRead == 0)
         return false;
 
-    outSource = MakeRef<AudioSource>(totalFramesRead, inResample.SampleRate, sampleBits, decoder.outputChannels, pFrames);
+    outSource.Reset(new AudioSource(totalFramesRead, inResample.SampleRate, sampleBits, decoder.outputChannels, pFrames));
 
     tempHeap.Free(pFrames);
 

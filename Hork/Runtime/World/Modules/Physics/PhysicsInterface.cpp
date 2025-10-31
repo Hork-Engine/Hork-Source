@@ -224,8 +224,7 @@ bool PhysicsInterfaceImpl::CreateCollision(CreateCollisionSettings const& settin
         if (auto* collider = Component::sUpcast<MeshCollider>(component))
         {
             // add mesh
-            MeshCollisionData* data = collider->Data;
-            if (data)
+            if (auto& data = collider->Data)
             {
                 if (data->IsConvex() || !settings.ConvexOnly)
                 {

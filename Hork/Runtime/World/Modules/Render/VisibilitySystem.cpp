@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
-
+#if 0
 #include "VisibilitySystem.h"
 #include <Hork/Runtime/World/DebugRenderer.h>
 
@@ -2355,3 +2355,4 @@ bool VisibilitySystem::RaycastClosestBounds(BoxHitResult& Result, Float3 const& 
 }
 
 HK_NAMESPACE_END
+#endif

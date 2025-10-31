@@ -95,12 +95,12 @@ public:
 
     String const&               GetName() const { return m_Name; }
     MGOutput*                   GetConnection() { return m_Slot; }
-    MGNode*                     ConnectedNode() { return m_SlotNode; }
+    MGNode*                     ConnectedNode() { return m_SlotNode.RawPtr(); }
 
 private:
     String                      m_Name;
     MGOutput*                   m_Slot = nullptr;
-    Ref<MGNode>                 m_SlotNode;
+    IntrusiveRef<MGNode>        m_SlotNode;
 
     friend class                MGNode;
 };
@@ -827,7 +827,7 @@ public:
 
                                 MaterialGraph();
 
-    static Ref<MaterialGraph>   sLoad(IBinaryStreamReadInterface& Stream);
+    static IntrusiveRef<MaterialGraph> sLoad(IBinaryStreamReadInterface& Stream);
 
     template <typename T, typename... TArgs>
     T&                          Add2(TArgs&&... Args);
@@ -864,7 +864,7 @@ private:
     void                        ComputeTessellationEvalStage(MaterialBuildContext& Context);
     void                        ComputeAlphaMask(MaterialBuildContext& Context);
 
-    Vector<Ref<MGNode>>         m_Nodes;
+    Vector<IntrusiveRef<MGNode>>m_Nodes;
     Vector<MGTextureSlot*>      m_TextureSlots;
     uint32_t                    m_NodeIdGen = 0;
 };
@@ -888,10 +888,10 @@ HK_INLINE T* MaterialGraph::Add(TArgs&&... Args)
                 return static_cast<T*>(node.RawPtr());
         }
     }
-    auto node = MakeRef<T>(std::forward<TArgs>(Args)...);
+    auto node = MakeIntrusive<T>(std::forward<TArgs>(Args)...);
     m_Nodes.Add(node);
     node->m_ID = ++m_NodeIdGen;
-    return static_cast<T*>(node.RawPtr());
+    return node.RawPtr();
 }
 
 HK_NAMESPACE_END

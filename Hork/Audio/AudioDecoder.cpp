@@ -36,8 +36,8 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-AudioDecoder::AudioDecoder(AudioSource* inSource) :
-    m_Source(inSource)
+AudioDecoder::AudioDecoder(IntrusiveRef<AudioSource> inSource) :
+    m_Source(std::move(inSource))
 {
     if (m_Source->IsEncoded())
     {
@@ -63,7 +63,7 @@ AudioDecoder::AudioDecoder(AudioSource* inSource) :
 
         ma_decoder_config config = ma_decoder_config_init(format, m_Source->GetChannels(), m_Source->GetSampleRate());
 
-        ma_result result = ma_decoder_init_memory(inSource->GetHeapPtr(), inSource->GetSizeInBytes(), &config, m_Decoder);
+        ma_result result = ma_decoder_init_memory(m_Source->GetHeapPtr(), m_Source->GetSizeInBytes(), &config, m_Decoder);
         if (result != MA_SUCCESS)
             CoreApplication::sTerminateWithError("AudioDecoder: failed to initialize decoder\n");
     }

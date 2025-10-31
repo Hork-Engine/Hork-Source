@@ -67,7 +67,7 @@ private:
     UIViewport* m_Viewport;
     UIWidget* m_LoadingScreen;
     World* m_World{};
-    Ref<WorldRenderView> m_WorldRenderView;
+    IntrusiveRef<WorldRenderView> m_WorldRenderView;
     GameObjectHandle m_Player;
     Vector<ResourceRef> m_LevelResources;
     const uint32_t BATCH_LEVEL_RESOURCES = 1;

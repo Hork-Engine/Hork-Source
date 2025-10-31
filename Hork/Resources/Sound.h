@@ -43,7 +43,7 @@ class IBinaryStreamWriteInterface;
 
 struct SoundData
 {
-    Ref<AudioSource> Source; // TODO: IntrusiveRef
+    IntrusiveRef<AudioSource> Source;
 };
 
 class Sound : public Resource
@@ -67,12 +67,12 @@ public:
     void                        Purge() override;
 
     
-    Ref<AudioSource>            GetSource();
+    IntrusiveRef<AudioSource>   GetSource();
 
     static void                 SetDecoderProperties(int sampleRate, bool stereo);
 
 private:
-    Ref<AudioSource>            m_Source;
+    IntrusiveRef<AudioSource>   m_Source;
 
     static int                  s_DecoderSampleRate;
     static bool                 s_IsStereo;

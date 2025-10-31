@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
+#include <Hork/Core/UniqueRef.h>
 #include <Hork/RHI/Common/VertexMemoryGPU.h>
 
 #include <Hork/VirtualTexture/VirtualTextureAnalyzer.h>
@@ -58,25 +59,25 @@ private:
     void                        SetViewConstants(int viewportIndex);
     void                        UploadShaderResources(int viewportIndex);
 
-    Ref<RHI::FrameGraph>        m_FrameGraph;
+    UniqueRef<RHI::FrameGraph>  m_FrameGraph;
 
-    Ref<class CanvasRenderer>   m_CanvasRenderer;
-    Ref<class FrameRenderer>    m_FrameRenderer;
+    UniqueRef<class CanvasRenderer> m_CanvasRenderer;
+    UniqueRef<class FrameRenderer> m_FrameRenderer;
 
     Ref<RHI::IQueryPool>        m_TimeQuery;
 
     Ref<RHI::IQueryPool>        m_TimeStamp1;
     Ref<RHI::IQueryPool>        m_TimeStamp2;
 
-    Ref<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
-    Ref<VirtualTextureCache>    m_PhysCacheVT;
+    IntrusiveRef<VirtualTextureFeedbackAnalyzer> m_FeedbackAnalyzerVT;
+    IntrusiveRef<VirtualTextureCache> m_PhysCacheVT;
 
     Ref<RHI::IPipeline>         m_TerrainDepthPipeline;
     Ref<RHI::IPipeline>         m_TerrainLightPipeline;
     Ref<RHI::IPipeline>         m_TerrainWireframePipeline;
 
     // Just for test
-    Ref<VirtualTexture>         m_TestVT;
+    IntrusiveRef<VirtualTexture>m_TestVT;
 };
 
 HK_NAMESPACE_END

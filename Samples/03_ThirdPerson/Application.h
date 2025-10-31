@@ -63,7 +63,7 @@ private:
         Quat Rotation;
     };
     Vector<SpawnPoint> m_PlayerSpawnPoints;
-    Ref<WorldRenderView> m_WorldRenderView;
+    IntrusiveRef<WorldRenderView> m_WorldRenderView;
 
     Vector<ResourceRef> m_LevelResources;
     const uint32_t BATCH_LEVEL_RESOURCES = 1;

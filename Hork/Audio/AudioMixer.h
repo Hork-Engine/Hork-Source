@@ -42,41 +42,31 @@ HK_NAMESPACE_BEGIN
 class AudioMixerSubmitQueue final : public Noncopyable
 {
 public:
-    AudioMixerSubmitQueue() = default;
-
-    ~AudioMixerSubmitQueue()
-    {
-        Clear();
-    }
-
     void Clear()
     {
-        for (AudioTrack* track : m_Tracks)
-            track->RemoveRef();
         m_Tracks.Clear();
     }
 
     // TODO: В будущем, для многопоточки можно использовать вектор фиксированный длины и атомарный счетчик,
     // либо для каждого потока создать свой вектор или экземпляр AudioMixerSubmitQueue
-    void Add(AudioTrack* track)
+    void Add(IntrusiveRef<AudioTrack> track)
     {
-        m_Tracks.Add(track);
-        track->AddRef();
+        m_Tracks.EmplaceBack(std::move(track));
     }
 
-    Vector<AudioTrack*> const& GetTracks()
+    Vector<IntrusiveRef<AudioTrack>> const& GetTracks()
     {
         return m_Tracks;
     }
 
 private:
-    Vector<AudioTrack*> m_Tracks;
+    Vector<IntrusiveRef<AudioTrack>> m_Tracks;
 };
 
 class AudioMixer final : public Noncopyable
 {
 public:
-                        AudioMixer(AudioDevice* device);
+                        AudioMixer(IntrusiveRef<AudioDevice> device);
                         ~AudioMixer();
 
     /// Add tracks to mixer thread
@@ -132,8 +122,7 @@ private:
     alignas(16) SamplePair  m_RenderBuffer[2048];
     static constexpr int    m_RenderBufferSize = HK_ARRAY_SIZE(m_RenderBuffer);
 
-    Ref<AudioDevice>        m_Device;
-    AudioDevice*            m_DeviceRawPtr;
+    IntrusiveRef<AudioDevice> m_Device;
     uint8_t*                m_TransferBuffer;
     bool                    m_IsAsync;
     int64_t                 m_RenderFrame;

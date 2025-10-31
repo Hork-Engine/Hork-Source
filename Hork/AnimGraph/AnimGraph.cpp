@@ -397,15 +397,14 @@ bool AnimationGraph::ValidateNode(AnimGraph_Node const* node) const
     return true;
 }
 
-Ref<AnimationGraph_Cooked> AnimationGraph::Cook()
+IntrusiveRef<AnimationGraph_Cooked> AnimationGraph::Cook()
 {
     Optimize();
 
     if (!Validate())
         return {};
 
-    Ref<AnimationGraph_Cooked> cooked;
-    cooked.Attach(new AnimationGraph_Cooked);
+    IntrusiveRef<AnimationGraph_Cooked> cooked(new AnimationGraph_Cooked);
 
     cooked->m_Nodes.Resize(m_Nodes.Size());
     cooked->m_RootNodeID = m_RootNode < m_Nodes.Size() ? m_RootNode : 0;

@@ -72,7 +72,7 @@ UniqueRef<SoundData> Sound::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
     resample.bForceMono = cfg_force_mono || !s_IsStereo;
     resample.bForce8Bit = cfg_force_8bit;
 
-    Ref<AudioSource> source;
+    IntrusiveRef<AudioSource> source;
 
     if (!cfg_encoded)
     {
@@ -91,7 +91,7 @@ UniqueRef<SoundData> Sound::BeginAsyncLoad(IBinaryStreamReadInterface& stream)
             return {};
         }
 
-        source = MakeRef<AudioSource>(info.FrameCount, s_DecoderSampleRate, info.SampleBits, info.Channels, stream.AsBlob());
+        source.Reset(new AudioSource(info.FrameCount, s_DecoderSampleRate, info.SampleBits, info.Channels, stream.AsBlob()));
     }
 
     UniqueRef<SoundData> data = MakeUnique<SoundData>();
@@ -129,7 +129,7 @@ void Sound::Purge()
     m_IsPurged = true;
 }
 
-Ref<AudioSource> Sound::GetSource()
+IntrusiveRef<AudioSource> Sound::GetSource()
 {
     return m_Source;
 }

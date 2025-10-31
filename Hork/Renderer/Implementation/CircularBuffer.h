@@ -34,7 +34,7 @@ SOFTWARE.
 
 HK_NAMESPACE_BEGIN
 
-class CircularBuffer : public RefCounted
+class CircularBuffer : public Noncopyable
 {
 public:
     CircularBuffer(size_t InBufferSize);

@@ -58,8 +58,8 @@ private:
 
     World* m_World{};
 
-    Ref<WorldRenderView> m_WorldRenderView;
-    Ref<WorldRenderView> m_OffscreenRenderView;
+    IntrusiveRef<WorldRenderView> m_WorldRenderView;
+    IntrusiveRef<WorldRenderView> m_OffscreenRenderView;
 
     Vector<ResourceRef> m_LevelResources;
     const uint32_t BATCH_LEVEL_RESOURCES = 1;
