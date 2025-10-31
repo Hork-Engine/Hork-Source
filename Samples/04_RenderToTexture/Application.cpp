@@ -327,7 +327,7 @@ void SampleApplication::CreateScene()
         face->SetMesh(resource);
         face->SetLocalBoundingBox(rawMesh.CalcBoundingBox());
         
-        MatInstanceHandle matInstance(new MatInstance);
+        MatInstanceRef matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/mirror.mat"));
         matInstance->SetTexture(0, m_OffscreenRenderView->GetTexture());
         face->SetMaterial(std::move(matInstance));

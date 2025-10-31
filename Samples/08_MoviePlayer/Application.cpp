@@ -309,7 +309,7 @@ void SampleApplication::CreateScene()
         m_Cinematic.SetLoop(true);
         m_Cinematic.E_OnImageUpdate.Bind(this, &SampleApplication::OnVideoFrameUpdated);
 
-        MatInstanceHandle matInstance(new MatInstance);
+        MatInstanceRef matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/unlit_clamped.mat"));
         matInstance->SetTexture(0, m_Cinematic.GetTexture());
         face->SetMaterial(std::move(matInstance));

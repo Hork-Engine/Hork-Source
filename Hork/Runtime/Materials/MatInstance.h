@@ -97,6 +97,6 @@ private:
     int                     m_VisFrame = -1;
 };
 
-using MatInstanceHandle = IntrusiveRef<MatInstance>;
+using MatInstanceRef = IntrusiveRef<MatInstance>;
 
 HK_NAMESPACE_END

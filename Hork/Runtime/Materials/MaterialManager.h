@@ -41,20 +41,20 @@ public:
 
     void                    Clear();
 
-    void                    AddMaterial(StringView name, MatInstanceHandle matInstance);
+    void                    AddMaterial(StringView name, MatInstanceRef matInstance);
 
     void                    RemoveMaterial(StringView name);
 
     bool                    HasMaterial(StringView name) const;
 
-    MatInstanceHandle       FindMaterial(StringView name);
+    MatInstanceRef          FindMaterial(StringView name);
 
     Vector<String>          GetMaterialNames() const;
 
     size_t                  GetMaterialCount() const;
 
 private:
-    StringHashMap<MatInstanceHandle> m_Instances;
+    StringHashMap<MatInstanceRef> m_Instances;
 };
 
 class MaterialManager final : public Noncopyable
@@ -70,7 +70,7 @@ public:
 
     IntrusiveRef<MaterialLibrary>    GetLibrary(StringView name) const;
 
-    MatInstanceHandle       FindMaterial(StringView name) const;
+    MatInstanceRef          FindMaterial(StringView name) const;
 
 private:
     StringHashMap<IntrusiveRef<MaterialLibrary>> m_Libraries;

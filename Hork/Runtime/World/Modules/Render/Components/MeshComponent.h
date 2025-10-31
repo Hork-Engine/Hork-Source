@@ -61,8 +61,8 @@ public:
     void                        SetProceduralMesh(IntrusiveRef<ProceduralMesh> proceduralMesh) { m_ProceduralData = std::move(proceduralMesh); }
     ProceduralMesh*             GetProceduralMesh() { return m_ProceduralData.RawPtr(); }
 
-    void                        SetMaterial(MatInstanceHandle material);
-    void                        SetMaterial(uint32_t index, MatInstanceHandle material);
+    void                        SetMaterial(MatInstanceRef material);
+    void                        SetMaterial(uint32_t index, MatInstanceRef material);
     MatInstance*                GetMaterial(uint32_t index);
     void                        SetMaterialCount(uint32_t count);
     uint32_t                    GetMaterialCount() const;
@@ -97,7 +97,7 @@ public:
 
 protected:
     MeshRef                     m_Resource;
-    Vector<MatInstanceHandle>   m_MatInstances;
+    Vector<MatInstanceRef>      m_MatInstances;
     IntrusiveRef<ProceduralMesh>m_ProceduralData;
     uint8_t                     m_VisibilityLayer = 0;
     bool                        m_Outline = false;

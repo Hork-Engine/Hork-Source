@@ -260,7 +260,7 @@ void SampleApplication::CreateScene()
         m_GifPlayer.SetLoop(true);
         m_GifPlayer.E_OnImageUpdate.Bind(this, &SampleApplication::OnVideoFrameUpdated);
 
-        MatInstanceHandle matInstance(new MatInstance);
+        MatInstanceRef matInstance(new MatInstance);
         matInstance->SetResource(resourceMngr.Acquire<Material>("/Root/default/materials/compiled/unlit_clamped.mat"));
         matInstance->SetTexture(0, m_GifPlayer.GetTexture());
         face->SetMaterial(std::move(matInstance));

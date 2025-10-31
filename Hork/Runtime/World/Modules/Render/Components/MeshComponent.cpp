@@ -42,12 +42,12 @@ HK_NAMESPACE_BEGIN
 ConsoleVar com_DrawMeshDebug("com_DrawMeshDebug"_s, "0"_s);
 ConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"_s, "0"_s);
 
-void MeshComponent::SetMaterial(MatInstanceHandle material)
+void MeshComponent::SetMaterial(MatInstanceRef material)
 {
     SetMaterial(0, std::move(material));
 }
 
-void MeshComponent::SetMaterial(uint32_t index, MatInstanceHandle material)
+void MeshComponent::SetMaterial(uint32_t index, MatInstanceRef material)
 {
     while (m_MatInstances.Size() <= index)
         m_MatInstances.EmplaceBack();

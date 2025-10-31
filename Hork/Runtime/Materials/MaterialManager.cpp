@@ -52,7 +52,7 @@ void MaterialLibrary::Load(IBinaryStreamReadInterface& stream)
         if (!dinstance.IsStructure())
             continue;
 
-        MatInstanceHandle matInstance(new MatInstance);
+        MatInstanceRef matInstance(new MatInstance);
 
         auto resource = dinstance["Material"].AsString();
         if (!resource.IsEmpty())
@@ -91,7 +91,7 @@ void MaterialLibrary::Clear()
     m_Instances.Clear();
 }
 
-void MaterialLibrary::AddMaterial(StringView name, MatInstanceHandle matInstance)
+void MaterialLibrary::AddMaterial(StringView name, MatInstanceRef matInstance)
 {
     m_Instances[name] = std::move(matInstance);
 }
@@ -106,7 +106,7 @@ bool MaterialLibrary::HasMaterial(StringView name) const
     return m_Instances.Find(name) != m_Instances.End();
 }
 
-MatInstanceHandle MaterialLibrary::FindMaterial(StringView name)
+MatInstanceRef MaterialLibrary::FindMaterial(StringView name)
 {
     auto it = m_Instances.Find(name);
     return (it != m_Instances.End()) ? it->second : nullptr;
@@ -161,7 +161,7 @@ void MaterialManager::RemoveLibrary(StringView name)
     m_Libraries.Erase(name);
 }
 
-MatInstanceHandle MaterialManager::FindMaterial(StringView name) const
+MatInstanceRef MaterialManager::FindMaterial(StringView name) const
 {
     for (auto& pair : m_Libraries)
     {
