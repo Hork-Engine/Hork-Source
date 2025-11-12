@@ -2021,7 +2021,7 @@ void PhysicsInterface::PostTransform()
                 collision.Body = other;
                 collision.Normal = event.Normal;
                 collision.Depth = event.Depth;
-                collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
+                collision.Contacts = ArrayView(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
                 World::sDispatchEvent<Event_OnBeginContact>(self->GetOwner(), collision);
                 break;
             }
@@ -2031,7 +2031,7 @@ void PhysicsInterface::PostTransform()
                 collision.Body = other;
                 collision.Normal = event.Normal;
                 collision.Depth = event.Depth;
-                collision.Contacts = ArrayView<ContactPoint>(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
+                collision.Contacts = ArrayView(&m_pImpl->m_ContactPoints[event.FirstPoint], event.NumPoints);
                 World::sDispatchEvent<Event_OnUpdateContact>(self->GetOwner(), collision);
                 break;
             }

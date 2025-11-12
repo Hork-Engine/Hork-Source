@@ -150,7 +150,7 @@ bool CreateConvexDecompositionVHACD(VHACDParameters const& inParams, GameObject*
 
         collider->OffsetPosition = hull.Centroid;
         collider->Data.Reset(new MeshCollisionData);
-        collider->Data->CreateConvexHull(ArrayView<Float3>(hullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount));
+        collider->Data->CreateConvexHull(ArrayView(hullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount));
     }
 
     return true;

@@ -828,8 +828,8 @@ void LightVoxelizer::DrawVoxels(DebugRenderer& renderer, Float4x4 const& cameraV
     int n = 0;
     for (Float3* lineP = m_DebugDrawVertices.ToPtr(); n < m_DebugDrawVertices.Size(); lineP += 8, n += 8)
     {
-        renderer.DrawLine(ArrayView<Float3>(lineP, 4), true);
-        renderer.DrawLine(ArrayView<Float3>(lineP + 4, 4), true);
+        renderer.DrawLine(ArrayView(lineP, 4), true);
+        renderer.DrawLine(ArrayView(lineP + 4, 4), true);
         renderer.DrawLine(lineP[0], lineP[5]);
         renderer.DrawLine(lineP[1], lineP[4]);
         renderer.DrawLine(lineP[2], lineP[7]);
